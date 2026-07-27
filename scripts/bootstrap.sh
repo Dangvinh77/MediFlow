@@ -6,6 +6,14 @@ set -euo pipefail
 
 echo "==> Hospital MSA toolkit bootstrap (Unix)"
 
+# 0. Git hooks
+if [ -d "scripts/git-hooks" ]; then
+  git config core.hooksPath scripts/git-hooks
+  echo "[ok] Git hooks installed from scripts/git-hooks (single-author policy enforced)"
+else
+  echo "[MISSING] scripts/git-hooks/ not found — hooks not configured"
+fi
+
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # 1. Java 21+

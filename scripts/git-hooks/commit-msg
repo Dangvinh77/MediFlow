@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# COMMIT-MSG HOOK — MediFlow
+# Ngăn commit chứa Co-Authored-By. Nếu còn sót, từ chối commit.
+# Agent (Claude, Codex, Copilot, ...) không được tự lấy danh xưng collaborator.
+
+COMMIT_MSG_FILE="$1"
+
+if grep -qi "^Co-Authored-By:" "$COMMIT_MSG_FILE"; then
+  echo ""
+  echo "ERROR: Commit message chứa 'Co-Authored-By:' — không được phép."
+  echo "Chỉ user hiện tại (Harori) mới được ghi nhận là tác giả."
+  echo "Hãy xoá dòng Co-Authored-By trước khi commit."
+  echo ""
+  exit 1
+fi

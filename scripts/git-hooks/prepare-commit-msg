@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# PREPARE-COMMIT-MSG HOOK — MediFlow
+# Xoá mọi dòng "Co-Authored-By:" khỏi commit message.
+# Agent (Claude, Codex, Copilot, ...) không được tự ý thêm danh xưng collaborator.
+# Chỉ user hiện tại (Harori) mới được ghi nhận là tác giả.
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+SHA1="$3"
+
+# Xoá tất cả dòng Co-Authored-By (kể cả trailing blank lines)
+if [ -f "$COMMIT_MSG_FILE" ]; then
+  # Xoá dòng Co-Authored-By và dòng trống ngay sau nó (nếu có)
+  sed -i '/^Co-Authored-By:.*/d' "$COMMIT_MSG_FILE"
+  # Dọn dẹp trailing blank lines dư thừa
+  sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$COMMIT_MSG_FILE"
+fi

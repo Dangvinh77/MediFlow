@@ -5,6 +5,15 @@
 $ErrorActionPreference = 'Stop'
 Write-Host "==> Hospital MSA toolkit bootstrap (Windows)" -ForegroundColor Cyan
 
+# 0. Git hooks
+$hooksDir = Join-Path (Get-Location) "scripts/git-hooks"
+if (Test-Path $hooksDir) {
+    git config core.hooksPath scripts/git-hooks
+    Write-Host "[ok] Git hooks installed from scripts/git-hooks (single-author policy enforced)" -ForegroundColor Green
+} else {
+    Write-Host "[MISSING] scripts/git-hooks/ not found — hooks not configured" -ForegroundColor Red
+}
+
 function Test-Cmd($name) { return [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 
 # 1. Java 21+
