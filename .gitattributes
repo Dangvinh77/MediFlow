@@ -1,0 +1,21 @@
+# Normalize line endings across a mixed Windows / macOS / Linux team.
+* text=auto eol=lf
+
+# Shell scripts MUST stay LF or they break on Unix.
+*.sh text eol=lf
+
+# Windows scripts stay CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Maven wrapper
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+
+# Binary / generated artifacts — never touch.
+*.jar binary
+*.zst binary
+*.png binary
+*.jpg binary
+*.pdf binary

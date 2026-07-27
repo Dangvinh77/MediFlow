@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Pharmacy Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>💊 Pharmacy Service</h1>
+    <p><strong>Vai trò:</strong> Quản lý thuốc, tồn kho, kê đơn và xuất thuốc.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Thuốc (THUOC), đơn thuốc (BAN_KE_CP), phiếu xuất (PHIEU_XUAT), chi tiết đơn.</li>
+            <li><strong>Không quản lý:</strong> Thanh toán, hồ sơ.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p><strong>THUOC</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_thuoc</td><td>UUID (PK)</td><td>Mã thuốc</td></tr>
+            <tr><td>ten_thuoc</td><td>VARCHAR(255)</td><td>Tên thuốc</td></tr>
+            <tr><td>hoat_chat</td><td>VARCHAR(255)</td><td>Hoạt chất</td></tr>
+            <tr><td>don_vi_tinh</td><td>VARCHAR(20)</td><td>Đơn vị tính</td></tr>
+            <tr><td>gia</td><td>DECIMAL(15,2)</td><td>Giá bán</td></tr>
+            <tr><td>so_luong_ton</td><td>INT</td><td>Số lượng tồn kho</td></tr>
+            <tr><td>han_su_dung</td><td>DATE</td><td>Hạn sử dụng</td></tr>
+            <tr><td>nha_san_xuat</td><td>VARCHAR(100)</td><td>Nhà sản xuất</td></tr>
+        </table>
+        <p><strong>BAN_KE_CP</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_ban_ke</td><td>UUID (PK)</td><td>Mã bảng kê</td></tr>
+            <tr><td>ma_ho_so</td><td>UUID (FK)</td><td>Mã hồ sơ</td></tr>
+            <tr><td>ma_bac_si</td><td>UUID (ref)</td><td>Mã bác sĩ kê — Organization Service (NHAN_VIEN)</td></tr>
+            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa kê đơn — Organization Service (KHOA)</td></tr>
+            <tr><td>ngay_ke</td><td>DATE</td><td>Ngày kê</td></tr>
+            <tr><td>tong_tien</td><td>DECIMAL(15,2)</td><td>Tổng tiền</td></tr>
+        </table>
+        <p><strong>CHI_TIET_BAN_KE</strong> và <strong>PHIEU_XUAT</strong> (xem thêm trong tài liệu đính kèm).</p>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/pharmacy/drugs</td><td>page, keyword</td><td>Page<DrugDTO></td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
+            <tr><td>GET</td><td>/api/v1/pharmacy/drugs/{id}</td><td>-</td><td>DrugDTO</td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
+            <tr><td>POST</td><td>/api/v1/pharmacy/drugs</td><td>CreateDrugRequest</td><td>DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
+            <tr><td>PUT</td><td>/api/v1/pharmacy/drugs/{id}/stock</td><td>UpdateStockRequest</td><td>DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
+            <tr><td>POST</td><td>/api/v1/pharmacy/prescriptions</td><td>CreatePrescriptionRequest</td><td>PrescriptionDTO</td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>PUT</td><td>/api/v1/pharmacy/prescriptions/{id}/dispense</td><td>DispenseRequest</td><td>DispenseResultDTO</td><td>ADMIN, PHARMACIST</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish</h2>
+        <table>
+            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
+            <tr><td>PrescriptionCreatedEvent</td><td>{ prescriptionId, patientId, recordId, <strong>maKhoa</strong>, totalAmount, items }</td><td>Khi tạo đơn thuốc</td></tr>
+            <tr><td>PrescriptionFilledEvent</td><td>{ prescriptionId, patientId, <strong>maKhoa</strong>, totalAmount, dispensedItems }</td><td>Khi xuất thuốc thành công</td></tr>
+            <tr><td>StockLowEvent</td><td>{ drugId, drugName, currentStock }</td><td>Khi tồn kho dưới ngưỡng (ví dụ <10)</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Events Subscribe</h2>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Cập nhật trạng thái phiếu xuất từ CHO_XUAT → DA_XUAT</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>6. Business Rules</h2>
+        <ul>
+            <li><strong>Không xuất thuốc nếu tồn kho &lt; số lượng yêu cầu.</strong></li>
+            <li>Không xuất thuốc nếu hạn sử dụng &lt; ngày hiện tại.</li>
+            <li>Khi tạo đơn, tự động tạo phiếu xuất với trạng thái CHO_XUAT.</li>
+            <li>Khi xuất thuốc, cập nhật tồn kho (giảm số lượng).</li>
+            <li>Tổng tiền đơn = sum(so_luong * don_gia).</li>
+        </ul>
+        <div class="note">Lưu ý: Nếu xuất thất bại do tồn kho, cần bắn event lỗi để rollback trong Saga.</div>
+    </div>
+
+    <div class="section">
+        <h2>7. Sequence Diagram – Kê đơn & Xuất thuốc (Saga Orchestration)</h2>
+        <div class="code">
+            Doctor → Client → Pharmacy Service<br>
+            1. POST /prescriptions<br>
+            2. Validate tồn kho, hạn dùng<br>
+            3. Lưu đơn + tạo phiếu xuất CHO_XUAT<br>
+            4. Publish PrescriptionCreatedEvent<br>
+            <br>
+            Billing Service (Saga Orchestrator) nhận event, tạo hóa đơn<br>
+            Billing → Pharmacy (REST/event): yêu cầu xuất thuốc<br>
+            Pharmacy kiểm tra và xuất → bắn PrescriptionFilledEvent<br>
+            Billing nhận → cập nhật hóa đơn, chờ thanh toán<br>
+            <br>
+            Sau thanh toán (Client → Billing): PaymentCompletedEvent → Pharmacy cập nhật phiếu xuất thành DA_XUAT
+        </div>
+    </div>
+</body>
+</html>

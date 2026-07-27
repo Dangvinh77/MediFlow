@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Lab Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Lab Service</h1>
+    <p><strong>Vai trò:</strong> Quản lý yêu cầu và kết quả xét nghiệm.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Xét nghiệm (XET_NGHIEM), kết quả (KET_QUA_XN).</li>
+            <li><strong>Không quản lý:</strong> Bệnh nhân, hồ sơ, thanh toán.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p><strong>XET_NGHIEM</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_xn</td><td>UUID (PK)</td><td>Mã xét nghiệm</td></tr>
+            <tr><td>ma_ho_so</td><td>UUID (FK)</td><td>Mã hồ sơ yêu cầu</td></tr>
+            <tr><td>ma_benh_nhan</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
+            <tr><td>ma_khoa_chi_dinh</td><td>UUID (ref)</td><td>Khoa chỉ định xét nghiệm — Organization Service (KHOA)</td></tr>
+            <tr><td>loai_xn</td><td>VARCHAR(50)</td><td>Loại xét nghiệm</td></tr>
+            <tr><td>ngay_yeu_cau</td><td>DATE</td><td>Ngày yêu cầu</td></tr>
+            <tr><td>ngay_thuc_hien</td><td>DATE</td><td>Ngày thực hiện</td></tr>
+            <tr><td>trang_thai</td><td>ENUM('CHO','DANG','HOAN_THANH','HUY')</td><td>Trạng thái</td></tr>
+            <tr><td>ket_luan</td><td>TEXT</td><td>Kết luận</td></tr>
+        </table>
+        <p><strong>KET_QUA_XN</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_ket_qua</td><td>UUID (PK)</td><td>Mã kết quả</td></tr>
+            <tr><td>ma_xn</td><td>UUID (FK)</td><td>Mã xét nghiệm</td></tr>
+            <tr><td>chi_so</td><td>VARCHAR(100)</td><td>Chỉ số</td></tr>
+            <tr><td>gia_tri</td><td>VARCHAR(50)</td><td>Giá trị</td></tr>
+            <tr><td>don_vi</td><td>VARCHAR(20)</td><td>Đơn vị</td></tr>
+            <tr><td>chi_so_binh_thuong</td><td>VARCHAR(50)</td><td>Giá trị bình thường</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/lab/{id}</td><td>-</td><td>LabTestDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
+            <tr><td>GET</td><td>/api/v1/lab/patient/{patientId}</td><td>-</td><td>List<LabTestDTO></td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>POST</td><td>/api/v1/lab</td><td>CreateLabRequest</td><td>LabTestDTO</td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>PUT</td><td>/api/v1/lab/{id}/results</td><td>AddResultRequest</td><td>LabTestDTO</td><td>ADMIN, LAB_TECH</td></tr>
+            <tr><td>PUT</td><td>/api/v1/lab/{id}/status</td><td>UpdateStatusRequest</td><td>LabTestDTO</td><td>ADMIN, LAB_TECH</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish</h2>
+        <table>
+            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
+            <tr><td>LabRequestCreatedEvent</td><td>{ labId, patientId, recordId, <strong>maKhoa</strong>, loaiXn, ngayYeuCau }</td><td>Khi tạo yêu cầu xét nghiệm</td></tr>
+            <tr><td>LabResultCreatedEvent</td><td>{ labId, patientId, recordId, <strong>maKhoa</strong>, ketQua, ketLuan }</td><td>Khi hoàn thành xét nghiệm</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Events Subscribe</h2>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tự động tạo xét nghiệm mẫu nếu có chỉ định; lấy <code>maKhoa</code> làm khoa chỉ định</td></tr>
+            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Cập nhật trạng thái thanh toán cho xét nghiệm</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>6. Business Rules</h2>
+        <ul>
+            <li>Không thể thêm kết quả nếu xét nghiệm ở trạng thái HOAN_THANH hoặc HUY.</li>
+            <li>Khi thêm kết quả, trạng thái tự động chuyển sang HOAN_THANH.</li>
+            <li>Ngày thực hiện phải ≥ ngày yêu cầu.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>7. Sequence Diagram – Hoàn thành xét nghiệm</h2>
+        <div class="code">
+            Lab Tech → Client → Gateway → Lab Service<br>
+            1. PUT /lab/{id}/results (kèm kết quả)<br>
+            2. Kiểm tra trạng thái cho phép<br>
+            3. Lưu kết quả và cập nhật trạng thái → HOAN_THANH<br>
+            4. Publish LabResultCreatedEvent<br>
+            5. (Event) Notification Service gửi thông báo cho bệnh nhân<br>
+            6. Trả về LabTestDTO
+        </div>
+    </div>
+</body>
+</html>

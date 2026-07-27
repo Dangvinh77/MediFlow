@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        tr:last-child td { border-bottom: none; }
+        .badge { display: inline-block; background: #3b82f6; color: #fff; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Gateway Service</h1>
+    <p><strong>Vai trò:</strong> API Gateway – điểm vào duy nhất cho tất cả client, đảm bảo xác thực, phân quyền, định tuyến, rate limiting, và log tập trung.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm (Bounded Context)</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Xác thực (JWT), phân quyền (RBAC), định tuyến request đến service đích, giới hạn tần suất, ghi log.</li>
+            <li><strong>Không quản lý:</strong> Nghiệp vụ y tế, dữ liệu bệnh nhân, thuốc, thanh toán…</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p>Gateway không lưu trữ dữ liệu nghiệp vụ, chỉ lưu cấu hình route, danh sách service từ Service Registry (Eureka).</p>
+        <p><strong>Bảng cấu hình route (trong database config):</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>route_id</td><td>UUID (PK)</td><td>ID route</td></tr>
+            <tr><td>path</td><td>VARCHAR(200)</td><td>Đường dẫn (VD: /api/v1/patients/**)</td></tr>
+            <tr><td>service_name</td><td>VARCHAR(50)</td><td>Tên service (patient-service, ...)</td></tr>
+            <tr><td>method</td><td>VARCHAR(10)</td><td>GET, POST, PUT, DELETE</td></tr>
+            <tr><td>roles_allowed</td><td>TEXT</td><td>Danh sách role (ADMIN, DOCTOR,...)</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints (Gateway tự thân)</h2>
+        <p>Gateway chỉ cung cấp endpoints cho authentication và health check.</p>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth</th></tr>
+            <tr><td>POST</td><td>/api/v1/auth/login</td><td>{ username, password }</td><td>{ accessToken, refreshToken, role }</td><td>Public</td></tr>
+            <tr><td colspan="5">Gateway <strong>không</strong> lưu người dùng. Nó gọi <code>POST /api/v1/org/accounts/verify</code> tới Organization Service để đối chiếu mật khẩu, rồi mới ký JWT với claim <code>sub, role, maKhoa, exp</code>. Đọc thẳng bảng <code>TAI_KHOAN</code> sẽ là truy cập DB chéo service — bị cấm.</td></tr>
+            <tr><td>POST</td><td>/api/v1/auth/refresh</td><td>{ refreshToken }</td><td>{ accessToken }</td><td>Public</td></tr>
+            <tr><td>GET</td><td>/actuator/health</td><td>-</td><td>{ status }</td><td>Internal</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish / Subscribe</h2>
+        <p>Gateway không publish/subscribe event nghiệp vụ; chỉ lắng nghe sự kiện khởi tạo từ Service Registry để cập nhật route động.</p>
+    </div>
+
+    <div class="section">
+        <h2>5. Business Rules / Validation</h2>
+        <ul>
+            <li>Token JWT phải còn hạn và chứa claim <code>role</code>.</li>
+            <li>Mỗi request phải có header <code>Authorization: Bearer &lt;token&gt;</code> (trừ login/refresh).</li>
+            <li>Rate limiting: tối đa 100 request/phút cho mỗi client IP.</li>
+            <li>Route chỉ chuyển tiếp nếu service đích có trong Service Registry.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>6. Sequence Diagram – Xác thực và gọi API</h2>
+        <div class="code">
+            Client → Gateway: POST /auth/login<br>
+            Gateway → Organization Service: POST /api/v1/org/accounts/verify<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;→ đối chiếu BCrypt hash, trả { maTaiKhoan, maNhanVien, maKhoa, vaiTro }<br>
+            Gateway ←: trả về JWT<br>
+            Client → Gateway: GET /api/v1/patients (kèm token)<br>
+            Gateway: validate token, kiểm tra role, lấy route từ registry<br>
+            Gateway → Patient Service: chuyển tiếp request<br>
+            Patient Service → Gateway: response<br>
+            Gateway → Client: trả về kết quả
+        </div>
+    </div>
+</body>
+</html>

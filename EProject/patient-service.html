@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        tr:last-child td { border-bottom: none; }
+        .badge { display: inline-block; background: #3b82f6; color: #fff; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧑‍⚕️ Patient Service</h1>
+    <p><strong>Vai trò:</strong> Quản lý thông tin nhân khẩu và hồ sơ bệnh nhân.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm (Bounded Context)</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Thông tin bệnh nhân (BENH_NHAN), bao gồm cả BHYT.</li>
+            <li><strong>Không quản lý:</strong> Lịch hẹn, hồ sơ bệnh án, thanh toán, thuốc.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p><strong>Bảng BENH_NHAN</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_benh_nhan</td><td>UUID (PK)</td><td>Mã bệnh nhân</td></tr>
+            <tr><td>ho_ten</td><td>VARCHAR(100)</td><td>Họ tên</td></tr>
+            <tr><td>ngay_sinh</td><td>DATE</td><td>Ngày sinh</td></tr>
+            <tr><td>gioi_tinh</td><td>ENUM('M','F')</td><td>Giới tính</td></tr>
+            <tr><td>so_cmnd</td><td>VARCHAR(20) UNIQUE</td><td>Số CMND/CCCD</td></tr>
+            <tr><td>dia_chi</td><td>VARCHAR(255)</td><td>Địa chỉ</td></tr>
+            <tr><td>so_dien_thoai</td><td>VARCHAR(15)</td><td>Số điện thoại</td></tr>
+            <tr><td>email</td><td>VARCHAR(100)</td><td>Email</td></tr>
+            <tr><td>bhyt_so</td><td>VARCHAR(20)</td><td>Số BHYT (có thể NULL)</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMP</td><td>Ngày tạo</td></tr>
+            <tr><td>updated_at</td><td>TIMESTAMP</td><td>Ngày cập nhật</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/patients/{id}</td><td>-</td><td>PatientDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
+            <tr><td>GET</td><td>/api/v1/patients</td><td>page, size, keyword</td><td>Page<PatientDTO></td><td>ADMIN, DOCTOR, NURSE</td></tr>
+            <tr><td>POST</td><td>/api/v1/patients</td><td>CreatePatientRequest</td><td>PatientDTO</td><td>ADMIN, NURSE</td></tr>
+            <tr><td>PUT</td><td>/api/v1/patients/{id}</td><td>UpdatePatientRequest</td><td>PatientDTO</td><td>ADMIN, NURSE</td></tr>
+            <tr><td>DELETE</td><td>/api/v1/patients/{id}</td><td>-</td><td>204 No Content</td><td>ADMIN</td></tr>
+        </table>
+        <p><strong>Request/Response schemas:</strong></p>
+        <div class="code">
+            CreatePatientRequest: { hoTen, ngaySinh, gioiTinh, soCmnd, diaChi, soDienThoai, email, bhytSo }<br>
+            PatientDTO: { maBenhNhan, hoTen, ngaySinh, gioiTinh, soCmnd, diaChi, soDienThoai, email, bhytSo, createdAt, updatedAt }
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish</h2>
+        <table>
+            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
+            <tr><td>PatientCreatedEvent</td><td>{ patientId, hoTen, email, sdt }</td><td>Khi tạo mới bệnh nhân</td></tr>
+            <tr><td>PatientUpdatedEvent</td><td>{ patientId, hoTen, email, sdt, diaChi }</td><td>Khi cập nhật thông tin</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Events Subscribe</h2>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Ghi log (không lưu thêm trong patient)</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>6. Business Rules / Validation</h2>
+        <ul>
+            <li>Số CMND/CCCD là duy nhất.</li>
+            <li>Email phải đúng định dạng (regex).</li>
+            <li>Số BHYT (nếu có) phải đúng format: <code>XX-XXXXXXXX-X</code>.</li>
+            <li>Ngày sinh không được lớn hơn ngày hiện tại.</li>
+            <li>Số điện thoại chỉ chứa số, tối thiểu 10 số.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>7. Sequence Diagram – Tạo bệnh nhân</h2>
+        <div class="code">
+            Client → Gateway → Patient Service<br>
+            1. POST /patients (kèm body)<br>
+            2. Patient Service: validate dữ liệu<br>
+            3. Lưu vào DB<br>
+            4. Publish PatientCreatedEvent → RabbitMQ<br>
+            5. Trả về PatientDTO cho Client
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mediflow</groupId>
+        <artifactId>mediflow-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>common</artifactId>
+    <name>MediFlow Common</name>
+    <description>Thin shared library: response envelope, base exceptions, security constants. No business logic.</description>
+
+    <!-- Intentionally dependency-free (pure Java) so both servlet services and the
+         WebFlux gateway can depend on it without pulling conflicting web stacks. -->
+</project>

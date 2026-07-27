@@ -1,0 +1,41 @@
+# ===== Codebase Memory (codebase-memory-mcp) =====
+# Local knowledge-graph index is machine-specific -> NOT committed.
+# Each developer re-indexes after `git pull` (see scripts/index-codebase.*).
+.codebase-memory/
+# Exception: the shared compressed artifact CAN be committed for fast bootstrap.
+# Uncomment the next line ONLY if the team decides to share the graph artifact:
+# !.codebase-memory/graph.db.zst
+
+# ===== Local AI/tool overrides (never commit machine-specific paths) =====
+.mcp.local.json
+.claude/settings.local.json
+.cursor/mcp.local.json
+
+# ===== Java / Maven =====
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+dependency-reduced-pom.xml
+
+# ===== Spring Boot =====
+*.log
+logs/
+application-local.yml
+application-local.properties
+*.env
+.env
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+*.factorypath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db

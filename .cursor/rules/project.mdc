@@ -1,0 +1,24 @@
+---
+description: MediFlow — pointer to AGENTS.md (the cross-tool standard) and docs/ai/. Do not duplicate rules here.
+globs: ["**/*.java", "**/*.xml", "**/*.yml", "**/*.yaml", "**/*.sql", "**/*.ts", "**/*.tsx", "**/*.css"]
+alwaysApply: true
+---
+
+# MediFlow project rules (Cursor)
+
+Cursor reads **`AGENTS.md`** natively, and that file is this repo's single entry point for every
+coding agent. This rule exists only to make the pointer explicit — it deliberately contains **no
+rules of its own**, so there is nothing here to drift out of sync.
+
+## Where the instructions are
+
+1. **[`AGENTS.md`](../../AGENTS.md)** at the repo root — project overview, read order, hard rules.
+2. **[`docs/ai/`](../../docs/ai/README.md)** — the actual standards, in full. This is the source of truth.
+3. **[`frontend/AGENTS.md`](../../frontend/AGENTS.md)** — takes precedence inside `frontend/`
+   (the AGENTS.md spec says the nearest file wins).
+
+## The one thing worth repeating
+
+The Java standards (clean architecture, JPA, `@PreAuthorize`, `BigDecimal`) govern the `*-service/`
+modules **only**. Inside `frontend/`, follow `docs/ai/12-frontend.md` instead — do not build
+`domain/application/infrastructure` trees in TypeScript.

@@ -1,0 +1,58 @@
+# Local infrastructure for MediFlow: PostgreSQL + RabbitMQ.
+#
+# This starts ONLY the infrastructure. The Java services and the Next.js frontend
+# still run from your IDE / Maven / pnpm as usual — that keeps hot reload and the
+# debugger working, which is what you want while developing.
+#
+#   docker compose up -d      # start
+#   docker compose ps         # check health
+#   docker compose down       # stop (data survives)
+#   docker compose down -v    # stop AND wipe all databases
+#
+# Credentials match the dev defaults in every service's application.yml, so nothing
+# else needs configuring. Do not use these values anywhere real.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mediflow-postgres
+    # Tự chạy lại sau khi khởi động máy / Docker Desktop, trừ khi bạn chủ động `docker compose down`.
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - mediflow-pgdata:/var/lib/postgresql/data
+      # Runs once, only when the data volume is empty. If you change this file
+      # after the first start, you must `docker compose down -v` to re-run it.
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: mediflow-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"     # AMQP — what the services connect to
+      - "15672:15672"   # management UI — http://localhost:15672 (guest/guest)
+    volumes:
+      - mediflow-rabbitdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mediflow-pgdata:
+  mediflow-rabbitdata:

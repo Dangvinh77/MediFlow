@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Billing Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>💰 Billing Service</h1>
+    <p><strong>Vai trò:</strong> Quản lý viện phí, hóa đơn và điều phối Saga thanh toán.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Viện phí (VIEN_PHI), hóa đơn (HOADON).</li>
+            <li><strong>Điều phối Saga:</strong> Là orchestrator cho luồng kê đơn → xuất thuốc → thanh toán.</li>
+            <li><strong>Không quản lý:</strong> Bệnh nhân, thuốc, hồ sơ.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p><strong>VIEN_PHI</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_vien_phi</td><td>UUID (PK)</td><td>Mã viện phí</td></tr>
+            <tr><td>ma_benh_nhan</td><td>UUID (FK)</td><td>Mã bệnh nhân</td></tr>
+            <tr><td>ma_ho_so</td><td>UUID (ref)</td><td>Mã hồ sơ (nếu có) — Clinical Service</td></tr>
+            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa phát sinh chi phí — Organization Service (KHOA). Là cơ sở để báo cáo doanh thu theo khoa</td></tr>
+            <tr><td>ngay_phat_sinh</td><td>DATE</td><td>Ngày phát sinh</td></tr>
+            <tr><td>loai_phi</td><td>ENUM('KHAM','XN','THUOC','DV')</td><td>Loại phí</td></tr>
+            <tr><td>so_tien</td><td>DECIMAL(15,2)</td><td>Số tiền</td></tr>
+            <tr><td>da_thanh_toan</td><td>BOOLEAN</td><td>Đã thanh toán?</td></tr>
+        </table>
+        <p><strong>HOADON</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_hoa_don</td><td>UUID (PK)</td><td>Mã hóa đơn</td></tr>
+            <tr><td>ma_benh_nhan</td><td>UUID (FK)</td><td>Mã bệnh nhân</td></tr>
+            <tr><td>ngay_tao</td><td>DATE</td><td>Ngày tạo</td></tr>
+            <tr><td>tong_tien</td><td>DECIMAL(15,2)</td><td>Tổng tiền</td></tr>
+            <tr><td>da_thanh_toan</td><td>BOOLEAN</td><td>Đã thanh toán?</td></tr>
+            <tr><td>hinh_thuc_tt</td><td>ENUM('TIEN_MAT','CHUYEN_KHOAN','BHYT')</td><td>Hình thức</td></tr>
+            <tr><td>ma_phieu_xuat</td><td>UUID (FK)</td><td>Liên kết với phiếu xuất (Pharmacy)</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/billing/invoices/{id}</td><td>-</td><td>InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>GET</td><td>/api/v1/billing/patient/{patientId}</td><td>-</td><td>List<InvoiceDTO></td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>POST</td><td>/api/v1/billing/invoices</td><td>CreateInvoiceRequest</td><td>InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>PUT</td><td>/api/v1/billing/invoices/{id}/pay</td><td>PaymentRequest</td><td>PaymentResultDTO</td><td>ADMIN, CASHIER</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish</h2>
+        <table>
+            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
+            <tr><td>InvoiceCreatedEvent</td><td>{ invoiceId, patientId, <strong>maKhoa</strong>, totalAmount, items }</td><td>Khi tạo hóa đơn</td></tr>
+            <tr><td>PaymentCompletedEvent</td><td>{ invoiceId, patientId, <strong>maKhoa</strong>, totalAmount, paymentMethod }</td><td>Khi thanh toán thành công</td></tr>
+            <tr><td>PaymentFailedEvent</td><td>{ invoiceId, patientId, reason }</td><td>Khi thanh toán thất bại</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Events Subscribe</h2>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Pharmacy</td><td>PrescriptionCreatedEvent</td><td>Tạo hóa đơn từ đơn thuốc</td></tr>
+            <tr><td>Lab</td><td>LabResultCreatedEvent</td><td>Tạo viện phí cho xét nghiệm</td></tr>
+            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tạo viện phí khám bệnh, gán <code>ma_khoa</code> theo <code>maKhoa</code> của event</td></tr>
+            <tr><td>Clinical</td><td>AppointmentStatusChangedEvent</td><td>Tạo viện phí nếu trạng thái = DA_DEN</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>6. Business Rules</h2>
+        <ul>
+            <li>Không thể thanh toán hóa đơn đã thanh toán.</li>
+            <li>Tổng tiền = sum(so_tien) của các VIEN_PHI chưa thanh toán liên quan.</li>
+            <li>Khi thanh toán thành công, cập nhật tất cả VIEN_PHI liên quan thành da_thanh_toan = true.</li>
+            <li>Saga: nếu một bước trong luồng (xuất thuốc) thất bại, phải bắn PaymentFailedEvent để rollback.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>7. Sequence Diagram – Saga Orchestration (Kê đơn → Xuất thuốc → Thanh toán)</h2>
+        <div class="code">
+            Billing Service (Orchestrator)<br>
+            1. Nhận PrescriptionCreatedEvent từ Pharmacy<br>
+            2. Tạo hóa đơn (trạng thái PENDING)<br>
+            3. Gửi yêu cầu xuất thuốc đến Pharmacy (qua event/command)<br>
+            4. Pharmacy xuất thành công → bắn PrescriptionFilledEvent<br>
+            5. Billing nhận → cập nhật hóa đơn, chờ thanh toán<br>
+            6. Client gọi PUT /invoices/{id}/pay<br>
+            7. Nếu thành công → bắn PaymentCompletedEvent<br>
+            8. Nếu thất bại → bắn PaymentFailedEvent, thông báo rollback (hủy phiếu xuất)
+        </div>
+    </div>
+</body>
+</html>

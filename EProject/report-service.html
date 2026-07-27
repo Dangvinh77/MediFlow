@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>📊 Report Service</h1>
+    <p><strong>Vai trò:</strong> Tổng hợp dữ liệu và cung cấp báo cáo thống kê.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Các bảng tổng hợp (BAO_CAO_KHAM, BAO_CAO_DOANH_THU, …).</li>
+            <li><strong>Không quản lý:</strong> Dữ liệu nghiệp vụ chi tiết (đọc từ các service khác qua event hoặc query).</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model (Các bảng tổng hợp)</h2>
+        <p><strong>BAO_CAO_KHAM</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_bao_cao</td><td>UUID (PK)</td><td>Mã báo cáo</td></tr>
+            <tr><td>ma_khoa</td><td>UUID (ref, nullable)</td><td>Khoa được tổng hợp. NULL = toàn viện. Khóa tổng hợp là (ngay, ma_khoa)</td></tr>
+            <tr><td>ngay</td><td>DATE</td><td>Ngày báo cáo</td></tr>
+            <tr><td>so_luong_kham</td><td>INT</td><td>Số lượng khám</td></tr>
+            <tr><td>so_luong_xn</td><td>INT</td><td>Số lượng xét nghiệm</td></tr>
+            <tr><td>doanh_thu</td><td>DECIMAL(15,2)</td><td>Doanh thu</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMP</td><td>-</td></tr>
+        </table>
+        <p><em>Ngoài ra có thể có các bảng chi tiết khác theo nhu cầu.</em></p>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/reports/daily</td><td>date (query)</td><td>DailyReportDTO</td><td>ADMIN, MANAGER</td></tr>
+            <tr><td>GET</td><td>/api/v1/reports/monthly</td><td>month, year</td><td>MonthlyReportDTO</td><td>ADMIN, MANAGER</td></tr>
+            <tr><td>GET</td><td>/api/v1/reports/top-medicines</td><td>period</td><td>List<TopMedicineDTO></td><td>ADMIN, MANAGER</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish / Subscribe</h2>
+        <p>Report Service chủ yếu <strong>lắng nghe</strong> các event từ các service khác để cập nhật bảng tổng hợp:</p>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tăng số lượng khám trong ngày, theo <code>maKhoa</code></td></tr>
+            <tr><td>Organization</td><td>StaffDepartmentChangedEvent</td><td>Cập nhật nhân sự theo khoa cho báo cáo</td></tr>
+            <tr><td>Lab</td><td>LabResultCreatedEvent</td><td>Tăng số lượng xét nghiệm</td></tr>
+            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Cập nhật doanh thu</td></tr>
+            <tr><td>Pharmacy</td><td>PrescriptionFilledEvent</td><td>Cập nhật thống kê thuốc bán chạy</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Business Rules</h2>
+        <ul>
+            <li>Báo cáo được tính toán và lưu theo ngày (có thể chạy batch vào cuối ngày).</li>
+            <li>Dữ liệu tổng hợp chỉ mang tính tham khảo, không ảnh hưởng đến nghiệp vụ chính.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>6. Sequence Diagram – Cập nhật báo cáo từ event</h2>
+        <div class="code">
+            [Any Service] → RabbitMQ → Report Service<br>
+            1. Consumer nhận PaymentCompletedEvent<br>
+            2. Tìm báo cáo ngày hiện tại (hoặc tạo mới)<br>
+            3. Cập nhật doanh thu + số lượng giao dịch<br>
+            4. Lưu vào bảng tổng hợp
+        </div>
+        <p><em>Báo cáo có thể được lấy qua API GET /reports/daily.</em></p>
+    </div>
+</body>
+</html>

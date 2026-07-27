@@ -1,0 +1,10 @@
+{
+  "$comment": "Project-scoped MCP servers, committed to git so the whole team shares the same tooling. codebase-memory-mcp is a NATIVE binary — each developer must install it first (see README.md > Setup). This config calls it by bare name, resolved from PATH. If your binary is not on PATH, copy .mcp.local.json.example to .mcp.local.json and point to your absolute path (that file is gitignored).",
+  "mcpServers": {
+    "codebase-memory-mcp": {
+      "command": "codebase-memory-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

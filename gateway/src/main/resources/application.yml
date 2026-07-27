@@ -1,0 +1,70 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      # One route per business service. `lb://` resolves the name through Eureka —
+      # never hard-code a host. Paths come from docs/ai/05-api-conventions.md.
+      routes:
+        - id: organization-service
+          uri: lb://organization-service
+          predicates:
+            - Path=/api/v1/org/**
+        - id: patient-service
+          uri: lb://patient-service
+          predicates:
+            - Path=/api/v1/patients/**
+        # clinical-service owns two URL prefixes: appointments and records were merged
+        # into one bounded context (Khoa Khám bệnh) without changing the public API.
+        - id: clinical-service-appointments
+          uri: lb://clinical-service
+          predicates:
+            - Path=/api/v1/appointments/**
+        - id: clinical-service-records
+          uri: lb://clinical-service
+          predicates:
+            - Path=/api/v1/records/**
+        - id: lab-service
+          uri: lb://lab-service
+          predicates:
+            - Path=/api/v1/lab/**
+        - id: pharmacy-service
+          uri: lb://pharmacy-service
+          predicates:
+            - Path=/api/v1/pharmacy/**
+        - id: billing-service
+          uri: lb://billing-service
+          predicates:
+            - Path=/api/v1/billing/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: report-service
+          uri: lb://report-service
+          predicates:
+            - Path=/api/v1/reports/**
+      # NOTE: request rate limiting (100 req/min per IP, see docs/ai/07) uses
+      # RequestRateLimiter which needs Redis. Add spring-boot-starter-data-redis-reactive
+      # and a RedisRateLimiter filter when you introduce Redis. Left out of the skeleton.
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+# JWT — secret MUST come from env in real environments. This dev default is only for local run.
+mediflow:
+  jwt:
+    secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+    access-token-minutes: 30
+    refresh-token-minutes: 1440
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

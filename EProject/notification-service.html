@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Notification Service – Technical Design</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        h1, h2, h3 { color: #0f172a; }
+        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>📧 Notification Service</h1>
+    <p><strong>Vai trò:</strong> Gửi thông báo cho bệnh nhân và nhân viên qua email, SMS, in-app.</p>
+
+    <div class="section">
+        <h2>1. Trách nhiệm</h2>
+        <ul>
+            <li><strong>Quản lý:</strong> Lịch sử thông báo (THONG_BAO).</li>
+            <li><strong>Không quản lý:</strong> Dữ liệu nghiệp vụ chính.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Model</h2>
+        <p><strong>THONG_BAO</strong></p>
+        <table>
+            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
+            <tr><td>ma_thong_bao</td><td>UUID (PK)</td><td>Mã thông báo</td></tr>
+            <tr><td>ma_benh_nhan</td><td>UUID</td><td>Mã bệnh nhân</td></tr>
+            <tr><td>tieu_de</td><td>VARCHAR(255)</td><td>Tiêu đề</td></tr>
+            <tr><td>noi_dung</td><td>TEXT</td><td>Nội dung</td></tr>
+            <tr><td>loai</td><td>ENUM('EMAIL','SMS','IN_APP')</td><td>Loại</td></tr>
+            <tr><td>trang_thai</td><td>ENUM('PENDING','SENT','FAILED')</td><td>Trạng thái</td></tr>
+            <tr><td>ngay_tao</td><td>TIMESTAMP</td><td>Ngày tạo</td></tr>
+            <tr><td>ngay_gui</td><td>TIMESTAMP</td><td>Ngày gửi</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>3. API Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/notifications/patient/{patientId}</td><td>-</td><td>List<NotificationDTO></td><td>ADMIN, NURSE, PATIENT</td></tr>
+            <tr><td>GET</td><td>/api/v1/notifications/{id}</td><td>-</td><td>NotificationDTO</td><td>ADMIN, PATIENT</td></tr>
+            <tr><td>POST</td><td>/api/v1/notifications/send</td><td>SendNotificationRequest</td><td>NotificationDTO</td><td>ADMIN, SYSTEM</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>4. Events Publish</h2>
+        <table>
+            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
+            <tr><td>NotificationSentEvent</td><td>{ notificationId, patientId, type, status }</td><td>Khi gửi thông báo thành công</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>5. Events Subscribe</h2>
+        <table>
+            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
+            <tr><td>Patient</td><td>PatientCreatedEvent</td><td>Gửi thông báo chào mừng</td></tr>
+            <tr><td>Appointment</td><td>AppointmentCreatedEvent</td><td>Gửi nhắc lịch hẹn</td></tr>
+            <tr><td>Lab</td><td>LabResultCreatedEvent</td><td>Gửi kết quả xét nghiệm</td></tr>
+            <tr><td>Pharmacy</td><td>PrescriptionFilledEvent</td><td>Thông báo đã có thuốc</td></tr>
+            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Xác nhận thanh toán</td></tr>
+            <tr><td>Saga</td><td>PaymentFailedEvent</td><td>Thông báo lỗi thanh toán</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>6. Business Rules</h2>
+        <ul>
+            <li>Email phải đúng định dạng để gửi email.</li>
+            <li>SMS chỉ gửi khi số điện thoại hợp lệ (10-11 số).</li>
+            <li>Lưu lại lịch sử thông báo đã gửi.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>7. Sequence Diagram – Gửi thông báo</h2>
+        <div class="code">
+            [Any Service] → RabbitMQ → Notification Service<br>
+            1. Consumer nhận event (VD: AppointmentCreatedEvent)<br>
+            2. Tạo THONG_BAO với status PENDING<br>
+            3. Gửi email/SMS (tích hợp hoặc giả lập)<br>
+            4. Cập nhật status → SENT/FAILED<br>
+            5. (Optional) Publish NotificationSentEvent
+        </div>
+    </div>
+</body>
+</html>

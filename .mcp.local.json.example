@@ -1,0 +1,10 @@
+{
+  "$comment": "Copy this file to .mcp.local.json (gitignored) if codebase-memory-mcp is NOT on your PATH. Replace the command with the absolute path to your installed binary. Windows example shown; on macOS/Linux use the install path from `which codebase-memory-mcp`.",
+  "mcpServers": {
+    "codebase-memory-mcp": {
+      "command": "C:/Users/<YOU>/AppData/Local/Programs/codebase-memory-mcp/codebase-memory-mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}

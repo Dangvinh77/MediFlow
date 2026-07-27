@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "//": "COMMITTED, team-shared Claude Code settings. Machine-specific overrides go in .claude/settings.local.json (gitignored). Hooks use `node -e` so they run identically on Windows/macOS/Linux.",
+  "permissions": {
+    "allow": [
+      "Read(//**)",
+      "Bash(mvn:*)",
+      "Bash(./mvnw:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "mcp__codebase-memory-mcp__search_graph",
+      "mcp__codebase-memory-mcp__trace_path",
+      "mcp__codebase-memory-mcp__get_code_snippet",
+      "mcp__codebase-memory-mcp__query_graph",
+      "mcp__codebase-memory-mcp__get_architecture",
+      "mcp__codebase-memory-mcp__search_code",
+      "mcp__codebase-memory-mcp__index_status",
+      "mcp__codebase-memory-mcp__list_projects"
+    ],
+    "deny": [
+      "Read(./**/application-local.yml)",
+      "Read(./**/.env)",
+      "Read(./.mcp.local.json)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"console.log('[MediFlow] Read docs/ai/README.md first. BACKEND: docs/ai/04-microservice-blueprint.md (clean architecture: infrastructure -> application -> domain). FRONTEND: docs/ai/12-frontend.md. codebase-memory-mcp is OPTIONAL - prefer it only if its tools are present, otherwise Grep/Glob are fine.')\""
+          }
+        ]
+      }
+    ]
+  }
+}
