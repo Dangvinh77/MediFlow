@@ -39,7 +39,8 @@ Then read **[`docs/ai/README.md`](docs/ai/README.md)** — that is the coding st
 | Git | everyone | |
 | Docker | everyone (recommended) | `docker compose up -d` gives you PostgreSQL + RabbitMQ; also required for integration tests (Testcontainers) |
 | Node 20+ & pnpm | frontend work | Next.js client |
-| `codebase-memory-mcp` | **optional**, Claude Code users | graph index for faster code navigation; see below |
+| `codebase-memory-mcp` | **optional**, Claude Code users | graph index for faster code navigation; setup: `scripts/setup-codebase-memory.bat` |
+| Understand-Anything | **optional**, Claude Code users | visual codebase dashboard; setup: `scripts/setup-understand-anything.bat` |
 
 ---
 
@@ -85,34 +86,52 @@ Machine-specific values never get committed: `.mcp.local.json`, `.claude/setting
 
 ---
 
-## Codebase Memory (codebase-memory-mcp)
+## Optional AI codebase tools
 
-This gives Claude a **knowledge graph** of the code (functions, calls, routes, events) for precise navigation — far better than text search on a microservices monorepo.
+Two optional tools make code exploration faster and more visual. Both are **optional** — nothing in this repo requires them.
 
-> **Optional.** Nothing in this repo requires it. Without it, Claude/Codex/Cursor fall back to
-> normal file search — slower and more token-hungry on a monorepo this size, but fully functional.
-> `.mcp.json` is committed, so the server is *configured* for everyone; it is **not** installed for you.
+> Full docs: [`docs/ai/13-codebase-tools.md`](docs/ai/13-codebase-tools.md).
 
-**Install it first — it is a native binary, not an npm package.** Download the release for your OS
-from [github.com/DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)
-and put it on your `PATH`. Verify with:
+### codebase-memory-mcp — fast graph queries for agents
+
+A native binary MCP server that indexes the codebase into a knowledge graph. AI agents use it for sub-ms structural queries (call chains, imports, routes) instead of Grep/Glob/Read.
 
 ```bash
-codebase-memory-mcp --version
+# Install (one-time per machine):
+scripts\setup-codebase-memory.bat         # Windows
+scripts/setup-codebase-memory.sh          # macOS/Linux
 ```
 
-**Portability model:** the graph index is per-machine and **not committed** (`.codebase-memory/` is gitignored). Each user builds it locally after cloning:
+Then restart Claude Code and run `/index-codebase`. The index is per-machine (`.codebase-memory/` is gitignored).
 
-1. Install the binary so it resolves on `PATH` — or copy `.mcp.local.json.example` to `.mcp.local.json` (gitignored) and point `command` at its absolute path.
-2. Restart Claude Code so it picks up `.mcp.json`. Check that `mcp__codebase-memory-mcp__*` tools are available; if they are absent, the binary was not found.
-3. Run **`/index-codebase`** (or ask Claude to run `index_repository` on the repo root). First run: `mode: "full"`.
-4. Re-index after big structural changes (or run `moderate`/`fast` for quick refreshes).
+> **Portability:** if the binary isn't on your PATH, copy `.mcp.local.json.example` → `.mcp.local.json` (gitignored) and point `command` to the absolute path.
+>
+> **Codex / Cursor users:** `codebase-memory-mcp` is Claude-side — you can skip this. Your source of truth is `docs/ai/` + `EProject/*.html`.
 
-**Optional team sharing:** run the index with `persistence: true` to write a compressed `.codebase-memory/graph.db.zst`. Teammates can bootstrap from that artifact instead of a full re-index. It's gitignored by default; the team can choose to commit it (see the exception line in `.gitignore`) — trade-off: faster onboarding vs. it going stale between commits. Recommended: keep it gitignored and re-index locally.
+### Understand-Anything — visual dashboard for humans
 
-> **Codex / Cursor users:** `codebase-memory-mcp` is Claude-side and may be unavailable to you — that's fine. Your source of truth is `docs/ai/` + `EProject/*.html`. You lose the graph tool, not the standards.
+A Claude Code plugin that analyzes the codebase with a multi-agent pipeline (tree-sitter + LLM) and produces an interactive knowledge graph dashboard with guided tours, semantic search, and diff impact analysis.
 
----
+```bash
+# Install (one-time per machine):
+scripts\setup-understand-anything.bat     # Windows
+scripts/setup-understand-anything.sh      # macOS/Linux
+```
+
+Then run `/understand` inside Claude Code. First run uses tokens (LLM analysis); subsequent runs are incremental.
+
+| Command | What it does |
+|---------|-------------|
+| `/understand` | Analyze codebase → open dashboard |
+| `/understand-chat How does payment work?` | Ask questions about the codebase |
+| `/understand-diff` | See ripple effects of your changes |
+| `/understand-onboard` | Generate onboarding guide |
+
+### Install both at once
+
+```bash
+scripts\setup-tools.bat                   # Windows (installs both)
+```
 
 ## Infrastructure (PostgreSQL + RabbitMQ)
 
@@ -174,13 +193,13 @@ Eight business services in three groups — each one exists for a reason you can
 | `report-service` | 8088 | `mediflow_report` | `/api/v1/reports` | read model from events |
 
 ```bash
-mvn -q -DskipTests install      # build all modules
-mvn -pl patient-service -am test    # test one service (+ its deps)
-mvn -pl patient-service -am verify  # integration tests (needs Docker)
+mvn -q -DskipTests install                   # build all modules
+mvn -pl backend/patient-service -am test         # test one service (+ its deps)
+mvn -pl backend/patient-service -am verify       # integration tests (needs Docker)
 ```
 
 **Start order:** `eureka-server` (8761) → `gateway` (8080) → any business service.
-Each is a Spring Boot app: `mvn -pl <module> -am spring-boot:run`.
+Each is a Spring Boot app: `mvn -pl backend/<module> -am spring-boot:run`.
 
 ### Frontend (Next.js)
 
@@ -211,16 +230,22 @@ MediFlow/
 ├── EProject/                     ← authoritative design docs (one HTML per service)
 │   └── backend-spec/             ← implementation specs: DDL, ports, DTOs, algorithms, test cases
 ├── docs/ai/                      ← SINGLE SOURCE OF TRUTH for coding standards
-│   ├── 00..11 *.md               ← overview, architecture, standards, blueprint, ide-setup, ...
+│   ├── 00..13 *.md               ← overview, architecture, standards, blueprint, ide-setup, codebase-tools, ...
 │   └── services/*.md             ← per-service bounded context / data / events
 ├── .claude/                      ← vendored Claude tooling (agents, commands, skills, hooks, settings)
-├── scripts/                      ← bootstrap.ps1 / bootstrap.sh
+├── scripts/                      ← bootstrap.ps1 / .sh + tool setup scripts
+├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 business services)
+│   ├── common/                   ← shared lib (envelope, pagination, base exceptions)
+│   ├── eureka-server/            ← service registry
+│   ├── gateway/                  ← API gateway (JWT, routing)
+│   ├── organization-service/     ← reference: departments, staff, accounts
+│   ├── patient-service/          ← reference: master patient index
+│   ├── clinical-service/         ← Khoa Khám bệnh (appointments + records)
+│   ├── lab-service/              ← Khoa Xét nghiệm
+│   ├── pharmacy-service/         ← Khoa Dược
+│   ├── billing-service/          ← Phòng Viện phí
+│   └── notification-service/ report-service/ ← support
 ├── frontend/                     ← Next.js web client (App Router, TS, Tailwind, pnpm)
-├── common/ eureka-server/ gateway/   ← shared lib + infra + API gateway
-└── organization-service/ patient-service/          ← reference data
-    clinical-service/ lab-service/
-    pharmacy-service/ billing-service/              ← departments
-    notification-service/ report-service/           ← support
 ```
 
 Every business service has the same internal shape (clean architecture — see
