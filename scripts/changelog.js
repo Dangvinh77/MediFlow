@@ -245,7 +245,7 @@ function cmdUpdate() {
 }
 
 function cmdRead(opts) {
-  const { scope, since, limit, json } = opts;
+  const { scope, since, limit, json, files } = opts;
 
   // Build query
   let where = [];
@@ -278,6 +278,31 @@ function cmdRead(opts) {
         }
       }
       console.log(JSON.stringify(data || [], null, 2));
+    } else if (files) {
+      const commits = sqliteJson(`
+        SELECT c.id, substr(c.hash,1,8) hash, c.author, c.timestamp,
+               c.files_count, c.insertions, c.deletions, c.summary
+        FROM changelog c
+        ${whereClause}
+        ORDER BY c.id DESC
+        LIMIT ${lim}
+      `);
+      if (!commits || commits.length === 0) { process.stdout.write('(no entries)\n'); return; }
+      for (const row of commits) {
+        const fc = sqliteJson(`
+          SELECT f.path, f.type, f.lines_added, f.lines_deleted
+          FROM file_changes f JOIN changelog c ON f.changelog_id = c.id
+          WHERE c.hash LIKE '${row.hash}%'
+          ORDER BY f.type, f.path
+        `) || [];
+        process.stdout.write(`\n${row.hash} | ${row.author} | ${row.timestamp}\n`);
+        process.stdout.write(`  ${row.summary}\n`);
+        process.stdout.write(`  ${row.files_count} file, +${row.insertions} -${row.deletions}\n`);
+        for (const f of fc) {
+          const icon = f.type === 'added' ? '+' : f.type === 'deleted' ? '-' : f.type === 'renamed' ? '→' : '~';
+          process.stdout.write(`    ${icon} ${f.path}  (${f.type}, +${f.lines_added} -${f.lines_deleted})\n`);
+        }
+      }
     } else {
       const table = sqliteQuery(`
         SELECT substr(c.hash,1,8) hash, c.author, c.timestamp,
@@ -340,7 +365,8 @@ function main() {
     scope: scopeIdx >= 0 && args[scopeIdx + 1] ? args[scopeIdx + 1] : null,
     since: sinceIdx >= 0 && args[sinceIdx + 1] ? args[sinceIdx + 1] : null,
     limit: limitIdx >= 0 && args[limitIdx + 1] ? args[limitIdx + 1] : null,
-    json: isJson
+    json: isJson,
+    files: args.includes('--files') || args.includes('-f')
   });
 }
 
