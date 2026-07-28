@@ -29,7 +29,7 @@ Hồ sơ bệnh nhân gốc (`BENH_NHAN`) — master patient index. Reference: [
 3. RabbitMQ must be running on localhost:5672 (or set `MEDIFLOW_RABBIT_*`).
 
 ```bash
-mvn -pl patient-service -am spring-boot:run
+mvn -pl backend/patient-service -am spring-boot:run
 ```
 
 Swagger UI: http://localhost:8081/swagger-ui.html
@@ -39,6 +39,6 @@ Publishes `patient.created`, `patient.updated` to the `mediflow.events` topic ex
 
 ## Tests
 ```bash
-mvn -pl patient-service test        # unit
-mvn -pl patient-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/patient-service test        # unit
+mvn -pl backend/patient-service verify      # + integration (Testcontainers, needs Docker)
 ```

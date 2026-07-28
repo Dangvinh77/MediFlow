@@ -27,7 +27,7 @@ It owns the three things every other service points at:
 3. RabbitMQ on localhost:5672.
 
 ```bash
-mvn -pl organization-service -am spring-boot:run
+mvn -pl backend/organization-service -am spring-boot:run
 ```
 
 Swagger UI: http://localhost:8089/swagger-ui.html
@@ -45,6 +45,6 @@ Swagger UI: http://localhost:8089/swagger-ui.html
 ## Tests
 
 ```bash
-mvn -pl organization-service test        # unit (domain + application, no Spring)
-mvn -pl organization-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/organization-service test        # unit (domain + application, no Spring)
+mvn -pl backend/organization-service verify      # + integration (Testcontainers, needs Docker)
 ```

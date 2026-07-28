@@ -30,7 +30,7 @@ is exactly what `05-api-conventions.md` specifies.
 3. RabbitMQ on localhost:5672.
 
 ```bash
-mvn -pl clinical-service -am spring-boot:run
+mvn -pl backend/clinical-service -am spring-boot:run
 ```
 
 Swagger UI: http://localhost:8082/swagger-ui.html
@@ -51,6 +51,6 @@ must degrade this service, never cascade.
 ## Tests
 
 ```bash
-mvn -pl clinical-service test        # unit (domain + application, no Spring)
-mvn -pl clinical-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/clinical-service test        # unit (domain + application, no Spring)
+mvn -pl backend/clinical-service verify      # + integration (Testcontainers, needs Docker)
 ```

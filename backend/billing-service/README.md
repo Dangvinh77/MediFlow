@@ -28,7 +28,7 @@ infrastructure/security   infrastructure/config
 3. RabbitMQ must be running on localhost:5672 (or set `MEDIFLOW_RABBIT_*`).
 
 ```bash
-mvn -pl billing-service -am spring-boot:run
+mvn -pl backend/billing-service -am spring-boot:run
 ```
 
 Swagger UI: http://localhost:8086/swagger-ui.html
@@ -43,6 +43,6 @@ Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../docs/
 ## Tests
 
 ```bash
-mvn -pl billing-service test        # unit (domain + application, no Spring)
-mvn -pl billing-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/billing-service test        # unit (domain + application, no Spring)
+mvn -pl backend/billing-service verify      # + integration (Testcontainers, needs Docker)
 ```
