@@ -46,37 +46,54 @@ mvn -q -DskipTests install
 # re-index codebase memory (Claude users) — see scripts/index-codebase.*
 ```
 
-## Changelog database
+## Changelog harness
 
-Mỗi commit tự động được ghi vào `CHANGELOG.db` (SQLite, committed) để dev mới clone về
-xem ngay lịch sử thay đổi mà không cần đọc `git log` hay toàn bộ source.
+Mỗi commit tự động được ghi vào `.changelog/entries.jsonl` (text, 1 dòng/commit)
+để dev mới clone về xem ngay lịch sử thay đổi mà không cần đọc `git log` hay
+toàn bộ source. SQLite cache (`.changelog/cache.db`) được rebuild từ JSONL cho
+query nhanh — file này gitignored.
+
+### Cách hoạt động với multi-branch
+
+JSONL là text file, mỗi dòng 1 commit. Khi 2 branch cùng append dòng mới:
+
+1. **Auto-merge:** Git merge recursive ghép nội dung ở cuối file → các dòng mới
+   ở 2 branch được giữ nguyên, không conflict.
+2. **Conflict:** Chỉ xảy ra nếu 2 branch cùng sửa *cùng dòng*. Khi đó conflict
+   markers xuất hiện ở `.changelog/entries.jsonl`.
+3. **Sau merge:** `post-merge` hook tự động chạy `--rebuild` để rebuild cache
+   từ JSONL. Nếu có conflict, resolve conflict markers rồi chạy:
+
+```bash
+node scripts/changelog.js --dedup    # xoá entries trùng hash
+node scripts/changelog.js --rebuild  # rebuild cache.db từ JSONL sạch
+```
 
 ### Xem changelog
 
 ```bash
-node scripts/changelog.js                    # 20 commits gần nhất (table view)
+node scripts/changelog.js                    # TẤT CẢ commits (table view)
+node scripts/changelog.js --limit 10         # giới hạn kết quả
 node scripts/changelog.js --json             # output JSON (dùng cho tooling)
-node scripts/changelog.js --scope patient    # lọc theo service
+node scripts/changelog.js --summary          # thống kê (total, by type, by author)
+node scripts/changelog.js --files            # xem chi tiết từng file + tác giả + số dòng
+node scripts/changelog.js --scope feat       # lọc theo type hoặc service
 node scripts/changelog.js --since 2026-07-01 # lọc theo thời gian
-node scripts/changelog.js --limit 5          # giới hạn số dòng
 ```
 
-### Schema
-
-| Table | Mục đích |
-|-------|----------|
-| `changelog` | Mỗi row = một commit: hash, author, timestamp, type, scope, file count, insertions/deletions, summary |
-| `file_changes` | Chi tiết từng file thay đổi trong commit: path, type (added/modified/deleted) |
-
-### Query trực tiếp
+### Xử lý sự cố
 
 ```bash
-sqlite3 CHANGELOG.db "SELECT hash, author, message FROM changelog ORDER BY id DESC LIMIT 5"
+# Rebuild cache sau khi conflict resolve
+node scripts/changelog.js --dedup
+node scripts/changelog.js --rebuild
+
+# Init từ đầu (scan toàn bộ git log)
+node scripts/changelog.js --init
 ```
 
 ### Lưu ý
 
 - Yêu cầu `sqlite3` CLI trên PATH (Windows: winget install sqlite, macOS: brew install sqlite3, Linux: apt install sqlite3).
-- Nếu không có sqlite3, script fallback sang `.changelog/changelog.jsonl`.
-- Sau bootstrap, chạy `node scripts/changelog.js --init` để init schema (tự động chạy trong bootstrap script).
-- Các commit cũ có thể backfill bằng: `node scripts/changelog.js --init` rồi seed qua từng commit.
+- Nếu không có sqlite3, vẫn đọc được entries từ JSONL nhưng query chậm hơn.
+- `post-commit` hook ghi entries.jsonl + update cache. `post-merge` hook rebuild cache.

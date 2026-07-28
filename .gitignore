@@ -39,3 +39,6 @@ application-local.properties
 # ===== OS =====
 .DS_Store
 Thumbs.db
+
+# ===== Changelog cache (SQLite local — rebuilt from .changelog/entries.jsonl) =====
+.changelog/cache.db
