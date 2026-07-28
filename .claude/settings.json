@@ -39,6 +39,10 @@
           {
             "type": "command",
             "command": "node -e \"console.log('[MediFlow] BACKEND: docs/ai/04-microservice-blueprint.md (clean architecture). FRONTEND: docs/ai/12-frontend.md. OPTIONAL: docs/ai/13-codebase-tools.md (codebase-memory-mcp + Understand-Anything).')\""
+          },
+          {
+            "type": "command",
+            "command": "node -e \"var s=require('child_process').execSync('node scripts/changelog.js --since ' + new Date(Date.now()-7*864e5).toISOString().slice(0,10) + ' --limit 5 --json 2>&1',{cwd:process.cwd()}); var j=JSON.parse(s); if(!j||!j.length){console.log('  [changelog] no entries in last 7d');}else{j.forEach(function(e){console.log('  >> '+e.hash.slice(0,8)+' | '+(e.type||'-')+' | '+e.summary)})}\""
           }
         ]
       }
