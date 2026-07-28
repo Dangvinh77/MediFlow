@@ -21,23 +21,23 @@
 
     <modules>
         <!-- shared + infrastructure -->
-        <module>common</module>
-        <module>eureka-server</module>
-        <module>gateway</module>
+        <module>backend/common</module>
+        <module>backend/eureka-server</module>
+        <module>backend/gateway</module>
 
         <!-- reference data: who works where, and who the patients are -->
-        <module>organization-service</module>
-        <module>patient-service</module>
+        <module>backend/organization-service</module>
+        <module>backend/patient-service</module>
 
         <!-- departments (khoa/phòng) -->
-        <module>clinical-service</module>
-        <module>lab-service</module>
-        <module>pharmacy-service</module>
-        <module>billing-service</module>
+        <module>backend/clinical-service</module>
+        <module>backend/lab-service</module>
+        <module>backend/pharmacy-service</module>
+        <module>backend/billing-service</module>
 
         <!-- support -->
-        <module>notification-service</module>
-        <module>report-service</module>
+        <module>backend/notification-service</module>
+        <module>backend/report-service</module>
     </modules>
 
     <properties>

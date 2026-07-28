@@ -8,11 +8,12 @@
         <groupId>com.mediflow</groupId>
         <artifactId>mediflow-parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>notification-service</artifactId>
-    <name>MediFlow Notification Service</name>
-    <description>Email/SMS/in-app notification history (THONG_BAO).</description>
+    <artifactId>organization-service</artifactId>
+    <name>MediFlow Organization Service</name>
+    <description>Departments, staff &amp; accounts (KHOA, NHAN_VIEN, TAI_KHOAN). Owns the department dimension the whole system references.</description>
 
     <dependencies>
         <!-- Web / JPA / Validation -->
@@ -28,6 +29,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <!-- Also supplies BCryptPasswordEncoder for TAI_KHOAN.mat_khau_hash -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -43,12 +45,6 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
-
-        <!-- Email channel (JavaMailSender autoconfigures only when spring.mail.* is set) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
         <!-- Actuator + OpenAPI -->

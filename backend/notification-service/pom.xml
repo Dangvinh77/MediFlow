@@ -8,11 +8,12 @@
         <groupId>com.mediflow</groupId>
         <artifactId>mediflow-parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>billing-service</artifactId>
-    <name>MediFlow Billing Service</name>
-    <description>Fees, invoices &amp; saga orchestration (VIEN_PHI, HOADON).</description>
+    <artifactId>notification-service</artifactId>
+    <name>MediFlow Notification Service</name>
+    <description>Email/SMS/in-app notification history (THONG_BAO).</description>
 
     <dependencies>
         <!-- Web / JPA / Validation -->
@@ -43,6 +44,12 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Email channel (JavaMailSender autoconfigures only when spring.mail.* is set) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
         <!-- Actuator + OpenAPI -->
