@@ -10,6 +10,14 @@ Cursor reads **`AGENTS.md`** natively, and that file is this repo's single entry
 coding agent. This rule exists only to make the pointer explicit — it deliberately contains **no
 rules of its own**, so there is nothing here to drift out of sync.
 
+## ⚡ First thing every session
+
+Before writing ANY code, read the changelog:
+```bash
+node scripts/changelog.js --summary
+node scripts/changelog.js --limit 5
+```
+
 ## Where the instructions are
 
 1. **[`AGENTS.md`](../../AGENTS.md)** at the repo root — project overview, read order, hard rules.

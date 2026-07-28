@@ -8,6 +8,21 @@
 > **The rules themselves live in [`docs/ai/`](docs/ai/README.md).** This file points at them.
 > Never copy a rule here; edit it in `docs/ai/*` once and every tool sees it on the next pull.
 
+## ⚡ First thing every session
+
+Before writing ANY code, read the changelog to understand what has changed:
+
+```bash
+node scripts/changelog.js --summary   # tổng quan: số commit, theo type, theo tác giả
+node scripts/changelog.js             # tất cả commits (table view)
+node scripts/changelog.js --limit 5   # 5 commits gần nhất
+node scripts/changelog.js --files     # chi tiết từng file + tác giả + số dòng
+```
+
+> **Nếu dùng Codex / Cursor / Copilot / Gemini CLI / Aider / Windsurf / Zed:**
+> các tool này đều đọc AGENTS.md này native. Hãy luôn chạy lệnh trên trước khi
+> code để nắm context đầy đủ.
+
 ## Project
 
 **MediFlow** — a hospital management system. Two halves:

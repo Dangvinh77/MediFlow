@@ -1,0 +1,11 @@
+#!/bin/sh
+# post-checkout — Rebuild changelog cache after switching branches.
+# Non-blocking: always exits 0. Errors are warnings only.
+#
+# Only runs after the checkout actually completed (exit code 0) and only
+# when HEAD changed (not for file-only checkout like `git checkout -- file`).
+
+if [ "$3" = "1" ]; then
+  node "$(git rev-parse --show-toplevel)/scripts/changelog.js" --rebuild 2>&1 | sed 's/^/[changelog] /'
+fi
+exit 0
