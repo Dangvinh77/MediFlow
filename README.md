@@ -211,6 +211,17 @@ pnpm dev            # http://localhost:3000  (proxies /api/* to the gateway on :
 
 See [`docs/ai/12-frontend.md`](docs/ai/12-frontend.md). Full-stack order: eureka → gateway → patient-service → `pnpm dev`.
 
+### Mobile (Flutter)
+
+```bash
+cd mobile
+flutter pub get
+flutter run                         # connected device / emulator
+flutter test                        # run all tests
+```
+
+Full docs: [`docs/ai/14-flutter.md`](docs/ai/14-flutter.md).
+
 Demo login (stub auth on the gateway — replace before real use):
 `POST http://localhost:8080/api/v1/auth/login` with `{"username":"admin","password":"admin123"}`.
 
@@ -245,6 +256,11 @@ MediFlow/
 │   ├── pharmacy-service/         ← Khoa Dược
 │   ├── billing-service/          ← Phòng Viện phí
 │   └── notification-service/ report-service/ ← support
+├── mobile/                       ← Flutter mobile app (Clean Architecture, Riverpod)
+│   └── lib/
+│       ├── app/                  ← app config, GoRouter, DI
+│       ├── core/                 ← theme, network (Dio), storage
+│       └── features/             ← 10 feature folders (mirror backend services)
 ├── frontend/                     ← Next.js web client (App Router, TS, Tailwind, pnpm)
 ```
 

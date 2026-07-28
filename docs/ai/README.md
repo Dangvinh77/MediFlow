@@ -27,6 +27,7 @@
 | 11 | [11-ide-setup.md](11-ide-setup.md) | IntelliJ / VS Code (Cursor) / NetBeans setup for a mixed-IDE team |
 | 12 | [12-frontend.md](12-frontend.md) | Next.js frontend — structure, gateway/auth wiring, conventions |
 | 13 | [13-codebase-tools.md](13-codebase-tools.md) | Optional AI tools: codebase-memory-mcp + Understand-Anything |
+| 14 | [14-flutter.md](14-flutter.md) | Flutter mobile — Clean Architecture, feature structure, API contract |
 | — | [services/](services/) | Per-service bounded context, data model, endpoints, events |
 
 ## Golden rules (the 30-second version)

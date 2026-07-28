@@ -12,6 +12,7 @@ The shared instructions are imported from `AGENTS.md` above. What follows is Cla
 `.claude/rules/` holds rules that load **only** when you touch matching files:
 
 - `frontend.md` → `frontend/**` — the Next.js rules, so backend sessions don't carry them.
+- `flutter.md` → `mobile/**` — the Flutter rules.
 
 There is also a nested `frontend/CLAUDE.md` (which imports `frontend/AGENTS.md`). Note that nested
 CLAUDE.md files are **not** re-injected after `/compact`; the path-scoped rule is the reliable one.

@@ -52,6 +52,13 @@ are building. Those specs give the *what*; `docs/ai/` still governs the *how*.
 1. [`docs/ai/12-frontend.md`](docs/ai/12-frontend.md) — the frontend blueprint, authoritative.
 2. [`docs/ai/05-api-conventions.md`](docs/ai/05-api-conventions.md) — the contracts your TS types mirror.
 
+**Flutter mobile (`mobile/` — `.dart`, `pubspec.yaml`):**
+1. [`docs/ai/README.md`](docs/ai/README.md) — the golden rules.
+2. [`docs/ai/14-flutter.md`](docs/ai/14-flutter.md) — Flutter blueprint, **mandatory**.
+3. [`docs/ai/05-api-conventions.md`](docs/ai/05-api-conventions.md) — API contracts.
+4. The Flutter rules govern `mobile/` only. Inside `mobile/`, follow Clean Architecture:
+   `presentation → domain ← data`. Never call service ports directly — use the gateway.
+
 There is a nested [`frontend/AGENTS.md`](frontend/AGENTS.md); per the AGENTS.md spec the **nearest
 file wins**, so it takes precedence when you work inside that folder.
 
@@ -90,6 +97,7 @@ docker compose up -d                  # PostgreSQL (8 DBs) + RabbitMQ
 mvn -q -DskipTests install            # build all modules
 mvn -pl backend/<module> -am spring-boot:run  # run one service
 cd frontend && pnpm install && pnpm dev
+cd mobile && flutter pub get && flutter run  # Flutter app
 
 # Optional: install AI codebase tools (one-time per machine)
 scripts/setup-codebase-memory.sh      # codebase-memory-mcp (macOS/Linux)
@@ -99,7 +107,7 @@ scripts\setup-understand-anything.bat # Understand-Anything (Windows)
 scripts\setup-tools.bat               # both at once (Windows)
 ```
 
-Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000).
+Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000) → `flutter run`.
 
 ## Git workflow
 
