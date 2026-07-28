@@ -10,6 +10,11 @@ $hooksDir = Join-Path (Get-Location) "scripts/git-hooks"
 if (Test-Path $hooksDir) {
     git config core.hooksPath scripts/git-hooks
     Write-Host "[ok] Git hooks installed from scripts/git-hooks (single-author policy enforced)" -ForegroundColor Green
+    if (Test-Cmd node) {
+        node scripts/changelog.js --init 2>$null
+        if ($?) { Write-Host "[ok] CHANGELOG.db initialized" -ForegroundColor Green }
+        else { Write-Host "[note] changelog init skipped (no sqlite3)" -ForegroundColor Yellow }
+    }
 } else {
     Write-Host "[MISSING] scripts/git-hooks/ not found — hooks not configured" -ForegroundColor Red
 }

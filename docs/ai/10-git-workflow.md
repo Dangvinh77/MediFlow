@@ -45,3 +45,38 @@ git pull
 mvn -q -DskipTests install
 # re-index codebase memory (Claude users) — see scripts/index-codebase.*
 ```
+
+## Changelog database
+
+Mỗi commit tự động được ghi vào `CHANGELOG.db` (SQLite, committed) để dev mới clone về
+xem ngay lịch sử thay đổi mà không cần đọc `git log` hay toàn bộ source.
+
+### Xem changelog
+
+```bash
+node scripts/changelog.js                    # 20 commits gần nhất (table view)
+node scripts/changelog.js --json             # output JSON (dùng cho tooling)
+node scripts/changelog.js --scope patient    # lọc theo service
+node scripts/changelog.js --since 2026-07-01 # lọc theo thời gian
+node scripts/changelog.js --limit 5          # giới hạn số dòng
+```
+
+### Schema
+
+| Table | Mục đích |
+|-------|----------|
+| `changelog` | Mỗi row = một commit: hash, author, timestamp, type, scope, file count, insertions/deletions, summary |
+| `file_changes` | Chi tiết từng file thay đổi trong commit: path, type (added/modified/deleted) |
+
+### Query trực tiếp
+
+```bash
+sqlite3 CHANGELOG.db "SELECT hash, author, message FROM changelog ORDER BY id DESC LIMIT 5"
+```
+
+### Lưu ý
+
+- Yêu cầu `sqlite3` CLI trên PATH (Windows: winget install sqlite, macOS: brew install sqlite3, Linux: apt install sqlite3).
+- Nếu không có sqlite3, script fallback sang `.changelog/changelog.jsonl`.
+- Sau bootstrap, chạy `node scripts/changelog.js --init` để init schema (tự động chạy trong bootstrap script).
+- Các commit cũ có thể backfill bằng: `node scripts/changelog.js --init` rồi seed qua từng commit.

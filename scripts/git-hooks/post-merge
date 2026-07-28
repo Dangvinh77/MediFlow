@@ -1,0 +1,6 @@
+#!/bin/sh
+# post-merge — Record commits pulled from remote in the changelog.
+# Non-blocking: always exits 0. Errors are warnings only.
+
+node "$(git rev-parse --show-toplevel)/scripts/changelog.js" --update 2>&1
+exit 0

@@ -10,6 +10,9 @@ echo "==> Hospital MSA toolkit bootstrap (Unix)"
 if [ -d "scripts/git-hooks" ]; then
   git config core.hooksPath scripts/git-hooks
   echo "[ok] Git hooks installed from scripts/git-hooks (single-author policy enforced)"
+  if have node; then
+    node scripts/changelog.js --init 2>/dev/null && echo "[ok] CHANGELOG.db initialized" || echo "[note] changelog init skipped (no sqlite3)"
+  fi
 else
   echo "[MISSING] scripts/git-hooks/ not found — hooks not configured"
 fi
