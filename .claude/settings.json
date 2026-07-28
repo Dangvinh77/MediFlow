@@ -26,13 +26,19 @@
       "Read(./.mcp.local.json)"
     ]
   },
+  "marketplaces": [
+    {
+      "name": "Egonex-AI/Understand-Anything",
+      "url": "https://github.com/Egonex-AI/Understand-Anything"
+    }
+  ],
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"console.log('[MediFlow] Read docs/ai/README.md first. BACKEND: docs/ai/04-microservice-blueprint.md (clean architecture: infrastructure -> application -> domain). FRONTEND: docs/ai/12-frontend.md. codebase-memory-mcp is OPTIONAL - prefer it only if its tools are present, otherwise Grep/Glob are fine.')\""
+            "command": "node -e \"console.log('[MediFlow] BACKEND: docs/ai/04-microservice-blueprint.md (clean architecture). FRONTEND: docs/ai/12-frontend.md. OPTIONAL: docs/ai/13-codebase-tools.md (codebase-memory-mcp + Understand-Anything).')\""
           }
         ]
       }

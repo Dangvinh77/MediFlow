@@ -8,12 +8,12 @@ description: Scaffold a new Spring Boot microservice module that conforms exactl
 This skill produces one new Maven module that matches `docs/ai/04-microservice-blueprint.md` exactly. Read that file and the target `docs/ai/services/<service>.md` first — they are authoritative.
 
 ## Inputs
-- `<service>`: kebab name, e.g. `patient`, `medical-record`. Module dir = `<service>-service/`. Base package = `com.mediflow.<serviceCamel>`.
+- `<service>`: kebab name, e.g. `patient`, `medical-record`. Module dir = `backend/<service>-service/`. Base package = `com.mediflow.<serviceCamel>`. The root `pom.xml` module path must use `backend/<service>-service`.
 - The design doc: `docs/ai/services/<service>.md` (and its `EProject/*.html` source).
 
 ## Steps (do them in order)
 
-1. **Module & POM.** Create `<service>-service/pom.xml` as a child of the root parent POM. No version numbers — inherit from `<dependencyManagement>`. Add the module to the root `pom.xml` `<modules>`. Dependencies per `docs/ai/02-tech-stack.md` (web, data-jpa + driver, validation, security+jwt, amqp, eureka-client, actuator, mapstruct, lombok, flyway, springdoc; openfeign only if it calls other services).
+1. **Module & POM.** Create `backend/<service>-service/pom.xml` as a child of the root parent POM. No version numbers — inherit from `<dependencyManagement>`. Add the module to the root `pom.xml` `<modules>` as `backend/<service>-service`. Dependencies per `docs/ai/02-tech-stack.md` (web, data-jpa + driver, validation, security+jwt, amqp, eureka-client, actuator, mapstruct, lombok, flyway, springdoc; openfeign only if it calls other services).
 
 2. **Package tree** under `src/main/java/com/mediflow/<serviceCamel>/` — three layers, dependencies inward only (`infrastructure → application → domain`):
    - `domain/model/`, `domain/exception/`
@@ -45,7 +45,7 @@ This skill produces one new Maven module that matches `docs/ai/04-microservice-b
 
 14. **Module README.md** linking `docs/ai/services/<service>.md`.
 
-15. **Verify.** `mvn -pl <service>-service -am -q -DskipTests install`, then report against the blueprint's Definition-of-Done checklist.
+15. **Verify.** `mvn -pl backend/<service>-service -am -q -DskipTests install`, then report against the blueprint's Definition-of-Done checklist.
 
 ## Guardrails
 - Do not invent structure or names — copy the blueprint.

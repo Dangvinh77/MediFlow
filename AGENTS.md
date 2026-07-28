@@ -73,8 +73,15 @@ trees, ports, or adapters in `frontend/`. The only thing that crosses is the wir
 ```bash
 docker compose up -d                  # PostgreSQL (8 DBs) + RabbitMQ
 mvn -q -DskipTests install            # build all modules
-mvn -pl <module> -am spring-boot:run  # run one service
+mvn -pl backend/<module> -am spring-boot:run  # run one service
 cd frontend && pnpm install && pnpm dev
+
+# Optional: install AI codebase tools (one-time per machine)
+scripts/setup-codebase-memory.sh      # codebase-memory-mcp (macOS/Linux)
+scripts\setup-codebase-memory.bat     # codebase-memory-mcp (Windows)
+scripts/setup-understand-anything.sh  # Understand-Anything (macOS/Linux)
+scripts\setup-understand-anything.bat # Understand-Anything (Windows)
+scripts\setup-tools.bat               # both at once (Windows)
 ```
 
 Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000).
@@ -85,5 +92,11 @@ Start order: `eureka-server` (8761) → `gateway` (8080) → business services (
 
 ## Note on tooling availability
 
-`codebase-memory-mcp` is a Claude-side graph index and may be absent in your environment — that is
-fine, it is optional. Your source of truth is `docs/ai/` + `EProject/*.html` either way.
+Two optional AI code-intelligence tools can speed up exploration:
+
+- **codebase-memory-mcp** — fast graph queries for agents. When installed + indexed, agents prefer
+  `search_graph`/`trace_path`/`get_code_snippet` over Grep/Glob/Read. Docs: [`13-codebase-tools.md`](docs/ai/13-codebase-tools.md).
+- **Understand-Anything** — interactive knowledge-graph dashboard with `/understand`, `/understand-chat`,
+  `/understand-dashboard`, and 5 more slash commands. Docs: [`13-codebase-tools.md`](docs/ai/13-codebase-tools.md).
+
+Both are **optional**. Without them, Grep/Glob/Read + `EProject/*.html` are your source of truth.

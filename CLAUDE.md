@@ -16,16 +16,31 @@ The shared instructions are imported from `AGENTS.md` above. What follows is Cla
 There is also a nested `frontend/CLAUDE.md` (which imports `frontend/AGENTS.md`). Note that nested
 CLAUDE.md files are **not** re-injected after `/compact`; the path-scoped rule is the reliable one.
 
-## Codebase memory (codebase-memory-mcp) — optional
+## Optional AI codebase tools
 
-Configured in `.mcp.json`, but it is a native binary each developer installs themselves, so it is
-often absent.
+Two optional tools for code exploration. Full docs: [`docs/ai/13-codebase-tools.md`](docs/ai/13-codebase-tools.md).
 
-- **If `mcp__codebase-memory-mcp__*` tools are present:** prefer them for code exploration —
-  `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, `get_architecture`, `search_code`.
-  If the repo isn't indexed yet, run `index_repository` (or `/index-codebase`) first.
-- **If they are absent:** use Grep/Glob/Read. Everything works, just slower. Do not tell the user to
-  run `/index-codebase` — point them at `README.md` → Codebase Memory for the install link.
+### codebase-memory-mcp (graph MCP for agents)
+
+Configured in `.mcp.json`, but the native binary must be installed first (see setup scripts).
+
+- **If `mcp__codebase-memory-mcp__*` tools are present:** prefer them — `search_graph`, `trace_path`,
+  `get_code_snippet`, `query_graph`, `get_architecture`, `search_code`. If not indexed yet, run
+  `/index-codebase`.
+- **If they are absent:** use Grep/Glob/Read. Everything works, just slower.
+- Setup: `scripts\setup-codebase-memory.bat` (Windows) or `scripts/setup-codebase-memory.sh` (macOS/Linux).
+
+### Understand-Anything (visual dashboard for humans)
+
+A Claude Code plugin for interactive codebase exploration. Installed via:
+```
+/plugin marketplace add Egonex-AI/Understand-Anything
+/plugin install understand-anything
+```
+Or run `scripts\setup-understand-anything.bat` / `scripts/setup-understand-anything.sh`.
+
+- **If `/understand` is available:** use it to explore beyond what graph tools can tell you.
+- **If absent:** no problem — everything works with Grep/Glob/Read.
 
 ## Vendored tooling
 
