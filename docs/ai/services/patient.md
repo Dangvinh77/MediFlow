@@ -1,6 +1,6 @@
 # Service: patient
 
-**Source of truth:** `EProject/patient-service.html`
+**Source of truth:** `docs/eproject_general_plan/patient-service.html`
 **Module:** `backend/patient-service/` · **Base path:** `/api/v1/patients` · **DB table:** `BENH_NHAN`
 
 ## Bounded context

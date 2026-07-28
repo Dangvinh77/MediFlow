@@ -7,7 +7,7 @@
 ## How to use
 
 - **Humans:** read `00` → `10` in order once, then keep `04-microservice-blueprint.md` open while coding.
-- **AI assistants:** these files are loaded as context. Follow them exactly. When a rule and the design docs (`EProject/*.html`) disagree, the design docs win for *what* to build; these files win for *how* to build it.
+- **AI assistants:** these files are loaded as context. Follow them exactly. When a rule and the design docs (`docs/eproject_general_plan/*.html`) disagree, the design docs win for *what* to build; these files win for *how* to build it.
 
 ## Index
 

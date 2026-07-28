@@ -2,7 +2,7 @@
 
 **Module:** `backend/organization-service/` · **Base path:** `/api/v1/org` · **DB tables:** `KHOA`, `NHAN_VIEN`, `TAI_KHOAN`
 
-**Source of truth:** `EProject/organization-service.html`
+**Source of truth:** `docs/eproject_general_plan/organization-service.html`
 
 > **This service is the foundation the rest of the system references.** It owns the three things
 > everything else points at:

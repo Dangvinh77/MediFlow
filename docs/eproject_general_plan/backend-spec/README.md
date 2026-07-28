@@ -9,13 +9,13 @@ chính xác. Viết để cả AI lẫn người đọc đều dùng được.
 | Ở đâu | Trả lời câu hỏi | Ví dụ |
 |-------|-----------------|-------|
 | [`docs/ai/`](../../docs/ai/README.md) | **Viết code thế nào** | "tầng domain không được import Spring" |
-| [`EProject/*.html`](..) | **Nghiệp vụ cần gì** | "một bệnh nhân không được có 2 lịch hẹn chờ trong cùng ngày" |
+| [`docs/eproject_general_plan/*.html`](..) | **Nghiệp vụ cần gì** | "một bệnh nhân không được có 2 lịch hẹn chờ trong cùng ngày" |
 | **thư mục này** | **Xây chính xác cái gì** | `boolean existsByMaBenhNhanAndNgayHenAndTrangThai(UUID, LocalDate, TrangThaiLichHen)` |
 
 Ba nơi này **không lặp lại nhau**. Khi spec ở đây cần một quy tắc, nó *dẫn link* sang `docs/ai/`
 chứ không chép lại. Nếu có mâu thuẫn, thứ tự thẩm quyền là:
 
-1. `EProject/*.html` — cho *nghiệp vụ làm gì*
+1. `docs/eproject_general_plan/*.html` — cho *nghiệp vụ làm gì*
 2. `docs/ai/` — cho *code tổ chức ra sao*
 3. thư mục này — cho *hình hài cụ thể của phần triển khai*
 
@@ -52,8 +52,8 @@ common → eureka-server → organization → patient → clinical → lab → p
 Chỉ đưa cho AI **ba** file, không hơn:
 
 1. `docs/ai/04-microservice-blueprint.md` — cấu trúc package bắt buộc
-2. `EProject/backend-spec/00-overview.md` — hợp đồng dùng chung
-3. `EProject/backend-spec/0N-<service>.md` — service đang xây
+2. `docs/eproject_general_plan/backend-spec/00-overview.md` — hợp đồng dùng chung
+3. `docs/eproject_general_plan/backend-spec/0N-<service>.md` — service đang xây
 
 Sau đó yêu cầu làm **từng tầng một** (domain → port → application → adapter), đừng bảo nó sinh cả
 service trong một lần. Mỗi spec kết thúc bằng một Definition of Done để bạn đối chiếu kết quả.

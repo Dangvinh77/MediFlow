@@ -2,7 +2,7 @@
 
 **Khoa Khám bệnh** — the outpatient examination workflow end to end: booking an appointment, the examination, the medical record and its diagnoses.
 
-Reference: [`docs/ai/services/clinical.md`](../docs/ai/services/clinical.md) · design doc [`EProject/clinical-service.html`](../EProject/clinical-service.html).
+Reference: [`docs/ai/services/clinical.md`](../docs/ai/services/clinical.md) · design doc [`EProject/clinical-service.html`](../docs/eproject_general_plan/clinical-service.html).
 
 - **Port:** 8082 · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB:** `mediflow_clinical`
 - **Owns tables:** `LICH_HEN`, `HO_SO_BA`, `CHUAN_DOAN`

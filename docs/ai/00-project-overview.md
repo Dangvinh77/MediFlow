@@ -2,7 +2,7 @@
 
 ## What we are building
 
-**MediFlow** — a **hospital / clinic management system** built as **Spring Boot microservices**. The authoritative technical design lives in `EProject/*.html` (one file per service). These AI rules turn that design into consistent, buildable code.
+**MediFlow** — a **hospital / clinic management system** built as **Spring Boot microservices**. The authoritative technical design lives in `docs/eproject_general_plan/*.html` (one file per service). These AI rules turn that design into consistent, buildable code.
 
 ## The 9 services
 

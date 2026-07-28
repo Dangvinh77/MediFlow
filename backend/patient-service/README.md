@@ -1,6 +1,6 @@
 # patient-service
 
-Hồ sơ bệnh nhân gốc (`BENH_NHAN`) — master patient index. Reference: [`docs/ai/services/patient.md`](../docs/ai/services/patient.md) · design doc [`EProject/patient-service.html`](../EProject/patient-service.html) · spec triển khai [`EProject/backend-spec/02-patient.md`](../EProject/backend-spec/02-patient.md).
+Hồ sơ bệnh nhân gốc (`BENH_NHAN`) — master patient index. Reference: [`docs/ai/services/patient.md`](../docs/ai/services/patient.md) · design doc [`EProject/patient-service.html`](../docs/eproject_general_plan/patient-service.html) · spec triển khai [`EProject/backend-spec/02-patient.md`](../docs/eproject_general_plan/backend-spec/02-patient.md).
 
 > ✅ **Đây là reference implementation của dự án.** Xây service khác mà thấy blueprint chưa rõ chỗ nào thì mở module này ra xem.
 >

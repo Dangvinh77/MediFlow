@@ -1,6 +1,6 @@
 # Service: notification
 
-**Source of truth:** `EProject/notification-service.html`
+**Source of truth:** `docs/eproject_general_plan/notification-service.html`
 **Module:** `backend/notification-service/` · **Base path:** `/api/v1/notifications` · **DB table:** `THONG_BAO`
 
 ## Bounded context

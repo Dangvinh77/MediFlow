@@ -71,7 +71,7 @@ department, so `report-service` can aggregate by department without ever calling
 > record is created happens in a local transaction inside `clinical-service`, not over the bus. If you
 > reach for an event to change something you already own, the service boundary is cut in the wrong place.
 
-> Keep this table in sync with each `services/*.md` publish/subscribe section. If they disagree, the per-service design doc (`EProject/*.html`) is authoritative.
+> Keep this table in sync with each `services/*.md` publish/subscribe section. If they disagree, the per-service design doc (`docs/eproject_general_plan/*.html`) is authoritative.
 
 ## Saga (billing orchestrates prescribe → dispense → pay)
 

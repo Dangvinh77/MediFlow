@@ -1,6 +1,6 @@
 # Service: report
 
-**Source of truth:** `EProject/report-service.html`
+**Source of truth:** `docs/eproject_general_plan/report-service.html`
 **Module:** `backend/report-service/` · **Base path:** `/api/v1/reports` · **DB tables:** `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU`, ...
 
 ## Bounded context

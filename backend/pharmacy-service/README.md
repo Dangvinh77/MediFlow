@@ -2,7 +2,7 @@
 
 Drugs, prescriptions, dispensing and stock. **Saga participant** in prescribe → dispense → pay.
 
-Reference: [`docs/ai/services/pharmacy.md`](../docs/ai/services/pharmacy.md) · design doc `EProject/pharmacy-service.html`.
+Reference: [`docs/ai/services/pharmacy.md`](../docs/ai/services/pharmacy.md) · design doc `docs/eproject_general_plan/pharmacy-service.html`.
 
 - **Port:** 8085 · **Base path:** `/api/v1/pharmacy` · **DB:** `mediflow_pharmacy` (PostgreSQL)
 - **Owns tables:** `THUOC`, `BAN_KE_CP`, `CHI_TIET_BAN_KE`, `PHIEU_XUAT`

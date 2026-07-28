@@ -2,7 +2,7 @@
 
 Aggregated analytics. A **read model** built purely from events — never queries another service's DB.
 
-Reference: [`docs/ai/services/report.md`](../docs/ai/services/report.md) · design doc `EProject/report-service.html`.
+Reference: [`docs/ai/services/report.md`](../docs/ai/services/report.md) · design doc `docs/eproject_general_plan/report-service.html`.
 
 - **Port:** 8088 · **Base path:** `/api/v1/reports` · **DB:** `mediflow_report` (PostgreSQL)
 - **Owns tables:** `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU`

@@ -2,7 +2,7 @@
 
 Lab tests and results (`XET_NGHIEM`, `KET_QUA_XN`).
 
-Reference: [`docs/ai/services/lab.md`](../docs/ai/services/lab.md) · design doc `EProject/lab-service.html`.
+Reference: [`docs/ai/services/lab.md`](../docs/ai/services/lab.md) · design doc `docs/eproject_general_plan/lab-service.html`.
 
 - **Port:** 8084 · **Base path:** `/api/v1/lab` · **DB:** `mediflow_lab` (PostgreSQL)
 - **Owns tables:** `XET_NGHIEM`, `KET_QUA_XN`

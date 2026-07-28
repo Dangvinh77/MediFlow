@@ -1,6 +1,6 @@
 # Service: pharmacy
 
-**Source of truth:** `EProject/pharmacy-service.html`
+**Source of truth:** `docs/eproject_general_plan/pharmacy-service.html`
 **Module:** `backend/pharmacy-service/` · **Base path:** `/api/v1/pharmacy` · **DB tables:** `THUOC`, `BAN_KE_CP`, `CHI_TIET_BAN_KE`, `PHIEU_XUAT`
 
 ## Bounded context

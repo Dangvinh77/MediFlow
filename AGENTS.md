@@ -17,7 +17,7 @@
   `gateway`, `eureka-server`, `common`. PostgreSQL (one DB per service) + RabbitMQ.
 - **Frontend** — `frontend/`: Next.js 16 App Router, TypeScript, Tailwind v4, pnpm.
 
-Authoritative business design: `EProject/*.html`. Coding standards: `docs/ai/`.
+Authoritative business design: `docs/eproject_general_plan/*.html`. Coding standards: `docs/ai/`.
 
 ## Read before you write code
 
@@ -27,10 +27,10 @@ Authoritative business design: `EProject/*.html`. Coding standards: `docs/ai/`.
 3. `docs/ai/services/<service>.md` — the bounded context you are touching.
 4. As needed: `01-architecture`, `03-coding-standards`, `05-api-conventions`, `06-events-rabbitmq`, `07-security-rbac`, `08-persistence-naming`, `09-testing`.
 
-**Actually writing the code?** Read [`EProject/backend-spec/`](EProject/backend-spec/README.md) —
+**Actually writing the code?** Read [`docs/eproject_general_plan/backend-spec/`](docs/eproject_general_plan/backend-spec/README.md) —
 implementation-ready specs: DDL, domain invariants, port signatures, DTOs with validation, use-case
 algorithms, event payloads, and a business-rule → test-case table per service. Start with
-[`00-overview.md`](EProject/backend-spec/00-overview.md) (shared contracts), then the one service you
+[`00-overview.md`](docs/eproject_general_plan/backend-spec/00-overview.md) (shared contracts), then the one service you
 are building. Those specs give the *what*; `docs/ai/` still governs the *how*.
 
 **Frontend (`frontend/` — `.ts`, `.tsx`, `.css`):**
@@ -99,4 +99,4 @@ Two optional AI code-intelligence tools can speed up exploration:
 - **Understand-Anything** — interactive knowledge-graph dashboard with `/understand`, `/understand-chat`,
   `/understand-dashboard`, and 5 more slash commands. Docs: [`13-codebase-tools.md`](docs/ai/13-codebase-tools.md).
 
-Both are **optional**. Without them, Grep/Glob/Read + `EProject/*.html` are your source of truth.
+Both are **optional**. Without them, Grep/Glob/Read + `docs/eproject_general_plan/*.html` are your source of truth.

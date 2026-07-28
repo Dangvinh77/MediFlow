@@ -13,7 +13,7 @@
 > stub ở gateway, frontend, cấu hình) **có thể thay đổi** và **chưa dùng cho production** — auth
 > mới là bản giả lập, secret dùng giá trị mặc định dev, và mới có một số module. Code sẽ còn đổi.
 
-- **Design docs (authoritative):** [`EProject/`](EProject/) — one HTML per service.
+- **Design docs (authoritative):** [`docs/eproject_general_plan/`](docs/eproject_general_plan/) — one HTML per service.
 - **AI coding rules (single source of truth):** [`docs/ai/`](docs/ai/README.md).
 - **Services:** gateway, patient, appointment, medical-record, lab, pharmacy, billing, notification, report · **Infra:** Eureka + RabbitMQ.
 
@@ -106,7 +106,7 @@ Then restart Claude Code and run `/index-codebase`. The index is per-machine (`.
 
 > **Portability:** if the binary isn't on your PATH, copy `.mcp.local.json.example` → `.mcp.local.json` (gitignored) and point `command` to the absolute path.
 >
-> **Codex / Cursor users:** `codebase-memory-mcp` is Claude-side — you can skip this. Your source of truth is `docs/ai/` + `EProject/*.html`.
+> **Codex / Cursor users:** `codebase-memory-mcp` is Claude-side — you can skip this. Your source of truth is `docs/ai/` + `docs/eproject_general_plan/*.html`.
 
 ### Understand-Anything — visual dashboard for humans
 
@@ -227,7 +227,7 @@ MediFlow/
 ├── .cursor/rules/project.mdc     ← Cursor entry pointer → docs/ai
 ├── .mcp.json (+ .example)        ← codebase-memory-mcp config (committed)
 ├── .gitignore / .editorconfig
-├── EProject/                     ← authoritative design docs (one HTML per service)
+├── docs/eproject_general_plan/                     ← authoritative design docs (one HTML per service)
 │   └── backend-spec/             ← implementation specs: DDL, ports, DTOs, algorithms, test cases
 ├── docs/ai/                      ← SINGLE SOURCE OF TRUTH for coding standards
 │   ├── 00..13 *.md               ← overview, architecture, standards, blueprint, ide-setup, codebase-tools, ...

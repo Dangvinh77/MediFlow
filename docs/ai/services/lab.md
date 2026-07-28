@@ -1,6 +1,6 @@
 # Service: lab
 
-**Source of truth:** `EProject/lab-service.html`
+**Source of truth:** `docs/eproject_general_plan/lab-service.html`
 **Module:** `backend/lab-service/` · **Base path:** `/api/v1/lab` · **DB tables:** `XET_NGHIEM`, `KET_QUA_XN`
 
 ## Bounded context

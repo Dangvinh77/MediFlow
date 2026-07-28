@@ -14,7 +14,7 @@ Always start from `docs/ai/01-architecture.md`, `docs/ai/06-events-rabbitmq.md`,
 - **Communication choice:** same-request read → resilient REST via Eureka; state-change reaction → RabbitMQ event. Push back on synchronous coupling that should be an event.
 - **Saga correctness:** billing orchestrates prescribe→dispense→pay; every participant idempotent with a compensation path.
 - **`common` module stays thin:** only truly generic cross-cutting code; never business logic.
-- **Event catalog consistency:** publish/subscribe in `06` matches each service doc and the design docs (`EProject/*.html`), which are authoritative.
+- **Event catalog consistency:** publish/subscribe in `06` matches each service doc and the design docs (`docs/eproject_general_plan/*.html`), which are authoritative.
 
 ## Output
 Give a decision with rationale and the trade-offs. Point to the exact `docs/ai/*` rule or design-doc section. Flag any boundary violation you find with the file/symbol and the rule it breaks. Propose changes; do not edit files (you are advisory).

@@ -36,7 +36,7 @@ Bên trong `mediflow-postgres` có **8 database**, mỗi service một cái:
 
 ## 2. Bật, tắt, kiểm tra
 
-Mở terminal tại thư mục gốc dự án (`D:\HK4\EProject\MediFlow`).
+Mở terminal tại thư mục gốc dự án (ví dụ `D:\HK4\eproject_general_plan\MediFlow`).
 
 **Xem đang chạy chưa:**
 

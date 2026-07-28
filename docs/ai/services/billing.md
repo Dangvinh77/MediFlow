@@ -1,6 +1,6 @@
 # Service: billing
 
-**Source of truth:** `EProject/billing-service.html`
+**Source of truth:** `docs/eproject_general_plan/billing-service.html`
 **Module:** `backend/billing-service/` · **Base path:** `/api/v1/billing` · **DB tables:** `VIEN_PHI`, `HOADON`
 
 ## Bounded context

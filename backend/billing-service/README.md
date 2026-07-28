@@ -2,7 +2,7 @@
 
 Fees and invoices. **Saga orchestrator** for prescribe → dispense → pay.
 
-Reference: [`docs/ai/services/billing.md`](../docs/ai/services/billing.md) · design doc `EProject/billing-service.html`.
+Reference: [`docs/ai/services/billing.md`](../docs/ai/services/billing.md) · design doc `docs/eproject_general_plan/billing-service.html`.
 
 - **Port:** 8086 · **Base path:** `/api/v1/billing` · **DB:** `mediflow_billing` (PostgreSQL)
 - **Owns tables:** `VIEN_PHI`, `HOADON`

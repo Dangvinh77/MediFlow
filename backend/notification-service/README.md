@@ -2,7 +2,7 @@
 
 Email/SMS/in-app notification history (`THONG_BAO`). Mostly event-driven.
 
-Reference: [`docs/ai/services/notification.md`](../docs/ai/services/notification.md) · design doc `EProject/notification-service.html`.
+Reference: [`docs/ai/services/notification.md`](../docs/ai/services/notification.md) · design doc `docs/eproject_general_plan/notification-service.html`.
 
 - **Port:** 8087 · **Base path:** `/api/v1/notifications` · **DB:** `mediflow_notification` (PostgreSQL)
 - **Owns tables:** `THONG_BAO`

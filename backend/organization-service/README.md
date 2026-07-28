@@ -2,7 +2,7 @@
 
 Departments, staff and accounts — the organisational backbone the rest of the system references.
 
-Reference: [`docs/ai/services/organization.md`](../docs/ai/services/organization.md) · design doc [`EProject/organization-service.html`](../EProject/organization-service.html).
+Reference: [`docs/ai/services/organization.md`](../docs/ai/services/organization.md) · design doc [`EProject/organization-service.html`](../docs/eproject_general_plan/organization-service.html).
 
 - **Port:** 8089 · **Base path:** `/api/v1/org` · **DB:** `mediflow_organization` (PostgreSQL)
 - **Owns tables:** `KHOA` (departments), `NHAN_VIEN` (staff), `TAI_KHOAN` (accounts)

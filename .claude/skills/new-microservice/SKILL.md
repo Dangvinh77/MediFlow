@@ -9,7 +9,7 @@ This skill produces one new Maven module that matches `docs/ai/04-microservice-b
 
 ## Inputs
 - `<service>`: kebab name, e.g. `patient`, `medical-record`. Module dir = `backend/<service>-service/`. Base package = `com.mediflow.<serviceCamel>`. The root `pom.xml` module path must use `backend/<service>-service`.
-- The design doc: `docs/ai/services/<service>.md` (and its `EProject/*.html` source).
+- The design doc: `docs/ai/services/<service>.md` (and its `docs/eproject_general_plan/*.html` source).
 
 ## Steps (do them in order)
 
@@ -50,5 +50,5 @@ This skill produces one new Maven module that matches `docs/ai/04-microservice-b
 ## Guardrails
 - Do not invent structure or names — copy the blueprint.
 - **Check the dependency rule before reporting done:** no `jakarta.persistence`, `org.springframework.data`, `org.springframework.amqp` or `org.springframework.web` import may appear under `domain/` or `application/`. See `04` for the three allowed concessions.
-- If the design doc and these rules disagree, the `EProject/*.html` design doc is authoritative for *what*; `docs/ai/*` is authoritative for *how*.
+- If the design doc and these rules disagree, the `docs/eproject_general_plan/*.html` design doc is authoritative for *what*; `docs/ai/*` is authoritative for *how*.
 - Never hard-code hosts (use Eureka names), secrets, or cross-service DB access.

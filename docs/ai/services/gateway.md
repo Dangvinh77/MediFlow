@@ -1,6 +1,6 @@
 # Service: gateway
 
-**Source of truth:** `EProject/gateway.html`
+**Source of truth:** `docs/eproject_general_plan/gateway.html`
 **Module:** `backend/gateway/` · **Base path:** `/api/v1/**` (routes everything) · **Tech:** Spring Cloud Gateway (WebFlux)
 
 ## Bounded context

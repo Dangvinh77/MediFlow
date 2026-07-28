@@ -1,6 +1,6 @@
 # Service: clinical (Khoa Khám bệnh)
 
-**Source of truth:** `EProject/clinical-service.html`
+**Source of truth:** `docs/eproject_general_plan/clinical-service.html`
 **Module:** `backend/clinical-service/` · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB tables:** `LICH_HEN`, `HO_SO_BA`, `CHUAN_DOAN`
 
 > **Why appointments and records share one service.** They are one department's single workflow —
