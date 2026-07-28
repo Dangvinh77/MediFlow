@@ -1,7 +1,7 @@
 # Service: report
 
 **Source of truth:** `EProject/report-service.html`
-**Module:** `report-service/` · **Base path:** `/api/v1/reports` · **DB tables:** `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU`, ...
+**Module:** `backend/report-service/` · **Base path:** `/api/v1/reports` · **DB tables:** `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU`, ...
 
 ## Bounded context
 Owns: aggregate/summary tables (a **read model**). Does NOT own detailed business data — it builds aggregates purely from events (never queries other services' DBs).

@@ -1,7 +1,7 @@
 # Service: pharmacy
 
 **Source of truth:** `EProject/pharmacy-service.html`
-**Module:** `pharmacy-service/` · **Base path:** `/api/v1/pharmacy` · **DB tables:** `THUOC`, `BAN_KE_CP`, `CHI_TIET_BAN_KE`, `PHIEU_XUAT`
+**Module:** `backend/pharmacy-service/` · **Base path:** `/api/v1/pharmacy` · **DB tables:** `THUOC`, `BAN_KE_CP`, `CHI_TIET_BAN_KE`, `PHIEU_XUAT`
 
 ## Bounded context
 Owns: drugs, prescriptions, dispense slips, stock. Does NOT own: billing, records. Saga participant.

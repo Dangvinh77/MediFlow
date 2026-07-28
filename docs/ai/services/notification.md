@@ -1,7 +1,7 @@
 # Service: notification
 
 **Source of truth:** `EProject/notification-service.html`
-**Module:** `notification-service/` · **Base path:** `/api/v1/notifications` · **DB table:** `THONG_BAO`
+**Module:** `backend/notification-service/` · **Base path:** `/api/v1/notifications` · **DB table:** `THONG_BAO`
 
 ## Bounded context
 Owns: notification history (`THONG_BAO`). Mostly event-driven. Does NOT own core business data.

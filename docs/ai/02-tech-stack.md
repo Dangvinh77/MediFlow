@@ -112,7 +112,7 @@ The browser calls same-origin `/api/*`; Next rewrites to the gateway (`GATEWAY_U
 
 ## Shared module (`common`)
 
-Deliberately **dependency-free pure Java** — so both the servlet services and the WebFlux gateway can depend on it without dragging in conflicting web stacks. That constraint is load-bearing; do not add a starter to `common/pom.xml`.
+Deliberately **dependency-free pure Java** — so both the servlet services and the WebFlux gateway can depend on it without dragging in conflicting web stacks. That constraint is load-bearing; do not add a starter to `backend/common/pom.xml`.
 
 Holds only what is genuinely generic: `ApiResponse` envelope + error types, framework-free pagination (`PageQuery` / `PageResult`), base exceptions, JWT claim names and role constants. **Business logic never goes in `common`.**
 

@@ -1,7 +1,7 @@
 # Service: clinical (Khoa Khám bệnh)
 
 **Source of truth:** `EProject/clinical-service.html`
-**Module:** `clinical-service/` · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB tables:** `LICH_HEN`, `HO_SO_BA`, `CHUAN_DOAN`
+**Module:** `backend/clinical-service/` · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB tables:** `LICH_HEN`, `HO_SO_BA`, `CHUAN_DOAN`
 
 > **Why appointments and records share one service.** They are one department's single workflow —
 > book, examine, record. Separating them would force `HO_SO_BA.ma_lich_hen` to become a foreign key

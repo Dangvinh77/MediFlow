@@ -39,9 +39,9 @@ seam — it should mock `PatientRepositoryPort` and never know JPA exists.
 # all modules
 mvn test
 # one service
-mvn -pl patient-service test
+mvn -pl backend/patient-service test
 # integration only
-mvn -pl patient-service verify
+mvn -pl backend/patient-service verify
 ```
 
 ## TDD

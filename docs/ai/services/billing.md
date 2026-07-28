@@ -1,7 +1,7 @@
 # Service: billing
 
 **Source of truth:** `EProject/billing-service.html`
-**Module:** `billing-service/` · **Base path:** `/api/v1/billing` · **DB tables:** `VIEN_PHI`, `HOADON`
+**Module:** `backend/billing-service/` · **Base path:** `/api/v1/billing` · **DB tables:** `VIEN_PHI`, `HOADON`
 
 ## Bounded context
 Owns: fees (`VIEN_PHI`), invoices (`HOADON`). **Saga orchestrator** for prescribe → dispense → pay. Does NOT own: patients, drugs, records.

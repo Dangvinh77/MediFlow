@@ -1,7 +1,7 @@
 # Service: gateway
 
 **Source of truth:** `EProject/gateway.html`
-**Module:** `gateway/` · **Base path:** `/api/v1/**` (routes everything) · **Tech:** Spring Cloud Gateway (WebFlux)
+**Module:** `backend/gateway/` · **Base path:** `/api/v1/**` (routes everything) · **Tech:** Spring Cloud Gateway (WebFlux)
 
 ## Bounded context
 Owns: authentication (JWT), authorization (RBAC), routing to target services, rate limiting, centralized logging.

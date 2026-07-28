@@ -1,7 +1,7 @@
 # Service: patient
 
 **Source of truth:** `EProject/patient-service.html`
-**Module:** `patient-service/` · **Base path:** `/api/v1/patients` · **DB table:** `BENH_NHAN`
+**Module:** `backend/patient-service/` · **Base path:** `/api/v1/patients` · **DB table:** `BENH_NHAN`
 
 ## Bounded context
 Owns: patient demographics & records incl. BHYT. Does NOT own: appointments, medical records, billing, drugs.

@@ -1,6 +1,6 @@
 # Service: organization
 
-**Module:** `organization-service/` · **Base path:** `/api/v1/org` · **DB tables:** `KHOA`, `NHAN_VIEN`, `TAI_KHOAN`
+**Module:** `backend/organization-service/` · **Base path:** `/api/v1/org` · **DB tables:** `KHOA`, `NHAN_VIEN`, `TAI_KHOAN`
 
 **Source of truth:** `EProject/organization-service.html`
 
@@ -31,7 +31,7 @@ never *what happened to a patient*.
 **`TAI_KHOAN`** — a login
 `ma_tai_khoan` UUID PK · `ten_dang_nhap` VARCHAR(50) UNIQUE · `mat_khau_hash` VARCHAR(255) · `ma_nhan_vien` UUID (FK, same service, nullable) · `vai_tro` ENUM('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','MANAGER','PATIENT','SYSTEM') · `kich_hoat` BOOLEAN · `lan_dang_nhap_cuoi` TIMESTAMPTZ NULL · `created_at` · `updated_at`.
 
-`vai_tro` mirrors `common/security/Roles.java` exactly — keep them in sync.
+`vai_tro` mirrors `backend/common/security/Roles.java` exactly — keep them in sync.
 
 ## Endpoints
 

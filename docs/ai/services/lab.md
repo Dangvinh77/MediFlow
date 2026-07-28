@@ -1,7 +1,7 @@
 # Service: lab
 
 **Source of truth:** `EProject/lab-service.html`
-**Module:** `lab-service/` · **Base path:** `/api/v1/lab` · **DB tables:** `XET_NGHIEM`, `KET_QUA_XN`
+**Module:** `backend/lab-service/` · **Base path:** `/api/v1/lab` · **DB tables:** `XET_NGHIEM`, `KET_QUA_XN`
 
 ## Bounded context
 Owns: lab tests (`XET_NGHIEM`) & results (`KET_QUA_XN`). Does NOT own: patients, records, billing.

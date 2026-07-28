@@ -4,7 +4,7 @@
 >
 > The architecture is **Clean Architecture**.
 >
-> ✅ **`patient-service/` is the reference implementation.** It follows this document exactly —
+> ✅ **`backend/patient-service/` is the reference implementation.** It follows this document exactly —
 > 4 files in `domain/`, 11 in `application/`, 15 in `infrastructure/`, 30 passing tests, and a
 > verified dependency rule (`domain/` imports nothing but `java.*` and `common`; `application/`
 > uses only `@Service` and `@Transactional` from Spring). When something here is ambiguous, open
@@ -31,25 +31,27 @@ If you ever need an outward dependency, you invert it: `application` declares an
 ```
 MediFlow/                       <- repo root, parent POM
 ├── pom.xml                     <- <packaging>pom</packaging>, dependencyManagement, <modules>
-├── common/                     <- shared thin lib (envelope, pagination, base exceptions, security constants)
-├── eureka-server/              <- service registry
-├── gateway/                    <- Spring Cloud Gateway (special, see services/gateway.md)
-├── organization-service/       <- reference: departments, staff, accounts
-├── patient-service/            <- reference: master patient index
-├── clinical-service/           <- Khoa Khám bệnh (appointments + records)
-├── lab-service/
-├── pharmacy-service/
-├── billing-service/
-├── notification-service/
-└── report-service/
-```
+├── backend/                    <- ALL Java microservices + shared lib + infra
+│   ├── common/                 <- shared thin lib (envelope, pagination, base exceptions, security constants)
+│   ├── eureka-server/          <- service registry
+│   ├── gateway/                <- Spring Cloud Gateway (special, see services/gateway.md)
+│   ├── organization-service/   <- reference: departments, staff, accounts
+│   ├── patient-service/        <- reference: master patient index
+│   ├── clinical-service/       <- Khoa Khám bệnh (appointments + records)
+│   ├── lab-service/
+│   ├── pharmacy-service/
+│   ├── billing-service/
+│   ├── notification-service/
+│   └── report-service/
+├── frontend/                   <- Next.js web client
+└── ...
 
 ## Package layout inside every `*-service`
 
 Base package: `com.mediflow.<service>`.
 
 ```
-patient-service/
+backend/patient-service/
 ├── pom.xml
 └── src/
     ├── main/

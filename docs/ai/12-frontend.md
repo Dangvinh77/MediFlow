@@ -54,6 +54,7 @@ frontend/
     │   │   ├── api.ts              # only this context's endpoints
     │   │   ├── types.ts            # only this context's DTOs
     │   │   └── components/         # UI used only by this feature
+    │   ├── organization/           # departments, staff, accounts
     │   ├── appointment/
     │   ├── medical-record/
     │   ├── lab/
@@ -167,7 +168,7 @@ beats marking the whole page client.
 
 - `lib/auth.ts` owns `login` / `logout` / `getToken` / `getRole`, talking to the gateway's `/api/v1/auth/*`.
 - `app/(dashboard)/layout.tsx` is the single auth guard — unauthenticated users get redirected once, from one place, not from every page.
-- `lib/roles.ts` mirrors `common/src/main/java/com/mediflow/common/security/Roles.java`. Keep them in sync.
+- `lib/roles.ts` mirrors `backend/common/src/main/java/com/mediflow/common/security/Roles.java`. Keep them in sync.
 - On `401`/`403` from `ApiRequestError`, redirect to `/login`.
 
 > **Hiding a button is UX, not security.** Every rule in `07-security-rbac.md` is enforced by the
