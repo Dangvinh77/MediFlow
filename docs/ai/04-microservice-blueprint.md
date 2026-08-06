@@ -82,22 +82,23 @@ backend/patient-service/
     │   │   │   ├── mapper/                 # domain model <-> DTO (MapStruct)
     │   │   │   └── service/                # PatientApplicationService implements the in-ports
     │   │   │
-    │   │   └── infrastructure/             # ADAPTERS — every framework annotation lives here
-    │   │       ├── web/                    # driving adapter (HTTP)
-    │   │       │   ├── PatientController.java
-    │   │       │   └── GlobalExceptionHandler.java
-    │   │       ├── persistence/            # driven adapter (DB) — implements PatientRepositoryPort
-    │   │       │   ├── PatientJpaEntity.java
-    │   │       │   ├── PatientJpaRepository.java
-    │   │       │   ├── PatientPersistenceMapper.java
-    │   │       │   └── PatientPersistenceAdapter.java
-    │   │       ├── messaging/              # driven adapter (RabbitMQ)
-    │   │       │   ├── PatientEventPublisherAdapter.java
-    │   │       │   ├── payload/            # event records (XxxEvent)
-    │   │       │   └── consumer/           # @RabbitListener handlers (idempotent)
-    │   │       ├── client/                 # driven adapter (REST to other services) — Feign + fallback
-    │   │       ├── security/               # JwtAuthFilter, JwtProperties
-    │   │       └── config/                 # SecurityConfig, RabbitConfig, OpenApiConfig
+    │   │   ├── web/                        # DRIVING adapter (HTTP) — outer ring, calls application
+    │   │   │   ├── PatientController.java
+    │   │   │   └── GlobalExceptionHandler.java
+    │   │   ├── messaging/                  # DRIVING adapter (event consumer) — calls application
+    │   │   │   └── consumer/               #   @RabbitListener handlers (idempotent)
+    │   │   ├── infrastructure/             # DRIVEN adapters — application calls OUT
+    │   │   │   ├── persistence/            #   driven (DB) — implements PatientRepositoryPort
+    │   │   │   │   ├── PatientJpaEntity.java
+    │   │   │   │   ├── PatientJpaRepository.java
+    │   │   │   │   ├── PatientPersistenceMapper.java
+    │   │   │   │   └── PatientPersistenceAdapter.java
+    │   │   │   ├── messaging/              #   driven (RabbitMQ) — publisher + payload
+    │   │   │   │   ├── PatientEventPublisherAdapter.java
+    │   │   │   │   └── payload/            #     event records (XxxEvent)
+    │   │   │   ├── client/                 #   driven (REST to other services) — Feign + fallback
+    │   │   │   ├── security/               #   JwtAuthFilter, JwtProperties
+    │   │   │   └── config/                 #   SecurityConfig, RabbitConfig, OpenApiConfig
     │   └── resources/
     │       ├── application.yml
     │       └── db/migration/               # Flyway V1__init.sql, ...
@@ -127,7 +128,7 @@ This is the part people get wrong, so it is spelled out:
 |-------|------|-----|
 | "ngày sinh không được ở tương lai" | `domain/model` | invariant of the thing itself |
 | "số CMND phải duy nhất" | `application/service` | needs to ask the repository — not knowable by one object alone |
-| "chỉ ADMIN/NURSE được tạo" | `infrastructure/web` (`@PreAuthorize`) | a delivery concern, not a business rule |
+| "chỉ ADMIN/NURSE được tạo" | `web` (`@PreAuthorize`) | a delivery concern, not a business rule |
 | "lưu vào Postgres" | `infrastructure/persistence` | a detail |
 | "phát event `patient.created`" | `application/service` calls the **port**; `infrastructure/messaging` does the AMQP | intent vs. mechanism |
 

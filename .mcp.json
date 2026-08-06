@@ -1,8 +1,8 @@
 {
-  "$comment": "Project-scoped MCP servers, committed to git so the whole team shares the same tooling. codebase-memory-mcp is a NATIVE binary — each developer must install it first (see README.md > Setup). This config calls it by bare name, resolved from PATH. If your binary is not on PATH, copy .mcp.local.json.example to .mcp.local.json and point to your absolute path (that file is gitignored).",
+  "$comment": "Project-scoped MCP servers, committed to git. codebase-memory-mcp: installed via 'npm i -g codebase-memory-mcp'. On Windows the npm Node.js shim is incompatible with MCP stdio (uses spawnSync, not exec), so we point directly at the native binary. The npm global path is stable across Windows machines when installed via npm. macOS/Linux users: replace command with 'codebase-memory-mcp' (from PATH) or adjust to your install path. Override machine-specific paths in .mcp.local.json (gitignored).",
   "mcpServers": {
     "codebase-memory-mcp": {
-      "command": "codebase-memory-mcp",
+      "command": "C:\\Users\\hp\\AppData\\Roaming\\npm\\node_modules\\codebase-memory-mcp\\bin\\codebase-memory-mcp.exe",
       "args": [],
       "env": {}
     }

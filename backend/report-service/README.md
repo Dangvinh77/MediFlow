@@ -5,8 +5,8 @@ Aggregated analytics. A **read model** built purely from events — never querie
 Reference: [`docs/ai/services/report.md`](../docs/ai/services/report.md) · design doc `docs/eproject_general_plan/report-service.html`.
 
 - **Port:** 8088 · **Base path:** `/api/v1/reports` · **DB:** `mediflow_report` (PostgreSQL)
-- **Owns tables:** `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU`
-- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
+- **Owns tables:** `DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`
+- **Architecture:** clean architecture (hexagonal) per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
 ## Status
 
@@ -17,8 +17,9 @@ Package layout (already created, each folder holds a `.gitkeep` until you fill i
 ```
 domain/model          domain/exception
 application/port/in   application/port/out   application/dto   application/mapper   application/service
-infrastructure/web    infrastructure/persistence   infrastructure/messaging   infrastructure/client
-infrastructure/security   infrastructure/config
+web                   (driving HTTP: controllers + GlobalExceptionHandler)
+messaging/consumer    (driving events: @RabbitListener)
+infrastructure/persistence   infrastructure/messaging   infrastructure/security   infrastructure/config
 ```
 
 ## Run locally

@@ -2,117 +2,549 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Pharmacy Service – Technical Design</title>
+    <title>Pharmacy Service – Technical Design (Coding Reference)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; line-height: 1.6; }
         h1, h2, h3 { color: #0f172a; }
         h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.92rem; }
         th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
-        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
-        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+        .code { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; font-family: 'Cascadia Code','Courier New',monospace; font-size: 0.82rem; overflow-x: auto; white-space: pre; margin: 12px 0; }
+        .code .c { color: #94a3b8; }  /* comment */
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .warn { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .ok { background: #dcfce7; border-left: 4px solid #22c55e; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        code { background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <h1>💊 Pharmacy Service</h1>
-    <p><strong>Vai trò:</strong> Quản lý thuốc, tồn kho, kê đơn và xuất thuốc.</p>
+    <h1>💊 Pharmacy Service — Technical Design (Coding Reference)</h1>
+    <p><strong>Module:</strong> <code>backend/pharmacy-service/</code> · <strong>Package:</strong> <code>com.mediflow.pharmacy</code> · <strong>Cổng:</strong> 8085 · <strong>DB:</strong> <code>mediflow_pharmacy</code> · <strong>Base path:</strong> <code>/api/v1/pharmacy</code></p>
+    <p><strong>Vai trò:</strong> Quản lý thuốc, tồn kho, đơn thuốc và phiếu xuất. <strong>Thành phần tham gia Saga</strong> kê đơn → hóa đơn → thanh toán → xuất thuốc. Service duy nhất có thể <em>hết hàng</em>.</p>
+    <p><strong>Nguồn đồng bộ:</strong> file này là tài liệu tham chiếu code; bản markdown tương ứng <code>docs/eproject_general_plan/backend-spec/05-pharmacy.md</code> (giữ nếu cần, không bắt buộc).</p>
+    <p><strong>Kiến trúc (hexagonal):</strong> <code>application → domain</code>, phụ thuộc hướng vào trong. Driving adapter <code>web/</code> (HTTP) và <code>messaging/consumer/</code> (events) <em>gọi vào</em> application; driven adapter <code>infrastructure/</code> (persistence, messaging publisher, security, config) <em>hiện thực</em> out-port của application.</p>
 
     <div class="section">
-        <h2>1. Trách nhiệm</h2>
+        <h2>1. Bounded Context &amp; Trách nhiệm</h2>
         <ul>
-            <li><strong>Quản lý:</strong> Thuốc (THUOC), đơn thuốc (BAN_KE_CP), phiếu xuất (PHIEU_XUAT), chi tiết đơn.</li>
-            <li><strong>Không quản lý:</strong> Thanh toán, hồ sơ.</li>
+            <li><strong>Sở hữu:</strong> Danh mục thuốc (DRUG), tồn kho, đơn thuốc (PRESCRIPTION), dòng kê (PRESCRIPTION_LINE), phiếu xuất (DISPENSE_SLIP).</li>
+            <li><strong>Không sở hữu:</strong> Thanh toán (billing), hồ sơ (clinical), thông tin bệnh nhân (patient).</li>
+            <li><strong>Saga participant:</strong> nhận <code>payment.completed</code> để xuất thuốc; phát <code>prescription.dispense.failed</code> để billing bù trừ.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>2. Data Model</h2>
-        <p><strong>THUOC</strong></p>
+        <h2>2. Quy ước đặt tên (BẮT BUỘC cho nhánh C)</h2>
+        <p>Bảng/cột/class dùng <strong>tiếng Anh</strong>. Rest của hệ thống vẫn dùng tiếng Việt snake_case (<code>docs/ai/08-persistence-naming.md</code>). Mapping chính thức:</p>
         <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_thuoc</td><td>UUID (PK)</td><td>Mã thuốc</td></tr>
-            <tr><td>ten_thuoc</td><td>VARCHAR(255)</td><td>Tên thuốc</td></tr>
-            <tr><td>hoat_chat</td><td>VARCHAR(255)</td><td>Hoạt chất</td></tr>
-            <tr><td>don_vi_tinh</td><td>VARCHAR(20)</td><td>Đơn vị tính</td></tr>
-            <tr><td>gia</td><td>DECIMAL(15,2)</td><td>Giá bán</td></tr>
-            <tr><td>so_luong_ton</td><td>INT</td><td>Số lượng tồn kho</td></tr>
-            <tr><td>han_su_dung</td><td>DATE</td><td>Hạn sử dụng</td></tr>
-            <tr><td>nha_san_xuat</td><td>VARCHAR(100)</td><td>Nhà sản xuất</td></tr>
-        </table>
-        <p><strong>BAN_KE_CP</strong></p>
-        <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_ban_ke</td><td>UUID (PK)</td><td>Mã bảng kê</td></tr>
-            <tr><td>ma_ho_so</td><td>UUID (FK)</td><td>Mã hồ sơ</td></tr>
-            <tr><td>ma_bac_si</td><td>UUID (ref)</td><td>Mã bác sĩ kê — Organization Service (NHAN_VIEN)</td></tr>
-            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa kê đơn — Organization Service (KHOA)</td></tr>
-            <tr><td>ngay_ke</td><td>DATE</td><td>Ngày kê</td></tr>
-            <tr><td>tong_tien</td><td>DECIMAL(15,2)</td><td>Tổng tiền</td></tr>
-        </table>
-        <p><strong>CHI_TIET_BAN_KE</strong> và <strong>PHIEU_XUAT</strong> (xem thêm trong tài liệu đính kèm).</p>
-    </div>
-
-    <div class="section">
-        <h2>3. API Endpoints</h2>
-        <table>
-            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
-            <tr><td>GET</td><td>/api/v1/pharmacy/drugs</td><td>page, keyword</td><td>Page<DrugDTO></td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
-            <tr><td>GET</td><td>/api/v1/pharmacy/drugs/{id}</td><td>-</td><td>DrugDTO</td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
-            <tr><td>POST</td><td>/api/v1/pharmacy/drugs</td><td>CreateDrugRequest</td><td>DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
-            <tr><td>PUT</td><td>/api/v1/pharmacy/drugs/{id}/stock</td><td>UpdateStockRequest</td><td>DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
-            <tr><td>POST</td><td>/api/v1/pharmacy/prescriptions</td><td>CreatePrescriptionRequest</td><td>PrescriptionDTO</td><td>ADMIN, DOCTOR</td></tr>
-            <tr><td>PUT</td><td>/api/v1/pharmacy/prescriptions/{id}/dispense</td><td>DispenseRequest</td><td>DispenseResultDTO</td><td>ADMIN, PHARMACIST</td></tr>
+            <tr><th>Việt (trước)</th><th>Anh (sau)</th><th>Dùng trong</th></tr>
+            <tr><td>THUOC</td><td>DRUG</td><td>bảng</td></tr>
+            <tr><td>ma_thuoc / ten_thuoc / hoat_chat / don_vi_tinh / gia / so_luong_ton / han_su_dung / nha_san_xuat / nguong_canh_bao</td><td>drug_id / drug_name / active_ingredient / unit / price / stock_quantity / expiry_date / manufacturer / low_stock_threshold</td><td>cột DRUG</td></tr>
+            <tr><td>BAN_KE_CP</td><td>PRESCRIPTION</td><td>bảng</td></tr>
+            <tr><td>ma_ban_ke / ma_ho_so / ma_benh_nhan / ma_bac_si / ma_khoa / ngay_ke / tong_tien</td><td>prescription_id / record_id / patient_id / doctor_id / department_id / prescribed_date / total_amount</td><td>cột PRESCRIPTION</td></tr>
+            <tr><td>CHI_TIET_BAN_KE</td><td>PRESCRIPTION_LINE</td><td>bảng</td></tr>
+            <tr><td>ma_chi_tiet / ma_thuoc / so_luong / don_gia / lieu_dung / thanh_tien</td><td>line_id / drug_id / quantity / unit_price / dosage / line_total</td><td>cột PRESCRIPTION_LINE</td></tr>
+            <tr><td>PHIEU_XUAT</td><td>DISPENSE_SLIP</td><td>bảng</td></tr>
+            <tr><td>ma_phieu_xuat / trang_thai / ngay_xuat / nguoi_xuat / ly_do_that_bai</td><td>dispense_id / status / dispensed_at / dispensed_by / failure_reason</td><td>cột DISPENSE_SLIP</td></tr>
+            <tr><td>SU_KIEN_DA_XU_LY / xu_ly_luc</td><td>PROCESSED_EVENT / processed_at</td><td>bảng/cột</td></tr>
+            <tr><td>TrangThaiPhieuXuat{CHO_XUAT,DA_XUAT,THAT_BAI}</td><td>DispenseStatus{PENDING,DISPENSED,FAILED}</td><td>enum</td></tr>
+            <tr><td>Thuoc / BanKe / ChiTietBanKe / PhieuXuat</td><td>Drug / Prescription / PrescriptionLine / DispenseSlip</td><td>class</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>4. Events Publish</h2>
+        <h2>3. Data Model — V1__init.sql</h2>
+        <p>Đường dẫn: <code>src/main/resources/db/migration/V1__init.sql</code>. Flyway <code>ddl-auto: validate</code> — schema phải tự tạo.</p>
+        <div class="code">CREATE TABLE DRUG (
+    drug_id             UUID          PRIMARY KEY,
+    drug_name           VARCHAR(150)  NOT NULL,
+    active_ingredient   VARCHAR(150),
+    unit                VARCHAR(20)   NOT NULL,
+    price               DECIMAL(15,2) NOT NULL,
+    stock_quantity      INT           NOT NULL DEFAULT 0,
+    expiry_date         DATE          NOT NULL,
+    manufacturer        VARCHAR(150),
+    low_stock_threshold INT           NOT NULL DEFAULT 10,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ,
+    CONSTRAINT ck_drug_price_positive      CHECK (price >= 0),
+    CONSTRAINT ck_drug_stock_non_negative  CHECK (stock_quantity >= 0)
+);
+CREATE INDEX idx_drug_name ON DRUG (drug_name);
+
+CREATE TABLE PRESCRIPTION (
+    prescription_id UUID          PRIMARY KEY,
+    record_id       UUID          NOT NULL,   -- ref clinical
+    patient_id      UUID          NOT NULL,   -- ref patient
+    doctor_id       UUID          NOT NULL,   -- ref organization NHAN_VIEN
+    department_id   UUID          NOT NULL,   -- ref organization KHOA
+    prescribed_date DATE          NOT NULL,
+    total_amount    DECIMAL(15,2) NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ
+);
+CREATE INDEX idx_prescription_patient ON PRESCRIPTION (patient_id);
+CREATE INDEX idx_prescription_dept   ON PRESCRIPTION (department_id);
+
+CREATE TABLE PRESCRIPTION_LINE (
+    line_id         UUID          PRIMARY KEY,
+    prescription_id UUID          NOT NULL REFERENCES PRESCRIPTION(prescription_id) ON DELETE CASCADE,
+    drug_id         UUID          NOT NULL REFERENCES DRUG(drug_id),
+    quantity        INT           NOT NULL,
+    unit_price      DECIMAL(15,2) NOT NULL,   -- price snapshot
+    dosage          VARCHAR(255),
+    line_total      DECIMAL(15,2) NOT NULL,
+    CONSTRAINT ck_line_quantity CHECK (quantity > 0)
+);
+CREATE INDEX idx_line_prescription ON PRESCRIPTION_LINE (prescription_id);
+
+CREATE TABLE DISPENSE_SLIP (
+    dispense_id     UUID          PRIMARY KEY,
+    prescription_id UUID          NOT NULL UNIQUE REFERENCES PRESCRIPTION(prescription_id),
+    status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
+    dispensed_at    TIMESTAMPTZ,
+    dispensed_by    UUID,
+    failure_reason  VARCHAR(255),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ
+);
+CREATE INDEX idx_dispense_status ON DISPENSE_SLIP (status);
+
+CREATE TABLE PROCESSED_EVENT (
+    event_id     UUID          PRIMARY KEY,
+    routing_key  VARCHAR(100)  NOT NULL,
+    processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
+);</div>
+        <div class="note"><code>unit_price</code> là <strong>ảnh chụp</strong> giá tại thời điểm kê đơn — không bao giờ join sang <code>DRUG.price</code> để tính lại đơn cũ.</div>
+    </div>
+
+    <div class="section">
+        <h2>4. Enum &amp; Domain Model</h2>
+        <h3>Enum — <code>domain/model/DispenseStatus.java</code></h3>
+        <div class="code">public enum DispenseStatus { PENDING, DISPENSED, FAILED }</div>
+
+        <h3><code>Drug</code> — <code>domain/model/Drug.java</code></h3>
+        <p>Trường: <code>drugId, drugName, activeIngredient, unit, price(BigDecimal), stockQuantity(int), expiryDate(LocalDate), manufacturer, lowStockThreshold</code>, timestamps.</p>
+        <div class="code">public static Drug create(String drugName, String activeIngredient, String unit, BigDecimal price,
+                        int stockQuantity, LocalDate expiryDate, String manufacturer, int lowStockThreshold);
+public void updateInfo(String drugName, String activeIngredient, String unit,
+                       BigDecimal price, LocalDate expiryDate, String manufacturer, int lowStockThreshold);
+public void restock(int quantity);          // quantity > 0
+public void dispenseStock(int quantity);    // BR-D1, BR-D2 — throws
+public boolean hasStock(int quantity);      // stockQuantity >= quantity
+public boolean isExpired();                 // expiryDate >= today
+public boolean belowLowStockThreshold();    // stockQuantity <= lowStockThreshold</div>
+        <p><strong>Bất biến <code>dispenseStock</code>:</strong></p>
         <table>
-            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>PrescriptionCreatedEvent</td><td>{ prescriptionId, patientId, recordId, <strong>maKhoa</strong>, totalAmount, items }</td><td>Khi tạo đơn thuốc</td></tr>
-            <tr><td>PrescriptionFilledEvent</td><td>{ prescriptionId, patientId, <strong>maKhoa</strong>, totalAmount, dispensedItems }</td><td>Khi xuất thuốc thành công</td></tr>
-            <tr><td>StockLowEvent</td><td>{ drugId, drugName, currentStock }</td><td>Khi tồn kho dưới ngưỡng (ví dụ <10)</td></tr>
+            <tr><th>Kiểm tra</th><th>Mã lỗi</th></tr>
+            <tr><td>quantity ≤ 0</td><td><code>DRUG_QUANTITY_INVALID</code></td></tr>
+            <tr><td>stockQuantity &lt; quantity</td><td><code>DRUG_OUT_OF_STOCK</code> (BR-D1)</td></tr>
+            <tr><td>expiryDate &lt; hôm nay</td><td><code>DRUG_EXPIRED</code> (BR-D2)</td></tr>
+        </table>
+        <p><code>create</code>/<code>updateInfo</code>: drugName không rỗng; price ≥ 0 (<code>DRUG_PRICE_NEGATIVE</code>); expiryDate không quá khứ lúc tạo (<code>DRUG_EXPIRY_PAST</code>); unit không rỗng.</p>
+
+        <h3><code>Prescription</code> (aggregate root) — <code>domain/model/Prescription.java</code></h3>
+        <p>Trường: <code>prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate, totalAmount, lines(List&lt;PrescriptionLine&gt;)</code>.</p>
+        <div class="code">public static Prescription create(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
+                              LocalDate prescribedDate, List&lt;PrescriptionLine&gt; lines);
+public BigDecimal computeTotal();        // Σ lineTotal — BR-D5
+public List&lt;PrescriptionLine&gt; getLines(); // unmodifiable</div>
+        <p>Bất biến: ít nhất một dòng (<code>PRESCRIPTION_EMPTY</code>); <code>totalAmount</code> <strong>tính ra</strong>, không nhận từ client.</p>
+
+        <h3><code>PrescriptionLine</code> — <code>domain/model/PrescriptionLine.java</code></h3>
+        <div class="code">public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unitPrice, String dosage);
+// lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP)</div>
+        <p>quantity &gt; 0 (<code>DRUG_QUANTITY_INVALID</code>).</p>
+
+        <h3><code>DispenseSlip</code> — <code>domain/model/DispenseSlip.java</code></h3>
+        <div class="code">public static DispenseSlip createPending(UUID prescriptionId);   // BR-D3 — luôn PENDING
+public void markDispensed(UUID dispensedBy, Instant timestamp);
+public void markFailed(String reason);
+public boolean isPending();</div>
+        <p>Chuyển tiếp: <code>PENDING → DISPENSED | FAILED</code>, đều là kết thúc. Còn lại ném <code>DISPENSE_INVALID_TRANSITION</code>. Xuất phiếu đã xuất → <code>DISPENSE_ALREADY_DONE</code>.</p>
+
+        <h3>Exceptions — <code>domain/exception/</code></h3>
+        <table>
+            <tr><th>Class</th><th>Extends</th><th>Mã / HTTP</th></tr>
+            <tr><td>DrugNotFoundException</td><td>ResourceNotFoundException</td><td>DRUG_NOT_FOUND / 404</td></tr>
+            <tr><td>PrescriptionNotFoundException</td><td>ResourceNotFoundException</td><td>PRESCRIPTION_NOT_FOUND / 404</td></tr>
+            <tr><td>DispenseNotFoundException</td><td>ResourceNotFoundException</td><td>DISPENSE_NOT_FOUND / 404</td></tr>
+            <tr><td>DrugRuleException</td><td>BusinessRuleException</td><td>DRUG_* / 422</td></tr>
+            <tr><td>DispenseRuleException</td><td>BusinessRuleException</td><td>DISPENSE_* / 422</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>5. Events Subscribe</h2>
+        <h2>5. Error Codes → HTTP</h2>
         <table>
-            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
-            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Cập nhật trạng thái phiếu xuất từ CHO_XUAT → DA_XUAT</td></tr>
+            <tr><th>Mã</th><th>HTTP</th></tr>
+            <tr><td>DRUG_NOT_FOUND, PRESCRIPTION_NOT_FOUND, DISPENSE_NOT_FOUND</td><td>404</td></tr>
+            <tr><td>DRUG_OUT_OF_STOCK, DRUG_EXPIRED, DRUG_QUANTITY_INVALID, DRUG_PRICE_NEGATIVE, DRUG_EXPIRY_PAST</td><td>422</td></tr>
+            <tr><td>PRESCRIPTION_EMPTY, DISPENSE_INVALID_TRANSITION, DISPENSE_ALREADY_DONE, DISPENSE_NOT_PAID</td><td>422</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>6. Business Rules</h2>
+        <h2>6. Ports</h2>
+        <h3>Out — <code>application/port/out/</code></h3>
+        <div class="code">public interface DrugRepositoryPort {
+    Drug save(Drug t);
+    Optional&lt;Drug&gt; findById(UUID id);
+    Optional&lt;Drug&gt; findByIdForUpdate(UUID id);   // BẮT BUỘC khóa ghi bi quan — §9
+    PageResult&lt;Drug&gt; search(String keyword, PageQuery page);
+}
+public interface PrescriptionRepositoryPort {
+    Prescription save(Prescription p);
+    Optional&lt;Prescription&gt; findById(UUID id);
+    List&lt;Prescription&gt; findByPatient(UUID patientId);
+}
+public interface DispenseSlipRepositoryPort {
+    DispenseSlip save(DispenseSlip s);
+    Optional&lt;DispenseSlip&gt; findById(UUID id);
+    Optional&lt;DispenseSlip&gt; findByPrescription(UUID prescriptionId);
+}
+public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }
+
+public interface PharmacyEventPublisherPort {
+    void publishPrescriptionCreated(PrescriptionCreatedEvent e);
+    void publishPrescriptionFilled(PrescriptionFilledEvent e);
+    void publishPrescriptionDispenseFailed(PrescriptionDispenseFailedEvent e);  // bù trừ saga
+    void publishStockLow(StockLowEvent e);
+}</div>
+        <h3>In — <code>application/port/in/</code></h3>
+        <div class="code">public interface ManageDrugUseCase {
+    DrugDTO create(CreateDrugRequest r);
+    DrugDTO getById(UUID id);
+    PageResult&lt;DrugDTO&gt; search(String keyword, PageQuery page);
+    DrugDTO adjustStock(UUID id, AdjustStockRequest r);
+}
+public interface CreatePrescriptionUseCase { PrescriptionDTO create(CreatePrescriptionRequest r); }
+public interface DispensePrescriptionUseCase { DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy); }
+public interface ReactToPaymentUseCase { void onPaymentCompleted(UUID prescriptionId, UUID invoiceId); }</div>
+    </div>
+
+    <div class="section">
+        <h2>7. DTOs (records)</h2>
+        <h3>Request — <code>application/dto/request/</code></h3>
+        <div class="code">public record CreateDrugRequest(
+    @NotBlank @Size(max = 150) String drugName,
+    @Size(max = 150) String activeIngredient,
+    @NotBlank @Size(max = 20) String unit,
+    @NotNull @DecimalMin("0.00") @Digits(integer = 13, fraction = 2) BigDecimal price,
+    @NotNull @Min(0) Integer stockQuantity,
+    @NotNull @Future LocalDate expiryDate,
+    @Size(max = 150) String manufacturer,
+    @Min(0) Integer lowStockThreshold) {}
+
+public record AdjustStockRequest(
+    @NotNull Integer quantity,   // dương = nhập, âm = giảm
+    @Size(max = 255) String reason) {}
+
+public record CreatePrescriptionRequest(
+    @NotNull UUID recordId, @NotNull UUID patientId, @NotNull UUID doctorId, @NotNull UUID departmentId,
+    @NotNull @PastOrPresent LocalDate prescribedDate,
+    @NotEmpty @Valid List&lt;PrescriptionLineRequest&gt; lines) {}
+
+public record PrescriptionLineRequest(
+    @NotNull UUID drugId, @NotNull @Min(1) Integer quantity,
+    @Size(max = 255) String dosage) {}   // KHÔNG có giá — server tự chụp</div>
+        <h3>Response — <code>application/dto/response/</code></h3>
+        <div class="code">public record DrugDTO(UUID drugId, String drugName, String activeIngredient, String unit,
+                  BigDecimal price, int stockQuantity, LocalDate expiryDate, String manufacturer,
+                  int lowStockThreshold, Instant createdAt, Instant updatedAt) {}
+
+public record PrescriptionDTO(UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
+                              UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount,
+                              List&lt;PrescriptionLineDTO&gt; lines,
+                              DispenseStatus dispenseStatus, Instant createdAt) {}
+
+public record PrescriptionLineDTO(UUID lineId, UUID drugId, String drugName,
+                                  int quantity, BigDecimal unitPrice, String dosage, BigDecimal lineTotal) {}
+
+public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus status,
+                          Instant dispensedAt, UUID dispensedBy, String failureReason) {}</div>
+        <p><strong>Mapper</strong> (MapStruct, <code>application/mapper/</code>): DrugDtoMapper, PrescriptionDtoMapper, DispenseDtoMapper.</p>
+    </div>
+
+    <div class="section">
+        <h2>8. Thuật toán tầng Application</h2>
+        <h3><code>createPrescription</code> — @Transactional</h3>
+        <ol>
+            <li>Mỗi dòng: <code>drugRepo.findById(drugId)</code> → không có thì <code>DRUG_NOT_FOUND</code>.</li>
+            <li><strong>Chụp giá</strong>: <code>unitPrice = drug.getPrice()</code> — client không được đặt giá.</li>
+            <li>Dựng <code>PrescriptionLine</code>; <code>lineTotal = unitPrice × quantity</code> (HALF_UP, 2 chữ số).</li>
+            <li><code>Prescription.create(...)</code> → tính <code>totalAmount</code> (BR-D5).</li>
+            <li>Lưu đơn thuốc.</li>
+            <li><code>DispenseSlip.createPending(prescriptionId)</code> → lưu (BR-D3 — luôn PENDING).</li>
+            <li>Publish <code>PrescriptionCreatedEvent</code> sau commit → billing tạo hóa đơn.</li>
+        </ol>
+        <div class="warn"><strong>KHÔNG trừ kho ở đây.</strong> Kê đơn chỉ là ghi nhận ý định. Kho chỉ biến động lúc xuất thuốc sau khi thanh toán. Trừ kho hai lần là lỗi dễ gặp nhất.</div>
+
+        <h3><code>dispense(prescriptionId, dispensedBy)</code> — @Transactional</h3>
+        <p>Gọi từ cả <code>PUT /prescriptions/{id}/dispense</code> lẫn consumer của <code>payment.completed</code>.</p>
+        <ol>
+            <li><code>dispenseSlipRepo.findByPrescription(prescriptionId)</code> → không có thì <code>DISPENSE_NOT_FOUND</code>.</li>
+            <li>nếu <code>!slip.isPending()</code> → <code>DISPENSE_ALREADY_DONE</code> (idempotent: redelivery không xuất 2 lần).</li>
+            <li>Nạp đơn thuốc + các dòng.</li>
+            <li><strong>Sắp xếp dòng theo <code>drugId</code></strong> trước khi khóa — tránh deadlock.</li>
+            <li>Mỗi dòng: <code>drugRepo.findByIdForUpdate(drugId)</code> → <code>drug.dispenseStock(quantity)</code>; ném DRUG_OUT_OF_STOCK / DRUG_EXPIRED.</li>
+            <li><strong>Khi lỗi:</strong> trừ kho rollback, <code>slip.markFailed(reason)</code>, lưu phiếu <strong>REQUIRES_NEW</strong>, publish <code>PrescriptionDispenseFailedEvent</code> → billing bù trừ (BR-D6).</li>
+            <li>Thành công: lưu từng thuốc; <code>slip.markDispensed(dispensedBy, now)</code>; lưu.</li>
+            <li>Thuốc nào <code>belowLowStockThreshold()</code> → publish <code>StockLowEvent</code>.</li>
+            <li>Publish <code>PrescriptionFilledEvent</code> sau commit.</li>
+        </ol>
+        <div class="warn">Bước 6 là nhánh bù trừ. Phiếu xuất <strong>vẫn phải ghi FAILED dù transaction trừ kho rollback</strong> — cần <code>REQUIRES_NEW</code>. Làm sai thì saga treo vĩnh viễn.</div>
+
+        <h3><code>onPaymentCompleted(prescriptionId, invoiceId)</code></h3>
+        <ol>
+            <li><code>processed.alreadyProcessed(eventId)</code> → return.</li>
+            <li>gọi <code>dispense(prescriptionId, SYSTEM_USER)</code>.</li>
+            <li><code>processed.markProcessed(...)</code> trong cùng transaction.</li>
+            <li>Lỗi nghiệp vụ không ném ngược lại Rabbit (đã publish dispense.failed); chỉ lỗi hạ tầng mới vào dead-letter.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>9. Tương tranh — đọc kỹ trước khi viết <code>dispense</code></h2>
+        <p>Hai dược sĩ xuất cùng thuốc cùng lúc sẽ bán vượt tồn kho nếu không khóa. <code>CHECK (stock_quantity >= 0)</code> chỉ là phòng thủ cuối.</p>
+        <div class="code">@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("SELECT d FROM DrugJpaEntity d WHERE d.drugId = :id")
+Optional&lt;DrugJpaEntity&gt; findByIdForUpdate(@Param("id") UUID id);</div>
         <ul>
-            <li><strong>Không xuất thuốc nếu tồn kho &lt; số lượng yêu cầu.</strong></li>
-            <li>Không xuất thuốc nếu hạn sử dụng &lt; ngày hiện tại.</li>
-            <li>Khi tạo đơn, tự động tạo phiếu xuất với trạng thái CHO_XUAT.</li>
-            <li>Khi xuất thuốc, cập nhật tồn kho (giảm số lượng).</li>
-            <li>Tổng tiền đơn = sum(so_luong * don_gia).</li>
+            <li>Luôn khóa qua <code>findByIdForUpdate</code> trong <code>dispense</code> — không dùng <code>findById</code> thường.</li>
+            <li>Luôn khóa dòng <strong>đã sắp xếp theo <code>drugId</code></strong>.</li>
+            <li>Giữ transaction ngắn: không gọi REST, không publish event trong lúc giữ khóa.</li>
         </ul>
-        <div class="note">Lưu ý: Nếu xuất thất bại do tồn kho, cần bắn event lỗi để rollback trong Saga.</div>
     </div>
 
     <div class="section">
-        <h2>7. Sequence Diagram – Kê đơn & Xuất thuốc (Saga Orchestration)</h2>
-        <div class="code">
-            Doctor → Client → Pharmacy Service<br>
-            1. POST /prescriptions<br>
-            2. Validate tồn kho, hạn dùng<br>
-            3. Lưu đơn + tạo phiếu xuất CHO_XUAT<br>
-            4. Publish PrescriptionCreatedEvent<br>
-            <br>
-            Billing Service (Saga Orchestrator) nhận event, tạo hóa đơn<br>
-            Billing → Pharmacy (REST/event): yêu cầu xuất thuốc<br>
-            Pharmacy kiểm tra và xuất → bắn PrescriptionFilledEvent<br>
-            Billing nhận → cập nhật hóa đơn, chờ thanh toán<br>
-            <br>
-            Sau thanh toán (Client → Billing): PaymentCompletedEvent → Pharmacy cập nhật phiếu xuất thành DA_XUAT
-        </div>
+        <h2>10. Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Body</th><th>Trả về</th><th>Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/pharmacy/drugs?keyword&page&size</td><td>—</td><td>PageResult&lt;DrugDTO&gt;</td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
+            <tr><td>GET</td><td>/api/v1/pharmacy/drugs/{id}</td><td>—</td><td>DrugDTO</td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
+            <tr><td>POST</td><td>/api/v1/pharmacy/drugs</td><td>CreateDrugRequest</td><td>201 DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
+            <tr><td>PUT</td><td>/api/v1/pharmacy/drugs/{id}/stock</td><td>AdjustStockRequest</td><td>DrugDTO</td><td>ADMIN, PHARMACIST</td></tr>
+            <tr><td>POST</td><td>/api/v1/pharmacy/prescriptions</td><td>CreatePrescriptionRequest</td><td>201 PrescriptionDTO</td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>GET</td><td>/api/v1/pharmacy/prescriptions/{id}</td><td>—</td><td>PrescriptionDTO</td><td>ADMIN, DOCTOR, PHARMACIST</td></tr>
+            <tr><td>PUT</td><td>/api/v1/pharmacy/prescriptions/{id}/dispense</td><td>—</td><td>DispenseDTO</td><td>ADMIN, PHARMACIST</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>11. Events</h2>
+        <h3>Publish — <code>infrastructure/messaging/payload/</code> (đều bắt đầu envelope <code>eventId, occurredAt, correlationId</code>)</h3>
+        <div class="code">// prescription.created
+public record PrescriptionCreatedEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID prescriptionId, UUID patientId, UUID recordId, UUID departmentId,
+    BigDecimal totalAmount, List&lt;Item&gt; items) {
+    public record Item(UUID drugId, String drugName, int quantity, BigDecimal price) {}
+}
+
+// prescription.filled
+public record PrescriptionFilledEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID prescriptionId, UUID patientId, UUID departmentId,
+    BigDecimal totalAmount, List&lt;DispensedItem&gt; dispensedItems) {
+    public record DispensedItem(UUID drugId, String drugName, int quantity) {}
+}
+
+// prescription.dispense.failed — kích hoạt bù trừ
+public record PrescriptionDispenseFailedEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID prescriptionId, UUID invoiceId, UUID patientId, String reason) {}
+
+// stock.low — bắn-rồi-quên
+public record StockLowEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID drugId, String drugName, int currentStock, int threshold) {}</div>
+        <p><code>departmentId</code> trên mọi event vận hành (bắt buộc — report group theo khoa).</p>
+
+        <h3>Subscribe — <code>messaging/consumer/PaymentCompletedConsumer.java</code></h3>
+        <table>
+            <tr><th>Routing key</th><th>Xử lý</th></tr>
+            <tr><td>payment.completed</td><td>onPaymentCompleted → xuất thuốc (PENDING → DISPENSED)</td></tr>
+        </table>
+        <p>Consumer: parse → gọi <code>ReactToPaymentUseCase</code> → dedupe theo eventId → ack. Không logic nghiệp vụ.</p>
+    </div>
+
+    <div class="section">
+        <h2>12. RabbitConfig</h2>
+        <div class="code">EXCHANGE = "mediflow.events"   // durable topic
+DLX      = "mediflow.events.dlx"
+QUEUE    = "pharmacy.q"          // durable, DLX + DLQ "pharmacy.dlq"</div>
+        <table>
+            <tr><th>Routing key</th><th>Hướng</th><th>Dùng cho</th></tr>
+            <tr><td>prescription.created</td><td>publish</td><td>saga khởi động</td></tr>
+            <tr><td>prescription.filled</td><td>publish</td><td>kết thúc thành công</td></tr>
+            <tr><td>prescription.dispense.failed</td><td>publish</td><td>bù trừ</td></tr>
+            <tr><td>stock.low</td><td>publish</td><td>cảnh báo tồn kho</td></tr>
+            <tr><td>payment.completed</td><td><strong>subscribe</strong> (bind pharmacy.q)</td><td>kích hoạt dispense</td></tr>
+        </table>
+        <p>Queue <code>pharmacy.q</code> <strong>chỉ bind <code>payment.completed</code></strong>. Các key publish không cần binding.</p>
+        <p><em>Copy <code>docs/ai/reference/RabbitConfig.java</code> → sửa hằng số. Message converter Jackson2Json. Publish qua <code>TransactionSynchronization.afterCommit()</code>.</em></p>
+    </div>
+
+    <div class="section">
+        <h2>13. Persistence</h2>
+        <h3><code>DrugJpaRepository</code></h3>
+        <div class="code">public interface DrugJpaRepository extends JpaRepository&lt;DrugJpaEntity, UUID&gt; {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM DrugJpaEntity d WHERE d.drugId = :id")
+    Optional&lt;DrugJpaEntity&gt; findByIdForUpdate(@Param("id") UUID id);
+
+    @Query("""
+        SELECT d FROM DrugJpaEntity d
+        WHERE :keyword IS NULL
+           OR LOWER(d.drugName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        """)
+    Page&lt;DrugJpaEntity&gt; search(@Param("keyword") String keyword, Pageable pageable);
+}</div>
+        <h3>Entity ↔ domain (MapStruct)</h3>
+        <table>
+            <tr><th>Entity field</th><th>Domain field</th><th>Kiểu</th></tr>
+            <tr><td>drug_id</td><td>drugId</td><td>UUID</td></tr>
+            <tr><td>drug_name</td><td>drugName</td><td>String</td></tr>
+            <tr><td>active_ingredient</td><td>activeIngredient</td><td>String</td></tr>
+            <tr><td>unit</td><td>unit</td><td>String</td></tr>
+            <tr><td>price</td><td>price</td><td>BigDecimal</td></tr>
+            <tr><td>stock_quantity</td><td>stockQuantity</td><td>int</td></tr>
+            <tr><td>expiry_date</td><td>expiryDate</td><td>LocalDate</td></tr>
+            <tr><td>manufacturer</td><td>manufacturer</td><td>String</td></tr>
+            <tr><td>low_stock_threshold</td><td>lowStockThreshold</td><td>int</td></tr>
+            <tr><td>created_at / updated_at</td><td>createdAt / updatedAt</td><td>Instant</td></tr>
+        </table>
+        <h3>Adapter cần làm đúng</h3>
+        <ol>
+            <li><code>findByIdForUpdate</code> chỉ trong <code>dispense</code>; các luồng đọc khác dùng <code>findById</code> thường.</li>
+            <li><code>search</code>: chuyển <code>PageQuery → Pageable</code>, <code>Page&lt;Entity&gt; → PageResult&lt;Domain&gt;</code>.</li>
+            <li><code>PrescriptionPersistenceAdapter</code>/<code>DispenseSlipPersistenceAdapter</code> cùng pattern.</li>
+            <li><code>PrescriptionJpaEntity</code> có <code>@OneToMany(cascade = ALL, orphanRemoval = true)</code> với <code>PrescriptionLineJpaEntity</code> — một aggregate, không có repo riêng cho line.</li>
+            <li><code>ProcessedEventPersistenceAdapter</code> hiện thực <code>ProcessedEventPort</code> trên bảng <code>PROCESSED_EVENT</code>.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>14. Test Plan (business rule → tầng → tên test)</h2>
+        <table>
+            <tr><th>Rule</th><th>Tầng</th><th>Tên test</th><th>Cần gì</th></tr>
+            <tr><td>BR-D1 (hết hàng)</td><td>application</td><td>dispense_insufficientStock_throwsOutOfStock</td><td>mock DrugRepositoryPort.findByIdForUpdate</td></tr>
+            <tr><td>BR-D2 (hết hạn)</td><td>application</td><td>dispense_expiredDrug_throwsExpired</td><td>—</td></tr>
+            <tr><td>BR-D3 (tự tạo phiếu PENDING)</td><td>application</td><td>createPrescription_alsoCreatesPendingDispense</td><td>assert save nhận PENDING</td></tr>
+            <tr><td>BR-D4 (trừ kho đúng 1 lần)</td><td>persistence</td><td>dispense_valid_decrementsStockOnce</td><td>Testcontainers PG</td></tr>
+            <tr><td>BR-D5 (total = Σ)</td><td>domain unit</td><td>createPrescription_computesTotalFromLines</td><td>không Spring</td></tr>
+            <tr><td>BR-D6 (publish dispense.failed)</td><td>application</td><td>dispense_outOfStock_publishesDispenseFailed</td><td>mock publisher</td></tr>
+            <tr><td>BR-D7 (price snapshot)</td><td>application</td><td>createPrescription_priceChangeLater_totalUnchanged</td><td>mock repo, đổi giá sau</td></tr>
+            <tr><td>BR-D8 (client không set giá)</td><td>web slice</td><td>createPrescription_requestHasNoPriceField</td><td>@WebMvcTest</td></tr>
+            <tr><td>BR-D9 (redelivery 1 lần)</td><td>application</td><td>onPaymentCompleted_sameEventTwice_dispensesOnce</td><td>mock alreadyProcessed</td></tr>
+            <tr><td>BR-D10 (concurrency)</td><td>integration</td><td>dispense_twoConcurrentCalls_onlyOneSucceeds</td><td>@SpringBootTest + Testcontainers, 2 threads, stock=1</td></tr>
+            <tr><td>BR-D11 (stock.low)</td><td>application</td><td>dispense_stockFallsBelowThreshold_publishesStockLow</td><td>mock publisher</td></tr>
+            <tr><td>BR-D12 (phiếu FAILED)</td><td>integration</td><td>dispense_failure_slipPersistedAsFailed</td><td>Testcontainers, REQUIRES_NEW branch</td></tr>
+        </table>
+        <p><strong>BR-D10</strong>: test tương tranh thật, không mock được. <strong>BR-D12</strong>: phiếu FAILED phải lưu được dù transaction trừ kho rollback.</p>
+    </div>
+
+    <div class="section">
+        <h2>15. File Map (mọi file Java cần tạo)</h2>
+        <div class="code">pharmacy-service/src/main/java/com/mediflow/pharmacy/
+├── PharmacyServiceApplication.java          # có sẵn
+├── domain/model/
+│   ├── DispenseStatus.java
+│   ├── Drug.java
+│   ├── Prescription.java
+│   ├── PrescriptionLine.java
+│   └── DispenseSlip.java
+├── domain/exception/
+│   ├── DrugNotFoundException.java
+│   ├── PrescriptionNotFoundException.java
+│   ├── DispenseNotFoundException.java
+│   ├── DrugRuleException.java
+│   └── DispenseRuleException.java
+├── application/port/in/
+│   ├── ManageDrugUseCase.java
+│   ├── CreatePrescriptionUseCase.java
+│   ├── DispensePrescriptionUseCase.java
+│   └── ReactToPaymentUseCase.java
+├── application/port/out/
+│   ├── DrugRepositoryPort.java
+│   ├── PrescriptionRepositoryPort.java
+│   ├── DispenseSlipRepositoryPort.java
+│   ├── ProcessedEventPort.java
+│   └── PharmacyEventPublisherPort.java
+├── application/dto/request/
+│   ├── CreateDrugRequest.java
+│   ├── AdjustStockRequest.java
+│   ├── CreatePrescriptionRequest.java
+│   └── PrescriptionLineRequest.java
+├── application/dto/response/
+│   ├── DrugDTO.java
+│   ├── PrescriptionDTO.java
+│   ├── PrescriptionLineDTO.java
+│   └── DispenseDTO.java
+├── application/mapper/
+│   ├── DrugDtoMapper.java
+│   ├── PrescriptionDtoMapper.java
+│   └── DispenseDtoMapper.java
+├── application/service/
+│   └── PharmacyApplicationService.java
+├── web/                                    # DRIVING (HTTP)
+│   ├── DrugController.java
+│   ├── PrescriptionController.java
+│   └── GlobalExceptionHandler.java          # copy docs/ai/reference
+├── messaging/consumer/                     # DRIVING (events)
+│   └── PaymentCompletedConsumer.java
+├── infrastructure/persistence/             # DRIVEN (DB)
+│   ├── DrugJpaEntity.java / DrugJpaRepository.java / DrugPersistenceAdapter.java / DrugPersistenceMapper.java
+│   ├── PrescriptionJpaEntity.java / PrescriptionJpaRepository.java / PrescriptionPersistenceAdapter.java / PrescriptionPersistenceMapper.java
+│   ├── PrescriptionLineJpaEntity.java
+│   ├── DispenseSlipJpaEntity.java / DispenseSlipJpaRepository.java / DispenseSlipPersistenceAdapter.java / DispenseSlipPersistenceMapper.java
+│   └── ProcessedEventPersistenceAdapter.java
+└── infrastructure/messaging/                # DRIVEN (RabbitMQ)
+    ├── PharmacyEventPublisherAdapter.java
+    └── payload/
+        ├── PrescriptionCreatedEvent.java
+        ├── PrescriptionFilledEvent.java
+        ├── PrescriptionDispenseFailedEvent.java
+        └── StockLowEvent.java
+# + boilerplate: config/RabbitConfig, security/JwtAuthFilter+JwtProperties, config/SecurityConfig, config/OpenApiConfig, db/migration/V1__init.sql</div>
+    </div>
+
+    <div class="section">
+        <h2>16. Checklist hoàn thiện (Definition of Done)</h2>
+        <ul>
+            <li>☐ V1__init.sql đủ 5 bảng, tên EN snake_case, index đúng.</li>
+            <li>☐ Domain: 4 model + 1 enum + 5 exception; bất biến trong model.</li>
+            <li>☐ Ports đủ (5 out, 4 in); application không import Spring Data/AMQP.</li>
+            <li>☐ DTO records có Bean Validation; 3 MapStruct mapper.</li>
+            <li>☐ Controller + @PreAuthorize (ADMIN/DOCTOR/PHARMACIST).</li>
+            <li>☐ 4 event record + publisher (sau commit); consumer payment.completed idempotent.</li>
+            <li>☐ GlobalExceptionHandler, SecurityConfig, RabbitConfig, OpenApiConfig.</li>
+            <li>☐ Test 5 tầng; 12 business rule được phủ.</li>
+            <li>☐ <code>mvn -pl backend/pharmacy-service -am -q -DskipTests install</code> xanh.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>17. Sequence Diagram — Kê đơn &amp; Xuất thuốc (Saga)</h2>
+        <div class="code">Doctor → Client → Pharmacy Service
+1. POST /prescriptions
+2. Validate, chụp giá từng dòng (unit_price = DRUG.price)
+3. Lưu đơn + tạo phiếu xuất PENDING
+4. Publish prescription.created (sau commit)
+   │
+   ▼
+Billing (orchestrator): tạo hóa đơn AWAITING_PAYMENT
+Client → Billing: PUT /invoices/{id}/pay → bắn payment.completed
+   │
+   ▼
+Pharmacy: nhận payment.completed → dispense()
+   ├─ thành công → phiếu DISPENSED, bắn prescription.filled → Billing: COMPLETED
+   └─ thất bại (hết hàng/hết hạn) → phiếu FAILED (REQUIRES_NEW),
+      bắn prescription.dispense.failed → Billing: REFUNDED + payment.failed</div>
     </div>
 </body>
 </html>

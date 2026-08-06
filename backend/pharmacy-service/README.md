@@ -5,8 +5,8 @@ Drugs, prescriptions, dispensing and stock. **Saga participant** in prescribe �
 Reference: [`docs/ai/services/pharmacy.md`](../docs/ai/services/pharmacy.md) · design doc `docs/eproject_general_plan/pharmacy-service.html`.
 
 - **Port:** 8085 · **Base path:** `/api/v1/pharmacy` · **DB:** `mediflow_pharmacy` (PostgreSQL)
-- **Owns tables:** `THUOC`, `BAN_KE_CP`, `CHI_TIET_BAN_KE`, `PHIEU_XUAT`
-- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
+- **Owns tables:** `DRUG`, `PRESCRIPTION`, `PRESCRIPTION_LINE`, `DISPENSE_SLIP`
+- **Architecture:** clean architecture (hexagonal) per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
 ## Status
 
@@ -17,8 +17,9 @@ Package layout (already created, each folder holds a `.gitkeep` until you fill i
 ```
 domain/model          domain/exception
 application/port/in   application/port/out   application/dto   application/mapper   application/service
-infrastructure/web    infrastructure/persistence   infrastructure/messaging   infrastructure/client
-infrastructure/security   infrastructure/config
+web                   (driving HTTP: controllers + GlobalExceptionHandler)
+messaging/consumer    (driving events: @RabbitListener)
+infrastructure/persistence   infrastructure/messaging   infrastructure/security   infrastructure/config
 ```
 
 ## Run locally

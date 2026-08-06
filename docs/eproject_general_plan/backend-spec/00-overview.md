@@ -40,10 +40,11 @@ com.mediflow.<svc>/
 ├── application/dto/request|response/   Java record
 ├── application/mapper/     MapStruct: domain model ↔ DTO
 ├── application/service/    hiện thực các in-port
-└── infrastructure/
-    ├── web/                @RestController + @RestControllerAdvice
+├── web/                    DRIVING adapter (HTTP) — @RestController + @RestControllerAdvice, gọi vào application
+├── messaging/              DRIVING adapter (event consumer) — @RabbitListener, gọi vào application
+└── infrastructure/         DRIVEN adapter — application gọi RA
     ├── persistence/        JpaEntity + JpaRepository + Mapper + Adapter
-    ├── messaging/          publisher adapter, payload/, consumer/
+    ├── messaging/          publisher adapter + payload/
     ├── client/             Feign + fallback
     ├── security/           JwtAuthFilter, JwtProperties
     └── config/             SecurityConfig, RabbitConfig, OpenApiConfig
@@ -231,7 +232,7 @@ public class PatientController {
 
 ## 10. Ánh xạ exception → HTTP
 
-Mỗi service có đúng một `@RestControllerAdvice GlobalExceptionHandler`, đặt trong `infrastructure/web/`:
+Mỗi service có đúng một `@RestControllerAdvice GlobalExceptionHandler`, đặt trong `web/`:
 
 | Exception | Status |
 |-----------|--------|

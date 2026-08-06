@@ -1,0 +1,34 @@
+# --- Dự án MediFlow - .dockerignore ---
+# Những thứ này KHÔNG được copy vào image Docker (tiết kiệm dung lượng, tránh lỗi)
+
+# Maven build output
+**/target/
+**/*.jar
+**/*.war
+
+# Node
+**/node_modules/
+**/.next/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (tránh copy chính nó)
+.dockerignore
+
+# Environment
+.env
+.env.local
+.env.*.local

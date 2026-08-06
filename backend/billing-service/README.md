@@ -5,8 +5,8 @@ Fees and invoices. **Saga orchestrator** for prescribe → dispense → pay.
 Reference: [`docs/ai/services/billing.md`](../docs/ai/services/billing.md) · design doc `docs/eproject_general_plan/billing-service.html`.
 
 - **Port:** 8086 · **Base path:** `/api/v1/billing` · **DB:** `mediflow_billing` (PostgreSQL)
-- **Owns tables:** `VIEN_PHI`, `HOADON`
-- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
+- **Owns tables:** `FEE`, `INVOICE`
+- **Architecture:** clean architecture (hexagonal) per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
 ## Status
 
@@ -17,8 +17,9 @@ Package layout (already created, each folder holds a `.gitkeep` until you fill i
 ```
 domain/model          domain/exception
 application/port/in   application/port/out   application/dto   application/mapper   application/service
-infrastructure/web    infrastructure/persistence   infrastructure/messaging   infrastructure/client
-infrastructure/security   infrastructure/config
+web                   (driving HTTP: controllers + GlobalExceptionHandler)
+messaging/consumer    (driving events: @RabbitListener)
+infrastructure/persistence   infrastructure/messaging   infrastructure/security   infrastructure/config
 ```
 
 ## Run locally
