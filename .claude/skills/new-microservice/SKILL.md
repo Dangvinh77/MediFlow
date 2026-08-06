@@ -15,10 +15,12 @@ This skill produces one new Maven module that matches `docs/ai/04-microservice-b
 
 1. **Module & POM.** Create `backend/<service>-service/pom.xml` as a child of the root parent POM. No version numbers — inherit from `<dependencyManagement>`. Add the module to the root `pom.xml` `<modules>` as `backend/<service>-service`. Dependencies per `docs/ai/02-tech-stack.md` (web, data-jpa + driver, validation, security+jwt, amqp, eureka-client, actuator, mapstruct, lombok, flyway, springdoc; openfeign only if it calls other services).
 
-2. **Package tree** under `src/main/java/com/mediflow/<serviceCamel>/` — three layers, dependencies inward only (`infrastructure → application → domain`):
+2. **Package tree** under `src/main/java/com/mediflow/<serviceCamel>/` — three layers plus two outer rings, dependencies inward only (`application → domain`; driving adapters `web`/`messaging` call `application`; `infrastructure` implements `application`'s out-ports):
    - `domain/model/`, `domain/exception/`
    - `application/port/in/`, `application/port/out/`, `application/dto/request/`, `application/dto/response/`, `application/mapper/`, `application/service/`
-   - `infrastructure/web/`, `infrastructure/persistence/`, `infrastructure/messaging/payload/`, `infrastructure/messaging/consumer/`, `infrastructure/client/`, `infrastructure/security/`, `infrastructure/config/`
+   - `web/` — DRIVING adapter (HTTP): controllers + `GlobalExceptionHandler`, calls `application/port/in`
+   - `messaging/consumer/` — DRIVING adapter (event consumers): `@RabbitListener`, calls `application/port/in`
+   - `infrastructure/persistence/`, `infrastructure/messaging/payload/`, `infrastructure/messaging/` (publisher adapter), `infrastructure/client/`, `infrastructure/security/`, `infrastructure/config/` — DRIVEN adapters implementing `application/port/out`
    - plus `<Service>Application.java` at the base package.
 
 3. **application.yml** (`src/main/resources/`): server port, `spring.application.name: <service>-service`, datasource, JPA (`ddl-auto: validate`), Flyway, RabbitMQ, Eureka client, actuator health, springdoc. Keep secrets out — use env placeholders; local overrides in `application-local.yml` (gitignored).
@@ -35,9 +37,9 @@ This skill produces one new Maven module that matches `docs/ai/04-microservice-b
 
 9. **Persistence adapter** (`infrastructure/persistence/`). `XxxJpaEntity` (explicit `@Table`/`@Column(name=...)`, `@Enumerated(STRING)`, `@CreationTimestamp`/`@UpdateTimestamp`, no `@Data`, no cross-service relations) + `XxxJpaRepository` (Spring Data) + `XxxPersistenceMapper` (entity ↔ domain model) + `XxxPersistenceAdapter` implementing the repository port. The JPA entity holds **no** business rules.
 
-10. **Web adapter** (`infrastructure/web/`). Thin controllers, one per resource; `/api/v1/...` paths; `@Valid` requests; standard `ApiResponse` envelope; `@PreAuthorize` with the exact roles from the service doc. Plus one `@RestControllerAdvice GlobalExceptionHandler` mapping domain exceptions to the error envelope.
+10. **Web adapter** (`web/`). Thin controllers, one per resource; `/api/v1/...` paths; `@Valid` requests; standard `ApiResponse` envelope; `@PreAuthorize` with the exact roles from the service doc. Plus one `@RestControllerAdvice GlobalExceptionHandler` mapping domain exceptions to the error envelope. Controllers are the *outer ring* — they call in-ports only, never infrastructure/persistence/messaging.
 
-11. **Messaging adapter** (`infrastructure/messaging/`). Publisher adapter implementing the event-publisher port (publish after commit); `@RabbitListener` consumers in `consumer/` (idempotent, dedupe on `eventId`); event records in `payload/`. Match the catalog in `docs/ai/06-events-rabbitmq.md`.
+11. **Messaging adapters.** Publisher adapter implementing the event-publisher port in `infrastructure/messaging/` (publish after commit); `@RabbitListener` consumers in `messaging/consumer/` (idempotent, dedupe on `eventId`); event records in `infrastructure/messaging/payload/`. Match the catalog in `docs/ai/06-events-rabbitmq.md`.
 
 12. **Config & security** (`infrastructure/config/`, `infrastructure/security/`). `SecurityConfig` (JWT verify, `@EnableMethodSecurity`, stateless, default deny), `RabbitConfig` (exchange/queues/bindings/DLX), `OpenApiConfig`, `JwtAuthFilter` + `JwtProperties`.
 

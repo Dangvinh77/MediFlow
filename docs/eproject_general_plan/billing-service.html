@@ -2,114 +2,505 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Billing Service – Technical Design</title>
+    <title>Billing Service – Technical Design (Coding Reference)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; line-height: 1.6; }
         h1, h2, h3 { color: #0f172a; }
         h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.92rem; }
         th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
-        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
-        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; }
+        .code { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; font-family: 'Cascadia Code','Courier New',monospace; font-size: 0.82rem; overflow-x: auto; white-space: pre; margin: 12px 0; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .warn { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .ok { background: #dcfce7; border-left: 4px solid #22c55e; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        code { background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <h1>💰 Billing Service</h1>
-    <p><strong>Vai trò:</strong> Quản lý viện phí, hóa đơn và điều phối Saga thanh toán.</p>
+    <h1>💰 Billing Service — Technical Design (Coding Reference)</h1>
+    <p><strong>Module:</strong> <code>backend/billing-service/</code> · <strong>Package:</strong> <code>com.mediflow.billing</code> · <strong>Cổng:</strong> 8086 · <strong>DB:</strong> <code>mediflow_billing</code> · <strong>Base path:</strong> <code>/api/v1/billing</code></p>
+    <p><strong>Vai trò:</strong> Sở hữu viện phí (FEE) và hóa đơn (INVOICE), đồng thời <strong>điều phối Saga</strong> kê đơn → hóa đơn → thanh toán → xuất thuốc, gồm nhánh bù trừ. Là service <strong>subscribe nhiều event nhất</strong> hệ thống (6 routing key).</p>
+    <p><strong>Nguồn đồng bộ:</strong> file này là tài liệu tham chiếu code; markdown <code>docs/eproject_general_plan/backend-spec/06-billing.md</code> (giữ nếu cần, không bắt buộc).</p>
+    <p><strong>Kiến trúc (hexagonal):</strong> <code>application → domain</code>, phụ thuộc hướng vào trong. Driving adapter <code>web/</code> (HTTP) và <code>messaging/consumer/</code> (events) <em>gọi vào</em> application; driven adapter <code>infrastructure/</code> (persistence, messaging publisher, security, config) <em>hiện thực</em> out-port của application.</p>
 
     <div class="section">
-        <h2>1. Trách nhiệm</h2>
+        <h2>1. Bounded Context &amp; Trách nhiệm</h2>
         <ul>
-            <li><strong>Quản lý:</strong> Viện phí (VIEN_PHI), hóa đơn (HOADON).</li>
-            <li><strong>Điều phối Saga:</strong> Là orchestrator cho luồng kê đơn → xuất thuốc → thanh toán.</li>
-            <li><strong>Không quản lý:</strong> Bệnh nhân, thuốc, hồ sơ.</li>
+            <li><strong>Sở hữu:</strong> Viện phí (FEE), hóa đơn (INVOICE).</li>
+            <li><strong>Điều phối Saga:</strong> orchestrator cho prescribe → dispense → pay, gồm bù trừ.</li>
+            <li><strong>Không sở hữu:</strong> Bệnh nhân, thuốc, hồ sơ.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>2. Data Model</h2>
-        <p><strong>VIEN_PHI</strong></p>
+        <h2>2. Quy ước đặt tên (BẮT BUỘC cho nhánh C)</h2>
+        <p>Bảng/cột/class dùng <strong>tiếng Anh</strong>. Mapping chính thức:</p>
         <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_vien_phi</td><td>UUID (PK)</td><td>Mã viện phí</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID (FK)</td><td>Mã bệnh nhân</td></tr>
-            <tr><td>ma_ho_so</td><td>UUID (ref)</td><td>Mã hồ sơ (nếu có) — Clinical Service</td></tr>
-            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa phát sinh chi phí — Organization Service (KHOA). Là cơ sở để báo cáo doanh thu theo khoa</td></tr>
-            <tr><td>ngay_phat_sinh</td><td>DATE</td><td>Ngày phát sinh</td></tr>
-            <tr><td>loai_phi</td><td>ENUM('KHAM','XN','THUOC','DV')</td><td>Loại phí</td></tr>
-            <tr><td>so_tien</td><td>DECIMAL(15,2)</td><td>Số tiền</td></tr>
-            <tr><td>da_thanh_toan</td><td>BOOLEAN</td><td>Đã thanh toán?</td></tr>
-        </table>
-        <p><strong>HOADON</strong></p>
-        <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_hoa_don</td><td>UUID (PK)</td><td>Mã hóa đơn</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID (FK)</td><td>Mã bệnh nhân</td></tr>
-            <tr><td>ngay_tao</td><td>DATE</td><td>Ngày tạo</td></tr>
-            <tr><td>tong_tien</td><td>DECIMAL(15,2)</td><td>Tổng tiền</td></tr>
-            <tr><td>da_thanh_toan</td><td>BOOLEAN</td><td>Đã thanh toán?</td></tr>
-            <tr><td>hinh_thuc_tt</td><td>ENUM('TIEN_MAT','CHUYEN_KHOAN','BHYT')</td><td>Hình thức</td></tr>
-            <tr><td>ma_phieu_xuat</td><td>UUID (FK)</td><td>Liên kết với phiếu xuất (Pharmacy)</td></tr>
+            <tr><th>Việt (trước)</th><th>Anh (sau)</th><th>Dùng trong</th></tr>
+            <tr><td>VIEN_PHI</td><td>FEE</td><td>bảng</td></tr>
+            <tr><td>ma_vien_phi / ma_benh_nhan / ma_ho_so / ma_khoa / ma_tham_chieu / loai_phi / ngay_phat_sinh / so_tien / da_thanh_toan / ma_hoa_don</td><td>fee_id / patient_id / record_id / department_id / source_ref_id / fee_type / incurred_date / amount / is_paid / invoice_id</td><td>cột FEE</td></tr>
+            <tr><td>HOADON</td><td>INVOICE</td><td>bảng</td></tr>
+            <tr><td>ma_hoa_don / ngay_tao / tong_tien / hinh_thuc_tt / ma_phieu_xuat / ma_ban_ke / trang_thai_saga / ngay_thanh_toan</td><td>invoice_id / created_date / total_amount / payment_method / dispense_id / prescription_id / saga_status / paid_at</td><td>cột INVOICE</td></tr>
+            <tr><td>SU_KIEN_DA_XU_LY / xu_ly_luc</td><td>PROCESSED_EVENT / processed_at</td><td>bảng/cột</td></tr>
+            <tr><td>LoaiPhi{KHAM,XN,THUOC,DV}</td><td>FeeType{EXAM,LAB,DRUG,SERVICE}</td><td>enum</td></tr>
+            <tr><td>HinhThucTT{TIEN_MAT,CHUYEN_KHOAN,BHYT}</td><td>PaymentMethod{CASH,TRANSFER,INSURANCE}</td><td>enum</td></tr>
+            <tr><td>TrangThaiSaga{NONE,CHO_THANH_TOAN,DA_THANH_TOAN,CHO_XUAT_THUOC,HOAN_TAT,DA_HOAN_TIEN}</td><td>SagaStatus{NONE,AWAITING_PAYMENT,PAID,AWAITING_DISPENSE,COMPLETED,REFUNDED}</td><td>enum</td></tr>
+            <tr><td>VienPhi / HoaDon / BangGiaPort</td><td>Fee / Invoice / PriceListPort</td><td>class</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>3. API Endpoints</h2>
+        <h2>3. Data Model — V1__init.sql</h2>
+        <p>Đường dẫn: <code>src/main/resources/db/migration/V1__init.sql</code>. Flyway <code>ddl-auto: validate</code>.</p>
+        <div class="code">CREATE TABLE FEE (
+    fee_id         UUID          PRIMARY KEY,
+    patient_id     UUID          NOT NULL,   -- ref patient
+    record_id      UUID,                     -- ref clinical, nullable
+    department_id  UUID          NOT NULL,   -- ref organization KHOA — cơ sở báo cáo theo khoa
+    source_ref_id  UUID,                     -- lab/prescription sinh ra phí
+    fee_type       VARCHAR(10)   NOT NULL,   -- EXAM | LAB | DRUG | SERVICE
+    incurred_date  DATE          NOT NULL,
+    amount         DECIMAL(15,2) NOT NULL,
+    is_paid        BOOLEAN       NOT NULL DEFAULT false,
+    invoice_id     UUID,                     -- gán khi đưa vào hóa đơn
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ,
+    CONSTRAINT ck_fee_amount_non_negative CHECK (amount >= 0)
+);
+CREATE INDEX idx_fee_patient ON FEE (patient_id, is_paid);
+CREATE INDEX idx_fee_dept   ON FEE (department_id, incurred_date);
+CREATE INDEX idx_fee_invoice ON FEE (invoice_id);
+-- mỗi event nguồn chỉ sinh một phí (BR-B7) — partial unique index
+CREATE UNIQUE INDEX uq_fee_source ON FEE (fee_type, source_ref_id) WHERE source_ref_id IS NOT NULL;
+
+CREATE TABLE INVOICE (
+    invoice_id      UUID          PRIMARY KEY,
+    patient_id      UUID          NOT NULL,
+    created_date    DATE          NOT NULL,
+    total_amount    DECIMAL(15,2) NOT NULL,
+    is_paid         BOOLEAN       NOT NULL DEFAULT false,
+    payment_method  VARCHAR(20),
+    dispense_id     UUID,                     -- ref pharmacy DISPENSE_SLIP, nullable
+    prescription_id UUID,                     -- đơn thuốc khởi động saga
+    saga_status     VARCHAR(20)   NOT NULL DEFAULT 'NONE',
+    paid_at         TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ,
+    CONSTRAINT ck_invoice_total_non_negative CHECK (total_amount >= 0)
+);
+CREATE INDEX idx_invoice_patient ON INVOICE (patient_id);
+CREATE UNIQUE INDEX uq_invoice_prescription ON INVOICE (prescription_id) WHERE prescription_id IS NOT NULL;
+
+CREATE TABLE PROCESSED_EVENT (
+    event_id     UUID          PRIMARY KEY,
+    routing_key  VARCHAR(100)  NOT NULL,
+    processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
+);</div>
+        <div class="note">Giữ nguyên dạng <strong>partial unique index</strong> (<code>WHERE ... IS NOT NULL</code>) — ràng buộc unique thường từ chối nhiều NULL trên một số engine.</div>
+    </div>
+
+    <div class="section">
+        <h2>4. Enum &amp; Saga State Machine</h2>
+        <h3>Enums — <code>domain/model/</code></h3>
+        <div class="code">public enum FeeType       { EXAM, LAB, DRUG, SERVICE }
+public enum PaymentMethod { CASH, TRANSFER, INSURANCE }
+public enum SagaStatus    { NONE, AWAITING_PAYMENT, PAID, AWAITING_DISPENSE, COMPLETED, REFUNDED }</div>
+
+        <h3>Máy trạng thái saga</h3>
+        <p><code>saga_status</code> chỉ rời <code>NONE</code> với hóa đơn sinh từ đơn thuốc.</p>
+        <div class="code">prescription.created
+        │
+        ▼
+AWAITING_PAYMENT ── PUT /invoices/{id}/pay ──► PAID ──► AWAITING_DISPENSE
+                                                          │
+                    ┌─────────────────────────────────────┴──────────────────────────────┐
+                    ▼ prescription.filled                          ▼ prescription.dispense.failed
+                COMPLETED                                      REFUNDED (đảo phí + payment.failed)</div>
+        <p>Chuyển tiếp hợp lệ — còn lại ném <code>BILLING_INVALID_SAGA_TRANSITION</code>:</p>
         <table>
-            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
-            <tr><td>GET</td><td>/api/v1/billing/invoices/{id}</td><td>-</td><td>InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
-            <tr><td>GET</td><td>/api/v1/billing/patient/{patientId}</td><td>-</td><td>List<InvoiceDTO></td><td>ADMIN, CASHIER</td></tr>
-            <tr><td>POST</td><td>/api/v1/billing/invoices</td><td>CreateInvoiceRequest</td><td>InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
-            <tr><td>PUT</td><td>/api/v1/billing/invoices/{id}/pay</td><td>PaymentRequest</td><td>PaymentResultDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><th>Từ</th><th>Sang</th></tr>
+            <tr><td>NONE</td><td>kết thúc (hóa đơn thường, không saga)</td></tr>
+            <tr><td>AWAITING_PAYMENT</td><td>PAID</td></tr>
+            <tr><td>PAID</td><td>AWAITING_DISPENSE</td></tr>
+            <tr><td>AWAITING_DISPENSE</td><td>COMPLETED, REFUNDED</td></tr>
+            <tr><td>COMPLETED, REFUNDED</td><td>kết thúc</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>4. Events Publish</h2>
+        <h2>5. Domain Model</h2>
+        <h3><code>Fee</code> — <code>domain/model/Fee.java</code></h3>
+        <div class="code">public static Fee create(UUID patientId, UUID recordId, UUID departmentId, UUID sourceRefId,
+                     FeeType feeType, LocalDate incurredDate, BigDecimal amount);
+public void assignToInvoice(UUID invoiceId);
+public void markPaid();           // BR-B3
+public void refund();             // bù trừ: is_paid=false, gỡ khỏi hóa đơn
+public boolean isUnpaid();</div>
+        <p>Invariants: <code>amount >= 0</code> (<code>BILLING_AMOUNT_NEGATIVE</code>); <code>feeType</code> và <code>departmentId</code> not null (<code>BILLING_DEPT_REQUIRED</code>).</p>
+
+        <h3><code>Invoice</code> (aggregate root) — <code>domain/model/Invoice.java</code></h3>
+        <div class="code">public static Invoice create(UUID patientId, LocalDate createdDate, List&lt;Fee&gt; unpaidFees);
+public static Invoice createFromPrescription(UUID patientId, UUID prescriptionId, List&lt;Fee&gt; fees);  // cửa vào saga
+public void pay(PaymentMethod method, Instant timestamp);   // BR-B1
+public void transitionSaga(SagaStatus next);
+public void refund();
+public boolean isAlreadyPaid();</div>
         <table>
-            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>InvoiceCreatedEvent</td><td>{ invoiceId, patientId, <strong>maKhoa</strong>, totalAmount, items }</td><td>Khi tạo hóa đơn</td></tr>
-            <tr><td>PaymentCompletedEvent</td><td>{ invoiceId, patientId, <strong>maKhoa</strong>, totalAmount, paymentMethod }</td><td>Khi thanh toán thành công</td></tr>
-            <tr><td>PaymentFailedEvent</td><td>{ invoiceId, patientId, reason }</td><td>Khi thanh toán thất bại</td></tr>
+            <tr><th>Check</th><th>Error</th></tr>
+            <tr><td>pay trên hóa đơn đã trả</td><td><code>BILLING_ALREADY_PAID</code> (BR-B1)</td></tr>
+            <tr><td>dựng hóa đơn từ danh sách phí rỗng</td><td><code>BILLING_NO_UNPAID_FEES</code></td></tr>
+            <tr><td>chuyển saga không hợp lệ</td><td><code>BILLING_INVALID_SAGA_TRANSITION</code></td></tr>
+        </table>
+        <p><code>totalAmount</code> được <strong>tính ra</strong> từ danh sách phí (BR-B2), không nhận từ request.</p>
+
+        <h3>Exceptions — <code>domain/exception/</code></h3>
+        <table>
+            <tr><th>Class</th><th>Extends</th><th>Mã / HTTP</th></tr>
+            <tr><td>InvoiceNotFoundException</td><td>ResourceNotFoundException</td><td>INVOICE_NOT_FOUND / 404</td></tr>
+            <tr><td>FeeNotFoundException</td><td>ResourceNotFoundException</td><td>FEE_NOT_FOUND / 404</td></tr>
+            <tr><td>BillingRuleException</td><td>BusinessRuleException</td><td>BILLING_* / 422</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>5. Events Subscribe</h2>
+        <h2>6. Error Codes → HTTP</h2>
         <table>
-            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
-            <tr><td>Pharmacy</td><td>PrescriptionCreatedEvent</td><td>Tạo hóa đơn từ đơn thuốc</td></tr>
-            <tr><td>Lab</td><td>LabResultCreatedEvent</td><td>Tạo viện phí cho xét nghiệm</td></tr>
-            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tạo viện phí khám bệnh, gán <code>ma_khoa</code> theo <code>maKhoa</code> của event</td></tr>
-            <tr><td>Clinical</td><td>AppointmentStatusChangedEvent</td><td>Tạo viện phí nếu trạng thái = DA_DEN</td></tr>
+            <tr><th>Mã</th><th>HTTP</th></tr>
+            <tr><td>INVOICE_NOT_FOUND, FEE_NOT_FOUND</td><td>404</td></tr>
+            <tr><td>BILLING_ALREADY_PAID, BILLING_NO_UNPAID_FEES, BILLING_AMOUNT_NEGATIVE, BILLING_DEPT_REQUIRED, BILLING_INVALID_SAGA_TRANSITION</td><td>422</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>6. Business Rules</h2>
+        <h2>7. Ports</h2>
+        <h3>Out — <code>application/port/out/</code></h3>
+        <div class="code">public interface FeeRepositoryPort {
+    Fee save(Fee fee);
+    List&lt;Fee&gt; saveAll(List&lt;Fee&gt; list);
+    Optional&lt;Fee&gt; findById(UUID id);
+    List&lt;Fee&gt; findUnpaidByPatient(UUID patientId);
+    List&lt;Fee&gt; findByInvoice(UUID invoiceId);
+    boolean existsBySource(FeeType feeType, UUID sourceRefId);   // BR-B7
+}
+public interface InvoiceRepositoryPort {
+    Invoice save(Invoice invoice);
+    Optional&lt;Invoice&gt; findById(UUID id);
+    Optional&lt;Invoice&gt; findByPrescription(UUID prescriptionId);
+    PageResult&lt;Invoice&gt; findByPatient(UUID patientId, PageQuery page);
+}
+public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }
+
+public interface BillingEventPublisherPort {
+    void publishInvoiceCreated(InvoiceCreatedEvent e);
+    void publishPaymentCompleted(PaymentCompletedEvent e);
+    void publishPaymentFailed(PaymentFailedEvent e);
+}
+/** Bảng giá cho phí tự sinh. V1: bảng PRICE_LIST hoặc @ConfigurationProperties, không phải service riêng. */
+public interface PriceListPort {
+    BigDecimal examFee(UUID departmentId);
+    BigDecimal labFee(String labType);
+}</div>
+        <h3>In — <code>application/port/in/</code></h3>
+        <div class="code">public interface ManageInvoiceUseCase {
+    InvoiceDTO create(CreateInvoiceRequest r);
+    InvoiceDTO getById(UUID id);
+    PageResult&lt;InvoiceDTO&gt; byPatient(UUID patientId, PageQuery page);
+    PaymentResultDTO pay(UUID id, PayInvoiceRequest r);
+}
+public interface AccrueFeeUseCase {          // do event consumer điều khiển
+    void onMedicalRecordCreated(MedicalRecordCreatedEvent e);
+    void onLabResultCreated(LabResultCreatedEvent e);
+    void onAppointmentStatusChanged(AppointmentStatusChangedEvent e);
+    void onPrescriptionCreated(PrescriptionCreatedEvent e);
+}
+public interface SagaCompensationUseCase {
+    void onDispenseFailed(PrescriptionDispenseFailedEvent e);
+    void onPrescriptionFilled(PrescriptionFilledEvent e);
+}</div>
+    </div>
+
+    <div class="section">
+        <h2>8. DTOs (records)</h2>
+        <h3>Request — <code>application/dto/request/</code></h3>
+        <div class="code">public record CreateInvoiceRequest(@NotNull UUID patientId, @NotNull @PastOrPresent LocalDate createdDate) {}
+// không có số tiền — server tự cộng phí chưa trả (BR-B2)
+
+public record PayInvoiceRequest(@NotNull PaymentMethod paymentMethod) {}</div>
+        <h3>Response — <code>application/dto/response/</code></h3>
+        <div class="code">public record InvoiceDTO(UUID invoiceId, UUID patientId, LocalDate createdDate, BigDecimal totalAmount,
+                     boolean isPaid, PaymentMethod paymentMethod, UUID dispenseId, UUID prescriptionId,
+                     SagaStatus sagaStatus, Instant paidAt, List&lt;FeeDTO&gt; fees) {}
+
+public record FeeDTO(UUID feeId, FeeType feeType, UUID departmentId, LocalDate incurredDate,
+                     BigDecimal amount, boolean isPaid) {}
+
+public record PaymentResultDTO(UUID invoiceId, boolean success, BigDecimal totalAmount,
+                               PaymentMethod paymentMethod, Instant paidAt, SagaStatus sagaStatus) {}
+
+public record RevenueByDeptDTO(UUID departmentId, BigDecimal totalRevenue, long invoiceCount) {}</div>
+        <p><strong>Mapper</strong> (MapStruct, <code>application/mapper/</code>): InvoiceDtoMapper, FeeDtoMapper, RevenueMapper.</p>
+    </div>
+
+    <div class="section">
+        <h2>9. Thuật toán tầng Application</h2>
+        <h3><code>pay(invoiceId, PayInvoiceRequest)</code> — @Transactional</h3>
+        <ol>
+            <li>Nạp hóa đơn → không có thì <code>INVOICE_NOT_FOUND</code>.</li>
+            <li><code>invoice.pay(method, now)</code> → ném <code>BILLING_ALREADY_PAID</code> nếu đã trả (BR-B1).</li>
+            <li><code>feeRepo.findByInvoice(id)</code> → <code>markPaid()</code> từng khoản → <code>saveAll</code> (BR-B3).</li>
+            <li>nếu <code>sagaStatus == AWAITING_PAYMENT</code>: <code>transitionSaga(PAID)</code> rồi <code>transitionSaga(AWAITING_DISPENSE)</code>.</li>
+            <li>Lưu.</li>
+            <li>Publish <code>PaymentCompletedEvent</code> <strong>sau commit</strong> — kích hoạt pharmacy xuất thuốc.</li>
+        </ol>
+
+        <h3><code>onPrescriptionCreated(e)</code> — cửa vào saga</h3>
+        <ol>
+            <li><code>processed.alreadyProcessed(e.eventId())</code> → return.</li>
+            <li><code>invoiceRepo.findByPrescription(e.prescriptionId())</code> đã có → return (unique index chặn thêm).</li>
+            <li>Tạo <code>Fee{feeType = DRUG, sourceRefId = prescriptionId, amount = e.totalAmount(), departmentId = e.departmentId()}</code>.</li>
+            <li><code>Invoice.createFromPrescription(...)</code>, <code>transitionSaga(AWAITING_PAYMENT)</code>.</li>
+            <li>Lưu, đánh dấu đã xử lý.</li>
+            <li>Publish <code>InvoiceCreatedEvent</code>.</li>
+        </ol>
+
+        <h3><code>onDispenseFailed(e)</code> — bù trừ</h3>
+        <ol>
+            <li>Khử trùng lặp theo eventId.</li>
+            <li>Nạp hóa đơn theo prescriptionId → không có thì log + return.</li>
+            <li><code>invoice.refund()</code> — is_paid=false, <code>transitionSaga(REFUNDED)</code>.</li>
+            <li><code>refund()</code> trên mọi <code>Fee</code> đính kèm.</li>
+            <li>Lưu.</li>
+            <li>Publish <code>PaymentFailedEvent{invoiceId, patientId, reason: e.reason()}</code> → notification.</li>
+        </ol>
+        <div class="note">Tiền được <strong>đảo trong sổ sách</strong>, không phải hoàn qua cổng thanh toán (hệ thống không có cổng nào).</div>
+
+        <h3><code>onPrescriptionFilled(e)</code> — saga thành công</h3>
+        <p>Khử trùng lặp → nạp hóa đơn theo prescriptionId → <code>transitionSaga(COMPLETED)</code> → đặt <code>dispenseId</code> → lưu. Không publish event nào.</p>
+
+        <h3>Sinh viện phí từ 3 event còn lại</h3>
+        <table>
+            <tr><th>Event</th><th>Phí được tạo</th></tr>
+            <tr><td>medicalrecord.created</td><td>EXAM, <code>priceList.examFee(departmentId)</code>, sourceRefId = recordId</td></tr>
+            <tr><td>lab.result.created</td><td>LAB, <code>priceList.labFee(labType)</code>, sourceRefId = labId</td></tr>
+            <tr><td>appointment.status.changed (status = ARRIVED)</td><td>EXAM nếu hồ sơ chưa có phí</td></tr>
+        </table>
+        <p>4 consumer đều kiểm <code>existsBySource(feeType, sourceRefId)</code> trước (BR-B7) — partial unique index đảm bảo an toàn khi tương tranh.</p>
+    </div>
+
+    <div class="section">
+        <h2>10. Endpoints</h2>
+        <table>
+            <tr><th>Method</th><th>Path</th><th>Body</th><th>Trả về</th><th>Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/billing/invoices/{id}</td><td>—</td><td>InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>GET</td><td>/api/v1/billing/patient/{patientId}?page&size</td><td>—</td><td>PageResult&lt;InvoiceDTO&gt;</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>POST</td><td>/api/v1/billing/invoices</td><td>CreateInvoiceRequest</td><td>201 InvoiceDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>PUT</td><td>/api/v1/billing/invoices/{id}/pay</td><td>PayInvoiceRequest</td><td>PaymentResultDTO</td><td>ADMIN, CASHIER</td></tr>
+            <tr><td>GET</td><td>/api/v1/billing/revenue?departmentId&fromDate&toDate</td><td>—</td><td>List&lt;RevenueByDeptDTO&gt;</td><td>ADMIN, MANAGER</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>11. Events</h2>
+        <h3>Publish — <code>infrastructure/messaging/payload/</code></h3>
+        <div class="code">// invoice.created
+public record InvoiceCreatedEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID invoiceId, UUID patientId, UUID departmentId,
+    BigDecimal totalAmount, List&lt;Item&gt; items) {
+    public record Item(UUID feeId, FeeType type, BigDecimal amount) {}
+}
+
+// payment.completed — bắt buộc mang prescriptionId để pharmacy biết xuất đơn nào
+public record PaymentCompletedEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID invoiceId, UUID patientId, UUID departmentId, UUID prescriptionId,
+    BigDecimal totalAmount, PaymentMethod paymentMethod) {}
+
+// payment.failed — bù trừ + notification
+public record PaymentFailedEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID invoiceId, UUID patientId, String reason) {}</div>
+        <h3>Subscribe — queue <code>billing.q</code></h3>
+        <table>
+            <tr><th>Routing key</th><th>Xử lý</th></tr>
+            <tr><td>prescription.created</td><td>cửa vào saga — tạo hóa đơn</td></tr>
+            <tr><td>prescription.filled</td><td>saga thành công → COMPLETED</td></tr>
+            <tr><td>prescription.dispense.failed</td><td><strong>bù trừ</strong> → REFUNDED + payment.failed</td></tr>
+            <tr><td>medicalrecord.created</td><td>sinh phí EXAM</td></tr>
+            <tr><td>lab.result.created</td><td>sinh phí LAB</td></tr>
+            <tr><td>appointment.status.changed</td><td>sinh phí EXAM khi ARRIVED</td></tr>
+        </table>
+        <div class="note">6 consumer đều nhận event record do service <em>publisher</em> định nghĩa (pharmacy/lab/clinical). Để tránh dependency cross-service, <strong>khai báo lại record cùng tên/field trong billing</strong> — contract qua JSON, không phải import Java.</div>
+    </div>
+
+    <div class="section">
+        <h2>12. RabbitConfig</h2>
+        <div class="code">EXCHANGE = "mediflow.events"
+DLX      = "mediflow.events.dlx"
+QUEUE    = "billing.q"     // durable, DLX + DLQ "billing.dlq"</div>
+        <table>
+            <tr><th>Routing key</th><th>Hướng</th><th>Dùng cho</th></tr>
+            <tr><td>invoice.created</td><td>publish</td><td>thông báo tạo hóa đơn</td></tr>
+            <tr><td>payment.completed</td><td>publish</td><td>saga — pharmacy xuất thuốc</td></tr>
+            <tr><td>payment.failed</td><td>publish</td><td>bù trừ + notification</td></tr>
+            <tr><td>prescription.created</td><td><strong>subscribe</strong></td><td>saga vào</td></tr>
+            <tr><td>prescription.filled</td><td><strong>subscribe</strong></td><td>COMPLETED</td></tr>
+            <tr><td>prescription.dispense.failed</td><td><strong>subscribe</strong></td><td>REFUNDED</td></tr>
+            <tr><td>medicalrecord.created</td><td><strong>subscribe</strong></td><td>phí EXAM</td></tr>
+            <tr><td>lab.result.created</td><td><strong>subscribe</strong></td><td>phí LAB</td></tr>
+            <tr><td>appointment.status.changed</td><td><strong>subscribe</strong></td><td>phí EXAM</td></tr>
+        </table>
+        <p>Queue <code>billing.q</code> bind <strong>6 routing key</strong> (bỏ invoice.created, payment.* vì là publish).</p>
+    </div>
+
+    <div class="section">
+        <h2>13. Persistence</h2>
+        <h3><code>FeeJpaRepository</code></h3>
+        <div class="code">public interface FeeJpaRepository extends JpaRepository&lt;FeeJpaEntity, UUID&gt; {
+    // uq_fee_source (partial unique index (fee_type, source_ref_id) WHERE source_ref_id IS NOT NULL)
+    boolean existsByFeeTypeAndSourceRefId(FeeType feeType, UUID sourceRefId);  // BR-B7
+
+    List&lt;FeeJpaEntity&gt; findByPatientIdAndIsPaidFalse(UUID patientId);   // phí chưa trả
+    List&lt;FeeJpaEntity&gt; findByInvoiceId(UUID invoiceId);                 // phí trong hóa đơn
+}</div>
+        <h3><code>InvoiceJpaRepository</code></h3>
+        <div class="code">public interface InvoiceJpaRepository extends JpaRepository&lt;InvoiceJpaEntity, UUID&gt; {
+    Optional&lt;InvoiceJpaEntity&gt; findByPrescriptionId(UUID prescriptionId);   // mỗi đơn tối đa 1 hóa đơn
+    Page&lt;InvoiceJpaEntity&gt; findByPatientId(UUID patientId, Pageable pageable);
+}</div>
+        <h3>Entity ↔ domain (MapStruct)</h3>
+        <table>
+            <tr><th>Entity field</th><th>Domain field</th><th>Kiểu</th></tr>
+            <tr><td>fee_id</td><td>feeId</td><td>UUID</td></tr>
+            <tr><td>patient_id</td><td>patientId</td><td>UUID</td></tr>
+            <tr><td>record_id</td><td>recordId</td><td>UUID (nullable)</td></tr>
+            <tr><td>department_id</td><td>departmentId</td><td>UUID</td></tr>
+            <tr><td>source_ref_id</td><td>sourceRefId</td><td>UUID (nullable)</td></tr>
+            <tr><td>fee_type</td><td>feeType</td><td>FeeType</td></tr>
+            <tr><td>incurred_date</td><td>incurredDate</td><td>LocalDate</td></tr>
+            <tr><td>amount</td><td>amount</td><td>BigDecimal</td></tr>
+            <tr><td>is_paid</td><td>isPaid</td><td>boolean</td></tr>
+            <tr><td>invoice_id</td><td>invoiceId</td><td>UUID (nullable)</td></tr>
+            <tr><td>INVOICE.*</td><td>Invoice.*</td><td>—</td></tr>
+        </table>
+        <h3>Adapter cần làm đúng</h3>
+        <ol>
+            <li><code>findByPrescriptionId</code> dựa trên unique index, trả <code>Optional</code>.</li>
+            <li><code>existsByFeeTypeAndSourceRefId</code> gọi <strong>trước khi</strong> tạo phí (BR-B7).</li>
+            <li><code>findByPatientIdAndIsPaidFalse</code> dùng để cộng totalAmount khi tạo hóa đơn (BR-B2).</li>
+            <li><code>PriceListAdapter</code> — V1 bằng bảng PRICE_LIST hoặc @ConfigurationProperties. Không tạo service riêng.</li>
+            <li><code>ProcessedEventPersistenceAdapter</code> hiện thực ProcessedEventPort.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>14. Test Plan (business rule → tầng → tên test)</h2>
+        <table>
+            <tr><th>Rule</th><th>Tầng</th><th>Tên test</th><th>Cần gì</th></tr>
+            <tr><td>BR-B1 (không trả hóa đơn đã trả)</td><td>domain unit</td><td>pay_alreadyPaid_throwsBusinessRule</td><td>không Spring</td></tr>
+            <tr><td>BR-B2 (total = Σ phí chưa trả)</td><td>application</td><td>createInvoice_sumsUnpaidFeesOnly</td><td>mock findUnpaidByPatient</td></tr>
+            <tr><td>BR-B3 (đánh dấu mọi phí)</td><td>application</td><td>pay_marksAllRelatedFeesPaid</td><td>mock saveAll</td></tr>
+            <tr><td>BR-B4 (đảo thanh toán bù trừ)</td><td>application</td><td>onDispenseFailed_reversesInvoiceAndFees</td><td>mock refund</td></tr>
+            <tr><td>BR-B5 (publish payment.failed)</td><td>application</td><td>onDispenseFailed_publishesPaymentFailed</td><td>mock publisher</td></tr>
+            <tr><td>BR-B6 (prescription.created 1 hóa đơn)</td><td>application</td><td>onPrescriptionCreated_twice_createsOneInvoice</td><td>mock alreadyProcessed</td></tr>
+            <tr><td>BR-B7 (phí idempotent theo nguồn)</td><td>application</td><td>onLabResult_sameEventTwice_createsOneFee</td><td>mock existsBySource</td></tr>
+            <tr><td>BR-B8 (mọi phí có department_id)</td><td>application</td><td>accrueFee_alwaysSetsDepartmentId</td><td>mock PriceListPort</td></tr>
+            <tr><td>BR-B9 (chuyển saga sai bị chặn)</td><td>domain unit</td><td>transitionSaga_completedToRefunded_throwsInvalidTransition</td><td>không Spring</td></tr>
+            <tr><td>BR-B10 (doanh thu nhóm khoa)</td><td>application</td><td>revenue_groupsByDepartmentIdAndDateRange</td><td>mock repo</td></tr>
+            <tr><td>BR-B11 (filled → COMPLETED)</td><td>application</td><td>onPrescriptionFilled_setsCompleted</td><td>mock repo</td></tr>
+        </table>
+        <p><strong>Saga đầy đủ (BR-B4..B11 + tương tác pharmacy)</strong> → test tích hợp riêng bằng Testcontainers (PG + Rabbit).</p>
+    </div>
+
+    <div class="section">
+        <h2>15. File Map (mọi file Java cần tạo)</h2>
+        <div class="code">billing-service/src/main/java/com/mediflow/billing/
+├── BillingServiceApplication.java          # có sẵn
+├── domain/model/
+│   ├── FeeType.java / PaymentMethod.java / SagaStatus.java
+│   ├── Fee.java / Invoice.java
+├── domain/exception/
+│   ├── InvoiceNotFoundException.java
+│   ├── FeeNotFoundException.java
+│   └── BillingRuleException.java
+├── application/port/in/
+│   ├── ManageInvoiceUseCase.java
+│   ├── AccrueFeeUseCase.java
+│   └── SagaCompensationUseCase.java
+├── application/port/out/
+│   ├── FeeRepositoryPort.java
+│   ├── InvoiceRepositoryPort.java
+│   ├── ProcessedEventPort.java
+│   ├── BillingEventPublisherPort.java
+│   └── PriceListPort.java
+├── application/dto/request/
+│   ├── CreateInvoiceRequest.java
+│   └── PayInvoiceRequest.java
+├── application/dto/response/
+│   ├── InvoiceDTO.java / FeeDTO.java / PaymentResultDTO.java / RevenueByDeptDTO.java
+├── application/mapper/
+│   ├── InvoiceDtoMapper.java / FeeDtoMapper.java / RevenueMapper.java
+├── application/service/
+│   ├── BillingApplicationService.java      # ManageInvoice
+│   ├── FeeAccrualService.java              # AccrueFeeUseCase (4 handler)
+│   └── SagaCompensationService.java        # SagaCompensationUseCase
+├── web/                                    # DRIVING (HTTP)
+│   ├── InvoiceController.java
+│   ├── RevenueController.java
+│   └── GlobalExceptionHandler.java         # copy docs/ai/reference
+├── messaging/consumer/                     # DRIVING (events)
+│   ├── PrescriptionCreatedConsumer.java
+│   ├── PrescriptionFilledConsumer.java
+│   ├── PrescriptionDispenseFailedConsumer.java
+│   ├── MedicalRecordCreatedConsumer.java
+│   ├── LabResultCreatedConsumer.java
+│   └── AppointmentStatusChangedConsumer.java
+├── infrastructure/persistence/             # DRIVEN (DB)
+│   ├── FeeJpaEntity / FeeJpaRepository / FeePersistenceAdapter / FeePersistenceMapper
+│   ├── InvoiceJpaEntity / InvoiceJpaRepository / InvoicePersistenceAdapter / InvoicePersistenceMapper
+│   ├── ProcessedEventPersistenceAdapter.java
+│   └── PriceListAdapter.java
+└── infrastructure/messaging/                # DRIVEN (RabbitMQ)
+    ├── BillingEventPublisherAdapter.java
+    └── payload/
+        ├── InvoiceCreatedEvent.java
+        ├── PaymentCompletedEvent.java
+        └── PaymentFailedEvent.java
+# + boilerplate: config/RabbitConfig, security/JwtAuthFilter+JwtProperties, config/SecurityConfig, config/OpenApiConfig, db/migration/V1__init.sql</div>
+    </div>
+
+    <div class="section">
+        <h2>16. Checklist hoàn thiện (Definition of Done)</h2>
         <ul>
-            <li>Không thể thanh toán hóa đơn đã thanh toán.</li>
-            <li>Tổng tiền = sum(so_tien) của các VIEN_PHI chưa thanh toán liên quan.</li>
-            <li>Khi thanh toán thành công, cập nhật tất cả VIEN_PHI liên quan thành da_thanh_toan = true.</li>
-            <li>Saga: nếu một bước trong luồng (xuất thuốc) thất bại, phải bắn PaymentFailedEvent để rollback.</li>
+            <li>☐ V1__init.sql đủ 3 bảng + 2 partial unique index (dạng WHERE ... IS NOT NULL).</li>
+            <li>☐ Domain: 3 enum + 2 model + 3 exception; Invoice thực thi máy trạng thái saga.</li>
+            <li>☐ Ports đủ (5 out, 3 in); application không import Spring Data/AMQP.</li>
+            <li>☐ DTO records có Bean Validation; 3 MapStruct mapper.</li>
+            <li>☐ Controller + @PreAuthorize (ADMIN/CASHIER/MANAGER); RevenueController tách nếu cần.</li>
+            <li>☐ 3 event record + publisher (sau commit); 6 consumer idempotent.</li>
+            <li>☐ PriceListAdapter hiện thực port.</li>
+            <li>☐ GlobalExceptionHandler, SecurityConfig, RabbitConfig, OpenApiConfig.</li>
+            <li>☐ Test 5 tầng; 11 business rule được phủ.</li>
+            <li>☐ <code>mvn -pl backend/billing-service -am -q -DskipTests install</code> xanh.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>7. Sequence Diagram – Saga Orchestration (Kê đơn → Xuất thuốc → Thanh toán)</h2>
-        <div class="code">
-            Billing Service (Orchestrator)<br>
-            1. Nhận PrescriptionCreatedEvent từ Pharmacy<br>
-            2. Tạo hóa đơn (trạng thái PENDING)<br>
-            3. Gửi yêu cầu xuất thuốc đến Pharmacy (qua event/command)<br>
-            4. Pharmacy xuất thành công → bắn PrescriptionFilledEvent<br>
-            5. Billing nhận → cập nhật hóa đơn, chờ thanh toán<br>
-            6. Client gọi PUT /invoices/{id}/pay<br>
-            7. Nếu thành công → bắn PaymentCompletedEvent<br>
-            8. Nếu thất bại → bắn PaymentFailedEvent, thông báo rollback (hủy phiếu xuất)
-        </div>
+        <h2>17. Sequence Diagram — Saga Orchestration</h2>
+        <div class="code">Billing (Orchestrator)
+1. Nhận prescription.created từ Pharmacy
+2. Tạo hóa đơn + FEE(DRUG), saga = AWAITING_PAYMENT, bắn invoice.created
+3. Client: PUT /invoices/{id}/pay
+4. pay() → FEE is_paid=true, saga PAID → AWAITING_DISPENSE
+5. Bắn payment.completed (sau commit)
+   │
+   ▼
+Pharmacy: xuất thuốc
+   ├─ prescription.filled → Billing: COMPLETED
+   └─ prescription.dispense.failed → Billing: REFUNDED + payment.failed → notification</div>
     </div>
 </body>
 </html>

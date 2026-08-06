@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:8080";
 
 const nextConfig: NextConfig = {
+  output: process.env.NODE_ENV === "production" ? "standalone" : undefined,
+
   async rewrites() {
     return [
       {

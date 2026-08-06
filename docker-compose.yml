@@ -1,22 +1,30 @@
-# Local infrastructure for MediFlow: PostgreSQL + RabbitMQ.
+# ==========================================================================
+# MediFlow — Docker Compose (DEV environment)
+# ==========================================================================
+# Chạy toàn bộ hệ thống chỉ với 1 lệnh:
 #
-# This starts ONLY the infrastructure. The Java services and the Next.js frontend
-# still run from your IDE / Maven / pnpm as usual — that keeps hot reload and the
-# debugger working, which is what you want while developing.
+#   docker compose up -d              # khởi động mọi thứ
+#   docker compose logs -f backend    # xem log backend
+#   docker compose down               # tắt hết
 #
-#   docker compose up -d      # start
-#   docker compose ps         # check health
-#   docker compose down       # stop (data survives)
-#   docker compose down -v    # stop AND wipe all databases
+# Hệ thống gồm:
+#   - PostgreSQL (DB) + RabbitMQ (message queue) — infrastructure
+#   - Eureka Server (service discovery)
+#   - Gateway (API gateway, JWT auth)
+#   - 8 business services
+#   - Frontend (Next.js)
 #
-# Credentials match the dev defaults in every service's application.yml, so nothing
-# else needs configuring. Do not use these values anywhere real.
+# Thứ tự khởi động: PostgreSQL → RabbitMQ → Eureka → Gateway → Business → Frontend
+# ==========================================================================
 
 services:
+
+  # ======================================================================
+  # INFRASTRUCTURE
+  # ======================================================================
   postgres:
     image: postgres:16-alpine
     container_name: mediflow-postgres
-    # Tự chạy lại sau khi khởi động máy / Docker Desktop, trừ khi bạn chủ động `docker compose down`.
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -26,14 +34,15 @@ services:
       - "5432:5432"
     volumes:
       - mediflow-pgdata:/var/lib/postgresql/data
-      # Runs once, only when the data volume is empty. If you change this file
-      # after the first start, you must `docker compose down -v` to re-run it.
+      # Script tạo 8 databases khi chạy lần đầu
       - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - mediflow-net
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -43,8 +52,8 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"     # AMQP — what the services connect to
-      - "15672:15672"   # management UI — http://localhost:15672 (guest/guest)
+      - "5672:5672"       # AMQP — services kết nối
+      - "15672:15672"     # Web UI — http://localhost:15672 (guest/guest)
     volumes:
       - mediflow-rabbitdata:/var/lib/rabbitmq
     healthcheck:
@@ -52,7 +61,294 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - mediflow-net
 
+  # ======================================================================
+  # SERVICE DISCOVERY
+  # ======================================================================
+  eureka-server:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: eureka-server
+    container_name: mediflow-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      # Eureka trong Docker cần hostname cố định
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+      # Tắt chế độ tự bảo vệ (chỉ cho dev — nếu không Eureka từ chối xoá instance chết)
+      EUREKA_SERVER_ENABLE_SELF_PRESERVATION: "false"
+      # Đăng ký chính nó (standalone mode)
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mediflow-net
+
+  # ======================================================================
+  # API GATEWAY
+  # ======================================================================
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: gateway
+    container_name: mediflow-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mediflow-net
+
+  # ======================================================================
+  # BUSINESS SERVICES
+  # ======================================================================
+  # Mỗi service giống nhau về cấu trúc, chỉ khác:
+  #   - SERVICE_NAME (thư mục Maven)
+  #   - port
+  #   - database name
+  # ======================================================================
+
+  organization-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: organization-service
+    container_name: mediflow-organization
+    ports:
+      - "8089:8089"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_organization
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  patient-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: patient-service
+    container_name: mediflow-patient
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_patient
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  clinical-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: clinical-service
+    container_name: mediflow-clinical
+    ports:
+      - "8082:8082"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_clinical
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  lab-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: lab-service
+    container_name: mediflow-lab
+    ports:
+      - "8084:8084"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_lab
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  pharmacy-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: pharmacy-service
+    container_name: mediflow-pharmacy
+    ports:
+      - "8085:8085"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: billing-service
+    container_name: mediflow-billing
+    ports:
+      - "8086:8086"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_billing
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: notification-service
+    container_name: mediflow-notification
+    ports:
+      - "8087:8087"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_notification
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  report-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: report-service
+    container_name: mediflow-report
+    ports:
+      - "8088:8088"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_report
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  # ======================================================================
+  # FRONTEND — Next.js 16
+  # ======================================================================
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: mediflow-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Trong Docker, frontend gọi gateway qua tên container (không phải localhost)
+      GATEWAY_URL: http://gateway:8080
+      NODE_ENV: production
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+# ======================================================================
+# VOLUMES — dữ liệu database được lưu trên ổ cứng, không mất khi tắt
+# ======================================================================
 volumes:
   mediflow-pgdata:
   mediflow-rabbitdata:
+
+# ======================================================================
+# NETWORK — tất cả container chung 1 network, gọi nhau bằng tên service
+# ======================================================================
+networks:
+  mediflow-net:
+    name: mediflow-net
+    driver: bridge
