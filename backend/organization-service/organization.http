@@ -1,0 +1,179 @@
+### MediFlow — Organization service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: organization-service chưa có web layer (chưa có controller). Các request
+### bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/01-organization.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → organization-service (8089) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 01-organization.md (base /api/v1/org):
+###  - GET/POST    /departments, GET/PUT /departments/{id}   — ADMIN, MANAGER, DOCTOR, NURSE đọc
+###  - GET/POST    /staff, GET/PUT /staff/{id}, PUT /staff/{id}/department, GET /staff/{id}/exists
+###  - POST /accounts, PUT /accounts/{id}/status
+###  - POST /accounts/verify — SYSTEM only, gateway gọi nội bộ, KHÔNG route ra ngoài
+### Mã lỗi chuẩn: KHOA_NOT_FOUND / NHAN_VIEN_NOT_FOUND / TAI_KHOAN_NOT_FOUND (404),
+###               KHOA_MA_VIET_TAT_DUPLICATE / TAI_KHOAN_USERNAME_DUPLICATE (409),
+###               NHAN_VIEN_BAC_SI_REQUIRES_CERT / KHOA_HAS_ACTIVE_STAFF / KHOA_INACTIVE / ... (422)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+# ============ KHOA (khoa phòng) ============
+
+### Danh sách khoa (chiHoatDong=true → chỉ khoa đang hoạt động)
+GET {{host}}/api/v1/org/departments?chiHoatDong=true
+Authorization: Bearer {{token}}
+
+### Xem một khoa (404 nếu không tồn tại)
+GET {{host}}/api/v1/org/departments/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Tạo khoa (201 — chỉ ADMIN; 409 nếu maVietTat trùng)
+POST {{host}}/api/v1/org/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenKhoa": "Khoa Khám bệnh",
+  "maVietTat": "KHAM",
+  "loaiKhoa": "LAM_SANG",
+  "diaDiem": "Tầng 1, nhà A"
+}
+
+### Tạo trùng maVietTat → 409 KHOA_MA_VIET_TAT_DUPLICATE
+POST {{host}}/api/v1/org/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenKhoa": "Khoa Khám bệnh 2",
+  "maVietTat": "KHAM",
+  "loaiKhoa": "LAM_SANG",
+  "diaDiem": "Tầng 2, nhà A"
+}
+
+### Cập nhật khoa (200 — chỉ ADMIN; truongKhoa phải thuộc chính khoa này)
+PUT {{host}}/api/v1/org/departments/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenKhoa": "Khoa Khám bệnh (đổi tên)",
+  "loaiKhoa": "LAM_SANG",
+  "diaDiem": "Tầng 1, nhà A"
+}
+
+# ============ NHÂN VIÊN ============
+
+### Tìm nhân viên (maKhoa + chucDanh tuỳ chọn, phân trang)
+GET {{host}}/api/v1/org/staff?maKhoa=00000000-0000-0000-0000-000000000000&chucDanh=BAC_SI&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Xem một nhân viên
+GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Tạo nhân viên (201 — chỉ ADMIN; khoa phải đang hoạt động)
+POST {{host}}/api/v1/org/staff
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn Bác",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "chucDanh": "BAC_SI",
+  "chuyenKhoa": "Nội tổng hợp",
+  "soChungChi": "CME123456",
+  "soDienThoai": "0901234567",
+  "email": "bacsi@mediflow.vn"
+}
+
+### Tạo bác sĩ KHÔNG có soChungChi → 422 NHAN_VIEN_BAC_SI_REQUIRES_CERT
+POST {{host}}/api/v1/org/staff
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn Thiếu Chứng Chỉ",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "chucDanh": "BAC_SI",
+  "soDienThoai": "0901234568"
+}
+
+### Cập nhật nhân viên (200 — chỉ ADMIN)
+PUT {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn Bác (đã đổi)",
+  "chucDanh": "BAC_SI",
+  "chuyenKhoa": "Tim mạch",
+  "soChungChi": "CME123456",
+  "soDienThoai": "0901234567",
+  "email": "bacsi@mediflow.vn"
+}
+
+### Chuyển khoa cho nhân viên (200 — chỉ ADMIN; publish staff.department.changed)
+PUT {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/department
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maKhoa": "00000000-0000-0000-0000-000000000000"
+}
+
+### Kiểm tra nhân viên có tồn tại (dùng bởi service khác qua gateway)
+GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/exists
+Authorization: Bearer {{token}}
+
+# ============ TÀI KHOẢN ============
+
+### Tạo tài khoản (201 — chỉ ADMIN; 409 nếu tenDangNhap trùng)
+POST {{host}}/api/v1/org/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenDangNhap": "bs.nguyenvana",
+  "matKhau": "MatKhau123",
+  "maNhanVien": "00000000-0000-0000-0000-000000000000",
+  "vaiTro": "DOCTOR"
+}
+
+### Tạo tài khoản trùng username → 409 TAI_KHOAN_USERNAME_DUPLICATE
+POST {{host}}/api/v1/org/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenDangNhap": "bs.nguyenvana",
+  "matKhau": "MatKhau123",
+  "maNhanVien": "00000000-0000-0000-0000-000000000000",
+  "vaiTro": "DOCTOR"
+}
+
+### Khoá / mở khoá tài khoản (chỉ ADMIN)
+PUT {{host}}/api/v1/org/accounts/00000000-0000-0000-0000-000000000000/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "kichHoat": false
+}
+
+### Xác thực thông tin đăng nhập (SYSTEM only — gateway gọi nội bộ, đừng dùng từ client)
+POST {{host}}/api/v1/org/accounts/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenDangNhap": "admin",
+  "matKhau": "admin123"
+}

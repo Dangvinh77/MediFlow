@@ -1,0 +1,51 @@
+### MediFlow — Report service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: report-service chưa có web layer (chưa có controller). Các request
+### bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/08-report.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Quy ước nhánh C: report dùng tên field tiếng Anh (reportDate, departmentId, totalRevenue, ...).
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → report-service (8088) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 08-report.md (base /api/v1/reports) — role ADMIN/MANAGER:
+###  - GET /daily?date&departmentId
+###  - GET /monthly?month&year&departmentId
+###  - GET /top-medicines?fromDate&toDate&departmentId&limit  (limit mặc định 10, tối đa 50)
+###
+### departmentId là tùy chọn ở cả ba: bỏ trống → số liệu toàn viện, truyền vào → của một khoa.
+### Report là READ MODEL, không có lỗi nghiệp vụ: ngày không có dữ liệu trả báo cáo toàn 0,
+### KHÔNG trả 404 (BR-R5).
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+### Báo cáo khám theo ngày (toàn viện — bỏ departmentId)
+GET {{host}}/api/v1/reports/daily?date=2026-08-14
+Authorization: Bearer {{token}}
+
+### Báo cáo khám theo ngày (của một khoa)
+GET {{host}}/api/v1/reports/daily?date=2026-08-14&departmentId=00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Báo cáo doanh thu tháng (toàn viện)
+GET {{host}}/api/v1/reports/monthly?month=8&year=2026
+Authorization: Bearer {{token}}
+
+### Báo cáo doanh thu tháng (của một khoa)
+GET {{host}}/api/v1/reports/monthly?month=8&year=2026&departmentId=00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Top thuốc xuất nhiều nhất trong khoảng ngày (toàn viện, mặc định limit 10)
+GET {{host}}/api/v1/reports/top-medicines?fromDate=2026-08-01&toDate=2026-08-14
+Authorization: Bearer {{token}}
+
+### Top thuốc theo khoa + giới hạn tùy chỉnh (tối đa 50)
+GET {{host}}/api/v1/reports/top-medicines?fromDate=2026-08-01&toDate=2026-08-14&departmentId=00000000-0000-0000-0000-000000000000&limit=20
+Authorization: Bearer {{token}}

@@ -1,0 +1,99 @@
+### MediFlow — Patient service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: source của patient-service đã bị xoá (Huy xác nhận, commit a328dae).
+### Các request bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/02-patient.md
+### Khi service được dựng lại, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → patient-service (8081) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 02-patient.md (base /api/v1/patients):
+###  - GET    /{id}                 — ADMIN, DOCTOR, NURSE   (404 nếu không tồn tại)
+###  - GET    ?keyword=&page=&size= — ADMIN, DOCTOR, NURSE
+###  - POST                        — ADMIN, NURSE          (201; 409 nếu soCmnd trùng)
+###  - PUT    /{id}                 — ADMIN, NURSE          (400 Bean Validation / 422 bất biến)
+###  - DELETE /{id}                 — ADMIN                 (204)
+### Mã lỗi chuẩn: PATIENT_NOT_FOUND (404), PATIENT_CMND_DUPLICATE (409),
+###               PATIENT_HOTEN_REQUIRED / PATIENT_NGAYSINH_FUTURE / ... (422)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+### Danh sách bệnh nhân (page 0, size 20)
+GET {{host}}/api/v1/patients?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Tìm theo keyword (khớp không hoa thường trên hoTen, tiền tố trên soCmnd)
+GET {{host}}/api/v1/patients?keyword=Nguyễn&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Xem một bệnh nhân (thay UUID — mong đợi 200 hoặc 404 PATIENT_NOT_FOUND)
+GET {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Tạo bệnh nhân (201 — role ADMIN/NURSE)
+POST {{host}}/api/v1/patients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn A",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M",
+  "soCmnd": "079090001234",
+  "diaChi": "12 Lê Lợi, Quận 1, TP.HCM",
+  "soDienThoai": "0901234567",
+  "email": "nguyenvana@example.com",
+  "bhytSo": "DN1234567890123"
+}
+
+### Tạo trùng soCmnd → 409 PATIENT_CMND_DUPLICATE
+POST {{host}}/api/v1/patients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn B",
+  "ngaySinh": "1992-05-20",
+  "gioiTinh": "F",
+  "soCmnd": "079090001234",
+  "diaChi": "5 Nguyễn Huệ, Quận 1, TP.HCM",
+  "soDienThoai": "0901234568",
+  "email": "nguyenvb@example.com",
+  "bhytSo": "DN1234567890123"
+}
+
+### Tạo sai Bean Validation → 400, error.details liệt kê từng field
+POST {{host}}/api/v1/patients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M"
+}
+
+### Cập nhật bệnh nhân (200 — role ADMIN/NURSE; soCmnd không đổi được, chỉ có trong request tạo)
+PUT {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hoTen": "Nguyễn Văn A (đã đổi)",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M",
+  "diaChi": "88 Võ Văn Tần, Quận 3, TP.HCM",
+  "soDienThoai": "0901234567",
+  "email": "nguyenvana@example.com",
+  "bhytSo": "DN1234567890123"
+}
+
+### Xoá bệnh nhân (204 — chỉ ADMIN)
+DELETE {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

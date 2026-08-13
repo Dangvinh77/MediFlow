@@ -1,0 +1,135 @@
+### MediFlow — Pharmacy service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: pharmacy-service đã có domain + persistence nhưng CHƯA có web layer
+### (chưa có controller). Các request bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/05-pharmacy.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Quy ước nhánh C: pharmacy dùng tên field tiếng Anh (drugName, stockQuantity, ...),
+### khác với các service còn lại (tiếng Việt camelCase).
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → pharmacy-service (8085) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 05-pharmacy.md (base /api/v1/pharmacy):
+###  - GET/POST /drugs, GET /drugs/{id}, PUT /drugs/{id}/stock
+###  - POST /prescriptions, GET /prescriptions/{id}, PUT /prescriptions/{id}/dispense
+### Mã lỗi chuẩn: DRUG_NOT_FOUND / PRESCRIPTION_NOT_FOUND / DISPENSE_NOT_FOUND (404),
+###               DRUG_OUT_OF_STOCK / DRUG_EXPIRED / DRUG_QUANTITY_INVALID / DRUG_PRICE_NEGATIVE
+###               / DRUG_EXPIRY_PAST / PRESCRIPTION_EMPTY / DISPENSE_INVALID_TRANSITION
+###               / DISPENSE_ALREADY_DONE / DISPENSE_NOT_PAID (422)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+# ============ THUỐC /api/v1/pharmacy/drugs ============
+
+### Tìm thuốc theo tên (phân trang)
+GET {{host}}/api/v1/pharmacy/drugs?keyword=paracetamol&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Xem một thuốc
+GET {{host}}/api/v1/pharmacy/drugs/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Tạo thuốc (201 — role ADMIN/PHARMACIST)
+POST {{host}}/api/v1/pharmacy/drugs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "drugName": "Paracetamol 500mg",
+  "activeIngredient": "Paracetamol",
+  "unit": "viên",
+  "price": 1200.00,
+  "stockQuantity": 500,
+  "expiryDate": "2027-12-31",
+  "manufacturer": "Dược phẩm VN",
+  "lowStockThreshold": 50
+}
+
+### Tạo thuốc giá âm → 422 DRUG_PRICE_NEGATIVE
+POST {{host}}/api/v1/pharmacy/drugs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "drugName": "Thuốc lỗi",
+  "unit": "viên",
+  "price": -5000.00,
+  "stockQuantity": 100,
+  "expiryDate": "2027-12-31"
+}
+
+### Tạo thuốc hết hạn → 422 DRUG_EXPIRY_PAST
+POST {{host}}/api/v1/pharmacy/drugs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "drugName": "Thuốc hết hạn",
+  "unit": "viên",
+  "price": 1000.00,
+  "stockQuantity": 100,
+  "expiryDate": "2025-01-01"
+}
+
+### Nhập kho / điều chỉnh tồn (200 — role ADMIN/PHARMACIST; quantity dương = nhập, âm = giảm)
+PUT {{host}}/api/v1/pharmacy/drugs/00000000-0000-0000-0000-000000000000/stock
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 200,
+  "reason": "Nhập thêm lô mới"
+}
+
+# ============ ĐƠN THUỐC /api/v1/pharmacy/prescriptions ============
+
+### Kê đơn (201 — role ADMIN/DOCTOR)
+### LƯU Ý: PrescriptionLineRequest KHÔNG có trường giá (BR-D8) — server tự chụp giá tại thời điểm kê đơn.
+POST {{host}}/api/v1/pharmacy/prescriptions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recordId": "00000000-0000-0000-0000-000000000000",
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "prescribedDate": "2026-08-14",
+  "lines": [
+    {
+      "drugId": "00000000-0000-0000-0000-000000000000",
+      "quantity": 10,
+      "dosage": "1 viên x 3 lần/ngày"
+    }
+  ]
+}
+
+### Kê đơn không có dòng nào → 422 PRESCRIPTION_EMPTY
+POST {{host}}/api/v1/pharmacy/prescriptions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recordId": "00000000-0000-0000-0000-000000000000",
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "prescribedDate": "2026-08-14",
+  "lines": []
+}
+
+### Xem một đơn thuốc (kèm dispenseStatus — PENDING/DISPENSED/FAILED)
+GET {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Xuất thuốc (200 — role ADMIN/PHARMACIST)
+### Chỉ xuất được khi phiếu còn PENDING; hết hàng/hết hạn → 422 + phiếu FAILED
+PUT {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000/dispense
+Authorization: Bearer {{token}}

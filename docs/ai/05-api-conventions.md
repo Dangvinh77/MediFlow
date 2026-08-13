@@ -26,6 +26,22 @@ Sub-resources nest: `/api/v1/records/{id}/diagnoses`, `/api/v1/pharmacy/prescrip
 | State transition | PUT `/{id}/status` etc. | 200 |
 | Delete | DELETE | 204 |
 
+## Every endpoint ships a `.http` request (Definition of Done)
+
+Each backend service has a live API collection at `backend/<service>/<service>.http`
+(`auth.http` covers the gateway). It is part of the endpoint contract, not documentation
+that can rot. Rule: **an endpoint is not done until its request lives in the service's `.http`
+file, and that request matches the real controller.**
+
+- Adding a new endpoint → add its request (method, path, sample body, `Authorization: Bearer {{token}}`) to the `.http` file **in the same commit**.
+- Changing an endpoint (path, DTO fields, roles, error code) → update the corresponding request and its expectations in the same commit.
+- Before a controller exists, requests are marked `DEMO` and sourced from `docs/eproject_general_plan/backend-spec/<nn>-<service>.md`. When you implement the real controller, flip the demo request to a live one — verify path, request/response shape, and `@PreAuthorize` roles against what you actually shipped.
+- Keep the cross-IDE conventions used by every file:
+  - `@host = http://localhost:8080` as a file variable — read by both IntelliJ HTTP Client and VS Code REST Client.
+  - `Authorization: Bearer {{token}}` on every authenticated request.
+  - IntelliJ sets the token globally via auth.http's `> {% client.global.set("token", ...); %}`; VS Code users uncomment a local `@token` instead (token flow is explained in each file's header).
+  - `.http-client.private.env.json` is gitignored — never commit real tokens/passwords.
+
 ## DTOs
 
 - Requests: `CreateXxxRequest`, `UpdateXxxRequest` — Java `record`, validated with Bean Validation.

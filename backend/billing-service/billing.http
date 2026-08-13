@@ -1,0 +1,69 @@
+### MediFlow — Billing service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: billing-service chưa có web layer (chưa có controller). Các request
+### bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/06-billing.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Quy ước nhánh C: billing dùng tên field tiếng Anh (invoiceId, patientId, totalAmount, ...).
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → billing-service (8086) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 06-billing.md (base /api/v1/billing):
+###  - GET /invoices/{id}, GET /patient/{patientId}, POST /invoices, PUT /invoices/{id}/pay
+###  - GET /revenue?departmentId&fromDate&toDate
+### Mã lỗi chuẩn: INVOICE_NOT_FOUND / FEE_NOT_FOUND (404),
+###               BILLING_ALREADY_PAID / BILLING_NO_UNPAID_FEES / BILLING_AMOUNT_NEGATIVE
+###               / BILLING_DEPT_REQUIRED / BILLING_INVALID_SAGA_TRANSITION (422)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+# ============ HÓA ĐƠN /api/v1/billing ============
+
+### Xem một hóa đơn
+GET {{host}}/api/v1/billing/invoices/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Hóa đơn của một bệnh nhân (phân trang)
+GET {{host}}/api/v1/billing/patient/00000000-0000-0000-0000-000000000000?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Tạo hóa đơn từ các khoản phí chưa trả của bệnh nhân (201 — role ADMIN/CASHIER)
+### LƯU Ý: KHÔNG gửi tổng tiền — server tự cộng các phí chưa trả (BR-B2).
+###         Bệnh nhân không còn phí chưa trả → 422 BILLING_NO_UNPAID_FEES.
+POST {{host}}/api/v1/billing/invoices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "createdDate": "2026-08-14"
+}
+
+### Thanh toán hóa đơn (200 — role ADMIN/CASHIER; paymentMethod: CASH | TRANSFER | INSURANCE)
+PUT {{host}}/api/v1/billing/invoices/00000000-0000-0000-0000-000000000000/pay
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "CASH"
+}
+
+### Thanh toán lại hóa đơn đã trả → 422 BILLING_ALREADY_PAID
+PUT {{host}}/api/v1/billing/invoices/00000000-0000-0000-0000-000000000000/pay
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "TRANSFER"
+}
+
+### Doanh thu theo khoa + khoảng ngày (role ADMIN/MANAGER)
+GET {{host}}/api/v1/billing/revenue?departmentId=00000000-0000-0000-0000-000000000000&fromDate=2026-08-01&toDate=2026-08-14
+Authorization: Bearer {{token}}

@@ -31,6 +31,8 @@ application-local.properties
 .idea/
 *.iml
 .vscode/
+# IntelliJ HTTP Client: private env (real tokens/passwords) is machine-local
+.http-client.private.env.json
 .settings/
 .classpath
 .project

@@ -1,0 +1,179 @@
+### MediFlow — Clinical service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: clinical-service chưa có web layer (chưa có controller). Các request
+### bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/03-clinical.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → clinical-service (8082) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Một bounded context, hai tài nguyên: /api/v1/appointments (đặt lịch) và /api/v1/records (hồ sơ).
+### Endpoint theo spec 03-clinical.md:
+###  Appointments: GET /{id}, GET /patient/{patientId}, GET ?maKhoa&ngayHen&page&size,
+###                POST, PUT /{id}, PUT /{id}/status
+###  Records:      GET /{id}, GET /patient/{patientId}, POST, PUT /{id}, POST /{id}/diagnoses
+### Mã lỗi chuẩn: APPOINTMENT_NOT_FOUND / RECORD_NOT_FOUND (404),
+###               APPOINTMENT_DUPLICATE_PENDING (409),
+###               APPOINTMENT_PAST_DATE / APPOINTMENT_TIME_OUT_OF_HOURS / APPOINTMENT_INVALID_TRANSITION
+###               / RECORD_NO_DIAGNOSIS / DIAGNOSIS_ICD_INVALID / PATIENT_NOT_FOUND_REMOTE
+###               / DOCTOR_NOT_FOUND_REMOTE / DOCTOR_WRONG_DEPARTMENT (422),
+###               UPSTREAM_UNAVAILABLE (503 — patient/org service chết)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+# ============ LỊCH HẸN /api/v1/appointments ============
+
+### Danh sách lịch hẹn theo khoa + ngày (phân trang)
+GET {{host}}/api/v1/appointments?maKhoa=00000000-0000-0000-0000-000000000000&ngayHen=2026-08-14&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Lịch hẹn của một bệnh nhân
+GET {{host}}/api/v1/appointments/patient/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Xem một lịch hẹn
+GET {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Tạo lịch hẹn (201 — role ADMIN/NURSE; gioHen trong 07:00–17:00)
+POST {{host}}/api/v1/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "maBacSi": "00000000-0000-0000-0000-000000000000",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "ngayHen": "2026-08-14",
+  "gioHen": "08:30",
+  "lyDoKham": "Đau đầu, sốt nhẹ 2 ngày"
+}
+
+### Tạo lịch hẹn giờ ngoài giờ hành chính → 422 APPOINTMENT_TIME_OUT_OF_HOURS
+POST {{host}}/api/v1/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "maBacSi": "00000000-0000-0000-0000-000000000000",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "ngayHen": "2026-08-14",
+  "gioHen": "18:30",
+  "lyDoKham": "Khám ngoài giờ"
+}
+
+### Đặt lịch hẹn thứ hai chờ trong ngày → 409 APPOINTMENT_DUPLICATE_PENDING
+POST {{host}}/api/v1/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "maBacSi": "00000000-0000-0000-0000-000000000000",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "ngayHen": "2026-08-14",
+  "gioHen": "10:00",
+  "lyDoKham": "Tái khám"
+}
+
+### Cập nhật lịch hẹn (200)
+PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ngayHen": "2026-08-15",
+  "gioHen": "09:00",
+  "lyDoKham": "Đau đầu, sốt nhẹ 3 ngày"
+}
+
+### Đổi trạng thái lịch hẹn (CHUA_DEN → DA_DEN | HUY; chuyển tiếp sai → 422)
+PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000000/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trangThai": "DA_DEN"
+}
+
+# ============ HỒ SƠ BỆNH ÁN /api/v1/records ============
+
+### Hồ sơ của một bệnh nhân
+GET {{host}}/api/v1/records/patient/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Xem một hồ sơ
+GET {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Lập hồ sơ (201 — role ADMIN/DOCTOR; chuanDoans bắt buộc ≥ 1)
+POST {{host}}/api/v1/records
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "maBacSi": "00000000-0000-0000-0000-000000000000",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "ngayKham": "2026-08-14",
+  "trieuChung": "Sốt nhẹ, đau đầu vùng trán, mệt mỏi",
+  "maLichHen": "00000000-0000-0000-0000-000000000000",
+  "chuanDoans": [
+    {
+      "tenChuanDoan": "Viêm mũi họng cấp",
+      "moTa": "Niêm mạc họng đỏ, chảy mũi",
+      "icdCode": "J00"
+    }
+  ]
+}
+
+### Lập hồ sơ KHÔNG có chẩn đoán → 422 RECORD_NO_DIAGNOSIS
+POST {{host}}/api/v1/records
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "maBacSi": "00000000-0000-0000-0000-000000000000",
+  "maKhoa": "00000000-0000-0000-0000-000000000000",
+  "ngayKham": "2026-08-14",
+  "trieuChung": "Đau bụng",
+  "chuanDoans": []
+}
+
+### Cập nhật hồ sơ (200 — chỉ sửa trieuChung)
+PUT {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "trieuChung": "Sốt nhẹ, đau đầu, mệt mỏi, ho khan"
+}
+
+### Thêm chẩn đoán (201 — icdCode theo chuẩn ^[A-Z]\d{2}(\.\d{1,2})?$)
+POST {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000/diagnoses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenChuanDoan": "Ho khan",
+  "moTa": "Ho không đờm",
+  "icdCode": "R05"
+}
+
+### Thêm chẩn đoán sai icdCode → 422 DIAGNOSIS_ICD_INVALID
+POST {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000/diagnoses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenChuanDoan": "Sai mã ICD",
+  "icdCode": "99"
+}

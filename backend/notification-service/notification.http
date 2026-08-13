@@ -1,0 +1,71 @@
+### MediFlow — Notification service (qua gateway :8080) — DEMO / TEMPLATE
+###
+### ⚠️ Trạng thái: notification-service chưa có web layer (chưa có controller). Các request
+### bên dưới là DEMO soạn theo spec chuẩn:
+###   docs/eproject_general_plan/backend-spec/07-notification.md
+### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Trước khi chạy:
+###  - eureka-server (8761) → gateway (8080) → notification-service (8087) đang chạy.
+###  - Có JWT:
+###     IntelliJ: chạy backend/auth.http "Đăng nhập admin" → {{token}} tự được set global.
+###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
+###       dòng "@token = ..." bên dưới và dán token vào.
+###
+### Endpoint theo spec 07-notification.md (base /api/v1/notifications):
+###  - GET /patient/{patientId}?page&size, GET /{id}, POST /send
+### Mã lỗi chuẩn: NOTIFICATION_NOT_FOUND (404), NOTIFICATION_ACCESS_DENIED (403),
+###               NOTIFICATION_ADDRESS_INVALID / NOTIFICATION_ALREADY_FINALISED (422)
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+
+# ============ THÔNG BÁO /api/v1/notifications ============
+
+### Thông báo của một bệnh nhân (phân trang)
+GET {{host}}/api/v1/notifications/patient/00000000-0000-0000-0000-000000000000?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Xem một thông báo (PATIENT chỉ đọc được của chính mình — khác người → 403)
+GET {{host}}/api/v1/notifications/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### Gửi thông báo thủ công (201 — role ADMIN/SYSTEM; loai: EMAIL | SMS | IN_APP)
+### - EMAIL cần diaChiNhan hợp lệ, SMS cần ^0\d{9,10}$; sai → 422 NOTIFICATION_ADDRESS_INVALID
+### - IN_APP không cần diaChiNhan
+POST {{host}}/api/v1/notifications/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "tieuDe": "Lịch khám định kỳ",
+  "noiDung": "Bạn có lịch khám định kỳ vào 15/08/2026. Vui lòng có mặt trước 15 phút.",
+  "loai": "IN_APP"
+}
+
+### Gửi EMAIL với địa chỉ sai → 422 NOTIFICATION_ADDRESS_INVALID
+POST {{host}}/api/v1/notifications/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "tieuDe": "Kết quả xét nghiệm",
+  "noiDung": "Kết quả xét nghiệm của bạn đã sẵn sàng.",
+  "loai": "EMAIL",
+  "diaChiNhan": "sai-dia-chi"
+}
+
+### Gửi SMS với số điện thoại sai → 422 NOTIFICATION_ADDRESS_INVALID
+POST {{host}}/api/v1/notifications/send
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
+  "tieuDe": "Nhắc tái khám",
+  "noiDung": "Vui lòng tái khám đúng hẹn.",
+  "loai": "SMS",
+  "diaChiNhan": "12345"
+}

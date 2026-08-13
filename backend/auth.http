@@ -1,0 +1,58 @@
+### MediFlow — Auth (gateway, port 8080)
+###
+### Bắt buộc: eureka-server (8761) + gateway (8080) đang chạy.
+###
+### Cách dùng theo IDE:
+###  - IntelliJ: chạy "Đăng nhập admin" một lần — script cuối tự set {{token}} global,
+###    mọi file .http khác trong project (vd patient.http) dùng lại {{token}}.
+###  - VS Code / Cursor (REST Client): script không chạy → copy accessToken trong
+###    response rồi dán vào biến token (xem comment đầu patient.http).
+
+@host = http://localhost:8080
+@token =""
+### Đăng nhập admin (ADMIN — full quyền)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123",
+  "accessToken":"ey....",
+}
+
+> {% client.global.set("token", response.body.accessToken); %}
+
+### Đăng nhập bác sĩ (DOCTOR — đọc bệnh nhân)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "doctor",
+  "password": "doctor123"
+}
+
+### Đăng nhập y tá (NURSE — đọc + tạo/cập nhật)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "nurse",
+  "password": "nurse123"
+}
+
+### Làm mới access token
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{token}}"
+}
+
+### Sai mật khẩu → mong đợi 401
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "sai-mat-khau"
+}

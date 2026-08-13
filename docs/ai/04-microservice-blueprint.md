@@ -171,6 +171,7 @@ Purity is a means, not the goal. These three are allowed; everything else follow
 - [ ] In-ports (one interface per use case) + application service implementing them, enforcing **all business rules** from the design doc.
 - [ ] DTOs (records) in `application/dto`; MapStruct DTO mapper.
 - [ ] Controller for every endpoint in the design doc, each with `@PreAuthorize` roles.
+- [ ] Every endpoint shipped has a matching request in `backend/<service>/<service>.http` (see `05` "Every endpoint ships a `.http` request").
 - [ ] Event publisher port + messaging adapter; consumers per the design doc's publish/subscribe tables (idempotent).
 - [ ] Domain exceptions + `GlobalExceptionHandler`.
 - [ ] `SecurityConfig` validating JWT + role checks; `RabbitConfig` for exchanges/queues.
