@@ -15,20 +15,20 @@ public class DispenseSlip {
    private final UUID dispenseId;
    private final UUID prescriptionId;
    private DispenseStatus status;
-   private Instant dispenseAt;
-   private UUID dispenseBy;
+   private Instant dispensedAt;
+   private UUID dispensedBy;
    private String failureReason;
    private final Instant createdAt;
    private Instant updatedAt;
 
-   private DispenseSlip(UUID dispenseId, UUID prescriptionId, DispenseStatus status, Instant dispenseAt, UUID dispenseBy,
+   private DispenseSlip(UUID dispenseId, UUID prescriptionId, DispenseStatus status, Instant dispensedAt, UUID dispensedBy,
                         String failureReason, Instant createdAt, Instant updatedAt
    ){
           this.dispenseId = dispenseId;
           this.prescriptionId = prescriptionId;
           this.status = status;
-          this.dispenseAt = dispenseAt;
-          this.dispenseBy = dispenseBy;
+          this.dispensedAt = dispensedAt;
+          this.dispensedBy = dispensedBy;
           this.failureReason = failureReason;
           this.createdAt = createdAt;
           this.updatedAt = updatedAt;
@@ -53,8 +53,9 @@ public class DispenseSlip {
         if (status == DispenseStatus.FAILED)
             throw new DispenseRuleException("DISPENSE_INVALID_TRANSITION", "Không thể xuất phiếu đã thất bại");
         this.status = DispenseStatus.DISPENSED;
-        this.dispenseBy = dispensedBy;
-        this.dispenseAt = timestamp;
+        this.dispensedBy = dispensedBy;
+        this.dispensedAt = timestamp;
+        this.updatedAt = timestamp;
     }
 
     /** PENDING → FAILED (nhánh bù trừ saga, BR-D12). */
@@ -63,6 +64,7 @@ public class DispenseSlip {
             throw new DispenseRuleException("DISPENSE_INVALID_TRANSITION", "Phiếu không còn ở trạng thái chờ xuất");
         this.status = DispenseStatus.FAILED;
         this.failureReason = reason;
+        this.updatedAt = Instant.now();
     }
 
     public boolean isPending() {
