@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph SRC["Nguồn dữ liệu vận hành (event)"]
+        HS["medicalrecord.created"]
+        XN["lab.result.created"]
+        PR["prescription.filled"]
+        PAY["payment.completed"]
+        FAIL["payment.failed"]
+        MV["staff.department.changed"]
+    end
+    subgraph REP["report · mediflow_report"]
+        PE["PROCESSED_EVENT<br/>(khử trùng lặp)"]
+        DVR["DAILY_VISIT_REPORT<br/>visit · lab · prescription · revenue"]
+        MRR["MONTHLY_REVENUE_REPORT<br/>revenue · invoice_count"]
+        DST["DRUG_STATISTIC<br/>dispensed_quantity"]
+    end
+    HS ==>|visit_count+1| DVR
+    XN ==>|lab_count+1| DVR
+    PR ==>|prescription_count+1| DVR
+    PR ==>|+quantity| DST
+    PAY ==>|revenue+| DVR & MRR
+    FAIL ==>|revenue−, invoice−| DVR & MRR
+    MV ==>|ảnh chụp NV| DVR
+    HS & XN & PR & PAY & FAIL & MV -.->|markProcessed| PE

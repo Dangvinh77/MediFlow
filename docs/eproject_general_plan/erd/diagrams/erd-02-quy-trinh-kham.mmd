@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph ORG["organization"]
+        KHOA["KHOA"]
+        NV["NHAN_VIEN (bác sĩ)"]
+    end
+    subgraph PAT["patient"]
+        BN["BENH_NHAN"]
+    end
+    subgraph CLI["clinical"]
+        LH["LICH_HEN<br/>CHUA_DEN → DA_DEN / HUY"]
+        HS["HO_SO_BA<br/>ngay_kham"]
+        CD["CHUAN_DOAN<br/>icd_code"]
+        KQDK["KET_QUA_DINH_KEM"]
+    end
+    subgraph LAB["lab"]
+        XN["XET_NGHIEM<br/>trang_thai"]
+        KQXN["KET_QUA_XN"]
+    end
+    subgraph PHA["pharmacy"]
+        PR["PRESCRIPTION"]
+        PRL["PRESCRIPTION_LINE"]
+    end
+    KHOA -->|FK| NV
+    BN -.->|ma_benh_nhan| LH
+    NV -.->|ma_bac_si| LH
+    LH -->|FK| HS
+    HS -->|FK| CD
+    HS -->|FK| KQDK
+    HS -.->|ma_ho_so| XN
+    XN -->|FK| KQXN
+    HS -.->|record_id| PR
+    PR -->|FK| PRL
+    KQXN -.->|lab.result.created| KQDK
+    PR -.->|prescription.filled| KQDK
