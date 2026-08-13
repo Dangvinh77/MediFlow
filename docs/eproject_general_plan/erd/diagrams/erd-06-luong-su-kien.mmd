@@ -1,0 +1,42 @@
+flowchart LR
+    subgraph ORG["organization"]
+        NV["NHAN_VIEN"]
+    end
+    subgraph PAT["patient"]
+        BN["BENH_NHAN"]
+    end
+    subgraph CLI["clinical"]
+        HS["HO_SO_BA"]
+        LH["LICH_HEN"]
+    end
+    subgraph LAB["lab"]
+        XN["XET_NGHIEM"]
+    end
+    subgraph PHA["pharmacy"]
+        PR["PRESCRIPTION"]
+        DS["DISPENSE_SLIP"]
+        DR["DRUG"]
+    end
+    subgraph BIL["billing"]
+        INV["INVOICE"]
+        FEE["FEE"]
+    end
+    subgraph NOT["notification"]
+        TB["THONG_BAO"]
+    end
+    subgraph REP["report"]
+        R["DVR + MRR + DRUG_STATISTIC"]
+    end
+
+    BN ==>|patient.created| TB
+    LH ==>|appointment.created| TB
+    HS ==>|medicalrecord.created| XN & FEE & R
+    XN ==>|lab.result.created| HS & FEE & TB & R
+    PR ==>|prescription.created| INV
+    PR ==>|prescription.filled| HS & INV & TB & R & DR
+    DS ==>|prescription.dispense.failed| INV & TB
+    INV ==>|payment.completed| DS & XN & TB & R
+    INV ==>|payment.failed| TB & R
+    LH ==>|appointment.status.changed| FEE
+    NV ==>|staff.department.changed| R
+    DR ==>|stock.low| TB

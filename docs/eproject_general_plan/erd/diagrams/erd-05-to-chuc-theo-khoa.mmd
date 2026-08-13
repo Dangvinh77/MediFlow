@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph ORG["organization"]
+        KHOA["KHOA<br/>ma_khoa"]
+        NV["NHAN_VIEN<br/>ma_khoa"]
+        TK["TAI_KHOAN<br/>ma_nhan_vien"]
+    end
+    subgraph CLI["clinical"]
+        LH["LICH_HEN<br/>ma_khoa"]
+        HS["HO_SO_BA<br/>ma_khoa"]
+    end
+    subgraph LAB["lab"]
+        XN["XET_NGHIEM<br/>ma_khoa_chi_dinh"]
+    end
+    subgraph PHA["pharmacy"]
+        PR["PRESCRIPTION<br/>department_id"]
+    end
+    subgraph BIL["billing"]
+        FEE["FEE<br/>department_id"]
+    end
+    subgraph REP["report"]
+        DVR["DAILY_VISIT_REPORT<br/>department_id (NULL=toàn viện)"]
+        MRR["MONTHLY_REVENUE_REPORT"]
+        DST["DRUG_STATISTIC"]
+    end
+    KHOA -->|FK| NV
+    NV -->|FK| TK
+    KHOA -.->|ma_khoa| LH & HS
+    KHOA -.->|ma_khoa_chi_dinh| XN
+    KHOA -.->|department_id| PR & FEE & DVR & MRR & DST

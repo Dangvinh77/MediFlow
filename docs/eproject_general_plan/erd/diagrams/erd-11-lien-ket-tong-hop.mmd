@@ -1,0 +1,92 @@
+flowchart LR
+    subgraph ORG["organization"]
+        KHOA["KHOA"]
+        NV["NHAN_VIEN"]
+        TK["TAI_KHOAN"]
+    end
+    subgraph PAT["patient"]
+        BN["BENH_NHAN"]
+    end
+    subgraph CLI["clinical"]
+        LH["LICH_HEN"]
+        HS["HO_SO_BA"]
+        CD["CHUAN_DOAN"]
+        KQDK["KET_QUA_DINH_KEM"]
+    end
+    subgraph LAB["lab"]
+        XN["XET_NGHIEM"]
+        KQXN["KET_QUA_XN"]
+    end
+    subgraph PHA["pharmacy"]
+        DR["DRUG"]
+        PR["PRESCRIPTION"]
+        PRL["PRESCRIPTION_LINE"]
+        DS["DISPENSE_SLIP"]
+    end
+    subgraph BIL["billing"]
+        FEE["FEE"]
+        INV["INVOICE"]
+    end
+    subgraph NOT["notification"]
+        TB["THONG_BAO"]
+    end
+    subgraph REP["report"]
+        DVR["DAILY_VISIT_REPORT"]
+        MRR["MONTHLY_REVENUE_REPORT"]
+        DST["DRUG_STATISTIC"]
+    end
+
+    %% ===== FK thật — cùng service (JOIN được) =====
+    NV -->|ma_khoa FK| KHOA
+    KHOA -->|truong_khoa FK| NV
+    TK -->|ma_nhan_vien FK| NV
+    HS -->|ma_lich_hen FK| LH
+    CD -->|ma_ho_so FK| HS
+    KQDK -->|ma_ho_so FK| HS
+    KQXN -->|ma_xn FK| XN
+    PRL -->|prescription_id FK| PR
+    PRL -->|drug_id FK| DR
+    DS -->|prescription_id FK 1-1| PR
+    FEE -->|invoice_id FK| INV
+
+    %% ===== UUID trần — xuyên service (không JOIN được) =====
+    LH -.->|ma_benh_nhan| BN
+    LH -.->|ma_bac_si| NV
+    LH -.->|ma_khoa| KHOA
+    HS -.->|ma_benh_nhan| BN
+    HS -.->|ma_bac_si| NV
+    HS -.->|ma_khoa| KHOA
+    XN -.->|ma_ho_so| HS
+    XN -.->|ma_benh_nhan| BN
+    XN -.->|ma_khoa_chi_dinh| KHOA
+    PR -.->|record_id| HS
+    PR -.->|patient_id| BN
+    PR -.->|doctor_id| NV
+    PR -.->|department_id| KHOA
+    DS -.->|dispensed_by| NV
+    FEE -.->|patient_id| BN
+    FEE -.->|record_id| HS
+    FEE -.->|department_id| KHOA
+    FEE -.->|source_ref_id XN| XN
+    FEE -.->|source_ref_id don| PR
+    INV -.->|patient_id| BN
+    INV -.->|prescription_id| PR
+    INV -.->|dispense_id| DS
+    TB -.->|ma_benh_nhan| BN
+    DVR -.->|department_id co-the-null| KHOA
+    MRR -.->|department_id co-the-null| KHOA
+    DST -.->|drug_id| DR
+
+    %% ===== Event — qua mediflow.events (async) =====
+    BN ==>|patient.created| TB
+    LH ==>|appointment.created| TB
+    LH ==>|appointment.status.changed| FEE
+    HS ==>|medicalrecord.created| XN & FEE & DVR & TB
+    XN ==>|lab.result.created| KQDK & FEE & TB & DVR
+    PR ==>|prescription.created| INV
+    DS ==>|prescription.filled| KQDK & INV & DVR & DST & TB
+    DS ==>|prescription.dispense.failed| INV & TB
+    INV ==>|payment.completed| DS & XN & TB & DVR & MRR
+    INV ==>|payment.failed| TB & DVR & MRR
+    DR ==>|stock.low| TB
+    NV ==>|staff.department.changed| DVR

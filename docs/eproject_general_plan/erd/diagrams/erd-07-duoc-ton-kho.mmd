@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph PHA["pharmacy"]
+        DR["DRUG<br/>stock_quantity · expiry_date · low_stock_threshold"]
+        PRL["PRESCRIPTION_LINE<br/>unit_price (giá chụp)"]
+        DS["DISPENSE_SLIP<br/>trừ kho khi DISPENSED"]
+        PR["PRESCRIPTION"]
+    end
+    subgraph BIL["billing"]
+        INV["INVOICE<br/>phải PAID trước khi xuất"]
+        FEE["FEE<br/>fee_type=DRUG"]
+    end
+    subgraph REP["report"]
+        DST["DRUG_STATISTIC<br/>dispensed_quantity"]
+    end
+    subgraph NOT["notification"]
+        TB["THONG_BAO<br/>cảnh báo hết thuốc"]
+    end
+    PR -->|FK| PRL
+    DR -->|FK| PRL
+    PR -->|FK UNIQUE| DS
+    PR -.->|prescription.created| FEE
+    INV ==>|payment.completed| DS
+    DS ==>|prescription.filled| DST
+    DR ==>|stock.low| TB

@@ -1,0 +1,40 @@
+flowchart LR
+    subgraph CLI["clinical"]
+        HS["HO_SO_BA"]
+    end
+    subgraph PHA["pharmacy"]
+        DR["DRUG<br/>stock_quantity"]
+        PR["PRESCRIPTION<br/>total_amount"]
+        PRL["PRESCRIPTION_LINE<br/>giá chụp"]
+        DS["DISPENSE_SLIP<br/>PENDING→DISPENSED / FAILED"]
+        PR -->|FK| PRL
+        DR -->|FK| PRL
+        PR -->|FK UNIQUE| DS
+    end
+    subgraph BIL["billing"]
+        INV["INVOICE<br/>saga_status"]
+        FEE["FEE<br/>fee_type=DRUG"]
+    end
+    subgraph LAB["lab"]
+        XN["XET_NGHIEM<br/>da_thanh_toan"]
+    end
+    subgraph REP["report"]
+        DVR["DAILY_VISIT_REPORT"]
+        MRR["MONTHLY_REVENUE_REPORT"]
+        DST["DRUG_STATISTIC"]
+    end
+    subgraph NOT["notification"]
+        TB["THONG_BAO"]
+    end
+    HS -.->|record_id| PR
+    PR ==>|prescription.created| INV
+    INV -->|invoice_id| FEE
+    INV ==>|payment.completed| DS
+    INV ==>|payment.completed| XN
+    DS ==>|prescription.filled| INV
+    DS ==>|prescription.filled| DST
+    INV ==>|payment.completed| MRR
+    INV ==>|payment.failed| DVR
+    DS -.->|prescription.dispense.failed| INV
+    DS ==>|prescription.filled| TB
+    INV ==>|payment.completed| TB
