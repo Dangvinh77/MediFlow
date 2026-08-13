@@ -2,7 +2,7 @@ package com.mediflow.pharmacy.domain.model;
 
 import java.util.UUID;
 
-import com.mediflow.pharmacy.domain.exception.DrugRulesException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,7 +31,7 @@ public class PrescriptionLine {
 
   public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unitPrice, String dosage){
        if(quantity <= 0){
-        throw new DrugRulesException("DRUG_QUANTITY_INVALID", "Số lượng phải lớn hơn 0");
+        throw new PrescriptionRuleException("DRUG_QUANTITY_INVALID", "Số lượng phải lớn hơn 0");
        }
 
        BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity))

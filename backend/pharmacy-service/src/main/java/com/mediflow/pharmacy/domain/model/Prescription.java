@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import com.mediflow.pharmacy.domain.exception.DrugRulesException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 
 import lombok.Getter;
 
@@ -42,7 +42,7 @@ public class Prescription {
                                      UUID departmentId, LocalDate prescribedDate, List<PrescriptionLine> lines
    ){
             if(lines == null || lines.isEmpty()){
-                  throw new DrugRulesException("PRESCRIPTION_EMPTY", "Đơn thuốc phải có ít nhất 1 dòng");
+                  throw new PrescriptionRuleException("PRESCRIPTION_EMPTY", "Đơn thuốc phải có ít nhất 1 dòng");
             }
             BigDecimal total = computeTotalFrom(lines);
             return new Prescription(null, recordId, patientId, doctorId, departmentId, prescribedDate, total,List.copyOf(lines), null);

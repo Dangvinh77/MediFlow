@@ -1,40 +1,61 @@
 # 05 — pharmacy-service (Khoa Dược)
 
-**Module** `pharmacy-service` · **Package** `com.mediflow.pharmacy` · **Cổng** 8085 · **DB** `mediflow_pharmacy` · **Tiền tố** `/api/v1/pharmacy`
+**Module:** `backend/pharmacy-service/` · **Package:** `com.mediflow.pharmacy` · **Cổng chạy:** 8085 · **DB:** `mediflow_pharmacy` · **Tiền tố:** `/api/v1/pharmacy`
 
-Sở hữu danh mục thuốc, tồn kho, đơn thuốc và phiếu xuất. **Thành phần tham gia saga** kê đơn → hóa
-đơn → thanh toán → xuất thuốc. Đây là service nhiều trạng thái nhất hệ thống: nó là service duy nhất
-có thể *hết hàng*.
+## Giới thiệu (đọc trước)
+
+Pharmacy lo 4 việc: danh mục thuốc, tồn kho, đơn thuốc và phiếu xuất thuốc. Nó là service **duy nhất có thể "hết hàng"**, nên tham gia saga *kê đơn → hóa đơn → thanh toán → xuất thuốc*:
+
+- Kê đơn xong → phát `prescription.created` để billing tạo hóa đơn.
+- Bệnh nhân trả tiền xong → billing phát `payment.completed` → pharmacy mới xuất thuốc.
+- Xuất thất bại (hết hàng / hết hạn) → phát `prescription.dispense.failed` để billing bù trừ.
+
+**Cách đọc spec này:** mỗi mục đều có phần giải thích đơn giản trước, code/chữ ký Java để sau. Nếu chỉ cần nắm nghiệp vụ thì đọc `docs/ai/services/pharmacy.md`; cần code thì đọc file này.
+
+**Quy ước đặt tên của nhánh C (bắt buộc):** bảng/cột/class dùng **tiếng Anh**; các service khác trong hệ thống vẫn dùng tiếng Việt snake_case (xem `docs/ai/08-persistence-naming.md`). Bảng dịch chính thức:
+
+| Việt (trước) | Anh (sau) | Dùng trong |
+|---|---|---|
+| THUOC | DRUG | bảng |
+| ma_thuoc / ten_thuoc / hoat_chat / don_vi_tinh / gia / so_luong_ton / han_su_dung / nha_san_xuat / nguong_canh_bao | drug_id / drug_name / active_ingredient / unit / price / stock_quantity / expiry_date / manufacturer / low_stock_threshold | cột DRUG |
+| BAN_KE_CP | PRESCRIPTION | bảng |
+| ma_ban_ke / ma_ho_so / ma_benh_nhan / ma_bac_si / ma_khoa / ngay_ke / tong_tien | prescription_id / record_id / patient_id / doctor_id / department_id / prescribed_date / total_amount | cột PRESCRIPTION |
+| CHI_TIET_BAN_KE | PRESCRIPTION_LINE | bảng |
+| ma_chi_tiet / ma_thuoc / so_luong / don_gia / lieu_dung / thanh_tien | line_id / drug_id / quantity / unit_price / dosage / line_total | cột PRESCRIPTION_LINE |
+| PHIEU_XUAT | DISPENSE_SLIP | bảng |
+| ma_phieu_xuat / trang_thai / ngay_xuat / nguoi_xuat / ly_do_that_bai | dispense_id / status / dispensed_at / dispensed_by / failure_reason | cột DISPENSE_SLIP |
+| SU_KIEN_DA_XU_LY / xu_ly_luc | PROCESSED_EVENT / processed_at | bảng/cột |
+| TrangThaiPhieuXuat{CHO_XUAT, DA_XUAT, THAT_BAI} | DispenseStatus{PENDING, DISPENSED, FAILED} | enum |
+| Thuoc / BanKe / ChiTietBanKe / PhieuXuat | Drug / Prescription / PrescriptionLine / DispenseSlip | class |
 
 ## 1. Lược đồ — `V1__init.sql`
 
-> **Bảng/cột dùng tiếng Anh** (theo thống nhất riêng cho các service của nhánh C — pharmacy/billing/report).
-> Xem mapping ở đầu mục này. Rest của hệ thống vẫn dùng tiếng Việt snake_case như `08-persistence-naming.md`.
+> Bảng và cột dùng tiếng Anh theo quy ước trên. UUID khóa chính do Hibernate sinh; tiền = `DECIMAL(15,2)`; ngày = `DATE` / `TIMESTAMPTZ`.
 
 ```sql
 CREATE TABLE DRUG (
-    drug_id        UUID          PRIMARY KEY,
-    drug_name      VARCHAR(150)  NOT NULL,
-    active_ingredient VARCHAR(150),
-    unit           VARCHAR(20)   NOT NULL,
-    price          DECIMAL(15,2) NOT NULL,
-    stock_quantity INT           NOT NULL DEFAULT 0,
-    expiry_date    DATE          NOT NULL,
-    manufacturer   VARCHAR(150),
-    low_stock_threshold INT      NOT NULL DEFAULT 10,   -- threshold that fires stock.low
-    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at     TIMESTAMPTZ,
-    CONSTRAINT ck_drug_price_positive  CHECK (price >= 0),
-    CONSTRAINT ck_drug_stock_non_negative CHECK (stock_quantity >= 0)
+    drug_id             UUID          PRIMARY KEY,
+    drug_name           VARCHAR(150)  NOT NULL,
+    active_ingredient   VARCHAR(150),
+    unit                VARCHAR(20)   NOT NULL,
+    price               DECIMAL(15,2) NOT NULL,
+    stock_quantity      INT           NOT NULL DEFAULT 0,
+    expiry_date         DATE          NOT NULL,
+    manufacturer        VARCHAR(150),
+    low_stock_threshold INT           NOT NULL DEFAULT 10,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ,
+    CONSTRAINT ck_drug_price_positive      CHECK (price >= 0),
+    CONSTRAINT ck_drug_stock_non_negative  CHECK (stock_quantity >= 0)
 );
 CREATE INDEX idx_drug_name ON DRUG (drug_name);
 
 CREATE TABLE PRESCRIPTION (
     prescription_id UUID          PRIMARY KEY,
-    record_id       UUID          NOT NULL,          -- ref clinical-service HO_SO_BA
-    patient_id      UUID          NOT NULL,          -- ref patient-service BENH_NHAN
-    doctor_id       UUID          NOT NULL,          -- ref organization-service NHAN_VIEN
-    department_id   UUID          NOT NULL,          -- ref organization-service KHOA
+    record_id       UUID          NOT NULL,   -- tham chiếu clinical (HO_SO_BA)
+    patient_id      UUID          NOT NULL,   -- tham chiếu patient (BENH_NHAN)
+    doctor_id       UUID          NOT NULL,   -- tham chiếu organization (NHAN_VIEN)
+    department_id   UUID          NOT NULL,   -- tham chiếu organization (KHOA — khoa kê đơn)
     prescribed_date DATE          NOT NULL,
     total_amount    DECIMAL(15,2) NOT NULL DEFAULT 0,
     created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
@@ -48,7 +69,7 @@ CREATE TABLE PRESCRIPTION_LINE (
     prescription_id UUID          NOT NULL REFERENCES PRESCRIPTION(prescription_id) ON DELETE CASCADE,
     drug_id         UUID          NOT NULL REFERENCES DRUG(drug_id),
     quantity        INT           NOT NULL,
-    unit_price      DECIMAL(15,2) NOT NULL,           -- price snapshot at prescription time
+    unit_price      DECIMAL(15,2) NOT NULL,   -- giá chụp tại thời điểm kê đơn
     dosage          VARCHAR(255),
     line_total      DECIMAL(15,2) NOT NULL,
     CONSTRAINT ck_line_quantity CHECK (quantity > 0)
@@ -56,84 +77,54 @@ CREATE TABLE PRESCRIPTION_LINE (
 CREATE INDEX idx_line_prescription ON PRESCRIPTION_LINE (prescription_id);
 
 CREATE TABLE DISPENSE_SLIP (
-    dispense_id   UUID          PRIMARY KEY,
-    prescription_id UUID        NOT NULL UNIQUE REFERENCES PRESCRIPTION(prescription_id),
-    status        VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
-    dispensed_at  TIMESTAMPTZ,
-    dispensed_by  UUID,                                -- ref organization-service NHAN_VIEN
-    failure_reason VARCHAR(255),
-    created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at    TIMESTAMPTZ
+    dispense_id     UUID          PRIMARY KEY,
+    prescription_id UUID          NOT NULL UNIQUE REFERENCES PRESCRIPTION(prescription_id),
+    status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
+    dispensed_at    TIMESTAMPTZ,
+    dispensed_by    UUID,                       -- tham chiếu nhân viên thực hiện
+    failure_reason  VARCHAR(255),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ
 );
 CREATE INDEX idx_dispense_status ON DISPENSE_SLIP (status);
 
--- Idempotency ledger for event consumers.
+-- Sổ ghi các event đã xử lý — dùng để chống xử lý trùng khi RabbitMQ gửi lại tin (BR-D9).
 CREATE TABLE PROCESSED_EVENT (
-    event_id    UUID          PRIMARY KEY,
-    routing_key VARCHAR(100)  NOT NULL,
-    processed_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+    event_id     UUID          PRIMARY KEY,
+    routing_key  VARCHAR(100)  NOT NULL,
+    processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 ```
 
-> **Mapping (tiếng Việt → tiếng Anh)** — đây là bảng dịch chính thức cho 3 service nhánh C:
+### Ý nghĩa từng bảng (đọc nhanh)
 
-| Việt (trước) | Anh (sau) | Dùng trong |
-|---|---|---|
-| THUOC | DRUG | bảng |
-| ma_thuoc | drug_id | cột |
-| ten_thuoc | drug_name | cột |
-| hoat_chat | active_ingredient | cột |
-| don_vi_tinh | unit | cột |
-| gia | price | cột |
-| so_luong_ton | stock_quantity | cột |
-| han_su_dung | expiry_date | cột |
-| nha_san_xuat | manufacturer | cột |
-| nguong_canh_bao | low_stock_threshold | cột |
-| BAN_KE_CP | PRESCRIPTION | bảng |
-| ma_ban_ke | prescription_id | cột |
-| ma_ho_so | record_id | cột |
-| ma_benh_nhan | patient_id | cột |
-| ma_bac_si | doctor_id | cột |
-| ma_khoa | department_id | cột |
-| ngay_ke | prescribed_date | cột |
-| tong_tien | total_amount | cột |
-| CHI_TIET_BAN_KE | PRESCRIPTION_LINE | bảng |
-| ma_chi_tiet | line_id | cột |
-| so_luong | quantity | cột |
-| don_gia | unit_price | cột |
-| lieu_dung | dosage | cột |
-| thanh_tien | line_total | cột |
-| PHIEU_XUAT | DISPENSE_SLIP | bảng |
-| ma_phieu_xuat | dispense_id | cột |
-| trang_thai | status | cột |
-| ngay_xuat | dispensed_at | cột |
-| nguoi_xuat | dispensed_by | cột |
-| ly_do_that_bai | failure_reason | cột |
-| SU_KIEN_DA_XU_LY | PROCESSED_EVENT | bảng |
-| xu_ly_luc | processed_at | cột |
-| TrangThaiPhieuXuat | DispenseStatus | enum |
-| CHO_XUAT | PENDING | enum value |
-| DA_XUAT | DISPENSED | enum value |
-| THAT_BAI | FAILED | enum value |
-
-> `unit_price` trên dòng chi tiết là **ảnh chụp**. Không bao giờ join sang `DRUG.price` để tính lại một
-> đơn thuốc cũ — giá trong danh mục thay đổi, còn tổng tiền lịch sử thì không được đổi.
-
+| Bảng | Vai trò | Điểm cần nhớ |
+|------|---------|--------------|
+| `DRUG` | danh mục thuốc + tồn kho | `price >= 0`, `stock_quantity >= 0` là phòng thủ cuối; quy tắc thật nằm trong domain model |
+| `PRESCRIPTION` | đơn thuốc | chỉ giữ UUID tham chiếu, không nối DB service khác |
+| `PRESCRIPTION_LINE` | từng dòng thuốc trong đơn | `unit_price` là **ảnh chụp giá** lúc kê đơn — sau này đổi giá không ảnh hưởng đơn cũ (BR-D7) |
+| `DISPENSE_SLIP` | phiếu xuất thuốc | `prescription_id` **UNIQUE** — mỗi đơn đúng một phiếu |
+| `PROCESSED_EVENT` | sổ chống trùng | mỗi `eventId` chỉ được xử lý một lần (BR-D9) |
 ## 2. Enum
 
 ```java
 public enum DispenseStatus { PENDING, DISPENSED, FAILED }
 ```
 
+Giải thích: trạng thái của phiếu xuất.
+- `PENDING` — đơn đã kê, chưa xuất (chờ thanh toán).
+- `DISPENSED` — đã xuất thuốc (kết thúc).
+- `FAILED` — xuất thất bại, kèm lý do (kết thúc).
+
 ## 3. Domain model
 
-> Tên class/field trong 3 service nhánh C dùng tiếng Anh (đồng bộ với bảng/cột):
-> `Thuoc` → `Drug`, `maThuoc` → `drugId`, `BanKe` → `Prescription`, `PhieuXuat` → `DispenseSlip`, ...
+> Tên class/field dùng tiếng Anh (đồng bộ với bảng): `Thuoc` → `Drug`, `maThuoc` → `drugId`, `BanKe` → `Prescription`, `PhieuXuat` → `DispenseSlip`, ...
 
-### `Drug`
+**Nguyên tắc chung:** mọi quy tắc nghiệp vụ nằm trong model — domain không import Spring, không import JPA. Lớp model chỉ có 2 cách tạo: `create(...)` (khi nhận yêu cầu mới — chạy quy tắc) và `restore(...)` (dựng lại từ dữ liệu đã lưu — không chạy lại quy tắc).
 
-Các trường: `drugId`, `drugName`, `activeIngredient`, `unit`, `price` (`BigDecimal`), `stockQuantity` (`int`),
-`expiryDate` (`LocalDate`), `manufacturer`, `lowStockThreshold`, timestamps.
+### `Drug` — thuốc
+
+Các trường: `drugId`, `drugName`, `activeIngredient`, `unit`, `price` (`BigDecimal`), `stockQuantity` (`int`), `expiryDate` (`LocalDate`), `manufacturer`, `lowStockThreshold`, timestamps.
 
 ```java
 public static Drug create(String drugName, String activeIngredient, String unit, BigDecimal price,
@@ -141,39 +132,36 @@ public static Drug create(String drugName, String activeIngredient, String unit,
 public void updateInfo(String drugName, String activeIngredient, String unit,
                        BigDecimal price, LocalDate expiryDate, String manufacturer, int lowStockThreshold);
 public void restock(int quantity);           // quantity > 0
-public void dispenseStock(int quantity);     // BR-D1, BR-D2 — throws if not possible
+public void dispenseStock(int quantity);     // BR-D1, BR-D2 — ném lỗi nếu không xuất được
 public boolean hasStock(int quantity);       // stockQuantity >= quantity
-public boolean isExpired();                  // expiryDate >= today
+public boolean isExpired();                  // expiryDate < hôm nay
 public boolean belowLowStockThreshold();     // stockQuantity <= lowStockThreshold
 ```
 
-Invariants of `dispenseStock`:
+Quy tắc trong `dispenseStock` (xuất kho):
 
-| Check | Error code |
-|-------|-----------|
+| Kiểm tra | Mã lỗi |
+|----------|--------|
 | `quantity <= 0` | `DRUG_QUANTITY_INVALID` |
 | `stockQuantity < quantity` | `DRUG_OUT_OF_STOCK` (BR-D1) |
-| `expiryDate < today` | `DRUG_EXPIRED` (BR-D2) |
+| `expiryDate < hôm nay` | `DRUG_EXPIRED` (BR-D2) |
 
-`create`/`updateInfo`: `drugName` not blank; `price >= 0` (`DRUG_PRICE_NEGATIVE`);
-`expiryDate` not in the past at creation (`DRUG_EXPIRY_PAST`); `unit` not blank.
+Quy tắc trong `create` / `updateInfo`: tên thuốc không rỗng; giá >= 0 (`DRUG_PRICE_NEGATIVE`); hạn dùng không được ở quá khứ (`DRUG_EXPIRY_PAST`); đơn vị không rỗng.
 
-### `Prescription` (đơn thuốc — aggregate root)
+### `Prescription` — đơn thuốc (aggregate root)
 
-Các trường: `prescriptionId`, `recordId`, `patientId`, `doctorId`, `departmentId`, `prescribedDate`,
-`totalAmount`, `lines` (`List<PrescriptionLine>`).
+Các trường: `prescriptionId`, `recordId`, `patientId`, `doctorId`, `departmentId`, `prescribedDate`, `totalAmount`, `lines` (`List<PrescriptionLine>`).
 
 ```java
 public static Prescription create(UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
                                   LocalDate prescribedDate, List<PrescriptionLine> lines);
 public BigDecimal computeTotal();            // Σ lineTotal — BR-D5
-public List<PrescriptionLine> getLines();    // không cho sửa
+public List<PrescriptionLine> getLines();    // không cho sửa (unmodifiable)
 ```
 
-Invariants: ít nhất một dòng (`PRESCRIPTION_EMPTY`); `totalAmount` được **tính ra**, không bao giờ nhận
-từ client.
+Quy tắc: đơn phải có ít nhất một dòng (`PRESCRIPTION_EMPTY`); `totalAmount` được **tính ra**, không bao giờ nhận từ client.
 
-### `PrescriptionLine`
+### `PrescriptionLine` — một dòng thuốc trong đơn
 
 `lineId`, `drugId`, `quantity`, `unitPrice`, `dosage`, `lineTotal`.
 
@@ -182,9 +170,9 @@ public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unit
 // lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP)
 ```
 
-`quantity > 0` (`DRUG_QUANTITY_INVALID`).
+Quy tắc: `quantity > 0` (`DRUG_QUANTITY_INVALID`).
 
-### `DispenseSlip` (phiếu xuất thuốc)
+### `DispenseSlip` — phiếu xuất thuốc
 
 `dispenseId`, `prescriptionId`, `status`, `dispensedAt`, `dispensedBy`, `failureReason`.
 
@@ -195,60 +183,185 @@ public void markFailed(String reason);
 public boolean isPending();
 ```
 
-Transitions: `PENDING → DISPENSED | FAILED`; cả hai đều là kết thúc. Còn lại ném
-`DISPENSE_INVALID_TRANSITION`. Xuất một phiếu đã xuất rồi → `DISPENSE_ALREADY_DONE`.
-
+Quy tắc chuyển trạng thái: `PENDING → DISPENSED | FAILED`; cả hai đều là kết thúc, không quay lại được. Chuyển sai trạng thái → ném `DISPENSE_INVALID_TRANSITION`. Xuất một phiếu đã xuất rồi → `DISPENSE_ALREADY_DONE`.
 ## 4. Mã lỗi
 
-| Mã | HTTP |
-|----|------|
-| `DRUG_NOT_FOUND`, `PRESCRIPTION_NOT_FOUND`, `DISPENSE_NOT_FOUND` | 404 |
-| `DRUG_OUT_OF_STOCK`, `DRUG_EXPIRED`, `DRUG_QUANTITY_INVALID`, `DRUG_PRICE_NEGATIVE`, `DRUG_EXPIRY_PAST` | 422 |
-| `PRESCRIPTION_EMPTY`, `DISPENSE_INVALID_TRANSITION`, `DISPENSE_ALREADY_DONE`, `DISPENSE_NOT_PAID` | 422 |
+| Mã | HTTP | Tình huống |
+|----|------|------------|
+| `DRUG_NOT_FOUND`, `PRESCRIPTION_NOT_FOUND`, `DISPENSE_NOT_FOUND` | 404 | không tìm thấy đối tượng |
+| `DRUG_OUT_OF_STOCK`, `DRUG_EXPIRED`, `DRUG_QUANTITY_INVALID`, `DRUG_PRICE_NEGATIVE`, `DRUG_EXPIRY_PAST` | 422 | vi phạm quy tắc thuốc |
+| `PRESCRIPTION_EMPTY`, `DISPENSE_INVALID_TRANSITION`, `DISPENSE_ALREADY_DONE`, `DISPENSE_NOT_PAID` | 422 | vi phạm quy tắc đơn / phiếu |
 
 ## 5. Port
 
+> **Port là gì?** Port = bản hợp đồng giữa application và thế giới bên ngoài: danh sách các phương thức đã thống nhất, chỉ có tên và tham số, không có code làm thật.
+> - **In-port (cổng vào):** bên ngoài (web, RabbitMQ) nhờ service làm gì.
+> - **Out-port (cổng ra):** service nhờ bên ngoài làm gì (lưu DB, gửi event).
+> - **Adapter (bộ chuyển đổi):** code thật sự nối DB/RabbitMQ, đứng sau out-port.
+>
+> Vì sao phải có port? Vì application giữ toàn bộ quy tắc nghiệp vụ; nếu application gọi thẳng JPA hay RabbitMQ thì đổi công nghệ phải sửa cả quy tắc. Có port thì chỉ cần thay adapter.
+
+### 5.1 Out-port — `application/port/out/`
+
+#### `DrugRepositoryPort` — lưu và tìm thuốc
+
+**Vì sao cần:** mọi thay đổi về thuốc (tạo, nhập kho, trừ kho) phải ghi xuống DB, nhưng application không được phép biết JPA. Interface này là "lời hứa": *ai đó hãy lưu và tìm thuốc giúp tôi* — `DrugPersistenceAdapter` trong `infrastructure` làm thật.
+
 ```java
-// out
 public interface DrugRepositoryPort {
     Drug save(Drug t);
     Optional<Drug> findById(UUID id);
-    /** BẮT BUỘC khóa ghi bi quan — xem §10 về tương tranh. */
+    /** BẮT BUỘC khóa ghi bi quan — chỉ dùng trong luồng dispense, xem §10. */
     Optional<Drug> findByIdForUpdate(UUID id);
     PageResult<Drug> search(String keyword, PageQuery page);
 }
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `save` | lưu mới / cập nhật thuốc | mọi luồng thay đổi thuốc |
+| `findById` | đọc 1 thuốc (kê đơn lấy giá, xem chi tiết) | — |
+| `findByIdForUpdate` | đọc 1 thuốc **kèm khóa ghi** | BR-D10 — hai dược sĩ xuất cùng lúc không được bán vượt kho |
+| `search` | tìm theo tên, phân trang | dùng `PageQuery`/`PageResult` của `common`, không dùng `Pageable` của Spring |
+
+#### `PrescriptionRepositoryPort` — lưu và tìm đơn thuốc
+
+**Vì sao cần:** đơn thuốc (kèm các dòng) phải được ghi nhận và đọc lại để phục vụ xem lịch sử và xuất thuốc.
+
+```java
 public interface PrescriptionRepositoryPort {
     Prescription save(Prescription p);
     Optional<Prescription> findById(UUID id);
     List<Prescription> findByPatient(UUID patientId);
 }
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `save` | lưu đơn + các dòng (một aggregate) | BR-D3 — kê đơn phải tự tạo phiếu xuất |
+| `findById` | đọc đơn + các dòng | luồng `dispense` cần biết đơn kê những gì |
+| `findByPatient` | danh sách đơn của 1 bệnh nhân | màn hình lịch sử kê đơn |
+
+#### `DispenseSlipRepositoryPort` — lưu và tìm phiếu xuất
+
+**Vì sao cần:** trạng thái phiếu phải được ghi nhận — đó là bằng chứng của saga: đã xuất chưa, thất bại vì lý do gì.
+
+```java
 public interface DispenseSlipRepositoryPort {
     DispenseSlip save(DispenseSlip s);
     Optional<DispenseSlip> findById(UUID id);
     Optional<DispenseSlip> findByPrescription(UUID prescriptionId);
 }
-public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }
+```
 
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `save` | lưu phiếu | BR-D3, BR-D12 — phiếu `FAILED` vẫn phải lưu được |
+| `findById` | đọc 1 phiếu | xem trạng thái |
+| `findByPrescription` | tìm phiếu theo đơn | cột UNIQUE — mỗi đơn đúng 1 phiếu |
+
+#### `ProcessedEventPort` — sổ chống xử lý trùng
+
+**Vì sao cần:** RabbitMQ có thể gửi lại cùng một event. Không kiểm tra thì một tin `payment.completed` đến hai lần sẽ xuất thuốc hai lần.
+
+```java
+public interface ProcessedEventPort {
+    boolean alreadyProcessed(UUID id);
+    void markProcessed(UUID id, String rk);
+}
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `alreadyProcessed` | kiểm tra event đã xử lý chưa | BR-D9 |
+| `markProcessed` | đánh dấu đã xử lý | BR-D9 |
+
+#### `PharmacyEventPublisherPort` — gửi event ra ngoài
+
+**Vì sao cần:** application phải "báo tin" cho các service khác nhưng không được đụng RabbitMQ. Adapter trong `infrastructure/messaging` làm thật (publish **sau khi** transaction commit).
+
+```java
 public interface PharmacyEventPublisherPort {
     void publishPrescriptionCreated(PrescriptionCreatedEvent e);
     void publishPrescriptionFilled(PrescriptionFilledEvent e);
-    void publishPrescriptionDispenseFailed(PrescriptionDispenseFailedEvent e);   // bù trừ saga
+    void publishPrescriptionDispenseFailed(PrescriptionDispenseFailedEvent e);  // bù trừ saga
     void publishStockLow(StockLowEvent e);
 }
+```
 
-// in
+| Phương thức | Tin gửi đi | Khi nào / vì sao |
+|-------------|-----------|------------------|
+| `publishPrescriptionCreated` | `prescription.created` | sau kê đơn commit — billing tạo hóa đơn (saga) |
+| `publishPrescriptionFilled` | `prescription.filled` | sau xuất thuốc thành công |
+| `publishPrescriptionDispenseFailed` | `prescription.dispense.failed` | xuất thất bại — kích hoạt bù trừ (BR-D6) |
+| `publishStockLow` | `stock.low` | tồn kho chạm ngưỡng (BR-D11); "bắn rồi quên" — lỗi gửi tin này không được làm hỏng lần xuất thành công |
+
+### 5.2 In-port — `application/port/in/`
+
+#### `ManageDrugUseCase` — quản lý danh mục thuốc
+
+**Vì sao cần:** dược sĩ/admin phải thêm thuốc, xem thuốc, tìm thuốc và nhập kho. Gộp chung vì cùng một nhóm nghiệp vụ "quản lý danh mục".
+
+```java
 public interface ManageDrugUseCase {
     DrugDTO create(CreateDrugRequest r);
     DrugDTO getById(UUID id);
     PageResult<DrugDTO> search(String keyword, PageQuery page);
     DrugDTO adjustStock(UUID id, AdjustStockRequest r);
 }
-public interface CreatePrescriptionUseCase { PrescriptionDTO create(CreatePrescriptionRequest r); }
-public interface DispensePrescriptionUseCase { DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy); }
-public interface ReactToPaymentUseCase { void onPaymentCompleted(UUID prescriptionId, UUID invoiceId); }
 ```
 
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `create` | thêm thuốc mới | tên/đơn vị bắt buộc, giá không âm, hạn dùng không ở quá khứ |
+| `getById` | xem 1 thuốc | không có → 404 `DRUG_NOT_FOUND` |
+| `search` | tìm theo tên, phân trang | màn hình danh sách thuốc |
+| `adjustStock` | nhập kho / điều chỉnh | số lượng > 0 (`Drug.restock`); **chỉ chỉnh tay** — không dùng để xuất thuốc, tránh trừ kho hai lần |
+
+#### `CreatePrescriptionUseCase` — kê đơn
+
+**Vì sao cần:** bác sĩ ghi nhận ý định dùng thuốc — bước khởi đầu của saga, tách riêng để dễ kiểm soát.
+
+```java
+public interface CreatePrescriptionUseCase {
+    PrescriptionDTO create(CreatePrescriptionRequest r);
+}
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `create` | tạo đơn + các dòng | đơn ≥ 1 dòng (`PRESCRIPTION_EMPTY`); server tự lấy giá — client không gửi giá (BR-D7, BR-D8); tổng = Σ (BR-D5); tự tạo phiếu `PENDING` (BR-D3); **không trừ kho** |
+
+#### `DispensePrescriptionUseCase` — xuất thuốc
+
+**Vì sao cần:** bước duy nhất làm biến động kho, nhiều quy tắc nhất (hết hàng, hết hạn, tương tranh, bù trừ) — cần xử lý đặc biệt (khóa dòng, bù trừ).
+
+```java
+public interface DispensePrescriptionUseCase {
+    DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy);
+}
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `dispense` | xuất thuốc theo đơn | phiếu đang `PENDING` (BR-D9); đủ hàng (BR-D1); chưa hết hạn (BR-D2); khóa dòng (BR-D10); trừ kho 1 lần (BR-D4); thất bại → phiếu `FAILED` + event bù trừ (BR-D6, BR-D12); chạm ngưỡng → `stock.low` (BR-D11); thành công → `prescription.filled` |
+
+#### `ReactToPaymentUseCase` — phản ứng khi có tin "đã thanh toán"
+
+**Vì sao cần:** saga quy định chỉ xuất thuốc **sau khi** bệnh nhân trả tiền — `payment.completed` chính là tín hiệu đó.
+
+```java
+public interface ReactToPaymentUseCase {
+    void onPaymentCompleted(UUID prescriptionId, UUID invoiceId);
+}
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `onPaymentCompleted` | gọi lại `dispense` với người thực hiện = hệ thống | chống trùng qua `ProcessedEventPort` (BR-D9); lỗi nghiệp vụ không ném ngược về RabbitMQ |
 ## 6. DTO
+
+> DTO là "túi đựng dữ liệu" đi qua biên giới HTTP — Java record, có Bean Validation. Client gửi request; server trả response. **Entity/domain model không bao giờ đi thẳng ra ngoài.**
 
 ```java
 public record CreateDrugRequest(
@@ -262,7 +375,7 @@ public record CreateDrugRequest(
     @Min(0) Integer lowStockThreshold) {}
 
 public record AdjustStockRequest(
-    @NotNull Integer quantity,          // dương = nhập, âm = điều chỉnh giảm
+    @NotNull Integer quantity,          // dương = nhập kho, âm = điều chỉnh giảm
     @Size(max = 255) String reason) {}
 
 public record CreatePrescriptionRequest(
@@ -273,7 +386,7 @@ public record CreatePrescriptionRequest(
 public record PrescriptionLineRequest(
     @NotNull UUID drugId,
     @NotNull @Min(1) Integer quantity,
-    @Size(max = 255) String dosage) {}     // LƯU Ý: không có giá — server tự chụp giá
+    @Size(max = 255) String dosage) {}     // LƯU Ý: không có trường giá — server tự chụp giá
 
 public record DrugDTO(UUID drugId, String drugName, String activeIngredient, String unit,
                       BigDecimal price, int stockQuantity, LocalDate expiryDate, String manufacturer,
@@ -291,49 +404,46 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
                           Instant dispensedAt, UUID dispensedBy, String failureReason) {}
 ```
 
+Điểm dễ quên: `PrescriptionLineRequest` **không có giá** (BR-D8) — nếu thấy client gửi giá thì bỏ qua, server luôn lấy giá từ kho tại thời điểm kê đơn.
+
 ## 7. Thuật toán tầng application
 
-### `createPrescription` — `@Transactional`
+> Tầng application = nơi "điều phối": nhận lệnh từ in-port, hỏi out-port, gọi domain model. Nó không import Spring Data, AMQP, HTTP.
 
-1. Với mỗi dòng: `drugRepo.findById(drugId)` → không có thì `DRUG_NOT_FOUND`
-2. **Chụp giá**: `unitPrice = drug.getPrice()` (không bao giờ lấy từ request — client không được đặt giá)
-3. Dựng `PrescriptionLine` cho mỗi dòng; `lineTotal = unitPrice × quantity`, làm tròn `HALF_UP` 2 chữ số
-4. `Prescription.create(...)` → tính `totalAmount` (BR-D5)
-5. Lưu đơn thuốc
-6. `DispenseSlip.createPending(prescriptionId)` → lưu (**BR-D3** — luôn tạo, luôn ở `PENDING`)
-7. Publish `PrescriptionCreatedEvent` sau commit → billing tạo hóa đơn
+### 7.1 Kê đơn (`createPrescription`) — `@Transactional`
 
-> **KHÔNG trừ kho ở đây.** Kê đơn chỉ là ghi nhận ý định. Kho chỉ biến động lúc xuất thuốc, sau khi
-> đã thanh toán. Trừ kho hai lần là lỗi dễ xảy ra nhất trong service này.
+1. Với mỗi dòng: `drugRepo.findById(drugId)` → không có thì `DRUG_NOT_FOUND`.
+2. **Chụp giá:** `unitPrice = drug.getPrice()` — không bao giờ lấy từ request (client không được đặt giá).
+3. Dựng `PrescriptionLine` cho mỗi dòng; `lineTotal = unitPrice × quantity`, làm tròn `HALF_UP` 2 chữ số.
+4. `Prescription.create(...)` → tính `totalAmount` (BR-D5).
+5. Lưu đơn thuốc.
+6. `DispenseSlip.createPending(prescriptionId)` → lưu (**BR-D3** — luôn tạo, luôn `PENDING`).
+7. Publish `PrescriptionCreatedEvent` sau commit → billing tạo hóa đơn.
 
-### `dispense(prescriptionId, dispensedBy)` — `@Transactional`
+> **KHÔNG trừ kho ở đây.** Kê đơn chỉ là ghi nhận ý định. Kho chỉ biến động lúc xuất thuốc, sau khi đã thanh toán. Trừ kho hai lần là lỗi dễ xảy ra nhất của service này.
 
-Được gọi từ cả `PUT /prescriptions/{id}/dispense` lẫn consumer của `payment.completed`.
+### 7.2 Xuất thuốc (`dispense(prescriptionId, dispensedBy)`) — `@Transactional`
 
-1. `dispenseSlipRepo.findByPrescription(prescriptionId)` → không có thì `DISPENSE_NOT_FOUND`
-2. nếu `!slip.isPending()` → `DISPENSE_ALREADY_DONE` *(idempotent: một `payment.completed` bị gửi lại không được xuất thuốc hai lần)*
-3. Nạp đơn thuốc và các dòng của nó
-4. **Sắp xếp các dòng theo `drugId`** trước khi khóa — tránh deadlock khi có nhiều lượt xuất đồng thời
-5. Với mỗi dòng: `drugRepo.findByIdForUpdate(drugId)` (khóa ghi bi quan), rồi `drug.dispenseStock(quantity)`
-   - ném `DRUG_OUT_OF_STOCK` (BR-D1) hoặc `DRUG_EXPIRED` (BR-D2)
-6. **Khi có bất kỳ lỗi nào:** phần trừ kho được hoàn tác (transaction lo việc đó), đặt
-   `slip.markFailed(reason)`, lưu phiếu **trong một transaction mới** (`REQUIRES_NEW`), rồi publish
-   `PrescriptionDispenseFailedEvent` → billing bù trừ (BR-D6)
-7. Khi thành công: lưu từng thuốc; `slip.markDispensed(dispensedBy, now)`; lưu
-8. Với mỗi thuốc giờ `belowLowStockThreshold()` → publish `StockLowEvent`
-9. Publish `PrescriptionFilledEvent` sau commit
+Được gọi từ cả `PUT /prescriptions/{id}/dispense` lẫn consumer của `payment.completed` — dùng **chung một** use case, không viết logic hai lần.
 
-> Bước 6 là nhánh bù trừ. Phiếu xuất **vẫn phải ghi được trạng thái thất bại dù transaction trừ kho
-> đã rollback** — vì thế mới cần `REQUIRES_NEW`. Làm sai chỗ này thì saga treo vĩnh viễn.
+1. `dispenseSlipRepo.findByPrescription(prescriptionId)` → không có thì `DISPENSE_NOT_FOUND`.
+2. Nếu `!slip.isPending()` → `DISPENSE_ALREADY_DONE` (chống xuất 2 lần — một `payment.completed` bị gửi lại không được xuất thuốc hai lần).
+3. Nạp đơn thuốc + các dòng của nó.
+4. **Sắp xếp các dòng theo `drugId`** trước khi khóa — tránh deadlock khi nhiều lần xuất đồng thời.
+5. Mỗi dòng: `drugRepo.findByIdForUpdate(drugId)` (khóa ghi bi quan) → `drug.dispenseStock(quantity)`; ném `DRUG_OUT_OF_STOCK` (BR-D1) hoặc `DRUG_EXPIRED` (BR-D2).
+6. **Khi có bất kỳ lỗi nào:** phần trừ kho bị hoàn tác (transaction rollback), đặt `slip.markFailed(reason)`, lưu phiếu **trong một transaction mới** (`REQUIRES_NEW`), rồi publish `PrescriptionDispenseFailedEvent` → billing bù trừ (BR-D6).
+7. Khi thành công: lưu từng thuốc; `slip.markDispensed(dispensedBy, now)`; lưu phiếu.
+8. Thuốc nào `belowLowStockThreshold()` → publish `StockLowEvent`.
+9. Publish `PrescriptionFilledEvent` sau commit.
 
-### `onPaymentCompleted(prescriptionId, invoiceId)` — bước tiến của saga
+> Bước 6 là nhánh bù trừ. Phiếu xuất **vẫn phải ghi FAILED dù transaction trừ kho đã rollback** — vì thế mới cần `REQUIRES_NEW`. Làm sai chỗ này thì saga treo vĩnh viễn.
 
-1. `processed.alreadyProcessed(eventId)` → return
-2. gọi `dispense(prescriptionId, SYSTEM_USER)`
-3. `processed.markProcessed(...)` trong cùng transaction
-4. Lỗi **không** được ném ngược lại cho Rabbit — chúng đã được publish thành
-   `PrescriptionDispenseFailedEvent`. Chỉ lỗi hạ tầng mới được cho vào dead-letter.
+### 7.3 Nhận tin "đã thanh toán" (`onPaymentCompleted(prescriptionId, invoiceId)`) — bước tiến của saga
 
+1. `processed.alreadyProcessed(eventId)` → đã xử lý rồi thì return.
+2. Gọi `dispense(prescriptionId, SYSTEM_USER)` — người thực hiện là hệ thống.
+3. `processed.markProcessed(...)` trong cùng transaction.
+4. Lỗi **không** ném ngược lại cho RabbitMQ — lỗi nghiệp vụ đã được publish thành `PrescriptionDispenseFailedEvent`. Chỉ lỗi hạ tầng mới được đưa vào dead-letter.
 ## 8. Endpoint
 
 | Method | Path | Body | Trả về | Role |
@@ -346,9 +456,13 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 | GET | `/api/v1/pharmacy/prescriptions/{id}` | — | `PrescriptionDTO` | ADMIN, DOCTOR, PHARMACIST |
 | PUT | `/api/v1/pharmacy/prescriptions/{id}/dispense` | — | `DispenseDTO` | ADMIN, PHARMACIST |
 
+> Phân quyền ghi ở controller (`@PreAuthorize`) — đây là lớp "giao hàng", không phải quy tắc nghiệp vụ (xem `docs/ai/07-security-rbac.md`).
+
 ## 9. Event
 
-**Publish**
+> Quy tắc chung (`docs/ai/06-events-rabbitmq.md`): mọi event bắt đầu bằng `eventId, occurredAt, correlationId`; publish **sau khi** transaction commit; consumer phải chống trùng (dedupe theo `eventId`).
+
+### Publish
 
 | Routing key | Payload | Khi nào |
 |-------------|---------|---------|
@@ -357,7 +471,7 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 | `prescription.dispense.failed` | `{envelope, prescriptionId, invoiceId, patientId, reason}` | xuất thất bại — **kích hoạt bù trừ** |
 | `stock.low` | `{envelope, drugId, drugName, currentStock, threshold}` | tồn kho chạm hoặc dưới `low_stock_threshold` |
 
-**Subscribe** — queue `pharmacy.q`
+### Subscribe — queue `pharmacy.q`
 
 | Routing key | Xử lý |
 |-------------|-------|
@@ -365,8 +479,7 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 
 ## 10. Tương tranh — đọc kỹ trước khi viết `dispense`
 
-Hai dược sĩ xuất cùng một loại thuốc cùng lúc sẽ bán vượt tồn kho nếu không khóa khi đọc. Ràng buộc
-`CHECK (stock_quantity >= 0)` là tuyến phòng thủ cuối cùng, không phải tuyến đầu.
+Hai dược sĩ xuất cùng một loại thuốc cùng lúc sẽ bán vượt tồn kho nếu không khóa khi đọc. Ràng buộc `CHECK (stock_quantity >= 0)` chỉ là tuyến phòng thủ cuối, không phải tuyến đầu.
 
 ```java
 @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -375,10 +488,9 @@ Optional<DrugJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 ```
 
 Quy tắc:
-1. Luôn khóa qua `findByIdForUpdate` bên trong `dispense` — không bao giờ dùng `findById` thường.
-2. Luôn khóa các dòng **đã sắp xếp theo `drugId`**. Khóa không sắp xếp trên đơn nhiều thuốc sẽ gây deadlock.
+1. Luôn khóa qua `findByIdForUpdate` trong `dispense` — không bao giờ dùng `findById` thường.
+2. Luôn khóa các dòng **đã sắp xếp theo `drugId`** — khóa không sắp xếp trên đơn nhiều thuốc sẽ gây deadlock.
 3. Giữ transaction ngắn: không gọi REST, không publish event trong khoảng thời gian đang giữ khóa.
-
 ## 11. Business rule → test
 
 | ID | Quy tắc | Test |
@@ -389,56 +501,49 @@ Quy tắc:
 | BR-D4 | Xuất thuốc trừ kho đúng một lần | `dispense_valid_decrementsStockOnce` |
 | BR-D5 | `total_amount = Σ(quantity × unit_price)` | `createPrescription_computesTotalFromLines` |
 | BR-D6 | Xuất thất bại thì publish event bù trừ | `dispense_outOfStock_publishesDispenseFailed` |
-| BR-D7 | Giá được chụp lại, không tra cứu về sau | `createPrescription_priceChangeLater_totalUnchanged` |
+| BR-D7 | Giá được chụp lại, không truy cứu về sau | `createPrescription_priceChangeLater_totalUnchanged` |
 | BR-D8 | Giá do client gửi bị bỏ qua | `createPrescription_requestHasNoPriceField` |
 | BR-D9 | `payment.completed` gửi lại chỉ xuất một lần | `onPaymentCompleted_sameEventTwice_dispensesOnce` |
 | BR-D10 | Tồn kho không bao giờ âm khi tương tranh | `dispense_twoConcurrentCalls_onlyOneSucceeds` |
 | BR-D11 | Chạm ngưỡng thì publish `stock.low` | `dispense_stockFallsBelowThreshold_publishesStockLow` |
 | BR-D12 | Xuất thất bại vẫn ghi phiếu là `FAILED` | `dispense_failure_slipPersistedAsFailed` |
 
-BR-D10 cần test tương tranh thật: hai luồng, `@SpringBootTest` + Testcontainers, một thuốc có
-`stock_quantity = 1`, hai lượt xuất mỗi lượt 1 → đúng một lượt thành công.
+Ghi chú test:
+- BR-D10 là test tương tranh **thật** (2 luồng) — phải chạy bằng `@SpringBootTest` + Testcontainers, không mock được.
+- BR-D12 cần kiểm tra phiếu `FAILED` **vẫn được lưu dù transaction trừ kho rollback** — tức test nhánh `REQUIRES_NEW` ở §7.2 bước 6.
 
 ## 12. Điểm dễ sai
 
 - Luôn dùng `BigDecimal`. `setScale(2, RoundingMode.HALF_UP)` cho mọi phép tính tiền. Không bao giờ dùng `double`.
 - `DISPENSE_SLIP.prescription_id` là `UNIQUE` — mỗi đơn thuốc đúng một phiếu. Hàm `findByPrescription` dựa vào ràng buộc này.
 - Consumer của `payment.completed` và endpoint `PUT .../dispense` gọi **cùng một** use case. Đừng viết logic hai lần.
-- `stock.low` là kiểu bắn-rồi-quên: đừng để việc publish nó thất bại làm rollback một lượt xuất thuốc đã thành công.
-
----
+- `stock.low` là kiểu bắn-rồi-quên: đừng để việc publish nó thất bại làm rollback một lần xuất thuốc đã thành công.
 
 ## 13. Coding map (chỉ dẫn hiện thực — bổ sung cho spec)
 
-> Mục này dành cho coder: file nào tạo, nội dung gì, đặt ở đâu. Spec là **nơi** (bounded context),
-> mục này là **cách** (cây file cụ thể). Kết hợp với boilerplate chuẩn ở `docs/ai/reference/`.
+> Mục này dành cho coder: file nào tạo, nội dung gì, đặt ở đâu. Spec là **nơi** (bounded context), mục này là **cách** (cây file cụ thể).
 
 ### 13.1 Bản đồ file Java (mọi file cần tạo)
 
-Base package `com.mediflow.pharmacy`. Cây đầy đủ dưới đây (mỗi dòng = một file):
+Base package `com.mediflow.pharmacy`:
 
 ```
 pharmacy-service/src/main/java/com/mediflow/pharmacy/
 ├── PharmacyServiceApplication.java                      # có sẵn
 ├── domain/model/
-│   ├── DispenseStatus.java                              # enum { PENDING, DISPENSED, FAILED }
-│   ├── Drug.java                                        # aggregate "danh mục thuốc" (stock rules)
-│   ├── Prescription.java                                # aggregate root: đơn thuốc + lines (bất biến)
-│   ├── PrescriptionLine.java                            # value: một dòng kê (price snapshot)
-│   └── DispenseSlip.java                                # máy trạng thái PENDING → DISPENSED | FAILED
-├── domain/exception/
-│   ├── DrugNotFoundException.java                       # 404, code DRUG_NOT_FOUND
-│   ├── PrescriptionNotFoundException.java               # 404, code PRESCRIPTION_NOT_FOUND
-│   ├── DispenseNotFoundException.java                   # 404, code DISPENSE_NOT_FOUND
-│   ├── DrugRuleException.java                           # 422, dùng chung cho mã DRUG_*
-│   └── DispenseRuleException.java                       # 422, dùng chung cho mã DISPENSE_*
+│   ├── DispenseStatus.java                              # đã có
+│   ├── Drug.java                                        # đã có
+│   ├── Prescription.java                                # đã có
+│   ├── PrescriptionLine.java                            # đã có
+│   └── DispenseSlip.java                                # đã có
+├── domain/exception/                                    # 6 exception — đã có
 ├── application/port/in/
-│   ├── ManageDrugUseCase.java                           # create/getById/search/adjustStock
-│   ├── CreatePrescriptionUseCase.java                   # create(CreatePrescriptionRequest)
-│   ├── DispensePrescriptionUseCase.java                 # dispense(prescriptionId, dispensedBy)
-│   └── ReactToPaymentUseCase.java                       # onPaymentCompleted(prescriptionId, invoiceId)
+│   ├── ManageDrugUseCase.java
+│   ├── CreatePrescriptionUseCase.java
+│   ├── DispensePrescriptionUseCase.java
+│   └── ReactToPaymentUseCase.java
 ├── application/port/out/
-│   ├── DrugRepositoryPort.java
+│   ├── DrugRepositoryPort.java                          # đã có
 │   ├── PrescriptionRepositoryPort.java
 │   ├── DispenseSlipRepositoryPort.java
 │   ├── ProcessedEventPort.java
@@ -458,28 +563,18 @@ pharmacy-service/src/main/java/com/mediflow/pharmacy/
 │   ├── PrescriptionDtoMapper.java                       # MapStruct: Prescription ↔ PrescriptionDTO
 │   └── DispenseDtoMapper.java                           # MapStruct: DispenseSlip ↔ DispenseDTO
 ├── application/service/
-│   ├── PharmacyApplicationService.java                  # hiện thực ManageDrug + CreatePrescription + Dispense + ReactToPayment
-│   └── (optional) DrugApplicationService.java           # tách riêng nếu service quá lớn
-├── web/                                  # DRIVING adapter (HTTP) — gọi vào application
+│   └── PharmacyApplicationService.java                  # thực hiện 4 in-port
+├── web/                                    # DRIVING adapter (HTTP) — gọi vào application
 │   ├── DrugController.java                              # /api/v1/pharmacy/drugs (4 endpoints)
-│   ├── PrescriptionController.java                      # /api/v1/pharmacy/prescriptions (POST, GET /{id}, PUT /{id}/dispense)
-│   └── GlobalExceptionHandler.java                      # copy từ docs/ai/reference (chỉ đổi package)
+│   ├── PrescriptionController.java                      # POST, GET /{id}, PUT /{id}/dispense
+│   └── GlobalExceptionHandler.java                      # copy từ docs/ai/reference (đổi package)
 ├── messaging/consumer/                   # DRIVING adapter (events) — gọi vào application
 │   └── PaymentCompletedConsumer.java                    # @RabbitListener, gọi ReactToPaymentUseCase, dedupe eventId
 ├── infrastructure/persistence/           # DRIVEN adapter (DB) — hiện thực port out
-│   ├── DrugJpaEntity.java
-│   ├── DrugJpaRepository.java                           # + findByIdForUpdate (PESSIMISTIC_WRITE)
-│   ├── DrugPersistenceAdapter.java
-│   ├── DrugPersistenceMapper.java                       # MapStruct: Drug ↔ DrugJpaEntity
-│   ├── PrescriptionJpaEntity.java
-│   ├── PrescriptionJpaRepository.java
-│   ├── PrescriptionPersistenceAdapter.java
-│   ├── PrescriptionPersistenceMapper.java
+│   ├── DrugJpaEntity.java / DrugJpaRepository.java / DrugPersistenceAdapter.java / DrugPersistenceMapper.java
+│   ├── PrescriptionJpaEntity.java / PrescriptionJpaRepository.java / PrescriptionPersistenceAdapter.java / PrescriptionPersistenceMapper.java
 │   ├── PrescriptionLineJpaEntity.java                   # con của PrescriptionJpaEntity (@OneToMany cascade)
-│   ├── DispenseSlipJpaEntity.java
-│   ├── DispenseSlipJpaRepository.java
-│   ├── DispenseSlipPersistenceAdapter.java
-│   ├── DispenseSlipPersistenceMapper.java
+│   ├── DispenseSlipJpaEntity.java / DispenseSlipJpaRepository.java / DispenseSlipPersistenceAdapter.java / DispenseSlipPersistenceMapper.java
 │   └── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng PROCESSED_EVENT)
 └── infrastructure/messaging/             # DRIVEN adapter (RabbitMQ) — publisher + payload
     ├── PharmacyEventPublisherAdapter.java               # hiện thực PharmacyEventPublisherPort (publish sau commit)
@@ -490,7 +585,7 @@ pharmacy-service/src/main/java/com/mediflow/pharmacy/
         └── StockLowEvent.java
 ```
 
-Các file sau **cần boilerplate sẵn có**, chưa liệt kê ở trên (xem `docs/ai/reference/`):
+Các file boilerplate (copy từ `docs/ai/reference/`):
 
 ```
 infrastructure/config/RabbitConfig.java        # copy chuẩn → sửa hằng số routing key
@@ -501,19 +596,11 @@ infrastructure/config/OpenApiConfig.java        # OpenAPI bean (tùy chọn)
 src/main/resources/db/migration/V1__init.sql    # DDL §1 ở trên
 ```
 
-> **Clean Architecture (hexagonal):** `web/` + `messaging/consumer/` là hai *driving adapter* (cổng
-> gọi *vào* application) — chúng nằm ở tầng ngoài cùng, anh em với `infrastructure/` (driven adapter,
-> application gọi *ra*). Controller/consumer **chỉ gọi in-port**, không bao giờ import persistence
-> hay publisher. Xem `docs/ai/04-microservice-blueprint.md`.
+> **Clean Architecture (hexagonal):** `web/` + `messaging/consumer/` là hai *driving adapter* (cổng gọi *vào* application). Controller/consumer **chỉ gọi in-port**, không bao giờ import persistence hay publisher. Xem `docs/ai/04-microservice-blueprint.md`.
 
-> **Ghi chú về cây con:** `Prescription` chứa `lines`. Phía JPA: `PrescriptionJpaEntity` có
-> `@OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL, orphanRemoval = true) List<PrescriptionLineJpaEntity>`
-> và `PrescriptionLineJpaEntity` có `@ManyToOne(fetch = LAZY) PrescriptionJpaEntity prescription` — một aggregate,
-> không có repository port riêng cho chi tiết. Domain `Prescription` trả `List<PrescriptionLine>` **không cho sửa** (unmodifiable).
+> **Ghi chú cây con:** `Prescription` chứa `lines`. Phía JPA: `PrescriptionJpaEntity` có `@OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL, orphanRemoval = true) List<PrescriptionLineJpaEntity>` và `PrescriptionLineJpaEntity` có `@ManyToOne(fetch = LAZY) PrescriptionJpaEntity prescription` — một aggregate, không có repository port riêng cho dòng kê. Domain `Prescription` trả `List<PrescriptionLine>` **không cho sửa** (unmodifiable).
 
 ### 13.2 Event payloads — dạng Java record (đúng envelope chuẩn)
-
-Theo `06-events-rabbitmq.md`, mọi event đều bắt đầu bằng `eventId, occurredAt, correlationId`. Đầy đủ:
 
 ```java
 // PrescriptionCreatedEvent — routing key "prescription.created", publish sau createPrescription commit
@@ -548,27 +635,10 @@ public record StockLowEvent(
 
 ### 13.3 Chi tiết persistence
 
-**`DrugJpaRepository` — khóa ghi bi quan (BẮT BUỘC cho `dispense`):**
+Entity ↔ domain (MapStruct):
 
-```java
-public interface DrugJpaRepository extends JpaRepository<DrugJpaEntity, UUID> {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT d FROM DrugJpaEntity d WHERE d.drugId = :id")
-    Optional<DrugJpaEntity> findByIdForUpdate(@Param("id") UUID id);
-
-    @Query("""
-        SELECT d FROM DrugJpaEntity d
-        WHERE :keyword IS NULL
-           OR LOWER(d.drugName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        """)
-    Page<DrugJpaEntity> search(@Param("keyword") String keyword, Pageable pageable);
-}
-```
-
-**Ánh xạ entity ↔ domain (MapStruct):**
-
-| Entity field (`@Column`) | Domain field | Kiểu |
-|---|---|---|
+| Entity field | Domain field | Kiểu |
+|--------------|--------------|------|
 | `drug_id` | `drugId` | UUID |
 | `drug_name` | `drugName` | String |
 | `active_ingredient` | `activeIngredient` | String |
@@ -578,14 +648,14 @@ public interface DrugJpaRepository extends JpaRepository<DrugJpaEntity, UUID> {
 | `expiry_date` | `expiryDate` | LocalDate |
 | `manufacturer` | `manufacturer` | String |
 | `low_stock_threshold` | `lowStockThreshold` | int |
-| `created_at`/`updated_at` | `createdAt`/`updatedAt` | Instant |
+| `created_at` / `updated_at` | `createdAt` / `updatedAt` | Instant |
 
-**Adapter cần làm đúng 3 điều:**
+Adapter cần làm đúng 3 điều:
 1. `findByIdForUpdate` → `findById` thường cho mọi luồng đọc; **chỉ `dispense` dùng bản khóa**.
-2. `search` → chuyển `PageQuery → Pageable` (page, size), và `Page<DrugJpaEntity> → PageResult<Drug>` (`map` qua entity mapper). DTO mapper tách lớp: persistence chỉ biết domain, không biết DTO.
-3. `save`/`findById`/`findByPatient`... → mapper domain↔entity ở hai chiều.
+2. `search` → chuyển `PageQuery → Pageable` (page, size), và `Page<DrugJpaEntity> → PageResult<Drug>` (map qua entity mapper). DTO mapper tách lớp: persistence chỉ biết domain, không biết DTO.
+3. `save`/`findById`/`findByPatient`... → mapper domain ↔ entity ở hai chiều.
 
-**`PrescriptionPersistenceAdapter`/`DispenseSlipPersistenceAdapter`** cùng pattern (save, findById, findByPatient/findByPrescription).
+`PrescriptionPersistenceAdapter` / `DispenseSlipPersistenceAdapter` cùng pattern (save, findById, findByPatient/findByPrescription).
 
 ### 13.4 RabbitConfig — hằng số & binding (pharmacy)
 
@@ -622,17 +692,13 @@ Queue `pharmacy.q` **chỉ bind `payment.completed`**. Các routing key publish 
 | BR-D11 (stock.low) | application | `dispense_stockFallsBelowThreshold_publishesStockLow` | mock publisher, verify `publishStockLow` |
 | BR-D12 (phiếu FAILED) | integration | `dispense_failure_slipPersistedAsFailed` | Testcontainers, `REQUIRES_NEW` branch |
 
-**Ghi chú test:**
-- BR-D10 là test tương tranh **thật** (2 luồng) — phải chạy bằng `@SpringBootTest` + Testcontainers, không mock được.
-- BR-D12 cần kiểm tra phiếu `FAILED` **vẫn được lưu dù transaction trừ kho rollback** — tức test nhánh `REQUIRES_NEW` ở §7 (bước 6).
-
 ### 13.6 Checklist hoàn thiện pharmacy (Definition of Done)
 
 - [ ] `V1__init.sql` đủ 5 bảng, đúng tên EN snake_case (DRUG, PRESCRIPTION, ...), index đúng spec.
-- [ ] Domain: 4 model + 1 enum + 5 exception; bất biến nằm trong model (`dispenseStock`, `create`...).
+- [ ] Domain: 4 model + 1 enum + 6 exception; quy tắc nằm trong model (`dispenseStock`, `create`...).
 - [ ] Ports đủ (5 out, 4 in); application service hiện thực, **không import Spring Data/AMQP**.
 - [ ] DTO records có Bean Validation; 3 MapStruct mapper.
-- [ ] Controller 3 cái + `@PreAuthorize` đúng role (ADMIN/DOCTOR/PHARMACIST).
+- [ ] Controller 2 cái + `@PreAuthorize` đúng role (ADMIN/DOCTOR/PHARMACIST).
 - [ ] 4 event record + publisher adapter (sau commit); consumer `payment.completed` idempotent.
 - [ ] `GlobalExceptionHandler` (từ reference), `SecurityConfig`, `RabbitConfig`, `OpenApiConfig`.
 - [ ] Test 5 tầng; 12 business rule được phủ.

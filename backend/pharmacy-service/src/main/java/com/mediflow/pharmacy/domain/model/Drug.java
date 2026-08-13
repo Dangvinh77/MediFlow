@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 import java.util.UUID;
 
-import com.mediflow.pharmacy.domain.exception.DrugRulesException;
+import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 
 import lombok.Getter;
 
@@ -45,19 +45,19 @@ public class Drug {
                             LocalDate expiryDate, String manufacturer, int lowStockThreshold
   ){
           if(drugName == null || drugName.isBlank()){
-             throw new DrugRulesException("DRUG_NAME_REQUIRED", "Tên thuốc không được bỏ trống");
+             throw new DrugRuleException("DRUG_NAME_REQUIRED", "Tên thuốc không được bỏ trống");
           }
           
           if(unit == null || unit.isBlank()){
-             throw new DrugRulesException("DRUG_UNIT_REQUIRED", "Đơn vị của thuốc không được bỏ trống");
+             throw new DrugRuleException("DRUG_UNIT_REQUIRED", "Đơn vị của thuốc không được bỏ trống");
           }
 
           if(price.compareTo(BigDecimal.ZERO) < 0){
-              throw new DrugRulesException("DRUG_PRICE_NEGATIVE", "Giá của thuốc không được âm");
+              throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá của thuốc không được âm");
           }
 
           if(expiryDate.isBefore(LocalDate.now())){
-              throw new DrugRulesException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
+              throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
           }
 
           return new Drug(null, drugName, activeIngredient, unit, price, stockQuantity, expiryDate, manufacturer, lowStockThreshold, null, null);
@@ -74,11 +74,13 @@ public class Drug {
     public void updateInfo(String drugName, String activeIngredient, String unit, BigDecimal price,
                            LocalDate expiryDate, String manufacturer, int lowStockThreshold) {
         if (drugName == null || drugName.isBlank())
-            throw new DrugRulesException("DRUG_NAME_REQUIRED", "Tên thuốc không được để trống");
+            throw new DrugRuleException("DRUG_NAME_REQUIRED", "Tên thuốc không được để trống");
         if (unit == null || unit.isBlank())
-            throw new DrugRulesException("DRUG_UNIT_REQUIRED", "Đơn vị tính không được để trống");
+            throw new DrugRuleException("DRUG_UNIT_REQUIRED", "Đơn vị tính không được để trống");
         if (price.compareTo(BigDecimal.ZERO) < 0)
-            throw new DrugRulesException("DRUG_PRICE_NEGATIVE", "Giá thuốc không được âm");
+            throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá thuốc không được âm");
+        if (expiryDate == null || expiryDate.isBefore(LocalDate.now()))
+            throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
         this.drugName = drugName;
         this.activeIngredient = activeIngredient;
         this.unit = unit;
@@ -91,18 +93,18 @@ public class Drug {
     /** Nhập kho. */
     public void restock(int quantity) {
         if (quantity <= 0)
-            throw new DrugRulesException("DRUG_QUANTITY_INVALID", "Số lượng nhập phải lớn hơn 0");
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng nhập phải lớn hơn 0");
         this.stockQuantity += quantity;
     }
 
     /** Xuất kho — ném nếu vi phạm BR-D1 (hết hàng) hoặc BR-D2 (hết hạn). */
     public void dispenseStock(int quantity) {
         if (quantity <= 0)
-            throw new DrugRulesException("DRUG_QUANTITY_INVALID", "Số lượng xuất phải lớn hơn 0");
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng xuất phải lớn hơn 0");
         if (stockQuantity < quantity)
-            throw new DrugRulesException("DRUG_OUT_OF_STOCK", "Không đủ hàng tồn kho");
+            throw new DrugRuleException("DRUG_OUT_OF_STOCK", "Không đủ hàng tồn kho");
         if (isExpired())
-            throw new DrugRulesException("DRUG_EXPIRED", "Thuốc đã hết hạn sử dụng");
+            throw new DrugRuleException("DRUG_EXPIRED", "Thuốc đã hết hạn sử dụng");
         this.stockQuantity -= quantity;
     }
 
@@ -111,7 +113,7 @@ public class Drug {
     }
 
     public boolean isExpired() {
-        return expiryDate != null && expiryDate.isBefore(LocalDate.now());
+        return expiryDate == null || expiryDate.isBefore(LocalDate.now());
     }
 
     public boolean belowLowStockThreshold() {
