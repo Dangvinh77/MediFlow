@@ -105,6 +105,10 @@ scripts\setup-codebase-memory.bat     # codebase-memory-mcp (Windows)
 scripts/setup-understand-anything.sh  # Understand-Anything (macOS/Linux)
 scripts\setup-understand-anything.bat # Understand-Anything (Windows)
 scripts\setup-tools.bat               # both at once (Windows)
+
+# New clone? Enable git hooks (single-author policy). core.hooksPath is local to
+# each machine and does NOT travel with `git clone` — bootstrap does this automatically.
+git config core.hooksPath scripts/git-hooks   # or: scripts\setup-hooks.bat / bash scripts/setup-hooks.sh
 ```
 
 Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000) → `flutter run`.

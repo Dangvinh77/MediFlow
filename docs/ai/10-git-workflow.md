@@ -46,6 +46,25 @@ mvn -q -DskipTests install
 # re-index codebase memory (Claude users) — see scripts/index-codebase.*
 ```
 
+## Git hooks (single-author policy)
+
+- Hook scripts nằm trong repo tại `scripts/git-hooks/`, nhưng git **chỉ chạy** chúng khi config
+  `core.hooksPath` trỏ tới đó — và setting này nằm trong `.git/config`, **local trên từng máy,
+  không đi theo `git clone`**. Đây là lý do commit từ máy dev khác có thể "sót" dòng
+  `Co-Authored-By: Claude` trong khi máy bạn thì không: Claude Code tự thêm trailer đó, và nếu
+  máy đó chưa bật hook thì không gì chặn.
+- `prepare-commit-msg` xoá mọi dòng `Co-Authored-By:`; `commit-msg` **từ chối** (exit 1) commit
+  nào còn sót — agent (Claude, Codex, Copilot, ...) không bao giờ được ghi là đồng tác giả.
+
+Bật hooks sau khi clone (1 lần):
+
+```bash
+git config core.hooksPath scripts/git-hooks   # tương đương: scripts\setup-hooks.bat / bash scripts/setup-hooks.sh
+```
+
+> `bootstrap.ps1` / `bootstrap.sh` làm việc này tự động. Dev đã có clone cũ → chạy lệnh trên.
+> Chỉnh hook: sửa `scripts/git-hooks/*` rồi commit (scope `tooling`).
+
 ## Changelog harness
 
 Mỗi commit tự động được ghi vào `.changelog/entries.jsonl` (text, 1 dòng/commit)
