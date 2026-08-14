@@ -1,167 +1,462 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Organization Service – Technical Design</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
-        h1, h2, h3 { color: #0f172a; }
-        h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
-        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
-        .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
-        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; margin: 16px 0; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Organization Service – Technical Design</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f9fafb;
+      color: #1e293b;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: #0f172a;
+    }
+
+    h1 {
+      border-bottom: 4px solid #3b82f6;
+      padding-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    th {
+      background: #1e293b;
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .code {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    .note {
+      background: #fef9c3;
+      border-left: 4px solid #eab308;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 16px 0;
+    }
+  </style>
 </head>
+
 <body>
-    <h1>🏢 Organization Service</h1>
-    <p><strong>Vai trò:</strong> Cơ cấu tổ chức của bệnh viện — có những khoa/phòng nào, ai làm việc ở đâu, và họ đăng nhập bằng gì.</p>
+  <h1>🏢 Organization Service</h1>
+  <p><strong>Vai trò:</strong> Cơ cấu tổ chức của bệnh viện — có những khoa/phòng nào, ai làm việc ở đâu, và họ đăng nhập bằng gì.</p>
 
+  <div class="note">
+    <strong>Service này là nền của toàn hệ thống.</strong> Nó sở hữu ba thứ mà mọi service khác
+    tham chiếu tới: <code>DEPARTMENT</code> (phòng ban), <code>STAFF</code> (chính là
+    <code>staff_id</code> xuất hiện trong lịch hẹn, hồ sơ và đơn thuốc), và
+    <code>ACCOUNT</code> (nơi Gateway đối chiếu để cấp JWT). Không có nó thì không có khái niệm
+    phòng ban, không ai sở hữu bác sĩ, và không có kho người dùng để xác thực.
+  </div>
+
+  <div class="section">
+    <h2>1. Trách nhiệm (Bounded Context)</h2>
+    <ul>
+      <li><strong>Quản lý:</strong> Khoa/phòng (<code>DEPARTMENT</code>), nhân viên y tế (<code>STAFF</code>), tài khoản đăng nhập (<code>ACCOUNT</code>).</li>
+      <li><strong>Không quản lý:</strong> Bệnh nhân, lịch hẹn, hồ sơ, xét nghiệm, thuốc, tiền.
+        Service này trả lời <em>ai</em> và <em>ở đâu</em>, không bao giờ trả lời <em>điều gì đã xảy ra với bệnh nhân</em>.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>2. Data Model</h2>
+
+    <p><strong>DEPARTMENT</strong> — khoa / phòng ban</p>
+    <table>
+      <tr>
+        <th>Trường</th>
+        <th>Kiểu</th>
+        <th>Mô tả</th>
+      </tr>
+      <tr>
+        <td>department_id</td>
+        <td>UUID (PK)</td>
+        <td>Mã khoa</td>
+      </tr>
+      <tr>
+        <td>department_name</td>
+        <td>VARCHAR(100)</td>
+        <td>Tên khoa (VD: Khoa Nội tổng hợp)</td>
+      </tr>
+      <tr>
+        <td>abbreviation</td>
+        <td>VARCHAR(20) UNIQUE</td>
+        <td>Mã viết tắt (VD: NOI, NGOAI, XN)</td>
+      </tr>
+      <tr>
+        <td>department_type</td>
+        <td>ENUM('CLINICAL','PARACLINICAL','ADMINISTRATIVE')</td>
+        <td>Phân loại khoa</td>
+      </tr>
+      <tr>
+        <td>department_head_id</td>
+        <td>UUID (FK → STAFF, nullable)</td>
+        <td>Trưởng khoa</td>
+      </tr>
+      <tr>
+        <td>location</td>
+        <td>VARCHAR(255)</td>
+        <td>Vị trí (tầng, tòa nhà)</td>
+      </tr>
+      <tr>
+        <td>is_active</td>
+        <td>BOOLEAN</td>
+        <td>Khoa còn hoạt động không</td>
+      </tr>
+      <tr>
+        <td>created_at / updated_at</td>
+        <td>TIMESTAMPTZ</td>
+        <td>-</td>
+      </tr>
+    </table>
+
+    <p><strong>STAFF</strong> — nhân viên y tế</p>
+    <table>
+      <tr>
+        <th>Trường</th>
+        <th>Kiểu</th>
+        <th>Mô tả</th>
+      </tr>
+      <tr>
+        <td>staff_id</td>
+        <td>UUID (PK)</td>
+        <td>Mã nhân viên — chính là <code>staff_id</code> mà các service khác tham chiếu</td>
+      </tr>
+      <tr>
+        <td>full_name</td>
+        <td>VARCHAR(100)</td>
+        <td>Họ tên</td>
+      </tr>
+      <tr>
+        <td>department_id</td>
+        <td>UUID (FK — cùng service)</td>
+        <td>Thuộc khoa nào</td>
+      </tr>
+      <tr>
+        <td>job_title</td>
+        <td>ENUM('DOCTOR','NURSE','TECHNICIAN','PHARMACIST','CASHIER','MANAGER','ADMINISTRATIVE')</td>
+        <td>Chức danh</td>
+      </tr>
+      <tr>
+        <td>specialization</td>
+        <td>VARCHAR(100) NULL</td>
+        <td>Chuyên khoa sâu</td>
+      </tr>
+      <tr>
+        <td>license_number</td>
+        <td>VARCHAR(50) NULL</td>
+        <td>Số chứng chỉ hành nghề</td>
+      </tr>
+      <tr>
+        <td>phone_number</td>
+        <td>VARCHAR(15)</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>email</td>
+        <td>VARCHAR(100)</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>status</td>
+        <td>ENUM('ACTIVE','INACTIVE')</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>created_at / updated_at</td>
+        <td>TIMESTAMPTZ</td>
+        <td>-</td>
+      </tr>
+    </table>
+
+    <p><strong>ACCOUNT</strong> — tài khoản đăng nhập</p>
+    <table>
+      <tr>
+        <th>Trường</th>
+        <th>Kiểu</th>
+        <th>Mô tả</th>
+      </tr>
+      <tr>
+        <td>account_id</td>
+        <td>UUID (PK)</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>username</td>
+        <td>VARCHAR(50) UNIQUE</td>
+        <td>Tên đăng nhập</td>
+      </tr>
+      <tr>
+        <td>password_hash</td>
+        <td>VARCHAR(255)</td>
+        <td><strong>BCrypt hash</strong> — không bao giờ lưu plaintext, không bao giờ ghi log</td>
+      </tr>
+      <tr>
+        <td>staff_id</td>
+        <td>UUID (FK — cùng service, nullable)</td>
+        <td>Null với tài khoản vai trò PATIENT</td>
+      </tr>
+      <tr>
+        <td>role</td>
+        <td>ENUM('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','MANAGER','PATIENT','SYSTEM')</td>
+        <td>Khớp chính xác với <code>Roles.java</code></td>
+      </tr>
+      <tr>
+        <td>is_active</td>
+        <td>BOOLEAN</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>last_login_at</td>
+        <td>TIMESTAMPTZ NULL</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>created_at / updated_at</td>
+        <td>TIMESTAMPTZ</td>
+        <td>-</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>3. API Endpoints</h2>
+    <table>
+      <tr>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Request</th>
+        <th>Response</th>
+        <th>Auth Role</th>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/v1/org/departments</td>
+        <td>-</td>
+        <td>List&lt;DepartmentDTO&gt;</td>
+        <td>ADMIN, MANAGER, DOCTOR, NURSE</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/v1/org/departments/{id}</td>
+        <td>-</td>
+        <td>DepartmentDTO</td>
+        <td>ADMIN, MANAGER, DOCTOR, NURSE</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/v1/org/departments</td>
+        <td>CreateDepartmentRequest</td>
+        <td>DepartmentDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>/api/v1/org/departments/{id}</td>
+        <td>UpdateDepartmentRequest</td>
+        <td>DepartmentDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/v1/org/staff?departmentId&amp;jobTitle&amp;page&amp;size</td>
+        <td>-</td>
+        <td>Page&lt;StaffDTO&gt;</td>
+        <td>ADMIN, MANAGER, DOCTOR, NURSE</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/v1/org/staff/{id}</td>
+        <td>-</td>
+        <td>StaffDTO</td>
+        <td>ADMIN, MANAGER, DOCTOR, NURSE</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/v1/org/staff</td>
+        <td>CreateStaffRequest</td>
+        <td>StaffDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>/api/v1/org/staff/{id}</td>
+        <td>UpdateStaffRequest</td>
+        <td>StaffDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>/api/v1/org/staff/{id}/department</td>
+        <td>{ departmentId }</td>
+        <td>StaffDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/v1/org/staff/{id}/exists</td>
+        <td>-</td>
+        <td>{ exists, departmentId }</td>
+        <td>SYSTEM (nội bộ)</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/v1/org/accounts</td>
+        <td>CreateAccountRequest</td>
+        <td>AccountDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>/api/v1/org/accounts/{id}/status</td>
+        <td>{ isActive }</td>
+        <td>AccountDTO</td>
+        <td>ADMIN</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/v1/org/accounts/verify</td>
+        <td>{ username, password }</td>
+        <td>{ accountId, staffId, departmentId, role }</td>
+        <td>SYSTEM (chỉ Gateway)</td>
+      </tr>
+    </table>
     <div class="note">
-        <strong>Service này là nền của toàn hệ thống.</strong> Nó sở hữu ba thứ mà mọi service khác
-        tham chiếu tới: <code>KHOA</code> (phòng ban), <code>NHAN_VIEN</code> (chính là
-        <code>ma_bac_si</code> xuất hiện trong lịch hẹn, hồ sơ và đơn thuốc), và
-        <code>TAI_KHOAN</code> (nơi Gateway đối chiếu để cấp JWT). Không có nó thì không có khái niệm
-        phòng ban, không ai sở hữu bác sĩ, và không có kho người dùng để xác thực.
+      <code>/accounts/verify</code> là thứ biến auth stub của Gateway thành xác thực thật: Gateway
+      gửi thông tin đăng nhập, service này kiểm tra hash rồi trả về danh tính, Gateway mới ký JWT.
+      <strong>Gateway tuyệt đối không đọc thẳng bảng ACCOUNT</strong> — đó sẽ là truy cập DB chéo service.
     </div>
+  </div>
 
-    <div class="section">
-        <h2>1. Trách nhiệm (Bounded Context)</h2>
-        <ul>
-            <li><strong>Quản lý:</strong> Khoa/phòng (KHOA), nhân viên y tế (NHAN_VIEN), tài khoản đăng nhập (TAI_KHOAN).</li>
-            <li><strong>Không quản lý:</strong> Bệnh nhân, lịch hẹn, hồ sơ, xét nghiệm, thuốc, tiền.
-                Service này trả lời <em>ai</em> và <em>ở đâu</em>, không bao giờ trả lời <em>điều gì đã xảy ra với bệnh nhân</em>.</li>
-        </ul>
+  <div class="section">
+    <h2>4. Events Publish</h2>
+    <table>
+      <tr>
+        <th>Tên Event</th>
+        <th>Schema</th>
+        <th>Khi nào bắn</th>
+      </tr>
+      <tr>
+        <td>department.created</td>
+        <td>{ departmentId, departmentName, departmentType }</td>
+        <td>Khi tạo khoa mới</td>
+      </tr>
+      <tr>
+        <td>staff.created</td>
+        <td>{ staffId, fullName, departmentId, jobTitle }</td>
+        <td>Khi thêm nhân viên</td>
+      </tr>
+      <tr>
+        <td>staff.department.changed</td>
+        <td>{ staffId, oldDepartmentId, newDepartmentId }</td>
+        <td>Khi điều chuyển nhân viên giữa khoa</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>5. Events Subscribe</h2>
+    <p><strong>Không có.</strong> Đây là dữ liệu nền — nó điều khiển các context khác chứ không phản ứng theo chúng.</p>
+  </div>
+
+  <div class="section">
+    <h2>6. Business Rules</h2>
+    <ul>
+      <li><code>username</code> là duy nhất; mật khẩu lưu dạng <strong>BCrypt hash</strong>, không bao giờ plaintext, không bao giờ ghi log.</li>
+      <li>Một <code>STAFF</code> phải thuộc đúng một <code>DEPARTMENT</code> đang hoạt động.</li>
+      <li><code>job_title = DOCTOR</code> bắt buộc phải có <code>license_number</code> (chứng chỉ hành nghề).</li>
+      <li><code>department_head_id</code> nếu có phải là <code>STAFF</code> <strong>thuộc chính khoa đó</strong>.</li>
+      <li>Không thể đặt <code>is_active = false</code> cho khoa còn nhân viên đang làm việc.</li>
+      <li>Điều chuyển nhân viên phải publish <code>staff.department.changed</code>; không được xóa rồi tạo lại.</li>
+      <li>Tài khoản vai trò <code>PATIENT</code> không có <code>staff_id</code> (bệnh nhân không phải nhân viên).</li>
+      <li>Vô hiệu hóa tài khoản phải chặn được lần đăng nhập kế tiếp; JWT đã cấp sẽ hết hạn tự nhiên.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>7. Chiều phòng ban xuyên suốt hệ thống</h2>
+    <p><code>department_id</code> được mang theo trong mọi bảng nghiệp vụ và mọi event, nhờ đó hệ thống
+      trả lời được những câu hỏi định nghĩa một hệ thống <em>theo phòng ban</em>:</p>
+    <table>
+      <tr>
+        <th>Câu hỏi</th>
+        <th>Cần dữ liệu</th>
+      </tr>
+      <tr>
+        <td>Khoa nào chỉ định xét nghiệm này?</td>
+        <td><code>LAB_TEST.department_id</code></td>
+      </tr>
+      <tr>
+        <td>Doanh thu từng khoa trong tháng</td>
+        <td><code>BILLING.department_id</code> + tổng hợp ở Report</td>
+      </tr>
+      <tr>
+        <td>Khoa Nội có những bác sĩ nào, ai là trưởng khoa?</td>
+        <td><code>STAFF.department_id</code>, <code>DEPARTMENT.department_head_id</code></td>
+      </tr>
+      <tr>
+        <td>Điều chuyển bác sĩ từ Khoa Nội sang Khoa Ngoại</td>
+        <td><code>staff.department.changed</code></td>
+      </tr>
+      <tr>
+        <td>Người dùng này được phép làm gì?</td>
+        <td><code>ACCOUNT.role</code>, xác định lúc đăng nhập</td>
+      </tr>
+    </table>
+    <p>Các service khác giữ <code>department_id</code> dưới dạng <strong>UUID trần</strong> — không có
+      quan hệ JPA, không join chéo database.</p>
+  </div>
+
+  <div class="section">
+    <h2>8. Sequence Diagram – Đăng nhập</h2>
+    <div class="code">
+      Client → Gateway → Organization Service<br>
+      1. POST /api/v1/auth/login { username, password }<br>
+      2. Gateway → POST /api/v1/org/accounts/verify<br>
+      3. Organization: tìm ACCOUNT theo username<br>
+      4. Organization: so khớp BCrypt hash, kiểm tra is_active<br>
+      5. Organization → { accountId, staffId, departmentId, role }<br>
+      6. Gateway ký JWT với claim: sub, role, departmentId, exp<br>
+      7. Trả về { accessToken, refreshToken, role }
     </div>
-
-    <div class="section">
-        <h2>2. Data Model</h2>
-        <p><strong>KHOA</strong> — khoa / phòng ban</p>
-        <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_khoa</td><td>UUID (PK)</td><td>Mã khoa</td></tr>
-            <tr><td>ten_khoa</td><td>VARCHAR(100)</td><td>Tên khoa (VD: Khoa Nội tổng hợp)</td></tr>
-            <tr><td>ma_viet_tat</td><td>VARCHAR(20) UNIQUE</td><td>Mã viết tắt (VD: NOI, NGOAI, XN)</td></tr>
-            <tr><td>loai_khoa</td><td>ENUM('LAM_SANG','CAN_LAM_SANG','HANH_CHINH')</td><td>Phân loại khoa</td></tr>
-            <tr><td>truong_khoa</td><td>UUID (FK → NHAN_VIEN, nullable)</td><td>Trưởng khoa</td></tr>
-            <tr><td>dia_diem</td><td>VARCHAR(255)</td><td>Vị trí (tầng, tòa nhà)</td></tr>
-            <tr><td>hoat_dong</td><td>BOOLEAN</td><td>Khoa còn hoạt động không</td></tr>
-            <tr><td>created_at / updated_at</td><td>TIMESTAMP</td><td>-</td></tr>
-        </table>
-
-        <p><strong>NHAN_VIEN</strong> — nhân viên y tế</p>
-        <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_nhan_vien</td><td>UUID (PK)</td><td>Mã nhân viên — chính là <code>ma_bac_si</code> mà các service khác tham chiếu</td></tr>
-            <tr><td>ho_ten</td><td>VARCHAR(100)</td><td>Họ tên</td></tr>
-            <tr><td>ma_khoa</td><td>UUID (FK — cùng service)</td><td>Thuộc khoa nào</td></tr>
-            <tr><td>chuc_danh</td><td>ENUM('BAC_SI','DIEU_DUONG','KY_THUAT_VIEN','DUOC_SI','THU_NGAN','QUAN_LY','HANH_CHINH')</td><td>Chức danh</td></tr>
-            <tr><td>chuyen_khoa</td><td>VARCHAR(100) NULL</td><td>Chuyên khoa sâu</td></tr>
-            <tr><td>so_chung_chi</td><td>VARCHAR(50) NULL</td><td>Số chứng chỉ hành nghề</td></tr>
-            <tr><td>so_dien_thoai</td><td>VARCHAR(15)</td><td>-</td></tr>
-            <tr><td>email</td><td>VARCHAR(100)</td><td>-</td></tr>
-            <tr><td>trang_thai</td><td>ENUM('DANG_LAM','NGHI_VIEC')</td><td>-</td></tr>
-            <tr><td>created_at / updated_at</td><td>TIMESTAMP</td><td>-</td></tr>
-        </table>
-
-        <p><strong>TAI_KHOAN</strong> — tài khoản đăng nhập</p>
-        <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_tai_khoan</td><td>UUID (PK)</td><td>-</td></tr>
-            <tr><td>ten_dang_nhap</td><td>VARCHAR(50) UNIQUE</td><td>Tên đăng nhập</td></tr>
-            <tr><td>mat_khau_hash</td><td>VARCHAR(255)</td><td><strong>BCrypt hash</strong> — không bao giờ lưu plaintext, không bao giờ ghi log</td></tr>
-            <tr><td>ma_nhan_vien</td><td>UUID (FK — cùng service, nullable)</td><td>Null với tài khoản vai trò PATIENT</td></tr>
-            <tr><td>vai_tro</td><td>ENUM('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','MANAGER','PATIENT','SYSTEM')</td><td>Khớp chính xác với <code>Roles.java</code></td></tr>
-            <tr><td>kich_hoat</td><td>BOOLEAN</td><td>-</td></tr>
-            <tr><td>lan_dang_nhap_cuoi</td><td>TIMESTAMP NULL</td><td>-</td></tr>
-            <tr><td>created_at / updated_at</td><td>TIMESTAMP</td><td>-</td></tr>
-        </table>
-    </div>
-
-    <div class="section">
-        <h2>3. API Endpoints</h2>
-        <table>
-            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
-            <tr><td>GET</td><td>/api/v1/org/departments</td><td>-</td><td>List&lt;KhoaDTO&gt;</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
-            <tr><td>GET</td><td>/api/v1/org/departments/{id}</td><td>-</td><td>KhoaDTO</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
-            <tr><td>POST</td><td>/api/v1/org/departments</td><td>CreateKhoaRequest</td><td>KhoaDTO</td><td>ADMIN</td></tr>
-            <tr><td>PUT</td><td>/api/v1/org/departments/{id}</td><td>UpdateKhoaRequest</td><td>KhoaDTO</td><td>ADMIN</td></tr>
-            <tr><td>GET</td><td>/api/v1/org/staff?maKhoa&amp;chucDanh&amp;page&amp;size</td><td>-</td><td>Page&lt;NhanVienDTO&gt;</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
-            <tr><td>GET</td><td>/api/v1/org/staff/{id}</td><td>-</td><td>NhanVienDTO</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
-            <tr><td>POST</td><td>/api/v1/org/staff</td><td>CreateNhanVienRequest</td><td>NhanVienDTO</td><td>ADMIN</td></tr>
-            <tr><td>PUT</td><td>/api/v1/org/staff/{id}</td><td>UpdateNhanVienRequest</td><td>NhanVienDTO</td><td>ADMIN</td></tr>
-            <tr><td>PUT</td><td>/api/v1/org/staff/{id}/department</td><td>{ maKhoa }</td><td>NhanVienDTO</td><td>ADMIN</td></tr>
-            <tr><td>GET</td><td>/api/v1/org/staff/{id}/exists</td><td>-</td><td>{ exists, maKhoa }</td><td>SYSTEM (nội bộ)</td></tr>
-            <tr><td>POST</td><td>/api/v1/org/accounts</td><td>CreateTaiKhoanRequest</td><td>TaiKhoanDTO</td><td>ADMIN</td></tr>
-            <tr><td>PUT</td><td>/api/v1/org/accounts/{id}/status</td><td>{ kichHoat }</td><td>TaiKhoanDTO</td><td>ADMIN</td></tr>
-            <tr><td>POST</td><td>/api/v1/org/accounts/verify</td><td>{ tenDangNhap, matKhau }</td><td>{ maTaiKhoan, maNhanVien, maKhoa, vaiTro }</td><td>SYSTEM (chỉ Gateway)</td></tr>
-        </table>
-        <div class="note">
-            <code>/accounts/verify</code> là thứ biến auth stub của Gateway thành xác thực thật: Gateway
-            gửi thông tin đăng nhập, service này kiểm tra hash rồi trả về danh tính, Gateway mới ký JWT.
-            <strong>Gateway tuyệt đối không đọc thẳng bảng TAI_KHOAN</strong> — đó sẽ là truy cập DB chéo service.
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>4. Events Publish</h2>
-        <table>
-            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>DepartmentCreatedEvent</td><td>{ maKhoa, tenKhoa, loaiKhoa }</td><td>Khi tạo khoa mới</td></tr>
-            <tr><td>StaffCreatedEvent</td><td>{ maNhanVien, hoTen, maKhoa, chucDanh }</td><td>Khi thêm nhân viên</td></tr>
-            <tr><td>StaffDepartmentChangedEvent</td><td>{ maNhanVien, maKhoaCu, maKhoaMoi }</td><td>Khi điều chuyển nhân viên giữa khoa</td></tr>
-        </table>
-    </div>
-
-    <div class="section">
-        <h2>5. Events Subscribe</h2>
-        <p><strong>Không có.</strong> Đây là dữ liệu nền — nó điều khiển các context khác chứ không phản ứng theo chúng.</p>
-    </div>
-
-    <div class="section">
-        <h2>6. Business Rules</h2>
-        <ul>
-            <li><code>ten_dang_nhap</code> là duy nhất; mật khẩu lưu dạng <strong>BCrypt hash</strong>, không bao giờ plaintext, không bao giờ ghi log.</li>
-            <li>Một <code>NHAN_VIEN</code> phải thuộc đúng một <code>KHOA</code> đang hoạt động.</li>
-            <li><code>chuc_danh = BAC_SI</code> bắt buộc phải có <code>so_chung_chi</code> (chứng chỉ hành nghề).</li>
-            <li><code>truong_khoa</code> nếu có phải là <code>NHAN_VIEN</code> <strong>thuộc chính khoa đó</strong>.</li>
-            <li>Không thể đặt <code>hoat_dong = false</code> cho khoa còn nhân viên đang làm việc.</li>
-            <li>Điều chuyển nhân viên phải publish <code>StaffDepartmentChangedEvent</code>; không được xóa rồi tạo lại.</li>
-            <li>Tài khoản vai trò <code>PATIENT</code> không có <code>ma_nhan_vien</code> (bệnh nhân không phải nhân viên).</li>
-            <li>Vô hiệu hóa tài khoản phải chặn được lần đăng nhập kế tiếp; JWT đã cấp sẽ hết hạn tự nhiên.</li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <h2>7. Chiều phòng ban xuyên suốt hệ thống</h2>
-        <p><code>ma_khoa</code> được mang theo trong mọi bảng nghiệp vụ và mọi event, nhờ đó hệ thống
-        trả lời được những câu hỏi định nghĩa một hệ thống <em>theo phòng ban</em>:</p>
-        <table>
-            <tr><th>Câu hỏi</th><th>Cần dữ liệu</th></tr>
-            <tr><td>Khoa nào chỉ định xét nghiệm này?</td><td><code>XET_NGHIEM.ma_khoa_chi_dinh</code></td></tr>
-            <tr><td>Doanh thu từng khoa trong tháng</td><td><code>VIEN_PHI.ma_khoa</code> + tổng hợp ở Report</td></tr>
-            <tr><td>Khoa Nội có những bác sĩ nào, ai là trưởng khoa?</td><td><code>NHAN_VIEN.ma_khoa</code>, <code>KHOA.truong_khoa</code></td></tr>
-            <tr><td>Điều chuyển bác sĩ từ Khoa Nội sang Khoa Ngoại</td><td><code>StaffDepartmentChangedEvent</code></td></tr>
-            <tr><td>Người dùng này được phép làm gì?</td><td><code>TAI_KHOAN.vai_tro</code>, xác định lúc đăng nhập</td></tr>
-        </table>
-        <p>Các service khác giữ <code>ma_khoa</code> dưới dạng <strong>UUID trần</strong> — không có
-        quan hệ JPA, không join chéo database.</p>
-    </div>
-
-    <div class="section">
-        <h2>8. Sequence Diagram – Đăng nhập</h2>
-        <div class="code">
-            Client → Gateway → Organization Service<br>
-            1. POST /api/v1/auth/login { username, password }<br>
-            2. Gateway → POST /api/v1/org/accounts/verify<br>
-            3. Organization: tìm TAI_KHOAN theo ten_dang_nhap<br>
-            4. Organization: so khớp BCrypt hash, kiểm tra kich_hoat<br>
-            5. Organization → { maTaiKhoan, maNhanVien, maKhoa, vaiTro }<br>
-            6. Gateway ký JWT với claim: sub, role, maKhoa, exp<br>
-            7. Trả về { accessToken, refreshToken, role }
-        </div>
-    </div>
+  </div>
 </body>
+
 </html>
