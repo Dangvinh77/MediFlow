@@ -21,57 +21,57 @@
 
     <div class="note">
         <strong>Vì sao lịch hẹn và hồ sơ nằm chung một service:</strong> đây là một quy trình duy nhất
-        của cùng một khoa. Tách đôi sẽ ép <code>HO_SO_BA.ma_lich_hen</code> thành khóa ngoại đi qua
+        của cùng một khoa. Tách đôi sẽ ép <code>MEDICAL_RECORD.appointment_id</code> thành khóa ngoại đi qua
         ranh giới mạng, và buộc phải publish event chỉ để đổi trạng thái lịch hẹn sang
-        <code>DA_DEN</code> — dùng message broker để làm việc của <strong>một transaction cục bộ</strong>.
+        <code>ARRIVED</code> — dùng message broker để làm việc của <strong>một transaction cục bộ</strong>.
         Giữ chung, cả hai vấn đề đó không tồn tại.
     </div>
 
     <div class="section">
         <h2>1. Trách nhiệm (Bounded Context)</h2>
         <ul>
-            <li><strong>Quản lý:</strong> Lịch hẹn (LICH_HEN), hồ sơ bệnh án (HO_SO_BA), chẩn đoán (CHUAN_DOAN).</li>
+            <li><strong>Quản lý:</strong> Lịch hẹn (APPOINTMENT), hồ sơ bệnh án (MEDICAL_RECORD), chẩn đoán (DIAGNOSIS).</li>
             <li><strong>Không quản lý:</strong> Bệnh nhân (→ Patient Service), bác sĩ &amp; khoa phòng (→ Organization Service), xét nghiệm, thuốc, viện phí.</li>
         </ul>
     </div>
 
     <div class="section">
         <h2>2. Data Model</h2>
-        <p><strong>LICH_HEN</strong> — lịch hẹn khám</p>
+        <p><strong>APPOINTMENT</strong> — lịch hẹn khám</p>
         <table>
             <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_lich_hen</td><td>UUID (PK)</td><td>Mã lịch hẹn</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
-            <tr><td>ma_bac_si</td><td>UUID (ref)</td><td>Mã bác sĩ — Organization Service (NHAN_VIEN)</td></tr>
-            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa tiếp nhận — Organization Service (KHOA)</td></tr>
-            <tr><td>ngay_hen</td><td>DATE</td><td>Ngày hẹn</td></tr>
-            <tr><td>gio_hen</td><td>TIME</td><td>Giờ hẹn</td></tr>
-            <tr><td>trang_thai</td><td>ENUM('CHUA_DEN','DA_DEN','HUY')</td><td>Trạng thái</td></tr>
-            <tr><td>ly_do_kham</td><td>TEXT</td><td>Lý do khám</td></tr>
+            <tr><td>appointment_id</td><td>UUID (PK)</td><td>Mã lịch hẹn</td></tr>
+            <tr><td>patient_id</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
+            <tr><td>doctor_id</td><td>UUID (ref)</td><td>Mã bác sĩ — Organization Service (STAFF)</td></tr>
+            <tr><td>department_id</td><td>UUID (ref)</td><td>Khoa tiếp nhận — Organization Service (DEPARTMENT)</td></tr>
+            <tr><td>appointment_date</td><td>DATE</td><td>Ngày hẹn</td></tr>
+            <tr><td>appointment_time</td><td>TIME</td><td>Giờ hẹn</td></tr>
+            <tr><td>status</td><td>ENUM('PENDING','ARRIVED','CANCELLED')</td><td>Trạng thái</td></tr>
+            <tr><td>reason</td><td>TEXT</td><td>Lý do khám</td></tr>
             <tr><td>created_at / updated_at</td><td>TIMESTAMP</td><td>-</td></tr>
         </table>
 
-        <p><strong>HO_SO_BA</strong> — hồ sơ bệnh án</p>
+        <p><strong>MEDICAL_RECORD</strong> — hồ sơ bệnh án</p>
         <table>
             <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_ho_so</td><td>UUID (PK)</td><td>Mã hồ sơ</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
-            <tr><td>ma_bac_si</td><td>UUID (ref)</td><td>Bác sĩ khám — Organization Service</td></tr>
-            <tr><td>ma_khoa</td><td>UUID (ref)</td><td>Khoa khám — Organization Service (KHOA)</td></tr>
-            <tr><td>ngay_kham</td><td>DATE</td><td>Ngày khám</td></tr>
-            <tr><td>trieu_chung</td><td>TEXT</td><td>Triệu chứng</td></tr>
-            <tr><td>ma_lich_hen</td><td>UUID (FK — cùng service)</td><td>Lịch hẹn liên quan (nếu có)</td></tr>
+            <tr><td>record_id</td><td>UUID (PK)</td><td>Mã hồ sơ</td></tr>
+            <tr><td>patient_id</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
+            <tr><td>doctor_id</td><td>UUID (ref)</td><td>Bác sĩ khám — Organization Service</td></tr>
+            <tr><td>department_id</td><td>UUID (ref)</td><td>Khoa khám — Organization Service (DEPARTMENT)</td></tr>
+            <tr><td>examination_date</td><td>DATE</td><td>Ngày khám</td></tr>
+            <tr><td>symptoms</td><td>TEXT</td><td>Triệu chứng</td></tr>
+            <tr><td>appointment_id</td><td>UUID (FK — cùng service)</td><td>Lịch hẹn liên quan (nếu có)</td></tr>
             <tr><td>created_at / updated_at</td><td>TIMESTAMP</td><td>-</td></tr>
         </table>
 
-        <p><strong>CHUAN_DOAN</strong> — chẩn đoán</p>
+        <p><strong>DIAGNOSIS</strong> — chẩn đoán</p>
         <table>
             <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_chuan_doan</td><td>UUID (PK)</td><td>Mã chẩn đoán</td></tr>
-            <tr><td>ma_ho_so</td><td>UUID (FK — cùng service)</td><td>Mã hồ sơ</td></tr>
-            <tr><td>ten_chuan_doan</td><td>VARCHAR(255)</td><td>Tên chẩn đoán</td></tr>
-            <tr><td>mo_ta</td><td>TEXT</td><td>Mô tả chi tiết</td></tr>
-            <tr><td>ICD_code</td><td>VARCHAR(10)</td><td>Mã ICD-10</td></tr>
+            <tr><td>diagnosis_id</td><td>UUID (PK)</td><td>Mã chẩn đoán</td></tr>
+            <tr><td>record_id</td><td>UUID (FK — cùng service)</td><td>Mã hồ sơ</td></tr>
+            <tr><td>diagnosis_name</td><td>VARCHAR(255)</td><td>Tên chẩn đoán</td></tr>
+            <tr><td>description</td><td>TEXT</td><td>Mô tả chi tiết</td></tr>
+            <tr><td>icd_code</td><td>VARCHAR(10)</td><td>Mã ICD-10</td></tr>
         </table>
     </div>
 
@@ -82,10 +82,10 @@
             <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
             <tr><td>GET</td><td>/api/v1/appointments/{id}</td><td>-</td><td>AppointmentDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
             <tr><td>GET</td><td>/api/v1/appointments/patient/{patientId}</td><td>-</td><td>List&lt;AppointmentDTO&gt;</td><td>ADMIN, DOCTOR, NURSE</td></tr>
-            <tr><td>GET</td><td>/api/v1/appointments?maKhoa&amp;ngayHen&amp;page&amp;size</td><td>-</td><td>Page&lt;AppointmentDTO&gt;</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
+            <tr><td>GET</td><td>/api/v1/appointments?departmentId&amp;appointmentDate&amp;page&amp;size</td><td>-</td><td>Page&lt;AppointmentDTO&gt;</td><td>ADMIN, MANAGER, DOCTOR, NURSE</td></tr>
             <tr><td>POST</td><td>/api/v1/appointments</td><td>CreateAppointmentRequest</td><td>AppointmentDTO</td><td>ADMIN, NURSE</td></tr>
             <tr><td>PUT</td><td>/api/v1/appointments/{id}</td><td>UpdateAppointmentRequest</td><td>AppointmentDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
-            <tr><td>PUT</td><td>/api/v1/appointments/{id}/status</td><td>{ trangThai }</td><td>AppointmentDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
+            <tr><td>PUT</td><td>/api/v1/appointments/{id}/status</td><td>{ status }</td><td>AppointmentDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
             <tr><td>GET</td><td>/api/v1/records/{id}</td><td>-</td><td>MedicalRecordDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
             <tr><td>GET</td><td>/api/v1/records/patient/{patientId}</td><td>-</td><td>List&lt;MedicalRecordDTO&gt;</td><td>ADMIN, DOCTOR, NURSE</td></tr>
             <tr><td>POST</td><td>/api/v1/records</td><td>CreateRecordRequest</td><td>MedicalRecordDTO</td><td>ADMIN, DOCTOR</td></tr>
@@ -98,12 +98,12 @@
         <h2>4. Events Publish</h2>
         <table>
             <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>AppointmentCreatedEvent</td><td>{ appointmentId, patientId, doctorId, <strong>maKhoa</strong>, ngayHen, gioHen }</td><td>Khi tạo lịch hẹn</td></tr>
-            <tr><td>AppointmentStatusChangedEvent</td><td>{ appointmentId, status, patientId, <strong>maKhoa</strong> }</td><td>Khi đổi trạng thái</td></tr>
-            <tr><td>MedicalRecordCreatedEvent</td><td>{ recordId, patientId, doctorId, <strong>maKhoa</strong>, diagnosis, ngayKham }</td><td>Khi tạo hồ sơ mới</td></tr>
+            <tr><td>AppointmentCreatedEvent</td><td>{ appointmentId, patientId, doctorId, <strong>departmentId</strong>, appointmentDate, appointmentTime }</td><td>Khi tạo lịch hẹn</td></tr>
+            <tr><td>AppointmentStatusChangedEvent</td><td>{ appointmentId, status, patientId, <strong>departmentId</strong> }</td><td>Khi đổi trạng thái</td></tr>
+            <tr><td>MedicalRecordCreatedEvent</td><td>{ recordId, patientId, doctorId, <strong>departmentId</strong>, diagnosis, examinationDate }</td><td>Khi tạo hồ sơ mới</td></tr>
             <tr><td>DiagnosisAddedEvent</td><td>{ recordId, diagnosisCode, diagnosisName }</td><td>Khi thêm chẩn đoán</td></tr>
         </table>
-        <p><code>maKhoa</code> đi kèm mọi event nghiệp vụ để Billing và Report quy được chi phí và số liệu về đúng khoa, mà không phải gọi ngược lại service nào.</p>
+        <p><code>departmentId</code> đi kèm mọi event nghiệp vụ để Billing và Report quy được chi phí và số liệu về đúng khoa, mà không phải gọi ngược lại service nào.</p>
     </div>
 
     <div class="section">
@@ -114,7 +114,7 @@
             <tr><td>Pharmacy</td><td>PrescriptionFilledEvent</td><td>Gắn thông tin đơn thuốc vào hồ sơ</td></tr>
         </table>
         <div class="note">
-            Việc đặt lịch hẹn sang <code>DA_DEN</code> khi lập hồ sơ <strong>không</strong> đi qua event —
+            Việc đặt lịch hẹn sang <code>ARRIVED</code> khi lập hồ sơ <strong>không</strong> đi qua event —
             hai bảng nằm cùng một service nên đó là transaction cục bộ (Business Rule #8).
             <br><br>
             Nguyên tắc chung: <strong>nếu phải publish event để cập nhật thứ nằm trong chính database
@@ -127,16 +127,16 @@
         <p><strong>Lịch hẹn</strong></p>
         <ul>
             <li>Không thể tạo lịch hẹn cho ngày quá khứ.</li>
-            <li>Một bệnh nhân không được có hơn 1 lịch hẹn <code>CHUA_DEN</code> cùng ngày.</li>
+            <li>Một bệnh nhân không được có hơn 1 lịch hẹn <code>PENDING</code> cùng ngày.</li>
             <li>Giờ hẹn phải nằm trong khoảng 07:00 – 17:00.</li>
-            <li>Bác sĩ phải tồn tại <strong>và thuộc đúng khoa</strong> trong <code>ma_khoa</code> — kiểm tra REST tới Organization Service.</li>
+            <li>Bác sĩ phải tồn tại <strong>và thuộc đúng khoa</strong> trong <code>department_id</code> — kiểm tra REST tới Organization Service.</li>
         </ul>
         <p><strong>Hồ sơ bệnh án</strong></p>
         <ul>
             <li>Mỗi hồ sơ phải có ít nhất 1 chẩn đoán.</li>
             <li>Một bệnh nhân chỉ có 1 hồ sơ hoạt động tại một thời điểm khám (chưa có thì tạo mới).</li>
             <li>Không thể tạo hồ sơ nếu bệnh nhân không tồn tại — kiểm tra REST tới Patient Service.</li>
-            <li>Tạo hồ sơ từ một lịch hẹn sẽ đặt lịch hẹn đó thành <code>DA_DEN</code> — <strong>trong cùng transaction</strong>, không qua event.</li>
+            <li>Tạo hồ sơ từ một lịch hẹn sẽ đặt lịch hẹn đó thành <code>ARRIVED</code> — <strong>trong cùng transaction</strong>, không qua event.</li>
         </ul>
     </div>
 
@@ -144,16 +144,16 @@
         <h2>7. Sequence Diagram – Khám bệnh trọn vẹn</h2>
         <div class="code">
             Client → Gateway → Clinical Service<br>
-            1. POST /appointments (kèm patientId, maBacSi, maKhoa)<br>
+            1. POST /appointments (kèm patientId, doctorId, departmentId)<br>
             2. Validate ngày/giờ + quy tắc trùng lịch<br>
             3. (REST, resilient) Kiểm tra bệnh nhân → Patient Service<br>
             4. (REST, resilient) Kiểm tra bác sĩ thuộc khoa → Organization Service<br>
-            5. Lưu LICH_HEN → Publish AppointmentCreatedEvent<br>
+            5. Lưu APPOINTMENT → Publish AppointmentCreatedEvent<br>
             <br>
             --- bệnh nhân đến khám ---<br>
-            6. POST /records (kèm maLichHen)<br>
-            7. Lưu HO_SO_BA + CHUAN_DOAN<br>
-            8. Đặt LICH_HEN.trang_thai = DA_DEN &nbsp;&nbsp;<em>(cùng transaction — không có event)</em><br>
+            6. POST /records (kèm appointmentId)<br>
+            7. Lưu MEDICAL_RECORD + DIAGNOSIS<br>
+            8. Đặt APPOINTMENT.status = ARRIVED &nbsp;&nbsp;<em>(cùng transaction — không có event)</em><br>
             9. Publish MedicalRecordCreatedEvent → Lab, Billing, Report
         </div>
     </div>

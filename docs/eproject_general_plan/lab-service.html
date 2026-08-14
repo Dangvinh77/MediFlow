@@ -21,35 +21,35 @@
     <div class="section">
         <h2>1. Trách nhiệm</h2>
         <ul>
-            <li><strong>Quản lý:</strong> Xét nghiệm (XET_NGHIEM), kết quả (KET_QUA_XN).</li>
+            <li><strong>Quản lý:</strong> Xét nghiệm (LAB_TEST), kết quả (LAB_RESULT).</li>
             <li><strong>Không quản lý:</strong> Bệnh nhân, hồ sơ, thanh toán.</li>
         </ul>
     </div>
 
     <div class="section">
         <h2>2. Data Model</h2>
-        <p><strong>XET_NGHIEM</strong></p>
+        <p><strong>LAB_TEST</strong></p>
         <table>
             <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_xn</td><td>UUID (PK)</td><td>Mã xét nghiệm</td></tr>
-            <tr><td>ma_ho_so</td><td>UUID (FK)</td><td>Mã hồ sơ yêu cầu</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
-            <tr><td>ma_khoa_chi_dinh</td><td>UUID (ref)</td><td>Khoa chỉ định xét nghiệm — Organization Service (KHOA)</td></tr>
-            <tr><td>loai_xn</td><td>VARCHAR(50)</td><td>Loại xét nghiệm</td></tr>
-            <tr><td>ngay_yeu_cau</td><td>DATE</td><td>Ngày yêu cầu</td></tr>
-            <tr><td>ngay_thuc_hien</td><td>DATE</td><td>Ngày thực hiện</td></tr>
-            <tr><td>trang_thai</td><td>ENUM('CHO','DANG','HOAN_THANH','HUY')</td><td>Trạng thái</td></tr>
-            <tr><td>ket_luan</td><td>TEXT</td><td>Kết luận</td></tr>
+            <tr><td>test_id</td><td>UUID (PK)</td><td>Mã xét nghiệm</td></tr>
+            <tr><td>record_id</td><td>UUID (FK)</td><td>Mã hồ sơ yêu cầu</td></tr>
+            <tr><td>patient_id</td><td>UUID (ref)</td><td>Mã bệnh nhân — Patient Service</td></tr>
+            <tr><td>requesting_department_id</td><td>UUID (ref)</td><td>Khoa chỉ định xét nghiệm — Organization Service (DEPARTMENT)</td></tr>
+            <tr><td>test_type</td><td>VARCHAR(50)</td><td>Loại xét nghiệm</td></tr>
+            <tr><td>requested_date</td><td>DATE</td><td>Ngày yêu cầu</td></tr>
+            <tr><td>performed_date</td><td>DATE</td><td>Ngày thực hiện</td></tr>
+            <tr><td>status</td><td>ENUM('PENDING','IN_PROGRESS','COMPLETED','CANCELLED')</td><td>Trạng thái</td></tr>
+            <tr><td>conclusion</td><td>TEXT</td><td>Kết luận</td></tr>
         </table>
-        <p><strong>KET_QUA_XN</strong></p>
+        <p><strong>LAB_RESULT</strong></p>
         <table>
             <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_ket_qua</td><td>UUID (PK)</td><td>Mã kết quả</td></tr>
-            <tr><td>ma_xn</td><td>UUID (FK)</td><td>Mã xét nghiệm</td></tr>
-            <tr><td>chi_so</td><td>VARCHAR(100)</td><td>Chỉ số</td></tr>
-            <tr><td>gia_tri</td><td>VARCHAR(50)</td><td>Giá trị</td></tr>
-            <tr><td>don_vi</td><td>VARCHAR(20)</td><td>Đơn vị</td></tr>
-            <tr><td>chi_so_binh_thuong</td><td>VARCHAR(50)</td><td>Giá trị bình thường</td></tr>
+            <tr><td>result_id</td><td>UUID (PK)</td><td>Mã kết quả</td></tr>
+            <tr><td>test_id</td><td>UUID (FK)</td><td>Mã xét nghiệm</td></tr>
+            <tr><td>indicator</td><td>VARCHAR(100)</td><td>Chỉ số</td></tr>
+            <tr><td>value</td><td>VARCHAR(50)</td><td>Giá trị</td></tr>
+            <tr><td>unit</td><td>VARCHAR(20)</td><td>Đơn vị</td></tr>
+            <tr><td>reference_range</td><td>VARCHAR(50)</td><td>Giá trị bình thường</td></tr>
         </table>
     </div>
 
@@ -58,10 +58,11 @@
         <table>
             <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
             <tr><td>GET</td><td>/api/v1/lab/{id}</td><td>-</td><td>LabTestDTO</td><td>ADMIN, DOCTOR, NURSE</td></tr>
-            <tr><td>GET</td><td>/api/v1/lab/patient/{patientId}</td><td>-</td><td>List<LabTestDTO></td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>GET</td><td>/api/v1/lab/patient/{patientId}</td><td>-</td><td>List&lt;LabTestDTO&gt;</td><td>ADMIN, DOCTOR</td></tr>
+            <tr><td>GET</td><td>/api/v1/lab?departmentId&amp;status&amp;page&amp;size</td><td>-</td><td>Page&lt;LabTestDTO&gt;</td><td>ADMIN, MANAGER, LAB_TECH</td></tr>
             <tr><td>POST</td><td>/api/v1/lab</td><td>CreateLabRequest</td><td>LabTestDTO</td><td>ADMIN, DOCTOR</td></tr>
             <tr><td>PUT</td><td>/api/v1/lab/{id}/results</td><td>AddResultRequest</td><td>LabTestDTO</td><td>ADMIN, LAB_TECH</td></tr>
-            <tr><td>PUT</td><td>/api/v1/lab/{id}/status</td><td>UpdateStatusRequest</td><td>LabTestDTO</td><td>ADMIN, LAB_TECH</td></tr>
+            <tr><td>PUT</td><td>/api/v1/lab/{id}/status</td><td>{ status }</td><td>LabTestDTO</td><td>ADMIN, LAB_TECH</td></tr>
         </table>
     </div>
 
@@ -69,8 +70,8 @@
         <h2>4. Events Publish</h2>
         <table>
             <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>LabRequestCreatedEvent</td><td>{ labId, patientId, recordId, <strong>maKhoa</strong>, loaiXn, ngayYeuCau }</td><td>Khi tạo yêu cầu xét nghiệm</td></tr>
-            <tr><td>LabResultCreatedEvent</td><td>{ labId, patientId, recordId, <strong>maKhoa</strong>, ketQua, ketLuan }</td><td>Khi hoàn thành xét nghiệm</td></tr>
+            <tr><td>LabRequestCreatedEvent</td><td>{ labId, patientId, recordId, <strong>departmentId</strong>, labType, requestedDate }</td><td>Khi tạo yêu cầu xét nghiệm</td></tr>
+            <tr><td>LabResultCreatedEvent</td><td>{ labId, patientId, recordId, <strong>departmentId</strong>, results, conclusion }</td><td>Khi hoàn thành xét nghiệm</td></tr>
         </table>
     </div>
 
@@ -78,7 +79,7 @@
         <h2>5. Events Subscribe</h2>
         <table>
             <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
-            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tự động tạo xét nghiệm mẫu nếu có chỉ định; lấy <code>maKhoa</code> làm khoa chỉ định</td></tr>
+            <tr><td>Clinical</td><td>MedicalRecordCreatedEvent</td><td>Tự động tạo xét nghiệm mẫu nếu có chỉ định; lấy <code>departmentId</code> làm khoa chỉ định</td></tr>
             <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Cập nhật trạng thái thanh toán cho xét nghiệm</td></tr>
         </table>
     </div>
@@ -86,8 +87,8 @@
     <div class="section">
         <h2>6. Business Rules</h2>
         <ul>
-            <li>Không thể thêm kết quả nếu xét nghiệm ở trạng thái HOAN_THANH hoặc HUY.</li>
-            <li>Khi thêm kết quả, trạng thái tự động chuyển sang HOAN_THANH.</li>
+            <li>Không thể thêm kết quả nếu xét nghiệm ở trạng thái COMPLETED hoặc CANCELLED.</li>
+            <li>Khi thêm kết quả, trạng thái tự động chuyển sang COMPLETED.</li>
             <li>Ngày thực hiện phải ≥ ngày yêu cầu.</li>
         </ul>
     </div>
@@ -98,7 +99,7 @@
             Lab Tech → Client → Gateway → Lab Service<br>
             1. PUT /lab/{id}/results (kèm kết quả)<br>
             2. Kiểm tra trạng thái cho phép<br>
-            3. Lưu kết quả và cập nhật trạng thái → HOAN_THANH<br>
+            3. Lưu kết quả và cập nhật trạng thái → COMPLETED<br>
             4. Publish LabResultCreatedEvent<br>
             5. (Event) Notification Service gửi thông báo cho bệnh nhân<br>
             6. Trả về LabTestDTO
