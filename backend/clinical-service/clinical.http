@@ -14,7 +14,7 @@
 ###
 ### Một bounded context, hai tài nguyên: /api/v1/appointments (đặt lịch) và /api/v1/records (hồ sơ).
 ### Endpoint theo spec 03-clinical.md:
-###  Appointments: GET /{id}, GET /patient/{patientId}, GET ?maKhoa&ngayHen&page&size,
+###  Appointments: GET /{id}, GET /patient/{patientId}, GET ?departmentId&appointmentDate&page&size,
 ###                POST, PUT /{id}, PUT /{id}/status
 ###  Records:      GET /{id}, GET /patient/{patientId}, POST, PUT /{id}, POST /{id}/diagnoses
 ### Mã lỗi chuẩn: APPOINTMENT_NOT_FOUND / RECORD_NOT_FOUND (404),
@@ -30,7 +30,7 @@
 # ============ LỊCH HẸN /api/v1/appointments ============
 
 ### Danh sách lịch hẹn theo khoa + ngày (phân trang)
-GET {{host}}/api/v1/appointments?maKhoa=00000000-0000-0000-0000-000000000000&ngayHen=2026-08-14&page=0&size=20
+GET {{host}}/api/v1/appointments?departmentId=00000000-0000-0000-0000-000000000000&appointmentDate=2026-08-14&page=0&size=20
 Authorization: Bearer {{token}}
 
 ### Lịch hẹn của một bệnh nhân
@@ -41,18 +41,18 @@ Authorization: Bearer {{token}}
 GET {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
-### Tạo lịch hẹn (201 — role ADMIN/NURSE; gioHen trong 07:00–17:00)
+### Tạo lịch hẹn (201 — role ADMIN/NURSE; appointmentTime trong 07:00–17:00)
 POST {{host}}/api/v1/appointments
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maBacSi": "00000000-0000-0000-0000-000000000000",
-  "maKhoa": "00000000-0000-0000-0000-000000000000",
-  "ngayHen": "2026-08-14",
-  "gioHen": "08:30",
-  "lyDoKham": "Đau đầu, sốt nhẹ 2 ngày"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "appointmentDate": "2026-08-14",
+  "appointmentTime": "08:30",
+  "reason": "Đau đầu, sốt nhẹ 2 ngày"
 }
 
 ### Tạo lịch hẹn giờ ngoài giờ hành chính → 422 APPOINTMENT_TIME_OUT_OF_HOURS
@@ -61,12 +61,12 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maBacSi": "00000000-0000-0000-0000-000000000000",
-  "maKhoa": "00000000-0000-0000-0000-000000000000",
-  "ngayHen": "2026-08-14",
-  "gioHen": "18:30",
-  "lyDoKham": "Khám ngoài giờ"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "appointmentDate": "2026-08-14",
+  "appointmentTime": "18:30",
+  "reason": "Khám ngoài giờ"
 }
 
 ### Đặt lịch hẹn thứ hai chờ trong ngày → 409 APPOINTMENT_DUPLICATE_PENDING
@@ -75,12 +75,12 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maBacSi": "00000000-0000-0000-0000-000000000000",
-  "maKhoa": "00000000-0000-0000-0000-000000000000",
-  "ngayHen": "2026-08-14",
-  "gioHen": "10:00",
-  "lyDoKham": "Tái khám"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "appointmentDate": "2026-08-14",
+  "appointmentTime": "10:00",
+  "reason": "Tái khám"
 }
 
 ### Cập nhật lịch hẹn (200)
@@ -89,18 +89,18 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "ngayHen": "2026-08-15",
-  "gioHen": "09:00",
-  "lyDoKham": "Đau đầu, sốt nhẹ 3 ngày"
+  "appointmentDate": "2026-08-15",
+  "appointmentTime": "09:00",
+  "reason": "Đau đầu, sốt nhẹ 3 ngày"
 }
 
-### Đổi trạng thái lịch hẹn (CHUA_DEN → DA_DEN | HUY; chuyển tiếp sai → 422)
+### Đổi trạng thái lịch hẹn (PENDING → ARRIVED | CANCELLED; chuyển tiếp sai → 422)
 PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000000/status
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "trangThai": "DA_DEN"
+  "status": "ARRIVED"
 }
 
 # ============ HỒ SƠ BỆNH ÁN /api/v1/records ============
@@ -113,22 +113,22 @@ Authorization: Bearer {{token}}
 GET {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
-### Lập hồ sơ (201 — role ADMIN/DOCTOR; chuanDoans bắt buộc ≥ 1)
+### Lập hồ sơ (201 — role ADMIN/DOCTOR; diagnoses bắt buộc ≥ 1)
 POST {{host}}/api/v1/records
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maBacSi": "00000000-0000-0000-0000-000000000000",
-  "maKhoa": "00000000-0000-0000-0000-000000000000",
-  "ngayKham": "2026-08-14",
-  "trieuChung": "Sốt nhẹ, đau đầu vùng trán, mệt mỏi",
-  "maLichHen": "00000000-0000-0000-0000-000000000000",
-  "chuanDoans": [
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "examinationDate": "2026-08-14",
+  "symptoms": "Sốt nhẹ, đau đầu vùng trán, mệt mỏi",
+  "appointmentId": "00000000-0000-0000-0000-000000000000",
+  "diagnoses": [
     {
-      "tenChuanDoan": "Viêm mũi họng cấp",
-      "moTa": "Niêm mạc họng đỏ, chảy mũi",
+      "diagnosisName": "Viêm mũi họng cấp",
+      "description": "Niêm mạc họng đỏ, chảy mũi",
       "icdCode": "J00"
     }
   ]
@@ -140,21 +140,21 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maBacSi": "00000000-0000-0000-0000-000000000000",
-  "maKhoa": "00000000-0000-0000-0000-000000000000",
-  "ngayKham": "2026-08-14",
-  "trieuChung": "Đau bụng",
-  "chuanDoans": []
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "doctorId": "00000000-0000-0000-0000-000000000000",
+  "departmentId": "00000000-0000-0000-0000-000000000000",
+  "examinationDate": "2026-08-14",
+  "symptoms": "Đau bụng",
+  "diagnoses": []
 }
 
-### Cập nhật hồ sơ (200 — chỉ sửa trieuChung)
+### Cập nhật hồ sơ (200 — chỉ sửa symptoms)
 PUT {{host}}/api/v1/records/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "trieuChung": "Sốt nhẹ, đau đầu, mệt mỏi, ho khan"
+  "symptoms": "Sốt nhẹ, đau đầu, mệt mỏi, ho khan"
 }
 
 ### Thêm chẩn đoán (201 — icdCode theo chuẩn ^[A-Z]\d{2}(\.\d{1,2})?$)
@@ -163,8 +163,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "tenChuanDoan": "Ho khan",
-  "moTa": "Ho không đờm",
+  "diagnosisName": "Ho khan",
+  "description": "Ho không đờm",
   "icdCode": "R05"
 }
 
@@ -174,6 +174,6 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "tenChuanDoan": "Sai mã ICD",
+  "diagnosisName": "Sai mã ICD",
   "icdCode": "99"
 }

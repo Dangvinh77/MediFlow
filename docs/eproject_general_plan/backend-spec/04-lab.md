@@ -5,99 +5,102 @@
 Sở hữu chỉ định xét nghiệm và kết quả của chúng. Không gọi ai đồng bộ — mọi thứ đến qua event hoặc
 qua REST từ bác sĩ lâm sàng.
 
+> Quy ước đặt tên chuẩn toàn hệ thống: bảng/column English snake_case, field Java/JSON English camelCase,
+> enum English UPPER_SNAKE. Prose (mô tả) vẫn tiếng Việt.
+
 ## 1. Lược đồ — `V1__init.sql`
 
 ```sql
-CREATE TABLE XET_NGHIEM (
-    ma_xn             UUID          PRIMARY KEY,
-    ma_ho_so          UUID          NOT NULL,     -- tham chiếu clinical-service
-    ma_benh_nhan      UUID          NOT NULL,     -- tham chiếu patient-service
-    ma_khoa_chi_dinh  UUID          NOT NULL,     -- tham chiếu organization-service KHOA
-    loai_xn           VARCHAR(50)   NOT NULL,
-    ngay_yeu_cau      DATE          NOT NULL,
-    ngay_thuc_hien    DATE,
-    trang_thai        VARCHAR(20)   NOT NULL DEFAULT 'CHO',
-    ket_luan          TEXT,
-    da_thanh_toan     BOOLEAN       NOT NULL DEFAULT false,
-    created_at        TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ
+CREATE TABLE LAB_TEST (
+    test_id                   UUID          PRIMARY KEY,
+    record_id                 UUID          NOT NULL,     -- tham chiếu clinical-service
+    patient_id                UUID          NOT NULL,     -- tham chiếu patient-service
+    requesting_department_id  UUID          NOT NULL,     -- tham chiếu organization-service DEPARTMENT
+    test_type                 VARCHAR(50)   NOT NULL,
+    requested_date            DATE          NOT NULL,
+    performed_date            DATE,
+    status                    VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
+    conclusion                TEXT,
+    is_paid                   BOOLEAN       NOT NULL DEFAULT false,
+    created_at                TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at                TIMESTAMPTZ
 );
-CREATE INDEX idx_xn_benh_nhan ON XET_NGHIEM (ma_benh_nhan);
-CREATE INDEX idx_xn_ho_so     ON XET_NGHIEM (ma_ho_so);
-CREATE INDEX idx_xn_khoa      ON XET_NGHIEM (ma_khoa_chi_dinh);
+CREATE INDEX idx_lab_test_patient   ON LAB_TEST (patient_id);
+CREATE INDEX idx_lab_test_record    ON LAB_TEST (record_id);
+CREATE INDEX idx_lab_test_department ON LAB_TEST (requesting_department_id);
 
-CREATE TABLE KET_QUA_XN (
-    ma_ket_qua          UUID          PRIMARY KEY,
-    ma_xn               UUID          NOT NULL REFERENCES XET_NGHIEM(ma_xn) ON DELETE CASCADE,
-    chi_so              VARCHAR(100)  NOT NULL,
-    gia_tri             VARCHAR(50)   NOT NULL,
-    don_vi              VARCHAR(20),
-    chi_so_binh_thuong  VARCHAR(50),
-    created_at          TIMESTAMPTZ   NOT NULL DEFAULT now()
+CREATE TABLE LAB_RESULT (
+    result_id         UUID          PRIMARY KEY,
+    test_id           UUID          NOT NULL REFERENCES LAB_TEST(test_id) ON DELETE CASCADE,
+    indicator         VARCHAR(100)  NOT NULL,
+    value             VARCHAR(50)   NOT NULL,
+    unit              VARCHAR(20),
+    reference_range   VARCHAR(50),
+    created_at        TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_ket_qua_xn ON KET_QUA_XN (ma_xn);
+CREATE INDEX idx_lab_result_test ON LAB_RESULT (test_id);
 
 -- Sổ khử trùng lặp cho event consumer (xem §9)
-CREATE TABLE SU_KIEN_DA_XU_LY (
+CREATE TABLE PROCESSED_EVENT (
     event_id     UUID          PRIMARY KEY,
     routing_key  VARCHAR(100)  NOT NULL,
-    xu_ly_luc    TIMESTAMPTZ   NOT NULL DEFAULT now()
+    processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 ```
 
 ## 2. Enum
 
 ```java
-public enum TrangThaiXetNghiem { CHO, DANG, HOAN_THANH, HUY }
+public enum LabTestStatus { PENDING, IN_PROGRESS, COMPLETED, CANCELLED }
 ```
 
 ## 3. Domain model
 
-**`XetNghiem`** — `maXn`, `maHoSo`, `maBenhNhan`, `maKhoaChiDinh`, `loaiXn`, `ngayYeuCau`,
-`ngayThucHien`, `trangThai`, `ketLuan`, `daThanhToan`, `ketQuas` (`List<KetQua>`), timestamps.
+**`LabTest`** — `testId`, `recordId`, `patientId`, `requestingDepartmentId`, `labType`,
+`requestedDate`, `performedDate`, `status`, `conclusion`, `paid`, `results` (`List<LabResult>`), timestamps.
 
 ```java
-public static XetNghiem taoMoi(UUID maHoSo, UUID maBenhNhan, UUID maKhoaChiDinh,
-                               String loaiXn, LocalDate ngayYeuCau);
+public static LabTest create(UUID recordId, UUID patientId, UUID requestingDepartmentId,
+                             String labType, LocalDate requestedDate);
 
 /** BR-L1 + BR-L2 + BR-L3 đều nằm ở đây. Ghi kết quả là hoàn tất xét nghiệm. */
-public void ghiKetQua(List<KetQua> ketQuas, String ketLuan, LocalDate ngayThucHien);
+public void recordResults(List<LabResult> results, String conclusion, LocalDate performedDate);
 
-public void doiTrangThai(TrangThaiXetNghiem moi);
-public void danhDauDaThanhToan();
-public boolean daKetThuc();   // HOAN_THANH hoặc HUY
+public void changeStatus(LabTestStatus next);
+public void markPaid();
+public boolean isFinal();   // COMPLETED hoặc CANCELLED
 ```
 
 Bất biến:
 
 | Kiểm tra | Mã lỗi |
 |----------|--------|
-| `loaiXn` không rỗng | `LAB_LOAI_XN_REQUIRED` |
-| gọi `ghiKetQua` khi `daKetThuc()` | `LAB_ALREADY_FINISHED` (BR-L1) |
-| `ghiKetQua` với danh sách rỗng | `LAB_RESULT_EMPTY` |
-| `ngayThucHien` trước `ngayYeuCau` | `LAB_DATE_BEFORE_REQUEST` (BR-L3) |
+| `labType` không rỗng | `LAB_TYPE_REQUIRED` |
+| gọi `recordResults` khi `isFinal()` | `LAB_ALREADY_FINISHED` (BR-L1) |
+| `recordResults` với danh sách rỗng | `LAB_RESULT_EMPTY` |
+| `performedDate` trước `requestedDate` | `LAB_DATE_BEFORE_REQUEST` (BR-L3) |
 | chuyển trạng thái không hợp lệ | `LAB_INVALID_TRANSITION` |
 
-`ghiKetQua` tự đặt `trangThai = HOAN_THANH` (BR-L2) — người gọi không bao giờ tự đặt thủ công.
+`recordResults` tự đặt `status = COMPLETED` (BR-L2) — người gọi không bao giờ tự đặt thủ công.
 
-Chuyển tiếp: `CHO → DANG | HUY`, `DANG → HOAN_THANH | HUY`, `HOAN_THANH`/`HUY` là kết thúc.
+Chuyển tiếp: `PENDING → IN_PROGRESS | CANCELLED`, `IN_PROGRESS → COMPLETED | CANCELLED`, `COMPLETED`/`CANCELLED` là kết thúc.
 
-**`KetQua`** — `maKetQua`, `chiSo` (không rỗng), `giaTri` (không rỗng), `donVi`, `chiSoBinhThuong`.
+**`LabResult`** — `resultId`, `indicator` (không rỗng), `value` (không rỗng), `unit`, `referenceRange`.
 
 ## 4. Mã lỗi
 
-`LAB_NOT_FOUND` → 404 · `LAB_ALREADY_FINISHED`, `LAB_RESULT_EMPTY`, `LAB_DATE_BEFORE_REQUEST`, `LAB_INVALID_TRANSITION`, `LAB_LOAI_XN_REQUIRED` → 422.
+`LAB_NOT_FOUND` → 404 · `LAB_ALREADY_FINISHED`, `LAB_RESULT_EMPTY`, `LAB_DATE_BEFORE_REQUEST`, `LAB_INVALID_TRANSITION`, `LAB_TYPE_REQUIRED` → 422.
 
 ## 5. Port
 
 ```java
 // out
-public interface XetNghiemRepositoryPort {
-    XetNghiem save(XetNghiem xn);
-    Optional<XetNghiem> findById(UUID id);
-    List<XetNghiem> findByBenhNhan(UUID maBenhNhan);
-    List<XetNghiem> findByHoSo(UUID maHoSo);
-    PageResult<XetNghiem> search(UUID maKhoa, TrangThaiXetNghiem tt, PageQuery page);
+public interface LabTestRepositoryPort {
+    LabTest save(LabTest lt);
+    Optional<LabTest> findById(UUID id);
+    List<LabTest> findByPatient(UUID patientId);
+    List<LabTest> findByRecord(UUID recordId);
+    PageResult<LabTest> search(UUID departmentId, LabTestStatus status, PageQuery page);
 }
 public interface ProcessedEventPort {          // tiện ích khử trùng lặp dùng chung
     boolean alreadyProcessed(UUID eventId);
@@ -112,13 +115,13 @@ public interface LabEventPublisherPort {
 public interface ManageLabTestUseCase {
     LabTestDTO create(CreateLabRequest r);
     LabTestDTO getById(UUID id);
-    List<LabTestDTO> byPatient(UUID maBenhNhan);
+    List<LabTestDTO> byPatient(UUID patientId);
     LabTestDTO addResults(UUID id, AddResultRequest r);
-    LabTestDTO changeStatus(UUID id, TrangThaiXetNghiem tt);
+    LabTestDTO changeStatus(UUID id, LabTestStatus status);
 }
 public interface ReactToClinicalUseCase {
-    void autoCreateFromRecord(UUID maHoSo, UUID maBenhNhan, UUID maKhoa, String loaiXn);
-    void markPaid(UUID maXn);
+    void autoCreateFromRecord(UUID recordId, UUID patientId, UUID departmentId, String labType);
+    void markPaid(UUID testId);
 }
 ```
 
@@ -126,27 +129,27 @@ public interface ReactToClinicalUseCase {
 
 ```java
 public record CreateLabRequest(
-    @NotNull UUID maHoSo, @NotNull UUID maBenhNhan, @NotNull UUID maKhoaChiDinh,
-    @NotBlank @Size(max = 50) String loaiXn,
-    @NotNull @PastOrPresent LocalDate ngayYeuCau) {}
+    @NotNull UUID recordId, @NotNull UUID patientId, @NotNull UUID requestingDepartmentId,
+    @NotBlank @Size(max = 50) String labType,
+    @NotNull @PastOrPresent LocalDate requestedDate) {}
 
 public record AddResultRequest(
-    @NotEmpty @Valid List<KetQuaItem> ketQuas,
-    @Size(max = 4000) String ketLuan,
-    @NotNull LocalDate ngayThucHien) {}
+    @NotEmpty @Valid List<LabResultItem> results,
+    @Size(max = 4000) String conclusion,
+    @NotNull LocalDate performedDate) {}
 
-public record KetQuaItem(
-    @NotBlank @Size(max = 100) String chiSo,
-    @NotBlank @Size(max = 50) String giaTri,
-    @Size(max = 20) String donVi,
-    @Size(max = 50) String chiSoBinhThuong) {}
+public record LabResultItem(
+    @NotBlank @Size(max = 100) String indicator,
+    @NotBlank @Size(max = 50) String value,
+    @Size(max = 20) String unit,
+    @Size(max = 50) String referenceRange) {}
 
-public record LabTestDTO(UUID maXn, UUID maHoSo, UUID maBenhNhan, UUID maKhoaChiDinh,
-                         String loaiXn, LocalDate ngayYeuCau, LocalDate ngayThucHien,
-                         TrangThaiXetNghiem trangThai, String ketLuan, boolean daThanhToan,
-                         List<KetQuaDTO> ketQuas, Instant createdAt, Instant updatedAt) {}
+public record LabTestDTO(UUID testId, UUID recordId, UUID patientId, UUID requestingDepartmentId,
+                         String labType, LocalDate requestedDate, LocalDate performedDate,
+                         LabTestStatus status, String conclusion, boolean paid,
+                         List<LabResultDTO> results, Instant createdAt, Instant updatedAt) {}
 
-public record KetQuaDTO(UUID maKetQua, String chiSo, String giaTri, String donVi, String chiSoBinhThuong) {}
+public record LabResultDTO(UUID resultId, String indicator, String value, String unit, String referenceRange) {}
 ```
 
 ## 7. Endpoint
@@ -155,10 +158,10 @@ public record KetQuaDTO(UUID maKetQua, String chiSo, String giaTri, String donVi
 |--------|------|------|--------|------|
 | GET | `/api/v1/lab/{id}` | — | `LabTestDTO` | ADMIN, DOCTOR, NURSE |
 | GET | `/api/v1/lab/patient/{patientId}` | — | `List<LabTestDTO>` | ADMIN, DOCTOR |
-| GET | `/api/v1/lab?maKhoa&trangThai&page&size` | — | `PageResult<LabTestDTO>` | ADMIN, MANAGER, LAB_TECH |
+| GET | `/api/v1/lab?departmentId&status&page&size` | — | `PageResult<LabTestDTO>` | ADMIN, MANAGER, LAB_TECH |
 | POST | `/api/v1/lab` | `CreateLabRequest` | 201 | ADMIN, DOCTOR |
 | PUT | `/api/v1/lab/{id}/results` | `AddResultRequest` | 200 | ADMIN, LAB_TECH |
-| PUT | `/api/v1/lab/{id}/status` | `{trangThai}` | 200 | ADMIN, LAB_TECH |
+| PUT | `/api/v1/lab/{id}/status` | `{status}` | 200 | ADMIN, LAB_TECH |
 
 ## 8. Event
 
@@ -166,17 +169,17 @@ public record KetQuaDTO(UUID maKetQua, String chiSo, String giaTri, String donVi
 
 | Routing key | Payload |
 |-------------|---------|
-| `lab.request.created` | `{envelope, labId, patientId, recordId, maKhoa, loaiXn, ngayYeuCau}` |
-| `lab.result.created` | `{envelope, labId, patientId, recordId, maKhoa, ketQua, ketLuan}` |
+| `lab.request.created` | `{envelope, labId, patientId, recordId, departmentId, labType, requestedDate}` |
+| `lab.result.created` | `{envelope, labId, patientId, recordId, departmentId, results, conclusion}` |
 
-`lab.result.created` bắn từ `addResults`, sau khi commit. Trường `maKhoa` lấy từ `maKhoaChiDinh`.
+`lab.result.created` bắn từ `addResults`, sau khi commit. Trường `departmentId` lấy từ `requestingDepartmentId`.
 
 **Subscribe** — queue `lab.q`
 
 | Routing key | Xử lý |
 |-------------|-------|
 | `medicalrecord.created` | Chỉ tự tạo xét nghiệm **khi hồ sơ có chỉ định**. V1: bỏ qua nếu payload không mang chỉ định rõ ràng — đừng tạo xét nghiệm cho mọi hồ sơ một cách mù quáng. |
-| `payment.completed` | `markPaid(maXn)` — đặt `da_thanh_toan = true` cho các xét nghiệm thuộc hóa đơn đó |
+| `payment.completed` | `markPaid(testId)` — đặt `is_paid = true` cho các xét nghiệm thuộc hóa đơn đó |
 
 ## 9. Khử trùng lặp
 
@@ -197,16 +200,16 @@ Phải làm việc này **trong cùng transaction với hiệu ứng**, nếu kh
 
 | ID | Quy tắc | Test |
 |----|---------|------|
-| BR-L1 | Không ghi kết quả khi đã `HOAN_THANH` hoặc `HUY` | `addResults_alreadyCompleted_throwsBusinessRule` |
-| BR-L2 | Ghi kết quả tự động hoàn tất xét nghiệm | `addResults_valid_setsTrangThaiHoanThanh` |
-| BR-L3 | `ngay_thuc_hien >= ngay_yeu_cau` | `addResults_dateBeforeRequest_throwsBusinessRule` |
+| BR-L1 | Không ghi kết quả khi đã `COMPLETED` hoặc `CANCELLED` | `addResults_alreadyCompleted_throwsBusinessRule` |
+| BR-L2 | Ghi kết quả tự động hoàn tất xét nghiệm | `addResults_valid_marksStatusCompleted` |
+| BR-L3 | `performed_date >= requested_date` | `addResults_dateBeforeRequest_throwsBusinessRule` |
 | BR-L4 | Ghi kết quả thì publish `lab.result.created` | `addResults_valid_publishesResultCreated` |
 | BR-L5 | Danh sách kết quả không được rỗng | `addResults_emptyList_throwsBusinessRule` |
 | BR-L6 | Consumer idempotent | `paymentCompletedConsumer_sameEventTwice_marksPaidOnce` |
-| BR-L7 | Từ chối chuyển trạng thái không hợp lệ | `changeStatus_completedToCho_throwsInvalidTransition` |
+| BR-L7 | Từ chối chuyển trạng thái không hợp lệ | `changeStatus_completedToPending_throwsInvalidTransition` |
 
 ## 11. Điểm dễ sai
 
-- `KET_QUA_XN` là một phần của aggregate `XetNghiem` — dùng cascade + `orphanRemoval`, **không** tạo repository port riêng cho nó.
-- `gia_tri` là `VARCHAR`, không phải số: giá trị xét nghiệm hoàn toàn có thể là `"<0.01"`, `"âm tính"`, `"3+"`. Đừng "sửa" nó thành kiểu số.
-- `SU_KIEN_DA_XU_LY` là bảng riêng của từng service. Chép cùng một bảng đó sang mọi service có tiêu thụ event (lab, pharmacy, billing, clinical, notification, report).
+- `LAB_RESULT` là một phần của aggregate `LabTest` — dùng cascade + `orphanRemoval`, **không** tạo repository port riêng cho nó.
+- `value` là `VARCHAR`, không phải số: giá trị xét nghiệm hoàn toàn có thể là `"<0.01"`, `"âm tính"`, `"3+"`. Đừng "sửa" nó thành kiểu số.
+- `PROCESSED_EVENT` là bảng riêng của từng service. Chép cùng một bảng đó sang mọi service có tiêu thụ event (lab, pharmacy, billing, clinical, notification, report).

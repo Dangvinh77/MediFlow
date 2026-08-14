@@ -13,19 +13,19 @@
 ###       dòng "@token = ..." bên dưới và dán token vào.
 ###
 ### Endpoint theo spec 04-lab.md (base /api/v1/lab):
-###  - GET /{id}, GET /patient/{patientId}, GET ?maKhoa&trangThai&page&size
+###  - GET /{id}, GET /patient/{patientId}, GET ?departmentId&status&page&size
 ###  - POST, PUT /{id}/results, PUT /{id}/status
 ### Mã lỗi chuẩn: LAB_NOT_FOUND (404),
 ###               LAB_ALREADY_FINISHED / LAB_RESULT_EMPTY / LAB_DATE_BEFORE_REQUEST
-###               / LAB_INVALID_TRANSITION / LAB_LOAI_XN_REQUIRED (422)
+###               / LAB_INVALID_TRANSITION / LAB_TYPE_REQUIRED (422)
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
 # ============ XÉT NGHIỆM /api/v1/lab ============
 
-### Tìm xét nghiệm theo khoa + trạng thái (trangThai: CHO | DANG | HOAN_THANH | HUY)
-GET {{host}}/api/v1/lab?maKhoa=00000000-0000-0000-0000-000000000000&trangThai=CHO&page=0&size=20
+### Tìm xét nghiệm theo khoa + trạng thái (status: PENDING | IN_PROGRESS | COMPLETED | CANCELLED)
+GET {{host}}/api/v1/lab?departmentId=00000000-0000-0000-0000-000000000000&status=PENDING&page=0&size=20
 Authorization: Bearer {{token}}
 
 ### Xét nghiệm của một bệnh nhân
@@ -42,35 +42,35 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maHoSo": "00000000-0000-0000-0000-000000000000",
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "maKhoaChiDinh": "00000000-0000-0000-0000-000000000000",
-  "loaiXn": "Công thức máu",
-  "ngayYeuCau": "2026-08-14"
+  "recordId": "00000000-0000-0000-0000-000000000000",
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "requestingDepartmentId": "00000000-0000-0000-0000-000000000000",
+  "labType": "Công thức máu",
+  "requestedDate": "2026-08-14"
 }
 
-### Ghi kết quả (200 — role ADMIN/LAB_TECH; tự đặt HOAN_THANH)
+### Ghi kết quả (200 — role ADMIN/LAB_TECH; tự đặt COMPLETED)
 PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/results
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "ketQuas": [
+  "results": [
     {
-      "chiSo": "Bạch cầu (WBC)",
-      "giaTri": "7.5",
-      "donVi": "G/L",
-      "chiSoBinhThuong": "4.0–10.0"
+      "indicator": "Bạch cầu (WBC)",
+      "value": "7.5",
+      "unit": "G/L",
+      "referenceRange": "4.0–10.0"
     },
     {
-      "chiSo": "Hồng cầu (RBC)",
-      "giaTri": "4.8",
-      "donVi": "T/L",
-      "chiSoBinhThuong": "4.2–5.4"
+      "indicator": "Hồng cầu (RBC)",
+      "value": "4.8",
+      "unit": "T/L",
+      "referenceRange": "4.2–5.4"
     }
   ],
-  "ketLuan": "Trong giới hạn bình thường",
-  "ngayThucHien": "2026-08-14"
+  "conclusion": "Trong giới hạn bình thường",
+  "performedDate": "2026-08-14"
 }
 
 ### Ghi kết quả rỗng → 422 LAB_RESULT_EMPTY
@@ -79,8 +79,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "ketQuas": [],
-  "ngayThucHien": "2026-08-14"
+  "results": [],
+  "performedDate": "2026-08-14"
 }
 
 ### Ghi kết quả với ngày thực hiện trước ngày yêu cầu → 422 LAB_DATE_BEFORE_REQUEST
@@ -89,22 +89,22 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "ketQuas": [
+  "results": [
     {
-      "chiSo": "Đường huyết",
-      "giaTri": "5.6",
-      "donVi": "mmol/L",
-      "chiSoBinhThuong": "3.9–6.4"
+      "indicator": "Đường huyết",
+      "value": "5.6",
+      "unit": "mmol/L",
+      "referenceRange": "3.9–6.4"
     }
   ],
-  "ngayThucHien": "2026-08-01"
+  "performedDate": "2026-08-01"
 }
 
-### Đổi trạng thái (CHO → DANG | HUY, DANG → HOAN_THANH | HUY; chuyển tiếp sai → 422)
+### Đổi trạng thái (PENDING → IN_PROGRESS | CANCELLED, IN_PROGRESS → COMPLETED | CANCELLED; chuyển tiếp sai → 422)
 PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/status
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "trangThai": "DANG"
+  "status": "IN_PROGRESS"
 }
