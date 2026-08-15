@@ -2,96 +2,362 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Notification Service – Technical Design</title>
+    <title>Notification Service – Technical Design (Coding Reference)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; line-height: 1.6; }
         h1, h2, h3 { color: #0f172a; }
         h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.92rem; }
         th { background: #1e293b; color: #fff; padding: 10px 12px; text-align: left; }
-        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         .section { background: #fff; padding: 20px; border-radius: 12px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.9rem; overflow-x: auto; }
+        .code { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 8px; font-family: 'Cascadia Code','Courier New',monospace; font-size: 0.82rem; overflow-x: auto; white-space: pre; margin: 12px 0; }
+        .note { background: #fef9c3; border-left: 4px solid #eab308; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .warn { background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        .ok { background: #dcfce7; border-left: 4px solid #22c55e; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        code { background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <h1>📧 Notification Service</h1>
-    <p><strong>Vai trò:</strong> Gửi thông báo cho bệnh nhân và nhân viên qua email, SMS, in-app.</p>
+    <h1>📧 Notification Service — Technical Design (Coding Reference)</h1>
+    <p><strong>Module:</strong> <code>backend/notification-service/</code> · <strong>Package:</strong> <code>com.mediflow.notification</code> · <strong>Cổng:</strong> 8087 · <strong>DB:</strong> <code>mediflow_notification</code> · <strong>Base path:</strong> <code>/api/v1/notifications</code></p>
+    <p><strong>Vai trò:</strong> Gần như hoàn toàn hướng sự kiện — subscribe <strong>sáu</strong> routing key, lưu bản ghi thông báo, thử gửi (email/SMS/in-app), rồi ghi lại kết quả. Đây <strong>không phải một khoa phòng</strong> — nó là kênh kỹ thuật thuần túy, không sở hữu dữ liệu nghiệp vụ cốt lõi nào.</p>
+    <p><strong>Nguồn đồng bộ:</strong> file này là tài liệu tham chiếu code, đồng bộ 1:1 với <code>docs/eproject_general_plan/backend-spec/07-notification.md</code> (nguồn thẩm quyền khi có mâu thuẫn) — cùng mức chi tiết với <code>billing-service.html</code>.</p>
+    <p><strong>Kiến trúc (hexagonal):</strong> <code>application → domain</code>, phụ thuộc hướng vào trong. Driving adapter <code>web/</code> (HTTP) và <code>messaging/consumer/</code> (events) <em>gọi vào</em> application; driven adapter <code>infrastructure/</code> (persistence, messaging publisher, channel gửi, security, config) <em>hiện thực</em> out-port của application.</p>
 
     <div class="section">
-        <h2>1. Trách nhiệm</h2>
+        <h2>1. Bounded Context &amp; Trách nhiệm</h2>
         <ul>
-            <li><strong>Quản lý:</strong> Lịch sử thông báo (THONG_BAO).</li>
-            <li><strong>Không quản lý:</strong> Dữ liệu nghiệp vụ chính.</li>
+            <li><strong>Sở hữu:</strong> Lịch sử thông báo (THONG_BAO) — không hơn.</li>
+            <li><strong>Không sở hữu:</strong> Dữ liệu nghiệp vụ chính (bệnh nhân, hóa đơn, đơn thuốc...) — chỉ nhận id qua event.</li>
+            <li><strong>Không gọi REST</strong> sang service khác để lấy email/số điện thoại — biến luồng bất đồng bộ thành phụ thuộc đồng bộ là sai. Nếu event không mang sẵn thông tin liên hệ thì gửi <code>IN_APP</code>.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>2. Data Model</h2>
-        <p><strong>THONG_BAO</strong></p>
+        <h2>2. Data Model — V1__init.sql</h2>
+        <p>Đường dẫn: <code>src/main/resources/db/migration/V1__init.sql</code>. Naming tiếng Việt snake_case như phần còn lại của hệ thống (khác nhánh C bên billing/pharmacy dùng tiếng Anh).</p>
+        <div class="code">CREATE TABLE THONG_BAO (
+    ma_thong_bao   UUID          PRIMARY KEY,
+    ma_benh_nhan   UUID          NOT NULL,     -- tham chiếu patient-service
+    tieu_de        VARCHAR(255)  NOT NULL,
+    noi_dung       TEXT          NOT NULL,
+    loai           VARCHAR(10)   NOT NULL,     -- EMAIL | SMS | IN_APP
+    dia_chi_nhan   VARCHAR(150),               -- email hoặc số điện thoại thực tế đã dùng (PII)
+    trang_thai     VARCHAR(10)   NOT NULL DEFAULT 'PENDING',
+    ly_do_that_bai VARCHAR(255),
+    so_lan_thu     INT           NOT NULL DEFAULT 0,
+    ngay_tao       TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    ngay_gui       TIMESTAMPTZ
+);
+CREATE INDEX idx_thong_bao_benh_nhan ON THONG_BAO (ma_benh_nhan, ngay_tao DESC);
+CREATE INDEX idx_thong_bao_trang_thai ON THONG_BAO (trang_thai);
+
+CREATE TABLE SU_KIEN_DA_XU_LY (
+    event_id     UUID          PRIMARY KEY,
+    routing_key  VARCHAR(100)  NOT NULL,
+    xu_ly_luc    TIMESTAMPTZ   NOT NULL DEFAULT now()
+);</div>
+        <div class="note">Chỉ 2 bảng — service này không giữ dữ liệu nghiệp vụ nào ngoài lịch sử gửi + khử trùng lặp event, khác hẳn quy mô 3 bảng của billing.</div>
+    </div>
+
+    <div class="section">
+        <h2>3. Enum</h2>
+        <div class="code">public enum LoaiThongBao      { EMAIL, SMS, IN_APP }
+public enum TrangThaiThongBao { PENDING, SENT, FAILED }</div>
+    </div>
+
+    <div class="section">
+        <h2>4. Domain Model — <code>ThongBao</code></h2>
+        <p>Trường: <code>maThongBao</code>, <code>maBenhNhan</code>, <code>tieuDe</code>, <code>noiDung</code>, <code>loai</code>, <code>diaChiNhan</code>, <code>trangThai</code>, <code>lyDoThatBai</code>, <code>soLanThu</code>, <code>ngayTao</code>, <code>ngayGui</code>.</p>
+        <div class="code">public static ThongBao taoMoi(UUID maBenhNhan, String tieuDe, String noiDung,
+                              LoaiThongBao loai, String diaChiNhan);
+public void danhDauDaGui(Instant thoiDiem);
+public void danhDauThatBai(String lyDo);
+public boolean coTheGui();      // trangThai == PENDING (BR-N7)
+
+/** BR-N1 / BR-N2 — một kênh chỉ dùng được khi địa chỉ của nó hợp lệ. */
+public static boolean emailHopLe(String email);   // regex kiểu RFC đơn giản
+public static boolean sdtHopLe(String sdt);       // ^0\d{9,10}$</div>
+        <p>Bất biến: <code>tieuDe</code>/<code>noiDung</code> không rỗng; <code>loai</code> không null; <code>EMAIL</code> → <code>emailHopLe</code>, <code>SMS</code> → <code>sdtHopLe</code>, nếu không thỏa thì ném <code>NOTIFICATION_ADDRESS_INVALID</code>. <code>IN_APP</code> không cần địa chỉ.</p>
+        <p>Chuyển tiếp: <code>PENDING → SENT | FAILED</code>, cả hai đều kết thúc. Gửi lại thông báo đã kết thúc → <code>NOTIFICATION_ALREADY_FINALISED</code> (BR-N7).</p>
+        <h3>Exceptions — <code>domain/exception/</code></h3>
         <table>
-            <tr><th>Trường</th><th>Kiểu</th><th>Mô tả</th></tr>
-            <tr><td>ma_thong_bao</td><td>UUID (PK)</td><td>Mã thông báo</td></tr>
-            <tr><td>ma_benh_nhan</td><td>UUID</td><td>Mã bệnh nhân</td></tr>
-            <tr><td>tieu_de</td><td>VARCHAR(255)</td><td>Tiêu đề</td></tr>
-            <tr><td>noi_dung</td><td>TEXT</td><td>Nội dung</td></tr>
-            <tr><td>loai</td><td>ENUM('EMAIL','SMS','IN_APP')</td><td>Loại</td></tr>
-            <tr><td>trang_thai</td><td>ENUM('PENDING','SENT','FAILED')</td><td>Trạng thái</td></tr>
-            <tr><td>ngay_tao</td><td>TIMESTAMP</td><td>Ngày tạo</td></tr>
-            <tr><td>ngay_gui</td><td>TIMESTAMP</td><td>Ngày gửi</td></tr>
+            <tr><th>Class</th><th>Extends</th><th>Mã / HTTP</th></tr>
+            <tr><td>NotificationNotFoundException</td><td>ResourceNotFoundException</td><td>NOTIFICATION_NOT_FOUND / 404</td></tr>
+            <tr><td>NotificationAddressInvalidException</td><td>BusinessRuleException</td><td>NOTIFICATION_ADDRESS_INVALID / 422 (BR-N1/N2)</td></tr>
+            <tr><td>NotificationAlreadyFinalisedException</td><td>BusinessRuleException</td><td>NOTIFICATION_ALREADY_FINALISED / 422 (BR-N7)</td></tr>
+            <tr><td>NotificationAccessDeniedException</td><td>— (map riêng, xem §5)</td><td>NOTIFICATION_ACCESS_DENIED / <strong>403</strong> (BR-N6)</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>3. API Endpoints</h2>
+        <h2>5. Error Codes → HTTP</h2>
         <table>
-            <tr><th>Method</th><th>Path</th><th>Request</th><th>Response</th><th>Auth Role</th></tr>
-            <tr><td>GET</td><td>/api/v1/notifications/patient/{patientId}</td><td>-</td><td>List<NotificationDTO></td><td>ADMIN, NURSE, PATIENT</td></tr>
-            <tr><td>GET</td><td>/api/v1/notifications/{id}</td><td>-</td><td>NotificationDTO</td><td>ADMIN, PATIENT</td></tr>
-            <tr><td>POST</td><td>/api/v1/notifications/send</td><td>SendNotificationRequest</td><td>NotificationDTO</td><td>ADMIN, SYSTEM</td></tr>
+            <tr><th>Mã</th><th>HTTP</th></tr>
+            <tr><td>NOTIFICATION_NOT_FOUND</td><td>404</td></tr>
+            <tr><td>NOTIFICATION_ACCESS_DENIED</td><td><strong>403</strong></td></tr>
+            <tr><td>NOTIFICATION_ADDRESS_INVALID, NOTIFICATION_ALREADY_FINALISED</td><td>422</td></tr>
+        </table>
+        <div class="warn"><strong>Lỗ hổng cần tự vá:</strong> 3 exception dùng chung trong <code>common.exception</code> (<code>ResourceNotFoundException</code> → 404, <code>DuplicateResourceException</code> → 409, <code>BusinessRuleException</code> → 422) <strong>không có lớp nào map ra 403</strong>. Không sửa <code>common/</code> — tự định nghĩa <code>NotificationAccessDeniedException</code> và thêm <code>@ExceptionHandler</code> riêng ngay trong <code>GlobalExceptionHandler</code> của chính notification-service.</div>
+    </div>
+
+    <div class="section">
+        <h2>6. Ports</h2>
+        <h3>Out — <code>application/port/out/</code></h3>
+        <div class="code">public interface ThongBaoRepositoryPort {
+    ThongBao save(ThongBao tb);
+    Optional&lt;ThongBao&gt; findById(UUID id);
+    PageResult&lt;ThongBao&gt; findByPatient(UUID maBenhNhan, PageQuery page);
+}
+public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }
+
+/** Mỗi kênh một bản hiện thực, chọn theo LoaiThongBao (BR-N9). */
+public interface NotificationSenderPort {
+    LoaiThongBao kenh();
+    /** @return rỗng nếu thành công, hoặc lý do thất bại. KHÔNG BAO GIỜ ném lỗi khi gửi thất bại. */
+    Optional&lt;String&gt; gui(ThongBao tb);
+}
+
+public interface NotificationEventPublisherPort {
+    void publishSent(NotificationSentEvent e);
+}</div>
+        <h3>In — <code>application/port/in/</code></h3>
+        <div class="code">public interface SendNotificationUseCase {
+    NotificationDTO send(SendNotificationRequest r);
+    void handleEvent(NotificationTrigger trigger);   // do các consumer gọi
+}
+public interface ReadNotificationUseCase {
+    NotificationDTO getById(UUID id, UUID callerPatientId, boolean isStaff);   // BR-N6
+    PageResult&lt;NotificationDTO&gt; byPatient(UUID maBenhNhan, PageQuery page);
+}</div>
+        <p><code>NotificationTrigger</code> là record nội bộ do consumer dựng — use case không bao giờ thấy kiểu AMQP:</p>
+        <div class="code">public record NotificationTrigger(UUID eventId, String routingKey, UUID maBenhNhan,
+                                  String tieuDe, String noiDung,
+                                  String email, String sdt) {}</div>
+    </div>
+
+    <div class="section">
+        <h2>7. DTOs (records)</h2>
+        <div class="code">public record SendNotificationRequest(
+    @NotNull UUID maBenhNhan,
+    @NotBlank @Size(max = 255) String tieuDe,
+    @NotBlank String noiDung,
+    @NotNull LoaiThongBao loai,
+    @Size(max = 150) String diaChiNhan) {}
+
+public record NotificationDTO(UUID maThongBao, UUID maBenhNhan, String tieuDe, String noiDung,
+                              LoaiThongBao loai, TrangThaiThongBao trangThai, String lyDoThatBai,
+                              Instant ngayTao, Instant ngayGui) {}</div>
+        <div class="warn">Không bao giờ đưa <code>diaChiNhan</code> hay <code>soLanThu</code> vào <code>NotificationDTO</code> — PII / dữ liệu nội bộ, không được lộ ra API.</div>
+        <p><strong>Mapper</strong> (MapStruct, <code>application/mapper/</code>): <code>NotificationDtoMapper</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>8. Luồng xử lý &amp; Template</h2>
+        <p>Với <strong>mọi</strong> event được tiêu thụ:</p>
+        <ol>
+            <li>Khử trùng lặp theo <code>eventId</code> → đã xử lý thì return (BR-N5).</li>
+            <li>Dựng nội dung từ template (bảng dưới).</li>
+            <li>Chọn kênh theo thứ tự ưu tiên: <code>EMAIL</code> nếu có email hợp lệ, không thì <code>SMS</code> nếu số điện thoại hợp lệ, không nữa thì <code>IN_APP</code> (<strong>BR-N9</strong>).</li>
+            <li><code>ThongBao.taoMoi(...)</code> → lưu với trạng thái <code>PENDING</code> (BR-N3, <strong>trước khi</strong> thử gửi).</li>
+            <li><code>sender.gui(tb)</code> → rỗng thì <code>danhDauDaGui(now)</code>, ngược lại <code>danhDauThatBai(reason)</code>, không ném lỗi (BR-N4).</li>
+            <li>Lưu; đánh dấu event đã xử lý <strong>trong cùng transaction</strong> với bước 4.</li>
+            <li>Publish <code>notification.sent</code> kèm trạng thái cuối cùng (BR-N8).</li>
+        </ol>
+        <div class="note">Lưu <code>PENDING</code> <strong>trước khi</strong> thử gửi. Nếu tiến trình chết giữa chừng vẫn còn bản ghi; nếu chỉ lưu sau khi gửi xong thì thông báo biến mất không dấu vết.</div>
+        <h3>Template — <code>application/service/NotificationTemplates</code></h3>
+        <p>Một class chứa toàn bộ mẫu, tiếng Việt, không chèn PII ngoài tên:</p>
+        <table>
+            <tr><th>Sự kiện</th><th>Tiêu đề</th><th>Nội dung</th></tr>
+            <tr><td>patient.created</td><td>Chào mừng đến với MediFlow</td><td>Xin chào {hoTen}, hồ sơ của bạn đã được tạo.</td></tr>
+            <tr><td>appointment.created</td><td>Nhắc lịch khám</td><td>Bạn có lịch khám ngày {ngayHen} lúc {gioHen}.</td></tr>
+            <tr><td>lab.result.created</td><td>Kết quả xét nghiệm đã có</td><td>Kết quả {loaiXn} của bạn đã sẵn sàng.</td></tr>
+            <tr><td>prescription.filled</td><td>Thuốc đã sẵn sàng</td><td>Đơn thuốc của bạn đã được chuẩn bị xong.</td></tr>
+            <tr><td>payment.completed</td><td>Thanh toán thành công</td><td>Hóa đơn {maHoaDon} đã được thanh toán: {tongTien} VNĐ.</td></tr>
+            <tr><td>payment.failed</td><td>Thanh toán không thành công</td><td>Hóa đơn {maHoaDon} gặp sự cố: {reason}.</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>4. Events Publish</h2>
+        <h2>9. Endpoints</h2>
         <table>
-            <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
-            <tr><td>NotificationSentEvent</td><td>{ notificationId, patientId, type, status }</td><td>Khi gửi thông báo thành công</td></tr>
+            <tr><th>Method</th><th>Path</th><th>Body</th><th>Trả về</th><th>Role</th></tr>
+            <tr><td>GET</td><td>/api/v1/notifications/patient/{patientId}?page&size</td><td>—</td><td>PageResult&lt;NotificationDTO&gt;</td><td>ADMIN, NURSE, PATIENT</td></tr>
+            <tr><td>GET</td><td>/api/v1/notifications/{id}</td><td>—</td><td>NotificationDTO</td><td>ADMIN, PATIENT</td></tr>
+            <tr><td>POST</td><td>/api/v1/notifications/send</td><td>SendNotificationRequest</td><td>201 NotificationDTO</td><td>ADMIN, SYSTEM</td></tr>
+        </table>
+        <h3>Kiểm tra quyền sở hữu — không phải tùy chọn (BR-N6)</h3>
+        <p><code>PATIENT</code> chỉ đọc được thông báo <strong>của chính mình</strong>. <code>@PreAuthorize</code> không diễn đạt được điều này — phải chặn ở tầng service:</p>
+        <div class="code">if (!isStaff && !notification.getMaBenhNhan().equals(callerPatientId))
+    throw new NotificationAccessDeniedException("NOTIFICATION_ACCESS_DENIED", "Không có quyền xem thông báo này");</div>
+        <p>Id bệnh nhân của người gọi lấy từ claim JWT (<code>sub</code>/claim riêng), <strong>không bao giờ</strong> lấy từ tham số request.</p>
+    </div>
+
+    <div class="section">
+        <h2>10. Events</h2>
+        <h3>Publish — <code>infrastructure/messaging/payload/</code></h3>
+        <div class="code">// notification.sent
+public record NotificationSentEvent(
+    UUID eventId, Instant occurredAt, String correlationId,
+    UUID notificationId, UUID patientId, LoaiThongBao type, TrangThaiThongBao status) {}</div>
+        <h3>Subscribe — queue <code>notification.q</code></h3>
+        <table>
+            <tr><th>Routing key</th><th>Xử lý</th></tr>
+            <tr><td>patient.created</td><td>gửi lời chào mừng</td></tr>
+            <tr><td>appointment.created</td><td>gửi nhắc lịch hẹn</td></tr>
+            <tr><td>lab.result.created</td><td>báo có kết quả xét nghiệm</td></tr>
+            <tr><td>prescription.filled</td><td>báo thuốc đã sẵn sàng</td></tr>
+            <tr><td>payment.completed</td><td>xác nhận thanh toán</td></tr>
+            <tr><td>payment.failed</td><td>báo lỗi thanh toán (nhánh bù trừ của billing)</td></tr>
+        </table>
+        <div class="note">6 event trên được khai báo lại làm record trong chính notification-service (contract qua JSON, không phải import Java) — giống cách billing tự định nghĩa lại event nó tiêu thụ. Event mang theo <strong>id</strong> chứ không mang thông tin liên hệ; V1 lấy <code>email</code>/<code>sdt</code> từ <code>patient.created</code>/<code>patient.updated</code> rồi giữ một bảng chiếu nhỏ ở local, hoặc chấp nhận chỉ dùng <code>IN_APP</code> cho các sự kiện còn lại.</div>
+    </div>
+
+    <div class="section">
+        <h2>11. RabbitConfig</h2>
+        <div class="code">EXCHANGE = "mediflow.events"
+DLX      = "mediflow.events.dlx"
+QUEUE    = "notification.q"     // durable, DLX + DLQ "notification.dlq"</div>
+        <table>
+            <tr><th>Routing key</th><th>Hướng</th><th>Dùng cho</th></tr>
+            <tr><td>notification.sent</td><td>publish</td><td>ghi log trạng thái gửi cuối cùng</td></tr>
+            <tr><td>patient.created</td><td><strong>subscribe</strong></td><td>chào mừng</td></tr>
+            <tr><td>appointment.created</td><td><strong>subscribe</strong></td><td>nhắc lịch</td></tr>
+            <tr><td>lab.result.created</td><td><strong>subscribe</strong></td><td>kết quả xét nghiệm</td></tr>
+            <tr><td>prescription.filled</td><td><strong>subscribe</strong></td><td>thuốc sẵn sàng</td></tr>
+            <tr><td>payment.completed</td><td><strong>subscribe</strong></td><td>xác nhận thanh toán</td></tr>
+            <tr><td>payment.failed</td><td><strong>subscribe</strong></td><td>lỗi thanh toán</td></tr>
+        </table>
+        <p>Queue <code>notification.q</code> bind <strong>6 routing key</strong> — <strong>một</strong> queue, <strong>một</strong> class consumer với <code>switch</code> theo routing key, không tạo sáu queue riêng.</p>
+    </div>
+
+    <div class="section">
+        <h2>12. Persistence</h2>
+        <h3><code>ThongBaoJpaRepository</code></h3>
+        <div class="code">public interface ThongBaoJpaRepository extends JpaRepository&lt;ThongBaoJpaEntity, UUID&gt; {
+    Page&lt;ThongBaoJpaEntity&gt; findByMaBenhNhanOrderByNgayTaoDesc(UUID maBenhNhan, Pageable pageable);
+}</div>
+        <h3>Entity ↔ domain (MapStruct)</h3>
+        <table>
+            <tr><th>Entity field</th><th>Domain field</th><th>Kiểu</th></tr>
+            <tr><td>ma_thong_bao</td><td>maThongBao</td><td>UUID</td></tr>
+            <tr><td>ma_benh_nhan</td><td>maBenhNhan</td><td>UUID</td></tr>
+            <tr><td>tieu_de</td><td>tieuDe</td><td>String</td></tr>
+            <tr><td>noi_dung</td><td>noiDung</td><td>String</td></tr>
+            <tr><td>loai</td><td>loai</td><td>LoaiThongBao</td></tr>
+            <tr><td>dia_chi_nhan</td><td>diaChiNhan</td><td>String (nullable)</td></tr>
+            <tr><td>trang_thai</td><td>trangThai</td><td>TrangThaiThongBao</td></tr>
+            <tr><td>ly_do_that_bai</td><td>lyDoThatBai</td><td>String (nullable)</td></tr>
+            <tr><td>so_lan_thu</td><td>soLanThu</td><td>int</td></tr>
+            <tr><td>ngay_tao</td><td>ngayTao</td><td>Instant</td></tr>
+            <tr><td>ngay_gui</td><td>ngayGui</td><td>Instant (nullable)</td></tr>
+        </table>
+        <h3>Adapter cần làm đúng</h3>
+        <ol>
+            <li><code>findByMaBenhNhanOrderByNgayTaoDesc</code> — dùng cho <code>ReadNotificationUseCase.byPatient</code>, khớp <code>idx_thong_bao_benh_nhan</code>.</li>
+            <li><code>NotificationDtoMapper</code> không map <code>diaChiNhan</code>/<code>soLanThu</code> ra <code>NotificationDTO</code> (DTO không có field đó — kiểm tra lại record).</li>
+            <li><code>MockEmailSender</code>/<code>MockSmsSender</code>/<code>InAppSender</code> implement <code>NotificationSenderPort</code>; inject cả ba dưới dạng <code>List&lt;NotificationSenderPort&gt;</code> hoặc <code>Map&lt;LoaiThongBao, NotificationSenderPort&gt;</code> — chọn đúng theo <code>loai</code> khi gọi <code>gui()</code>. Việc <strong>chọn kênh</strong> (BR-N9) nằm ở tầng application, không phải trong sender.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>13. Test Plan (business rule → tầng → tên test)</h2>
+        <table>
+            <tr><th>Rule</th><th>Tầng</th><th>Tên test</th><th>Cần gì</th></tr>
+            <tr><td>BR-N1 (EMAIL cần địa chỉ hợp lệ)</td><td>domain unit</td><td>send_emailChannelInvalidAddress_throwsBusinessRule</td><td>không Spring</td></tr>
+            <tr><td>BR-N2 (SMS cần số 10–11 chữ số hợp lệ)</td><td>domain unit</td><td>send_smsChannelBadPhone_throwsBusinessRule</td><td>không Spring</td></tr>
+            <tr><td>BR-N3 (lưu PENDING trước khi gửi)</td><td>application</td><td>handleEvent_persistsPendingBeforeSend</td><td>mock repo, verify thứ tự gọi</td></tr>
+            <tr><td>BR-N4 (gửi thất bại → FAILED, không ném lỗi)</td><td>application</td><td>handleEvent_senderFails_marksFailedNoThrow</td><td>mock sender trả Optional.of(reason)</td></tr>
+            <tr><td>BR-N5 (consumer idempotent)</td><td>application</td><td>handleEvent_sameEventTwice_createsOneNotification</td><td>mock alreadyProcessed</td></tr>
+            <tr><td>BR-N6 (PATIENT không đọc thông báo người khác)</td><td>application</td><td>getById_otherPatient_throwsAccessDenied</td><td>isStaff=false, callerPatientId khác chủ</td></tr>
+            <tr><td>BR-N7 (không gửi lại thông báo đã kết thúc)</td><td>domain unit</td><td>send_alreadySent_throwsAlreadyFinalised</td><td>test coTheGui()</td></tr>
+            <tr><td>BR-N8 (notification.sent kèm trạng thái cuối)</td><td>application</td><td>handleEvent_publishesSentWithStatus</td><td>mock publisher, verify payload</td></tr>
+            <tr><td>BR-N9 (chọn kênh EMAIL → SMS → IN_APP)</td><td>application</td><td>handleEvent_choosesChannelByPriorityEmailSmsThenInApp</td><td>3 case: email hợp lệ / chỉ sđt hợp lệ / không có cả hai</td></tr>
         </table>
     </div>
 
     <div class="section">
-        <h2>5. Events Subscribe</h2>
-        <table>
-            <tr><th>Từ Service</th><th>Event</th><th>Xử lý</th></tr>
-            <tr><td>Patient</td><td>PatientCreatedEvent</td><td>Gửi thông báo chào mừng</td></tr>
-            <tr><td>Appointment</td><td>AppointmentCreatedEvent</td><td>Gửi nhắc lịch hẹn</td></tr>
-            <tr><td>Lab</td><td>LabResultCreatedEvent</td><td>Gửi kết quả xét nghiệm</td></tr>
-            <tr><td>Pharmacy</td><td>PrescriptionFilledEvent</td><td>Thông báo đã có thuốc</td></tr>
-            <tr><td>Billing</td><td>PaymentCompletedEvent</td><td>Xác nhận thanh toán</td></tr>
-            <tr><td>Saga</td><td>PaymentFailedEvent</td><td>Thông báo lỗi thanh toán</td></tr>
-        </table>
+        <h2>14. File Map (mọi file Java cần tạo)</h2>
+        <div class="code">notification-service/src/main/java/com/mediflow/notification/
+├── NotificationServiceApplication.java     # có sẵn
+├── domain/model/
+│   ├── LoaiThongBao.java / TrangThaiThongBao.java
+│   └── ThongBao.java                       # emailHopLe/sdtHopLe (BR-N1/N2), coTheGui (BR-N7)
+├── domain/exception/
+│   ├── NotificationNotFoundException.java
+│   ├── NotificationAddressInvalidException.java
+│   ├── NotificationAlreadyFinalisedException.java
+│   └── NotificationAccessDeniedException.java   # 403, xem §5
+├── application/port/in/
+│   ├── SendNotificationUseCase.java
+│   └── ReadNotificationUseCase.java
+├── application/port/out/
+│   ├── ThongBaoRepositoryPort.java
+│   ├── ProcessedEventPort.java
+│   ├── NotificationSenderPort.java
+│   └── NotificationEventPublisherPort.java
+├── application/dto/request/
+│   └── SendNotificationRequest.java
+├── application/dto/response/
+│   └── NotificationDTO.java                # KHÔNG có diaChiNhan/soLanThu
+├── application/mapper/
+│   └── NotificationDtoMapper.java
+├── application/service/
+│   ├── NotificationApplicationService.java # Send + Read; luồng 7 bước §8 (chọn kênh = BR-N9)
+│   └── NotificationTemplates.java          # kho mẫu 6 sự kiện
+├── web/                                    # DRIVING (HTTP)
+│   ├── NotificationController.java
+│   └── GlobalExceptionHandler.java         # copy docs/ai/reference + handler riêng AccessDenied → 403
+├── messaging/consumer/                     # DRIVING (events)
+│   └── NotificationEventConsumer.java      # 1 class, switch theo routing key, 6 binding
+├── infrastructure/persistence/             # DRIVEN (DB)
+│   ├── ThongBaoJpaEntity / ThongBaoJpaRepository / ThongBaoPersistenceAdapter / ThongBaoPersistenceMapper
+│   └── ProcessedEventJpaEntity / ProcessedEventJpaRepository / ProcessedEventPersistenceAdapter
+├── infrastructure/messaging/               # DRIVEN (RabbitMQ)
+│   ├── NotificationEventPublisherAdapter.java
+│   └── payload/NotificationSentEvent.java
+└── infrastructure/channel/                 # DRIVEN — hiện thực NotificationSenderPort
+    │                                          (thư mục tự thêm, ngoài blueprint chuẩn — giống tinh
+    │                                           thần PriceListAdapter bên billing: 1 out-port, nhiều
+    │                                           adapter, đổi sau không đụng application/domain)
+    ├── MockEmailSender.java                # kenh()=EMAIL, log + luôn thành công
+    ├── MockSmsSender.java                  # kenh()=SMS, log + luôn thành công (chưa có SMS provider thật)
+    └── InAppSender.java                    # kenh()=IN_APP, thành công ngay (đã lưu DB là đủ)
+# + boilerplate: config/RabbitConfig, security/JwtAuthFilter+JwtProperties, config/SecurityConfig,
+#   config/OpenApiConfig, config/MailConfig (tùy chọn), db/migration/V1__init.sql</div>
     </div>
 
     <div class="section">
-        <h2>6. Business Rules</h2>
+        <h2>15. Checklist hoàn thiện (Definition of Done)</h2>
         <ul>
-            <li>Email phải đúng định dạng để gửi email.</li>
-            <li>SMS chỉ gửi khi số điện thoại hợp lệ (10-11 số).</li>
-            <li>Lưu lại lịch sử thông báo đã gửi.</li>
+            <li>☐ V1__init.sql tạo đủ 2 bảng (THONG_BAO, SU_KIEN_DA_XU_LY), đúng tiếng Việt snake_case.</li>
+            <li>☐ Domain: 2 enum + 1 model (ThongBao) + 4 exception; emailHopLe/sdtHopLe/coTheGui không phụ thuộc Spring.</li>
+            <li>☐ Ports đủ (4 out, 2 in); application service không import Spring Data/AMQP.</li>
+            <li>☐ DTO record có Bean Validation; 1 MapStruct mapper — xác nhận diaChiNhan/soLanThu không lộ ra NotificationDTO.</li>
+            <li>☐ Controller + @PreAuthorize đúng role từng endpoint; kiểm tra quyền sở hữu thủ công cho PATIENT (BR-N6).</li>
+            <li>☐ GlobalExceptionHandler map đủ 403 cho NotificationAccessDeniedException (ngoài bảng chuẩn 404/409/422).</li>
+            <li>☐ 1 event publish (notification.sent) + 1 consumer bind 6 routing key, idempotent theo eventId.</li>
+            <li>☐ 3 adapter kênh (MockEmailSender, MockSmsSender, InAppSender) trong infrastructure/channel/.</li>
+            <li>☐ GlobalExceptionHandler, SecurityConfig, RabbitConfig, OpenApiConfig.</li>
+            <li>☐ Test 5 tầng; <strong>9 business rule</strong> (BR-N1 → BR-N9) được phủ.</li>
+            <li>☐ <code>mvn -pl backend/notification-service -am -q -DskipTests install</code> xanh.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>7. Sequence Diagram – Gửi thông báo</h2>
-        <div class="code">
-            [Any Service] → RabbitMQ → Notification Service<br>
-            1. Consumer nhận event (VD: AppointmentCreatedEvent)<br>
-            2. Tạo THONG_BAO với status PENDING<br>
-            3. Gửi email/SMS (tích hợp hoặc giả lập)<br>
-            4. Cập nhật status → SENT/FAILED<br>
-            5. (Optional) Publish NotificationSentEvent
-        </div>
+        <h2>16. Sequence Diagram — Gửi thông báo</h2>
+        <div class="code">[Any Service] → RabbitMQ (mediflow.events) → notification.q → NotificationEventConsumer
+1. Consumer nhận event (VD: PaymentCompletedEvent) → dựng NotificationTrigger
+2. handleEvent(trigger):
+   a. alreadyProcessed(eventId)? → return (BR-N5)
+   b. dựng tiêu đề/nội dung từ NotificationTemplates (§8)
+   c. chọn kênh EMAIL → SMS → IN_APP theo địa chỉ hợp lệ (BR-N9)
+   d. ThongBao.taoMoi(...) → lưu PENDING (BR-N3)
+   e. sender.gui(tb) → SENT hoặc FAILED, không ném lỗi (BR-N4)
+   f. lưu + markProcessed cùng transaction
+3. Publish notification.sent{status cuối cùng} (BR-N8)</div>
     </div>
 </body>
 </html>
