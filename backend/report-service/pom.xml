@@ -13,7 +13,7 @@
 
     <artifactId>report-service</artifactId>
     <name>MediFlow Report Service</name>
-    <description>Aggregated read-model reports (BAO_CAO_KHAM, BAO_CAO_DOANH_THU).</description>
+    <description>Aggregated read-model reports (DAILY_VISIT_REPORT, MONTHLY_REVENUE_REPORT, DRUG_STATISTIC).</description>
 
     <dependencies>
         <!-- Web / JPA / Validation -->
