@@ -16,7 +16,7 @@
 | **pharmacy** | Drugs, prescriptions, dispensing, stock | `THUOC`, `BAN_KE_CP`, `PHIEU_XUAT`, `CHI_TIET_BAN_KE` |
 | **billing** | Fees, invoices, **Saga orchestrator** (prescribe→dispense→pay) | `VIEN_PHI`, `HOADON` |
 | **notification** | Email/SMS/in-app notification history | `THONG_BAO` |
-| **report** | Aggregated analytics (read-model built from events) | `BAO_CAO_KHAM`, `BAO_CAO_DOANH_THU` |
+| **report** | Aggregated analytics (read-model built from events) | `DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC` |
 
 Supporting infrastructure: **Eureka** (service registry), **RabbitMQ** (event bus), a **config source** for gateway routes.
 

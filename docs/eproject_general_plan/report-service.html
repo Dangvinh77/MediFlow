@@ -2,10 +2,10 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Report Service – Technical Design (Coding Reference)</title>
+    <title>Report Service – Tài liệu Tổng hợp (đầy đủ)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; background: #f9fafb; color: #1e293b; line-height: 1.6; }
-        h1, h2, h3 { color: #0f172a; }
+        h1, h2, h3, h4 { color: #0f172a; }
         h1 { border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
         h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 40px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.92rem; }
@@ -20,41 +20,72 @@
     </style>
 </head>
 <body>
-    <h1>📊 Report Service — Technical Design (Coding Reference)</h1>
-    <p><strong>Module:</strong> <code>backend/report-service/</code> · <strong>Package:</strong> <code>com.mediflow.report</code> · <strong>Cổng:</strong> 8088 · <strong>DB:</strong> <code>mediflow_report</code> · <strong>Base path:</strong> <code>/api/v1/reports</code></p>
-    <p><strong>Vai trò:</strong> <strong>Read model</strong> — mọi con số đều là tổng hợp dựng thuần từ event. <strong>Không bao giờ</strong> truy vấn DB service khác, không gọi REST, không publish event. Nếu cần JDBC URL hay Feign client trỏ sang service khác nghĩa là thiết kế đã bị vi phạm.</p>
-    <p><strong>Nguồn đồng bộ:</strong> file này là tài liệu tham chiếu code; markdown <code>docs/eproject_general_plan/backend-spec/08-report.md</code> (giữ nếu cần, không bắt buộc).</p>
-    <p><strong>Kiến trúc (hexagonal):</strong> <code>application → domain</code>, phụ thuộc hướng vào trong. Driving adapter <code>web/</code> (HTTP) và <code>messaging/consumer/</code> (events) <em>gọi vào</em> application; driven adapter <code>infrastructure/</code> (persistence, messaging publisher, security, config) <em>hiện thực</em> out-port của application.</p>
+    <h1>📊 Report Service — Tài liệu Tổng hợp (đầy đủ)</h1>
+    <p><strong>Module:</strong> <code>backend/report-service/</code> · <strong>Package:</strong> <code>com.mediflow.report</code> · <strong>Cổng chạy:</strong> 8088 · <strong>Database:</strong> <code>mediflow_report</code> · <strong>Base path:</strong> <code>/api/v1/reports</code></p>
+    <p><strong>Nguồn chuẩn:</strong> <code>docs/eproject_general_plan/backend-spec/08-report.md</code>. File này diễn đạt lại cho dễ đọc (giải thích đơn giản trước, code sau) và đầy đủ các phần: dữ liệu, domain model, ports, DTO, thuật toán application, API, sự kiện, RabbitConfig, persistence + concurrency, test plan, file map, checklist.</p>
 
     <div class="section">
-        <h2>1. Bounded Context &amp; Trách nhiệm</h2>
+        <h2>1. Service này làm gì?</h2>
+        <p>Report là một <strong>read model</strong>: nó không sở hữu dữ liệu giao dịch nào, mọi con số trả về đều là <strong>số liệu tổng hợp dựng thuần từ event</strong> (không truy vấn DB service khác, không gọi REST, không publish event). Nó giúp ban lãnh đạo / phòng kế hoạch nhìn được bức tranh hoạt động của bệnh viện, gồm 3 việc chính:</p>
+        <ol>
+            <li><strong>Báo cáo theo ngày</strong> — mỗi ngày có bao nhiêu lượt khám, xét nghiệm, đơn thuốc, doanh thu (theo khoa hoặc toàn viện).</li>
+            <li><strong>Báo cáo doanh thu theo tháng</strong> — tổng doanh thu và số hóa đơn theo từng tháng.</li>
+            <li><strong>Top thuốc</strong> — thuốc nào được xuất nhiều nhất trong một khoảng thời gian.</li>
+        </ol>
+        <p>Vì là read model nên report chỉ <strong>nghe</strong> các event từ các service khác (<code>medicalrecord.created</code>, <code>lab.result.created</code>, <code>prescription.filled</code>, <code>payment.completed</code>, <code>payment.failed</code>, <code>staff.department.changed</code>) để tăng/giảm bộ đếm. Số liệu tổng hợp là <strong>dữ liệu dẫn xuất</strong>, không bao giờ là nguồn chuẩn — nếu lệch, cách sửa là phát lại event, không sửa tay con số.</p>
+    </div>
+
+    <div class="section">
+        <h2>2. Phạm vi (bounded context)</h2>
         <ul>
-            <li><strong>Sở hữu:</strong> Các bảng tổng hợp (DAILY_VISIT_REPORT, MONTHLY_REVENUE_REPORT, DRUG_STATISTIC).</li>
-            <li><strong>Không sở hữu:</strong> Dữ liệu giao dịch — tổng hợp từ event, không phải nguồn chuẩn.</li>
-            <li><strong>Không gọi:</strong> không Feign, không external datasource (test ArchUnit BR-R4 chống lại).</li>
+            <li><strong>Sở hữu:</strong> các bảng tổng hợp (<code>DAILY_VISIT_REPORT</code>, <code>MONTHLY_REVENUE_REPORT</code>, <code>DRUG_STATISTIC</code>) + sổ chống trùng <code>PROCESSED_EVENT</code>.</li>
+            <li><strong>Không sở hữu:</strong> dữ liệu giao dịch (hồ sơ bệnh án, xét nghiệm, đơn thuốc, hóa đơn…). Report chỉ giữ <strong>UUID tham chiếu</strong> (<code>departmentId</code>, <code>drugId</code>) — không nối thẳng DB của service khác (xem <code>docs/ai/08-persistence-naming.md</code>).</li>
+            <li><strong>Cấm tuyệt đối:</strong> thư mục <code>infrastructure/client/</code> — không Feign, không external datasource. Nếu service này cần JDBC URL hoặc Feign client trỏ sang service khác, nghĩa là thiết kế đã bị vi phạm (BR-R4).</li>
         </ul>
-        <div class="warn"><strong>Cấm tuyệt đối</strong> thư mục <code>infrastructure/client/</code> — nếu để trống cũng không dùng.</div>
     </div>
 
     <div class="section">
-        <h2>2. Quy ước đặt tên (BẮT BUỘC cho nhánh C)</h2>
-        <p>Bảng/cột/class dùng <strong>tiếng Anh</strong>. Mapping chính thức:</p>
+        <h2>3. Cách tổ chức code (nhìn nhanh)</h2>
+        <div class="code">HTTP (web/)  hoặc  event từ RabbitMQ (messaging/consumer/)
+                    |
+                    | gọi in-port (cổng vào)
+                    v
+            application/service  ── cập nhật bộ đếm ──►  domain/model
+                    |
+                    | gọi out-port (cổng ra)
+                    v
+   infrastructure/persistence (PostgreSQL)   ·   infrastructure/messaging (RabbitMQ)</div>
+        <p>Quy tắc quan trọng nhất: <strong>application chỉ biết tên các interface (port), không biết ai làm thật.</strong> Việc làm thật (JPA, RabbitMQ) nằm hết trong <code>infrastructure/</code>. Nhờ vậy, muốn đổi database hay đổi cách gửi event thì không phải sửa quy tắc nghiệp vụ. Chi tiết đầy đủ ở <code>docs/ai/04-microservice-blueprint.md</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>4. Dữ liệu</h2>
+        <div class="note"><strong>Lưu ý:</strong> nhánh service C (pharmacy – billing – report) dùng tên bảng/cột/class <strong>tiếng Anh</strong> theo spec 08. Các service khác trong hệ thống dùng tên tiếng Việt. Bảng dịch chính thức (Việt → Anh) nằm ở đầu spec 08.</div>
+
+        <h3><code>DAILY_VISIT_REPORT</code> — báo cáo theo ngày</h3>
         <table>
-            <tr><th>Việt (trước)</th><th>Anh (sau)</th><th>Dùng trong</th></tr>
-            <tr><td>BAO_CAO_KHAM</td><td>DAILY_VISIT_REPORT</td><td>bảng</td></tr>
-            <tr><td>ma_bao_cao / ngay / ma_khoa / so_luong_kham / so_luong_xn / so_don_thuoc / doanh_thu</td><td>report_id / report_date / department_id / visit_count / lab_count / prescription_count / revenue</td><td>cột</td></tr>
-            <tr><td>BAO_CAO_DOANH_THU</td><td>MONTHLY_REVENUE_REPORT</td><td>bảng</td></tr>
-            <tr><td>thang / nam / tong_doanh_thu / so_hoa_don</td><td>month / year / total_revenue / invoice_count</td><td>cột</td></tr>
-            <tr><td>THONG_KE_THUOC</td><td>DRUG_STATISTIC</td><td>bảng</td></tr>
-            <tr><td>ma_thong_ke / ma_thuoc / ten_thuoc / so_luong_xuat</td><td>statistic_id / drug_id / drug_name / dispensed_quantity</td><td>cột</td></tr>
-            <tr><td>SU_KIEN_DA_XU_LY / xu_ly_luc</td><td>PROCESSED_EVENT / processed_at</td><td>bảng/cột</td></tr>
-            <tr><td>BaoCaoKham / BaoCaoDoanhThu / ThongKeThuoc</td><td>DailyVisitReport / MonthlyRevenueReport / DrugStatistic</td><td>class</td></tr>
+            <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+            <tr><td><code>report_id</code></td><td>UUID khóa chính</td></tr>
+            <tr><td><code>report_date</code></td><td>ngày báo cáo</td></tr>
+            <tr><td><code>department_id</code></td><td>UUID tham chiếu organization <code>KHOA</code>; <strong>NULL = số liệu toàn viện</strong></td></tr>
+            <tr><td><code>visit_count</code></td><td>số lượt khám trong ngày</td></tr>
+            <tr><td><code>lab_count</code></td><td>số xét nghiệm trong ngày</td></tr>
+            <tr><td><code>prescription_count</code></td><td>số đơn thuốc trong ngày</td></tr>
+            <tr><td><code>revenue</code></td><td>doanh thu, <code>DECIMAL(15,2)</code> — không bao giờ dùng <code>double</code> cho tiền</td></tr>
         </table>
-    </div>
+        <p>Khóa tự nhiên <code>(report_date, department_id)</code> với unique index <code>NULLS NOT DISTINCT</code> — nhờ vậy dòng toàn viện (<code>department_id IS NULL</code>) cũng chỉ có đúng một dòng mỗi ngày.</p>
 
-    <div class="section">
-        <h2>3. Data Model — V1__init.sql</h2>
-        <p>Đường dẫn: <code>src/main/resources/db/migration/V1__init.sql</code>. Yêu cầu <strong>PostgreSQL 15+</strong> (stack dùng PG 16) cho <code>NULLS NOT DISTINCT</code>.</p>
+        <h3><code>MONTHLY_REVENUE_REPORT</code> — báo cáo doanh thu theo tháng</h3>
+        <p><code>report_id</code> UUID PK · <code>month</code> INT (1–12) · <code>year</code> INT · <code>department_id</code> UUID (NULL = toàn viện) · <code>total_revenue</code> DECIMAL(15,2) · <code>invoice_count</code> INT. Khóa tự nhiên <code>(year, month, department_id)</code>.</p>
+        <p>Ràng buộc DB: <code>ck_month</code> — <code>month BETWEEN 1 AND 12</code>; <code>total_revenue &gt;= 0</code> là "tuyến phòng thủ cuối", quy tắc thật nằm trong domain model (mục 5).</p>
+
+        <h3><code>DRUG_STATISTIC</code> — thống kê thuốc xuất</h3>
+        <p><code>statistic_id</code> UUID PK · <code>drug_id</code> UUID (tham chiếu pharmacy) · <code>drug_name</code> VARCHAR(150) — <strong>ảnh chụp tên thuốc</strong> tại lúc thống kê · <code>report_date</code> DATE · <code>department_id</code> UUID · <code>dispensed_quantity</code> INT. Khóa tự nhiên <code>(drug_id, report_date, department_id)</code>.</p>
+
+        <h3><code>PROCESSED_EVENT</code> — sổ ghi các event đã xử lý</h3>
+        <p><code>event_id</code> UUID PK · <code>routing_key</code> · <code>processed_at</code>. Bảng này dùng để <strong>chống xử lý trùng</strong> khi RabbitMQ gửi lại tin — thiếu nó, một lần gửi lại sẽ làm hỏng vĩnh viễn mọi bộ đếm (BR-R2).</p>
+
+        <h3>DDL đầy đủ — <code>V1__init.sql</code></h3>
         <div class="code">-- Bộ đếm theo ngày, khóa (report_date, department_id). department_id NULL = toàn viện.
 CREATE TABLE DAILY_VISIT_REPORT (
     report_id          UUID          PRIMARY KEY,
@@ -67,6 +98,7 @@ CREATE TABLE DAILY_VISIT_REPORT (
     created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ
 );
+-- NULLS NOT DISTINCT để dòng toàn viện (department_id IS NULL) cũng là duy nhất mỗi ngày
 CREATE UNIQUE INDEX uq_daily_report_date_dept
     ON DAILY_VISIT_REPORT (report_date, department_id) NULLS NOT DISTINCT;
 
@@ -102,25 +134,135 @@ CREATE TABLE PROCESSED_EVENT (
     routing_key  VARCHAR(100)  NOT NULL,
     processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );</div>
-        <div class="note">Không có <code>NULLS NOT DISTINCT</code> thì <code>(report_date, NULL)</code> không bị coi là trùng → tích lũy hàng loạt dòng toàn viện trùng.</div>
+        <div class="note"><code>NULLS NOT DISTINCT</code> cần <strong>PostgreSQL 15 trở lên</strong>. Stack đang dùng PG 16 (<code>docker-compose.yml</code>) nên dùng được. Không có nó thì <code>(report_date, NULL)</code> không bị coi là trùng → tích lũy hàng loạt dòng toàn viện trùng lặp.</div>
     </div>
 
     <div class="section">
-        <h2>4. Domain Model</h2>
-        <h3><code>DailyVisitReport</code> — <code>domain/model/DailyVisitReport.java</code></h3>
+        <h2>5. Domain model</h2>
+        <p><strong>Nguyên tắc chung:</strong> mọi quy tắc nghiệp vụ nằm trong model — domain không import Spring, không import JPA. Report không có enum (không có trạng thái như <code>DispenseStatus</code> của pharmacy); mọi bộ đếm đều chịu <strong>delta âm</strong> — <code>payment.failed</code> đảo ngược doanh thu.</p>
+
+        <h3><code>DailyVisitReport</code> — bộ đếm theo ngày + khoa</h3>
+        <p>Trường: <code>reportId, reportDate, departmentId (nullable), visitCount, labCount, prescriptionCount, revenue (BigDecimal)</code>, timestamps.</p>
         <div class="code">public static DailyVisitReport initialize(LocalDate reportDate, UUID departmentId);
 public void incrementVisits(int delta);
 public void incrementLabs(int delta);
 public void incrementPrescriptions(int delta);
 public void addRevenue(BigDecimal amount);   // có thể âm khi bù trừ</div>
-        <h3><code>MonthlyRevenueReport</code> — month, year, departmentId, totalRevenue, invoiceCount.</h3>
-        <h3><code>DrugStatistic</code> — drugId, drugName, reportDate, departmentId, dispensedQuantity.</h3>
-        <p>Mọi bộ đếm <strong>chịu được delta âm</strong> — <code>payment.failed</code> đảo ngược doanh thu. Không cần domain exception riêng (V1 không trả 404).</p>
+
+        <h3><code>MonthlyRevenueReport</code> — bộ đếm theo tháng + năm + khoa</h3>
+        <p>Trường: <code>month, year, departmentId, totalRevenue, invoiceCount</code>.</p>
+        <div class="code">public void addRevenue(BigDecimal amount);   // âm khi payment.failed
+public void adjustInvoiceCount(int delta);  // chặn không âm: Math.max(0, invoiceCount + delta)</div>
+
+        <h3><code>DrugStatistic</code> — bộ đếm thuốc xuất</h3>
+        <p>Trường: <code>statisticId, drugId, drugName, reportDate, departmentId, dispensedQuantity</code>.</p>
+        <div class="code">public void incrementQuantity(int delta);</div>
+        <p>V1 không cần domain exception riêng — report không trả 404 (ngày không dữ liệu → trả số 0, BR-R5).</p>
     </div>
 
     <div class="section">
-        <h2>5. Ports</h2>
-        <h3>Out — <code>application/port/out/</code></h3>
+        <h2>6. Exceptions — <code>domain/exception/</code></h2>
+        <p>Report có rất ít quy tắc ném lỗi. V1 <strong>không có</strong> domain exception riêng: không endpoint nào trả 404 (BR-R5), không có chuỗi chuyển trạng thái nào phải kiểm soát. Nếu sau này có endpoint trả 404 thì thêm <code>ReportNotFoundException</code> kế thừa <code>ResourceNotFoundException</code> của <code>common</code> (→ 404).</p>
+        <div class="ok"><strong>Kết luận:</strong> mục này để trống trong V1. Đừng tạo exception cho có — khi nào có quy tắc ném lỗi mới thêm.</div>
+    </div>
+
+    <div class="section">
+        <h2>7. Mã lỗi</h2>
+        <table>
+            <tr><th>Mã lỗi</th><th>HTTP</th><th>Tình huống</th></tr>
+            <tr><td>(V1 không có mã lỗi nghiệp vụ)</td><td>—</td><td>ngày không có dữ liệu → trả báo cáo số 0, không phải 404 (BR-R5)</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>8. Các cổng (ports) — phần quan trọng nhất</h2>
+
+        <h3>8.0 Port là gì?</h3>
+        <p><strong>Port = bản hợp đồng</strong> giữa application và thế giới bên ngoài: một danh sách các phương thức đã thống nhất, chỉ có tên và tham số, không có code làm thật.</p>
+        <ul>
+            <li><strong>In-port (cổng vào):</strong> bên ngoài (web, RabbitMQ) nhờ service làm việc gì. Vd: "cập nhật bộ đếm", "đọc báo cáo".</li>
+            <li><strong>Out-port (cổng ra):</strong> service cần bên ngoài giúp việc gì. Vd: "lưu báo cáo xuống DB".</li>
+            <li><strong>Adapter (bộ chuyển đổi):</strong> phần code thật sự nối với DB / RabbitMQ, đứng sau out-port. Application gọi port, adapter làm thật.</li>
+        </ul>
+        <p>Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn bộ quy tắc nghiệp vụ. Nếu application gọi thẳng JPA hay RabbitMQ thì khi đổi công nghệ phải sửa cả quy tắc. Có port thì chỉ cần thay adapter.</p>
+
+        <h3>8.1 Cổng vào (in-ports) — 2 interface</h3>
+
+        <h4><code>UpdateAggregateUseCase</code> — cập nhật bộ đếm khi có event</h4>
+        <p><strong>Vì sao cần:</strong> mọi event tới đều dẫn đến một phép tăng/giảm bộ đếm. Gộp các handler vào một interface vì chúng cùng phục vụ một nhóm nghiệp vụ "duy trì số liệu tổng hợp".</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th><th>Quy tắc khớp</th></tr>
+            <tr><td><code>onMedicalRecordCreated(eventId, reportDate, departmentId)</code></td><td><code>visit_count += 1</code> trên dòng ngày + dòng toàn viện</td><td>BR-R1</td></tr>
+            <tr><td><code>onLabResultCreated(eventId, reportDate, departmentId)</code></td><td><code>lab_count += 1</code></td><td>BR-R1</td></tr>
+            <tr><td><code>onPrescriptionFilled(eventId, reportDate, departmentId, items)</code></td><td><code>prescription_count += 1</code>; mỗi mặt hàng tăng <code>DRUG_STATISTIC.dispensed_quantity</code></td><td>BR-R1</td></tr>
+            <tr><td><code>onPaymentCompleted(eventId, reportDate, departmentId, amount)</code></td><td><code>revenue += amount</code>; theo tháng <code>total_revenue += amount</code>, <code>invoice_count += 1</code></td><td>BR-R1, BR-R3</td></tr>
+            <tr><td><code>onPaymentFailed(eventId, reportDate, departmentId, amount)</code></td><td>đảo ngược: <code>revenue -= amount</code>; theo tháng tương tự, <code>invoice_count -= 1</code> (<strong>chặn không âm</strong>)</td><td>BR-R3</td></tr>
+            <tr><td><code>onStaffDepartmentChanged(eventId, staffId, oldDept, newDept)</code></td><td>chỉ cập nhật ảnh chụp nhân sự; V1 không đổi bộ đếm nào</td><td>—</td></tr>
+        </table>
+
+        <h4><code>ReadReportUseCase</code> — đọc báo cáo</h4>
+        <p><strong>Vì sao cần:</strong> các màn hình báo cáo (theo ngày / theo tháng / top thuốc) cần đọc số liệu tổng hợp đã dựng sẵn, gộp chung một interface vì cùng một nhóm nghiệp vụ "trả số liệu cho người xem".</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th><th>Quy tắc khớp</th></tr>
+            <tr><td><code>daily(date, departmentId)</code></td><td>báo cáo theo ngày; <code>departmentId</code> NULL = toàn viện; ngày không có dữ liệu trả về <strong>số 0, không 404</strong></td><td>BR-R5, BR-R6</td></tr>
+            <tr><td><code>monthly(month, year, departmentId)</code></td><td>báo cáo doanh thu theo tháng</td><td>BR-R5</td></tr>
+            <tr><td><code>topMedicines(fromDate, toDate, departmentId, limit)</code></td><td>top thuốc xuất nhiều nhất, tôn trọng khoảng ngày + <code>limit</code> (mặc định 10, tối đa 50)</td><td>BR-R7</td></tr>
+        </table>
+
+        <p>Chữ ký đầy đủ của 2 in-port:</p>
+        <div class="code">public interface UpdateAggregateUseCase {
+    void onMedicalRecordCreated(UUID eventId, LocalDate reportDate, UUID departmentId);
+    void onLabResultCreated(UUID eventId, LocalDate reportDate, UUID departmentId);
+    void onPrescriptionFilled(UUID eventId, LocalDate reportDate, UUID departmentId, List&lt;DispensedItem&gt; items);
+    void onPaymentCompleted(UUID eventId, LocalDate reportDate, UUID departmentId, BigDecimal amount);
+    void onPaymentFailed(UUID eventId, LocalDate reportDate, UUID departmentId, BigDecimal amount);  // delta âm
+    void onStaffDepartmentChanged(UUID eventId, UUID staffId, UUID oldDept, UUID newDept);
+}
+public interface ReadReportUseCase {
+    DailyReportDTO daily(LocalDate date, UUID departmentId);
+    MonthlyReportDTO monthly(int month, int year, UUID departmentId);
+    List&lt;TopMedicineDTO&gt; topMedicines(LocalDate fromDate, LocalDate toDate, UUID departmentId, int limit);
+}</div>
+
+        <h3>8.2 Cổng ra (out-ports) — 4 interface</h3>
+
+        <h4><code>DailyVisitReportRepositoryPort</code> — lưu và tìm báo cáo ngày</h4>
+        <p><strong>Vì sao cần:</strong> mọi cập nhật bộ đếm theo ngày đều phải ghi xuống DB, nhưng application không được phép biết JPA. Interface này là "lời hứa": <em>ai đó hãy lưu và tìm báo cáo ngày giúp tôi</em> — <code>DailyVisitReportPersistenceAdapter</code> trong <code>infrastructure</code> sẽ làm thật.</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th><th>Quy tắc khớp</th></tr>
+            <tr><td><code>findOrCreate(reportDate, departmentId)</code></td><td>tìm-hoặc-tạo dòng theo <code>(reportDate, departmentId)</code>, <strong>an toàn khi nhiều consumer chạy song song</strong></td><td>BR-R8</td></tr>
+            <tr><td><code>save(DailyVisitReport)</code></td><td>lưu báo cáo</td><td>mọi luồng cập nhật</td></tr>
+            <tr><td><code>find(reportDate, departmentId)</code></td><td>đọc 1 dòng</td><td>đọc báo cáo</td></tr>
+            <tr><td><code>findRange(fromDate, toDate, departmentId)</code></td><td>đọc một khoảng ngày</td><td>chế độ chi tiết theo ngày</td></tr>
+        </table>
+
+        <h4><code>MonthlyRevenueReportRepositoryPort</code> — lưu và tìm báo cáo tháng</h4>
+        <p><strong>Vì sao cần:</strong> doanh thu tháng được cập nhật theo từng event thanh toán, cần một nơi ghi và đọc lại theo <code>(year, month, departmentId)</code>.</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th></tr>
+            <tr><td><code>findOrCreate(year, month, departmentId)</code></td><td>tìm-hoặc-tạo dòng theo <code>(year, month, departmentId)</code></td></tr>
+            <tr><td><code>save(MonthlyRevenueReport)</code></td><td>lưu báo cáo</td></tr>
+            <tr><td><code>findByMonth(year, month)</code></td><td>đọc toàn bộ dòng của một tháng (các khoa + toàn viện)</td></tr>
+        </table>
+
+        <h4><code>DrugStatisticRepositoryPort</code> — lưu và tìm thống kê thuốc</h4>
+        <p><strong>Vì sao cần:</strong> top thuốc phải tổng hợp theo <code>(drugId, reportDate, departmentId)</code> và trả về theo khoảng ngày + <code>limit</code> — quá riêng để nhét vào một port "đọc chung".</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th><th>Quy tắc khớp</th></tr>
+            <tr><td><code>findOrCreate(drugId, drugName, reportDate, departmentId)</code></td><td>tìm-hoặc-tạo dòng theo <code>(drugId, reportDate, departmentId)</code></td><td>BR-R1</td></tr>
+            <tr><td><code>save(DrugStatistic)</code></td><td>lưu thống kê</td><td>—</td></tr>
+            <tr><td><code>topDrugs(fromDate, toDate, departmentId, limit)</code></td><td>lấy top thuốc theo khoảng ngày + <code>limit</code></td><td>BR-R7</td></tr>
+        </table>
+
+        <h4><code>ProcessedEventPort</code> — sổ chống xử lý trùng</h4>
+        <p><strong>Vì sao cần:</strong> RabbitMQ có thể gửi lại cùng một event. Nếu không kiểm tra, một tin <code>payment.completed</code> đến hai lần sẽ tăng doanh thu hai lần, làm hỏng vĩnh viễn mọi bộ đếm.</p>
+        <table>
+            <tr><th>Phương thức</th><th>Làm gì</th><th>Quy tắc khớp</th></tr>
+            <tr><td><code>alreadyProcessed(UUID eventId)</code></td><td>kiểm tra event đã xử lý chưa</td><td>BR-R2</td></tr>
+            <tr><td><code>markProcessed(UUID eventId, String routingKey)</code></td><td>đánh dấu đã xử lý (cùng transaction với hiệu ứng)</td><td>BR-R2</td></tr>
+        </table>
+
+        <p>Chữ ký đầy đủ của 4 out-port:</p>
         <div class="code">public interface DailyVisitReportRepositoryPort {
     DailyVisitReport findOrCreate(LocalDate reportDate, UUID departmentId);  // an toàn concurrency
     DailyVisitReport save(DailyVisitReport r);
@@ -138,24 +280,13 @@ public interface DrugStatisticRepositoryPort {
     List&lt;DrugStatistic&gt; topDrugs(LocalDate fromDate, LocalDate toDate, UUID departmentId, int limit);
 }
 public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }</div>
-        <h3>In — <code>application/port/in/</code></h3>
-        <div class="code">public interface UpdateAggregateUseCase {
-    void onMedicalRecordCreated(UUID eventId, LocalDate reportDate, UUID departmentId);
-    void onLabResultCreated(UUID eventId, LocalDate reportDate, UUID departmentId);
-    void onPrescriptionFilled(UUID eventId, LocalDate reportDate, UUID departmentId, List&lt;DispensedItem&gt; items);
-    void onPaymentCompleted(UUID eventId, LocalDate reportDate, UUID departmentId, BigDecimal amount);
-    void onPaymentFailed(UUID eventId, LocalDate reportDate, UUID departmentId, BigDecimal amount);  // delta âm
-    void onStaffDepartmentChanged(UUID eventId, UUID staffId, UUID oldDept, UUID newDept);
-}
-public interface ReadReportUseCase {
-    DailyReportDTO daily(LocalDate date, UUID departmentId);
-    MonthlyReportDTO monthly(int month, int year, UUID departmentId);
-    List&lt;TopMedicineDTO&gt; topMedicines(LocalDate fromDate, LocalDate toDate, UUID departmentId, int limit);
-}</div>
     </div>
 
     <div class="section">
-        <h2>6. DTOs — <code>application/dto/response/</code></h2>
+        <h2>9. DTO (dữ liệu đi qua biên giới HTTP)</h2>
+        <p>DTO là "túi đựng dữ liệu" đi qua HTTP — Java record. Report chỉ có response (không có request body — các endpoint đều đọc bằng query param). <strong>Entity/domain model không bao giờ đi thẳng ra ngoài.</strong></p>
+
+        <h3>Response — <code>application/dto/response/</code></h3>
         <div class="code">public record DailyReportDTO(LocalDate reportDate, UUID departmentId, int visitCount, int labCount,
                              int prescriptionCount, BigDecimal revenue) {}
 
@@ -163,11 +294,16 @@ public record MonthlyReportDTO(int month, int year, UUID departmentId, BigDecima
                                int invoiceCount, List&lt;DailyReportDTO&gt; dailyDetails) {}
 
 public record TopMedicineDTO(UUID drugId, String drugName, int totalQuantity) {}</div>
+
+        <div class="note">Không có request DTO: cả 3 endpoint đều đọc tham số query (<code>date</code>, <code>departmentId</code>, <code>month</code>, <code>year</code>, <code>fromDate</code>, <code>toDate</code>, <code>limit</code>) — không cần <code>@Valid</code> body.</div>
     </div>
 
     <div class="section">
-        <h2>7. Consumer — pattern 4 bước trong 1 transaction</h2>
-        <p>Một class duy nhất <code>messaging/consumer/ReportEventConsumer.java</code> nhận queue <code>report.q</code>, dispatch theo routing key.</p>
+        <h2>10. Thuật toán tầng application</h2>
+        <p>Tầng application = nơi "điều phối": nhận lệnh từ in-port, hỏi out-port, gọi domain model. Nó không import Spring Data, AMQP, HTTP.</p>
+
+        <h3>10.1 Nhận event — pattern 4 bước trong 1 transaction</h3>
+        <p>Consumer nhận <strong>một queue <code>report.q</code></strong>, dispatch theo routing key, mọi bước trong cùng một transaction:</p>
         <div class="code">@RabbitListener(queues = "report.q")
 @Transactional
 public void on(Message message) {
@@ -185,32 +321,81 @@ public void on(Message message) {
     }
     processed.markProcessed(eventId, rk);                   // 4. cùng transaction với hiệu ứng
 }</div>
-        <p>Mỗi handler cập nhật <strong>2 dòng</strong>: dòng khoa (<code>department_id = X</code>) + dòng toàn viện (<code>department_id = NULL</code>). Làm thiếu một → tổng số liệu không khớp.</p>
+
+        <h3>10.2 Mỗi event cập nhật hai dòng — khoa + toàn viện</h3>
+        <p>Mỗi handler gọi <strong>2 dòng</strong>: dòng của khoa (<code>department_id = X</code>) + dòng toàn viện (<code>department_id = NULL</code>). Làm thiếu một trong hai → tổng số liệu không khớp.</p>
         <table>
             <tr><th>Routing key</th><th>Tác động</th></tr>
-            <tr><td>medicalrecord.created</td><td>visit_count += 1</td></tr>
-            <tr><td>lab.result.created</td><td>lab_count += 1</td></tr>
-            <tr><td>prescription.filled</td><td>prescription_count += 1; mỗi mặt hàng DRUG_STATISTIC.dispensed_quantity += quantity</td></tr>
-            <tr><td>payment.completed</td><td>revenue += totalAmount; monthly total_revenue += ; invoice_count += 1</td></tr>
-            <tr><td>payment.failed</td><td>revenue -= totalAmount; monthly tương tự; invoice_count -= 1</td></tr>
-            <tr><td>staff.department.changed</td><td>chỉ cập nhật ảnh chụp nhân sự; V1 không đổi bộ đếm</td></tr>
+            <tr><td><code>medicalrecord.created</code></td><td><code>visit_count += 1</code></td></tr>
+            <tr><td><code>lab.result.created</code></td><td><code>lab_count += 1</code></td></tr>
+            <tr><td><code>prescription.filled</code></td><td><code>prescription_count += 1</code>; mỗi mặt hàng <code>DRUG_STATISTIC.dispensed_quantity += quantity</code></td></tr>
+            <tr><td><code>payment.completed</code></td><td><code>revenue += totalAmount</code>; theo tháng <code>total_revenue += totalAmount</code>, <code>invoice_count += 1</code></td></tr>
+            <tr><td><code>payment.failed</code></td><td><code>revenue -= totalAmount</code>; theo tháng tương tự, <code>invoice_count -= 1</code></td></tr>
+            <tr><td><code>staff.department.changed</code></td><td>chỉ cập nhật ảnh chụp nhân sự; V1 không đổi bộ đếm nào</td></tr>
         </table>
+
+        <h3>10.3 Đọc báo cáo (không có dữ liệu → số 0, không 404)</h3>
+        <ol>
+            <li><code>ReadReportUseCase.daily/monthly/topMedicines</code> gọi out-port đọc dòng.</li>
+            <li>Không có dòng thì dựng DTO với mọi bộ đếm = <strong>0</strong> — không ném 404 (BR-R5).</li>
+            <li><code>departmentId</code> NULL ⇒ trả dòng toàn viện (BR-R6).</li>
+        </ol>
     </div>
 
     <div class="section">
-        <h2>8. Endpoints</h2>
+        <h2>11. API</h2>
         <table>
-            <tr><th>Method</th><th>Path</th><th>Trả về</th><th>Role</th></tr>
-            <tr><td>GET</td><td>/api/v1/reports/daily?date&departmentId</td><td>DailyReportDTO</td><td>ADMIN, MANAGER</td></tr>
-            <tr><td>GET</td><td>/api/v1/reports/monthly?month&year&departmentId</td><td>MonthlyReportDTO</td><td>ADMIN, MANAGER</td></tr>
-            <tr><td>GET</td><td>/api/v1/reports/top-medicines?fromDate&toDate&departmentId&limit</td><td>List&lt;TopMedicineDTO&gt;</td><td>ADMIN, MANAGER</td></tr>
+            <tr><th>Method</th><th>Path</th><th>Làm gì</th><th>Role</th></tr>
+            <tr><td>GET</td><td><code>/api/v1/reports/daily?date&amp;departmentId</code></td><td>báo cáo theo ngày</td><td>ADMIN, MANAGER</td></tr>
+            <tr><td>GET</td><td><code>/api/v1/reports/monthly?month&amp;year&amp;departmentId</code></td><td>báo cáo doanh thu theo tháng</td><td>ADMIN, MANAGER</td></tr>
+            <tr><td>GET</td><td><code>/api/v1/reports/top-medicines?fromDate&amp;toDate&amp;departmentId&amp;limit</code></td><td>top thuốc xuất nhiều nhất</td><td>ADMIN, MANAGER</td></tr>
         </table>
-        <p><code>departmentId</code> tùy chọn ở cả ba: bỏ trống = toàn viện. <code>limit</code> mặc định 10, tối đa 50.</p>
+        <div class="note"><code>departmentId</code> là tùy chọn ở cả ba: bỏ trống = số liệu toàn viện, truyền vào = số liệu của một khoa. <code>limit</code> mặc định 10, tối đa 50.
+        Phân quyền ghi ở controller (<code>@PreAuthorize</code>) — đây là lớp "giao hàng", không phải quy tắc nghiệp vụ (xem <code>docs/ai/07-security-rbac.md</code>).</div>
     </div>
 
     <div class="section">
-        <h2>9. Persistence — <code>findOrCreate</code> an toàn concurrency</h2>
-        <p>Hai event cho cùng <code>(reportDate, departmentId)</code> có thể đến cùng lúc. Dựa vào unique index, <strong>không</strong> kiểm-rồi-chèn.</p>
+        <h2>12. Sự kiện</h2>
+        <p>Quy tắc chung (<code>docs/ai/06-events-rabbitmq.md</code>): mọi event bắt đầu bằng <code>eventId, occurredAt, correlationId</code>; consumer phải chống trùng (dedupe theo <code>eventId</code>).</p>
+
+        <h3>Publish (report gửi đi)</h3>
+        <p><strong>Không có.</strong> Report không gửi event nào ra ngoài — không có binding xuôi.</p>
+
+        <h3>Subscribe (report nhận)</h3>
+        <table>
+            <tr><th>Routing key</th><th>Xử lý</th></tr>
+            <tr><td><code>medicalrecord.created</code></td><td><code>onMedicalRecordCreated</code> → <code>visit_count += 1</code></td></tr>
+            <tr><td><code>lab.result.created</code></td><td><code>onLabResultCreated</code> → <code>lab_count += 1</code></td></tr>
+            <tr><td><code>prescription.filled</code></td><td><code>onPrescriptionFilled</code> → <code>prescription_count += 1</code> + <code>DRUG_STATISTIC</code></td></tr>
+            <tr><td><code>payment.completed</code></td><td><code>onPaymentCompleted</code> → tăng doanh thu ngày + tháng</td></tr>
+            <tr><td><code>payment.failed</code></td><td><code>onPaymentFailed</code> → đảo ngược doanh thu</td></tr>
+            <tr><td><code>staff.department.changed</code></td><td><code>onStaffDepartmentChanged</code> → cập nhật ảnh chụp nhân sự</td></tr>
+        </table>
+        <p>Queue: <code>report.q</code> bind <strong>6 routing key</strong> trên. Consumer là <strong>một class duy nhất</strong> (<code>ReportEventConsumer</code>) — nhận <code>Message</code>, parse JSON thủ công, dispatch theo routing key (xem mục 10.1).</p>
+    </div>
+
+    <div class="section">
+        <h2>13. RabbitConfig — hằng số &amp; binding</h2>
+        <div class="code">EXCHANGE = "mediflow.events"        // durable topic
+DLX      = "mediflow.events.dlx"
+QUEUE    = "report.q"              // durable, DLX + DLQ "report.dlq"</div>
+        <table>
+            <tr><th>Routing key</th><th>Hướng</th><th>Dùng cho</th></tr>
+            <tr><td><code>medicalrecord.created</code></td><td>subscribe</td><td>tăng lượt khám</td></tr>
+            <tr><td><code>lab.result.created</code></td><td>subscribe</td><td>tăng xét nghiệm</td></tr>
+            <tr><td><code>prescription.filled</code></td><td>subscribe</td><td>tăng đơn thuốc + thống kê thuốc</td></tr>
+            <tr><td><code>payment.completed</code></td><td>subscribe</td><td>tăng doanh thu</td></tr>
+            <tr><td><code>payment.failed</code></td><td>subscribe</td><td>đảo ngược doanh thu</td></tr>
+            <tr><td><code>staff.department.changed</code></td><td>subscribe</td><td>cập nhật ảnh chụp nhân sự</td></tr>
+        </table>
+        <p>Queue <code>report.q</code> <strong>chỉ bind 6 key nêu trên</strong> — report không publish gì, không có binding xuôi.</p>
+        <p><em>Copy <code>docs/ai/reference/RabbitConfig.java</code> → sửa hằng số. Message converter Jackson2Json.</em></p>
+    </div>
+
+    <div class="section">
+        <h2>14. Persistence &amp; concurrency — <code>findOrCreate</code> an toàn</h2>
+
+        <h3><code>DailyVisitReportJpaRepository</code> — ví dụ repository JPA</h3>
         <div class="code">@Modifying
 @Query(value = """
     INSERT INTO DAILY_VISIT_REPORT (report_id, report_date, department_id)
@@ -224,36 +409,81 @@ void insertIfAbsent(@Param("id") UUID id, @Param("reportDate") LocalDate reportD
 @Query("SELECT r FROM DailyVisitReportJpaEntity r WHERE r.reportDate = :reportDate AND (r.departmentId = :departmentId OR (:departmentId IS NULL AND r.departmentId IS NULL))")
 Optional&lt;DailyVisitReportJpaEntity&gt; findForUpdate(@Param("reportDate") LocalDate reportDate,
                                                   @Param("departmentId") UUID departmentId);</div>
-        <div class="warn"><strong>Điều kiện <code>department_id IS NULL</code>:</strong> Hibernate/JPA đối chiếu <code>WHERE x = NULL</code> không khớp. Phải viết <code>(r.departmentId = :departmentId OR (:departmentId IS NULL AND r.departmentId IS NULL))</code> — lỗi dễ mắc nhất ở report.</div>
+
+        <h3>Entity ↔ domain (MapStruct)</h3>
+        <p>JPA entity chỉ là "túi đựng dữ liệu" khớp với bảng; domain model chứa quy tắc. MapStruct sinh code chuyển đổi hai chiều, tránh viết tay.</p>
+        <table>
+            <tr><th>Entity field</th><th>Domain field</th><th>Kiểu</th></tr>
+            <tr><td><code>report_id</code></td><td><code>reportId</code></td><td>UUID</td></tr>
+            <tr><td><code>report_date</code></td><td><code>reportDate</code></td><td>LocalDate</td></tr>
+            <tr><td><code>department_id</code></td><td><code>departmentId</code></td><td>UUID</td></tr>
+            <tr><td><code>visit_count</code></td><td><code>visitCount</code></td><td>int</td></tr>
+            <tr><td><code>lab_count</code></td><td><code>labCount</code></td><td>int</td></tr>
+            <tr><td><code>prescription_count</code></td><td><code>prescriptionCount</code></td><td>int</td></tr>
+            <tr><td><code>revenue</code></td><td><code>revenue</code></td><td>BigDecimal</td></tr>
+            <tr><td><code>created_at</code> / <code>updated_at</code></td><td><code>createdAt</code> / <code>updatedAt</code></td><td>Instant</td></tr>
+        </table>
+
+        <h3>Mapper cần làm (3 mapper MapStruct)</h3>
         <ul>
-            <li><code>DrugStatistic</code> findOrCreate tương tự, khóa <code>(drugId, reportDate, departmentId)</code>.</li>
-            <li><code>invoice_count</code> không âm: khi payment.failed dùng <code>Math.max(0, invoiceCount - 1)</code>.</li>
-            <li><code>ProcessedEventPersistenceAdapter</code> hiện thực ProcessedEventPort trên bảng PROCESSED_EVENT.</li>
+            <li><code>DailyVisitReportPersistenceMapper</code> — <code>DailyVisitReportJpaEntity ↔ DailyVisitReport</code>.</li>
+            <li><code>MonthlyRevenueReportPersistenceMapper</code> — entity ↔ model.</li>
+            <li><code>DrugStatisticPersistenceMapper</code> — entity ↔ model.</li>
+            <li><code>ReportDtoMapper</code> — model ↔ DTO response.</li>
+        </ul>
+        <p>MapStruct dùng <code>componentModel = SPRING</code> để Spring tự nối bean. Mapper interface thuần, chỉ code sinh mới chạm Spring.</p>
+
+        <h3>Adapter cần làm đúng</h3>
+        <ol>
+            <li><code>findOrCreate</code> phải dùng <code>INSERT ... ON CONFLICT DO NOTHING</code> rồi <code>SELECT ... FOR UPDATE</code>, <strong>không</strong> kiểm-rồi-chèn (BR-R8).</li>
+            <li>Luôn xử lý đúng <code>department_id IS NULL</code> — Hibernate đối chiếu <code>WHERE x = NULL</code> không khớp (xem mục 15).</li>
+            <li><code>ProcessedEventPersistenceAdapter</code> hiện thực <code>ProcessedEventPort</code> trên bảng <code>PROCESSED_EVENT</code>.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>15. Tương tranh khi nhiều consumer cùng cập nhật</h2>
+        <p>Hai event cho cùng <code>(reportDate, departmentId)</code> có thể đến cùng lúc (ví dụ <code>payment.completed</code> của hai bệnh nhân cùng một khoa trong cùng giây). Nếu kiểm-rồi-chèn, một trong hai sẽ trùng khóa. Ràng buộc unique index chỉ là phòng thủ cuối, không phải tuyến đầu.</p>
+        <div class="code">INSERT INTO DAILY_VISIT_REPORT (report_id, report_date, department_id) VALUES (:id, :reportDate, :departmentId)
+ON CONFLICT (report_date, department_id) DO NOTHING;</div>
+        <ul>
+            <li><strong>Luôn</strong> dựa vào unique index qua <code>insertIfAbsent</code> + <code>SELECT FOR UPDATE</code> — không dùng <code>findById</code> rồi <code>save</code>.</li>
+            <li><strong>Điều kiện <code>department_id IS NULL</code>:</strong> phải viết <code>(r.departmentId = :departmentId OR (:departmentId IS NULL AND r.departmentId IS NULL))</code> — <strong>lỗi dễ mắc nhất ở report</strong>.</li>
+            <li><code>invoice_count</code> không âm: khi <code>payment.failed</code> dùng <code>Math.max(0, invoiceCount - 1)</code> nếu event tới không đúng thứ tự.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>10. RabbitConfig</h2>
-        <div class="code">EXCHANGE = "mediflow.events"
-DLX      = "mediflow.events.dlx"
-QUEUE    = "report.q"     // durable, DLX + DLQ "report.dlq"</div>
-        <p>Queue <code>report.q</code> bind 6 routing key: <code>medicalrecord.created</code> · <code>lab.result.created</code> · <code>prescription.filled</code> · <code>payment.completed</code> · <code>payment.failed</code> · <code>staff.department.changed</code></p>
-        <div class="note"><strong>Report không publish gì.</strong> Chỉ bind 6 key vào queue, không có binding xuôi.</div>
+        <h2>16. Quy tắc nghiệp vụ (8 quy tắc)</h2>
+        <table>
+            <tr><th>ID</th><th>Quy tắc (diễn đạt đơn giản)</th></tr>
+            <tr><td>BR-R1</td><td>Số liệu được tổng hợp theo ngày và theo khoa (kèm dòng toàn viện).</td></tr>
+            <tr><td>BR-R2</td><td>Gửi lại event không được đếm hai lần (khử trùng lặp trên <code>eventId</code>).</td></tr>
+            <tr><td>BR-R3</td><td><code>payment.failed</code> phải đảo ngược doanh thu (delta âm).</td></tr>
+            <tr><td>BR-R4</td><td>Không bao giờ truy vấn service khác — không Feign, không external datasource.</td></tr>
+            <tr><td>BR-R5</td><td>Ngày/tháng không có dữ liệu trả về số 0, không phải 404.</td></tr>
+            <tr><td>BR-R6</td><td>Bỏ trống <code>departmentId</code> ⇒ trả dòng toàn viện.</td></tr>
+            <tr><td>BR-R7</td><td>Top thuốc tôn trọng khoảng ngày và <code>limit</code>.</td></tr>
+            <tr><td>BR-R8</td><td>Nhiều event đầu tiên cùng ngày chỉ tạo đúng một dòng (concurrency-safe).</td></tr>
+        </table>
+        <p>Ánh xạ chi tiết quy tắc → tầng test → tên test: xem mục 17.</p>
     </div>
 
     <div class="section">
-        <h2>11. Test Plan (business rule → tầng → tên test)</h2>
+        <h2>17. Test plan (quy tắc nghiệp vụ → tầng → tên test)</h2>
         <table>
             <tr><th>Rule</th><th>Tầng</th><th>Tên test</th><th>Cần gì</th></tr>
-            <tr><td>BR-R1 (tổng hợp ngày+khoa)</td><td>application</td><td>onMedicalRecordCreated_updatesDeptAndHospitalRows</td><td>mock 2 repo, verify 2 save</td></tr>
-            <tr><td>BR-R2 (redelivery không đếm 2 lần)</td><td>application</td><td>onPaymentCompleted_sameEventTwice_revenueCountedOnce</td><td>mock ProcessedEventPort</td></tr>
-            <tr><td>BR-R3 (payment.failed đảo doanh thu)</td><td>application</td><td>onPaymentFailed_subtractsRevenue</td><td>mock repo, delta âm</td></tr>
-            <tr><td>BR-R4 (không Feign/client)</td><td><strong>ArchUnit</strong></td><td>reportService_hasNoFeignClientOrExternalDataSource</td><td>kiểm cây package</td></tr>
-            <tr><td>BR-R5 (ngày không dữ liệu → 0, không 404)</td><td>web slice</td><td>daily_noData_returnsZeroedReport</td><td>@WebMvcTest</td></tr>
-            <tr><td>BR-R6 (bỏ departmentId → toàn viện)</td><td>application</td><td>daily_noDepartment_returnsNullDeptRow</td><td>mock trả departmentId = null</td></tr>
-            <tr><td>BR-R7 (top thuốc tôn trọng khoảng/limit)</td><td>application</td><td>topMedicines_respectsDateRangeAndLimit</td><td>mock repo</td></tr>
-            <tr><td>BR-R8 (nhiều event đầu tiên tạo 1 dòng)</td><td>integration</td><td>findOrCreate_concurrent_createsSingleRow</td><td>Testcontainers PG, 2 luồng</td></tr>
+            <tr><td>BR-R1 (tổng hợp ngày+khoa)</td><td>application</td><td><code>onMedicalRecordCreated_updatesDeptAndHospitalRows</code></td><td>mock 2 repo, verify 2 save</td></tr>
+            <tr><td>BR-R2 (redelivery không đếm 2 lần)</td><td>application</td><td><code>onPaymentCompleted_sameEventTwice_revenueCountedOnce</code></td><td>mock <code>ProcessedEventPort</code></td></tr>
+            <tr><td>BR-R3 (payment.failed đảo doanh thu)</td><td>application</td><td><code>onPaymentFailed_subtractsRevenue</code></td><td>mock repo, delta âm</td></tr>
+            <tr><td>BR-R4 (không Feign/client)</td><td><strong>ArchUnit</strong></td><td><code>reportService_hasNoFeignClientOrExternalDataSource</code></td><td>kiểm cây package</td></tr>
+            <tr><td>BR-R5 (ngày không dữ liệu → 0, không 404)</td><td>web slice</td><td><code>daily_noData_returnsZeroedReport</code></td><td><code>@WebMvcTest</code></td></tr>
+            <tr><td>BR-R6 (bỏ departmentId → toàn viện)</td><td>application</td><td><code>daily_noDepartment_returnsNullDeptRow</code></td><td>mock trả <code>departmentId = null</code></td></tr>
+            <tr><td>BR-R7 (top thuốc tôn trọng khoảng/limit)</td><td>application</td><td><code>topMedicines_respectsDateRangeAndLimit</code></td><td>mock repo</td></tr>
+            <tr><td>BR-R8 (nhiều event đầu tiên tạo 1 dòng)</td><td>integration</td><td><code>findOrCreate_concurrent_createsSingleRow</code></td><td>Testcontainers PG, 2 luồng</td></tr>
         </table>
+        <div class="warn">BR-R8 là test tương tranh thật (2 luồng cùng <code>(reportDate, departmentId)</code>) — phải chạy bằng Testcontainers PG, không mock được. BR-R4 đáng viết hẳn một test ArchUnit chặn <code>infrastructure/client/</code>.</div>
+
         <h3>Test ArchUnit BR-R4</h3>
         <div class="code">@AnalyzeClasses(packages = "com.mediflow.report")
 class ArchitectureTest {
@@ -267,7 +497,7 @@ class ArchitectureTest {
     </div>
 
     <div class="section">
-        <h2>12. File Map (mọi file Java cần tạo)</h2>
+        <h2>18. File map (mọi file Java cần tạo)</h2>
         <div class="code">report-service/src/main/java/com/mediflow/report/
 ├── ReportServiceApplication.java          # có sẵn
 ├── domain/model/
@@ -283,46 +513,44 @@ class ArchitectureTest {
 │   ├── MonthlyRevenueReportRepositoryPort.java
 │   ├── DrugStatisticRepositoryPort.java
 │   └── ProcessedEventPort.java
-├── application/dto/response/
-│   ├── DailyReportDTO.java / MonthlyReportDTO.java / TopMedicineDTO.java
-├── application/mapper/
-│   └── ReportDtoMapper.java
+├── application/dto/response/              # DailyReportDTO, MonthlyReportDTO, TopMedicineDTO
+├── application/mapper/                    # ReportDtoMapper (MapStruct) — model ↔ DTO
 ├── application/service/
-│   ├── ReportApplicationService.java      # ReadReportUseCase
-│   └── AggregateUpdaterService.java       # UpdateAggregateUseCase
-├── web/                                    # DRIVING (HTTP)
+│   ├── AggregateUpdaterService.java       # hiện thực UpdateAggregateUseCase
+│   └── ReportApplicationService.java      # hiện thực ReadReportUseCase
+├── web/                                   # DRIVING (HTTP)
 │   ├── ReportController.java
-│   └── GlobalExceptionHandler.java        # copy docs/ai/reference
-├── messaging/consumer/                     # DRIVING (events)
+│   └── GlobalExceptionHandler.java
+├── messaging/consumer/                    # DRIVING (events)
 │   └── ReportEventConsumer.java
-├── infrastructure/persistence/             # DRIVEN (DB)
+├── infrastructure/persistence/            # DRIVEN (DB)
 │   ├── DailyVisitReportJpaEntity / JpaRepository / PersistenceAdapter / PersistenceMapper
 │   ├── MonthlyRevenueReportJpaEntity / JpaRepository / PersistenceAdapter / PersistenceMapper
 │   ├── DrugStatisticJpaEntity / JpaRepository / PersistenceAdapter / PersistenceMapper
 │   └── ProcessedEventPersistenceAdapter.java
-└── infrastructure/messaging/                # DRIVEN (RabbitMQ)
+└── infrastructure/messaging/              # DRIVEN (RabbitMQ)
     └── payload/                           # (tùy chọn) event record nếu dùng Jackson deserialize
-# KHÔNG có infrastructure/client/ — cấm tuyệt đối
-# + boilerplate: config/RabbitConfig, security/JwtAuthFilter+JwtProperties, config/SecurityConfig, config/OpenApiConfig, db/migration/V1__init.sql</div>
+# KHÔNG có infrastructure/client/ — cấm tuyệt đối (BR-R4)
+# + boilerplate: config/RabbitConfig, security/JwtAuthFilter + JwtProperties, config/SecurityConfig, config/OpenApiConfig, db/migration/V1__init.sql</div>
     </div>
 
     <div class="section">
-        <h2>13. Checklist hoàn thiện (Definition of Done)</h2>
+        <h2>19. Checklist hoàn thiện (Definition of Done)</h2>
         <ul>
-            <li>☐ V1__init.sql đủ 4 bảng + NULLS NOT DISTINCT unique index + ck_month.</li>
+            <li>☐ <code>V1__init.sql</code> đủ 4 bảng, tên EN snake_case, unique index <code>NULLS NOT DISTINCT</code> + <code>ck_month</code>.</li>
             <li>☐ Domain: 3 model (delta âm); không domain exception nếu không cần.</li>
             <li>☐ Ports đủ (4 out, 2 in); application không import Spring Data/AMQP.</li>
-            <li>☐ findOrCreate dùng ON CONFLICT + SELECT FOR UPDATE; xử lý đúng department_id IS NULL.</li>
+            <li>☐ <code>findOrCreate</code> dùng ON CONFLICT + SELECT FOR UPDATE; xử lý đúng <code>department_id IS NULL</code>.</li>
             <li>☐ Consumer 1 class, switch theo routing key, dedupe + mark cùng transaction.</li>
-            <li>☐ Controller 3 endpoints + @PreAuthorize (ADMIN/MANAGER); departmentId tùy chọn.</li>
-            <li>☐ GlobalExceptionHandler, SecurityConfig, RabbitConfig, OpenApiConfig.</li>
-            <li>☐ Test 5 tầng + ArchUnit BR-R4; 8 business rule được phủ.</li>
+            <li>☐ Controller 3 endpoints + <code>@PreAuthorize</code> (ADMIN/MANAGER); <code>departmentId</code> tùy chọn.</li>
+            <li>☐ <code>GlobalExceptionHandler</code>, <code>SecurityConfig</code>, <code>RabbitConfig</code>, <code>OpenApiConfig</code>.</li>
+            <li>☐ Test 5 tầng + ArchUnit BR-R4; 8 quy tắc nghiệp vụ được phủ.</li>
             <li>☐ <code>mvn -pl backend/report-service -am -q -DskipTests install</code> xanh.</li>
         </ul>
     </div>
 
     <div class="section">
-        <h2>14. Sequence Diagram — Cập nhật báo cáo từ event</h2>
+        <h2>20. Sơ đồ luồng — Cập nhật báo cáo từ event</h2>
         <div class="code">[Any Service] → RabbitMQ → Report Service (queue report.q)
 1. Consumer nhận event (dedupe eventId)
 2. findOrCreate dòng (report_date, department_id) bằng ON CONFLICT DO NOTHING
@@ -332,7 +560,29 @@ class ArchitectureTest {
    ▼
 Báo cáo lấy qua GET /reports/daily | monthly | top-medicines
 (ngày không dữ liệu → trả số 0, không phải 404 — BR-R5)</div>
-        <p>Không cần job cuối ngày: bộ đếm duy trì theo từng event. Chỉ thêm job khi cần backfill dữ liệu cũ.</p>
+        <p>Không cần job chạy cuối ngày: bộ đếm được duy trì tăng dần theo từng event. Chỉ thêm job khi về sau cần backfill dữ liệu cũ.</p>
+    </div>
+
+    <div class="section">
+        <h2>21. Code hiện tại: đã có gì, còn thiếu gì</h2>
+
+        <h3>Đã có (đối chiếu với cây thư mục thật)</h3>
+        <ul>
+            <li><code>ArchitectureTest.java</code>: kiểm tra quy tắc kiến trúc (domain không dùng Spring/JPA, application không dùng Spring Data/AMQP/HTTP, không vòng lặp giữa các tầng) — đồng thời bắt luôn BR-R4 (không Feign/client).</li>
+        </ul>
+
+        <h3>Còn thiếu (theo spec 08 — xem phần "Coding map" và "Definition of Done")</h3>
+        <ul>
+            <li><code>db/migration/V1__init.sql</code>: 4 bảng (<code>DAILY_VISIT_REPORT</code>, <code>MONTHLY_REVENUE_REPORT</code>, <code>DRUG_STATISTIC</code>, <code>PROCESSED_EVENT</code>) + unique index <code>NULLS NOT DISTINCT</code> + <code>ck_month</code>.</li>
+            <li><code>domain/model/</code>: <code>DailyVisitReport</code>, <code>MonthlyRevenueReport</code>, <code>DrugStatistic</code> (bộ đếm chịu delta âm).</li>
+            <li>4 out-port + 2 in-port (<code>UpdateAggregateUseCase</code>, <code>ReadReportUseCase</code>).</li>
+            <li><code>application/service/</code>: <code>AggregateUpdaterService</code>, <code>ReportApplicationService</code>.</li>
+            <li>DTO response (<code>DailyReportDTO</code>, <code>MonthlyReportDTO</code>, <code>TopMedicineDTO</code>) + mapper (MapStruct).</li>
+            <li><code>web/</code>: <code>ReportController</code> 3 endpoint + <code>GlobalExceptionHandler</code> + <code>SecurityConfig</code> + <code>OpenApiConfig</code>.</li>
+            <li><code>messaging/consumer/</code>: <code>ReportEventConsumer</code> (1 class, 4 bước trong 1 transaction).</li>
+            <li><code>infrastructure/persistence/</code>: JPA entity + repository (<code>findOrCreate</code> ON CONFLICT, <code>SELECT FOR UPDATE</code>) + adapter.</li>
+            <li>Test đủ 5 tầng, phủ 8 quy tắc nghiệp vụ (danh sách test cụ thể ở mục 17).</li>
+        </ul>
     </div>
 </body>
 </html>
