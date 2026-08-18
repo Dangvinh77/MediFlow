@@ -1,0 +1,9 @@
+[features]
+hooks = true
+
+[mcp_servers."codebase-memory-mcp"]
+command = "codebase-memory-mcp"
+startup_timeout_sec = 30
+
+[mcp_servers.mermaidchart]
+url = "https://mcp.mermaid.ai/mcp"
