@@ -1,0 +1,19 @@
+{
+  "description": "Mirror of MediFlow SessionStart hooks from .claude/settings.json for Codex.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"console.log('[MediFlow] BACKEND: docs/ai/04-microservice-blueprint.md (clean architecture). FRONTEND: docs/ai/12-frontend.md. OPTIONAL: docs/ai/13-codebase-tools.md (codebase-memory-mcp + Understand-Anything).')\""
+          },
+          {
+            "type": "command",
+            "command": "node -e \"var s=require('child_process').execSync('node scripts/changelog.js --summary 2>&1',{cwd:process.cwd()}); console.log(s.toString().trim())\""
+          }
+        ]
+      }
+    ]
+  }
+}
