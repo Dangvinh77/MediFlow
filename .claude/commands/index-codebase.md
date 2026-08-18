@@ -10,4 +10,4 @@ Steps:
 3. If the team wants to share the graph so others skip a full re-index, pass `persistence: true` to write `.codebase-memory/graph.db.zst` (see README — that artifact can optionally be committed).
 4. After indexing, confirm with `get_architecture` that the services show up, and report a short summary (modules, clusters) to the user.
 
-Note: codebase-memory-mcp is Claude-side. Codex/Cursor users rely on `docs/ai/` instead and can skip this.
+The MCP is optional for both Claude and Codex. When unavailable, fall back to repository documentation and text search.

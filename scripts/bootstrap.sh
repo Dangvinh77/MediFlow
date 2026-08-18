@@ -31,14 +31,13 @@ else echo "[MISSING] Maven. Install Maven or add the Maven wrapper."; fi
 # 3. Git
 if have git; then echo "[ok] Git found"; else echo "[MISSING] Git."; fi
 
-# 4. codebase-memory-mcp (Claude users only)
+# 4. codebase-memory-mcp (optional for Claude and Codex)
 if have codebase-memory-mcp; then
-  echo "[ok] codebase-memory-mcp on PATH -> .mcp.json works as-is"
+  echo "[ok] codebase-memory-mcp on PATH -> Claude and Codex project configs can launch it"
 else
   echo "[note] codebase-memory-mcp NOT on PATH."
-  echo "       Claude users: install it, then add it to PATH, or copy"
-  echo "       .mcp.local.json.example -> .mcp.local.json with the absolute path."
-  echo "       Codex/Cursor users can ignore this (they use docs/ai/ directly)."
+  echo "       Claude/Codex users: run scripts/setup-codebase-memory.sh and restart the client."
+  echo "       The MCP is optional; agents fall back to docs and text search."
 fi
 
 echo ""
@@ -46,5 +45,5 @@ echo "Next steps:"
 echo "  1) Read docs/ai/README.md (the coding standards)."
 echo "  2) Build:  mvn -q -DskipTests install   (once the service modules exist)."
 echo "  3) Init changelog: node scripts/changelog.js --init  (already done above)."
-echo "  4) Claude users: open the repo in Claude Code and run /index-codebase to build the graph."
+echo "  4) Restart Claude Code or Codex, then run /index-codebase or \$index-codebase."
 echo "  5) Before coding, run: node scripts/changelog.js --summary"

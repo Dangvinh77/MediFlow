@@ -8,8 +8,8 @@
 #   ./scripts/setup-codebase-memory.sh                  # auto-detect OS/arch
 #   ./scripts/setup-codebase-memory.sh /custom/path     # custom install dir
 #
-# After installing, restart Claude Code, then run  /index-codebase
-# to build the knowledge graph.
+# After installing, restart Claude Code or Codex, then run /index-codebase
+# or $index-codebase to build the knowledge graph.
 
 set -euo pipefail
 
@@ -92,8 +92,8 @@ echo ""
 echo "============================================="
 echo "  Setup complete!"
 echo "============================================="
-echo "  1. Restart Claude Code"
-echo "  2. Run  /index-codebase  to build the graph"
+echo "  1. Restart Claude Code or Codex"
+echo "  2. Run /index-codebase (Claude) or \$index-codebase (Codex)"
 echo "     (first index ~1-3 min for MediFlow)"
 echo "  3. Start coding — agents use graph tools"
 echo "============================================="
