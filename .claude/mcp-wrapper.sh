@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# MCP wrapper for codebase-memory-mcp — runs native binary directly.
-# This wrapper exists because the npm Node.js shim (bin.js with spawnSync)
-# is incompatible with the persistent bidirectional stdio that MCP requires.
-exec "/c/Users/hp/AppData/Roaming/npm/node_modules/codebase-memory-mcp/bin/codebase-memory-mcp.exe" "$@"
+if ! command -v codebase-memory-mcp >/dev/null 2>&1; then
+  echo "[FAIL] codebase-memory-mcp is not on PATH. Run scripts/setup-codebase-memory.sh." >&2
+  exit 1
+fi
+exec codebase-memory-mcp "$@"
