@@ -52,7 +52,7 @@ Then read **[`docs/ai/README.md`](docs/ai/README.md)** — that is the coding st
 | Git hooks | everyone | single-author policy (strips `Co-Authored-By`); setup: `scripts/setup-hooks.bat` — bootstrap does it automatically |
 | Docker | everyone (recommended) | `docker compose up -d` gives you PostgreSQL + RabbitMQ; also required for integration tests (Testcontainers) |
 | Node 20+ & pnpm | frontend work | Next.js client |
-| `codebase-memory-mcp` | **optional**, Claude Code users | graph index for faster code navigation; setup: `scripts/setup-codebase-memory.bat` |
+| `codebase-memory-mcp` | **optional**, Claude Code and Codex users | graph index for faster code navigation; setup: `scripts/setup-codebase-memory.bat` |
 | Understand-Anything | **optional**, Claude Code users | visual codebase dashboard; setup: `scripts/setup-understand-anything.bat` |
 
 ---
@@ -69,11 +69,14 @@ AGENTS.md                     ← the single entry point (agents.md standard)
    │                            read natively by Codex, Cursor, Copilot, Gemini CLI,
    │                            Aider, Windsurf, Zed… (30+ tools, 60k+ repos)
    ├── CLAUDE.md               `@AGENTS.md` import + Claude-only extras
+   ├── .codex/                 Codex config, agents, and hooks
+   ├── .agents/skills/         team-shared Codex workflows
    ├── .cursor/rules/          thin pointer, zero rules of its own
    └── .claude/rules/          path-scoped (frontend.md loads only for frontend/**)
 
 frontend/AGENTS.md            ← nested; the spec says the NEAREST file wins
    └── frontend/CLAUDE.md      `@AGENTS.md` import
+mobile/AGENTS.md              ← nested Flutter instructions for Codex and other AGENTS readers
 ```
 
 **One file, every tool.** [AGENTS.md](https://agents.md/) became the cross-tool standard under the
@@ -88,14 +91,24 @@ tree in React.
 
 Change a rule → edit `docs/ai/*` **once**. Every tool and every teammate stays in sync on the next pull. Never duplicate rules into the entry files — they are pointers, not rulebooks.
 
-**Everything is vendored (no marketplace).** All Claude tooling is committed into the repo and installed by simply cloning:
+**Everything essential is vendored.** Claude and Codex adapters are committed and installed by cloning:
 - `.claude/agents/` — `spring-boot-engineer`, `java-architect`, `code-reviewer`, `test-engineer`
 - `.claude/commands/` — `/new-service`, `/index-codebase`, `/review-pr`
 - `.claude/skills/new-microservice/` — tool-agnostic scaffolder (Codex/Cursor can read it too)
 - `.claude/settings.json` — shared permissions + a SessionStart reminder hook (committed)
+- `.codex/agents/` — native Codex mirrors of the four Claude agents
+- `.codex/config.toml` + `.codex/hooks.json` — project MCP and lifecycle configuration
+- `.agents/skills/` — Codex-native `index-codebase`, `new-service`, `review-pr`, and `new-microservice` skills
 - `.mcp.json` — project-scoped MCP server config (committed)
 
-Machine-specific values never get committed: `.mcp.local.json`, `.claude/settings.local.json`, `application-local.yml`, `.env` are all gitignored. A `.mcp.local.json.example` shows how to override the MCP path.
+Machine-specific values never get committed: `.mcp.local.json`, `.claude/settings.local.json`, `application-local.yml`, and `.env` are gitignored. Codex personal settings belong in `~/.codex/config.toml`; Codex does not load a project `.codex/settings.local.json`.
+
+After changing the Claude dev kit, regenerate and audit its Codex adapters:
+
+```bash
+node scripts/sync-agent-devkit.mjs --write
+node scripts/sync-agent-devkit.mjs --check
+```
 
 ---
 
@@ -115,11 +128,14 @@ scripts\setup-codebase-memory.bat         # Windows
 scripts/setup-codebase-memory.sh          # macOS/Linux
 ```
 
-Then restart Claude Code and run `/index-codebase`. The index is per-machine (`.codebase-memory/` is gitignored).
+Then restart Claude Code or Codex and build the per-machine index (`.codebase-memory/` is gitignored):
+
+- Claude Code: run `/index-codebase`.
+- Codex: invoke `$index-codebase` or ask Codex to index the current repository.
 
 > **Portability:** if the binary isn't on your PATH, copy `.mcp.local.json.example` → `.mcp.local.json` (gitignored) and point `command` to the absolute path.
 >
-> **Codex / Cursor users:** `codebase-memory-mcp` is Claude-side — you can skip this. Your source of truth is `docs/ai/` + `docs/eproject_general_plan/*.html`.
+> The graph MCP is optional in both clients. When absent, agents fall back to `docs/ai/`, `docs/eproject_general_plan/*.html`, and text search.
 
 ### Understand-Anything — visual dashboard for humans
 
@@ -238,7 +254,7 @@ Full docs: [`docs/ai/14-flutter.md`](docs/ai/14-flutter.md).
 Demo login (stub auth on the gateway — replace before real use):
 `POST http://localhost:8080/api/v1/auth/login` with `{"username":"admin","password":"admin123"}`.
 
-Add a new service with **`/new-service <name>`** (Claude) or by following [`.claude/skills/new-microservice/SKILL.md`](.claude/skills/new-microservice/SKILL.md) + [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md).
+Add a new service with **`/new-service <name>`** in Claude or **`$new-service`** in Codex. Both adapters use the same blueprint and [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md).
 
 ---
 
@@ -257,6 +273,8 @@ MediFlow/
 │   ├── 00..13 *.md               ← overview, architecture, standards, blueprint, ide-setup, codebase-tools, ...
 │   └── services/*.md             ← per-service bounded context / data / events
 ├── .claude/                      ← vendored Claude tooling (agents, commands, skills, hooks, settings)
+├── .codex/                       ← Codex config, agents, and hooks
+├── .agents/skills/               ← team-shared Codex workflows
 ├── scripts/                      ← bootstrap.ps1 / .sh + tool setup scripts
 ├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 business services)
 │   ├── common/                   ← shared lib (envelope, pagination, base exceptions)
@@ -270,6 +288,7 @@ MediFlow/
 │   ├── billing-service/          ← Phòng Viện phí
 │   └── notification-service/ report-service/ ← support
 ├── mobile/                       ← Flutter mobile app (Clean Architecture, Riverpod)
+│   ├── AGENTS.md                 ← nested mobile instructions
 │   └── lib/
 │       ├── app/                  ← app config, GoRouter, DI
 │       ├── core/                 ← theme, network (Dio), storage
