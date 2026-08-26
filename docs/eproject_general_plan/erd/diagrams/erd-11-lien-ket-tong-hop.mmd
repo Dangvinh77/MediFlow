@@ -1,34 +1,34 @@
 flowchart LR
     subgraph ORG["organization"]
-        KHOA["KHOA"]
-        NV["NHAN_VIEN"]
-        TK["TAI_KHOAN"]
+        DEPT["DEPARTMENT"]
+        STAFF["STAFF"]
+        ACCOUNT["ACCOUNT"]
     end
     subgraph PAT["patient"]
-        BN["BENH_NHAN"]
+        PATIENT["PATIENT"]
     end
     subgraph CLI["clinical"]
-        LH["LICH_HEN"]
-        HS["HO_SO_BA"]
-        CD["CHUAN_DOAN"]
-        KQDK["KET_QUA_DINH_KEM"]
+        APPT["APPOINTMENT"]
+        MRECORD["MEDICAL_RECORD"]
+        DIAG["DIAGNOSIS"]
+        ATTACH["RECORD_ATTACHMENT"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM"]
-        KQXN["KET_QUA_XN"]
+        LTEST["LAB_TEST"]
+        LRESULT["LAB_RESULT"]
     end
     subgraph PHA["pharmacy"]
-        DR["DRUG"]
-        PR["PRESCRIPTION"]
-        PRL["PRESCRIPTION_LINE"]
-        DS["DISPENSE_SLIP"]
+        DRUG["DRUG"]
+        RX["PRESCRIPTION"]
+        RXLINE["PRESCRIPTION_LINE"]
+        DSLIP["DISPENSE_SLIP"]
     end
     subgraph BIL["billing"]
         FEE["FEE"]
         INV["INVOICE"]
     end
     subgraph NOT["notification"]
-        TB["THONG_BAO"]
+        NOTIF["NOTIFICATION"]
     end
     subgraph REP["report"]
         DVR["DAILY_VISIT_REPORT"]
@@ -36,57 +36,57 @@ flowchart LR
         DST["DRUG_STATISTIC"]
     end
 
-    %% ===== FK thật — cùng service (JOIN được) =====
-    NV -->|ma_khoa FK| KHOA
-    KHOA -->|truong_khoa FK| NV
-    TK -->|ma_nhan_vien FK| NV
-    HS -->|ma_lich_hen FK| LH
-    CD -->|ma_ho_so FK| HS
-    KQDK -->|ma_ho_so FK| HS
-    KQXN -->|ma_xn FK| XN
-    PRL -->|prescription_id FK| PR
-    PRL -->|drug_id FK| DR
-    DS -->|prescription_id FK 1-1| PR
+    %% ===== Real FK — same service (JOINable) =====
+    STAFF -->|department_id FK| DEPT
+    DEPT -->|head_of_dept FK| STAFF
+    ACCOUNT -->|staff_id FK| STAFF
+    MRECORD -->|appointment_id FK| APPT
+    DIAG -->|record_id FK| MRECORD
+    ATTACH -->|record_id FK| MRECORD
+    LRESULT -->|test_id FK| LTEST
+    RXLINE -->|prescription_id FK| RX
+    RXLINE -->|drug_id FK| DRUG
+    DSLIP -->|prescription_id FK 1-1| RX
     FEE -->|invoice_id FK| INV
 
-    %% ===== UUID trần — xuyên service (không JOIN được) =====
-    LH -.->|ma_benh_nhan| BN
-    LH -.->|ma_bac_si| NV
-    LH -.->|ma_khoa| KHOA
-    HS -.->|ma_benh_nhan| BN
-    HS -.->|ma_bac_si| NV
-    HS -.->|ma_khoa| KHOA
-    XN -.->|ma_ho_so| HS
-    XN -.->|ma_benh_nhan| BN
-    XN -.->|ma_khoa_chi_dinh| KHOA
-    PR -.->|record_id| HS
-    PR -.->|patient_id| BN
-    PR -.->|doctor_id| NV
-    PR -.->|department_id| KHOA
-    DS -.->|dispensed_by| NV
-    FEE -.->|patient_id| BN
-    FEE -.->|record_id| HS
-    FEE -.->|department_id| KHOA
-    FEE -.->|source_ref_id XN| XN
-    FEE -.->|source_ref_id don| PR
-    INV -.->|patient_id| BN
-    INV -.->|prescription_id| PR
-    INV -.->|dispense_id| DS
-    TB -.->|ma_benh_nhan| BN
-    DVR -.->|department_id co-the-null| KHOA
-    MRR -.->|department_id co-the-null| KHOA
-    DST -.->|drug_id| DR
+    %% ===== Bare UUID — cross-service (no JOIN) =====
+    APPT -.->|patient_id| PATIENT
+    APPT -.->|doctor_id| STAFF
+    APPT -.->|department_id| DEPT
+    MRECORD -.->|patient_id| PATIENT
+    MRECORD -.->|doctor_id| STAFF
+    MRECORD -.->|department_id| DEPT
+    LTEST -.->|record_id| MRECORD
+    LTEST -.->|patient_id| PATIENT
+    LTEST -.->|requesting_department_id| DEPT
+    RX -.->|record_id| MRECORD
+    RX -.->|patient_id| PATIENT
+    RX -.->|doctor_id| STAFF
+    RX -.->|department_id| DEPT
+    DSLIP -.->|dispensed_by| STAFF
+    FEE -.->|patient_id| PATIENT
+    FEE -.->|record_id| MRECORD
+    FEE -.->|department_id| DEPT
+    FEE -.->|source_ref_id lab| LTEST
+    FEE -.->|source_ref_id rx| RX
+    INV -.->|patient_id| PATIENT
+    INV -.->|prescription_id| RX
+    INV -.->|dispense_id| DSLIP
+    NOTIF -.->|patient_id| PATIENT
+    DVR -.->|department_id nullable| DEPT
+    MRR -.->|department_id nullable| DEPT
+    DST -.->|drug_id| DRUG
 
-    %% ===== Event — qua mediflow.events (async) =====
-    BN ==>|patient.created| TB
-    LH ==>|appointment.created| TB
-    LH ==>|appointment.status.changed| FEE
-    HS ==>|medicalrecord.created| XN & FEE & DVR & TB
-    XN ==>|lab.result.created| KQDK & FEE & TB & DVR
-    PR ==>|prescription.created| INV
-    DS ==>|prescription.filled| KQDK & INV & DVR & DST & TB
-    DS ==>|prescription.dispense.failed| INV & TB
-    INV ==>|payment.completed| DS & XN & TB & DVR & MRR
-    INV ==>|payment.failed| TB & DVR & MRR
-    DR ==>|stock.low| TB
-    NV ==>|staff.department.changed| DVR
+    %% ===== Events — via mediflow.events (async) =====
+    PATIENT ==>|patient.created| NOTIF
+    APPT ==>|appointment.created| NOTIF
+    APPT ==>|appointment.status.changed| FEE
+    MRECORD ==>|medicalrecord.created| LTEST & FEE & DVR & NOTIF
+    LTEST ==>|lab.result.created| ATTACH & FEE & NOTIF & DVR
+    RX ==>|prescription.created| INV
+    DSLIP ==>|prescription.filled| ATTACH & INV & DVR & DST & NOTIF
+    DSLIP ==>|prescription.dispense.failed| INV & NOTIF
+    INV ==>|payment.completed| DSLIP & LTEST & NOTIF & DVR & MRR
+    INV ==>|payment.failed| NOTIF & DVR & MRR
+    DRUG ==>|stock.low| NOTIF
+    STAFF ==>|staff.department.changed| DVR
