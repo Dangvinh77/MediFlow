@@ -1,32 +1,32 @@
 flowchart LR
     subgraph PAT["patient"]
-        BN["BENH_NHAN<br/>ma_benh_nhan"]
+        PATIENT["PATIENT<br/>patient_id"]
     end
     subgraph CLI["clinical"]
-        LH["LICH_HEN"]
-        HS["HO_SO_BA"]
+        APPT["APPOINTMENT"]
+        MRECORD["MEDICAL_RECORD"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM"]
+        LTEST["LAB_TEST"]
     end
     subgraph PHA["pharmacy"]
-        PR["PRESCRIPTION"]
+        RX["PRESCRIPTION"]
     end
     subgraph BIL["billing"]
         FEE["FEE"]
         INV["INVOICE"]
     end
     subgraph NOT["notification"]
-        TB["THONG_BAO"]
+        NOTIF["NOTIFICATION"]
     end
-    BN ==>|patient.created| TB
-    BN -.->|ma_benh_nhan| LH
-    BN -.->|ma_benh_nhan| HS
-    BN -.->|ma_benh_nhan| XN
-    BN -.->|patient_id| PR
-    BN -.->|patient_id| FEE
-    BN -.->|patient_id| INV
-    BN -.->|ma_benh_nhan| TB
-    LH -.->|appointment.created| TB
-    XN -.->|lab.result.created| TB
-    PR -.->|prescription.filled| TB
+    PATIENT ==>|patient.created| NOTIF
+    PATIENT -.->|patient_id| APPT
+    PATIENT -.->|patient_id| MRECORD
+    PATIENT -.->|patient_id| LTEST
+    PATIENT -.->|patient_id| RX
+    PATIENT -.->|patient_id| FEE
+    PATIENT -.->|patient_id| INV
+    PATIENT -.->|patient_id| NOTIF
+    APPT -.->|appointment.created| NOTIF
+    LTEST -.->|lab.result.created| NOTIF
+    RX -.->|prescription.filled| NOTIF
