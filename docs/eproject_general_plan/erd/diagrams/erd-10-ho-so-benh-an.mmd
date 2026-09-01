@@ -1,30 +1,30 @@
-flowchart LR
+﻿flowchart LR
     subgraph CLI["clinical"]
-        HS["HO_SO_BA<br/>ma_ho_so"]
-        CD["CHUAN_DOAN<br/>icd_code"]
-        KQDK["KET_QUA_DINH_KEM<br/>(loai, ma_tham_chieu, tom_tat)"]
+        MRECORD["MEDICAL_RECORD<br/>record_id"]
+        DIAG["DIAGNOSIS<br/>icd_code"]
+        ATTACH["RECORD_ATTACHMENT<br/>(type, ref_id, summary)"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM"]
-        KQXN["KET_QUA_XN<br/>chi_so · gia_tri"]
+        LTEST["LAB_TEST"]
+        LRESULT["LAB_RESULT<br/>indicator / value"]
     end
     subgraph PHA["pharmacy"]
-        PR["PRESCRIPTION"]
-        PRL["PRESCRIPTION_LINE<br/>drug_name · quantity · dosage"]
-        DS["DISPENSE_SLIP<br/>trạng thái xuất"]
+        RX["PRESCRIPTION"]
+        RXLINE["PRESCRIPTION_LINE<br/>drug_name / quantity / dosage"]
+        DSLIP["DISPENSE_SLIP<br/>dispense status"]
     end
     subgraph BIL["billing"]
         FEE["FEE<br/>EXAM / LAB / DRUG"]
-        INV["INVOICE<br/>saga_status · paid_at"]
+        INV["INVOICE<br/>saga_status / paid_at"]
     end
-    HS -->|FK| CD
-    HS -->|FK| KQDK
-    HS -.->|ma_ho_so| XN
-    XN -->|FK| KQXN
-    HS -.->|record_id| PR
-    PR -->|FK| PRL
-    PR -->|FK UNIQUE| DS
-    HS -.->|record_id| FEE
-    FEE -->|invoice_id| INV
-    XN -.->|lab.result.created| KQDK
-    PR -.->|prescription.filled| KQDK
+    MRECORD -->|FK| DIAG
+    MRECORD -->|FK| ATTACH
+    MRECORD -.->|record_id| LTEST
+    LTEST -->|FK| LRESULT
+    MRECORD -.->|record_id| RX
+    RX -->|FK| RXLINE
+    RX -->|FK UNIQUE| DSLIP
+    MRECORD -.->|record_id| FEE
+    FEE -->|invoice_id FK| INV
+    LTEST -.->|lab.result.created| ATTACH
+    RX -.->|prescription.filled| ATTACH

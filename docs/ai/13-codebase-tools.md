@@ -43,25 +43,26 @@ scripts\setup-codebase-memory.bat         # Windows (Git Bash / cmd)
 ### Post-install
 
 ```bash
-# 1. Restart Claude Code so .mcp.json picks up the binary
+# 1. Restart Claude Code or Codex so project MCP configuration reloads
 # 2. Build the graph:
-/index-codebase
+#    Claude Code: /index-codebase
+#    Codex:       $index-codebase (or ask Codex to index this repository)
 
 # The first index takes ~30s–3min for MediFlow. Subsequent runs are fast incremental updates.
 # If you want to share the index artifact so others skip a full re-index:
-#   /index-codebase with persistence: true → writes .codebase-memory/graph.db.zst
+#   index_repository with persistence: true → writes .codebase-memory/graph.db.zst
 #   Then commit the .zst file (uncomment the gitignore exception)
 ```
 
 ### How agents use it
 
-When the binary is installed and the graph is indexed, Claude Code agents **automatically prefer** graph tools over Grep/Glob/Read. You don't need to do anything special — it just works.
+When the binary is installed and the graph is indexed, Claude Code and Codex agents **automatically prefer** graph tools over Grep/Glob/Read. You don't need to do anything special.
 
 If you see "mcp__codebase-memory-mcp__* tools not found", the binary isn't on PATH. Check with `which codebase-memory-mcp`.
 
-### Override the binary path (if not on PATH)
+### Machine-specific configuration
 
-Copy `.mcp.local.json.example` to `.mcp.local.json` and set the absolute path to your binary. This file is gitignored — safe for machine-specific paths.
+The shared Claude and Codex configurations resolve `codebase-memory-mcp` from `PATH`. Claude users may copy `.mcp.local.json.example` to `.mcp.local.json` for a machine-specific override. Codex users keep personal overrides in `~/.codex/config.toml`. Never commit absolute user paths.
 
 ---
 

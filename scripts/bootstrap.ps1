@@ -35,14 +35,13 @@ else { Write-Host "[MISSING] Maven. Install Maven or add the Maven wrapper." -Fo
 # 3. Git
 if (Test-Cmd git) { Write-Host "[ok] Git found" } else { Write-Host "[MISSING] Git." -ForegroundColor Yellow }
 
-# 4. codebase-memory-mcp (Claude users only)
+# 4. codebase-memory-mcp (optional for Claude and Codex)
 if (Test-Cmd codebase-memory-mcp) {
-  Write-Host "[ok] codebase-memory-mcp on PATH -> .mcp.json will work as-is"
+  Write-Host "[ok] codebase-memory-mcp on PATH -> Claude and Codex project configs can launch it"
 } else {
   Write-Host "[note] codebase-memory-mcp NOT on PATH." -ForegroundColor Yellow
-  Write-Host "       Claude users: install it, then either add its folder to PATH," -ForegroundColor Yellow
-  Write-Host "       or copy .mcp.local.json.example -> .mcp.local.json and set the absolute path." -ForegroundColor Yellow
-  Write-Host "       Codex/Cursor users can ignore this (they use docs/ai/ directly)." -ForegroundColor Yellow
+  Write-Host "       Claude/Codex users: run scripts\setup-codebase-memory.bat and restart the client." -ForegroundColor Yellow
+  Write-Host "       The MCP is optional; agents fall back to docs and text search." -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -50,6 +49,6 @@ Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1) Read docs/ai/README.md (the coding standards)."
 Write-Host "  2) Build:  mvn -q -DskipTests install   (once the service modules exist)."
 Write-Host "  3) Init changelog: node scripts/changelog.js --init  (already done above)."
-Write-Host "  4) Claude users: open this repo in Claude Code and run /index-codebase to build the graph."
-Write-Host "     (Or ask Claude to run index_repository on the repo root.)"
+Write-Host "  4) Restart Claude Code or Codex, then index the graph: /index-codebase or `$index-codebase."
+Write-Host "     (Or ask the agent to run index_repository on the repo root.)"
 Write-Host "  5) Before coding, run: node scripts/changelog.js --summary" -ForegroundColor Cyan

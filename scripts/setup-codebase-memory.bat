@@ -7,8 +7,8 @@
 :: Usage:  scripts\setup-codebase-memory.bat
 ::         scripts\setup-codebase-memory.bat C:\custom\path
 ::
-:: After installing, restart Claude Code so .mcp.json picks up the new binary,
-:: then run  /index-codebase  to build the knowledge graph.
+:: After installing, restart Claude Code or Codex, then run /index-codebase
+:: or $index-codebase to build the knowledge graph.
 
 setlocal enabledelayedexpansion
 
@@ -67,8 +67,8 @@ echo.
 echo =============================================
 echo  Setup complete!
 echo =============================================
-echo  1. Restart Claude Code
-echo  2. Run  /index-codebase  to build the graph
+echo  1. Restart Claude Code or Codex
+echo  2. Run /index-codebase (Claude) or $index-codebase (Codex)
 echo     (first index takes 1-3 min for MediFlow)
 echo  3. Start coding — agents will use graph tools
 echo =============================================

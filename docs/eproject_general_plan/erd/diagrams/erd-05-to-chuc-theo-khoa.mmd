@@ -1,29 +1,29 @@
 flowchart LR
     subgraph ORG["organization"]
-        KHOA["KHOA<br/>ma_khoa"]
-        NV["NHAN_VIEN<br/>ma_khoa"]
-        TK["TAI_KHOAN<br/>ma_nhan_vien"]
+        DEPT["DEPARTMENT<br/>department_id"]
+        STAFF["STAFF<br/>department_id"]
+        ACCOUNT["ACCOUNT<br/>staff_id"]
     end
     subgraph CLI["clinical"]
-        LH["LICH_HEN<br/>ma_khoa"]
-        HS["HO_SO_BA<br/>ma_khoa"]
+        APPT["APPOINTMENT<br/>department_id"]
+        MRECORD["MEDICAL_RECORD<br/>department_id"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM<br/>ma_khoa_chi_dinh"]
+        LTEST["LAB_TEST<br/>requesting_department_id"]
     end
     subgraph PHA["pharmacy"]
-        PR["PRESCRIPTION<br/>department_id"]
+        RX["PRESCRIPTION<br/>department_id"]
     end
     subgraph BIL["billing"]
         FEE["FEE<br/>department_id"]
     end
     subgraph REP["report"]
-        DVR["DAILY_VISIT_REPORT<br/>department_id (NULL=toàn viện)"]
+        DVR["DAILY_VISIT_REPORT<br/>department_id (NULL=hospital-wide)"]
         MRR["MONTHLY_REVENUE_REPORT"]
         DST["DRUG_STATISTIC"]
     end
-    KHOA -->|FK| NV
-    NV -->|FK| TK
-    KHOA -.->|ma_khoa| LH & HS
-    KHOA -.->|ma_khoa_chi_dinh| XN
-    KHOA -.->|department_id| PR & FEE & DVR & MRR & DST
+    DEPT -->|FK| STAFF
+    STAFF -->|FK| ACCOUNT
+    DEPT -.->|department_id| APPT & MRECORD
+    DEPT -.->|requesting_department_id| LTEST
+    DEPT -.->|department_id| RX & FEE & DVR & MRR & DST

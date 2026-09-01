@@ -1,18 +1,18 @@
-flowchart LR
+﻿flowchart LR
     subgraph ORG["organization"]
-        TK["TAI_KHOAN<br/>ten_dang_nhap · mat_khau_hash · vai_tro · kich_hoat"]
-        NV["NHAN_VIEN<br/>chuc_danh · so_chung_chi"]
-        KHOA["KHOA"]
+        ACCOUNT["ACCOUNT<br/>username / password_hash / role / is_active"]
+        STAFF["STAFF<br/>title / license_no"]
+        DEPT["DEPARTMENT"]
     end
-    subgraph GATE["gateway · 8080"]
-        JWT["Xác minh JWT<br/>route → service qua Eureka"]
+    subgraph GATE["gateway / 8080"]
+        JWT["Verify JWT<br/>route → service via Eureka"]
     end
     subgraph SVC["8 business services"]
-        SEC["@PreAuthorize<br/>kiểm role lại trên từng endpoint"]
+        SEC["@PreAuthorize<br/>re-check role per endpoint"]
     end
-    NV -->|FK| TK
-    KHOA -->|FK| NV
-    TK ==>|POST /accounts/verify · SYSTEM| JWT
+    STAFF -->|FK| ACCOUNT
+    DEPT -->|FK| STAFF
+    ACCOUNT ==>|POST /accounts/verify / SYSTEM| JWT
     JWT -->|JWT Bearer| SVC
-    TK -.->|vai_tro| SVC
-    SVC -.->|ADMIN · DOCTOR · NURSE · PHARMACIST · CASHIER · LAB_TECH · MANAGER · PATIENT · SYSTEM| SEC
+    ACCOUNT -.->|role| SVC
+    SVC -.->|ADMIN / DOCTOR / NURSE / PHARMACIST / CASHIER / LAB_TECH / MANAGER / PATIENT / SYSTEM| SEC
