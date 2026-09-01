@@ -1,6 +1,6 @@
 ---
 name: new-microservice
-description: Scaffold a new Spring Boot microservice module that conforms exactly to the project blueprint. Tool-agnostic — usable by Claude, Codex, or Cursor. Use when creating any new *-service module in this monorepo.
+description: Scaffold a new Spring Boot microservice module that conforms exactly to the project blueprint. Tool-agnostic — usable by Codex, Codex, or Cursor. Use when creating any new *-service module in this monorepo.
 ---
 
 # Scaffold a microservice (blueprint-conformant)

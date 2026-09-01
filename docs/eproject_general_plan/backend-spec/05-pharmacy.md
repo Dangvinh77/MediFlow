@@ -94,6 +94,24 @@ CREATE TABLE PROCESSED_EVENT (
     routing_key  VARCHAR(100)  NOT NULL,
     processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
+
+-- Giữ chỗ tồn kho (stock reservation): kê đơn = "hứa" có thuốc ngay lúc kê.
+-- Vòng đời: RESERVED --xuất--> FULFILLED | --hủy/hết hạn--> RELEASED / EXPIRED.
+-- Số tồn "có thể bán" = stock_quantity - Σ(quantity) của các dòng RESERVED.
+CREATE TABLE STOCK_RESERVATION (
+    reservation_id   UUID         PRIMARY KEY,
+    drug_id          UUID         NOT NULL REFERENCES DRUG(drug_id),
+    prescription_id  UUID         NOT NULL REFERENCES PRESCRIPTION(prescription_id),
+    quantity         INT          NOT NULL,
+    status           VARCHAR(20)  NOT NULL DEFAULT 'RESERVED',   -- RESERVED / FULFILLED / RELEASED / EXPIRED
+    expires_at       TIMESTAMPTZ,                                 -- hết hạn giữ chỗ (TTL, mặc định 24h)
+    created_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ,
+    CONSTRAINT ck_reservation_quantity_positive CHECK (quantity > 0)
+);
+CREATE INDEX idx_reservation_drug          ON STOCK_RESERVATION (drug_id);
+CREATE INDEX idx_reservation_prescription  ON STOCK_RESERVATION (prescription_id);
+CREATE INDEX idx_reservation_status_expiry ON STOCK_RESERVATION (status, expires_at);
 ```
 
 ### Ý nghĩa từng bảng (đọc nhanh)
@@ -115,6 +133,16 @@ Giải thích: trạng thái của phiếu xuất.
 - `PENDING` — đơn đã kê, chưa xuất (chờ thanh toán).
 - `DISPENSED` — đã xuất thuốc (kết thúc).
 - `FAILED` — xuất thất bại, kèm lý do (kết thúc).
+
+```java
+public enum ReservationStatus { RESERVED, FULFILLED, RELEASED, EXPIRED }
+```
+
+Giải thích: trạng thái của một dòng giữ chỗ tồn kho (STOCK_RESERVATION).
+- `RESERVED` — đang giữ chỗ (chưa xuất, đơn chưa thanh toán) — **chỉ trạng thái này** được tính vào số tồn "có thể bán".
+- `FULFILLED` — đã xuất thuốc thật (reserved → stock), kết thúc.
+- `RELEASED` — trả lại chỗ (hủy / giải phóng chủ động), kết thúc.
+- `EXPIRED` — trả lại chỗ do hết hạn TTL, kết thúc.
 
 ## 3. Domain model
 
@@ -184,6 +212,20 @@ public boolean isPending();
 ```
 
 Quy tắc chuyển trạng thái: `PENDING → DISPENSED | FAILED`; cả hai đều là kết thúc, không quay lại được. Chuyển sai trạng thái → ném `DISPENSE_INVALID_TRANSITION`. Xuất một phiếu đã xuất rồi → `DISPENSE_ALREADY_DONE`.
+
+### `StockReservation` — dòng giữ chỗ tồn kho
+
+`reservationId`, `drugId`, `prescriptionId`, `quantity`, `status`, `expiresAt`, timestamps.
+
+```java
+public static StockReservation create(UUID drugId, UUID prescriptionId, int quantity, Instant expiresAt);
+public void markFulfilled();   // RESERVED → FULFILLED
+public void release();         // RESERVED → RELEASED
+public void expire();          // RESERVED → EXPIRED
+public boolean isReserved();
+```
+
+Quy tắc: `quantity > 0` (`RESERVATION_QUANTITY_INVALID`); `expiresAt` bắt buộc (`RESERVATION_EXPIRY_REQUIRED`); chỉ `RESERVED` mới chuyển tiếp được (`RESERVATION_INVALID_TRANSITION`).
 ## 4. Mã lỗi
 
 | Mã | HTTP | Tình huống |
@@ -191,6 +233,8 @@ Quy tắc chuyển trạng thái: `PENDING → DISPENSED | FAILED`; cả hai đ�
 | `DRUG_NOT_FOUND`, `PRESCRIPTION_NOT_FOUND`, `DISPENSE_NOT_FOUND` | 404 | không tìm thấy đối tượng |
 | `DRUG_OUT_OF_STOCK`, `DRUG_EXPIRED`, `DRUG_QUANTITY_INVALID`, `DRUG_PRICE_NEGATIVE`, `DRUG_EXPIRY_PAST` | 422 | vi phạm quy tắc thuốc |
 | `PRESCRIPTION_EMPTY`, `DISPENSE_INVALID_TRANSITION`, `DISPENSE_ALREADY_DONE`, `DISPENSE_NOT_PAID` | 422 | vi phạm quy tắc đơn / phiếu |
+| `INSUFFICIENT_AVAILABLE_STOCK` | 422 | tồn khả dụng (sau khi trừ dự trữ) không đủ khi kê đơn |
+| `RESERVATION_QUANTITY_INVALID`, `RESERVATION_EXPIRY_REQUIRED`, `RESERVATION_INVALID_TRANSITION`, `RESERVATION_MISSING` | 422 | vi phạm quy tắc giữ chỗ |
 
 ## 5. Port
 
@@ -276,6 +320,28 @@ public interface ProcessedEventPort {
 | `alreadyProcessed` | kiểm tra event đã xử lý chưa | BR-D9 |
 | `markProcessed` | đánh dấu đã xử lý | BR-D9 |
 
+#### `StockReservationRepositoryPort` — lưu và tìm giữ chỗ tồn kho
+
+**Vì sao cần:** kê đơn phải xác nhận "còn đủ thuốc có thể bán" (trừ dự trữ), xuất thuốc phải chuyển dự trữ → kho thật, job TTL phải tìm các dòng hết hạn để trả chỗ.
+
+```java
+public interface StockReservationRepositoryPort {
+    StockReservation save(StockReservation r);
+    List<StockReservation> findByPrescription(UUID prescriptionId);
+    List<StockReservation> findReservedByDrug(UUID drugId);              // tính tồn khả dụng khi kê
+    List<StockReservation> findExpired();                                 // job release TTL
+    Optional<StockReservation> findReservedByPrescriptionForUpdate(UUID prescriptionId, UUID drugId); // khóa ghi
+}
+```
+
+| Phương thức | Dùng cho | Quy tắc khớp |
+|-------------|----------|--------------|
+| `save` | tạo / cập nhật giữ chỗ | kê đơn (reserve), dispense (fulfill), job release (expire) |
+| `findByPrescription` | dispense biết đơn đã giữ những gì | — |
+| `findReservedByDrug` | tính tồn khả dụng khi kê | BR-D1 (mở rộng: kể cả dự trữ) |
+| `findExpired` | job TTL | release |
+| `findReservedByPrescriptionForUpdate` | khóa ghi giữ chỗ trong dispense | BR-D10 |
+
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
 **Vì sao cần:** application phải "báo tin" cho các service khác nhưng không được đụng RabbitMQ. Adapter trong `infrastructure/messaging` làm thật (publish **sau khi** transaction commit).
@@ -359,6 +425,20 @@ public interface ReactToPaymentUseCase {
 | Phương thức | Dùng cho | Quy tắc khớp |
 |-------------|----------|--------------|
 | `onPaymentCompleted` | gọi lại `dispense` với người thực hiện = hệ thống | chống trùng qua `ProcessedEventPort` (BR-D9); lỗi nghiệp vụ không ném ngược về RabbitMQ |
+
+#### `ReleaseExpiredReservationsUseCase` — trả lại chỗ giữ quá hạn
+
+**Vì sao cần:** đơn kê chưa thanh toán sẽ giữ chỗ vô thời hạn nếu không có cơ chế hết hạn. Job định kỳ gọi use case này để giải phóng.
+
+```java
+public interface ReleaseExpiredReservationsUseCase {
+    int releaseExpiredReservations();
+}
+```
+
+| Phương thức | Làm gì | Quy tắc khớp |
+|-------------|--------|--------------|
+| `releaseExpiredReservations` | đổi các giữ chỗ `RESERVED` quá hạn → `EXPIRED` (trả lại chỗ) | job TTL |
 ## 6. DTO
 
 > DTO là "túi đựng dữ liệu" đi qua biên giới HTTP — Java record, có Bean Validation. Client gửi request; server trả response. **Entity/domain model không bao giờ đi thẳng ra ngoài.**
@@ -412,15 +492,18 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 
 ### 7.1 Kê đơn (`createPrescription`) — `@Transactional`
 
-1. Với mỗi dòng: `drugRepo.findById(drugId)` → không có thì `DRUG_NOT_FOUND`.
-2. **Chụp giá:** `unitPrice = drug.getPrice()` — không bao giờ lấy từ request (client không được đặt giá).
-3. Dựng `PrescriptionLine` cho mỗi dòng; `lineTotal = unitPrice × quantity`, làm tròn `HALF_UP` 2 chữ số.
-4. `Prescription.create(...)` → tính `totalAmount` (BR-D5).
-5. Lưu đơn thuốc.
-6. `DispenseSlip.createPending(prescriptionId)` → lưu (**BR-D3** — luôn tạo, luôn `PENDING`).
-7. Publish `PrescriptionCreatedEvent` sau commit → billing tạo hóa đơn.
+1. Sắp xếp các dòng theo `drugId` (khóa đều, tránh deadlock — BR-D10).
+2. Với mỗi dòng: `drugRepo.findByIdForUpdate(drugId)` → không có thì `DRUG_NOT_FOUND`.
+3. **Kiểm tra tồn khả dụng + giữ chỗ:** `available = stockQuantity - Σ(reserved của drug)`; nếu `available < quantity` → ném `INSUFFICIENT_AVAILABLE_STOCK` (**422**, BR-D1 mở rộng) — bác sĩ thấy ngay lúc kê, đơn chưa tạo.
+4. **Chụp giá:** `unitPrice = drug.getPrice()` — không bao giờ lấy từ request (client không được đặt giá).
+5. Dựng `PrescriptionLine` cho mỗi dòng; `lineTotal = unitPrice × quantity`, làm tròn `HALF_UP` 2 chữ số.
+6. `Prescription.create(...)` → tính `totalAmount` (BR-D5).
+7. Lưu đơn thuốc.
+8. Tạo `StockReservation{RESERVED, expiresAt = now + TTL(24h)}` cho từng dòng (BR-D3 mở rộng) — **giữ chỗ tồn kho**.
+9. `DispenseSlip.createPending(prescriptionId)` → lưu (**BR-D3** — luôn tạo, luôn `PENDING`).
+10. Publish `PrescriptionCreatedEvent` sau commit → billing tạo hóa đơn.
 
-> **KHÔNG trừ kho ở đây.** Kê đơn chỉ là ghi nhận ý định. Kho chỉ biến động lúc xuất thuốc, sau khi đã thanh toán. Trừ kho hai lần là lỗi dễ xảy ra nhất của service này.
+> **KHÔNG trừ kho ở đây.** Kê đơn **giữ chỗ** (reserve) nhưng không trừ kho thật; kho chỉ biến động khi xuất thuốc. Trừ kho hai lần là lỗi dễ xảy ra nhất của service này. Mục đích giữ chỗ: bệnh nhân biết trước lượng thuốc có thể bán, không còn cảnh trả tiền rồi mới hết hàng.
 
 ### 7.2 Xuất thuốc (`dispense(prescriptionId, dispensedBy)`) — `@Transactional`
 
@@ -430,11 +513,13 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 2. Nếu `!slip.isPending()` → `DISPENSE_ALREADY_DONE` (chống xuất 2 lần — một `payment.completed` bị gửi lại không được xuất thuốc hai lần).
 3. Nạp đơn thuốc + các dòng của nó.
 4. **Sắp xếp các dòng theo `drugId`** trước khi khóa — tránh deadlock khi nhiều lần xuất đồng thời.
-5. Mỗi dòng: `drugRepo.findByIdForUpdate(drugId)` (khóa ghi bi quan) → `drug.dispenseStock(quantity)`; ném `DRUG_OUT_OF_STOCK` (BR-D1) hoặc `DRUG_EXPIRED` (BR-D2).
-6. **Khi có bất kỳ lỗi nào:** phần trừ kho bị hoàn tác (transaction rollback), đặt `slip.markFailed(reason)`, lưu phiếu **trong một transaction mới** (`REQUIRES_NEW`), rồi publish `PrescriptionDispenseFailedEvent` → billing bù trừ (BR-D6).
+5. Mỗi dòng: `drugRepo.findByIdForUpdate(drugId)` (khóa ghi bi quan) → `reservationRepo.findReservedByPrescriptionForUpdate(prescriptionId, drugId)` — giữ chỗ phải còn `RESERVED` (mất thì `RESERVATION_MISSING`) → `reservation.markFulfilled()` (RESERVED → FULFILLED) → `drug.dispenseStock(quantity)`; kiểm tra hết hạn (BR-D2) lúc xuất; ném `DRUG_OUT_OF_STOCK` (BR-D1) nếu dữ liệu không nhất quán.
+6. **Khi có bất kỳ lỗi nào:** phần trừ kho bị hoàn tác (transaction rollback), đặt `slip.markFailed(reason)`, lưu phiếu **trong một transaction mới** (`REQUIRES_NEW`), rồi publish `PrescriptionDispenseFailedEvent` (kèm `failedItems[]`) → billing bù trừ (BR-D6).
 7. Khi thành công: lưu từng thuốc; `slip.markDispensed(dispensedBy, now)`; lưu phiếu.
 8. Thuốc nào `belowLowStockThreshold()` → publish `StockLowEvent`.
 9. Publish `PrescriptionFilledEvent` sau commit.
+
+> **Với mô hình reservation, "hết hàng" ở đây gần như không còn xảy ra** — đã giữ chỗ lúc kê. Còn xảy ra là lỗi hệ thống / giữ chỗ thất lạc, vẫn rơi vào nhánh bù trừ §6.
 
 > Bước 6 là nhánh bù trừ. Phiếu xuất **vẫn phải ghi FAILED dù transaction trừ kho đã rollback** — vì thế mới cần `REQUIRES_NEW`. Làm sai chỗ này thì saga treo vĩnh viễn.
 
@@ -468,7 +553,7 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 |-------------|---------|---------|
 | `prescription.created` | `{envelope, prescriptionId, patientId, recordId, departmentId, totalAmount, items[]}` | sau khi `createPrescription` commit |
 | `prescription.filled` | `{envelope, prescriptionId, patientId, departmentId, totalAmount, dispensedItems[]}` | sau khi xuất thuốc thành công |
-| `prescription.dispense.failed` | `{envelope, prescriptionId, invoiceId, patientId, reason}` | xuất thất bại — **kích hoạt bù trừ** |
+| `prescription.dispense.failed` | `{envelope, prescriptionId, invoiceId, patientId, reason, failedItems[]}` | xuất thất bại — **kích hoạt bù trừ**; `failedItems[] = [{drugId, drugName, requestedQty, availableQty}]` cho rõ thuốc nào thiếu |
 | `stock.low` | `{envelope, drugId, drugName, currentStock, threshold}` | tồn kho chạm hoặc dưới `low_stock_threshold` |
 
 ### Subscribe — queue `pharmacy.q`
@@ -518,6 +603,7 @@ Ghi chú test:
 - `DISPENSE_SLIP.prescription_id` là `UNIQUE` — mỗi đơn thuốc đúng một phiếu. Hàm `findByPrescription` dựa vào ràng buộc này.
 - Consumer của `payment.completed` và endpoint `PUT .../dispense` gọi **cùng một** use case. Đừng viết logic hai lần.
 - `stock.low` là kiểu bắn-rồi-quên: đừng để việc publish nó thất bại làm rollback một lần xuất thuốc đã thành công.
+- **Reservation:** kê đơn phải `findByIdForUpdate` + trừ `Σ reserved` khi tính tồn khả dụng (khóa theo drugId — BR-D10); dispense phải `findReservedByPrescriptionForUpdate` rồi `markFulfilled`; job TTL chỉ chạm những giữ chỗ quá hạn. Quên khóa sẽ bán vượt kho khi tương tranh.
 
 ## 13. Coding map (chỉ dẫn hiện thực — bổ sung cho spec)
 
@@ -529,24 +615,28 @@ Base package `com.mediflow.pharmacy`:
 
 ```
 pharmacy-service/src/main/java/com/mediflow/pharmacy/
-├── PharmacyServiceApplication.java                      # có sẵn
+├── PharmacyServiceApplication.java                      # có sẵn (+@EnableScheduling)
 ├── domain/model/
 │   ├── DispenseStatus.java                              # đã có
 │   ├── Drug.java                                        # đã có
 │   ├── Prescription.java                                # đã có
 │   ├── PrescriptionLine.java                            # đã có
-│   └── DispenseSlip.java                                # đã có
-├── domain/exception/                                    # 6 exception — đã có
+│   ├── DispenseSlip.java                                # đã có
+│   ├── enums/ReservationStatus.java                     # RESERVED/FULFILLED/RELEASED/EXPIRED
+│   └── StockReservation.java                            # giữ chỗ tồn kho
+├── domain/exception/                                    # 6 exception + StockReservationRuleException
 ├── application/port/in/
 │   ├── ManageDrugUseCase.java
 │   ├── CreatePrescriptionUseCase.java
 │   ├── DispensePrescriptionUseCase.java
-│   └── ReactToPaymentUseCase.java
+│   ├── ReactToPaymentUseCase.java
+│   └── ReleaseExpiredReservationsUseCase.java           # job TTL
 ├── application/port/out/
 │   ├── DrugRepositoryPort.java                          # đã có
 │   ├── PrescriptionRepositoryPort.java
 │   ├── DispenseSlipRepositoryPort.java
 │   ├── ProcessedEventPort.java
+│   ├── StockReservationRepositoryPort.java              # giữ chỗ
 │   └── PharmacyEventPublisherPort.java
 ├── application/dto/request/
 │   ├── CreateDrugRequest.java
@@ -575,7 +665,10 @@ pharmacy-service/src/main/java/com/mediflow/pharmacy/
 │   ├── PrescriptionJpaEntity.java / PrescriptionJpaRepository.java / PrescriptionPersistenceAdapter.java / PrescriptionPersistenceMapper.java
 │   ├── PrescriptionLineJpaEntity.java                   # con của PrescriptionJpaEntity (@OneToMany cascade)
 │   ├── DispenseSlipJpaEntity.java / DispenseSlipJpaRepository.java / DispenseSlipPersistenceAdapter.java / DispenseSlipPersistenceMapper.java
-│   └── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng PROCESSED_EVENT)
+│   ├── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng PROCESSED_EVENT)
+│   └── StockReservationJpaEntity.java / StockReservationJpaRepository.java / StockReservationPersistenceAdapter.java   # giữ chỗ
+└── infrastructure/scheduling/            # DRIVING adapter (job)
+    └── ReservationExpiryScheduler.java                 # @Scheduled gọi ReleaseExpiredReservationsUseCase
 └── infrastructure/messaging/             # DRIVEN adapter (RabbitMQ) — publisher + payload
     ├── PharmacyEventPublisherAdapter.java               # hiện thực PharmacyEventPublisherPort (publish sau commit)
     └── payload/
@@ -620,9 +713,13 @@ public record PrescriptionFilledEvent(
 }
 
 // PrescriptionDispenseFailedEvent — routing key "prescription.dispense.failed", kích hoạt bù trừ saga
+// failedItems[] cho rõ thuốc nào thiếu (không gắn với thuốc cụ thể thì để rỗng)
 public record PrescriptionDispenseFailedEvent(
     UUID eventId, Instant occurredAt, String correlationId,
-    UUID prescriptionId, UUID invoiceId, UUID patientId, String reason) {}
+    UUID prescriptionId, UUID invoiceId, UUID patientId, String reason,
+    List<FailedItem> failedItems) {
+    public record FailedItem(UUID drugId, String drugName, int requestedQty, int availableQty) {}
+}
 
 // StockLowEvent — routing key "stock.low", bắn-rồi-quên khi tồn kho ≤ ngưỡng
 public record StockLowEvent(
@@ -692,14 +789,25 @@ Queue `pharmacy.q` **chỉ bind `payment.completed`**. Các routing key publish 
 | BR-D11 (stock.low) | application | `dispense_stockFallsBelowThreshold_publishesStockLow` | mock publisher, verify `publishStockLow` |
 | BR-D12 (phiếu FAILED) | integration | `dispense_failure_slipPersistedAsFailed` | Testcontainers, `REQUIRES_NEW` branch |
 
+Các test mới cho reservation:
+
+| Rule | Tầng | Tên test | Cần gì |
+|---|---|---|---|
+| Reserve đủ hàng khi kê | application (mock repo) | `createPrescription_valid_reservesStock` | mock `StockReservationRepositoryPort.save` |
+| Reserve thiếu (tồn khả dụng) | application (mock repo) | `createPrescription_insufficientAvailable_throws422` | mock `findReservedByDrug` trả 1 dòng, `Drug.stockQuantity` nhỏ hơn yêu cầu |
+| Dispense chuyển reserved→FULFILLED | application (mock repo) | `dispense_valid_fulfillsReservation` | mock `findReservedByPrescriptionForUpdate` trả RESERVED, verify `markFulfilled` |
+| Release TTL hết hạn | application (mock repo) | `releaseExpiredReservations_expiresOnlyOverdue` | mock `findExpired`, assert trả về số lượng đúng |
+| Domain vòng đời giữ chỗ | domain unit | `StockReservation_lifecycleTransitions` | không Spring (đã có `StockReservationTest`) |
+
 ### 13.6 Checklist hoàn thiện pharmacy (Definition of Done)
 
-- [ ] `V1__init.sql` đủ 5 bảng, đúng tên EN snake_case (DRUG, PRESCRIPTION, ...), index đúng spec.
-- [ ] Domain: 4 model + 1 enum + 6 exception; quy tắc nằm trong model (`dispenseStock`, `create`...).
-- [ ] Ports đủ (5 out, 4 in); application service hiện thực, **không import Spring Data/AMQP**.
+- [ ] `V1__init.sql` đủ 5 bảng + `V2__stock_reservation.sql`, đúng tên EN snake_case (DRUG, PRESCRIPTION, STOCK_RESERVATION, ...), index đúng spec.
+- [ ] Domain: 4 model + 2 enum + 7 exception; quy tắc nằm trong model (`dispenseStock`, `create`, `StockReservation.markFulfilled/release/expire`...).
+- [ ] Ports đủ (6 out, 5 in); application service hiện thực, **không import Spring Data/AMQP**.
 - [ ] DTO records có Bean Validation; 3 MapStruct mapper.
 - [ ] Controller 2 cái + `@PreAuthorize` đúng role (ADMIN/DOCTOR/PHARMACIST).
-- [ ] 4 event record + publisher adapter (sau commit); consumer `payment.completed` idempotent.
+- [ ] 4 event record + publisher adapter (sau commit); consumer `payment.completed` idempotent; `PrescriptionDispenseFailedEvent` kèm `failedItems[]`.
+- [ ] `ReservationExpiryScheduler` (job TTL) + `@EnableScheduling`.
 - [ ] `GlobalExceptionHandler` (từ reference), `SecurityConfig`, `RabbitConfig`, `OpenApiConfig`.
-- [ ] Test 5 tầng; 12 business rule được phủ.
+- [ ] Test 5 tầng; 12 business rule + 5 test reservation được phủ.
 - [ ] `mvn -pl backend/pharmacy-service -am -q -DskipTests install` xanh.
