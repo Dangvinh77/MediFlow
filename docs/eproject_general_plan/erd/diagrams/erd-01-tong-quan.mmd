@@ -1,56 +1,54 @@
-flowchart LR
-    subgraph ORG["organization · 8089"]
-        KHOA["KHOA<br/>ma_khoa"]
-        NV["NHAN_VIEN<br/>ma_nhan_vien"]
-        TK["TAI_KHOAN<br/>ma_tai_khoan"]
-        KHOA -->|ma_khoa FK| NV
-        NV -->|truong_khoa FK| KHOA
-        NV -->|ma_nhan_vien FK| TK
+﻿flowchart LR
+    subgraph ORG["organization / 8089"]
+        DEPT["DEPARTMENT<br/>department_id"]
+        STAFF["STAFF<br/>staff_id"]
+        ACCOUNT["ACCOUNT<br/>account_id"]
+        DEPT -->|ma_khoa FK| STAFF
+        STAFF -->|truong_khoa FK| DEPT
+        STAFF -->|staff_id FK| ACCOUNT
     end
-    subgraph PAT["patient · 8081"]
-        BN["BENH_NHAN<br/>ma_benh_nhan"]
+    subgraph PAT["patient / 8081"]
+        PATIENT["PATIENT<br/>patient_id"]
     end
-    subgraph CLI["clinical · 8082"]
-        LH["LICH_HEN<br/>ma_lich_hen"]
-        HS["HO_SO_BA<br/>ma_ho_so"]
-        CD["CHUAN_DOAN<br/>ma_chuan_doan"]
-        KQDK["KET_QUA_DINH_KEM<br/>V2"]
-        LH -->|ma_lich_hen FK| HS
-        HS -->|ma_ho_so FK| CD
-        HS -->|ma_ho_so FK| KQDK
+    subgraph CLI["clinical / 8082"]
+        APPT["APPOINTMENT<br/>appointment_id"]
+        MRECORD["MEDICAL_RECORD<br/>record_id"]
+        DIAG["DIAGNOSIS<br/>diagnosis_id"]
+        APPT -->|appointment_id FK| MRECORD
+        MRECORD -->|record_id FK| DIAG
     end
-    subgraph LAB["lab · 8084"]
-        XN["XET_NGHIEM<br/>ma_xn"]
-        KQXN["KET_QUA_XN<br/>ma_ket_qua"]
-        XN -->|ma_xn FK| KQXN
+    subgraph LAB["lab / 8084"]
+        LTEST["LAB_TEST<br/>test_id"]
+        LRESULT["LAB_RESULT<br/>result_id"]
+        LTEST -->|test_id FK| LRESULT
     end
-    subgraph PHA["pharmacy · 8085"]
-        DR["DRUG<br/>drug_id"]
-        PR["PRESCRIPTION<br/>prescription_id"]
-        PRL["PRESCRIPTION_LINE<br/>line_id"]
-        DS["DISPENSE_SLIP<br/>dispense_id"]
-        PR -->|prescription_id FK| PRL
-        DR -->|drug_id FK| PRL
-        PR -->|prescription_id FK UNIQUE| DS
+    subgraph PHA["pharmacy / 8085"]
+        DRUG["DRUG<br/>drug_id"]
+        RX["PRESCRIPTION<br/>prescription_id"]
+        RXLINE["PRESCRIPTION_LINE<br/>line_id"]
+        DSLIP["DISPENSE_SLIP<br/>dispense_id"]
+        RX -->|prescription_id FK| RXLINE
+        DRUG -->|drug_id FK| RXLINE
+        RX -->|prescription_id FK UNIQUE| DSLIP
     end
-    subgraph BIL["billing · 8086"]
+    subgraph BIL["billing / 8086"]
         FEE["FEE<br/>fee_id"]
         INV["INVOICE<br/>invoice_id"]
-        INV -->|invoice_id| FEE
+        INV -->|invoice_id FK| FEE
     end
-    subgraph NOT["notification · 8087"]
-        TB["THONG_BAO<br/>ma_thong_bao"]
+    subgraph NOT["notification / 8087"]
+        NOTIF["NOTIFICATION<br/>notification_id"]
     end
-    subgraph REP["report · 8088"]
+    subgraph REP["report / 8088"]
         DVR["DAILY_VISIT_REPORT"]
         MRR["MONTHLY_REVENUE_REPORT"]
         DST["DRUG_STATISTIC"]
     end
 
-    %% cross-service logical refs (UUID trần)
-    BN -.->|ma_benh_nhan| LH & HS & XN & PR & FEE & INV & TB
-    KHOA -.->|ma_khoa / department_id| NV & LH & HS & XN & PR & FEE & DVR & MRR & DST
-    NV -.->|ma_bac_si / doctor_id| LH & HS & PR
-    HS -.->|ma_ho_so / record_id| XN & PR & FEE
-    PR -.->|prescription_id| INV
-    DS -.->|dispense_id| INV
+    %% cross-service logical refs (bare UUID)
+    PATIENT -.->|patient_id| APPT & MRECORD & LTEST & RX & FEE & INV & NOTIF
+    DEPT -.->|department_id| STAFF & APPT & MRECORD & LTEST & RX & FEE & DVR & MRR
+    STAFF -.->|doctor_id| APPT & MRECORD & RX
+    MRECORD -.->|record_id| LTEST & RX & FEE
+    RX -.->|prescription_id| INV
+    DSLIP -.->|dispense_id| INV

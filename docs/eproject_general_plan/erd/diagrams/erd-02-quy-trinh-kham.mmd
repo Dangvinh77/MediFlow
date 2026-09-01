@@ -1,34 +1,32 @@
-flowchart LR
+﻿flowchart LR
     subgraph ORG["organization"]
-        KHOA["KHOA"]
-        NV["NHAN_VIEN (bác sĩ)"]
+        DEPT["DEPARTMENT"]
+        STAFF["STAFF (doctor)"]
     end
     subgraph PAT["patient"]
-        BN["BENH_NHAN"]
+        PATIENT["PATIENT"]
     end
     subgraph CLI["clinical"]
-        LH["LICH_HEN<br/>CHUA_DEN → DA_DEN / HUY"]
-        HS["HO_SO_BA<br/>ngay_kham"]
-        CD["CHUAN_DOAN<br/>icd_code"]
-        KQDK["KET_QUA_DINH_KEM"]
+        APPT["APPOINTMENT<br/>PENDING → ARRIVED / CANCELLED"]
+        MRECORD["MEDICAL_RECORD<br/>examination_date"]
+        DIAG["DIAGNOSIS<br/>icd_code"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM<br/>trang_thai"]
-        KQXN["KET_QUA_XN"]
+        LTEST["LAB_TEST<br/>status"]
+        LRESULT["LAB_RESULT<br/>indicator / value"]
     end
     subgraph PHA["pharmacy"]
-        PR["PRESCRIPTION"]
-        PRL["PRESCRIPTION_LINE"]
+        RX["PRESCRIPTION"]
+        RXLINE["PRESCRIPTION_LINE"]
     end
-    KHOA -->|FK| NV
-    BN -.->|ma_benh_nhan| LH
-    NV -.->|ma_bac_si| LH
-    LH -->|FK| HS
-    HS -->|FK| CD
-    HS -->|FK| KQDK
-    HS -.->|ma_ho_so| XN
-    XN -->|FK| KQXN
-    HS -.->|record_id| PR
-    PR -->|FK| PRL
-    KQXN -.->|lab.result.created| KQDK
-    PR -.->|prescription.filled| KQDK
+    DEPT -->|FK| STAFF
+    PATIENT -.->|patient_id| APPT
+    STAFF -.->|doctor_id| APPT
+    APPT -->|FK| MRECORD
+    MRECORD -->|FK| DIAG
+    MRECORD -.->|record_id| LTEST
+    LTEST -->|FK| LRESULT
+    MRECORD -.->|record_id| RX
+    RX -->|FK| RXLINE
+    LRESULT -.->|lab.result.created| MRECORD
+    RX -.->|prescription.filled| MRECORD

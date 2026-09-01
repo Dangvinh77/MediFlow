@@ -1,5 +1,6 @@
 ---
-description: Index (or re-index) this repo into codebase-memory-mcp so graph tools work on this machine.
+name: index-codebase
+description: "Index (or re-index) this repo into codebase-memory-mcp so graph tools work on this machine."
 ---
 
 Index the current repository into the codebase knowledge graph using codebase-memory-mcp.

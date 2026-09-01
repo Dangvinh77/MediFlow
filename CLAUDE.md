@@ -49,3 +49,7 @@ Or run `scripts\setup-understand-anything.bat` / `scripts/setup-understand-anyth
 - Commands: `.claude/commands/` — `/new-service`, `/index-codebase`, `/review-pr`.
 - Skill: `.claude/skills/new-microservice/`.
 - Shared settings: `.claude/settings.json` (committed). Machine-specific: `.claude/settings.local.json` (gitignored).
+
+Codex-compatible mirrors live in `.codex/agents/`, `.codex/hooks.json`, `.codex/config.toml`, and
+`.agents/skills/`. After changing Claude agents, commands, skills, or hooks, run
+`node scripts/sync-agent-devkit.mjs --write` and `node scripts/sync-agent-devkit.mjs --check`.

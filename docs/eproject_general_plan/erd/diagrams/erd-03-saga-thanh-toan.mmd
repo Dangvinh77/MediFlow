@@ -1,22 +1,22 @@
 flowchart LR
     subgraph CLI["clinical"]
-        HS["HO_SO_BA"]
+        MRECORD["MEDICAL_RECORD"]
     end
     subgraph PHA["pharmacy"]
-        DR["DRUG<br/>stock_quantity"]
-        PR["PRESCRIPTION<br/>total_amount"]
-        PRL["PRESCRIPTION_LINE<br/>giá chụp"]
-        DS["DISPENSE_SLIP<br/>PENDING→DISPENSED / FAILED"]
-        PR -->|FK| PRL
-        DR -->|FK| PRL
-        PR -->|FK UNIQUE| DS
+        DRUG["DRUG<br/>stock_quantity"]
+        RX["PRESCRIPTION<br/>total_amount"]
+        RXLINE["PRESCRIPTION_LINE<br/>unit_price (snapshot)"]
+        DSLIP["DISPENSE_SLIP<br/>PENDING → DISPENSED / FAILED"]
+        RX -->|FK| RXLINE
+        DRUG -->|FK| RXLINE
+        RX -->|FK UNIQUE| DSLIP
     end
     subgraph BIL["billing"]
         INV["INVOICE<br/>saga_status"]
         FEE["FEE<br/>fee_type=DRUG"]
     end
     subgraph LAB["lab"]
-        XN["XET_NGHIEM<br/>da_thanh_toan"]
+        LTEST["LAB_TEST<br/>is_paid"]
     end
     subgraph REP["report"]
         DVR["DAILY_VISIT_REPORT"]
@@ -24,17 +24,17 @@ flowchart LR
         DST["DRUG_STATISTIC"]
     end
     subgraph NOT["notification"]
-        TB["THONG_BAO"]
+        NOTIF["NOTIFICATION"]
     end
-    HS -.->|record_id| PR
-    PR ==>|prescription.created| INV
-    INV -->|invoice_id| FEE
-    INV ==>|payment.completed| DS
-    INV ==>|payment.completed| XN
-    DS ==>|prescription.filled| INV
-    DS ==>|prescription.filled| DST
+    MRECORD -.->|record_id| RX
+    RX ==>|prescription.created| INV
+    INV -->|invoice_id FK| FEE
+    INV ==>|payment.completed| DSLIP
+    INV ==>|payment.completed| LTEST
+    DSLIP ==>|prescription.filled| INV
+    DSLIP ==>|prescription.filled| DST
     INV ==>|payment.completed| MRR
     INV ==>|payment.failed| DVR
-    DS -.->|prescription.dispense.failed| INV
-    DS ==>|prescription.filled| TB
-    INV ==>|payment.completed| TB
+    DSLIP -.->|prescription.dispense.failed| INV
+    DSLIP ==>|prescription.filled| NOTIF
+    INV ==>|payment.completed| NOTIF

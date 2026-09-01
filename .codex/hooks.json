@@ -1,4 +1,5 @@
 {
+  "description": "Mirror of MediFlow SessionStart hooks from .claude/settings.json for Codex.",
   "hooks": {
     "SessionStart": [
       {
