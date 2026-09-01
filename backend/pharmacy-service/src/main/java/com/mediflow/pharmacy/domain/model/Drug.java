@@ -52,12 +52,20 @@ public class Drug {
              throw new DrugRuleException("DRUG_UNIT_REQUIRED", "Đơn vị của thuốc không được bỏ trống");
           }
 
-          if(price.compareTo(BigDecimal.ZERO) < 0){
+          if(price == null || price.compareTo(BigDecimal.ZERO) < 0){
               throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá của thuốc không được âm");
           }
 
-          if(expiryDate.isBefore(LocalDate.now())){
+          if(expiryDate == null || expiryDate.isBefore(LocalDate.now())){
               throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
+          }
+
+          if (stockQuantity < 0) {
+              throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng tồn kho không được âm");
+          }
+
+          if (lowStockThreshold < 0) {
+              throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Ngưỡng cảnh báo tồn kho không được âm");
           }
 
           return new Drug(null, drugName, activeIngredient, unit, price, stockQuantity, expiryDate, manufacturer, lowStockThreshold, null, null);
@@ -77,7 +85,7 @@ public class Drug {
             throw new DrugRuleException("DRUG_NAME_REQUIRED", "Tên thuốc không được để trống");
         if (unit == null || unit.isBlank())
             throw new DrugRuleException("DRUG_UNIT_REQUIRED", "Đơn vị tính không được để trống");
-        if (price.compareTo(BigDecimal.ZERO) < 0)
+        if (price == null || price.compareTo(BigDecimal.ZERO) < 0)
             throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá thuốc không được âm");
         if (expiryDate == null || expiryDate.isBefore(LocalDate.now()))
             throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
@@ -94,6 +102,17 @@ public class Drug {
     public void restock(int quantity) {
         if (quantity <= 0)
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng nhập phải lớn hơn 0");
+        this.stockQuantity += quantity;
+    }
+
+    /** Điều chỉnh tồn kho thủ công; không cho phép tồn kho âm. */
+    public void adjustStock(int quantity) {
+        if (quantity == 0) {
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng điều chỉnh không được bằng 0");
+        }
+        if (stockQuantity + quantity < 0) {
+            throw new DrugRuleException("DRUG_OUT_OF_STOCK", "Điều chỉnh làm tồn kho âm");
+        }
         this.stockQuantity += quantity;
     }
 
