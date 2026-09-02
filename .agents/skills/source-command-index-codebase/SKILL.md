@@ -17,4 +17,4 @@ Steps:
 3. If the team wants to share the graph so others skip a full re-index, pass `persistence: true` to write `.codebase-memory/graph.db.zst` (see README — that artifact can optionally be committed).
 4. After indexing, confirm with `get_architecture` that the services show up, and report a short summary (modules, clusters) to the user.
 
-The MCP is optional for both Codex and Codex. When unavailable, fall back to repository documentation and text search.
+The MCP is optional for both Claude and Codex. When unavailable, fall back to repository documentation and text search.
