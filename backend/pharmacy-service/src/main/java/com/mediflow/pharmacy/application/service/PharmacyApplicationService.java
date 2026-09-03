@@ -32,6 +32,7 @@ import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Drug;
@@ -46,11 +47,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -144,7 +147,7 @@ public class PharmacyApplicationService implements
     @Override
     @Transactional
     public DrugDTO adjustStock(UUID id, AdjustStockRequest rq) {
-        Drug drug = drugRepo.findById(id)
+        Drug drug = drugRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new DrugNotFoundException("Không tìm thấy thuốc id=" + id));
         drug.adjustStock(rq.quantity());
         return drugDtoMapper.toDto(drugRepo.save(drug));
@@ -154,87 +157,215 @@ public class PharmacyApplicationService implements
     // CreatePrescriptionUseCase — spec §7.1
     // ============================================================
 
-    @Override
-    @Transactional
-    public PrescriptionDTO create(CreatePrescriptionRequest rq) {
-        // 1: nạp từng thuốc + chụp giá (BR-D7, BR-D8 — client không gửi giá), sắp theo drugId để khóa đều.
-        List<PrescriptionLineRequest> sorted = rq.lines().stream()
-                .sorted(java.util.Comparator.comparing(PrescriptionLineRequest::drugId))
-                .toList();
+  @Override
+@Transactional
+public PrescriptionDTO create(CreatePrescriptionRequest request) {
+    // 1. Thất bại sớm nếu một thuốc xuất hiện nhiều lần.
+    validateNoDuplicateDrugIds(request.lines());
 
-        // 2-3: dựng các dòng; đồng thời kiểm tra tồn khả dụng + tạo giữ chỗ ngay lúc kê (spec §7.1).
-        List<PrescriptionLine> lines = sorted.stream()
-                .map(this::toPrescriptionLine)
-                .toList();
+    // 2. Khóa theo thứ tự ổn định để giảm nguy cơ deadlock.
+    List<PrescriptionLineRequest> sortedRequests =
+            request.lines().stream()
+                    .sorted(java.util.Comparator.comparing(
+                            PrescriptionLineRequest::drugId))
+                    .toList();
 
-        // 4: dựng đơn, tính tổng tiền (BR-D5).
-        Prescription prescription = Prescription.create(
-                rq.recordId(), rq.patientId(), rq.doctorId(), rq.departmentId(),
-                rq.prescribedDate(), lines);
+    // 3. Khóa thuốc, kiểm tra tồn khả dụng, chụp giá và tên.
+    List<ResolvedPrescriptionLine> resolvedLines =
+            sortedRequests.stream()
+                    .map(this::resolvePrescriptionLine)
+                    .toList();
 
-        // 5: lưu đơn.
-        Prescription saved = prescriptionRepo.save(prescription);
+    List<PrescriptionLine> prescriptionLines =
+            resolvedLines.stream()
+                    .map(ResolvedPrescriptionLine::line)
+                    .toList();
 
-        // 6: giữ chỗ tồn kho cho từng dòng (reservation) — bác sĩ/bệnh nhân THẤY ngay lượng thuốc
-        //    có thể bán, không còn cảnh trả tiền rồi mới hết hàng.
-        Instant expiresAt = Instant.now().plus(RESERVATION_TTL);
-        for (PrescriptionLineRequest lr : sorted) {
-            reservationRepo.save(StockReservation.create(lr.drugId(), saved.getPrescriptionId(), lr.quantity(), expiresAt));
-        }
+    // 4. Domain tính lineTotal và totalAmount từ giá server đã chụp.
+    Prescription prescription = Prescription.create(
+            request.recordId(),
+            request.patientId(),
+            request.doctorId(),
+            request.departmentId(),
+            request.prescribedDate(),
+            prescriptionLines);
 
-        // 7: tự tạo phiếu xuất PENDING (BR-D3).
-        DispenseSlip slip = dispenseSlipRepo.save(DispenseSlip.createPending(saved.getPrescriptionId()));
+    // 5. Lưu aggregate Prescription + PrescriptionLine.
+    Prescription savedPrescription =
+            prescriptionRepo.save(prescription);
 
-        // 8: publish prescription.created — billing tạo hóa đơn (khởi đầu saga).
-        publishCreated(saved, lines);
+    // 6. Một thời điểm hết hạn thống nhất cho toàn bộ đơn.
+    Instant reservationExpiresAt =
+            Instant.now().plus(RESERVATION_TTL);
 
-        return toPrescriptionDto(saved, slip.getStatus());
+    for (ResolvedPrescriptionLine resolved : resolvedLines) {
+        PrescriptionLine line = resolved.line();
+
+        StockReservation reservation = StockReservation.create(
+                line.getDrugId(),
+                savedPrescription.getPrescriptionId(),
+                line.getQuantity(),
+                reservationExpiresAt);
+
+        reservationRepo.save(reservation);
     }
 
-    private PrescriptionDTO toPrescriptionDto(Prescription prescription, DispenseStatus status) {
-        List<PrescriptionLineDTO> lines = prescription.getLines().stream()
-                .map(line -> prescriptionDtoMapper.toLineDto(
-                        line,
-                        drugRepo.findById(line.getDrugId()).map(Drug::getDrugName).orElse(null)))
-                .toList();
-        return prescriptionDtoMapper.toDto(prescription, status, lines);
+    // 7. Mỗi đơn luôn có đúng một phiếu xuất PENDING.
+    DispenseSlip pendingSlip = dispenseSlipRepo.save(
+            DispenseSlip.createPending(
+                    savedPrescription.getPrescriptionId()));
+
+    // 8. Lưu tên thuốc để dùng cho DTO và event.
+    Map<UUID, String> drugNames = new LinkedHashMap<>();
+
+    for (ResolvedPrescriptionLine resolved : resolvedLines) {
+        drugNames.put(
+                resolved.line().getDrugId(),
+                resolved.drugName());
     }
 
-    private PrescriptionLine toPrescriptionLine(PrescriptionLineRequest lr) {
-        // Khóa ghi theo drugId (BR-D10) — đọc đúng con số tồn khả dụng, tránh kê vượt khi tương tranh.
-        Drug drug = drugRepo.findByIdForUpdate(lr.drugId())
-                .orElseThrow(() -> new DrugNotFoundException("Không tìm thấy thuốc id=" + lr.drugId()));
+    // Adapter sẽ trì hoãn việc gửi RabbitMQ tới sau commit.
+    publishCreated(savedPrescription, drugNames);
 
-        // Tồn khả dụng = tổng tồn - tổng đang giữ chỗ (RESERVED). Nếu thiếu → ném NGAY lúc kê.
-        int reservedSum = reservationRepo.findReservedByDrug(lr.drugId()).stream()
-                .mapToInt(StockReservation::getQuantity)
-                .sum();
-        int available = drug.getStockQuantity() - reservedSum;
-        if (available < lr.quantity()) {
-            throw new StockReservationRuleException("INSUFFICIENT_AVAILABLE_STOCK",
-                    "Không đủ thuốc có thể bán cho '" + drug.getDrugName() + "': cần " + lr.quantity()
-                            + ", còn " + Math.max(available, 0));
-        }
+    return toPrescriptionDto(
+            savedPrescription,
+            pendingSlip.getStatus(),
+            drugNames);
+}
 
-        // BR-D7: chụp giá tại thời điểm kê đơn — không lấy từ client.
-        return PrescriptionLine.create(lr.drugId(), lr.quantity(), drug.getPrice(), lr.dosage());
-    }
+  /**
+ * Chuyển đơn thuốc thành DTO bằng tên thuốc đã được giải quyết trong use case.
+ */
+private PrescriptionDTO toPrescriptionDto(
+        Prescription prescription,
+        DispenseStatus status,
+        Map<UUID, String> drugNames) {
+
+    List<PrescriptionLineDTO> lineDtos =
+            prescription.getLines().stream()
+                    .map(line -> prescriptionDtoMapper.toLineDto(
+                            line,
+                            drugNames.get(line.getDrugId())))
+                    .toList();
+
+    return prescriptionDtoMapper.toDto(
+            prescription,
+            status,
+            lineDtos);
+}
+
 
     /**
-     * Publish {@code prescription.created}. Đúng spec là publish SAU khi commit; ở tầng application
-     * sạch (không import Spring transaction synchronization), phương án thực tế là publish trong
-     * transaction và để adapter {@code PharmacyEventPublisherPort} đặt hàng đúng (xem ghi chú spec §12).
-     */
-    private void publishCreated(Prescription saved, List<PrescriptionLine> lines) {
-        List<PrescriptionCreatedEvent.Item> items = lines.stream()
-                .map(l -> new PrescriptionCreatedEvent.Item(
-                        l.getDrugId(), null /* drugName */, l.getQuantity(), l.getUnitPrice()))
-                .toList();
-        eventPublisher.publishPrescriptionCreated(new PrescriptionCreatedEvent(
-                UUID.randomUUID(), Instant.now(), null,
-                saved.getPrescriptionId(), saved.getPatientId(), saved.getRecordId(),
-                saved.getDepartmentId(), saved.getTotalAmount(), items));
+ * Kết quả nội bộ sau khi đã khóa thuốc, kiểm tra tồn và chụp giá.
+ *
+ * <p>Record này không đi qua HTTP hoặc persistence. Nó chỉ giữ tên thuốc cạnh
+ * dòng đơn để tạo DTO và event mà không cần truy vấn database lần nữa.</p>
+ */
+private record ResolvedPrescriptionLine(
+        PrescriptionLine line,
+        String drugName
+) {
+}
+
+   /**
+ * Khóa thuốc, kiểm tra tồn có thể bán và chụp giá hiện tại.
+ *
+ * @param request dòng thuốc từ request
+ * @return dòng đơn đã xác định giá, kèm tên thuốc
+ */
+private ResolvedPrescriptionLine resolvePrescriptionLine(
+        PrescriptionLineRequest request) {
+
+    Drug drug = drugRepo.findByIdForUpdate(request.drugId())
+            .orElseThrow(() -> new DrugNotFoundException(
+                    "Không tìm thấy thuốc id=" + request.drugId()));
+
+    int reservedQuantity = reservationRepo
+            .findReservedByDrug(request.drugId())
+            .stream()
+            .mapToInt(StockReservation::getQuantity)
+            .sum();
+
+    int availableQuantity =
+            drug.getStockQuantity() - reservedQuantity;
+
+    if (availableQuantity < request.quantity()) {
+        throw new StockReservationRuleException(
+                "INSUFFICIENT_AVAILABLE_STOCK",
+                "Không đủ thuốc có thể bán cho '"
+                        + drug.getDrugName()
+                        + "': cần " + request.quantity()
+                        + ", còn " + Math.max(availableQuantity, 0));
     }
+
+    PrescriptionLine line = PrescriptionLine.create(
+            request.drugId(),
+            request.quantity(),
+            drug.getPrice(),
+            request.dosage());
+
+    return new ResolvedPrescriptionLine(
+            line,
+            drug.getDrugName());
+}
+
+   /**
+ * Tạo yêu cầu phát event cho đơn đã lưu.
+ *
+ * <p>Việc gửi RabbitMQ thật được adapter trì hoãn tới sau khi transaction
+ * database commit thành công.</p>
+ */
+private void publishCreated(
+        Prescription prescription,
+        Map<UUID, String> drugNames) {
+
+    List<PrescriptionCreatedEvent.Item> items =
+            prescription.getLines().stream()
+                    .map(line -> new PrescriptionCreatedEvent.Item(
+                            line.getDrugId(),
+                            drugNames.get(line.getDrugId()),
+                            line.getQuantity(),
+                            line.getUnitPrice()))
+                    .toList();
+
+    PrescriptionCreatedEvent event =
+            new PrescriptionCreatedEvent(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    null,
+                    prescription.getPrescriptionId(),
+                    prescription.getPatientId(),
+                    prescription.getRecordId(),
+                    prescription.getDepartmentId(),
+                    prescription.getTotalAmount(),
+                    items);
+
+    eventPublisher.publishPrescriptionCreated(event);
+}
+
+    /**
+ * Bảo đảm mỗi thuốc chỉ xuất hiện một lần trong đơn.
+ *
+ * <p>Kiểm tra được thực hiện trước khi khóa thuốc hoặc ghi database để request
+ * không hợp lệ thất bại sớm và không tạo công việc thừa.</p>
+ *
+ * @param requests các dòng thuốc do client gửi
+ * @throws PrescriptionRuleException nếu một drugId xuất hiện nhiều hơn một lần
+ */
+private void validateNoDuplicateDrugIds(
+        List<PrescriptionLineRequest> requests) {
+
+    Set<UUID> seenDrugIds = new HashSet<>();
+
+    for (PrescriptionLineRequest request : requests) {
+        if (!seenDrugIds.add(request.drugId())) {
+            throw new PrescriptionRuleException(
+                    "PRESCRIPTION_DUPLICATE_DRUG",
+                    "Thuốc id=" + request.drugId()
+                            + " xuất hiện nhiều hơn một lần trong đơn");
+        }
+    }
+}
 
     // ============================================================
     // DispensePrescriptionUseCase — spec §7.2

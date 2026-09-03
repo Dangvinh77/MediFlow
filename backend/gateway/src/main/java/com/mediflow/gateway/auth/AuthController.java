@@ -30,7 +30,8 @@ public class AuthController {
     private static final Map<String, String[]> DEMO_USERS = Map.of(
             "admin", new String[]{"admin123", Roles.ADMIN},
             "doctor", new String[]{"doctor123", Roles.DOCTOR},
-            "nurse", new String[]{"nurse123", Roles.NURSE}
+            "nurse", new String[]{"nurse123", Roles.NURSE},
+            "pharmacist", new String[]{"pharmacist123", Roles.PHARMACIST}
     );
 
     private final JwtTokenService jwt;
