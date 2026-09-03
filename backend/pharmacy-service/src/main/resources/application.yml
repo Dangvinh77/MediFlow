@@ -5,6 +5,11 @@ spring:
   application:
     name: pharmacy-service
 
+  # Authentication is stateless JWT; do not create Spring Boot's default in-memory user/password.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
   datasource:
     url: jdbc:postgresql://localhost:5432/mediflow_pharmacy
     username: ${MEDIFLOW_DB_USER:postgres}

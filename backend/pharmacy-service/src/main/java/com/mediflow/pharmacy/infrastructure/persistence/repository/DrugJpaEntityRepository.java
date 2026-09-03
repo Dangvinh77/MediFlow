@@ -22,8 +22,7 @@ public interface DrugJpaEntityRepository extends JpaRepository<DrugJpaEntity, UU
 
     @Query("""
             SELECT d FROM DrugJpaEntity d
-            WHERE :keyword IS NULL
-               OR LOWER(d.drugName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            WHERE LOWER(d.drugName) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
     Page<DrugJpaEntity> search(@Param("keyword") String keyword, Pageable pageable);
 }

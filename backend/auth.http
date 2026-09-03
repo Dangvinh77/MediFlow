@@ -1,28 +1,27 @@
-### MediFlow — Auth (gateway, port 8080)
+### MediFlow — Auth qua gateway :8080
 ###
-### Bắt buộc: eureka-server (8761) + gateway (8080) đang chạy.
-###
-### Cách dùng theo IDE:
-###  - IntelliJ: chạy "Đăng nhập admin" một lần — script cuối tự set {{token}} global,
-###    mọi file .http khác trong project (vd patient.http) dùng lại {{token}}.
-###  - VS Code / Cursor (REST Client): script không chạy → copy accessToken trong
-###    response rồi dán vào biến token (xem comment đầu patient.http).
+### IntelliJ: chạy một request đăng nhập; script sẽ lưu accessToken và refreshToken dạng global.
+### VS Code/Cursor: copy token từ response rồi bỏ comment hai biến dưới đây khi cần.
 
 @host = http://localhost:8080
-@token =""
-### Đăng nhập admin (ADMIN — full quyền)
+# @token = paste-access-token-here
+# @refreshToken = paste-refresh-token-here
+
+### Đăng nhập quản trị viên — ADMIN
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "admin123",
-  "accessToken":"ey....",
+  "password": "admin123"
 }
 
-> {% client.global.set("token", response.body.accessToken); %}
+> {%
+    client.global.set("token", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
 
-### Đăng nhập bác sĩ (DOCTOR — đọc bệnh nhân)
+### Đăng nhập bác sĩ — DOCTOR
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
 
@@ -31,7 +30,12 @@ Content-Type: application/json
   "password": "doctor123"
 }
 
-### Đăng nhập y tá (NURSE — đọc + tạo/cập nhật)
+> {%
+    client.global.set("token", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Đăng nhập y tá — NURSE
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
 
@@ -40,15 +44,36 @@ Content-Type: application/json
   "password": "nurse123"
 }
 
+> {%
+    client.global.set("token", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Đăng nhập dược sĩ — PHARMACIST
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "pharmacist",
+  "password": "pharmacist123"
+}
+
+> {%
+    client.global.set("token", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
 ### Làm mới access token
 POST {{host}}/api/v1/auth/refresh
 Content-Type: application/json
 
 {
-  "refreshToken": "{{token}}"
+  "refreshToken": "{{refreshToken}}"
 }
 
-### Sai mật khẩu → mong đợi 401
+> {% client.global.set("token", response.body.accessToken); %}
+
+### Sai mật khẩu — mong đợi 401
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
 

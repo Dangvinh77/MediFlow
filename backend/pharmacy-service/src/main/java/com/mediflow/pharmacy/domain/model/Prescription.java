@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.UUID;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
+import java.util.HashSet;
+import java.util.Set;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 
 import lombok.Getter;
@@ -44,6 +45,7 @@ public class Prescription {
             if(lines == null || lines.isEmpty()){
                   throw new PrescriptionRuleException("PRESCRIPTION_EMPTY", "Đơn thuốc phải có ít nhất 1 dòng");
             }
+            validateUniqueDrugs(lines);
             BigDecimal total = computeTotalFrom(lines);
             return new Prescription(null, recordId, patientId, doctorId, departmentId, prescribedDate, total,List.copyOf(lines), null);
    }
@@ -66,4 +68,19 @@ public class Prescription {
                           .reduce(BigDecimal.ZERO, BigDecimal::add)
                           .setScale(2, RoundingMode.HALF_UP);
     }
+
+    /**
+ * Bảo đảm một thuốc không xuất hiện nhiều lần trong cùng aggregate.
+ */
+private static void validateUniqueDrugs(List<PrescriptionLine> lines) {
+    Set<UUID> seenDrugIds = new HashSet<>();
+
+    for (PrescriptionLine line : lines) {
+        if (!seenDrugIds.add(line.getDrugId())) {
+            throw new PrescriptionRuleException(
+                    "PRESCRIPTION_DUPLICATE_DRUG",
+                    "Một thuốc chỉ được xuất hiện một lần trong đơn");
+        }
+    }
+}
 }

@@ -16,6 +16,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,7 +29,16 @@ import lombok.Setter;
  * bounded context, docs/ai/08-persistence-naming.md).
  */
 @Entity
-@Table(name = "STOCK_RESERVATION")
+@Table(
+        name = "STOCK_RESERVATION",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_reservation_prescription_drug",
+                        columnNames = {
+                                "prescription_id",
+                                "drug_id"
+                        })
+        })
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
