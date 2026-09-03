@@ -36,6 +36,15 @@ Bộ này được dựng bằng skill **Pretty Mermaid** từ nguồn Mermaid v
 | 15 | Thanh toán và cấp thuốc | [MMD](src/15-sequence-thanh-toan-cap-thuoc.mmd) | [SVG](word-svg/15-sequence-thanh-toan-cap-thuoc.svg) | [PNG](png/15-sequence-thanh-toan-cap-thuoc.png) |
 | 16 | Vòng đời saga | [MMD](src/16-vong-doi-saga.mmd) | [SVG](word-svg/16-vong-doi-saga.svg) | [PNG](png/16-vong-doi-saga.png) |
 | 17 | Thông báo và báo cáo | [MMD](src/17-luong-thong-bao-bao-cao.mmd) | [SVG](word-svg/17-luong-thong-bao-bao-cao.svg) | [PNG](png/17-luong-thong-bao-bao-cao.png) |
+| 18 | ERD–luồng Organization | [MMD](src/18-erd-flow-organization.mmd) | [SVG](word-svg/18-erd-flow-organization.svg) | [PNG](png/18-erd-flow-organization.png) |
+| 19 | ERD–luồng Patient | [MMD](src/19-erd-flow-patient.mmd) | [SVG](word-svg/19-erd-flow-patient.svg) | [PNG](png/19-erd-flow-patient.png) |
+| 20 | ERD–luồng Clinical | [MMD](src/20-erd-flow-clinical.mmd) | [SVG](word-svg/20-erd-flow-clinical.svg) | [PNG](png/20-erd-flow-clinical.png) |
+| 21 | ERD–luồng Lab | [MMD](src/21-erd-flow-lab.mmd) | [SVG](word-svg/21-erd-flow-lab.svg) | [PNG](png/21-erd-flow-lab.png) |
+| 22 | ERD–luồng Pharmacy | [MMD](src/22-erd-flow-pharmacy.mmd) | [SVG](word-svg/22-erd-flow-pharmacy.svg) | [PNG](png/22-erd-flow-pharmacy.png) |
+| 23 | ERD–luồng Billing | [MMD](src/23-erd-flow-billing.mmd) | [SVG](word-svg/23-erd-flow-billing.svg) | [PNG](png/23-erd-flow-billing.png) |
+| 24 | ERD–luồng Notification | [MMD](src/24-erd-flow-notification.mmd) | [SVG](word-svg/24-erd-flow-notification.svg) | [PNG](png/24-erd-flow-notification.png) |
+| 25 | ERD–luồng Report | [MMD](src/25-erd-flow-report.mmd) | [SVG](word-svg/25-erd-flow-report.svg) | [PNG](png/25-erd-flow-report.png) |
+| 26 | ERD tổng quan toàn hệ thống | [MMD](src/26-erd-system-overview.mmd) | [SVG](word-svg/26-erd-system-overview.svg) | [PNG](png/26-erd-system-overview.png) |
 
 ## Quy chuẩn xuất hình
 
@@ -46,3 +55,4 @@ Bộ này được dựng bằng skill **Pretty Mermaid** từ nguồn Mermaid v
 - Nền đối tượng: `#F0FDFA`.
 - Font văn bản: Arial; font tên cột kỹ thuật: Consolas.
 - Sơ đồ lớn được tách theo bounded context để giữ khả năng đọc trên trang A4.
+- ERD vật lý dùng đường liền; ERD–luồng dùng nhãn rõ ràng cho UUID/REST logic và integration event, không ngụ ý foreign key xuyên database.

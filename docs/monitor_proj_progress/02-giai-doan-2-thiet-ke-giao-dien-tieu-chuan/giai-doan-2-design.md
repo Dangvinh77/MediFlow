@@ -187,57 +187,138 @@ Quy tắc toàn vẹn xuyên dịch vụ:
 - Dữ liệu phục vụ đồng bộ, thông báo và báo cáo được truyền bằng integration event.
 - Consumer lưu `eventId` vào bảng khử trùng lặp trước hoặc trong cùng giao dịch cập nhật dữ liệu.
 
+#### Quy ước đọc hai lớp sơ đồ
+
+- **Đường liền:** quan hệ PK–FK vật lý trong cùng database.
+- **Đường nét đứt ghi “UUID logic” hoặc “REST validation”:** tham chiếu xuyên service, không phải foreign key.
+- **Đường nét đứt ghi routing key:** integration event truyền qua RabbitMQ.
+- **`PROCESSED_EVENT`:** sổ chống xử lý trùng cục bộ; `event_id` không tham chiếu một bảng trung tâm.
+
 ### 2.3. ERD
 
-ERD được tách theo từng database để giữ kích thước chữ đủ lớn khi chèn vào Word. Quan hệ trong hình là khóa ngoại thật của cùng một service; các UUID xuyên service đã được liệt kê riêng tại Mục 2.2 và không được biểu diễn thành foreign key giả.
+Mỗi service được trình bày bằng hai lớp: **ERD vật lý** cho cấu trúc database và **ERD–luồng dữ liệu** cho tham chiếu UUID, REST validation cùng event vào/ra. Cách tách này giữ đúng nguyên tắc database-per-service mà vẫn giải thích được dữ liệu di chuyển trong các quy trình nghiệp vụ.
 
 #### 2.3.1. Organization database
+
+**Dữ liệu sở hữu:** `DEPARTMENT`, `STAFF`, `ACCOUNT`.
+
+**Luồng chính:** quản trị viên quản lý khoa, nhân viên và tài khoản; Clinical xác minh `doctor_id`/`department_id`; Organization phát `department.created`, `staff.created`, `staff.department.changed`, trong đó Report tiêu thụ sự kiện điều chuyển khoa.
 
 ![ERD Organization database](assets/diagrams/png/02-erd-organization.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/02-erd-organization.svg) · [PNG 2400 px](assets/diagrams/png/02-erd-organization.png) · [Nguồn Mermaid](assets/diagrams/src/02-erd-organization.mmd)
 
+![ERD–luồng dữ liệu Organization service](assets/diagrams/png/18-erd-flow-organization.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/18-erd-flow-organization.svg) · [PNG 2400 px](assets/diagrams/png/18-erd-flow-organization.png) · [Nguồn Mermaid](assets/diagrams/src/18-erd-flow-organization.mmd)
+
 #### 2.3.2. Patient database
+
+**Dữ liệu sở hữu:** `PATIENT`.
+
+**Luồng chính:** tiếp nhận tạo/cập nhật thông tin hành chính; Clinical xác minh bệnh nhân bằng REST; Lab, Pharmacy, Billing và Notification lưu `patient_id` dưới dạng UUID logic; Patient phát `patient.created`, `patient.updated`.
 
 ![ERD Patient database](assets/diagrams/png/03-erd-patient.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/03-erd-patient.svg) · [PNG 2400 px](assets/diagrams/png/03-erd-patient.png) · [Nguồn Mermaid](assets/diagrams/src/03-erd-patient.mmd)
 
+![ERD–luồng dữ liệu Patient service](assets/diagrams/png/19-erd-flow-patient.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/19-erd-flow-patient.svg) · [PNG 2400 px](assets/diagrams/png/19-erd-flow-patient.png) · [Nguồn Mermaid](assets/diagrams/src/19-erd-flow-patient.mmd)
+
 #### 2.3.3. Clinical database
+
+**Dữ liệu sở hữu V1:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`.
+
+**Luồng chính:** xác minh Patient/Organization; tạo lịch hẹn, hồ sơ và chẩn đoán; nhận `lab.result.created`, `prescription.filled`; phát `appointment.created`, `appointment.status.changed`, `medicalrecord.created`, `diagnosis.added`.
+
+> `ATTACHED_RESULT` và sổ khử trùng lặp trong sơ đồ luồng là phần mở rộng V2 đã được backend spec yêu cầu cho việc nhận kết quả ngoài. Chúng không được tính vào ba bảng vật lý V1 hiện hành.
 
 ![ERD Clinical database](assets/diagrams/png/04-erd-clinical.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/04-erd-clinical.svg) · [PNG 2400 px](assets/diagrams/png/04-erd-clinical.png) · [Nguồn Mermaid](assets/diagrams/src/04-erd-clinical.mmd)
 
+![ERD–luồng dữ liệu Clinical service](assets/diagrams/png/20-erd-flow-clinical.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/20-erd-flow-clinical.svg) · [PNG 2400 px](assets/diagrams/png/20-erd-flow-clinical.png) · [Nguồn Mermaid](assets/diagrams/src/20-erd-flow-clinical.mmd)
+
 #### 2.3.4. Lab database
+
+**Dữ liệu sở hữu:** `LAB_TEST`, `LAB_RESULT`, `PROCESSED_EVENT`.
+
+**Luồng chính:** nhận `medicalrecord.created` và `payment.completed`; liên kết logic tới Clinical, Patient, Organization; tạo chỉ định/kết quả; phát `lab.request.created`, `lab.result.created` cho các consumer liên quan.
 
 ![ERD Lab database](assets/diagrams/png/05-erd-lab.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/05-erd-lab.svg) · [PNG 2400 px](assets/diagrams/png/05-erd-lab.png) · [Nguồn Mermaid](assets/diagrams/src/05-erd-lab.mmd)
 
+![ERD–luồng dữ liệu Lab service](assets/diagrams/png/21-erd-flow-lab.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/21-erd-flow-lab.svg) · [PNG 2400 px](assets/diagrams/png/21-erd-flow-lab.png) · [Nguồn Mermaid](assets/diagrams/src/21-erd-flow-lab.mmd)
+
 #### 2.3.5. Pharmacy database
+
+**Dữ liệu sở hữu:** `DRUG`, `PRESCRIPTION`, `PRESCRIPTION_LINE`, `DISPENSE_SLIP`, `STOCK_RESERVATION`, `PROCESSED_EVENT`.
+
+**Luồng chính:** nhận lệnh kê đơn và `payment.completed`; giữ/trừ tồn kho; phát `prescription.created`, `prescription.filled`, `prescription.dispense.failed`, `stock.low`; nhánh thất bại kích hoạt bù trừ tại Billing.
 
 ![ERD Pharmacy database](assets/diagrams/png/06-erd-pharmacy.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/06-erd-pharmacy.svg) · [PNG 2400 px](assets/diagrams/png/06-erd-pharmacy.png) · [Nguồn Mermaid](assets/diagrams/src/06-erd-pharmacy.mmd)
 
+![ERD–luồng dữ liệu Pharmacy service](assets/diagrams/png/22-erd-flow-pharmacy.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/22-erd-flow-pharmacy.svg) · [PNG 2400 px](assets/diagrams/png/22-erd-flow-pharmacy.png) · [Nguồn Mermaid](assets/diagrams/src/22-erd-flow-pharmacy.mmd)
+
 #### 2.3.6. Billing database
+
+**Dữ liệu sở hữu:** `FEE`, `INVOICE`, `PROCESSED_EVENT`.
+
+**Luồng chính:** nhận sáu event từ Clinical, Lab và Pharmacy để tạo phí hoặc chuyển saga; lập/thanh toán hóa đơn; phát `invoice.created`, `payment.completed`, `payment.failed`. Tất cả liên kết tới bệnh nhân, hồ sơ, khoa, đơn thuốc và phiếu xuất đều là UUID logic.
 
 ![ERD Billing database](assets/diagrams/png/07-erd-billing.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/07-erd-billing.svg) · [PNG 2400 px](assets/diagrams/png/07-erd-billing.png) · [Nguồn Mermaid](assets/diagrams/src/07-erd-billing.mmd)
 
+![ERD–luồng dữ liệu Billing service](assets/diagrams/png/23-erd-flow-billing.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/23-erd-flow-billing.svg) · [PNG 2400 px](assets/diagrams/png/23-erd-flow-billing.png) · [Nguồn Mermaid](assets/diagrams/src/23-erd-flow-billing.mmd)
+
 #### 2.3.7. Notification database
+
+**Dữ liệu sở hữu:** `NOTIFICATION`, `PROCESSED_EVENT`.
+
+**Luồng chính:** một queue nhận `patient.created`, `appointment.created`, `lab.result.created`, `prescription.filled`, `payment.completed`, `payment.failed`; consumer chống trùng, lưu thông báo, chọn Email/SMS/In-app và phát `notification.sent` với trạng thái cuối.
 
 ![ERD Notification database](assets/diagrams/png/08-erd-notification.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/08-erd-notification.svg) · [PNG 2400 px](assets/diagrams/png/08-erd-notification.png) · [Nguồn Mermaid](assets/diagrams/src/08-erd-notification.mmd)
 
+![ERD–luồng dữ liệu Notification service](assets/diagrams/png/24-erd-flow-notification.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/24-erd-flow-notification.svg) · [PNG 2400 px](assets/diagrams/png/24-erd-flow-notification.png) · [Nguồn Mermaid](assets/diagrams/src/24-erd-flow-notification.mmd)
+
 #### 2.3.8. Report database
+
+**Dữ liệu sở hữu:** `DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`, `PROCESSED_EVENT`.
+
+**Luồng chính:** nhận sáu event nghiệp vụ để cập nhật read model theo khoa và toàn viện; `department_id`, `drug_id` là chiều dữ liệu logic; Report không gọi REST và không truy cập database nguồn; service không phát event ra ngoài.
 
 ![ERD Report database](assets/diagrams/png/09-erd-report.png)
 
 [SVG dùng cho Word](assets/diagrams/word-svg/09-erd-report.svg) · [PNG 2400 px](assets/diagrams/png/09-erd-report.png) · [Nguồn Mermaid](assets/diagrams/src/09-erd-report.mmd)
+
+![ERD–luồng dữ liệu Report service](assets/diagrams/png/25-erd-flow-report.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/25-erd-flow-report.svg) · [PNG 2400 px](assets/diagrams/png/25-erd-flow-report.png) · [Nguồn Mermaid](assets/diagrams/src/25-erd-flow-report.mmd)
+
+#### 2.3.9. ERD tổng quan toàn hệ thống
+
+Sơ đồ tổng quan đặt tám database trong tám bounded context riêng. Quan hệ liền chỉ tồn tại bên trong một database; các đường xuyên service là UUID/REST logic hoặc integration event và tuyệt đối không phải khóa ngoại vật lý.
+
+![ERD tổng quan toàn hệ thống MediFlow](assets/diagrams/png/26-erd-system-overview.png)
+
+[SVG dùng cho Word](assets/diagrams/word-svg/26-erd-system-overview.svg) · [PNG 2400 px](assets/diagrams/png/26-erd-system-overview.png) · [Nguồn Mermaid](assets/diagrams/src/26-erd-system-overview.mmd)
 
 ### 2.4. DDL
 
