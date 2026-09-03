@@ -1,6 +1,6 @@
 # Bộ báo cáo Giai đoạn 2 - Thiết kế Giao diện và Tiêu chuẩn
 
-**Thời gian kế hoạch:** 10/08/2026 - 23/08/2026  
+**Thời gian kế hoạch:** 10/08/2026 - 23/08/2026
 **Trạng thái hồ sơ:** Có nền tảng kiến trúc/ERD và bản khung GUI; chưa đủ điều kiện công nhận Design v1.0.
 
 ## Nội dung của folder

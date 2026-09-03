@@ -164,4 +164,3 @@ Mỗi sơ đồ được xuất lại thành:
 - Bốn sơ đồ được render lại thành SVG và PNG hợp lệ.
 - SVG Word-safe không chứa font ngoài, `@import`, CSS variable chưa giải quyết hoặc `color-mix()`.
 - Tất cả liên kết tương đối trong báo cáo và README vẫn hợp lệ.
-

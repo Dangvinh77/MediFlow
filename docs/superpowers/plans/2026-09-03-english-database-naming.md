@@ -439,4 +439,3 @@ Expected: `git diff --check` exit code 0; `git status` chỉ liệt kê các tha
 git add -- docs/monitor_proj_progress/02-giai-doan-2-thiet-ke-giao-dien-tieu-chuan docs/ai/services/organization.md docs/ai/services/patient.md docs/ai/services/notification.md docs/eproject_general_plan/backend-spec/01-organization.md docs/eproject_general_plan/backend-spec/02-patient.md docs/eproject_general_plan/backend-spec/07-notification.md
 git commit -m "docs: finalize english database terminology"
 ```
-
