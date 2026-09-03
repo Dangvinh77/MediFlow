@@ -1,0 +1,204 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1850.701 509.75333333333333" width="1850.701" height="509.75333333333333" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="PHARMACY" data-label="Pharmacy Service · mediflow_pharmacy">
+  <rect x="708.1289999999999" y="32" width="690.4599999999999" height="436.365" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="708.1289999999999" y="32" width="690.4599999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="720.1289999999999" y="46" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Pharmacy Service · mediflow_pharmacy</text>
+</g>
+<polyline class="edge" data-from="CLINICAL" data-to="PRESCRIPTION" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record_id · UUID logic" points="485.20349999999996,222.15333333333336 678.1289999999999,222.15333333333334 678.1289999999999,291.4666666666667 724.1289999999999,291.4666666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PATIENT" data-to="PRESCRIPTION" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="482.2394999999999,311.9533333333334 690.1289999999999,311.9533333333334 690.1289999999999,312.6416666666667 724.1289999999999,312.6416666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="PRESCRIPTION" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="staff/department UUID logic" points="308.10599999999994,298.8116666666667 340.7659999999999,298.8116666666667 340.7659999999999,148.95333333333338 690.1289999999999,148.95333333333338 690.1289999999999,270.2916666666667 724.1289999999999,270.2916666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="SLIP" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dispensed_by · UUID logic" points="308.10599999999994,316.74500000000006 346.10599999999994,316.74500000000006 346.10599999999994,385.85333333333335 690.1289999999999,385.85333333333335 690.1289999999999,356.665 1141.1009999999999,356.665 1141.1009999999999,372.7525 1183.3988,372.7525" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAYMENT_COMPLETED" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume · dispense" points="503.72849999999994,450.60333333333335 690.1289999999999,450.60333333333335 690.1289999999999,410.01500000000004 776.7399999999998,410.015" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PRESCRIPTION" data-to="PRESCRIPTION_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="992.8249999999998,299.9366666666667 1004.8249999999998,299.9366666666667 1004.8249999999998,308.05 1442.5889999999997,308.05 1442.5889999999997,296.8929166666667 1552.2549999999999,296.8929166666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="SLIP" data-to="PRESCRIPTION_FILLED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="success" points="1365.3978,358.6358333333333 1442.5889999999997,358.6358333333333 1442.5889999999997,369.79291666666666 1552.2549999999999,369.79291666666666" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="SLIP" data-to="DISPENSE_FAILED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="failure/compensation" points="1365.3978,386.8691666666667 1442.5889999999997,386.8691666666667 1442.5889999999997,442.6929166666667 1612.2489999999998,442.6929166666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DRUG" data-to="STOCK_LOW" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="threshold reached · publish" points="987.6379999999998,97.17500000000001 1004.8249999999998,97.17500000000001 1004.8249999999998,81.65000000000003 1645.5129999999997,81.65000000000003" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PRESCRIPTION" data-to="LINE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N dòng thuốc" points="992.8249999999998,266.0566666666667 1004.8249999999998,266.0566666666667 1004.8249999999998,151.65 1141.1009999999999,151.65 1141.1009999999999,149.11666666666667 1183.3988,149.11666666666667" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DRUG" data-to="LINE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N được kê" points="987.6379999999998,118.35 1141.1009999999999,118.35000000000002 1141.1009999999999,120.88333333333333 1183.3988,120.88333333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PRESCRIPTION" data-to="SLIP" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:0..1 phiếu xuất" points="992.8249999999998,316.87666666666667 1004.8249999999998,316.87666666666667 1004.8249999999998,335.9275 1153.1009999999999,335.9275 1153.1009999999999,351.5775 1183.3988,351.5775" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PRESCRIPTION" data-to="RESERVATION" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N giữ tồn" points="992.8249999999998,282.99666666666667 1004.8249999999998,282.99666666666667 1004.8249999999998,272.35 1141.1009999999999,272.35 1141.1009999999999,269.8166666666667 1183.3988,269.8166666666667" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DRUG" data-to="RESERVATION" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N giữ số lượng" points="987.6379999999998,139.525 1016.8249999999998,139.525 1016.8249999999998,239.05 1141.1009999999999,239.05 1141.1009999999999,241.58333333333337 1183.3988,241.58333333333337" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="SLIP" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe payment" points="950.5879999999997,410.015 1141.1009999999999,410.01500000000004 1141.1009999999999,393.9275 1183.3988,393.9275" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="CLINICAL" data-to="PRESCRIPTION" data-label="record_id · UUID logic">
+  <rect x="533.3409999999999" y="206.15333333333334" width="122.78800000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="594.7349999999999" y="221.30333333333334" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">record_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="PRESCRIPTION" data-label="patient_id · UUID logic">
+  <rect x="535.7169999999999" y="295.9533333333334" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="595.9229999999999" y="311.10333333333335" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="PRESCRIPTION" data-label="staff/department UUID logic">
+  <rect x="514.333" y="132.95333333333338" width="141.796" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="585.231" y="148.10333333333338" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">staff/department UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="SLIP" data-label="dispensed_by · UUID logic">
+  <rect x="513.145" y="369.85333333333335" width="142.98399999999998" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="584.637" y="385.00333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dispensed_by · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PAYMENT_COMPLETED" data-to="PROCESSED_EVENT" data-label="consume · dispense">
+  <rect x="542.251" y="434.60333333333335" width="113.87800000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="599.19" y="449.75333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · dispense</text>
+</g>
+<g class="edge-label" data-from="PRESCRIPTION" data-to="PRESCRIPTION_CREATED" data-label="publish">
+  <rect x="1450.589" y="280.8929166666667" width="52.102" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1476.6399999999999" y="296.04291666666666" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="SLIP" data-to="PRESCRIPTION_FILLED" data-label="success">
+  <rect x="1450.589" y="353.79291666666666" width="59.230000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1480.204" y="368.94291666666663" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">success</text>
+</g>
+<g class="edge-label" data-from="SLIP" data-to="DISPENSE_FAILED" data-label="failure/compensation">
+  <rect x="1450.589" y="426.6929166666667" width="115.66000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1508.4189999999999" y="441.84291666666667" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">failure/compensation</text>
+</g>
+<g class="edge-label" data-from="DRUG" data-to="STOCK_LOW" data-label="threshold reached · publish">
+  <rect x="1450.589" y="65.64999999999998" width="148.924" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1525.051" y="80.79999999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">threshold reached · publish</text>
+</g>
+<g class="edge-label" data-from="PRESCRIPTION" data-to="LINE" data-label="1:N dòng thuốc">
+  <rect x="1044.4679999999998" y="135.65" width="82.99000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="150.8" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N dòng thuốc</text>
+</g>
+<g class="edge-label" data-from="DRUG" data-to="LINE" data-label="1:N được kê">
+  <rect x="1051.5959999999998" y="102.35000000000002" width="68.73400000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="117.50000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N được kê</text>
+</g>
+<g class="edge-label" data-from="PRESCRIPTION" data-to="SLIP" data-label="1:0..1 phiếu xuất">
+  <rect x="1043.2799999999997" y="319.9275" width="85.36600000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="335.0775" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:0..1 phiếu xuất</text>
+</g>
+<g class="edge-label" data-from="PRESCRIPTION" data-to="RESERVATION" data-label="1:N giữ tồn">
+  <rect x="1055.1599999999999" y="256.35" width="61.605999999999995" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="271.5" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N giữ tồn</text>
+</g>
+<g class="edge-label" data-from="DRUG" data-to="RESERVATION" data-label="1:N giữ số lượng">
+  <rect x="1042.3889999999997" y="223.05" width="87.14800000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="238.20000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N giữ số lượng</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="SLIP" data-label="dedupe payment">
+  <rect x="1038.8249999999998" y="394.01500000000004" width="94.27600000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1085.9629999999997" y="409.165" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe payment</text>
+</g>
+<g class="node" data-id="CLINICAL" data-label="Clinical Service
+record_id" data-shape="rectangle">
+  <rect x="350.6284999999999" y="195.25333333333336" width="134.57500000000002" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text x="417.91599999999994" y="222.15333333333336" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="417.91599999999994" dy="-3.9000000000000012">Clinical Service</tspan><tspan x="417.91599999999994" dy="16.900000000000002">record_id</tspan></text>
+</g>
+<g class="node" data-id="PATIENT" data-label="Patient Service
+patient_id" data-shape="rectangle">
+  <rect x="350.6284999999999" y="285.05333333333334" width="131.611" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text x="416.4339999999999" y="311.9533333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="416.4339999999999" dy="-3.9000000000000012">Patient Service</tspan><tspan x="416.4339999999999" dy="16.900000000000002">patient_id</tspan></text>
+</g>
+<g class="node" data-id="ORGANIZATION" data-label="Organization Service
+doctor_id, department_id, dispensed_by" data-shape="rectangle">
+  <rect x="32" y="280.8783333333334" width="276.10599999999994" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text x="170.05299999999997" y="307.77833333333336" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="170.05299999999997" dy="-3.9000000000000012">Organization Service</tspan><tspan x="170.05299999999997" dy="16.900000000000002">doctor_id, department_id, dispensed_by</tspan></text>
+</g>
+<g class="node" data-id="PAYMENT_COMPLETED" data-label="payment.completed" data-shape="stadium">
+  <rect x="350.6284999999999" y="432.15333333333336" width="153.1" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text x="427.17849999999993" y="450.60333333333335" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.completed</text>
+</g>
+<g class="node" data-id="PRESCRIPTION_CREATED" data-label="prescription.created" data-shape="stadium">
+  <rect x="1552.255" y="278.4429166666667" width="163.474" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text x="1633.9920000000002" y="296.8929166666667" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.created</text>
+</g>
+<g class="node" data-id="PRESCRIPTION_FILLED" data-label="prescription.filled" data-shape="stadium">
+  <rect x="1552.255" y="351.34291666666667" width="144.20800000000003" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text x="1624.3590000000002" y="369.79291666666666" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.filled</text>
+</g>
+<g class="node" data-id="DISPENSE_FAILED" data-label="prescription.dispense.failed" data-shape="stadium">
+  <rect x="1612.249" y="424.2429166666667" width="206.45199999999994" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text x="1715.475" y="442.6929166666667" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.dispense.failed</text>
+</g>
+<g class="node" data-id="STOCK_LOW" data-label="stock.low" data-shape="stadium">
+  <rect x="1645.513" y="63.200000000000045" width="96.784" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text x="1693.905" y="81.65000000000005" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">stock.low</text>
+</g>
+<g class="node" data-id="DRUG" data-label="DRUG
+PK drug_id
+stock_quantity · expiry_date" data-shape="cylinder">
+  <rect x="776.7399999999998" y="83" width="210.898" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="776.7399999999998" y1="83" x2="776.7399999999998" y2="153.7" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="987.6379999999998" y1="83" x2="987.6379999999998" y2="153.7" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="882.1889999999997" cy="153.7" rx="105.449" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="882.1889999999997" cy="83" rx="105.449" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="882.1889999999997" y="118.35" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="882.1889999999997" dy="-12.350000000000001">DRUG</tspan><tspan x="882.1889999999997" dy="16.900000000000002">PK drug_id</tspan><tspan x="882.1889999999997" dy="16.900000000000002">stock_quantity · expiry_date</tspan></text>
+</g>
+<g class="node" data-id="PRESCRIPTION" data-label="PRESCRIPTION
+PK prescription_id
+record/patient/doctor/department UUID" data-shape="cylinder">
+  <rect x="724.1289999999999" y="256.1166666666667" width="268.6959999999999" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="724.1289999999999" y1="256.1166666666667" x2="724.1289999999999" y2="326.81666666666666" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="992.8249999999998" y1="256.1166666666667" x2="992.8249999999998" y2="326.81666666666666" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="858.4769999999999" cy="326.81666666666666" rx="134.34799999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="858.4769999999999" cy="256.1166666666667" rx="134.34799999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="858.4769999999999" y="291.4666666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="858.4769999999999" dy="-12.350000000000001">PRESCRIPTION</tspan><tspan x="858.4769999999999" dy="16.900000000000002">PK prescription_id</tspan><tspan x="858.4769999999999" dy="16.900000000000002">record/patient/doctor/department UUID</tspan></text>
+</g>
+<g class="node" data-id="LINE" data-label="PRESCRIPTION_LINE
+PK line_id
+FK prescription_id, drug_id" data-shape="cylinder">
+  <rect x="1183.3988" y="99.65" width="203.488" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="1183.3988" y1="99.65" x2="1183.3988" y2="170.35000000000002" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1386.8868" y1="99.65" x2="1386.8868" y2="170.35000000000002" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1285.1427999999999" cy="170.35000000000002" rx="101.744" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1285.1427999999999" cy="99.65" rx="101.744" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1285.1427999999999" y="135" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1285.1427999999999" dy="-12.350000000000001">PRESCRIPTION_LINE</tspan><tspan x="1285.1427999999999" dy="16.900000000000002">PK line_id</tspan><tspan x="1285.1427999999999" dy="16.900000000000002">FK prescription_id, drug_id</tspan></text>
+</g>
+<g class="node" data-id="SLIP" data-label="DISPENSE_SLIP
+PK dispense_id
+FK + UK prescription_id" data-shape="cylinder">
+  <rect x="1183.3988" y="337.40250000000003" width="181.99899999999997" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="1183.3988" y1="337.40250000000003" x2="1183.3988" y2="408.1025" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1365.3978" y1="337.40250000000003" x2="1365.3978" y2="408.1025" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1274.3982999999998" cy="408.1025" rx="90.99949999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1274.3982999999998" cy="337.40250000000003" rx="90.99949999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1274.3982999999998" y="372.75250000000005" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1274.3982999999998" dy="-12.350000000000001">DISPENSE_SLIP</tspan><tspan x="1274.3982999999998" dy="16.900000000000002">PK dispense_id</tspan><tspan x="1274.3982999999998" dy="16.900000000000002">FK + UK prescription_id</tspan></text>
+</g>
+<g class="node" data-id="RESERVATION" data-label="STOCK_RESERVATION
+PK reservation_id
+FK drug_id, prescription_id" data-shape="cylinder">
+  <rect x="1183.3988" y="220.35000000000002" width="203.48799999999997" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="1183.3988" y1="220.35000000000002" x2="1183.3988" y2="291.05" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1386.8868" y1="220.35000000000002" x2="1386.8868" y2="291.05" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1285.1427999999999" cy="291.05" rx="101.74399999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1285.1427999999999" cy="220.35000000000002" rx="101.74399999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1285.1427999999999" y="255.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1285.1427999999999" dy="-12.350000000000001">STOCK_RESERVATION</tspan><tspan x="1285.1427999999999" dy="16.900000000000002">PK reservation_id</tspan><tspan x="1285.1427999999999" dy="16.900000000000002">FK drug_id, prescription_id</tspan></text>
+</g>
+<g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT
+PK event_id
+routing_key" data-shape="cylinder">
+  <rect x="776.7399999999998" y="374.665" width="173.84799999999996" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="776.7399999999998" y1="374.665" x2="776.7399999999998" y2="445.365" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="950.5879999999997" y1="374.665" x2="950.5879999999997" y2="445.365" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="863.6639999999998" cy="445.365" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="863.6639999999998" cy="374.665" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text x="863.6639999999998" y="410.01500000000004" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="863.6639999999998" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="863.6639999999998" dy="16.900000000000002">PK event_id</tspan><tspan x="863.6639999999998" dy="16.900000000000002">routing_key</tspan></text>
+</g>
+</svg>
