@@ -3,18 +3,18 @@
   .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
   svg {
     /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
   }</style>
 <defs>
 </defs>

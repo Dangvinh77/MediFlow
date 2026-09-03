@@ -1,10 +1,10 @@
 # GIAI ĐOẠN 2 - THIẾT KẾ GIAO DIỆN, CƠ SỞ DỮ LIỆU VÀ KIẾN TRÚC HỆ THỐNG
 
-**Dự án:** MediFlow - Hệ thống quản lý bệnh viện  
-**Giai đoạn:** Giai đoạn 2 - Thiết kế  
-**Nền tảng:** Web Next.js và Mobile Flutter  
-**Kiến trúc:** Spring Boot Microservices, PostgreSQL, RabbitMQ  
-**Phiên bản tài liệu:** 0.1 - Bản thiết kế phục vụ rà soát  
+**Dự án:** MediFlow - Hệ thống quản lý bệnh viện
+**Giai đoạn:** Giai đoạn 2 - Thiết kế
+**Nền tảng:** Web Next.js và Mobile Flutter
+**Kiến trúc:** Spring Boot Microservices, PostgreSQL, RabbitMQ
+**Phiên bản tài liệu:** 0.1 - Bản thiết kế phục vụ rà soát
 **Ngày cập nhật:** 03/09/2026
 
 ## Mục đích tài liệu
