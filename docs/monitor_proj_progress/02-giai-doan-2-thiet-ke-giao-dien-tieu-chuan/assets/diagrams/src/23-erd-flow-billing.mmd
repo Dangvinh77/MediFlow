@@ -1,0 +1,46 @@
+flowchart LR
+    CLINICAL[Clinical Service<br/>record_id, department_id]
+    PATIENT[Patient Service<br/>patient_id]
+    PHARMACY[Pharmacy Service<br/>prescription_id, dispense_id]
+
+    RECORD_CREATED([medicalrecord.created])
+    LAB_RESULT([lab.result.created])
+    APPOINTMENT_CHANGED([appointment.status.changed])
+    PRESCRIPTION_CREATED([prescription.created])
+    PRESCRIPTION_FILLED([prescription.filled])
+    DISPENSE_FAILED([prescription.dispense.failed])
+
+    subgraph BILLING[Billing Service · mediflow_billing]
+        FEE[(FEE<br/>PK fee_id<br/>UK source_ref_id<br/>FK invoice_id)]
+        INVOICE[(INVOICE<br/>PK invoice_id<br/>UK prescription_id<br/>saga_status)]
+        PROCESSED_EVENT[(PROCESSED_EVENT<br/>PK event_id<br/>routing_key)]
+
+        INVOICE -->|1:N khoản phí| FEE
+        PROCESSED_EVENT -.->|dedupe fee| FEE
+        PROCESSED_EVENT -.->|dedupe saga| INVOICE
+    end
+
+    INVOICE_CREATED([invoice.created])
+    PAYMENT_COMPLETED([payment.completed])
+    PAYMENT_FAILED([payment.failed])
+
+    CLINICAL -.->|record/department UUID logic| FEE
+    PATIENT -.->|patient_id · UUID logic| FEE
+    PATIENT -.->|patient_id · UUID logic| INVOICE
+    PHARMACY -.->|prescription/dispense UUID logic| INVOICE
+    RECORD_CREATED -.->|consume · EXAM fee| PROCESSED_EVENT
+    LAB_RESULT -.->|consume · LAB fee| PROCESSED_EVENT
+    APPOINTMENT_CHANGED -.->|consume · ARRIVED fee| PROCESSED_EVENT
+    PRESCRIPTION_CREATED -.->|consume · start saga| PROCESSED_EVENT
+    PRESCRIPTION_FILLED -.->|consume · complete saga| PROCESSED_EVENT
+    DISPENSE_FAILED -.->|consume · compensate| PROCESSED_EVENT
+    INVOICE -.->|publish| INVOICE_CREATED
+    INVOICE -.->|publish after paid| PAYMENT_COMPLETED
+    INVOICE -.->|failure/compensation| PAYMENT_FAILED
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class CLINICAL,PATIENT,PHARMACY external
+    class FEE,INVOICE,PROCESSED_EVENT owned
+    class RECORD_CREATED,LAB_RESULT,APPOINTMENT_CHANGED,PRESCRIPTION_CREATED,PRESCRIPTION_FILLED,DISPENSE_FAILED,INVOICE_CREATED,PAYMENT_COMPLETED,PAYMENT_FAILED event

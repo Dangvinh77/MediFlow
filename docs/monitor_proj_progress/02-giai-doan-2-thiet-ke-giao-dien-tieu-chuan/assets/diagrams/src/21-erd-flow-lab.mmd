@@ -1,0 +1,33 @@
+flowchart LR
+    CLINICAL[Clinical Service<br/>record_id]
+    PATIENT[Patient Service<br/>patient_id]
+    ORGANIZATION[Organization Service<br/>requesting_department_id]
+    RECORD_CREATED([medicalrecord.created])
+    PAYMENT_COMPLETED([payment.completed])
+
+    subgraph LAB[Lab Service · mediflow_lab]
+        LAB_TEST[(LAB_TEST<br/>PK test_id<br/>record_id · patient_id · department_id<br/>status · is_paid)]
+        LAB_RESULT[(LAB_RESULT<br/>PK result_id<br/>FK test_id<br/>indicator · value)]
+        PROCESSED_EVENT[(PROCESSED_EVENT<br/>PK event_id<br/>routing_key)]
+
+        LAB_TEST -->|1:N kết quả| LAB_RESULT
+        PROCESSED_EVENT -.->|dedupe| LAB_TEST
+    end
+
+    REQUEST_CREATED([lab.request.created])
+    RESULT_CREATED([lab.result.created])
+
+    CLINICAL -.->|record_id · UUID logic| LAB_TEST
+    PATIENT -.->|patient_id · UUID logic| LAB_TEST
+    ORGANIZATION -.->|department_id · UUID logic| LAB_TEST
+    RECORD_CREATED -.->|consume · optional order| PROCESSED_EVENT
+    PAYMENT_COMPLETED -.->|consume · mark paid| PROCESSED_EVENT
+    LAB_TEST -.->|publish| REQUEST_CREATED
+    LAB_RESULT -.->|publish after result| RESULT_CREATED
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class CLINICAL,PATIENT,ORGANIZATION external
+    class LAB_TEST,LAB_RESULT,PROCESSED_EVENT owned
+    class RECORD_CREATED,PAYMENT_COMPLETED,REQUEST_CREATED,RESULT_CREATED event
