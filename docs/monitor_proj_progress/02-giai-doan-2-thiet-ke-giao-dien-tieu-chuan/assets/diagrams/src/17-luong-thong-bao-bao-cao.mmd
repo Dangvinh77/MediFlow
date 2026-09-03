@@ -1,0 +1,25 @@
+flowchart LR
+    PUB[Microservice phát event]
+    MQ[(RabbitMQ<br/>mediflow.events)]
+    NDEDUP{Notification<br/>event_id đã xử lý?}
+    RDEDUP{Report<br/>event_id đã xử lý?}
+    NOTICE[Tạo nội dung<br/>và chọn kênh gửi]
+    SEND[Gửi SMS, Email<br/>hoặc In-App]
+    HISTORY[(NOTIFICATION<br/>Lịch sử gửi)]
+    READMODEL[Cập nhật read model<br/>theo ngày, tháng, khoa, thuốc]
+    DASH[Dashboard và báo cáo]
+    IGNORE1[Bỏ qua an toàn]
+    IGNORE2[Bỏ qua an toàn]
+    RETRY{Xử lý thành công?}
+    DLQ[(Dead-letter queue)]
+
+    PUB -->|event + correlationId| MQ
+    MQ --> NDEDUP
+    MQ --> RDEDUP
+    NDEDUP -->|Chưa| NOTICE --> SEND --> RETRY
+    NDEDUP -->|Rồi| IGNORE1
+    RETRY -->|Có| HISTORY
+    RETRY -->|Không, còn lượt| SEND
+    RETRY -.->|Vượt giới hạn| DLQ
+    RDEDUP -->|Chưa| READMODEL --> DASH
+    RDEDUP -->|Rồi| IGNORE2
