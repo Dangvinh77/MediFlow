@@ -1,0 +1,19 @@
+flowchart LR
+    SPEC[Backend specification<br/>DDL theo từng service]
+    REVIEW[Review tên bảng, cột,<br/>PK, FK, UNIQUE, CHECK, INDEX]
+    MIG[Flyway migration<br/>V1__init_schema.sql]
+    CLEAN[(PostgreSQL sạch<br/>mỗi service một database)]
+    VALIDATE[Ứng dụng khởi động<br/>ddl-auto = validate]
+    TEST[Smoke test<br/>insert, update, query]
+    ERD[Render lại ERD<br/>khớp migration]
+    BASELINE([Khóa Database Design v1.0])
+
+    SPEC --> REVIEW
+    REVIEW --> MIG
+    MIG --> CLEAN
+    CLEAN --> VALIDATE
+    VALIDATE --> TEST
+    TEST --> ERD
+    ERD --> BASELINE
+    VALIDATE -.->|schema không khớp| REVIEW
+    TEST -.->|constraint/index sai| REVIEW

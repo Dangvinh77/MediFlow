@@ -9,24 +9,24 @@ nó không sở hữu gì về lịch hẹn, hồ sơ khám, xét nghiệm, thu�
 > dự án. Khi xây service khác mà thấy spec chưa rõ chỗ nào, hãy mở `patient-service/` ra xem nó
 > làm thế nào. 30 test đang xanh; quy tắc phụ thuộc đã được kiểm chứng.
 
-## 1. Lược đồ — `V1__init_benh_nhan.sql` (đã tồn tại)
+## 1. Lược đồ — `V1__init_patient.sql`
 
 ```sql
-CREATE TABLE BENH_NHAN (
-    ma_benh_nhan   UUID          PRIMARY KEY,
-    ho_ten         VARCHAR(100)  NOT NULL,
-    ngay_sinh      DATE          NOT NULL,
-    gioi_tinh      VARCHAR(1),
-    so_cmnd        VARCHAR(20)   NOT NULL,
-    dia_chi        VARCHAR(255),
-    so_dien_thoai  VARCHAR(15),
-    email          VARCHAR(100),
-    bhyt_so        VARCHAR(20),
-    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at     TIMESTAMPTZ,
-    CONSTRAINT uq_benh_nhan_so_cmnd UNIQUE (so_cmnd)
+CREATE TABLE PATIENT (
+    patient_id               UUID          PRIMARY KEY,
+    full_name                VARCHAR(100)  NOT NULL,
+    date_of_birth            DATE          NOT NULL,
+    gender                   VARCHAR(10)   NOT NULL,
+    identity_number          VARCHAR(20)   NOT NULL,
+    address                  VARCHAR(255),
+    phone_number             VARCHAR(15),
+    email                    VARCHAR(100),
+    health_insurance_number  VARCHAR(20),
+    created_at               TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ,
+    CONSTRAINT uq_patient_identity_number UNIQUE (identity_number)
 );
-CREATE INDEX idx_benh_nhan_ho_ten ON BENH_NHAN (ho_ten);
+CREATE INDEX idx_patient_full_name ON PATIENT (full_name);
 ```
 
 ## 2. Enum
@@ -176,12 +176,12 @@ Page<PatientJpaEntity> search(@Param("keyword") String keyword, Pageable pageabl
 
 | ID | Quy tắc | Test |
 |----|---------|------|
-| BR-P1 | `so_cmnd` duy nhất | `create_duplicateCmnd_throwsDuplicateResource` |
+| BR-P1 | `identity_number` duy nhất | `create_duplicateCmnd_throwsDuplicateResource` |
 | BR-P2 | `email` hợp lệ nếu có | `create_invalidEmail_throwsInvalidPatientData` |
-| BR-P3 | `bhyt_so` khớp `XX-XXXXXXXX-X` | `create_malformedBhyt_throwsInvalidPatientData` |
-| BR-P4 | `ngay_sinh` không ở tương lai | `create_futureBirthDate_throwsInvalidPatientData` |
-| BR-P5 | `so_dien_thoai` chỉ chữ số, ≥10 | `create_shortPhone_throwsInvalidPatientData` |
-| BR-P6 | `so_cmnd` bất biến | `update_doesNotChangeSoCmnd` |
+| BR-P3 | `health_insurance_number` khớp `XX-XXXXXXXX-X` | `create_malformedBhyt_throwsInvalidPatientData` |
+| BR-P4 | `date_of_birth` không ở tương lai | `create_futureBirthDate_throwsInvalidPatientData` |
+| BR-P5 | `phone_number` chỉ chữ số, ≥10 | `create_shortPhone_throwsInvalidPatientData` |
+| BR-P6 | `identity_number` bất biến | `update_doesNotChangeSoCmnd` |
 | BR-P7 | Tạo thành công thì publish event | `create_valid_publishesPatientCreated` |
 | BR-P8 | Tạo thất bại thì không publish gì | `create_duplicateCmnd_publishesNothing` |
 
@@ -189,4 +189,4 @@ Page<PatientJpaEntity> search(@Param("keyword") String keyword, Pageable pageabl
 
 - Hai tầng validation là **cố ý**: Bean Validation trên DTO cho ra 400 kèm chi tiết từng field; bất biến trong domain cho ra 422 và bảo vệ model trước mọi người gọi. Làm **cả hai** — chúng không thừa nhau.
 - `soCmnd` và `bhytSo` là PII. Không log ở mức INFO.
-- Service này đọc nhiều, ghi ít và chủ yếu do NURSE ghi; endpoint search là đường nóng. Giữ index trên `ho_ten`.
+- Service này đọc nhiều, ghi ít và chủ yếu do NURSE ghi; endpoint search là đường nóng. Giữ index trên `full_name`.

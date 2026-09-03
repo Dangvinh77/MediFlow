@@ -10,26 +10,26 @@ lại kết quả. Nó không sở hữu dữ liệu nghiệp vụ cốt lõi n�
 ## 1. Lược đồ — `V1__init.sql`
 
 ```sql
-CREATE TABLE THONG_BAO (
-    ma_thong_bao   UUID          PRIMARY KEY,
-    ma_benh_nhan   UUID          NOT NULL,     -- tham chiếu patient-service
-    tieu_de        VARCHAR(255)  NOT NULL,
-    noi_dung       TEXT          NOT NULL,
-    loai           VARCHAR(10)   NOT NULL,     -- EMAIL | SMS | IN_APP
-    dia_chi_nhan   VARCHAR(150),               -- email hoặc số điện thoại thực tế đã dùng
-    trang_thai     VARCHAR(10)   NOT NULL DEFAULT 'PENDING',
-    ly_do_that_bai VARCHAR(255),
-    so_lan_thu     INT           NOT NULL DEFAULT 0,
-    ngay_tao       TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    ngay_gui       TIMESTAMPTZ
+CREATE TABLE NOTIFICATION (
+    notification_id    UUID          PRIMARY KEY,
+    patient_id         UUID          NOT NULL,     -- tham chiếu logic patient-service
+    title              VARCHAR(255)  NOT NULL,
+    content            TEXT          NOT NULL,
+    channel            VARCHAR(10)   NOT NULL,     -- EMAIL | SMS | IN_APP
+    recipient_address  VARCHAR(150),               -- email hoặc số điện thoại thực tế đã dùng
+    status             VARCHAR(10)   NOT NULL DEFAULT 'PENDING',
+    failure_reason     VARCHAR(255),
+    retry_count        INT           NOT NULL DEFAULT 0,
+    created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    sent_at            TIMESTAMPTZ
 );
-CREATE INDEX idx_thong_bao_benh_nhan ON THONG_BAO (ma_benh_nhan, ngay_tao DESC);
-CREATE INDEX idx_thong_bao_trang_thai ON THONG_BAO (trang_thai);
+CREATE INDEX idx_notification_patient ON NOTIFICATION (patient_id, created_at DESC);
+CREATE INDEX idx_notification_status ON NOTIFICATION (status);
 
-CREATE TABLE SU_KIEN_DA_XU_LY (
+CREATE TABLE PROCESSED_EVENT (
     event_id     UUID          PRIMARY KEY,
     routing_key  VARCHAR(100)  NOT NULL,
-    xu_ly_luc    TIMESTAMPTZ   NOT NULL DEFAULT now()
+    processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 ```
 
@@ -213,7 +213,7 @@ từ trong consumer — làm vậy là biến một luồng bất đồng bộ t
 - `spring-boot-starter-mail` đã có trong POM nhưng nằm im cho tới khi cấu hình `spring.mail.*`. Hãy làm sẵn một `MockEmailSender` (ghi log, luôn thành công) làm mặc định để service chạy được khi không có SMTP; sau này cắm `JavaMailSender` thật vào sau cùng một port.
 - Không có nhà cung cấp SMS nào cả. `MockSmsSender` ghi log và trả thành công. Đừng bịa ra một tích hợp không tồn tại.
 - Bind **một** queue vào sáu routing key thay vì tạo sáu queue. Một class consumer với `switch` theo routing key giúp logic khử trùng lặp nằm gọn một chỗ.
-- Không bao giờ log `noi_dung` ở mức INFO — nó có thể chứa gợi ý về chẩn đoán.
+- Không bao giờ log cột `content` ở mức INFO — nó có thể chứa gợi ý về chẩn đoán.
 
 ---
 
@@ -267,7 +267,7 @@ notification-service/src/main/java/com/mediflow/notification/
 │   ├── ThongBaoPersistenceMapper.java
 │   ├── ProcessedEventJpaEntity.java
 │   ├── ProcessedEventJpaRepository.java
-│   └── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng SU_KIEN_DA_XU_LY)
+│   └── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng PROCESSED_EVENT)
 ├── infrastructure/messaging/             # DRIVEN adapter (RabbitMQ) — publisher + payload
 │   ├── NotificationEventPublisherAdapter.java           # hiện thực NotificationEventPublisherPort
 │   └── payload/
@@ -326,20 +326,20 @@ public interface ThongBaoJpaRepository extends JpaRepository<ThongBaoJpaEntity, 
 
 | Entity field | Domain field | Kiểu |
 |---|---|---|
-| `ma_thong_bao` | `maThongBao` | UUID |
-| `ma_benh_nhan` | `maBenhNhan` | UUID |
-| `tieu_de` | `tieuDe` | String |
-| `noi_dung` | `noiDung` | String |
-| `loai` | `loai` | LoaiThongBao |
-| `dia_chi_nhan` | `diaChiNhan` | String (nullable) |
-| `trang_thai` | `trangThai` | TrangThaiThongBao |
-| `ly_do_that_bai` | `lyDoThatBai` | String (nullable) |
-| `so_lan_thu` | `soLanThu` | int |
-| `ngay_tao` | `ngayTao` | Instant |
-| `ngay_gui` | `ngayGui` | Instant (nullable) |
+| `notification_id` | `maThongBao` | UUID |
+| `patient_id` | `maBenhNhan` | UUID |
+| `title` | `tieuDe` | String |
+| `content` | `noiDung` | String |
+| `channel` | `loai` | LoaiThongBao |
+| `recipient_address` | `diaChiNhan` | String (nullable) |
+| `status` | `trangThai` | TrangThaiThongBao |
+| `failure_reason` | `lyDoThatBai` | String (nullable) |
+| `retry_count` | `soLanThu` | int |
+| `created_at` | `ngayTao` | Instant |
+| `sent_at` | `ngayGui` | Instant (nullable) |
 
 **Adapter cần làm đúng:**
-1. `findByMaBenhNhanOrderByNgayTaoDesc` — dùng cho `ReadNotificationUseCase.byPatient`, khớp index `idx_thong_bao_benh_nhan`.
+1. `findByMaBenhNhanOrderByNgayTaoDesc` — dùng cho `ReadNotificationUseCase.byPatient`, ánh xạ truy vấn vào index `idx_notification_patient`.
 2. `NotificationDtoMapper` — **loại bỏ** tường minh `diaChiNhan`/`soLanThu` khỏi `NotificationDTO` (không phải MapStruct tự bỏ, phải khai báo `@Mapping(target = "...", ignore = true)` nếu field trùng tên mà không muốn map, hoặc đơn giản là DTO không có field đó nên MapStruct tự bỏ qua — kiểm tra lại DTO record).
 3. `MockEmailSender`/`MockSmsSender`/`InAppSender` implement `NotificationSenderPort`; Spring tự inject cả ba vào `NotificationApplicationService` dưới dạng `List<NotificationSenderPort>` hoặc `Map<LoaiThongBao, NotificationSenderPort>` — chọn đúng theo `loai` khi gọi `gui()` (BR-N9 chọn kênh nằm ở tầng application, **không** phải trong sender).
 
@@ -380,7 +380,7 @@ Queue `notification.q` bind **6 routing key** (bỏ `notification.sent` vì là 
 
 ### 13.6 Checklist hoàn thiện notification (Definition of Done)
 
-- [ ] `V1__init.sql` tạo đủ 2 bảng (`THONG_BAO`, `SU_KIEN_DA_XU_LY`), đúng tiếng Việt snake_case.
+- [ ] `V1__init.sql` tạo đủ 2 bảng (`NOTIFICATION`, `PROCESSED_EVENT`), với tên bảng/cột tiếng Anh đúng quy ước.
 - [ ] Domain: 2 enum + 1 model (`ThongBao`) + 4 exception; `emailHopLe`/`sdtHopLe`/`coTheGui` không phụ thuộc Spring.
 - [ ] Ports đủ (4 out, 2 in); application service hiện thực, không import Spring Data/AMQP.
 - [ ] DTO record có Bean Validation; 1 MapStruct mapper — xác nhận `diaChiNhan`/`soLanThu` không lộ ra `NotificationDTO`.

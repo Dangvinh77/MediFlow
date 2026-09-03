@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1156.242 334" width="1156.242" height="334" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="APPOINTMENT" data-entity2="MEDICAL_RECORD" data-cardinality1="one" data-cardinality2="zero-one" data-identifying="true" data-label="khởi tạo lượt khám" points="226.4,167 497.428,167" fill="none" stroke="#2563EB" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="MEDICAL_RECORD" data-entity2="DIAGNOSIS" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="có chẩn đoán" points="683.828,167 936.442,167" fill="none" stroke="#2563EB" stroke-width="1" />
+<g class="entity" data-id="APPOINTMENT" data-label="APPOINTMENT">
+  <rect x="40" y="40" width="186.4" height="254" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="40" y="40" width="186.4" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="133.2" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">APPOINTMENT</text>
+  <line x1="40" y1="74" x2="226.4" y2="74" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="46" y="78" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="76.31" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="218.4" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">appointment_id</tspan></text>
+  <text x="48" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="218.4" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">patient_id</tspan></text>
+  <text x="48" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="218.4" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">doctor_id</tspan></text>
+  <text x="48" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="218.4" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_id</tspan></text>
+  <text x="48" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">date</tspan></text>
+  <text x="218.4" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">appointment_date</tspan></text>
+  <text x="48" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">time</tspan></text>
+  <text x="218.4" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">appointment_time</tspan></text>
+  <text x="48" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="218.4" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">status</tspan></text>
+  <text x="48" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">text</tspan></text>
+  <text x="218.4" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">reason</tspan></text>
+  <text x="48" y="261" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="218.4" y="261" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="48" y="283" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="218.4" y="283" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="MEDICAL_RECORD" data-label="MEDICAL_RECORD">
+  <rect x="497.428" y="51" width="186.4" height="232" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="497.428" y="51" width="186.4" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="590.628" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">MEDICAL_RECORD</text>
+  <line x1="497.428" y1="85" x2="683.828" y2="85" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="503.428" y="89" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="514.583" y="96" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="533.7379999999999" y="96" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="675.828" y="96" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">record_id</tspan></text>
+  <text x="505.428" y="118" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="675.828" y="118" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">patient_id</tspan></text>
+  <text x="505.428" y="140" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="675.828" y="140" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">doctor_id</tspan></text>
+  <text x="505.428" y="162" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="675.828" y="162" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_id</tspan></text>
+  <text x="505.428" y="184" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">date</tspan></text>
+  <text x="675.828" y="184" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">examination_date</tspan></text>
+  <text x="505.428" y="206" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">text</tspan></text>
+  <text x="675.828" y="206" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">symptoms</tspan></text>
+  <rect x="503.428" y="221" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="514.583" y="228" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="533.7379999999999" y="228" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="675.828" y="228" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">appointment_id</tspan></text>
+  <text x="505.428" y="250" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="675.828" y="250" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="505.428" y="272" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="675.828" y="272" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="DIAGNOSIS" data-label="DIAGNOSIS">
+  <rect x="936.442" y="84" width="179.79999999999998" height="166" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="936.442" y="84" width="179.79999999999998" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="1026.342" y="101" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">DIAGNOSIS</text>
+  <line x1="936.442" y1="118" x2="1116.242" y2="118" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="942.442" y="122" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="953.597" y="129" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="972.752" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="1108.242" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">diagnosis_id</tspan></text>
+  <rect x="942.442" y="144" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="953.597" y="151" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="972.752" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="1108.242" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">record_id</tspan></text>
+  <text x="944.442" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="1108.242" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">diagnosis_name</tspan></text>
+  <text x="944.442" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">text</tspan></text>
+  <text x="1108.242" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">description</tspan></text>
+  <text x="944.442" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="1108.242" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">icd_code</tspan></text>
+  <text x="944.442" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="1108.242" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+</g>
+<line x1="230.4" y1="161" x2="230.4" y2="173" stroke="#2563EB" stroke-width="1.25" />
+<line x1="234.4" y1="161" x2="234.4" y2="173" stroke="#2563EB" stroke-width="1.25" />
+<line x1="493.428" y1="173" x2="493.428" y2="161" stroke="#2563EB" stroke-width="1.25" />
+<line x1="489.428" y1="173" x2="489.428" y2="161" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="485.428" cy="167" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<line x1="687.828" y1="161" x2="687.828" y2="173" stroke="#2563EB" stroke-width="1.25" />
+<line x1="691.828" y1="161" x2="691.828" y2="173" stroke="#2563EB" stroke-width="1.25" />
+<line x1="932.442" y1="174" x2="920.442" y2="167" stroke="#2563EB" stroke-width="1.25" />
+<line x1="932.442" y1="167" x2="920.442" y2="167" stroke="#2563EB" stroke-width="1.25" />
+<line x1="932.442" y1="160" x2="920.442" y2="167" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="916.442" cy="167" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<rect x="316.4" y="156.85" width="91.02800000000002" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="361.914" y="167" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">khởi tạo lượt khám</text>
+<rect x="773.828" y="156.85" width="72.614" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="810.135" y="167" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">có chẩn đoán</text>
+</svg>
