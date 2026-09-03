@@ -1,0 +1,31 @@
+flowchart LR
+    INPUTS[Integration events<br/>patient.created<br/>appointment.created<br/>lab.result.created<br/>prescription.filled<br/>payment.completed<br/>payment.failed]
+    PATIENT[Patient identity/contact projection<br/>patient_id]
+
+    subgraph NOTIFICATION[Notification Service · mediflow_notification]
+        PROCESSED_EVENT[(PROCESSED_EVENT<br/>PK event_id<br/>routing_key)]
+        NOTICE[(NOTIFICATION<br/>PK notification_id<br/>patient_id · channel<br/>status · retry_count)]
+
+        PROCESSED_EVENT -.->|dedupe then create| NOTICE
+    end
+
+    EMAIL[Email sender]
+    SMS[SMS sender]
+    IN_APP[In-app channel]
+    SENT([notification.sent])
+
+    INPUTS -.->|consume one queue| PROCESSED_EVENT
+    PATIENT -.->|patient_id · UUID logic| NOTICE
+    NOTICE -->|EMAIL| EMAIL
+    NOTICE -->|SMS| SMS
+    NOTICE -->|IN_APP| IN_APP
+    EMAIL -.->|publish final status| SENT
+    SMS -.->|publish final status| SENT
+    IN_APP -.->|publish final status| SENT
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class INPUTS,PATIENT,EMAIL,SMS,IN_APP external
+    class PROCESSED_EVENT,NOTICE owned
+    class SENT event
