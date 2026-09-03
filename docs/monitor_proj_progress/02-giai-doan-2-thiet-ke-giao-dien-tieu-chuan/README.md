@@ -6,7 +6,7 @@
 ## Nội dung của folder
 
 1. [Hồ sơ thiết kế Giai đoạn 2](giai-doan-2-design.md) - GUI Standards, Database Design, kiến trúc hệ thống và Business Flowchart.
-2. [Bộ sơ đồ Word-safe](assets/diagrams/README.md) - 17 sơ đồ có nguồn Mermaid, SVG vector và PNG 2400 px.
+2. [Bộ sơ đồ Word-safe](assets/diagrams/README.md) - 26 sơ đồ có nguồn Mermaid, SVG vector và PNG 2400 px; trong đó có 8 ERD vật lý, 8 ERD–luồng dữ liệu và 1 ERD tổng quan hệ thống.
 3. [Báo cáo giải trình Giai đoạn 2](bao-cao-giai-trinh.md) - giải trình GUI, Web/Mobile, ERD/DDL, kiến trúc và business flow.
 4. [GUI Standards và wireframe dạng văn bản](../gui-standards-wireframes-draft.md) - bản nháp dùng để review.
 5. [Audit ERD, DDL và events](../erd-ddl-events-audit.md) - trạng thái thiết kế và ma trận sự kiện liên dịch vụ.
