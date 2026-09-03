@@ -10,50 +10,50 @@ Xây **đầu tiên**. `clinical` và `gateway` phụ thuộc vào nó.
 ## 1. Lược đồ — `V1__init.sql`
 
 ```sql
-CREATE TABLE KHOA (
-    ma_khoa       UUID          PRIMARY KEY,
-    ten_khoa      VARCHAR(100)  NOT NULL,
-    ma_viet_tat   VARCHAR(20)   NOT NULL,
-    loai_khoa     VARCHAR(20)   NOT NULL,
-    truong_khoa   UUID,
-    dia_diem      VARCHAR(255),
-    hoat_dong     BOOLEAN       NOT NULL DEFAULT true,
-    created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at    TIMESTAMPTZ,
-    CONSTRAINT uq_khoa_ma_viet_tat UNIQUE (ma_viet_tat)
+CREATE TABLE DEPARTMENT (
+    department_id       UUID          PRIMARY KEY,
+    department_name     VARCHAR(100)  NOT NULL,
+    abbreviation        VARCHAR(20)   NOT NULL,
+    department_type     VARCHAR(20)   NOT NULL,
+    department_head_id  UUID,
+    location            VARCHAR(255),
+    is_active           BOOLEAN       NOT NULL DEFAULT true,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ,
+    CONSTRAINT uq_department_abbreviation UNIQUE (abbreviation)
 );
 
-CREATE TABLE NHAN_VIEN (
-    ma_nhan_vien   UUID          PRIMARY KEY,
-    ho_ten         VARCHAR(100)  NOT NULL,
-    ma_khoa        UUID          NOT NULL REFERENCES KHOA(ma_khoa),
-    chuc_danh      VARCHAR(20)   NOT NULL,
-    chuyen_khoa    VARCHAR(100),
-    so_chung_chi   VARCHAR(50),
-    so_dien_thoai  VARCHAR(15),
+CREATE TABLE STAFF (
+    staff_id       UUID          PRIMARY KEY,
+    full_name      VARCHAR(100)  NOT NULL,
+    department_id  UUID          NOT NULL REFERENCES DEPARTMENT(department_id),
+    job_title      VARCHAR(20)   NOT NULL,
+    specialization VARCHAR(100),
+    license_number VARCHAR(50),
+    phone_number   VARCHAR(15),
     email          VARCHAR(100),
-    trang_thai     VARCHAR(20)   NOT NULL DEFAULT 'DANG_LAM',
+    status         VARCHAR(20)   NOT NULL DEFAULT 'ACTIVE',
     created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ
 );
-CREATE INDEX idx_nhan_vien_ma_khoa ON NHAN_VIEN (ma_khoa);
-CREATE INDEX idx_nhan_vien_chuc_danh ON NHAN_VIEN (chuc_danh);
+CREATE INDEX idx_staff_department_id ON STAFF (department_id);
+CREATE INDEX idx_staff_job_title ON STAFF (job_title);
 
--- truong_khoa tham chiếu NHAN_VIEN, thêm sau khi cả hai bảng đã tồn tại
-ALTER TABLE KHOA ADD CONSTRAINT fk_khoa_truong_khoa
-    FOREIGN KEY (truong_khoa) REFERENCES NHAN_VIEN(ma_nhan_vien);
+-- department_head_id tham chiếu STAFF, thêm sau khi cả hai bảng đã tồn tại
+ALTER TABLE DEPARTMENT ADD CONSTRAINT fk_department_head
+    FOREIGN KEY (department_head_id) REFERENCES STAFF(staff_id);
 
-CREATE TABLE TAI_KHOAN (
-    ma_tai_khoan        UUID          PRIMARY KEY,
-    ten_dang_nhap       VARCHAR(50)   NOT NULL,
-    mat_khau_hash       VARCHAR(255)  NOT NULL,
-    ma_nhan_vien        UUID          REFERENCES NHAN_VIEN(ma_nhan_vien),
-    vai_tro             VARCHAR(20)   NOT NULL,
-    kich_hoat           BOOLEAN       NOT NULL DEFAULT true,
-    lan_dang_nhap_cuoi  TIMESTAMPTZ,
-    created_at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ,
-    CONSTRAINT uq_tai_khoan_ten_dang_nhap UNIQUE (ten_dang_nhap)
+CREATE TABLE ACCOUNT (
+    account_id     UUID          PRIMARY KEY,
+    username       VARCHAR(50)   NOT NULL,
+    password_hash  VARCHAR(255)  NOT NULL,
+    staff_id       UUID          REFERENCES STAFF(staff_id),
+    role           VARCHAR(20)   NOT NULL,
+    is_active      BOOLEAN       NOT NULL DEFAULT true,
+    last_login_at  TIMESTAMPTZ,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ,
+    CONSTRAINT uq_account_username UNIQUE (username)
 );
 ```
 
@@ -310,21 +310,21 @@ public record VerifiedAccountDTO(UUID maTaiKhoan, UUID maNhanVien, UUID maKhoa, 
 
 | ID | Quy tắc | Test |
 |----|---------|------|
-| BR-K1 | `ma_viet_tat` duy nhất | `createKhoa_duplicateMaVietTat_throwsDuplicate` |
-| BR-K2 | `truong_khoa` phải thuộc chính khoa đó | `setTruongKhoa_staffFromOtherDept_throwsBusinessRule` |
+| BR-K1 | `abbreviation` duy nhất | `createKhoa_duplicateMaVietTat_throwsDuplicate` |
+| BR-K2 | `department_head_id` phải thuộc chính khoa đó | `setTruongKhoa_staffFromOtherDept_throwsBusinessRule` |
 | BR-K3 | Không ngừng hoạt động khoa còn nhân viên | `deactivateKhoa_hasActiveStaff_throwsBusinessRule` |
 | BR-N1 | Nhân viên phải thuộc một khoa đang hoạt động | `createNhanVien_inactiveKhoa_throwsBusinessRule` |
-| BR-N2 | `BAC_SI` bắt buộc có `so_chung_chi` | `createNhanVien_doctorWithoutCert_throwsBusinessRule` |
+| BR-N2 | `BAC_SI` bắt buộc có `license_number` | `createNhanVien_doctorWithoutCert_throwsBusinessRule` |
 | BR-N3 | Chuyển khoa phải publish event, không xóa rồi tạo lại | `changeDepartment_valid_publishesStaffDepartmentChanged` |
 | BR-N4 | Chuyển về đúng khoa cũ là no-op | `changeDepartment_sameKhoa_publishesNothing` |
-| BR-T1 | `ten_dang_nhap` duy nhất | `createTaiKhoan_duplicateUsername_throwsDuplicate` |
-| BR-T2 | Tài khoản `PATIENT` không có `ma_nhan_vien` | `createTaiKhoan_patientWithStaffId_throwsBusinessRule` |
+| BR-T1 | `username` duy nhất | `createTaiKhoan_duplicateUsername_throwsDuplicate` |
+| BR-T2 | Tài khoản `PATIENT` không có `staff_id` | `createTaiKhoan_patientWithStaffId_throwsBusinessRule` |
 | BR-T3 | Mật khẩu lưu dạng BCrypt hash | `createTaiKhoan_storesHashNotPlaintext` |
 | BR-T4 | Tài khoản bị khóa không đăng nhập được | `verify_disabledAccount_throwsInvalidCredentials` |
 | BR-T5 | Sai user và sai mật khẩu trả lỗi giống hệt nhau | `verify_unknownUser_sameErrorCodeAsWrongPassword` |
 
 ## 11. Điểm dễ sai
 
-- `KHOA.truong_khoa` và `NHAN_VIEN.ma_khoa` tham chiếu **vòng tròn**. Phải tạo cả hai bảng trước rồi mới thêm khóa ngoại (DDL ở trên đã làm vậy). Trong JPA, ánh xạ `truongKhoa` là cột `UUID` thuần, **không** dùng `@ManyToOne` — nếu không Hibernate không giải được vòng lặp khi insert.
+- `DEPARTMENT.department_head_id` và `STAFF.department_id` tham chiếu **vòng tròn**. Phải tạo cả hai bảng trước rồi mới thêm khóa ngoại (DDL ở trên đã làm vậy). Trong JPA, thuộc tính `truongKhoa` ánh xạ vào cột `department_head_id` dưới dạng `UUID` thuần, **không** dùng `@ManyToOne` — nếu không Hibernate không giải được vòng lặp khi insert.
 - `POST /accounts/verify` **tuyệt đối không** được route ra ngoài. Gateway gọi nó theo kiểu service-to-service; bảng route của gateway chỉ mở `/api/v1/auth/*` cho client.
 - Dữ liệu mẫu (vài khoa, một tài khoản ADMIN) đặt ở `V2__seed.sql`, không đặt vào `V1`. Migration chỉ được thêm mới.

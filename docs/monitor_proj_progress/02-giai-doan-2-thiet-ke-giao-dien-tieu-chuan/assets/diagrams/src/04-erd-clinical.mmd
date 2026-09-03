@@ -1,0 +1,37 @@
+erDiagram
+    APPOINTMENT ||--o| MEDICAL_RECORD : "khởi tạo lượt khám"
+    MEDICAL_RECORD ||--o{ DIAGNOSIS : "có chẩn đoán"
+
+    APPOINTMENT {
+        uuid appointment_id PK
+        uuid patient_id
+        uuid doctor_id
+        uuid department_id
+        date appointment_date
+        time appointment_time
+        varchar status
+        text reason
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MEDICAL_RECORD {
+        uuid record_id PK
+        uuid patient_id
+        uuid doctor_id
+        uuid department_id
+        date examination_date
+        text symptoms
+        uuid appointment_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DIAGNOSIS {
+        uuid diagnosis_id PK
+        uuid record_id FK
+        varchar diagnosis_name
+        text description
+        varchar icd_code
+        timestamp created_at
+    }

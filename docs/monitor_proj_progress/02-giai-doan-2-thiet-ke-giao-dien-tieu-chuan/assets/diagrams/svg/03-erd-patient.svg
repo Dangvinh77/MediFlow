@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 319.2 356" width="319.2" height="356" style="--bg:#FFFFFF;--fg:#0F172A;--line:#2563EB;--accent:#0F766E;--muted:#64748B;--surface:#F0FDFA;--border:#0F766E;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+</defs>
+<g class="entity" data-id="PATIENT" data-label="PATIENT">
+  <rect x="40" y="40" width="239.2" height="276" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="239.2" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="159.6" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">PATIENT</text>
+  <line x1="40" y1="74" x2="279.2" y2="74" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="46" y="78" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="57.155" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="76.31" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="271.2" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">patient_id</tspan></text>
+  <text x="48" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">full_name</tspan></text>
+  <text x="48" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">date</tspan></text>
+  <text x="271.2" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">date_of_birth</tspan></text>
+  <text x="48" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">gender</tspan></text>
+  <rect x="46" y="166" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="57.155" y="173" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">UK</text>
+  <text x="76.31" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">identity_number</tspan></text>
+  <text x="48" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">address</tspan></text>
+  <text x="48" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">phone_number</tspan></text>
+  <text x="48" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">email</tspan></text>
+  <text x="48" y="261" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="271.2" y="261" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">health_insurance_number</tspan></text>
+  <text x="48" y="283" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="271.2" y="283" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">created_at</tspan></text>
+  <text x="48" y="305" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="271.2" y="305" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">updated_at</tspan></text>
+</g>
+</svg>

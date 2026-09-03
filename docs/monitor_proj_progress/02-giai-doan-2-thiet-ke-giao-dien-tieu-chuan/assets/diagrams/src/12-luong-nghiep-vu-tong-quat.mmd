@@ -1,0 +1,37 @@
+flowchart TB
+    START([Bệnh nhân cần khám])
+    PAT[Tiếp nhận hoặc tra cứu bệnh nhân]
+    APP[Tạo và xác nhận lịch hẹn]
+    EXAM[Bác sĩ khám, lập hồ sơ và chẩn đoán]
+    NEEDLAB{Cần xét nghiệm?}
+    LAB[Thực hiện và công bố kết quả]
+    REVIEW[Bác sĩ đánh giá kết quả]
+    NEEDRX{Cần kê đơn?}
+    RX[Lập đơn thuốc và khoản phí]
+    FEE[Tổng hợp các khoản phí]
+    PAY[Thanh toán hóa đơn]
+    PAID{Thanh toán thành công?}
+    NEEDDISP{Có đơn thuốc?}
+    DISP[Giữ tồn và cấp phát thuốc]
+    DISPENSED{Cấp phát thành công?}
+    COMP[Bù trừ hoặc hoàn tiền]
+    FAIL[Thông báo lỗi và xử lý lại]
+    DONE[Hoàn tất lượt khám]
+    NOTICE[Thông báo bệnh nhân]
+    REPORT[Cập nhật báo cáo]
+    END([Kết thúc])
+
+    START --> PAT --> APP --> EXAM --> NEEDLAB
+    NEEDLAB -->|Có| LAB --> REVIEW --> NEEDRX
+    NEEDLAB -->|Không| NEEDRX
+    NEEDRX -->|Có| RX --> PAY
+    NEEDRX -->|Không| FEE --> PAY
+    PAID -->|Không| FAIL
+    PAY --> PAID
+    PAID -->|Có| NEEDDISP
+    NEEDDISP -->|Không| DONE
+    NEEDDISP -->|Có| DISP --> DISPENSED
+    DISPENSED -->|Có| DONE
+    DISPENSED -->|Không| COMP --> FAIL
+    DONE --> NOTICE --> END
+    DONE --> REPORT --> END

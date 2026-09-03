@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730.758 498" width="730.758" height="498" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="LAB_TEST" data-entity2="LAB_RESULT" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="trả kết quả" points="266,309 504.358,309" fill="none" stroke="#2563EB" stroke-width="1" />
+<g class="entity" data-id="LAB_TEST" data-label="LAB_TEST">
+  <rect x="40" y="160" width="226" height="298" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="40" y="160" width="226" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="153" y="177" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">LAB_TEST</text>
+  <line x1="40" y1="194" x2="266" y2="194" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="46" y="198" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="205" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="76.31" y="205" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="258" y="205" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">test_id</tspan></text>
+  <text x="48" y="227" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="258" y="227" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">record_id</tspan></text>
+  <text x="48" y="249" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="258" y="249" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">patient_id</tspan></text>
+  <text x="48" y="271" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="258" y="271" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">requesting_department_id</tspan></text>
+  <text x="48" y="293" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="258" y="293" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">test_type</tspan></text>
+  <text x="48" y="315" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">date</tspan></text>
+  <text x="258" y="315" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">requested_date</tspan></text>
+  <text x="48" y="337" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">date</tspan></text>
+  <text x="258" y="337" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">performed_date</tspan></text>
+  <text x="48" y="359" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="258" y="359" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">status</tspan></text>
+  <text x="48" y="381" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">text</tspan></text>
+  <text x="258" y="381" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">conclusion</tspan></text>
+  <text x="48" y="403" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">boolean</tspan></text>
+  <text x="258" y="403" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">is_paid</tspan></text>
+  <text x="48" y="425" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="258" y="425" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="48" y="447" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="258" y="447" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="LAB_RESULT" data-label="LAB_RESULT">
+  <rect x="504.358" y="215" width="186.4" height="188" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="504.358" y="215" width="186.4" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="597.558" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">LAB_RESULT</text>
+  <line x1="504.358" y1="249" x2="690.758" y2="249" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="510.358" y="253" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="521.513" y="260" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="540.6679999999999" y="260" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="682.758" y="260" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">result_id</tspan></text>
+  <rect x="510.358" y="275" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="521.513" y="282" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="540.6679999999999" y="282" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="682.758" y="282" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">test_id</tspan></text>
+  <text x="512.358" y="304" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="682.758" y="304" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">indicator</tspan></text>
+  <text x="512.358" y="326" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="682.758" y="326" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">value</tspan></text>
+  <text x="512.358" y="348" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="682.758" y="348" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">unit</tspan></text>
+  <text x="512.358" y="370" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="682.758" y="370" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">reference_range</tspan></text>
+  <text x="512.358" y="392" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="682.758" y="392" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+</g>
+<g class="entity" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT">
+  <rect x="40" y="40" width="179.79999999999998" height="100" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="40" y="40" width="179.79999999999998" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="129.89999999999998" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">PROCESSED_EVENT</text>
+  <line x1="40" y1="74" x2="219.79999999999998" y2="74" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="46" y="78" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="76.31" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="211.79999999999998" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">event_id</tspan></text>
+  <text x="48" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="211.79999999999998" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">routing_key</tspan></text>
+  <text x="48" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="211.79999999999998" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">processed_at</tspan></text>
+</g>
+<line x1="270" y1="303" x2="270" y2="315" stroke="#2563EB" stroke-width="1.25" />
+<line x1="274" y1="303" x2="274" y2="315" stroke="#2563EB" stroke-width="1.25" />
+<line x1="500.358" y1="316" x2="488.358" y2="309" stroke="#2563EB" stroke-width="1.25" />
+<line x1="500.358" y1="309" x2="488.358" y2="309" stroke="#2563EB" stroke-width="1.25" />
+<line x1="500.358" y1="302" x2="488.358" y2="309" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="484.358" cy="309" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<rect x="356" y="298.85" width="58.358" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="385.179" y="309" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">trả kết quả</text>
+</svg>

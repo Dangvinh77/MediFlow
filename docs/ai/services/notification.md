@@ -1,13 +1,20 @@
 # Service: notification
 
 **Source of truth:** `docs/eproject_general_plan/notification-service.html`
-**Module:** `backend/notification-service/` · **Base path:** `/api/v1/notifications` · **DB table:** `THONG_BAO`
+**Module:** `backend/notification-service/` · **Base path:** `/api/v1/notifications` · **DB tables:** `NOTIFICATION`, `PROCESSED_EVENT`
 
 ## Bounded context
-Owns: notification history (`THONG_BAO`). Mostly event-driven. Does NOT own core business data.
+Owns: notification history (`NOTIFICATION`) and consumer idempotency records (`PROCESSED_EVENT`). Mostly event-driven. Does NOT own core business data.
 
-## Data — `THONG_BAO`
-`ma_thong_bao` UUID PK · `ma_benh_nhan` UUID · `tieu_de` VARCHAR(255) · `noi_dung` TEXT · `loai` ENUM('EMAIL','SMS','IN_APP') · `trang_thai` ENUM('PENDING','SENT','FAILED') · `ngay_tao` TIMESTAMP · `ngay_gui` TIMESTAMP.
+## Data
+
+### `NOTIFICATION`
+
+`notification_id` UUID PK · `patient_id` UUID · `title` VARCHAR(255) · `content` TEXT · `channel` ENUM('EMAIL','SMS','IN_APP') · `recipient_address` VARCHAR(150) · `status` ENUM('PENDING','SENT','FAILED') · `failure_reason` VARCHAR(255) · `retry_count` INT · `created_at` TIMESTAMPTZ · `sent_at` TIMESTAMPTZ.
+
+### `PROCESSED_EVENT`
+
+`event_id` UUID PK · `routing_key` VARCHAR(100) · `processed_at` TIMESTAMPTZ.
 
 ## Endpoints
 | Method | Path | Roles |
@@ -28,4 +35,4 @@ Owns: notification history (`THONG_BAO`). Mostly event-driven. Does NOT own core
 3. Persist notification history (PENDING → SENT/FAILED).
 
 ## Flow
-Consume event → create `THONG_BAO` (PENDING) → send email/SMS (integration or mock) → update status → optionally publish `notification.sent`. Consumers idempotent.
+Consume event → create `NOTIFICATION` (PENDING) → send email/SMS (integration or mock) → update status → optionally publish `notification.sent`. Consumers idempotent through `PROCESSED_EVENT`.

@@ -1,0 +1,70 @@
+erDiagram
+    PRESCRIPTION ||--|{ PRESCRIPTION_LINE : "gồm các dòng thuốc"
+    DRUG ||--o{ PRESCRIPTION_LINE : "được kê"
+    PRESCRIPTION ||--o| DISPENSE_SLIP : "được cấp một lần"
+    PRESCRIPTION ||--o{ STOCK_RESERVATION : "giữ tồn cho đơn"
+    DRUG ||--o{ STOCK_RESERVATION : "giữ số lượng"
+
+    DRUG {
+        uuid drug_id PK
+        varchar drug_name
+        varchar active_ingredient
+        varchar unit
+        decimal price
+        int stock_quantity
+        date expiry_date
+        varchar manufacturer
+        int low_stock_threshold
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRESCRIPTION {
+        uuid prescription_id PK
+        uuid record_id
+        uuid patient_id
+        uuid doctor_id
+        uuid department_id
+        date prescribed_date
+        decimal total_amount
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRESCRIPTION_LINE {
+        uuid line_id PK
+        uuid prescription_id FK
+        uuid drug_id FK
+        int quantity
+        decimal unit_price
+        varchar dosage
+        decimal line_total
+    }
+
+    DISPENSE_SLIP {
+        uuid dispense_id PK
+        uuid prescription_id FK,UK
+        varchar status
+        timestamp dispensed_at
+        uuid dispensed_by
+        varchar failure_reason
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STOCK_RESERVATION {
+        uuid reservation_id PK
+        uuid drug_id FK
+        uuid prescription_id FK
+        int quantity
+        varchar status
+        timestamp expires_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PROCESSED_EVENT {
+        uuid event_id PK
+        varchar routing_key
+        timestamp processed_at
+    }

@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1154.724 356" width="1154.724" height="356" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="DEPARTMENT" data-entity2="STAFF" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="quản lý nhân sự" points="252.79999999999998,209.33333333333331 435.51199999999994,209.33333333333331 435.51199999999994,224 515.512,224" fill="none" stroke="#2563EB" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="STAFF" data-entity2="ACCOUNT" data-cardinality1="one" data-cardinality2="zero-one" data-identifying="true" data-label="được cấp" points="695.3119999999999,178 928.3239999999998,178" fill="none" stroke="#2563EB" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="DEPARTMENT" data-entity2="STAFF" data-cardinality1="zero-one" data-cardinality2="zero-one" data-identifying="true" data-label="trưởng khoa" points="252.79999999999998,132 515.512,132" fill="none" stroke="#2563EB" stroke-width="1" />
+<g class="entity" data-id="DEPARTMENT" data-label="DEPARTMENT">
+  <rect x="40" y="54.66666666666667" width="212.79999999999998" height="232" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="40" y="54.66666666666667" width="212.79999999999998" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="146.39999999999998" y="71.66666666666667" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">DEPARTMENT</text>
+  <line x1="40" y1="88.66666666666667" x2="252.79999999999998" y2="88.66666666666667" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="46" y="92.66666666666667" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="99.66666666666667" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="76.31" y="99.66666666666667" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="244.79999999999998" y="99.66666666666667" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_id</tspan></text>
+  <text x="48" y="121.66666666666667" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="244.79999999999998" y="121.66666666666667" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_name</tspan></text>
+  <rect x="46" y="136.66666666666669" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="143.66666666666669" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">UK</text>
+  <text x="76.31" y="143.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="244.79999999999998" y="143.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">abbreviation</tspan></text>
+  <text x="48" y="165.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="244.79999999999998" y="165.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_type</tspan></text>
+  <rect x="46" y="180.66666666666669" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="57.155" y="187.66666666666669" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="76.31" y="187.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="244.79999999999998" y="187.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_head_id</tspan></text>
+  <text x="48" y="209.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="244.79999999999998" y="209.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">location</tspan></text>
+  <text x="48" y="231.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">boolean</tspan></text>
+  <text x="244.79999999999998" y="231.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">is_active</tspan></text>
+  <text x="48" y="253.66666666666669" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="244.79999999999998" y="253.66666666666669" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="48" y="275.6666666666667" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="244.79999999999998" y="275.6666666666667" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="STAFF" data-label="STAFF">
+  <rect x="515.512" y="40" width="179.79999999999998" height="276" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="515.512" y="40" width="179.79999999999998" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="605.4119999999999" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">STAFF</text>
+  <line x1="515.512" y1="74" x2="695.3119999999999" y2="74" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="521.512" y="78" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="532.6669999999999" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="551.8219999999999" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="687.3119999999999" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">staff_id</tspan></text>
+  <text x="523.512" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">full_name</tspan></text>
+  <rect x="521.512" y="122" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="532.6669999999999" y="129" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="551.8219999999999" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="687.3119999999999" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">department_id</tspan></text>
+  <text x="523.512" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">job_title</tspan></text>
+  <text x="523.512" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">specialization</tspan></text>
+  <text x="523.512" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">license_number</tspan></text>
+  <text x="523.512" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">phone_number</tspan></text>
+  <text x="523.512" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">email</tspan></text>
+  <text x="523.512" y="261" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="687.3119999999999" y="261" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">status</tspan></text>
+  <text x="523.512" y="283" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="687.3119999999999" y="283" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="523.512" y="305" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="687.3119999999999" y="305" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="ACCOUNT" data-label="ACCOUNT">
+  <rect x="928.3239999999998" y="62" width="186.4" height="232" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <rect x="928.3239999999998" y="62" width="186.4" height="34" rx="0" ry="0" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="1021.5239999999999" y="79" text-anchor="middle" font-size="13" font-weight="700" fill="#0F172A" dy="4.55">ACCOUNT</text>
+  <line x1="928.3239999999998" y1="96" x2="1114.724" y2="96" stroke="#0F766E" stroke-width="0.75" />
+  <rect x="934.3239999999998" y="100" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="945.4789999999998" y="107" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">PK</text>
+  <text x="964.6339999999998" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="1106.724" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">account_id</tspan></text>
+  <rect x="934.3239999999998" y="122" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="945.4789999999998" y="129" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">UK</text>
+  <text x="964.6339999999998" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="1106.724" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">username</tspan></text>
+  <text x="936.3239999999998" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="1106.724" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">password_hash</tspan></text>
+  <rect x="934.3239999999998" y="166" width="22.31" height="14" rx="2" ry="2" fill="#e7e8ea" />
+  <text x="945.4789999999998" y="173" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="#64748B">FK</text>
+  <text x="964.6339999999998" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">uuid</tspan></text>
+  <text x="1106.724" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">staff_id</tspan></text>
+  <text x="936.3239999999998" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">varchar</tspan></text>
+  <text x="1106.724" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">role</tspan></text>
+  <text x="936.3239999999998" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">boolean</tspan></text>
+  <text x="1106.724" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">is_active</tspan></text>
+  <text x="936.3239999999998" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="1106.724" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">last_login_at</tspan></text>
+  <text x="936.3239999999998" y="261" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="1106.724" y="261" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">created_at</tspan></text>
+  <text x="936.3239999999998" y="283" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">timestamp</tspan></text>
+  <text x="1106.724" y="283" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="#64748B">updated_at</tspan></text>
+</g>
+<line x1="256.79999999999995" y1="203.33333333333331" x2="256.79999999999995" y2="215.33333333333331" stroke="#2563EB" stroke-width="1.25" />
+<line x1="260.79999999999995" y1="203.33333333333331" x2="260.79999999999995" y2="215.33333333333331" stroke="#2563EB" stroke-width="1.25" />
+<line x1="511.51199999999994" y1="231" x2="499.51199999999994" y2="224" stroke="#2563EB" stroke-width="1.25" />
+<line x1="511.51199999999994" y1="224" x2="499.51199999999994" y2="224" stroke="#2563EB" stroke-width="1.25" />
+<line x1="511.51199999999994" y1="217" x2="499.51199999999994" y2="224" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="495.51199999999994" cy="224" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<line x1="699.3119999999999" y1="172" x2="699.3119999999999" y2="184" stroke="#2563EB" stroke-width="1.25" />
+<line x1="703.3119999999999" y1="172" x2="703.3119999999999" y2="184" stroke="#2563EB" stroke-width="1.25" />
+<line x1="924.3239999999998" y1="184" x2="924.3239999999998" y2="172" stroke="#2563EB" stroke-width="1.25" />
+<line x1="920.3239999999998" y1="184" x2="920.3239999999998" y2="172" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="916.3239999999998" cy="178" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<line x1="256.79999999999995" y1="126" x2="256.79999999999995" y2="138" stroke="#2563EB" stroke-width="1.25" />
+<line x1="260.79999999999995" y1="126" x2="260.79999999999995" y2="138" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="264.79999999999995" cy="132" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<line x1="511.51199999999994" y1="138" x2="511.51199999999994" y2="126" stroke="#2563EB" stroke-width="1.25" />
+<line x1="507.51199999999994" y1="138" x2="507.51199999999994" y2="126" stroke="#2563EB" stroke-width="1.25" />
+<circle cx="503.51199999999994" cy="132" r="4" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.25" />
+<rect x="350.1333333333333" y="199.1833333333333" width="82.71200000000002" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="391.4893333333333" y="209.33333333333331" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">quản lý nhân sự</text>
+<rect x="785.3119999999999" y="167.85" width="53.012" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="811.8179999999999" y="178" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">được cấp</text>
+<rect x="351.11599999999993" y="121.85" width="66.08000000000001" height="20.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="0.5" />
+<text x="384.15599999999995" y="132" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">trưởng khoa</text>
+</svg>

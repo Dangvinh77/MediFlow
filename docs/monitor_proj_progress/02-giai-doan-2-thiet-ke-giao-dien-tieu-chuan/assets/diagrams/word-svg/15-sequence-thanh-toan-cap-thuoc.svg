@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1058.1855 942" width="1058.1855" height="942" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#0F766E" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="#0F766E" stroke-width="1" />
+  </marker>
+</defs>
+<g class="block" data-type="alt" data-label="Đủ tồn kho và đơn hợp lệ">
+  <rect x="298.9425" y="468" width="729.243" height="424" rx="0" ry="0" fill="none" stroke="#0F766E" stroke-width="1" />
+  <rect x="298.9425" y="468" width="160.87000000000003" height="18" fill="#f3f3f4" stroke="#0F766E" stroke-width="1" />
+  <text x="304.9425" y="477" font-size="11" font-weight="600" fill="#64748B" dy="3.8499999999999996">alt [Đủ tồn kho và đơn hợp lệ]</text>
+  <line x1="298.9425" y1="694" x2="1028.1855" y2="694" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+  <text x="306.9425" y="708" font-size="11" text-anchor="start" font-weight="400" fill="#64748B" dy="3.8499999999999996">[Thiếu tồn hoặc thuốc hết hạn]</text>
+</g>
+<line class="lifeline" data-actor="Doctor" x1="70" y1="70" x2="70" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Cashier" x1="210" y1="70" x2="210" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Pharmacist" x1="350" y1="70" x2="350" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="GW" x1="490" y1="70" x2="490" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="PHA" x1="655.8340000000001" y1="70" x2="655.8340000000001" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="BIL" x1="827.596" y1="70" x2="827.596" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="MQ" x1="972.682" y1="70" x2="972.682" y2="912" stroke="#2563EB" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="Doctor" data-to="GW" data-label="Kê đơn" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="70" y1="90" x2="490" y2="90" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="280" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Kê đơn</text>
+</g>
+<g class="message" data-from="GW" data-to="PHA" data-label="Tạo PRESCRIPTION và các dòng thuốc" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="490" y1="130" x2="655.8340000000001" y2="130" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="572.917" y="120" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Tạo PRESCRIPTION và các dòng thuốc</text>
+</g>
+<g class="message" data-from="PHA" data-to="MQ" data-label="prescription.created" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="655.8340000000001" y1="170" x2="972.682" y2="170" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="814.258" y="160" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">prescription.created</text>
+</g>
+<g class="message" data-from="MQ" data-to="BIL" data-label="Tạo FEE và INVOICE" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="972.682" y1="210" x2="827.596" y2="210" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="900.139" y="200" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Tạo FEE và INVOICE</text>
+</g>
+<g class="message" data-from="Cashier" data-to="GW" data-label="Xác nhận thanh toán" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="210" y1="250" x2="490" y2="250" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="350" y="240" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Xác nhận thanh toán</text>
+</g>
+<g class="message" data-from="GW" data-to="BIL" data-label="Ghi nhận thanh toán" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="490" y1="290" x2="827.596" y2="290" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="658.798" y="280" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Ghi nhận thanh toán</text>
+</g>
+<g class="message" data-from="BIL" data-to="MQ" data-label="payment.completed" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="827.596" y1="330" x2="972.682" y2="330" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="900.139" y="320" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="message" data-from="MQ" data-to="PHA" data-label="Bắt đầu cấp phát" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="972.682" y1="370" x2="655.8340000000001" y2="370" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="814.258" y="360" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Bắt đầu cấp phát</text>
+</g>
+<g class="message" data-from="PHA" data-to="PHA" data-label="Khóa ghi và giữ tồn kho" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="655.8340000000001,410 685.8340000000001,410 685.8340000000001,430 655.8340000000001,430" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="693.8340000000001" y="420" font-size="11" text-anchor="start" font-weight="400" fill="#64748B" dy="3.8499999999999996">Khóa ghi và giữ tồn kho</text>
+</g>
+<g class="message" data-from="Pharmacist" data-to="PHA" data-label="Xác nhận cấp thuốc" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="350" y1="508" x2="655.8340000000001" y2="508" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="502.91700000000003" y="498" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Xác nhận cấp thuốc</text>
+</g>
+<g class="message" data-from="PHA" data-to="PHA" data-label="Trừ tồn và tạo DISPENSE_SLIP" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="655.8340000000001,548 685.8340000000001,548 685.8340000000001,568 655.8340000000001,568" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="693.8340000000001" y="558" font-size="11" text-anchor="start" font-weight="400" fill="#64748B" dy="3.8499999999999996">Trừ tồn và tạo DISPENSE_SLIP</text>
+</g>
+<g class="message" data-from="PHA" data-to="MQ" data-label="prescription.filled" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="655.8340000000001" y1="618" x2="972.682" y2="618" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="814.258" y="608" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">prescription.filled</text>
+</g>
+<g class="message" data-from="MQ" data-to="BIL" data-label="Saga COMPLETED" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="972.682" y1="658" x2="827.596" y2="658" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="900.139" y="648" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Saga COMPLETED</text>
+</g>
+<g class="message" data-from="PHA" data-to="MQ" data-label="prescription.dispense.failed" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="655.8340000000001" y1="722" x2="972.682" y2="722" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="814.258" y="712" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">prescription.dispense.failed</text>
+</g>
+<g class="message" data-from="MQ" data-to="BIL" data-label="Yêu cầu bù trừ" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="972.682" y1="762" x2="827.596" y2="762" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="900.139" y="752" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">Yêu cầu bù trừ</text>
+</g>
+<g class="message" data-from="BIL" data-to="BIL" data-label="Hoàn tiền, saga REFUNDED" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="827.596,802 857.596,802 857.596,822 827.596,822" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="865.596" y="812" font-size="11" text-anchor="start" font-weight="400" fill="#64748B" dy="3.8499999999999996">Hoàn tiền, saga REFUNDED</text>
+</g>
+<g class="message" data-from="BIL" data-to="MQ" data-label="payment.failed" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="827.596" y1="872" x2="972.682" y2="872" stroke="#2563EB" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="900.139" y="862" font-size="11" text-anchor="middle" font-weight="400" fill="#64748B" dy="3.8499999999999996">payment.failed</text>
+</g>
+<g class="actor" data-id="Doctor" data-label="Bác sĩ" data-type="participant">
+  <rect x="30" y="30" width="80" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="70" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">Bác sĩ</text>
+</g>
+<g class="actor" data-id="Cashier" data-label="Thu ngân" data-type="participant">
+  <rect x="165.2375" y="30" width="89.525" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">Thu ngân</text>
+</g>
+<g class="actor" data-id="Pharmacist" data-label="Dược sĩ" data-type="participant">
+  <rect x="308.9425" y="30" width="82.11500000000001" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="350" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">Dược sĩ</text>
+</g>
+<g class="actor" data-id="GW" data-label="API Gateway" data-type="participant">
+  <rect x="436.3455" y="30" width="107.30900000000001" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="490" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">API Gateway</text>
+</g>
+<g class="actor" data-id="PHA" data-label="Pharmacy Service" data-type="participant">
+  <rect x="583.6545000000001" y="30" width="144.359" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="655.8340000000001" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">Pharmacy Service</text>
+</g>
+<g class="actor" data-id="BIL" data-label="Billing Service" data-type="participant">
+  <rect x="768.0135" y="30" width="119.16499999999999" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="827.596" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">Billing Service</text>
+</g>
+<g class="actor" data-id="MQ" data-label="RabbitMQ" data-type="participant">
+  <rect x="927.1785" y="30" width="91.007" height="40" rx="4" ry="4" fill="#F0FDFA" stroke="#0F766E" stroke-width="1" />
+  <text x="972.682" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="#0F172A" dy="4.55">RabbitMQ</text>
+</g>
+</svg>

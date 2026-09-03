@@ -1,0 +1,56 @@
+flowchart TB
+    WEB[Web Next.js]
+    MOBILE[Mobile Flutter]
+    GW[API Gateway :8080<br/>JWT, RBAC, rate limit, routing]
+    EUREKA[Eureka Server :8761<br/>Service discovery]
+    MQ[(RabbitMQ<br/>Topic: mediflow.events)]
+
+    subgraph BUSINESS[Business microservices]
+        ORG[Organization :8089]
+        PAT[Patient :8081]
+        CLI[Clinical :8082]
+        LAB[Lab :8084]
+        PHA[Pharmacy :8085]
+        BIL[Billing :8086]
+        NOTI[Notification :8087]
+        REP[Report :8088]
+    end
+
+    DORG[(Organization DB)]
+    DPAT[(Patient DB)]
+    DCLI[(Clinical DB)]
+    DLAB[(Lab DB)]
+    DPHA[(Pharmacy DB)]
+    DBIL[(Billing DB)]
+    DNOTI[(Notification DB)]
+    DREP[(Report DB)]
+
+    WEB -->|HTTPS /api/v1| GW
+    MOBILE -->|HTTPS /api/v1| GW
+    GW -.->|Resolve service name| EUREKA
+    GW --> ORG
+    GW --> PAT
+    GW --> CLI
+    GW --> LAB
+    GW --> PHA
+    GW --> BIL
+    GW --> NOTI
+    GW --> REP
+
+    ORG --- DORG
+    PAT --- DPAT
+    CLI --- DCLI
+    LAB --- DLAB
+    PHA --- DPHA
+    BIL --- DBIL
+    NOTI --- DNOTI
+    REP --- DREP
+
+    ORG <--> MQ
+    PAT <--> MQ
+    CLI <--> MQ
+    LAB <--> MQ
+    PHA <--> MQ
+    BIL <--> MQ
+    NOTI <--> MQ
+    REP <--> MQ

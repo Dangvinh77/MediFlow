@@ -1,0 +1,29 @@
+flowchart LR
+    ORG[Organization]
+    PAT[Patient]
+    CLI[Clinical]
+    LAB[Lab]
+    PHA[Pharmacy]
+    BIL[Billing]
+    NOTI[Notification]
+    REP[Report]
+    OPS[Operations]
+    MQ[(RabbitMQ<br/>mediflow.events)]
+    DLQ[(DLX / DLQ)]
+
+    ORG -->|staff.department.changed| MQ
+    PAT -->|patient.created| MQ
+    CLI -->|appointment.created<br/>medicalrecord.created| MQ
+    LAB -->|lab.result.created| MQ
+    PHA -->|prescription.created<br/>prescription.filled<br/>stock.low| MQ
+    BIL -->|invoice.created<br/>payment.completed<br/>payment.failed| MQ
+    NOTI -->|notification.sent| MQ
+
+    MQ -->|patient, appointment,<br/>lab, payment, dispense| NOTI
+    MQ -->|clinical, lab,<br/>pharmacy, billing events| REP
+    MQ -->|medicalrecord.created<br/>payment.completed| LAB
+    MQ -->|payment.completed| PHA
+    MQ -->|prescription.created<br/>dispense result| BIL
+    MQ -->|lab.result.created<br/>prescription.filled| CLI
+    MQ -->|stock.low| OPS
+    MQ -.->|retry vượt giới hạn| DLQ
