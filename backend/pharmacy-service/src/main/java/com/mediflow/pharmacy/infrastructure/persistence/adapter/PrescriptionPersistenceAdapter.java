@@ -25,13 +25,21 @@ import lombok.RequiredArgsConstructor;
 public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPort {
 
     private final PrescriptionJpaRepository jpaRepo;
+@Override
+public Prescription save(Prescription prescription) {
+    PrescriptionJpaEntity entity = toEntity(prescription);
 
-    @Override
-    public Prescription save(Prescription prescription) {
-        PrescriptionJpaEntity entity = toEntity(prescription);
-        PrescriptionJpaEntity saved = jpaRepo.save(entity); // cascade PERSIST/REMOVE theo @OneToMany
-        return toDomain(saved);
-    }
+    /*
+     * Flush để:
+     * - UUID của đơn và từng dòng đã được sinh;
+     * - createdAt đã được Hibernate gán;
+     * - constraint database được kiểm tra ngay trong transaction hiện tại.
+     */
+    PrescriptionJpaEntity saved =
+            jpaRepo.saveAndFlush(entity);
+
+    return toDomain(saved);
+}
 
     @Override
     public Optional<Prescription> findById(UUID id) {

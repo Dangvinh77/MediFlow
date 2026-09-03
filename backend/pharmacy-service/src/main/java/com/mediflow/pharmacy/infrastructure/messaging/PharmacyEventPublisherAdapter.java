@@ -1,53 +1,101 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.stereotype.Component;
-
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Adapter cho {@link PharmacyEventPublisherPort} — publish event ra RabbitMQ.
- * {@code application} chỉ gọi port (không biết RabbitTemplate); mọi thứ AMQP nằm ở đây.
+ * Adapter phát các sự kiện nghiệp vụ của pharmacy-service.
  *
- * <p>Exchange: {@code mediflow.events} (topic) — convention chung docs/ai/06-events-rabbitmq.md.
- * Routing key thống nhất theo tên event: {@code pharmacy.<tên>}. Consumer (billing) sẽ khai
- * binding của riêng nó, service này chỉ publish, không đụng queue.
+ * <p>Khi đang có transaction, payload chỉ được gửi sau commit thành công.
+ * Nếu transaction rollback, callback afterCommit không được thực thi và bên
+ * ngoài sẽ không nhìn thấy sự kiện cho dữ liệu không tồn tại.</p>
  */
 @Component
 @RequiredArgsConstructor
 public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort {
 
-    private static final String EXCHANGE = "mediflow.events";
+ private static final String EXCHANGE = "mediflow.events";
+
+    private static final String PRESCRIPTION_CREATED =
+            "prescription.created";
+
+    private static final String PRESCRIPTION_FILLED =
+            "prescription.filled";
+
+    private static final String PRESCRIPTION_DISPENSE_FAILED =
+            "prescription.dispense.failed";
+
+    private static final String STOCK_LOW =
+            "stock.low";
 
     private final RabbitTemplate rabbitTemplate;
+     @Override
+    public void publishPrescriptionCreated(
+            PrescriptionCreatedEvent event) {
 
-    @Override
-    public void publishPrescriptionCreated(PrescriptionCreatedEvent event) {
-        publish("pharmacy.prescription.created", event);
+        publishAfterCommit(PRESCRIPTION_CREATED, event);
+    }
+
+      @Override
+    public void publishPrescriptionFilled(
+            PrescriptionFilledEvent event) {
+
+        publishAfterCommit(PRESCRIPTION_FILLED, event);
     }
 
     @Override
-    public void publishPrescriptionFilled(PrescriptionFilledEvent event) {
-        publish("pharmacy.prescription.filled", event);
-    }
+    public void publishPrescriptionDispenseFailed(
+            PrescriptionDispenseFailedEvent event) {
 
-    @Override
-    public void publishPrescriptionDispenseFailed(PrescriptionDispenseFailedEvent event) {
-        publish("pharmacy.prescription.dispense.failed", event);
+        publishAfterCommit(PRESCRIPTION_DISPENSE_FAILED, event);
     }
 
     @Override
     public void publishStockLow(StockLowEvent event) {
-        publish("pharmacy.stock.low", event);
+        publishAfterCommit(STOCK_LOW, event);
     }
 
-    private void publish(String routingKey, Object payload) {
-        rabbitTemplate.convertAndSend(EXCHANGE, routingKey, payload);
+     /**
+     * Đăng ký gửi payload sau commit nếu đang ở trong transaction.
+     *
+     * <p>Khi adapter được gọi ngoài transaction, chẳng hạn từ unit test hoặc
+     * một tác vụ độc lập, payload được gửi ngay.</p>
+     */
+    private void publishAfterCommit(
+            String routingKey,
+            Object payload) {
+
+        if (!TransactionSynchronizationManager
+                .isSynchronizationActive()) {
+
+            publishNow(routingKey, payload);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        publishNow(routingKey, payload);
+                    }
+                });
+    }
+
+    private void publishNow(
+            String routingKey,
+            Object payload) {
+
+        rabbitTemplate.convertAndSend(
+                EXCHANGE,
+                routingKey,
+                payload);
     }
 }
