@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 954.12 828" width="954.12" height="828" style="--bg:#FFFFFF;--fg:#0F172A;--line:#2563EB;--accent:#0F766E;--muted:#64748B;--surface:#F0FDFA;--border:#0F766E;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Segoe%20UI:wght@400;500;600;700&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');
+  text { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="PRESCRIPTION" data-entity2="PRESCRIPTION_LINE" data-cardinality1="one" data-cardinality2="many" data-identifying="true" data-label="gồm các dòng thuốc" points="439.4,625 469.4,625 469.4,445.3333333333333 721.12,445.3333333333333" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="DRUG" data-entity2="PRESCRIPTION_LINE" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="được kê" points="439.4,347 641.12,347 641.12,382.66666666666663 721.12,382.6666666666667" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="PRESCRIPTION" data-entity2="DISPENSE_SLIP" data-cardinality1="one" data-cardinality2="zero-one" data-identifying="true" data-label="được cấp một lần" points="439.4,683 721.12,683" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="PRESCRIPTION" data-entity2="STOCK_RESERVATION" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="giữ tồn cho đơn" points="439.4,567 459.4,567 459.4,180 721.12,180" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="DRUG" data-entity2="STOCK_RESERVATION" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="giữ số lượng" points="439.4,255 449.4,255 449.4,145.7 641.12,145.7 641.12,110 721.12,110" fill="none" stroke="var(--_line)" stroke-width="1" />
+<g class="entity" data-id="PRESCRIPTION" data-label="PRESCRIPTION">
+  <rect x="246.39999999999998" y="509" width="193" height="232" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="246.39999999999998" y="509" width="193" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="342.9" y="526" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">PRESCRIPTION</text>
+  <line x1="246.39999999999998" y1="543" x2="439.4" y2="543" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="252.39999999999998" y="547" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="263.55499999999995" y="554" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="282.71" y="554" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="554" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">prescription_id</tspan></text>
+  <text x="254.39999999999998" y="576" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="576" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">record_id</tspan></text>
+  <text x="254.39999999999998" y="598" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="598" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">patient_id</tspan></text>
+  <text x="254.39999999999998" y="620" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="620" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">doctor_id</tspan></text>
+  <text x="254.39999999999998" y="642" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="642" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">department_id</tspan></text>
+  <text x="254.39999999999998" y="664" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">date</tspan></text>
+  <text x="431.4" y="664" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">prescribed_date</tspan></text>
+  <text x="254.39999999999998" y="686" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">decimal</tspan></text>
+  <text x="431.4" y="686" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">total_amount</tspan></text>
+  <text x="254.39999999999998" y="708" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="431.4" y="708" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">created_at</tspan></text>
+  <text x="254.39999999999998" y="730" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="431.4" y="730" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="PRESCRIPTION_LINE" data-label="PRESCRIPTION_LINE">
+  <rect x="721.12" y="320" width="193" height="188" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="721.12" y="320" width="193" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="817.62" y="337" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">PRESCRIPTION_LINE</text>
+  <line x1="721.12" y1="354" x2="914.12" y2="354" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="727.12" y="358" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="365" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="757.43" y="365" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="365" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">line_id</tspan></text>
+  <rect x="727.12" y="380" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="387" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="757.43" y="387" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="387" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">prescription_id</tspan></text>
+  <rect x="727.12" y="402" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="409" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="757.43" y="409" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="409" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">drug_id</tspan></text>
+  <text x="729.12" y="431" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">int</tspan></text>
+  <text x="906.12" y="431" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">quantity</tspan></text>
+  <text x="729.12" y="453" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">decimal</tspan></text>
+  <text x="906.12" y="453" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">unit_price</tspan></text>
+  <text x="729.12" y="475" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="906.12" y="475" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">dosage</tspan></text>
+  <text x="729.12" y="497" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">decimal</tspan></text>
+  <text x="906.12" y="497" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">line_total</tspan></text>
+</g>
+<g class="entity" data-id="DRUG" data-label="DRUG">
+  <rect x="239.79999999999998" y="163" width="199.6" height="276" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="239.79999999999998" y="163" width="199.6" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="339.59999999999997" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">DRUG</text>
+  <line x1="239.79999999999998" y1="197" x2="439.4" y2="197" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="245.79999999999998" y="201" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="256.955" y="208" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="276.10999999999996" y="208" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="431.4" y="208" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">drug_id</tspan></text>
+  <text x="247.79999999999998" y="230" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="431.4" y="230" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">drug_name</tspan></text>
+  <text x="247.79999999999998" y="252" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="431.4" y="252" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">active_ingredient</tspan></text>
+  <text x="247.79999999999998" y="274" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="431.4" y="274" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">unit</tspan></text>
+  <text x="247.79999999999998" y="296" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">decimal</tspan></text>
+  <text x="431.4" y="296" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">price</tspan></text>
+  <text x="247.79999999999998" y="318" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">int</tspan></text>
+  <text x="431.4" y="318" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">stock_quantity</tspan></text>
+  <text x="247.79999999999998" y="340" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">date</tspan></text>
+  <text x="431.4" y="340" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">expiry_date</tspan></text>
+  <text x="247.79999999999998" y="362" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="431.4" y="362" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">manufacturer</tspan></text>
+  <text x="247.79999999999998" y="384" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">int</tspan></text>
+  <text x="431.4" y="384" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">low_stock_threshold</tspan></text>
+  <text x="247.79999999999998" y="406" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="431.4" y="406" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">created_at</tspan></text>
+  <text x="247.79999999999998" y="428" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="431.4" y="428" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="DISPENSE_SLIP" data-label="DISPENSE_SLIP">
+  <rect x="721.12" y="578" width="179.79999999999998" height="210" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="721.12" y="578" width="179.79999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="811.02" y="595" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">DISPENSE_SLIP</text>
+  <line x1="721.12" y1="612" x2="900.92" y2="612" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="727.12" y="616" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="623" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="757.43" y="623" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="892.92" y="623" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">dispense_id</tspan></text>
+  <text x="729.12" y="645" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="892.92" y="645" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">prescription_id</tspan></text>
+  <text x="729.12" y="667" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="892.92" y="667" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+  <text x="729.12" y="689" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="892.92" y="689" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">dispensed_at</tspan></text>
+  <text x="729.12" y="711" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="892.92" y="711" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">dispensed_by</tspan></text>
+  <text x="729.12" y="733" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="892.92" y="733" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">failure_reason</tspan></text>
+  <text x="729.12" y="755" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="892.92" y="755" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">created_at</tspan></text>
+  <text x="729.12" y="777" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="892.92" y="777" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="STOCK_RESERVATION" data-label="STOCK_RESERVATION">
+  <rect x="721.12" y="40" width="193" height="210" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="721.12" y="40" width="193" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="817.62" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">STOCK_RESERVATION</text>
+  <line x1="721.12" y1="74" x2="914.12" y2="74" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="727.12" y="78" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="757.43" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">reservation_id</tspan></text>
+  <rect x="727.12" y="100" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="107" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="757.43" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">drug_id</tspan></text>
+  <rect x="727.12" y="122" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="738.275" y="129" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="757.43" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="906.12" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">prescription_id</tspan></text>
+  <text x="729.12" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">int</tspan></text>
+  <text x="906.12" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">quantity</tspan></text>
+  <text x="729.12" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="906.12" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+  <text x="729.12" y="195" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="906.12" y="195" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">expires_at</tspan></text>
+  <text x="729.12" y="217" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="906.12" y="217" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">created_at</tspan></text>
+  <text x="729.12" y="239" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="906.12" y="239" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">updated_at</tspan></text>
+</g>
+<g class="entity" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT">
+  <rect x="40" y="40" width="179.79999999999998" height="100" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="179.79999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="129.89999999999998" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">PROCESSED_EVENT</text>
+  <line x1="40" y1="74" x2="219.79999999999998" y2="74" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="46" y="78" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="57.155" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="76.31" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">uuid</tspan></text>
+  <text x="211.79999999999998" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">event_id</tspan></text>
+  <text x="48" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">varchar</tspan></text>
+  <text x="211.79999999999998" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">routing_key</tspan></text>
+  <text x="48" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">timestamp</tspan></text>
+  <text x="211.79999999999998" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">processed_at</tspan></text>
+</g>
+<line x1="443.4" y1="619" x2="443.4" y2="631" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="447.4" y1="619" x2="447.4" y2="631" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="452.3333333333333" x2="705.12" y2="445.3333333333333" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="445.3333333333333" x2="705.12" y2="445.3333333333333" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="438.3333333333333" x2="705.12" y2="445.3333333333333" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="443.4" y1="341" x2="443.4" y2="353" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="447.4" y1="341" x2="447.4" y2="353" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="389.6666666666667" x2="705.12" y2="382.6666666666667" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="382.6666666666667" x2="705.12" y2="382.6666666666667" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="375.6666666666667" x2="705.12" y2="382.6666666666667" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="701.12" cy="382.6666666666667" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="443.4" y1="677" x2="443.4" y2="689" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="447.4" y1="677" x2="447.4" y2="689" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="689" x2="717.12" y2="677" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="713.12" y1="689" x2="713.12" y2="677" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="709.12" cy="683" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="443.4" y1="561" x2="443.4" y2="573" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="447.4" y1="561" x2="447.4" y2="573" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="187" x2="705.12" y2="180" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="180" x2="705.12" y2="180" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="173" x2="705.12" y2="180" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="701.12" cy="180" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="443.4" y1="249" x2="443.4" y2="261" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="447.4" y1="249" x2="447.4" y2="261" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="117" x2="705.12" y2="110" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="110" x2="705.12" y2="110" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="717.12" y1="103" x2="705.12" y2="110" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="701.12" cy="110" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<rect x="439.5666666666666" y="435.18333333333334" width="101.72000000000003" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="490.4266666666666" y="445.3333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">gồm các dòng thuốc</text>
+<rect x="574.5573333333332" y="336.85" width="47.072" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="598.0933333333332" y="347" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">được kê</text>
+<rect x="537.122" y="672.85" width="86.27600000000001" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="580.26" y="683" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">được cấp một lần</text>
+<rect x="419.82599999999996" y="242.48999999999998" width="79.14800000000001" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="459.4" y="252.64" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">giữ tồn cho đơn</text>
+<rect x="510.71700000000004" y="135.54999999999998" width="65.48599999999999" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="543.46" y="145.7" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">giữ số lượng</text>
+</svg>

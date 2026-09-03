@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Nurse as Điều dưỡng
+    participant GW as API Gateway
+    participant PAT as Patient Service
+    participant CLI as Clinical Service
+    participant ORG as Organization Service
+    participant MQ as RabbitMQ
+    participant NOTI as Notification
+
+    Nurse->>GW: Tra cứu bệnh nhân
+    GW->>PAT: GET /api/v1/patients
+    PAT-->>GW: Hồ sơ hoặc danh sách rỗng
+    alt Bệnh nhân chưa tồn tại
+        Nurse->>GW: Tạo hồ sơ mới
+        GW->>PAT: POST /api/v1/patients
+        PAT->>MQ: patient.created
+        MQ->>NOTI: Tạo thông báo tiếp nhận
+    end
+    Nurse->>GW: Tạo lịch hẹn
+    GW->>CLI: POST /api/v1/appointments
+    CLI->>PAT: Xác minh patient_id
+    PAT-->>CLI: Hợp lệ
+    CLI->>ORG: Xác minh doctor_id, department_id
+    ORG-->>CLI: Hợp lệ
+    CLI->>MQ: appointment.created
+    MQ->>NOTI: Gửi thông tin lịch hẹn
+    CLI-->>GW: Lịch hẹn đã tạo
+    GW-->>Nurse: 201 Created + correlationId

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant Doctor as Bác sĩ
+    participant Tech as Kỹ thuật viên
+    participant GW as API Gateway
+    participant CLI as Clinical Service
+    participant LAB as Lab Service
+    participant MQ as RabbitMQ
+    participant BIL as Billing Service
+
+    Doctor->>GW: Lập hồ sơ
+    GW->>CLI: POST /api/v1/records
+    CLI->>MQ: medicalrecord.created
+    CLI-->>Doctor: Hồ sơ đã tạo
+    Doctor->>GW: Tạo chỉ định xét nghiệm
+    GW->>LAB: POST /api/v1/lab
+    LAB->>MQ: lab.request.created
+    LAB-->>Doctor: Mã yêu cầu xét nghiệm
+    Tech->>GW: Tiếp nhận và cập nhật trạng thái
+    GW->>LAB: PENDING → IN_PROGRESS
+    Tech->>GW: Nhập và công bố kết quả
+    GW->>LAB: Lưu LAB_RESULT
+    LAB->>MQ: lab.result.created
+    MQ->>CLI: Gắn kết quả vào hồ sơ
+    MQ->>BIL: Tạo khoản phí xét nghiệm
+    CLI-->>Doctor: Kết quả sẵn sàng đánh giá
