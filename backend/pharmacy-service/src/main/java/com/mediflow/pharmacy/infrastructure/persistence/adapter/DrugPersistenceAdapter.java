@@ -34,9 +34,9 @@ public class DrugPersistenceAdapter implements DrugRepositoryPort {
 
     @Override
     public Drug save(Drug drug) {
-        // Lưu mới: entity chưa có id (drugId == null) → lưu xong Hibernate sinh id + timestamps.
+        // Flush để giá trị do Hibernate sinh (id và timestamps) có mặt trong domain trả về.
         DrugJpaEntity entity = toEntity(drug);
-        DrugJpaEntity saved = jpaRepo.save(entity);
+        DrugJpaEntity saved = jpaRepo.saveAndFlush(entity);
         return toDomain(saved);
     }
 
@@ -53,7 +53,10 @@ public class DrugPersistenceAdapter implements DrugRepositoryPort {
     @Override
     public PageResult<Drug> search(String keyword, PageQuery query) {
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Page<DrugJpaEntity> page = jpaRepo.search(keyword, pageable);
+        // Chuẩn hóa null thành chuỗi rỗng để PostgreSQL luôn bind tham số dưới dạng varchar.
+        // Điều này cũng giữ đúng semantics: không có từ khóa thì trả về toàn bộ danh mục.
+        String normalizedKeyword = keyword == null ? "" : keyword;
+        Page<DrugJpaEntity> page = jpaRepo.search(normalizedKeyword, pageable);
         return PageResult.of(
                 page.getContent().stream().map(this::toDomain).toList(),
                 page.getTotalElements(),
@@ -81,7 +84,9 @@ public class DrugPersistenceAdapter implements DrugRepositoryPort {
                 .expiryDate(d.getExpiryDate())
                 .manufacturer(d.getManufacturer())
                 .lowStockThreshold(d.getLowStockThreshold())
-                // createdAt/updatedAt để Hibernate tự sinh khi save (CREATE/UPDATE timestamps)
+                // Lưu mới nhận timestamps từ Hibernate; cập nhật phải giữ createdAt của bản ghi cũ.
+                .createdAt(d.getCreatedAt())
+                .updatedAt(d.getUpdatedAt())
                 .build();
     }
 }

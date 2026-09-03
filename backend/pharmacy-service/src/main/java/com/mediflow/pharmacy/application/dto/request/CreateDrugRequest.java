@@ -5,7 +5,8 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.Future;
+
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +29,7 @@ public record CreateDrugRequest(
         BigDecimal price,
         @NotNull @Min(0)
         Integer stockQuantity,
-        @NotNull @Future
+        @NotNull @FutureOrPresent
         LocalDate expiryDate,   // hạn sử dụng phải ở tương lai
         @Size(max = 150)
         String manufacturer,

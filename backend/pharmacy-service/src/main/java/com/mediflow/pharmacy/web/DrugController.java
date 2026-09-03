@@ -70,6 +70,8 @@ public class DrugController {
   * @param request thông tin thuốc cần tạo
   * @return phản hồi tạo thành công chứa thuốc mới và URI của tài nguyên
   */
+  @PostMapping
+  @PreAuthorize("hasAnyRole('ADMIN','PHARMACIST')")
  public ResponseEntity<ApiResponse<DrugDTO>> create(@Valid @RequestBody CreateDrugRequest request){
       DrugDTO created = manageDrugUseCase.create(request);
       URI location = URI.create("/api/v1/pharmacy/drugs/" + created.drugId());
