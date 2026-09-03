@@ -1,0 +1,40 @@
+erDiagram
+    DAILY_VISIT_REPORT {
+        uuid report_id PK
+        date report_date
+        uuid department_id
+        int visit_count
+        int lab_count
+        int prescription_count
+        decimal revenue
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MONTHLY_REVENUE_REPORT {
+        uuid report_id PK
+        int month
+        int year
+        uuid department_id
+        decimal total_revenue
+        int invoice_count
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DRUG_STATISTIC {
+        uuid statistic_id PK
+        uuid drug_id
+        varchar drug_name
+        date report_date
+        uuid department_id
+        int dispensed_quantity
+        timestamp updated_at
+    }
+
+    PROCESSED_EVENT {
+        uuid event_id PK
+        varchar routing_key
+        timestamp processed_at
+    }
+

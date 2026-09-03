@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1046.232 760" width="1046.232" height="760" style="--bg:#FFFFFF;--fg:#0F172A;--line:#2563EB;--accent:#0F766E;--muted:#64748B;--surface:#F0FDFA;--border:#0F766E;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<line class="lifeline" data-actor="Doctor" x1="70" y1="70" x2="70" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Tech" x1="210" y1="70" x2="210" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="GW" x1="357.6795" y1="70" x2="357.6795" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="CLI" x1="514.6215" y1="70" x2="514.6215" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="LAB" x1="671.5635" y1="70" x2="671.5635" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="MQ" x1="811.5635" y1="70" x2="811.5635" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="BIL" x1="956.6495" y1="70" x2="956.6495" y2="730" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="Doctor" data-to="GW" data-label="Lập hồ sơ" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="70" y1="90" x2="357.6795" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="213.83975" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Lập hồ sơ</text>
+</g>
+<g class="message" data-from="GW" data-to="CLI" data-label="POST /api/v1/records" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="357.6795" y1="130" x2="514.6215" y2="130" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="436.15049999999997" y="120" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">POST /api/v1/records</text>
+</g>
+<g class="message" data-from="CLI" data-to="MQ" data-label="medicalrecord.created" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="514.6215" y1="170" x2="811.5635" y2="170" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="663.0925" y="160" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">medicalrecord.created</text>
+</g>
+<g class="message" data-from="CLI" data-to="Doctor" data-label="Hồ sơ đã tạo" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="514.6215" y1="210" x2="70" y2="210" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="292.31075" y="200" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Hồ sơ đã tạo</text>
+</g>
+<g class="message" data-from="Doctor" data-to="GW" data-label="Tạo chỉ định xét nghiệm" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="70" y1="250" x2="357.6795" y2="250" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="213.83975" y="240" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Tạo chỉ định xét nghiệm</text>
+</g>
+<g class="message" data-from="GW" data-to="LAB" data-label="POST /api/v1/lab" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="357.6795" y1="290" x2="671.5635" y2="290" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="514.6215" y="280" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">POST /api/v1/lab</text>
+</g>
+<g class="message" data-from="LAB" data-to="MQ" data-label="lab.request.created" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="671.5635" y1="330" x2="811.5635" y2="330" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="741.5635" y="320" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">lab.request.created</text>
+</g>
+<g class="message" data-from="LAB" data-to="Doctor" data-label="Mã yêu cầu xét nghiệm" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="671.5635" y1="370" x2="70" y2="370" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="370.78175" y="360" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Mã yêu cầu xét nghiệm</text>
+</g>
+<g class="message" data-from="Tech" data-to="GW" data-label="Tiếp nhận và cập nhật trạng thái" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="210" y1="410" x2="357.6795" y2="410" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="283.83975" y="400" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Tiếp nhận và cập nhật trạng thái</text>
+</g>
+<g class="message" data-from="GW" data-to="LAB" data-label="PENDING → IN_PROGRESS" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="357.6795" y1="450" x2="671.5635" y2="450" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="514.6215" y="440" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">PENDING → IN_PROGRESS</text>
+</g>
+<g class="message" data-from="Tech" data-to="GW" data-label="Nhập và công bố kết quả" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="210" y1="490" x2="357.6795" y2="490" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="283.83975" y="480" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Nhập và công bố kết quả</text>
+</g>
+<g class="message" data-from="GW" data-to="LAB" data-label="Lưu LAB_RESULT" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="357.6795" y1="530" x2="671.5635" y2="530" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="514.6215" y="520" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Lưu LAB_RESULT</text>
+</g>
+<g class="message" data-from="LAB" data-to="MQ" data-label="lab.result.created" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="671.5635" y1="570" x2="811.5635" y2="570" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="741.5635" y="560" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">lab.result.created</text>
+</g>
+<g class="message" data-from="MQ" data-to="CLI" data-label="Gắn kết quả vào hồ sơ" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="811.5635" y1="610" x2="514.6215" y2="610" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="663.0925" y="600" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Gắn kết quả vào hồ sơ</text>
+</g>
+<g class="message" data-from="MQ" data-to="BIL" data-label="Tạo khoản phí xét nghiệm" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="811.5635" y1="650" x2="956.6495" y2="650" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="884.1065" y="640" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Tạo khoản phí xét nghiệm</text>
+</g>
+<g class="message" data-from="CLI" data-to="Doctor" data-label="Kết quả sẵn sàng đánh giá" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="514.6215" y1="690" x2="70" y2="690" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="292.31075" y="680" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Kết quả sẵn sàng đánh giá</text>
+</g>
+<g class="actor" data-id="Doctor" data-label="Bác sĩ" data-type="participant">
+  <rect x="30" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="70" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Bác sĩ</text>
+</g>
+<g class="actor" data-id="Tech" data-label="Kỹ thuật viên" data-type="participant">
+  <rect x="155.975" y="30" width="108.05" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Kỹ thuật viên</text>
+</g>
+<g class="actor" data-id="GW" data-label="API Gateway" data-type="participant">
+  <rect x="304.02500000000003" y="30" width="107.30900000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="357.6795" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">API Gateway</text>
+</g>
+<g class="actor" data-id="CLI" data-label="Clinical Service" data-type="participant">
+  <rect x="451.33399999999995" y="30" width="126.57500000000002" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="514.6215" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Clinical Service</text>
+</g>
+<g class="actor" data-id="LAB" data-label="Lab Service" data-type="participant">
+  <rect x="617.909" y="30" width="107.30900000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="671.5635" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Lab Service</text>
+</g>
+<g class="actor" data-id="MQ" data-label="RabbitMQ" data-type="participant">
+  <rect x="766.06" y="30" width="91.007" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="811.5635" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">RabbitMQ</text>
+</g>
+<g class="actor" data-id="BIL" data-label="Billing Service" data-type="participant">
+  <rect x="897.067" y="30" width="119.16499999999999" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="956.6495" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Billing Service</text>
+</g>
+</svg>

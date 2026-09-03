@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 689.82975 2589.7860000000005" width="689.82975" height="2589.7860000000005" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="START" data-to="PAT" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="378.9896666666667,84.9 378.9896666666666,138.9" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAT" data-to="APP" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="378.9896666666666,175.8 378.9896666666667,229.8" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="APP" data-to="EXAM" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="378.9896666666667,266.70000000000005 378.9896666666666,320.70000000000005" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="EXAM" data-to="NEEDLAB" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="378.9896666666666,357.6 378.9896666666666,411.6" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDLAB" data-to="LAB" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="352.18999999999994,545.5983333333334 352.18999999999994,614.398 299.01516666666663,614.398 299.0151666666667,700.698" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB" data-to="REVIEW" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.0151666666667,737.598 299.0151666666667,791.598" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="REVIEW" data-to="NEEDRX" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="299.0151666666667,828.4979999999999 299.0151666666667,870.4979999999999 355.895,870.4979999999999 355.895,905.5926666666667" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDLAB" data-to="NEEDRX" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="405.7893333333333,545.5983333333334 405.7893333333333,688.698 458.96416666666664,688.698 458.96416666666664,870.4979999999999 402.08433333333335,870.4979999999999 402.08433333333335,905.5926666666667" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDRX" data-to="RX" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="355.895,997.9713333333332 355.895,1033.0659999999998 264.1359166666666,1033.0659999999998 264.1359166666666,1119.3659999999998" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RX" data-to="PAY" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="264.1359166666667,1156.2659999999998 264.1359166666667,1183.2659999999998 378.9896666666667,1183.2659999999998 378.9896666666667,1210.2659999999998" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDRX" data-to="FEE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="402.08433333333335,997.9713333333332 402.08433333333335,1033.0659999999998 493.8434166666666,1033.0659999999998 493.8434166666666,1119.3659999999998" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="FEE" data-to="PAY" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="493.8434166666666,1156.2659999999998 493.8434166666666,1183.2659999999998 378.9896666666667,1183.2659999999998 378.9896666666667,1210.2659999999998" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAID" data-to="FAIL" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="413.3228333333333,1472.8318333333332 413.3228333333333,1900.7069999999999 590.06075,1900.7069999999999 590.06075,2401.9860000000003 574.6489166666667,2401.9860000000003 574.6489166666667,2413.9860000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAY" data-to="PAID" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="378.9896666666667,1247.166 378.9896666666666,1301.166" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAID" data-to="NEEDDISP" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="344.65649999999994,1472.8318333333332 344.65649999999994,1549.165 293.08708333333334,1549.165 293.08708333333334,1635.465" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDDISP" data-to="DONE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="268.26341666666667,1759.5833333333333 268.26341666666667,1991.607 202.83383333333333,1991.607 202.83383333333333,2323.0860000000002" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NEEDDISP" data-to="DISP" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="317.91075,1759.5833333333333 317.91075,1826.407 366.3468333333333,1826.407 366.3468333333333,1912.7069999999999" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DISP" data-to="DISPENSED" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="366.3468333333333,1949.607 366.3468333333333,2003.607" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DISPENSED" data-to="DONE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="334.48366666666664,2162.9228333333335 334.48366666666664,2236.786 284.32016666666664,2236.786 284.32016666666664,2311.0860000000002 251.15016666666665,2311.0860000000002 251.15016666666665,2323.0860000000002" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DISPENSED" data-to="COMP" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không" points="398.21000000000004,2162.9228333333335 398.21000000000004,2236.786 486.6330833333334,2236.786 486.6330833333334,2323.0860000000002" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="COMP" data-to="FAIL" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="486.6330833333334,2359.9860000000003 486.6330833333334,2401.9860000000003 513.7355833333334,2401.9860000000003 513.7355833333334,2413.9860000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DONE" data-to="NOTICE" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="226.992,2359.9860000000003 226.992,2386.9860000000003 132.3305,2386.9860000000003 132.3305,2413.9860000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NOTICE" data-to="END" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="132.3305,2450.8860000000004 132.3305,2477.8860000000004 226.992,2477.8860000000004 226.992,2504.8860000000004" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DONE" data-to="REPORT" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="226.992,2359.9860000000003 226.992,2386.9860000000003 321.6535,2386.9860000000003 321.6535,2413.9860000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="REPORT" data-to="END" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="321.6535,2450.8860000000004 321.6535,2477.8860000000004 226.992,2477.8860000000004 226.992,2504.8860000000004" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="NEEDLAB" data-to="LAB" data-label="Có">
+  <rect x="283.51516666666663" y="621.398" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="298.8741666666666" y="636.548" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="NEEDLAB" data-to="NEEDRX" data-label="Không">
+  <rect x="434.46416666666664" y="803.198" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="458.73316666666665" y="818.348" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không</text>
+</g>
+<g class="edge-label" data-from="NEEDRX" data-to="RX" data-label="Có">
+  <rect x="248.63591666666665" y="1040.0659999999998" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="263.99491666666665" y="1055.216" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="NEEDRX" data-to="FEE" data-label="Không">
+  <rect x="469.3434166666666" y="1040.0659999999998" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="493.6124166666666" y="1055.216" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không</text>
+</g>
+<g class="edge-label" data-from="PAID" data-to="FAIL" data-label="Không">
+  <rect x="565.56075" y="2243.786" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="589.82975" y="2258.936" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không</text>
+</g>
+<g class="edge-label" data-from="PAID" data-to="NEEDDISP" data-label="Có">
+  <rect x="277.58708333333334" y="1556.165" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="292.9460833333333" y="1571.315" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="NEEDDISP" data-to="DONE" data-label="Không">
+  <rect x="178.33383333333333" y="2243.786" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="202.60283333333334" y="2258.936" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không</text>
+</g>
+<g class="edge-label" data-from="NEEDDISP" data-to="DISP" data-label="Có">
+  <rect x="350.8468333333333" y="1833.407" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="366.20583333333326" y="1848.557" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="DISPENSED" data-to="DONE" data-label="Có">
+  <rect x="268.82016666666664" y="2243.786" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="284.1791666666666" y="2258.936" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="DISPENSED" data-to="COMP" data-label="Không">
+  <rect x="462.1330833333334" y="2243.786" width="48.538000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="486.4020833333334" y="2258.936" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không</text>
+</g>
+<g class="node" data-id="START" data-label="Bệnh nhân cần khám" data-shape="stadium">
+  <rect x="297.62316666666663" y="48" width="162.733" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666666" y="66.45" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bệnh nhân cần khám</text>
+</g>
+<g class="node" data-id="PAT" data-label="Tiếp nhận hoặc tra cứu bệnh nhân" data-shape="rectangle">
+  <rect x="259.4616666666666" y="138.9" width="239.056" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666666" y="157.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Tiếp nhận hoặc tra cứu bệnh nhân</text>
+</g>
+<g class="node" data-id="APP" data-label="Tạo và xác nhận lịch hẹn" data-shape="rectangle">
+  <rect x="283.5441666666667" y="229.8" width="190.89100000000002" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666667" y="248.25" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Tạo và xác nhận lịch hẹn</text>
+</g>
+<g class="node" data-id="EXAM" data-label="Bác sĩ khám, lập hồ sơ và chẩn đoán" data-shape="rectangle">
+  <rect x="252.05166666666665" y="320.70000000000005" width="253.876" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.98966666666666" y="339.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bác sĩ khám, lập hồ sơ và chẩn đoán</text>
+</g>
+<g class="node" data-id="NEEDLAB" data-label="Cần xét nghiệm?" data-shape="diamond">
+  <polygon points="378.9896666666666,411.6 459.3886666666666,491.999 378.9896666666666,572.398 298.5906666666666,491.999" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666666" y="491.999" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Cần xét nghiệm?</text>
+</g>
+<g class="node" data-id="LAB" data-label="Thực hiện và công bố kết quả" data-shape="rectangle">
+  <rect x="193.56616666666665" y="700.698" width="210.898" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="299.01516666666663" y="719.148" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Thực hiện và công bố kết quả</text>
+</g>
+<g class="node" data-id="REVIEW" data-label="Bác sĩ đánh giá kết quả" data-shape="rectangle">
+  <rect x="209.49766666666665" y="791.598" width="179.035" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="299.01516666666663" y="810.048" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bác sĩ đánh giá kết quả</text>
+</g>
+<g class="node" data-id="NEEDRX" data-label="Cần kê đơn?" data-shape="diamond">
+  <polygon points="378.98966666666666,882.4979999999999 448.27366666666666,951.7819999999999 378.98966666666666,1021.0659999999999 309.7056666666667,951.7819999999999" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.98966666666666" y="951.7819999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Cần kê đơn?</text>
+</g>
+<g class="node" data-id="RX" data-label="Lập đơn thuốc và khoản phí" data-shape="rectangle">
+  <rect x="161.28041666666667" y="1119.3659999999998" width="205.71099999999998" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="264.1359166666667" y="1137.8159999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Lập đơn thuốc và khoản phí</text>
+</g>
+<g class="node" data-id="FEE" data-label="Tổng hợp các khoản phí" data-shape="rectangle">
+  <rect x="400.9914166666666" y="1119.3659999999998" width="185.70399999999998" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="493.8434166666666" y="1137.8159999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Tổng hợp các khoản phí</text>
+</g>
+<g class="node" data-id="PAY" data-label="Thanh toán hóa đơn" data-shape="rectangle">
+  <rect x="300.5871666666667" y="1210.2659999999998" width="156.805" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666667" y="1228.716" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Thanh toán hóa đơn</text>
+</g>
+<g class="node" data-id="PAID" data-label="Thanh toán thành công?" data-shape="diamond">
+  <polygon points="378.9896666666666,1301.166 481.9891666666666,1404.1654999999998 378.9896666666666,1507.1649999999997 275.9901666666666,1404.1654999999998" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="378.9896666666666" y="1404.1654999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Thanh toán thành công?</text>
+</g>
+<g class="node" data-id="NEEDDISP" data-label="Có đơn thuốc?" data-shape="diamond">
+  <polygon points="293.08708333333334,1635.465 367.55808333333334,1709.936 293.08708333333334,1784.407 218.61608333333334,1709.936" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="293.08708333333334" y="1709.936" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Có đơn thuốc?</text>
+</g>
+<g class="node" data-id="DISP" data-label="Giữ tồn và cấp phát thuốc" data-shape="rectangle">
+  <rect x="273.8653333333333" y="1912.7069999999999" width="184.96299999999997" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="366.3468333333333" y="1931.157" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Giữ tồn và cấp phát thuốc</text>
+</g>
+<g class="node" data-id="DISPENSED" data-label="Cấp phát thành công?" data-shape="diamond">
+  <polygon points="366.34683333333334,2003.607 461.9363333333333,2099.1965 366.34683333333334,2194.786 270.75733333333335,2099.1965" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="366.34683333333334" y="2099.1965" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Cấp phát thành công?</text>
+</g>
+<g class="node" data-id="COMP" data-label="Bù trừ hoặc hoàn tiền" data-shape="rectangle">
+  <rect x="404.8960833333333" y="2323.0860000000002" width="163.474" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="486.6330833333333" y="2341.536" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bù trừ hoặc hoàn tiền</text>
+</g>
+<g class="node" data-id="FAIL" data-label="Thông báo lỗi và xử lý lại" data-shape="rectangle">
+  <rect x="452.82225000000005" y="2413.9860000000003" width="182.74" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="544.1922500000001" y="2432.436" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Thông báo lỗi và xử lý lại</text>
+</g>
+<g class="node" data-id="DONE" data-label="Hoàn tất lượt khám" data-shape="rectangle">
+  <rect x="154.51749999999998" y="2323.0860000000002" width="144.949" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="226.992" y="2341.536" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Hoàn tất lượt khám</text>
+</g>
+<g class="node" data-id="NOTICE" data-label="Thông báo bệnh nhân" data-shape="rectangle">
+  <rect x="48" y="2413.9860000000003" width="168.661" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="132.3305" y="2432.436" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Thông báo bệnh nhân</text>
+</g>
+<g class="node" data-id="REPORT" data-label="Cập nhật báo cáo" data-shape="rectangle">
+  <rect x="250.661" y="2413.9860000000003" width="141.985" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="321.6535" y="2432.436" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Cập nhật báo cáo</text>
+</g>
+<g class="node" data-id="END" data-label="Kết thúc" data-shape="stadium">
+  <rect x="182.6755" y="2504.8860000000004" width="88.633" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="226.992" y="2523.3360000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Kết thúc</text>
+</g>
+</svg>

@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> NONE
+    NONE --> AWAITING_PAYMENT: invoice.created
+    AWAITING_PAYMENT --> PAID: payment.completed
+    AWAITING_PAYMENT --> PAYMENT_FAILED: thanh toán thất bại
+    PAID --> AWAITING_DISPENSE: yêu cầu cấp thuốc
+    AWAITING_DISPENSE --> COMPLETED: prescription.filled
+    AWAITING_DISPENSE --> COMPENSATING: prescription.dispense.failed
+    COMPENSATING --> REFUNDED: hoàn tiền thành công
+    COMPENSATING --> COMPENSATION_FAILED: hoàn tiền thất bại
+    PAYMENT_FAILED --> AWAITING_PAYMENT: thử thanh toán lại
+    COMPENSATION_FAILED --> COMPENSATING: vận hành thử lại
+    COMPLETED --> [*]
+    REFUNDED --> [*]

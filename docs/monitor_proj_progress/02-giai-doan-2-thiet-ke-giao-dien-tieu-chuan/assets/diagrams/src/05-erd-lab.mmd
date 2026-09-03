@@ -1,0 +1,34 @@
+erDiagram
+    LAB_TEST ||--o{ LAB_RESULT : "trả kết quả"
+
+    LAB_TEST {
+        uuid test_id PK
+        uuid record_id
+        uuid patient_id
+        uuid requesting_department_id
+        varchar test_type
+        date requested_date
+        date performed_date
+        varchar status
+        text conclusion
+        boolean is_paid
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    LAB_RESULT {
+        uuid result_id PK
+        uuid test_id FK
+        varchar indicator
+        varchar value
+        varchar unit
+        varchar reference_range
+        timestamp created_at
+    }
+
+    PROCESSED_EVENT {
+        uuid event_id PK
+        varchar routing_key
+        timestamp processed_at
+    }
+

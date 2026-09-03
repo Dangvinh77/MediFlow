@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 552.08 1122.8999999999999" width="552.08" height="1122.8999999999999" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="_start" data-to="NONE" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="351.226,76 351.226,130" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NONE" data-to="AWAITING_PAYMENT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="invoice.created" points="351.226,166.9 351.22599999999994,295.20000000000005" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_PAYMENT" data-to="PAID" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="307.39349999999996,332.1 307.39349999999996,374.1 224.57833333333332,374.1 224.57833333333332,460.40000000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_PAYMENT" data-to="PAYMENT_FAILED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="thanh toán thất bại" points="351.22599999999994,332.1 351.226,522.7 374.9588333333333,522.7 374.9588333333333,534.7" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAID" data-to="AWAITING_DISPENSE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="yêu cầu cấp thuốc" points="224.57833333333332,497.3 224.57833333333332,625.6000000000001" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_DISPENSE" data-to="COMPLETED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.filled" points="195.23316666666665,662.5 195.23316666666665,704.5 110.10049999999998,704.5 110.10049999999998,790.8" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_DISPENSE" data-to="COMPENSATING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.dispense.failed" points="253.92349999999993,662.5 253.92349999999993,704.5 319.8658333333332,704.5 319.8658333333332,790.8" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="COMPENSATING" data-to="REFUNDED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="hoàn tiền thành công" points="283.62858333333327,827.7 283.62858333333327,869.7 211.10049999999998,869.7 211.10049999999995,956" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="COMPENSATING" data-to="COMPENSATION_FAILED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="hoàn tiền thất bại" points="319.8658333333332,827.7 319.8658333333332,869.7 353.64699999999993,869.7 353.64699999999993,944 368.2378333333333,944 368.2378333333333,956" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAYMENT_FAILED" data-to="AWAITING_PAYMENT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="thử thanh toán lại" points="428.70916666666665,534.7 428.70916666666665,522.7 452.442,522.7 452.442,448.4000000000001 395.0585,448.4000000000001 395.0585,332.1" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="COMPENSATION_FAILED" data-to="COMPENSATING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="vận hành thử lại" points="434.8321666666666,956 434.8321666666666,944 449.42299999999994,944 449.42299999999994,869.7 356.10308333333325,869.7 356.10308333333325,827.7" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="COMPLETED" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="110.10049999999998,827.7 110.10049999999998,881.7" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="REFUNDED" data-to="_end2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="211.10049999999995,992.8999999999999 211.10049999999998,1046.8999999999999" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="NONE" data-to="AWAITING_PAYMENT" data-label="invoice.created">
+  <rect x="305.22599999999994" y="215.9" width="91.30600000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="350.87899999999996" y="231.05" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">invoice.created</text>
+</g>
+<g class="edge-label" data-from="AWAITING_PAYMENT" data-to="PAID" data-label="payment.completed">
+  <rect x="171.0783333333333" y="381.1" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="224.4533333333333" y="396.25" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="AWAITING_PAYMENT" data-to="PAYMENT_FAILED" data-label="thanh toán thất bại">
+  <rect x="300.72599999999994" y="455.4000000000001" width="100.21600000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="350.83399999999995" y="470.55000000000007" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">thanh toán thất bại</text>
+</g>
+<g class="edge-label" data-from="PAID" data-to="AWAITING_DISPENSE" data-label="yêu cầu cấp thuốc">
+  <rect x="173.07833333333332" y="546.3000000000001" width="102.59200000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="224.3743333333333" y="561.45" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">yêu cầu cấp thuốc</text>
+</g>
+<g class="edge-label" data-from="AWAITING_DISPENSE" data-to="COMPLETED" data-label="prescription.filled">
+  <rect x="60.100499999999975" y="711.5" width="99.62200000000003" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="109.91149999999999" y="726.65" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">prescription.filled</text>
+</g>
+<g class="edge-label" data-from="AWAITING_DISPENSE" data-to="COMPENSATING" data-label="prescription.dispense.failed">
+  <rect x="244.86583333333323" y="711.5" width="149.518" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="319.62483333333324" y="726.65" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">prescription.dispense.failed</text>
+</g>
+<g class="edge-label" data-from="COMPENSATING" data-to="REFUNDED" data-label="hoàn tiền thành công">
+  <rect x="154.1005" y="876.7" width="113.28400000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="210.7425" y="891.85" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">hoàn tiền thành công</text>
+</g>
+<g class="edge-label" data-from="COMPENSATING" data-to="COMPENSATION_FAILED" data-label="hoàn tiền thất bại">
+  <rect x="306.14699999999993" y="876.7" width="94.27600000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="353.28499999999997" y="891.85" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">hoàn tiền thất bại</text>
+</g>
+<g class="edge-label" data-from="PAYMENT_FAILED" data-to="AWAITING_PAYMENT" data-label="thử thanh toán lại">
+  <rect x="404.942" y="455.4000000000001" width="94.27600000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="452.08000000000004" y="470.55000000000007" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">thử thanh toán lại</text>
+</g>
+<g class="edge-label" data-from="COMPENSATION_FAILED" data-to="COMPENSATING" data-label="vận hành thử lại">
+  <rect x="404.42299999999994" y="876.7" width="89.52400000000003" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="449.18499999999995" y="891.85" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">vận hành thử lại</text>
+</g>
+<g class="node" data-id="_start" data-label="" data-shape="state-start">
+  <circle cx="351.22599999999994" cy="62" r="12" fill="#0F172A" stroke="none" />
+</g>
+<g class="node" data-id="NONE" data-label="NONE" data-shape="rounded">
+  <rect x="312.467" y="130" width="77.518" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="351.226" y="148.45" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">NONE</text>
+</g>
+<g class="node" data-id="AWAITING_PAYMENT" data-label="AWAITING_PAYMENT" data-shape="rounded">
+  <rect x="263.561" y="295.20000000000005" width="175.32999999999996" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="351.22599999999994" y="313.65000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">AWAITING_PAYMENT</text>
+</g>
+<g class="node" data-id="PAID" data-label="PAID" data-shape="rounded">
+  <rect x="188.7833333333333" y="460.40000000000003" width="71.59" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="224.57833333333332" y="478.85" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">PAID</text>
+</g>
+<g class="node" data-id="PAYMENT_FAILED" data-label="PAYMENT_FAILED" data-shape="rounded">
+  <rect x="321.20849999999996" y="534.7" width="161.25099999999998" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="401.83399999999995" y="553.1500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">PAYMENT_FAILED</text>
+</g>
+<g class="node" data-id="AWAITING_DISPENSE" data-label="AWAITING_DISPENSE" data-shape="rounded">
+  <rect x="136.5428333333333" y="625.6000000000001" width="176.07099999999997" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="224.5783333333333" y="644.0500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">AWAITING_DISPENSE</text>
+</g>
+<g class="node" data-id="COMPLETED" data-label="COMPLETED" data-shape="rounded">
+  <rect x="48" y="790.8" width="124.20099999999998" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="110.10049999999998" y="809.25" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">COMPLETED</text>
+</g>
+<g class="node" data-id="COMPENSATING" data-label="COMPENSATING" data-shape="rounded">
+  <rect x="247.39133333333325" y="790.8" width="144.94899999999996" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="319.8658333333332" y="809.25" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">COMPENSATING</text>
+</g>
+<g class="node" data-id="REFUNDED" data-label="REFUNDED" data-shape="rounded">
+  <rect x="154.55749999999998" y="956" width="113.086" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="211.10049999999998" y="974.45" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">REFUNDED</text>
+</g>
+<g class="node" data-id="COMPENSATION_FAILED" data-label="COMPENSATION_FAILED" data-shape="rounded">
+  <rect x="301.64349999999996" y="956" width="199.78299999999993" height="36.900000000000006" rx="6" ry="6" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="401.5349999999999" y="974.45" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">COMPENSATION_FAILED</text>
+</g>
+<g class="node" data-id="_end" data-label="" data-shape="state-end">
+  <circle cx="110.10049999999998" cy="895.7" r="12" fill="none" stroke="#0F172A" stroke-width="1.5" />
+  <circle cx="110.10049999999998" cy="895.7" r="8" fill="#0F172A" stroke="none" />
+</g>
+<g class="node" data-id="_end2" data-label="" data-shape="state-end">
+  <circle cx="211.10049999999998" cy="1060.8999999999999" r="12" fill="none" stroke="#0F172A" stroke-width="1.5" />
+  <circle cx="211.10049999999998" cy="1060.8999999999999" r="8" fill="#0F172A" stroke="none" />
+</g>
+</svg>

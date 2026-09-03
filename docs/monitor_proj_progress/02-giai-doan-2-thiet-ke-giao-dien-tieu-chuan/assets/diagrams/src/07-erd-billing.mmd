@@ -1,0 +1,39 @@
+erDiagram
+    INVOICE ||--o{ FEE : "tổng hợp khoản phí"
+
+    FEE {
+        uuid fee_id PK
+        uuid patient_id
+        uuid record_id
+        uuid department_id
+        uuid source_ref_id
+        varchar fee_type
+        date incurred_date
+        decimal amount
+        boolean is_paid
+        uuid invoice_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    INVOICE {
+        uuid invoice_id PK
+        uuid patient_id
+        date created_date
+        decimal total_amount
+        boolean is_paid
+        varchar payment_method
+        uuid dispense_id
+        uuid prescription_id UK
+        varchar saga_status
+        timestamp paid_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PROCESSED_EVENT {
+        uuid event_id PK
+        varchar routing_key
+        timestamp processed_at
+    }
+
