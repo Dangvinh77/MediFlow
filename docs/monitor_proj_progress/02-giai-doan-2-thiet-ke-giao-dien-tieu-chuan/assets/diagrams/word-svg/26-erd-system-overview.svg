@@ -1,0 +1,268 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3140.950999999999 782.98" width="3140.950999999999" height="782.98" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-232563EB" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#2563EB" stroke="#2563EB" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-232563EB" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#2563EB" stroke="#2563EB" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-23EA580C" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#EA580C" stroke="#EA580C" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start-23EA580C" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#EA580C" stroke="#EA580C" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="ORGANIZATION" data-to="CLINICAL" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="doctor_id, department_id · UUID/REST" points="353.3069999999999,192.47178571428572 365.3069999999999,192.47178571428572 365.3069999999999,421.35 639.5329999999999,421.35 639.5329999999999,445.43000000000006 651.5329999999999,445.43000000000006" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PATIENT" data-to="CLINICAL" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID/REST" points="377.3069999999999,478.1214285714286 459.99299999999994,478.1214285714286 459.99299999999994,478.73 639.5329999999999,478.73 639.5329999999999,468.03000000000003 651.5329999999999,468.03000000000003" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="CLINICAL" data-to="LAB" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record_id · UUID logic" points="998.7749999999999,434.13000000000005 1022.7749999999999,434.13000000000005 1022.7749999999999,189.78750000000002 1508.365,189.78750000000002 1508.365,187.26249999999993 1520.365,187.26249999999993" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PATIENT" data-to="LAB" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="377.3069999999999,468.43571428571437 389.3069999999999,468.43571428571437 389.3069999999999,210.8875 1508.365,210.8875 1508.365,204.21249999999998 1520.365,204.21249999999998" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="LAB" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="353.3069999999999,163.4146428571429 1314.569,163.4146428571429 1314.569,140.75 1508.365,140.75 1508.365,170.31249999999994 1520.365,170.31249999999994" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="CLINICAL" data-to="PHARMACY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record_id · UUID logic" points="998.7749999999999,456.73 1046.7749999999999,456.73 1046.7749999999999,414.305 1209.5629999999999,414.305 1209.5629999999999,384.51250000000005 1233.5629999999999,384.51250000000005" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PATIENT" data-to="PHARMACY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="377.3069999999999,487.80714285714294 459.99299999999994,487.80714285714294 459.99299999999994,579.0300000000001 1061.1509999999998,579.0300000000001 1061.1509999999998,482.0800000000001 1221.5629999999999,482.0800000000001 1221.5629999999999,405.6875 1233.5629999999999,405.6875" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="PHARMACY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="doctor/department/staff UUID" points="353.3069999999999,182.78607142857146 377.3069999999999,182.78607142857146 377.3069999999999,338.725 1221.5629999999999,338.725 1221.5629999999999,357.20500000000004 1221.5629999999999,357.20500000000004 1221.5629999999999,363.33750000000003 1233.5629999999999,363.33750000000003" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PATIENT" data-to="BILLING" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="377.3069999999999,497.49285714285725 447.99299999999994,497.49285714285725 447.99299999999994,600.1800000000001 1073.1509999999998,600.1800000000001 1073.1509999999998,504.0800000000001 1911.017,504.0800000000001 1911.017,387.84000000000003 1923.017,387.84000000000003" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="CLINICAL" data-to="BILLING" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record_id · UUID logic" points="998.7749999999999,445.43000000000006 1034.7749999999999,445.43000000000006 1034.7749999999999,278.14250000000004 1899.017,278.14250000000004 1899.017,360.72 1923.017,360.72" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="BILLING" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="353.3069999999999,173.10035714285715 886.3629999999998,173.10035714285715 886.3629999999998,256.14250000000004 1911.017,256.14250000000004 1911.017,347.16 1923.017,347.16" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PHARMACY" data-to="BILLING" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="prescription_id, dispense_id · UUID" points="1625.265,376.0425 1911.017,376.0425 1911.017,374.28000000000003 1923.017,374.28000000000003" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PATIENT" data-to="NOTIFICATION" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="377.3069999999999,507.1785714285715 435.99299999999994,507.1785714285715 435.99299999999994,679.9300000000001 1963.055,679.9300000000001" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="REPORT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id dimension" points="353.3069999999999,144.04321428571433 1290.569,144.04321428571433 1290.569,52.35000000000002 2800.0969999999998,52.35000000000002 2800.0969999999998,53.174999999999955 2812.0969999999998,53.174999999999955" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="PHARMACY" data-to="REPORT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="drug_id dimension" points="1625.265,359.1025 1887.017,359.1025 1887.017,74.35000000000002 2812.0969999999998,74.35000000000002" fill="none" stroke="#2563EB" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-232563EB)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish organization events" points="353.3069999999999,153.72892857142858 1302.569,153.72892857142858 1302.569,94.64999999999998 2452.031,94.64999999999998 2452.031,521.4192307692308 2464.031,521.4192307692308" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="PATIENT" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish patient events" points="377.3069999999999,516.8642857142858 423.99299999999994,516.8642857142858 423.99299999999994,723.83 2452.031,723.83 2452.031,578.7884615384615 2464.031,578.7884615384615" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="CLINICAL" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish clinical events" points="998.7749999999999,468.0300000000001 1085.1509999999998,468.0300000000001 1085.1509999999998,601.73 2404.031,601.73 2404.031,557.9269230769231 2464.031,557.9269230769231" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="LAB" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish lab events" points="1875.017,175.96249999999998 2322.0329999999994,175.96249999999998 2322.0329999999994,170.61249999999995 2440.031,170.61249999999995 2440.031,526.6346153846155 2464.031,526.6346153846155" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="PHARMACY" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish prescription events" points="1625.265,392.9825 1899.017,392.9825 1899.017,546.4300000000001 2452.031,546.4300000000001 2452.031,547.4961538461539 2464.031,547.4961538461539" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="BILLING" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish billing events" points="2197.6409999999996,356.20000000000005 2284.965,356.20000000000005 2284.965,345.5 2416.031,345.5 2416.031,537.0653846153847 2464.031,537.0653846153847" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="NOTIFICATION" data-to="EVENTS" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish notification.sent" points="2237.679,668.63 2285.679,668.63 2285.679,663.2800000000001 2428.031,663.2800000000001 2428.031,568.3576923076923 2464.031,568.3576923076923" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="CLINICAL" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="result / prescription events" points="2464.031,563.1423076923078 2416.031,563.1423076923078 2416.031,635.0300000000001 1049.1509999999998,635.0300000000001 1049.1509999999998,479.33000000000004 998.7749999999999,479.33000000000004" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="LAB" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="medicalrecord + payment" points="2464.031,531.85 2428.031,531.85 2428.031,203.91250000000002 2276.7689999999993,203.91250000000002 2276.7689999999993,198.56249999999994 1875.017,198.56249999999994" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="PHARMACY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="2464.031,552.7115384615386 2392.031,552.7115384615386 2392.031,579.73 1887.017,579.73 1887.017,409.9225 1625.265,409.9225" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="BILLING" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="clinical + lab + prescription" points="2464.031,542.2807692307692 2404.031,542.2807692307692 2404.031,378.8 2197.6409999999996,378.8" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="NOTIFICATION" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="6 notification triggers" points="2464.031,573.573076923077 2440.031,573.573076923077 2440.031,696.58 2308.9649999999992,696.58 2308.9649999999992,691.23 2237.679,691.23" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<polyline class="edge" data-from="EVENTS" data-to="REPORT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="6 report projection events" points="2597.865,550.1038461538462 2800.0969999999998,550.1038461538462 2800.0969999999998,95.52499999999998 2812.0969999999998,95.52499999999998" fill="none" stroke="#EA580C" stroke-width="2px" stroke-dasharray="4 4" marker-end="url(#arrowhead-23EA580C)" />
+<g class="edge-label" data-from="ORGANIZATION" data-to="CLINICAL" data-label="doctor_id, department_id · UUID/REST">
+  <rect x="397.3069999999999" y="405.35" width="198.22599999999997" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="496.4199999999999" y="420.5" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">doctor_id, department_id · UUID/REST</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="CLINICAL" data-label="patient_id · UUID/REST">
+  <rect x="467.99299999999994" y="462.73" width="127.53999999999999" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="531.7629999999999" y="477.88" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID/REST</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="LAB" data-label="record_id · UUID logic">
+  <rect x="1341.577" y="173.78750000000002" width="122.78800000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1402.971" y="188.93750000000003" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">record_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="LAB" data-label="patient_id · UUID logic">
+  <rect x="894.3629999999998" y="194.8875" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="954.5689999999998" y="210.0375" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="LAB" data-label="department_id · UUID logic">
+  <rect x="1322.569" y="124.75" width="141.796" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1393.4669999999999" y="139.9" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="PHARMACY" data-label="record_id · UUID logic">
+  <rect x="1054.7749999999999" y="398.305" width="122.78800000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1116.1689999999999" y="413.455" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">record_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="PHARMACY" data-label="patient_id · UUID logic">
+  <rect x="920.7389999999998" y="563.0300000000001" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="980.9449999999998" y="578.1800000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="PHARMACY" data-label="doctor/department/staff UUID">
+  <rect x="863.4749999999999" y="322.725" width="151.29999999999995" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="939.1249999999999" y="337.875" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">doctor/department/staff UUID</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="BILLING" data-label="patient_id · UUID logic">
+  <rect x="1093.1509999999998" y="488.0800000000001" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1153.3569999999997" y="503.2300000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="BILLING" data-label="record_id · UUID logic">
+  <rect x="1756.229" y="262.14250000000004" width="122.78800000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1817.623" y="277.2925" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">record_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="BILLING" data-label="department_id · UUID logic">
+  <rect x="1610.433" y="240.14250000000004" width="141.796" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1681.331" y="255.29250000000005" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PHARMACY" data-to="BILLING" data-label="prescription_id, dispense_id · UUID">
+  <rect x="1681.265" y="360.0425" width="185.752" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1774.141" y="375.1925" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">prescription_id, dispense_id · UUID</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="NOTIFICATION" data-label="patient_id · UUID logic">
+  <rect x="1786.643" y="663.9300000000001" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1846.849" y="679.08" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="REPORT" data-label="department_id dimension">
+  <rect x="2514.8369999999995" y="36.35000000000002" width="133.48000000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2581.5769999999993" y="51.50000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">department_id dimension</text>
+</g>
+<g class="edge-label" data-from="PHARMACY" data-to="REPORT" data-label="drug_id dimension">
+  <rect x="2652.316999999999" y="58.35000000000003" width="103.78000000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2704.206999999999" y="73.50000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">drug_id dimension</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="EVENTS" data-label="publish organization events">
+  <rect x="1731.875" y="78.64999999999998" width="147.14200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1805.446" y="93.79999999999998" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish organization events</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="EVENTS" data-label="publish patient events">
+  <rect x="1788.425" y="707.83" width="118.63000000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1847.74" y="722.98" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish patient events</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="EVENTS" data-label="publish clinical events">
+  <rect x="2152.2749999999996" y="585.73" width="121.006" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2212.778" y="600.88" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish clinical events</text>
+</g>
+<g class="edge-label" data-from="LAB" data-to="EVENTS" data-label="publish lab events">
+  <rect x="2330.0329999999994" y="154.61249999999995" width="101.99800000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2381.0319999999992" y="169.76249999999996" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish lab events</text>
+</g>
+<g class="edge-label" data-from="PHARMACY" data-to="EVENTS" data-label="publish prescription events">
+  <rect x="2238.0769999999993" y="530.4300000000001" width="145.954" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2311.053999999999" y="545.58" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish prescription events</text>
+</g>
+<g class="edge-label" data-from="BILLING" data-to="EVENTS" data-label="publish billing events">
+  <rect x="2292.965" y="329.5" width="115.06600000000003" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2350.498" y="344.65" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish billing events</text>
+</g>
+<g class="edge-label" data-from="NOTIFICATION" data-to="EVENTS" data-label="publish notification.sent">
+  <rect x="2293.679" y="647.2800000000001" width="126.35200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2356.855" y="662.4300000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish notification.sent</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="CLINICAL" data-label="result / prescription events">
+  <rect x="1763.477" y="619.0300000000001" width="143.57800000000003" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1835.266" y="634.1800000000001" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">result / prescription events</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="LAB" data-label="medicalrecord + payment">
+  <rect x="2284.7689999999993" y="187.91250000000002" width="135.262" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2352.399999999999" y="203.06250000000003" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">medicalrecord + payment</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="PHARMACY" data-label="payment.completed">
+  <rect x="2277.281" y="563.73" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2330.656" y="578.88" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="BILLING" data-label="clinical + lab + prescription">
+  <rect x="2253.6409999999996" y="362.8" width="142.39" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2324.836" y="377.95" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">clinical + lab + prescription</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="NOTIFICATION" data-label="6 notification triggers">
+  <rect x="2316.9649999999992" y="680.58" width="115.06600000000005" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2374.497999999999" y="695.73" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">6 notification triggers</text>
+</g>
+<g class="edge-label" data-from="EVENTS" data-to="REPORT" data-label="6 report projection events">
+  <rect x="2653.865" y="534.1038461538462" width="138.23200000000003" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="2722.9809999999998" y="549.2538461538462" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">6 report projection events</text>
+</g>
+<g class="node" data-id="ORGANIZATION" data-label="Organization DB
+DEPARTMENT · STAFF · ACCOUNT" data-shape="cylinder">
+  <rect x="89.798" y="141.35750000000002" width="263.5089999999999" height="53.80000000000001" fill="#E0F2FE" stroke="none" />
+  <line x1="89.798" y1="141.35750000000002" x2="89.798" y2="195.15750000000003" stroke="#0369A1" stroke-width="0.75" />
+  <line x1="353.3069999999999" y1="141.35750000000002" x2="353.3069999999999" y2="195.15750000000003" stroke="#0369A1" stroke-width="0.75" />
+  <ellipse cx="221.55249999999995" cy="195.15750000000003" rx="131.75449999999995" ry="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="0.75" />
+  <ellipse cx="221.55249999999995" cy="141.35750000000002" rx="131.75449999999995" ry="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="0.75" />
+  <text font-family="Arial" x="221.55249999999995" y="168.25750000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0C4A6E"><tspan x="221.55249999999995" dy="-3.9000000000000012">Organization DB</tspan><tspan x="221.55249999999995" dy="16.900000000000002">DEPARTMENT · STAFF · ACCOUNT</tspan></text>
+</g>
+<g class="node" data-id="PATIENT" data-label="Patient DB
+PATIENT" data-shape="cylinder">
+  <rect x="275.3359999999999" y="465.7500000000001" width="101.971" height="53.80000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="275.3359999999999" y1="465.7500000000001" x2="275.3359999999999" y2="519.5500000000002" stroke="#047857" stroke-width="0.75" />
+  <line x1="377.3069999999999" y1="465.7500000000001" x2="377.3069999999999" y2="519.5500000000002" stroke="#047857" stroke-width="0.75" />
+  <ellipse cx="326.3214999999999" cy="519.5500000000002" rx="50.9855" ry="7" fill="#ECFDF5" stroke="#047857" stroke-width="0.75" />
+  <ellipse cx="326.3214999999999" cy="465.7500000000001" rx="50.9855" ry="7" fill="#ECFDF5" stroke="#047857" stroke-width="0.75" />
+  <text font-family="Arial" x="326.3214999999999" y="492.6500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#064E3B"><tspan x="326.3214999999999" dy="-3.9000000000000012">Patient DB</tspan><tspan x="326.3214999999999" dy="16.900000000000002">PATIENT</tspan></text>
+</g>
+<g class="node" data-id="CLINICAL" data-label="Clinical DB
+APPOINTMENT · MEDICAL_RECORD · DIAGNOSIS" data-shape="cylinder">
+  <rect x="651.5329999999999" y="429.83000000000004" width="347.242" height="53.80000000000001" fill="#EEF2FF" stroke="none" />
+  <line x1="651.5329999999999" y1="429.83000000000004" x2="651.5329999999999" y2="483.63000000000005" stroke="#4F46E5" stroke-width="0.75" />
+  <line x1="998.7749999999999" y1="429.83000000000004" x2="998.7749999999999" y2="483.63000000000005" stroke="#4F46E5" stroke-width="0.75" />
+  <ellipse cx="825.1539999999999" cy="483.63000000000005" rx="173.621" ry="7" fill="#EEF2FF" stroke="#4F46E5" stroke-width="0.75" />
+  <ellipse cx="825.1539999999999" cy="429.83000000000004" rx="173.621" ry="7" fill="#EEF2FF" stroke="#4F46E5" stroke-width="0.75" />
+  <text font-family="Arial" x="825.1539999999999" y="456.73" text-anchor="middle" font-size="13" font-weight="500" fill="#312E81"><tspan x="825.1539999999999" dy="-3.9000000000000012">Clinical DB</tspan><tspan x="825.1539999999999" dy="16.900000000000002">APPOINTMENT · MEDICAL_RECORD · DIAGNOSIS</tspan></text>
+</g>
+<g class="node" data-id="LAB" data-label="Lab DB
+LAB_TEST · LAB_RESULT · PROCESSED_EVENT" data-shape="cylinder">
+  <rect x="1520.365" y="160.36249999999995" width="354.65200000000004" height="53.80000000000001" fill="#F0FDFA" stroke="none" />
+  <line x1="1520.365" y1="160.36249999999995" x2="1520.365" y2="214.16249999999997" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1875.017" y1="160.36249999999995" x2="1875.017" y2="214.16249999999997" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1697.691" cy="214.16249999999997" rx="177.32600000000002" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1697.691" cy="160.36249999999995" rx="177.32600000000002" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1697.691" y="187.26249999999996" text-anchor="middle" font-size="13" font-weight="500" fill="#134E4A"><tspan x="1697.691" dy="-3.9000000000000012">Lab DB</tspan><tspan x="1697.691" dy="16.900000000000002">LAB_TEST · LAB_RESULT · PROCESSED_EVENT</tspan></text>
+</g>
+<g class="node" data-id="PHARMACY" data-label="Pharmacy DB
+DRUG · PRESCRIPTION · LINE
+DISPENSE_SLIP · RESERVATION · PROCESSED_EVENT" data-shape="cylinder">
+  <rect x="1233.5629999999999" y="349.1625" width="391.70200000000017" height="70.7" fill="#FFF7ED" stroke="none" />
+  <line x1="1233.5629999999999" y1="349.1625" x2="1233.5629999999999" y2="419.8625" stroke="#EA580C" stroke-width="0.75" />
+  <line x1="1625.265" y1="349.1625" x2="1625.265" y2="419.8625" stroke="#EA580C" stroke-width="0.75" />
+  <ellipse cx="1429.414" cy="419.8625" rx="195.85100000000008" ry="7" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <ellipse cx="1429.414" cy="349.1625" rx="195.85100000000008" ry="7" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1429.414" y="384.51250000000005" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12"><tspan x="1429.414" dy="-12.350000000000001">Pharmacy DB</tspan><tspan x="1429.414" dy="16.900000000000002">DRUG · PRESCRIPTION · LINE</tspan><tspan x="1429.414" dy="16.900000000000002">DISPENSE_SLIP · RESERVATION · PROCESSED_EVENT</tspan></text>
+</g>
+<g class="node" data-id="BILLING" data-label="Billing DB
+FEE · INVOICE · PROCESSED_EVENT" data-shape="cylinder">
+  <rect x="1923.017" y="340.6" width="274.6239999999999" height="53.80000000000001" fill="#FEF3C7" stroke="none" />
+  <line x1="1923.017" y1="340.6" x2="1923.017" y2="394.40000000000003" stroke="#D97706" stroke-width="0.75" />
+  <line x1="2197.641" y1="340.6" x2="2197.641" y2="394.40000000000003" stroke="#D97706" stroke-width="0.75" />
+  <ellipse cx="2060.329" cy="394.40000000000003" rx="137.31199999999995" ry="7" fill="#FEF3C7" stroke="#D97706" stroke-width="0.75" />
+  <ellipse cx="2060.329" cy="340.6" rx="137.31199999999995" ry="7" fill="#FEF3C7" stroke="#D97706" stroke-width="0.75" />
+  <text font-family="Arial" x="2060.329" y="367.5" text-anchor="middle" font-size="13" font-weight="500" fill="#78350F"><tspan x="2060.329" dy="-3.9000000000000012">Billing DB</tspan><tspan x="2060.329" dy="16.900000000000002">FEE · INVOICE · PROCESSED_EVENT</tspan></text>
+</g>
+<g class="node" data-id="NOTIFICATION" data-label="Notification DB
+NOTIFICATION · PROCESSED_EVENT" data-shape="cylinder">
+  <rect x="1963.055" y="653.0300000000001" width="274.6239999999999" height="53.80000000000001" fill="#FDF2F8" stroke="none" />
+  <line x1="1963.055" y1="653.0300000000001" x2="1963.055" y2="706.8300000000002" stroke="#DB2777" stroke-width="0.75" />
+  <line x1="2237.679" y1="653.0300000000001" x2="2237.679" y2="706.8300000000002" stroke="#DB2777" stroke-width="0.75" />
+  <ellipse cx="2100.367" cy="706.8300000000002" rx="137.31199999999995" ry="7" fill="#FDF2F8" stroke="#DB2777" stroke-width="0.75" />
+  <ellipse cx="2100.367" cy="653.0300000000001" rx="137.31199999999995" ry="7" fill="#FDF2F8" stroke="#DB2777" stroke-width="0.75" />
+  <text font-family="Arial" x="2100.367" y="679.9300000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#831843"><tspan x="2100.367" dy="-3.9000000000000012">Notification DB</tspan><tspan x="2100.367" dy="16.900000000000002">NOTIFICATION · PROCESSED_EVENT</tspan></text>
+</g>
+<g class="node" data-id="REPORT" data-label="Report DB
+DAILY_VISIT · MONTHLY_REVENUE
+DRUG_STATISTIC · PROCESSED_EVENT" data-shape="cylinder">
+  <rect x="2812.0969999999998" y="39" width="296.8539999999999" height="70.7" fill="#F5F3FF" stroke="none" />
+  <line x1="2812.0969999999998" y1="39" x2="2812.0969999999998" y2="109.7" stroke="#7C3AED" stroke-width="0.75" />
+  <line x1="3108.9509999999996" y1="39" x2="3108.9509999999996" y2="109.7" stroke="#7C3AED" stroke-width="0.75" />
+  <ellipse cx="2960.524" cy="109.7" rx="148.42699999999996" ry="7" fill="#F5F3FF" stroke="#7C3AED" stroke-width="0.75" />
+  <ellipse cx="2960.524" cy="39" rx="148.42699999999996" ry="7" fill="#F5F3FF" stroke="#7C3AED" stroke-width="0.75" />
+  <text font-family="Arial" x="2960.524" y="74.35" text-anchor="middle" font-size="13" font-weight="500" fill="#4C1D95"><tspan x="2960.524" dy="-12.350000000000001">Report DB</tspan><tspan x="2960.524" dy="16.900000000000002">DAILY_VISIT · MONTHLY_REVENUE</tspan><tspan x="2960.524" dy="16.900000000000002">DRUG_STATISTIC · PROCESSED_EVENT</tspan></text>
+</g>
+<g class="node" data-id="EVENTS" data-label="RabbitMQ
+mediflow.events" data-shape="cylinder">
+  <rect x="2464.031" y="523.2038461538461" width="133.834" height="53.80000000000001" fill="#FFF7ED" stroke="none" />
+  <line x1="2464.031" y1="523.2038461538461" x2="2464.031" y2="577.0038461538461" stroke="#EA580C" stroke-width="0.75" />
+  <line x1="2597.865" y1="523.2038461538461" x2="2597.865" y2="577.0038461538461" stroke="#EA580C" stroke-width="0.75" />
+  <ellipse cx="2530.948" cy="577.0038461538461" rx="66.917" ry="7" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <ellipse cx="2530.948" cy="523.2038461538461" rx="66.917" ry="7" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="2530.948" y="550.1038461538461" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12"><tspan x="2530.948" dy="-3.9000000000000012">RabbitMQ</tspan><tspan x="2530.948" dy="16.900000000000002">mediflow.events</tspan></text>
+</g>
+<g class="node" data-id="LEGEND" data-label="Chú giải
+Trong mỗi DB: quan hệ vật lý xem ERD 2.3.1–2.3.8
+Nét đứt xanh: UUID/REST logic · không phải FK
+Nét đứt cam: integration event qua RabbitMQ" data-shape="rectangle">
+  <rect x="32" y="250.15750000000003" width="321.3069999999999" height="87.60000000000001" rx="0" ry="0" fill="#FFFFFF" stroke="#64748B" stroke-width="0.75" />
+  <text font-family="Arial" x="192.65349999999995" y="293.95750000000004" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="192.65349999999995" dy="-20.8">Chú giải</tspan><tspan x="192.65349999999995" dy="16.900000000000002">Trong mỗi DB: quan hệ vật lý xem ERD 2.3.1–2.3.8</tspan><tspan x="192.65349999999995" dy="16.900000000000002">Nét đứt xanh: UUID/REST logic · không phải FK</tspan><tspan x="192.65349999999995" dy="16.900000000000002">Nét đứt cam: integration event qua RabbitMQ</tspan></text>
+</g>
+</svg>

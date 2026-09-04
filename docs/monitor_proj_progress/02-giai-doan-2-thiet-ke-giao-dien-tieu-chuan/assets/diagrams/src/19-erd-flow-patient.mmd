@@ -1,0 +1,31 @@
+flowchart LR
+    STAFF[Tiếp nhận / Điều dưỡng<br/>quản lý hồ sơ hành chính]
+
+    subgraph PATIENT_SERVICE[Patient Service · mediflow_patient]
+        PATIENT[(PATIENT<br/>PK patient_id<br/>UK identity_number<br/>thông tin hành chính và liên hệ)]
+    end
+
+    CLINICAL[Clinical Service<br/>patient_id]
+    LAB[Lab Service<br/>patient_id]
+    PHARMACY[Pharmacy Service<br/>patient_id]
+    BILLING[Billing Service<br/>patient_id]
+    NOTIFICATION[Notification Service<br/>patient_id]
+    PATIENT_CREATED([patient.created])
+    PATIENT_UPDATED([patient.updated])
+
+    STAFF -->|create / update| PATIENT
+    CLINICAL -.->|REST validation| PATIENT
+    LAB -.->|patient_id · UUID logic| PATIENT
+    PHARMACY -.->|patient_id · UUID logic| PATIENT
+    BILLING -.->|patient_id · UUID logic| PATIENT
+    NOTIFICATION -.->|patient_id · UUID logic| PATIENT
+    PATIENT -.->|publish| PATIENT_CREATED
+    PATIENT -.->|publish| PATIENT_UPDATED
+    PATIENT_CREATED -.->|consume| NOTIFICATION
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class STAFF,CLINICAL,LAB,PHARMACY,BILLING,NOTIFICATION external
+    class PATIENT owned
+    class PATIENT_CREATED,PATIENT_UPDATED event

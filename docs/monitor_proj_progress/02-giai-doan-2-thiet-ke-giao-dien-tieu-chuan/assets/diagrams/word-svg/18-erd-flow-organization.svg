@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1681.094 416.0333333333333" width="1681.094" height="416.0333333333333" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="ORGANIZATION" data-label="Organization Service · mediflow_organization">
+  <rect x="467.15099999999995" y="32" width="539.8779999999999" height="338.1" rx="0" ry="0" fill="#FFFFFF" stroke="#d4d4d4" stroke-width="1" />
+  <rect x="467.15099999999995" y="32" width="539.8779999999999" height="28" rx="0" ry="0" fill="#f4f4f4" stroke="#d4d4d4" stroke-width="1" />
+  <text font-family="Arial" x="479.15099999999995" y="46" font-size="12" font-weight="600" fill="#7d7d7f" dy="4.199999999999999">Organization Service · mediflow_organization</text>
+</g>
+<polyline class="edge" data-from="STAFF_CHANGED" data-to="REPORT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume" points="1345.799,204.5 1498.217,204.5" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ADMIN" data-to="DEPARTMENT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="CRUD" points="315.72499999999997,213.7166666666667 360.989,213.7166666666667 360.989,223.28333333333333 449.15099999999995,223.28333333333333 449.15099999999995,217.5 771.03,217.5 771.03,257.28666666666663 809.03,257.28666666666663" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ADMIN" data-to="STAFF" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="CRUD" points="315.72499999999997,227.16666666666669 360.989,227.16666666666669 360.989,262.3666666666667 483.15099999999995,262.3666666666667" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ADMIN" data-to="ACCOUNT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="cấp tài khoản" points="315.72499999999997,200.26666666666668 327.72499999999997,200.26666666666668 327.72499999999997,155.63333333333333 449.15099999999995,155.63333333333333 449.15099999999995,115.5 809.03,115.5" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CLINICAL" data-to="STAFF" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="REST validation · UUID logic" points="218.44499999999996,306.4666666666667 256.44499999999994,306.4666666666667 256.44499999999994,297.28333333333336 449.15099999999995,297.28333333333336 449.15099999999995,296.23333333333335 483.15099999999995,296.23333333333335" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CLINICAL" data-to="DEPARTMENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="218.44499999999996,324.40000000000003 265.35499999999996,324.40000000000003 265.35499999999996,336.3166666666667 449.15099999999995,336.3166666666667 449.15099999999995,340.1 771.03,340.1 771.03,318.24666666666667 809.03,318.24666666666667" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DEPARTMENT" data-to="DEPARTMENT_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="991.029,287.76666666666665 1051.029,287.76666666666665 1051.029,283.98333333333335 1157.1310000000003,283.98333333333335" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="STAFF" data-to="STAFF_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="628.0999999999999,313.1666666666667 640.0999999999999,313.1666666666667 640.0999999999999,353.1 1051.029,353.1 1051.029,356.8833333333334 1157.1310000000003,356.8833333333333" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="STAFF" data-to="STAFF_CHANGED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="628.0999999999999,262.3666666666667 652.0999999999999,262.3666666666667 652.0999999999999,204.5 1157.1309999999999,204.5" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DEPARTMENT" data-to="STAFF" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N nhân sự" points="809.03,277.6066666666667 771.03,277.6066666666667 771.03,271.1166666666667 640.0999999999999,271.1166666666667 640.0999999999999,279.3 628.0999999999999,279.3" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="STAFF" data-to="ACCOUNT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:0..1 tài khoản" points="628.0999999999999,245.43333333333334 640.0999999999999,245.43333333333334 640.0999999999999,155 809.03,155" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="STAFF" data-to="DEPARTMENT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="0..1 trưởng khoa" points="628.0999999999999,296.23333333333335 652.0999999999999,296.23333333333335 652.0999999999999,307.53000000000003 771.03,307.53000000000003 771.03,297.9266666666667 809.03,297.9266666666667" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="STAFF_CHANGED" data-to="REPORT" data-label="consume">
+  <rect x="1391.799" y="188.5" width="60.418000000000006" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1422.008" y="203.65" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">consume</text>
+</g>
+<g class="edge-label" data-from="ADMIN" data-to="DEPARTMENT" data-label="CRUD">
+  <rect x="368.989" y="207.28333333333333" width="46.162" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="392.07" y="222.43333333333334" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">CRUD</text>
+</g>
+<g class="edge-label" data-from="ADMIN" data-to="STAFF" data-label="CRUD">
+  <rect x="368.989" y="246.36666666666665" width="46.162" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="392.07" y="261.51666666666665" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">CRUD</text>
+</g>
+<g class="edge-label" data-from="ADMIN" data-to="ACCOUNT" data-label="cấp tài khoản">
+  <rect x="335.725" y="139.63333333333333" width="79.42599999999999" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="375.438" y="154.78333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">cấp tài khoản</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="STAFF" data-label="REST validation · UUID logic">
+  <rect x="264.44499999999994" y="281.28333333333336" width="150.706" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="339.79799999999994" y="296.43333333333334" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">REST validation · UUID logic</text>
+</g>
+<g class="edge-label" data-from="CLINICAL" data-to="DEPARTMENT" data-label="department_id · UUID logic">
+  <rect x="273.3549999999999" y="320.3166666666667" width="141.796" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="344.25299999999993" y="335.4666666666667" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="DEPARTMENT" data-to="DEPARTMENT_CREATED" data-label="publish">
+  <rect x="1059.029" y="267.98333333333335" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1085.08" y="283.1333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="STAFF" data-to="STAFF_CREATED" data-label="publish">
+  <rect x="1059.029" y="340.8833333333333" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1085.08" y="356.0333333333333" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="STAFF" data-to="STAFF_CHANGED" data-label="publish">
+  <rect x="1059.029" y="188.5" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1085.08" y="203.65" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="DEPARTMENT" data-to="STAFF" data-label="1:N nhân sự">
+  <rect x="684.198" y="255.11666666666665" width="68.73400000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="718.5649999999999" y="270.26666666666665" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">1:N nhân sự</text>
+</g>
+<g class="edge-label" data-from="STAFF" data-to="ACCOUNT" data-label="1:0..1 tài khoản">
+  <rect x="678.852" y="139" width="79.42599999999999" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="718.5649999999999" y="154.15" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">1:0..1 tài khoản</text>
+</g>
+<g class="edge-label" data-from="STAFF" data-to="DEPARTMENT" data-label="0..1 trưởng khoa">
+  <rect x="674.0999999999999" y="291.53000000000003" width="88.93" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="718.5649999999999" y="306.68" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">0..1 trưởng khoa</text>
+</g>
+<g class="node" data-id="ADMIN" data-label="Quản trị viên
+quản lý tổ chức" data-shape="rectangle">
+  <rect x="187.07799999999997" y="186.81666666666666" width="128.647" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="251.40149999999997" y="213.71666666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="251.40149999999997" dy="-3.9000000000000012">Quản trị viên</tspan><tspan x="251.40149999999997" dy="16.900000000000002">quản lý tổ chức</tspan></text>
+</g>
+<g class="node" data-id="CLINICAL" data-label="Clinical Service
+doctor_id, department_id" data-shape="rectangle">
+  <rect x="32" y="288.53333333333336" width="186.44499999999996" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="125.22249999999998" y="315.43333333333334" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="125.22249999999998" dy="-3.9000000000000012">Clinical Service</tspan><tspan x="125.22249999999998" dy="16.900000000000002">doctor_id, department_id</tspan></text>
+</g>
+<g class="node" data-id="REPORT" data-label="Report Service
+cập nhật theo khoa" data-shape="rectangle">
+  <rect x="1498.217" y="177.6" width="150.877" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="1573.6555" y="204.5" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1573.6555" dy="-3.9000000000000012">Report Service</tspan><tspan x="1573.6555" dy="16.900000000000002">cập nhật theo khoa</tspan></text>
+</g>
+<g class="node" data-id="DEPARTMENT_CREATED" data-label="department.created" data-shape="stadium">
+  <rect x="1157.1310000000003" y="265.53333333333336" width="156.06400000000002" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1235.1630000000002" y="283.98333333333335" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">department.created</text>
+</g>
+<g class="node" data-id="STAFF_CREATED" data-label="staff.created" data-shape="stadium">
+  <rect x="1157.1310000000003" y="338.43333333333334" width="114.568" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1214.4150000000004" y="356.8833333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">staff.created</text>
+</g>
+<g class="node" data-id="STAFF_CHANGED" data-label="staff.department.changed" data-shape="stadium">
+  <rect x="1157.1309999999999" y="186.05" width="188.668" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1251.465" y="204.5" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">staff.department.changed</text>
+</g>
+<g class="node" data-id="DEPARTMENT" data-label="DEPARTMENT
+PK department_id
+UK abbreviation
+FK department_head_id" data-shape="cylinder">
+  <rect x="809.03" y="243.96666666666667" width="181.99899999999997" height="87.60000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="809.03" y1="243.96666666666667" x2="809.03" y2="331.56666666666666" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="991.029" y1="243.96666666666667" x2="991.029" y2="331.56666666666666" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="900.0295" cy="331.56666666666666" rx="90.99949999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="900.0295" cy="243.96666666666667" rx="90.99949999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="900.0295" y="287.76666666666665" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="900.0295" dy="-20.8">DEPARTMENT</tspan><tspan x="900.0295" dy="16.900000000000002">PK department_id</tspan><tspan x="900.0295" dy="16.900000000000002">UK abbreviation</tspan><tspan x="900.0295" dy="16.900000000000002">FK department_head_id</tspan></text>
+</g>
+<g class="node" data-id="STAFF" data-label="STAFF
+PK staff_id
+FK department_id
+license_number" data-shape="cylinder">
+  <rect x="483.15099999999995" y="235.5" width="144.949" height="87.60000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="483.15099999999995" y1="235.5" x2="483.15099999999995" y2="323.1" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="628.0999999999999" y1="235.5" x2="628.0999999999999" y2="323.1" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="555.6255" cy="323.1" rx="72.4745" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="555.6255" cy="235.5" rx="72.4745" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="555.6255" y="279.3" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="555.6255" dy="-20.8">STAFF</tspan><tspan x="555.6255" dy="16.900000000000002">PK staff_id</tspan><tspan x="555.6255" dy="16.900000000000002">FK department_id</tspan><tspan x="555.6255" dy="16.900000000000002">license_number</tspan></text>
+</g>
+<g class="node" data-id="ACCOUNT" data-label="ACCOUNT
+PK account_id
+UK username
+FK staff_id
+role" data-shape="cylinder">
+  <rect x="809.03" y="83" width="127.16499999999999" height="104.50000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="809.03" y1="83" x2="809.03" y2="187.5" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="936.1949999999999" y1="83" x2="936.1949999999999" y2="187.5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="872.6125" cy="187.5" rx="63.582499999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="872.6125" cy="83" rx="63.582499999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="872.6125" y="135.25" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="872.6125" dy="-29.250000000000004">ACCOUNT</tspan><tspan x="872.6125" dy="16.900000000000002">PK account_id</tspan><tspan x="872.6125" dy="16.900000000000002">UK username</tspan><tspan x="872.6125" dy="16.900000000000002">FK staff_id</tspan><tspan x="872.6125" dy="16.900000000000002">role</tspan></text>
+</g>
+</svg>

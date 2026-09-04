@@ -1,0 +1,43 @@
+flowchart LR
+    CLINICAL[Clinical Service<br/>record_id]
+    PATIENT[Patient Service<br/>patient_id]
+    ORGANIZATION[Organization Service<br/>doctor_id, department_id, dispensed_by]
+    PAYMENT_COMPLETED([payment.completed])
+
+    subgraph PHARMACY[Pharmacy Service · mediflow_pharmacy]
+        DRUG[(DRUG<br/>PK drug_id<br/>stock_quantity · expiry_date)]
+        PRESCRIPTION[(PRESCRIPTION<br/>PK prescription_id<br/>record/patient/doctor/department UUID)]
+        LINE[(PRESCRIPTION_LINE<br/>PK line_id<br/>FK prescription_id, drug_id)]
+        SLIP[(DISPENSE_SLIP<br/>PK dispense_id<br/>FK + UK prescription_id)]
+        RESERVATION[(STOCK_RESERVATION<br/>PK reservation_id<br/>FK drug_id, prescription_id)]
+        PROCESSED_EVENT[(PROCESSED_EVENT<br/>PK event_id<br/>routing_key)]
+
+        PRESCRIPTION -->|1:N dòng thuốc| LINE
+        DRUG -->|1:N được kê| LINE
+        PRESCRIPTION -->|1:0..1 phiếu xuất| SLIP
+        PRESCRIPTION -->|1:N giữ tồn| RESERVATION
+        DRUG -->|1:N giữ số lượng| RESERVATION
+        PROCESSED_EVENT -.->|dedupe payment| SLIP
+    end
+
+    PRESCRIPTION_CREATED([prescription.created])
+    PRESCRIPTION_FILLED([prescription.filled])
+    DISPENSE_FAILED([prescription.dispense.failed])
+    STOCK_LOW([stock.low])
+
+    CLINICAL -.->|record_id · UUID logic| PRESCRIPTION
+    PATIENT -.->|patient_id · UUID logic| PRESCRIPTION
+    ORGANIZATION -.->|staff/department UUID logic| PRESCRIPTION
+    ORGANIZATION -.->|dispensed_by · UUID logic| SLIP
+    PAYMENT_COMPLETED -.->|consume · dispense| PROCESSED_EVENT
+    PRESCRIPTION -.->|publish| PRESCRIPTION_CREATED
+    SLIP -.->|success| PRESCRIPTION_FILLED
+    SLIP -.->|failure/compensation| DISPENSE_FAILED
+    DRUG -.->|threshold reached · publish| STOCK_LOW
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class CLINICAL,PATIENT,ORGANIZATION external
+    class DRUG,PRESCRIPTION,LINE,SLIP,RESERVATION,PROCESSED_EVENT owned
+    class PAYMENT_COMPLETED,PRESCRIPTION_CREATED,PRESCRIPTION_FILLED,DISPENSE_FAILED,STOCK_LOW event
