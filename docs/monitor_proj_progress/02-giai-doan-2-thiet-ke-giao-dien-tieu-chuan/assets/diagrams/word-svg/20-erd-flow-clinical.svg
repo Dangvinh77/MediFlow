@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2087.165 447.26250000000005" width="2087.165" height="447.26250000000005" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#47474a" stroke="#47474a" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="CLINICAL" data-label="Clinical Service · mediflow_clinical">
+  <rect x="507.54299999999995" y="80.92083333333332" width="1192.55" height="334.3416666666667" rx="0" ry="0" fill="#FFFFFF" stroke="#d4d4d4" stroke-width="1" />
+  <rect x="507.54299999999995" y="80.92083333333332" width="1192.55" height="28" rx="0" ry="0" fill="#f4f4f4" stroke="#d4d4d4" stroke-width="1" />
+  <text font-family="Arial" x="519.5429999999999" y="94.92083333333332" font-size="12" font-weight="600" fill="#7d7d7f" dy="4.199999999999999">Clinical Service · mediflow_clinical</text>
+</g>
+<polyline class="edge" data-from="PATIENT" data-to="APPOINTMENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="REST validation · UUID logic" points="258.83699999999993,129.60416666666663 296.83699999999993,129.60416666666663 296.83699999999993,119.81666666666666 489.54299999999995,119.81666666666666 489.54299999999995,153.15416666666667 547.5429999999999,153.15416666666667" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="APPOINTMENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="REST validation · UUID logic" points="218.44499999999996,219.40416666666664 296.83699999999993,219.40416666666664 296.83699999999993,209.61666666666667 465.54299999999995,209.61666666666667 465.54299999999995,230.12083333333334 535.5429999999999,230.12083333333334 535.5429999999999,181.3875 547.5429999999999,181.3875" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PATIENT" data-to="MEDICAL_RECORD" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="258.83699999999993,147.53749999999997 327.1309999999999,147.53749999999997 327.1309999999999,153.11666666666667 477.54299999999995,153.11666666666667 477.54299999999995,220.12083333333334 1026.6439999999998,220.1208333333333" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="MEDICAL_RECORD" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="doctor_id, department_id · UUID logic" points="218.44499999999996,237.33749999999998 256.44499999999994,237.33749999999998 256.44499999999994,242.91666666666669 489.54299999999995,242.91666666666669 489.54299999999995,241.29583333333332 1026.6439999999998,241.29583333333332" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB_RESULT" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume" points="349.86599999999993,314.97916666666663 489.54299999999995,314.9791666666667 489.54299999999995,342.79583333333335 981.4429999999998,342.79583333333335" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PRESCRIPTION_FILLED" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume" points="348.38399999999996,387.8791666666667 489.54299999999995,387.8791666666667 489.54299999999995,371.0291666666667 981.4429999999998,371.0291666666667" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="APPOINTMENT" data-to="APPOINTMENT_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="808.8289999999998,146.0958333333333 820.8289999999998,146.0958333333333 820.8289999999998,136.12499999999994 1718.0929999999998,136.12499999999994 1718.0929999999998,50.44999999999999 1837.195,50.44999999999999" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="APPOINTMENT" data-to="APPOINTMENT_CHANGED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="808.8289999999998,167.2708333333333 820.8289999999998,167.2708333333333 820.8289999999998,153.21249999999998 1744.0929999999998,153.21249999999998 1744.0929999999998,123.34999999999997 1837.195,123.34999999999997" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MEDICAL_RECORD" data-to="RECORD_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="1187.8949999999998,198.94583333333327 1245.0959999999998,198.94583333333327 1245.0959999999998,166.21249999999998 1744.0929999999998,166.21249999999998 1744.0929999999998,196.24999999999997 1837.195,196.25" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DIAGNOSIS" data-to="DIAGNOSIS_ADDED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="1627.0359999999998,219.56249999999997 1744.0929999999998,219.56249999999997 1744.0929999999998,269.15 1837.195,269.15" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="APPOINTMENT" data-to="MEDICAL_RECORD" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:0..1 lượt khám" points="808.829,188.44583333333333 820.829,188.44583333333333 820.829,188.85833333333332 943.4429999999999,188.85833333333332 943.4429999999999,198.94583333333333 1026.6439999999998,198.94583333333333" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MEDICAL_RECORD" data-to="DIAGNOSIS" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N chẩn đoán" points="1187.8949999999998,220.1208333333333 1245.0959999999998,220.1208333333333 1245.0959999999998,219.5625 1489.4969999999998,219.5625" fill="none" stroke="#939395" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MEDICAL_RECORD" data-to="ATTACHED_RESULT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="planned attachment" points="1187.8949999999998,241.29583333333332 1245.0959999999998,241.29583333333332 1245.0959999999998,323.61249999999995 1394.4399999999998,323.61249999999995 1394.4399999999998,326.1458333333333 1432.4399999999998,326.1458333333333" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="ATTACHED_RESULT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe" points="1233.0959999999998,356.9125 1394.4399999999998,356.9125 1394.4399999999998,354.3791666666667 1432.4399999999998,354.3791666666667" fill="none" stroke="#939395" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="PATIENT" data-to="APPOINTMENT" data-label="REST validation · UUID logic">
+  <rect x="304.83699999999993" y="103.81666666666666" width="150.706" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="380.18999999999994" y="118.96666666666667" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">REST validation · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="APPOINTMENT" data-label="REST validation · UUID logic">
+  <rect x="304.83699999999993" y="193.61666666666667" width="150.706" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="380.18999999999994" y="208.76666666666668" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">REST validation · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="MEDICAL_RECORD" data-label="patient_id · UUID logic">
+  <rect x="335.1309999999999" y="137.11666666666667" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="395.33699999999993" y="152.26666666666668" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="MEDICAL_RECORD" data-label="doctor_id, department_id · UUID logic">
+  <rect x="264.44499999999994" y="226.91666666666669" width="191.09799999999998" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="359.9939999999999" y="242.0666666666667" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">doctor_id, department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="LAB_RESULT" data-to="PROCESSED_EVENT" data-label="consume">
+  <rect x="395.12499999999994" y="298.9791666666667" width="60.418000000000006" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="425.33399999999995" y="314.12916666666666" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">consume</text>
+</g>
+<g class="edge-label" data-from="PRESCRIPTION_FILLED" data-to="PROCESSED_EVENT" data-label="consume">
+  <rect x="395.12499999999994" y="371.8791666666667" width="60.418000000000006" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="425.33399999999995" y="387.0291666666667" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">consume</text>
+</g>
+<g class="edge-label" data-from="APPOINTMENT" data-to="APPOINTMENT_CREATED" data-label="publish">
+  <rect x="1726.0929999999998" y="34.44999999999999" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1752.1439999999998" y="49.59999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="APPOINTMENT" data-to="APPOINTMENT_CHANGED" data-label="publish">
+  <rect x="1752.0929999999998" y="107.34999999999997" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1778.1439999999998" y="122.49999999999997" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="MEDICAL_RECORD" data-to="RECORD_CREATED" data-label="publish">
+  <rect x="1752.0929999999998" y="180.24999999999997" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1778.1439999999998" y="195.39999999999998" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="DIAGNOSIS" data-to="DIAGNOSIS_ADDED" data-label="publish">
+  <rect x="1752.0929999999998" y="253.14999999999995" width="52.102" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1778.1439999999998" y="268.29999999999995" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="APPOINTMENT" data-to="MEDICAL_RECORD" data-label="1:0..1 lượt khám">
+  <rect x="854.829" y="172.85833333333332" width="80.61399999999999" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="895.136" y="188.00833333333333" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">1:0..1 lượt khám</text>
+</g>
+<g class="edge-label" data-from="MEDICAL_RECORD" data-to="DIAGNOSIS" data-label="1:N chẩn đoán">
+  <rect x="1292.4609999999998" y="203.5625" width="80.614" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1332.7679999999998" y="218.7125" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">1:N chẩn đoán</text>
+</g>
+<g class="edge-label" data-from="MEDICAL_RECORD" data-to="ATTACHED_RESULT" data-label="planned attachment">
+  <rect x="1279.0959999999998" y="307.6125" width="107.34400000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1332.7679999999998" y="322.7625" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">planned attachment</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="ATTACHED_RESULT" data-label="dedupe">
+  <rect x="1306.1229999999998" y="340.9125" width="53.29" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e5e5e5" stroke-width="1" />
+  <text font-family="Arial" x="1332.7679999999998" y="356.0625" text-anchor="middle" font-size="11" font-weight="400" fill="#7d7d7f" dy="3.8499999999999996">dedupe</text>
+</g>
+<g class="node" data-id="PATIENT" data-label="Patient Service
+patient_id" data-shape="rectangle">
+  <rect x="127.22599999999994" y="111.67083333333329" width="131.611" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="193.03149999999994" y="138.5708333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="193.03149999999994" dy="-3.9000000000000012">Patient Service</tspan><tspan x="193.03149999999994" dy="16.900000000000002">patient_id</tspan></text>
+</g>
+<g class="node" data-id="ORGANIZATION" data-label="Organization Service
+doctor_id, department_id" data-shape="rectangle">
+  <rect x="32" y="201.4708333333333" width="186.44499999999996" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="125.22249999999998" y="228.3708333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="125.22249999999998" dy="-3.9000000000000012">Organization Service</tspan><tspan x="125.22249999999998" dy="16.900000000000002">doctor_id, department_id</tspan></text>
+</g>
+<g class="node" data-id="LAB_RESULT" data-label="lab.result.created" data-shape="stadium">
+  <rect x="204.17599999999993" y="296.5291666666667" width="145.69" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="277.02099999999996" y="314.9791666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">lab.result.created</text>
+</g>
+<g class="node" data-id="PRESCRIPTION_FILLED" data-label="prescription.filled" data-shape="stadium">
+  <rect x="204.17599999999993" y="369.4291666666667" width="144.20800000000003" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="276.28" y="387.87916666666666" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.filled</text>
+</g>
+<g class="node" data-id="APPOINTMENT_CREATED" data-label="appointment.created" data-shape="stadium">
+  <rect x="1837.195" y="32" width="160.51" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1917.4499999999998" y="50.45" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">appointment.created</text>
+</g>
+<g class="node" data-id="APPOINTMENT_CHANGED" data-label="appointment.status.changed" data-shape="stadium">
+  <rect x="1837.195" y="104.9" width="204.96999999999997" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1939.6799999999998" y="123.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">appointment.status.changed</text>
+</g>
+<g class="node" data-id="RECORD_CREATED" data-label="medicalrecord.created" data-shape="stadium">
+  <rect x="1837.195" y="177.8" width="176.81199999999998" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1925.6009999999999" y="196.25" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">medicalrecord.created</text>
+</g>
+<g class="node" data-id="DIAGNOSIS_ADDED" data-label="diagnosis.added" data-shape="stadium">
+  <rect x="1837.195" y="250.70000000000002" width="139.762" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1907.076" y="269.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">diagnosis.added</text>
+</g>
+<g class="node" data-id="APPOINTMENT" data-label="APPOINTMENT
+PK appointment_id
+patient_id · doctor_id · department_id" data-shape="cylinder">
+  <rect x="547.5429999999999" y="131.92083333333332" width="261.28599999999994" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="547.5429999999999" y1="131.92083333333332" x2="547.5429999999999" y2="202.62083333333334" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="808.8289999999998" y1="131.92083333333332" x2="808.8289999999998" y2="202.62083333333334" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="678.1859999999999" cy="202.62083333333334" rx="130.64299999999997" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="678.1859999999999" cy="131.92083333333332" rx="130.64299999999997" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="678.1859999999999" y="167.27083333333331" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="678.1859999999999" dy="-12.350000000000001">APPOINTMENT</tspan><tspan x="678.1859999999999" dy="16.900000000000002">PK appointment_id</tspan><tspan x="678.1859999999999" dy="16.900000000000002">patient_id · doctor_id · department_id</tspan></text>
+</g>
+<g class="node" data-id="MEDICAL_RECORD" data-label="MEDICAL_RECORD
+PK record_id
+FK appointment_id" data-shape="cylinder">
+  <rect x="1026.6439999999998" y="184.77083333333331" width="161.25099999999998" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="1026.6439999999998" y1="184.77083333333331" x2="1026.6439999999998" y2="255.4708333333333" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1187.8949999999998" y1="184.77083333333331" x2="1187.8949999999998" y2="255.4708333333333" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1107.2694999999999" cy="255.4708333333333" rx="80.62549999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1107.2694999999999" cy="184.77083333333331" rx="80.62549999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1107.2694999999999" y="220.1208333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1107.2694999999999" dy="-12.350000000000001">MEDICAL_RECORD</tspan><tspan x="1107.2694999999999" dy="16.900000000000002">PK record_id</tspan><tspan x="1107.2694999999999" dy="16.900000000000002">FK appointment_id</tspan></text>
+</g>
+<g class="node" data-id="DIAGNOSIS" data-label="DIAGNOSIS
+PK diagnosis_id
+FK record_id" data-shape="cylinder">
+  <rect x="1489.4969999999998" y="184.21249999999998" width="137.539" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="1489.4969999999998" y1="184.21249999999998" x2="1489.4969999999998" y2="254.91249999999997" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1627.0359999999998" y1="184.21249999999998" x2="1627.0359999999998" y2="254.91249999999997" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1558.2664999999997" cy="254.91249999999997" rx="68.7695" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1558.2664999999997" cy="184.21249999999998" rx="68.7695" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1558.2664999999997" y="219.56249999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1558.2664999999997" dy="-12.350000000000001">DIAGNOSIS</tspan><tspan x="1558.2664999999997" dy="16.900000000000002">PK diagnosis_id</tspan><tspan x="1558.2664999999997" dy="16.900000000000002">FK record_id</tspan></text>
+</g>
+<g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT · planned V2
+PK event_id
+routing_key" data-shape="cylinder">
+  <rect x="981.4429999999999" y="321.5625" width="251.65299999999996" height="70.7" fill="#F8FAFC" stroke="none" />
+  <line x1="981.4429999999999" y1="321.5625" x2="981.4429999999999" y2="392.2625" stroke="#64748B" stroke-width="0.75" />
+  <line x1="1233.0959999999998" y1="321.5625" x2="1233.0959999999998" y2="392.2625" stroke="#64748B" stroke-width="0.75" />
+  <ellipse cx="1107.2694999999999" cy="392.2625" rx="125.82649999999998" ry="7" fill="#F8FAFC" stroke="#64748B" stroke-width="0.75" />
+  <ellipse cx="1107.2694999999999" cy="321.5625" rx="125.82649999999998" ry="7" fill="#F8FAFC" stroke="#64748B" stroke-width="0.75" />
+  <text font-family="Arial" x="1107.2694999999999" y="356.9125" text-anchor="middle" font-size="13" font-weight="500" fill="#334155"><tspan x="1107.2694999999999" dy="-12.350000000000001">PROCESSED_EVENT · planned V2</tspan><tspan x="1107.2694999999999" dy="16.900000000000002">PK event_id</tspan><tspan x="1107.2694999999999" dy="16.900000000000002">routing_key</tspan></text>
+</g>
+<g class="node" data-id="ATTACHED_RESULT" data-label="ATTACHED_RESULT · planned V2
+FK record_id
+type · reference_id · summary" data-shape="cylinder">
+  <rect x="1432.4399999999998" y="304.9125" width="251.65299999999996" height="70.7" fill="#F8FAFC" stroke="none" />
+  <line x1="1432.4399999999998" y1="304.9125" x2="1432.4399999999998" y2="375.6125" stroke="#64748B" stroke-width="0.75" />
+  <line x1="1684.0929999999998" y1="304.9125" x2="1684.0929999999998" y2="375.6125" stroke="#64748B" stroke-width="0.75" />
+  <ellipse cx="1558.2664999999997" cy="375.6125" rx="125.82649999999998" ry="7" fill="#F8FAFC" stroke="#64748B" stroke-width="0.75" />
+  <ellipse cx="1558.2664999999997" cy="304.9125" rx="125.82649999999998" ry="7" fill="#F8FAFC" stroke="#64748B" stroke-width="0.75" />
+  <text font-family="Arial" x="1558.2664999999997" y="340.26250000000005" text-anchor="middle" font-size="13" font-weight="500" fill="#334155"><tspan x="1558.2664999999997" dy="-12.350000000000001">ATTACHED_RESULT · planned V2</tspan><tspan x="1558.2664999999997" dy="16.900000000000002">FK record_id</tspan><tspan x="1558.2664999999997" dy="16.900000000000002">type · reference_id · summary</tspan></text>
+</g>
+</svg>

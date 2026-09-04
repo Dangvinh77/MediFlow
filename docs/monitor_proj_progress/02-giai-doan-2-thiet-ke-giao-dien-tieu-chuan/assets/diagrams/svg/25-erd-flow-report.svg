@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1610.524 489.1416666666667" width="1610.524" height="489.1416666666667" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="REPORT" data-label="Report Service · mediflow_report">
+  <rect x="647.349" y="32" width="615.3879999999999" height="386.1" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="647.349" y="32" width="615.3879999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="659.349" y="46" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Report Service · mediflow_report</text>
+</g>
+<polyline class="edge" data-from="INPUTS" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume one queue" points="437.847,240.64166666666668 629.349,240.64166666666668 629.349,279.2583333333333 663.349,279.2583333333333" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="DAILY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="199.179,142.37916666666666 433.553,142.37916666666666 433.553,77.06250000000003 629.349,77.06250000000003 629.349,100.85000000000002 944.487,100.85000000000002 944.487,104.23333333333335 990.2675,104.23333333333335" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="MONTHLY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="199.179,155.82916666666665 445.553,155.82916666666665 445.553,125.19166666666669 629.349,125.19166666666669 629.349,167.7 956.487,167.7 956.487,224.93333333333334 990.2675000000002,224.93333333333334" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="DRUG_STAT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="199.179,169.27916666666664 237.179,169.27916666666664 237.179,356.79166666666674 629.349,356.79166666666674 629.349,359.75 990.2674999999999,359.75" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PHARMACY" data-to="DRUG_STAT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="drug_id · UUID logic" points="437.25300000000004,429.99166666666673 629.349,429.99166666666673 629.349,380.925 990.2674999999999,380.925" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DAILY" data-to="API" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="query" points="1207.8345,118.35 1332.737,118.35 1332.737,162.05 1394.899,162.05 1394.899,215.675 1406.899,215.675" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MONTHLY" data-to="API" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="query" points="1227.1005,239.04999999999998 1394.899,239.05 1394.899,229.125 1406.899,229.125" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="DRUG_STAT" data-to="API" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="query" points="1254.5175,359.75 1306.737,359.75 1306.737,277.52083333333337 1394.899,277.52083333333337 1394.899,242.57500000000002 1406.899,242.57500000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="DAILY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe" points="837.197,258.08333333333337 849.197,258.08333333333337 849.197,189.7 944.4870000000001,189.7 944.4870000000001,132.46666666666667 990.2675,132.46666666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="MONTHLY" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe" points="837.197,279.2583333333333 849.197,279.2583333333333 849.197,266.7 944.4870000000001,266.7 944.4870000000001,253.16666666666666 990.2675,253.16666666666666" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="DRUG_STAT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe" points="837.197,300.43333333333334 849.197,300.43333333333334 849.197,333.575 944.4870000000001,333.575 944.4870000000001,338.575 990.2675,338.575" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="INPUTS" data-to="PROCESSED_EVENT" data-label="consume one queue">
+  <rect x="483.8469999999999" y="224.64166666666668" width="111.50200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="539.598" y="239.79166666666669" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume one queue</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="DAILY" data-label="department_id · UUID logic">
+  <rect x="453.553" y="61.062500000000036" width="141.796" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="524.451" y="76.21250000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="MONTHLY" data-label="department_id · UUID logic">
+  <rect x="453.553" y="109.19166666666669" width="141.796" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="524.451" y="124.3416666666667" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="DRUG_STAT" data-label="department_id · UUID logic">
+  <rect x="453.553" y="340.79166666666674" width="141.796" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="524.451" y="355.9416666666667" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PHARMACY" data-to="DRUG_STAT" data-label="drug_id · UUID logic">
+  <rect x="483.25300000000004" y="413.99166666666673" width="112.09600000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="539.301" y="429.1416666666667" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">drug_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="DAILY" data-to="API" data-label="query">
+  <rect x="1340.7369999999999" y="146.05" width="46.162" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1363.8179999999998" y="161.20000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">query</text>
+</g>
+<g class="edge-label" data-from="MONTHLY" data-to="API" data-label="query">
+  <rect x="1314.7369999999999" y="223.05" width="46.162" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1337.8179999999998" y="238.20000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">query</text>
+</g>
+<g class="edge-label" data-from="DRUG_STAT" data-to="API" data-label="query">
+  <rect x="1314.7369999999999" y="261.52083333333337" width="46.162" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1337.8179999999998" y="276.67083333333335" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">query</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="DAILY" data-label="dedupe">
+  <rect x="883.197" y="173.7" width="53.29" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="909.842" y="188.85" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="MONTHLY" data-label="dedupe">
+  <rect x="883.197" y="250.70000000000002" width="53.29" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="909.842" y="265.85" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="DRUG_STAT" data-label="dedupe">
+  <rect x="883.197" y="317.575" width="53.29" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="909.842" y="332.72499999999997" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe</text>
+</g>
+<g class="node" data-id="INPUTS" data-label="Integration events
+medicalrecord.created
+lab.result.created
+prescription.filled
+payment.completed
+payment.failed
+staff.department.changed" data-shape="rectangle">
+  <rect x="249.179" y="171.49166666666667" width="188.668" height="138.3" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="343.51300000000003" y="240.64166666666668" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="343.51300000000003" dy="-46.150000000000006">Integration events</tspan><tspan x="343.51300000000003" dy="16.900000000000002">medicalrecord.created</tspan><tspan x="343.51300000000003" dy="16.900000000000002">lab.result.created</tspan><tspan x="343.51300000000003" dy="16.900000000000002">prescription.filled</tspan><tspan x="343.51300000000003" dy="16.900000000000002">payment.completed</tspan><tspan x="343.51300000000003" dy="16.900000000000002">payment.failed</tspan><tspan x="343.51300000000003" dy="16.900000000000002">staff.department.changed</tspan></text>
+</g>
+<g class="node" data-id="ORGANIZATION" data-label="Organization Service
+department_id" data-shape="rectangle">
+  <rect x="32" y="128.92916666666665" width="167.179" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="115.5895" y="155.82916666666665" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="115.5895" dy="-3.9000000000000012">Organization Service</tspan><tspan x="115.5895" dy="16.900000000000002">department_id</tspan></text>
+</g>
+<g class="node" data-id="PHARMACY" data-label="Pharmacy Service
+drug_id" data-shape="rectangle">
+  <rect x="284.894" y="403.0916666666667" width="152.359" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="361.0735" y="429.9916666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="361.0735" dy="-3.9000000000000012">Pharmacy Service</tspan><tspan x="361.0735" dy="16.900000000000002">drug_id</tspan></text>
+</g>
+<g class="node" data-id="API" data-label="Read-only report APIs
+theo khoa và toàn viện" data-shape="rectangle">
+  <rect x="1406.899" y="202.22500000000002" width="171.625" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="1492.7115" y="229.12500000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1492.7115" dy="-3.9000000000000012">Read-only report APIs</tspan><tspan x="1492.7115" dy="16.900000000000002">theo khoa và toàn viện</tspan></text>
+</g>
+<g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT
+PK event_id
+routing_key" data-shape="cylinder">
+  <rect x="663.349" y="243.90833333333336" width="173.84799999999996" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="663.349" y1="243.90833333333336" x2="663.349" y2="314.60833333333335" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="837.197" y1="243.90833333333336" x2="837.197" y2="314.60833333333335" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="750.273" cy="314.60833333333335" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="750.273" cy="243.90833333333336" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="750.273" y="279.2583333333334" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="750.273" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="750.273" dy="16.900000000000002">PK event_id</tspan><tspan x="750.273" dy="16.900000000000002">routing_key</tspan></text>
+</g>
+<g class="node" data-id="DAILY" data-label="DAILY_VISIT_REPORT
+report_date + department_id
+visit/lab/prescription/revenue" data-shape="cylinder">
+  <rect x="990.2675" y="83" width="217.56699999999998" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="990.2675" y1="83" x2="990.2675" y2="153.7" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1207.8345" y1="83" x2="1207.8345" y2="153.7" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1099.051" cy="153.7" rx="108.78349999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1099.051" cy="83" rx="108.78349999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1099.051" y="118.35" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1099.051" dy="-12.350000000000001">DAILY_VISIT_REPORT</tspan><tspan x="1099.051" dy="16.900000000000002">report_date + department_id</tspan><tspan x="1099.051" dy="16.900000000000002">visit/lab/prescription/revenue</tspan></text>
+</g>
+<g class="node" data-id="MONTHLY" data-label="MONTHLY_REVENUE_REPORT
+month + year + department_id
+revenue + invoice_count" data-shape="cylinder">
+  <rect x="990.2675" y="203.7" width="236.8329999999999" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="990.2675" y1="203.7" x2="990.2675" y2="274.4" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1227.1005" y1="203.7" x2="1227.1005" y2="274.4" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1108.684" cy="274.4" rx="118.41649999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1108.684" cy="203.7" rx="118.41649999999996" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1108.684" y="239.04999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1108.684" dy="-12.350000000000001">MONTHLY_REVENUE_REPORT</tspan><tspan x="1108.684" dy="16.900000000000002">month + year + department_id</tspan><tspan x="1108.684" dy="16.900000000000002">revenue + invoice_count</tspan></text>
+</g>
+<g class="node" data-id="DRUG_STAT" data-label="DRUG_STATISTIC
+drug_id + report_date + department_id
+dispensed_quantity" data-shape="cylinder">
+  <rect x="990.2675" y="324.4" width="264.24999999999994" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="990.2675" y1="324.4" x2="990.2675" y2="395.09999999999997" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1254.5175" y1="324.4" x2="1254.5175" y2="395.09999999999997" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1122.3925" cy="395.09999999999997" rx="132.12499999999997" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1122.3925" cy="324.4" rx="132.12499999999997" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1122.3925" y="359.75" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1122.3925" dy="-12.350000000000001">DRUG_STATISTIC</tspan><tspan x="1122.3925" dy="16.900000000000002">drug_id + report_date + department_id</tspan><tspan x="1122.3925" dy="16.900000000000002">dispensed_quantity</tspan></text>
+</g>
+</svg>
