@@ -7,8 +7,8 @@ package com.mediflow.pharmacy.application.port.in;
  * chưa được thanh toán, job định kỳ gọi use case này để chuyển các giữ chỗ {@code RESERVED}
  * quá hạn → {@code EXPIRED} — tức trả lại "chỗ" trong số tồn có thể bán cho các đơn khác.
  *
- * <p>Đây chỉ là hợp đồng — {@code PharmacyApplicationService} sẽ hiện thực. Driving adapter
- * là một scheduler (job) trong infrastructure.
+ * <p>Đây chỉ là hợp đồng — {@code ReleaseExpiredReservationsService} hiện thực. Driving adapter
+ * là một scheduler (job) trong infrastructure.</p>
  */
 public interface ReleaseExpiredReservationsUseCase {
 

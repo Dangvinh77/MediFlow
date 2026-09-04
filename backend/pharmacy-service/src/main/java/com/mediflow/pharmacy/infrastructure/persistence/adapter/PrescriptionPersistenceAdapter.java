@@ -25,25 +25,36 @@ import lombok.RequiredArgsConstructor;
 public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPort {
 
     private final PrescriptionJpaRepository jpaRepo;
-@Override
-public Prescription save(Prescription prescription) {
-    PrescriptionJpaEntity entity = toEntity(prescription);
 
-    /*
-     * Flush để:
-     * - UUID của đơn và từng dòng đã được sinh;
-     * - createdAt đã được Hibernate gán;
-     * - constraint database được kiểm tra ngay trong transaction hiện tại.
-     */
-    PrescriptionJpaEntity saved =
-            jpaRepo.saveAndFlush(entity);
+    @Override
+    public Prescription save(Prescription prescription) {
+        PrescriptionJpaEntity entity = toEntity(prescription);
 
-    return toDomain(saved);
-}
+        /*
+         * Flush để:
+         * - UUID của đơn và từng dòng đã được sinh;
+         * - createdAt đã được Hibernate gán;
+         * - constraint database được kiểm tra ngay trong transaction hiện tại.
+         */
+        PrescriptionJpaEntity saved =
+                jpaRepo.saveAndFlush(entity);
+
+        return toDomain(saved);
+    }
 
     @Override
     public Optional<Prescription> findById(UUID id) {
         return jpaRepo.findById(id).map(this::toDomain);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Khóa do Spring Data giữ đến khi transaction của application kết thúc.</p>
+     */
+    @Override
+    public Optional<Prescription> findByIdForUpdate(UUID id) {
+        return jpaRepo.findByIdForUpdate(id).map(this::toDomain);
     }
 
     @Override
@@ -57,7 +68,9 @@ public Prescription save(Prescription prescription) {
         List<PrescriptionLine> lines = e.getLines().stream().map(this::toDomainLine).toList();
         return Prescription.restore(
                 e.getPrescriptionId(), e.getRecordId(), e.getPatientId(), e.getDoctorId(),
-                e.getDepartmentId(), e.getPrescribedDate(), e.getTotalAmount(), lines, e.getCreatedAt());
+                e.getDepartmentId(), e.getPrescribedDate(), e.getTotalAmount(), lines,
+                e.getStatus(), e.getCancelledAt(), e.getCancelledBy(), e.getCancellationReason(),
+                e.getCreatedAt(), e.getUpdatedAt());
     }
 
     private PrescriptionLine toDomainLine(PrescriptionLineJpaEntity l) {
@@ -74,6 +87,10 @@ public Prescription save(Prescription prescription) {
                 .departmentId(p.getDepartmentId())
                 .prescribedDate(p.getPrescribedDate())
                 .totalAmount(p.getTotalAmount())
+                .status(p.getStatus())
+                .cancelledAt(p.getCancelledAt())
+                .cancelledBy(p.getCancelledBy())
+                .cancellationReason(p.getCancellationReason())
                 .build();
         p.getLines().forEach(line -> entity.addLine(toEntityLine(line)));
         return entity;

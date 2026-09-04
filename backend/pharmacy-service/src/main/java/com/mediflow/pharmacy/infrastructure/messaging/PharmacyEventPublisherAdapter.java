@@ -1,7 +1,9 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
+import com.mediflow.pharmacy.application.event.PrescriptionCancelledEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.pharmacy.application.event.PrescriptionExpiredEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
@@ -22,7 +24,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort {
 
- private static final String EXCHANGE = "mediflow.events";
+    private static final String EXCHANGE = "mediflow.events";
+
+    private static final String PRESCRIPTION_CANCELLED =
+            "prescription.cancelled";
 
     private static final String PRESCRIPTION_CREATED =
             "prescription.created";
@@ -33,18 +38,29 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     private static final String PRESCRIPTION_DISPENSE_FAILED =
             "prescription.dispense.failed";
 
+    private static final String PRESCRIPTION_EXPIRED =
+            "prescription.expired";
+
     private static final String STOCK_LOW =
             "stock.low";
 
     private final RabbitTemplate rabbitTemplate;
-     @Override
+
+    @Override
+    public void publishPrescriptionCancelled(
+            PrescriptionCancelledEvent event) {
+
+        publishAfterCommit(PRESCRIPTION_CANCELLED, event);
+    }
+
+    @Override
     public void publishPrescriptionCreated(
             PrescriptionCreatedEvent event) {
 
         publishAfterCommit(PRESCRIPTION_CREATED, event);
     }
 
-      @Override
+    @Override
     public void publishPrescriptionFilled(
             PrescriptionFilledEvent event) {
 
@@ -59,11 +75,18 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     }
 
     @Override
+    public void publishPrescriptionExpired(
+            PrescriptionExpiredEvent event) {
+
+        publishAfterCommit(PRESCRIPTION_EXPIRED, event);
+    }
+
+    @Override
     public void publishStockLow(StockLowEvent event) {
         publishAfterCommit(STOCK_LOW, event);
     }
 
-     /**
+    /**
      * Đăng ký gửi payload sau commit nếu đang ở trong transaction.
      *
      * <p>Khi adapter được gọi ngoài transaction, chẳng hạn từ unit test hoặc

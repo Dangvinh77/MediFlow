@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
@@ -35,6 +36,15 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
         return jpaRepo.findByPrescriptionId(prescriptionId).stream().map(this::toDomain).toList();
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public List<StockReservation> findByPrescriptionForUpdate(UUID prescriptionId) {
+        return jpaRepo.findByPrescriptionIdForUpdate(prescriptionId)
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     @Override
     public List<StockReservation> findReservedByDrug(UUID drugId) {
         return jpaRepo.findByDrugIdAndStatus(drugId, ReservationStatus.RESERVED)
@@ -42,9 +52,14 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
     }
 
     @Override
-    public List<StockReservation> findExpired() {
-        return jpaRepo.findExpiredByStatusAndBefore(ReservationStatus.RESERVED, Instant.now())
-                .stream().map(this::toDomain).toList();
+    public List<UUID> findExpiredPrescriptionIds(Instant now, int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Giới hạn batch phải lớn hơn 0");
+        }
+        return jpaRepo.findExpiredPrescriptionIds(
+                ReservationStatus.RESERVED,
+                now,
+                PageRequest.of(0, limit));
     }
 
     @Override
@@ -57,7 +72,8 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
     private StockReservation toDomain(StockReservationJpaEntity e) {
         return StockReservation.restore(
                 e.getReservationId(), e.getDrugId(), e.getPrescriptionId(), e.getQuantity(),
-                e.getStatus(), e.getCreatedAt(), e.getExpiresAt(), e.getUpdatedAt());
+                e.getStatus(), e.getCreatedAt(), e.getExpiresAt(), e.getUpdatedAt(),
+                e.getReleaseReason(), e.getReleasedAt(), e.getReleasedBy());
     }
 
     private StockReservationJpaEntity toEntity(StockReservation r) {
@@ -68,6 +84,9 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
                 .quantity(r.getQuantity())
                 .status(r.getStatus())
                 .expiresAt(r.getExpiresAt())
+                .releaseReason(r.getReleaseReason())
+                .releasedAt(r.getReleasedAt())
+                .releasedBy(r.getReleasedBy())
                 .build();
     }
 }
