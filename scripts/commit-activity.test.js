@@ -1,5 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   parseEntries,
@@ -8,6 +11,7 @@ const {
   renderDailySvg,
   renderHourlySvg,
   replaceGeneratedBlock,
+  generate,
 } = require('./commit-activity');
 
 function entry(overrides = {}) {
@@ -197,4 +201,37 @@ test('chart renderers handle an empty changelog', () => {
 
   assert.match(renderDailySvg(model), /No commits recorded/);
   assert.match(renderHourlySvg(model), /No commits recorded/);
+});
+
+test('generate writes all dashboard artifacts atomically and is idempotent', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(rootDir, '.changelog'));
+  fs.writeFileSync(
+    path.join(rootDir, '.changelog', 'entries.jsonl'),
+    `${JSON.stringify(entry())}\n`,
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'README.md'),
+    '# Test\n\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n\nKeep me.\n',
+  );
+
+  const first = generate({ rootDir, timeZone: 'Asia/Saigon' });
+  const second = generate({ rootDir, timeZone: 'Asia/Saigon' });
+
+  assert.deepEqual(first.changed.sort(), [
+    'README.md',
+    'docs/assets/commit-activity-by-day.svg',
+    'docs/assets/commit-activity-by-hour.svg',
+  ]);
+  assert.deepEqual(second.changed, []);
+  assert.match(fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8'), /Keep me\./);
+  assert.match(
+    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'), 'utf8'),
+    /Commit activity by day/,
+  );
+  assert.deepEqual(
+    fs.readdirSync(path.join(rootDir, 'docs', 'assets')).filter((name) => name.includes('.tmp-')),
+    [],
+  );
 });

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 1024 284">
+  <title>Commit activity by hour</title>
+  <desc>99 commits grouped into 24 local-hour columns for each contributor.</desc>
+  <rect width="1024" height="284" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.axis{fill:#57606a;font-size:11px}.heading{fill:#1f2328;font-size:18px;font-weight:600}.subheading{fill:#57606a;font-size:12px}.name{fill:#1f2328;font-size:12px}</style>
+  <text class="heading" x="180" y="30">Commits by hour</text>
+  <text class="subheading" x="180" y="49">Local time · Asia/Saigon · darker cells mean more commits</text>
+  <text class="axis" x="197" y="70" text-anchor="middle">00</text>
+  <text class="axis" x="231" y="70" text-anchor="middle">01</text>
+  <text class="axis" x="265" y="70" text-anchor="middle">02</text>
+  <text class="axis" x="299" y="70" text-anchor="middle">03</text>
+  <text class="axis" x="333" y="70" text-anchor="middle">04</text>
+  <text class="axis" x="367" y="70" text-anchor="middle">05</text>
+  <text class="axis" x="401" y="70" text-anchor="middle">06</text>
+  <text class="axis" x="435" y="70" text-anchor="middle">07</text>
+  <text class="axis" x="469" y="70" text-anchor="middle">08</text>
+  <text class="axis" x="503" y="70" text-anchor="middle">09</text>
+  <text class="axis" x="537" y="70" text-anchor="middle">10</text>
+  <text class="axis" x="571" y="70" text-anchor="middle">11</text>
+  <text class="axis" x="605" y="70" text-anchor="middle">12</text>
+  <text class="axis" x="639" y="70" text-anchor="middle">13</text>
+  <text class="axis" x="673" y="70" text-anchor="middle">14</text>
+  <text class="axis" x="707" y="70" text-anchor="middle">15</text>
+  <text class="axis" x="741" y="70" text-anchor="middle">16</text>
+  <text class="axis" x="775" y="70" text-anchor="middle">17</text>
+  <text class="axis" x="809" y="70" text-anchor="middle">18</text>
+  <text class="axis" x="843" y="70" text-anchor="middle">19</text>
+  <text class="axis" x="877" y="70" text-anchor="middle">20</text>
+  <text class="axis" x="911" y="70" text-anchor="middle">21</text>
+  <text class="axis" x="945" y="70" text-anchor="middle">22</text>
+  <text class="axis" x="979" y="70" text-anchor="middle">23</text>
+  <text class="name" x="170" y="102" text-anchor="end">Harori</text>
+  <rect data-hour="0" x="182" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.48)"><title>Harori · 00:00: 4</title></rect>
+  <rect data-hour="1" x="216" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.60)"><title>Harori · 01:00: 6</title></rect>
+  <rect data-hour="2" x="250" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 02:00: 0</title></rect>
+  <rect data-hour="3" x="284" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 03:00: 0</title></rect>
+  <rect data-hour="4" x="318" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 04:00: 0</title></rect>
+  <rect data-hour="5" x="352" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 05:00: 0</title></rect>
+  <rect data-hour="6" x="386" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 06:00: 0</title></rect>
+  <rect data-hour="7" x="420" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 07:00: 0</title></rect>
+  <rect data-hour="8" x="454" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 08:00: 0</title></rect>
+  <rect data-hour="9" x="488" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 09:00: 0</title></rect>
+  <rect data-hour="10" x="522" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 10:00: 0</title></rect>
+  <rect data-hour="11" x="556" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.60)"><title>Harori · 11:00: 6</title></rect>
+  <rect data-hour="12" x="590" y="84" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 12:00: 0</title></rect>
+  <rect data-hour="13" x="624" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>Harori · 13:00: 1</title></rect>
+  <rect data-hour="14" x="658" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 1.00)"><title>Harori · 14:00: 13</title></rect>
+  <rect data-hour="15" x="692" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>Harori · 15:00: 2</title></rect>
+  <rect data-hour="16" x="726" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.54)"><title>Harori · 16:00: 5</title></rect>
+  <rect data-hour="17" x="760" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.60)"><title>Harori · 17:00: 6</title></rect>
+  <rect data-hour="18" x="794" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.77)"><title>Harori · 18:00: 9</title></rect>
+  <rect data-hour="19" x="828" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.77)"><title>Harori · 19:00: 9</title></rect>
+  <rect data-hour="20" x="862" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.42)"><title>Harori · 20:00: 3</title></rect>
+  <rect data-hour="21" x="896" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>Harori · 21:00: 2</title></rect>
+  <rect data-hour="22" x="930" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>Harori · 22:00: 1</title></rect>
+  <rect data-hour="23" x="964" y="84" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.42)"><title>Harori · 23:00: 3</title></rect>
+  <text class="name" x="170" y="134" text-anchor="end">LQHuy0210</text>
+  <rect data-hour="0" x="182" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 00:00: 0</title></rect>
+  <rect data-hour="1" x="216" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 01:00: 0</title></rect>
+  <rect data-hour="2" x="250" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 02:00: 0</title></rect>
+  <rect data-hour="3" x="284" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 03:00: 0</title></rect>
+  <rect data-hour="4" x="318" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 04:00: 0</title></rect>
+  <rect data-hour="5" x="352" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 05:00: 0</title></rect>
+  <rect data-hour="6" x="386" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 06:00: 0</title></rect>
+  <rect data-hour="7" x="420" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 07:00: 0</title></rect>
+  <rect data-hour="8" x="454" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 08:00: 0</title></rect>
+  <rect data-hour="9" x="488" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 09:00: 0</title></rect>
+  <rect data-hour="10" x="522" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 10:00: 0</title></rect>
+  <rect data-hour="11" x="556" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 11:00: 0</title></rect>
+  <rect data-hour="12" x="590" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 12:00: 0</title></rect>
+  <rect data-hour="13" x="624" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 13:00: 0</title></rect>
+  <rect data-hour="14" x="658" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>LQHuy0210 · 14:00: 1</title></rect>
+  <rect data-hour="15" x="692" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.48)"><title>LQHuy0210 · 15:00: 4</title></rect>
+  <rect data-hour="16" x="726" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 16:00: 0</title></rect>
+  <rect data-hour="17" x="760" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 17:00: 0</title></rect>
+  <rect data-hour="18" x="794" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>LQHuy0210 · 18:00: 2</title></rect>
+  <rect data-hour="19" x="828" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.48)"><title>LQHuy0210 · 19:00: 4</title></rect>
+  <rect data-hour="20" x="862" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>LQHuy0210 · 20:00: 1</title></rect>
+  <rect data-hour="21" x="896" y="116" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>LQHuy0210 · 21:00: 1</title></rect>
+  <rect data-hour="22" x="930" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 22:00: 0</title></rect>
+  <rect data-hour="23" x="964" y="116" width="30" height="28" rx="4" fill="#ebedf0"><title>LQHuy0210 · 23:00: 0</title></rect>
+  <text class="name" x="170" y="166" text-anchor="end">Harori</text>
+  <rect data-hour="0" x="182" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 00:00: 0</title></rect>
+  <rect data-hour="1" x="216" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 01:00: 0</title></rect>
+  <rect data-hour="2" x="250" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 02:00: 0</title></rect>
+  <rect data-hour="3" x="284" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 03:00: 0</title></rect>
+  <rect data-hour="4" x="318" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 04:00: 0</title></rect>
+  <rect data-hour="5" x="352" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 05:00: 0</title></rect>
+  <rect data-hour="6" x="386" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 06:00: 0</title></rect>
+  <rect data-hour="7" x="420" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 07:00: 0</title></rect>
+  <rect data-hour="8" x="454" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 08:00: 0</title></rect>
+  <rect data-hour="9" x="488" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 09:00: 0</title></rect>
+  <rect data-hour="10" x="522" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 10:00: 0</title></rect>
+  <rect data-hour="11" x="556" y="148" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>Harori · 11:00: 1</title></rect>
+  <rect data-hour="12" x="590" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 12:00: 0</title></rect>
+  <rect data-hour="13" x="624" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 13:00: 0</title></rect>
+  <rect data-hour="14" x="658" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 14:00: 0</title></rect>
+  <rect data-hour="15" x="692" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 15:00: 0</title></rect>
+  <rect data-hour="16" x="726" y="148" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>Harori · 16:00: 1</title></rect>
+  <rect data-hour="17" x="760" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 17:00: 0</title></rect>
+  <rect data-hour="18" x="794" y="148" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.48)"><title>Harori · 18:00: 4</title></rect>
+  <rect data-hour="19" x="828" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 19:00: 0</title></rect>
+  <rect data-hour="20" x="862" y="148" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>Harori · 20:00: 2</title></rect>
+  <rect data-hour="21" x="896" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 21:00: 0</title></rect>
+  <rect data-hour="22" x="930" y="148" width="30" height="28" rx="4" fill="#ebedf0"><title>Harori · 22:00: 0</title></rect>
+  <rect data-hour="23" x="964" y="148" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>Harori · 23:00: 1</title></rect>
+  <text class="name" x="170" y="198" text-anchor="end">locgit-89</text>
+  <rect data-hour="0" x="182" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 00:00: 0</title></rect>
+  <rect data-hour="1" x="216" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 01:00: 0</title></rect>
+  <rect data-hour="2" x="250" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 02:00: 0</title></rect>
+  <rect data-hour="3" x="284" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 03:00: 0</title></rect>
+  <rect data-hour="4" x="318" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 04:00: 0</title></rect>
+  <rect data-hour="5" x="352" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 05:00: 0</title></rect>
+  <rect data-hour="6" x="386" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 06:00: 0</title></rect>
+  <rect data-hour="7" x="420" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 07:00: 0</title></rect>
+  <rect data-hour="8" x="454" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 08:00: 0</title></rect>
+  <rect data-hour="9" x="488" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 09:00: 0</title></rect>
+  <rect data-hour="10" x="522" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 10:00: 0</title></rect>
+  <rect data-hour="11" x="556" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 11:00: 0</title></rect>
+  <rect data-hour="12" x="590" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 12:00: 0</title></rect>
+  <rect data-hour="13" x="624" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 13:00: 0</title></rect>
+  <rect data-hour="14" x="658" y="180" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>locgit-89 · 14:00: 2</title></rect>
+  <rect data-hour="15" x="692" y="180" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.37)"><title>locgit-89 · 15:00: 2</title></rect>
+  <rect data-hour="16" x="726" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 16:00: 0</title></rect>
+  <rect data-hour="17" x="760" y="180" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>locgit-89 · 17:00: 1</title></rect>
+  <rect data-hour="18" x="794" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 18:00: 0</title></rect>
+  <rect data-hour="19" x="828" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 19:00: 0</title></rect>
+  <rect data-hour="20" x="862" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 20:00: 0</title></rect>
+  <rect data-hour="21" x="896" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 21:00: 0</title></rect>
+  <rect data-hour="22" x="930" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 22:00: 0</title></rect>
+  <rect data-hour="23" x="964" y="180" width="30" height="28" rx="4" fill="#ebedf0"><title>locgit-89 · 23:00: 0</title></rect>
+  <text class="name" x="170" y="230" text-anchor="end">TranHoangAnh94</text>
+  <rect data-hour="0" x="182" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 00:00: 0</title></rect>
+  <rect data-hour="1" x="216" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 01:00: 0</title></rect>
+  <rect data-hour="2" x="250" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 02:00: 0</title></rect>
+  <rect data-hour="3" x="284" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 03:00: 0</title></rect>
+  <rect data-hour="4" x="318" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 04:00: 0</title></rect>
+  <rect data-hour="5" x="352" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 05:00: 0</title></rect>
+  <rect data-hour="6" x="386" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 06:00: 0</title></rect>
+  <rect data-hour="7" x="420" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 07:00: 0</title></rect>
+  <rect data-hour="8" x="454" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 08:00: 0</title></rect>
+  <rect data-hour="9" x="488" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 09:00: 0</title></rect>
+  <rect data-hour="10" x="522" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 10:00: 0</title></rect>
+  <rect data-hour="11" x="556" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 11:00: 0</title></rect>
+  <rect data-hour="12" x="590" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 12:00: 0</title></rect>
+  <rect data-hour="13" x="624" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 13:00: 0</title></rect>
+  <rect data-hour="14" x="658" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 14:00: 0</title></rect>
+  <rect data-hour="15" x="692" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 15:00: 0</title></rect>
+  <rect data-hour="16" x="726" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 16:00: 0</title></rect>
+  <rect data-hour="17" x="760" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 17:00: 0</title></rect>
+  <rect data-hour="18" x="794" y="212" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>TranHoangAnh94 · 18:00: 1</title></rect>
+  <rect data-hour="19" x="828" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 19:00: 0</title></rect>
+  <rect data-hour="20" x="862" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 20:00: 0</title></rect>
+  <rect data-hour="21" x="896" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 21:00: 0</title></rect>
+  <rect data-hour="22" x="930" y="212" width="30" height="28" rx="4" fill="#ebedf0"><title>TranHoangAnh94 · 22:00: 0</title></rect>
+  <rect data-hour="23" x="964" y="212" width="30" height="28" rx="4" fill="rgba(37, 99, 235, 0.31)"><title>TranHoangAnh94 · 23:00: 1</title></rect>
+</svg>
