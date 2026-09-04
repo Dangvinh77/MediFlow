@@ -1,7 +1,9 @@
 # Thiết kế bộ ERD chi tiết theo luồng service
 
-**Ngày:** 04/09/2026  
-**Phạm vi:** Báo cáo Giai đoạn 2 của MediFlow  
+**Ngày:** 04/09/2026
+
+**Phạm vi:** Báo cáo Giai đoạn 2 của MediFlow
+
 **Trạng thái:** Đã được người dùng duyệt phương án
 
 ## 1. Mục tiêu
