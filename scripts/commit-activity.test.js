@@ -5,6 +5,8 @@ const {
   parseEntries,
   aggregateEntries,
   renderDashboardMarkdown,
+  renderDailySvg,
+  renderHourlySvg,
   replaceGeneratedBlock,
 } = require('./commit-activity');
 
@@ -157,4 +159,42 @@ test('replaceGeneratedBlock rejects reversed markers', () => {
     ),
     /end marker must follow/i,
   );
+});
+
+test('renderDailySvg renders every date, contributor legend, and accessible text', () => {
+  const model = aggregateEntries(parseEntries([
+    entry({ author: 'A & B', timestamp: 'Tue Sep 1 01:00:00 2026 +0700' }),
+    entry({
+      hash: 'b'.repeat(40),
+      author: 'A & B',
+      timestamp: 'Thu Sep 3 01:00:00 2026 +0700',
+    }),
+  ].map(JSON.stringify).join('\n')));
+
+  const svg = renderDailySvg(model);
+
+  assert.match(svg, /<title>Commit activity by day<\/title>/);
+  assert.match(svg, /2026-09-01/);
+  assert.match(svg, /2026-09-02/);
+  assert.match(svg, /2026-09-03/);
+  assert.match(svg, /A &amp; B/);
+  assert.doesNotMatch(svg, /@example\.com/);
+});
+
+test('renderHourlySvg renders 24 columns and escaped tooltips', () => {
+  const model = aggregateEntries(parseEntries(JSON.stringify(entry({ author: 'A < B' }))));
+
+  const svg = renderHourlySvg(model);
+
+  assert.match(svg, /<title>Commit activity by hour<\/title>/);
+  assert.equal((svg.match(/data-hour=/g) || []).length, 24);
+  assert.match(svg, /A &lt; B/);
+  assert.doesNotMatch(svg, /@example\.com/);
+});
+
+test('chart renderers handle an empty changelog', () => {
+  const model = aggregateEntries([]);
+
+  assert.match(renderDailySvg(model), /No commits recorded/);
+  assert.match(renderHourlySvg(model), /No commits recorded/);
 });

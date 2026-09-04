@@ -4,6 +4,16 @@ const HASH_PATTERN = /^[0-9a-f]{40}$/i;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
 const START_MARKER = '<!-- commit-activity:start -->';
 const END_MARKER = '<!-- commit-activity:end -->';
+const PALETTE = [
+  '#2563eb',
+  '#16a34a',
+  '#dc2626',
+  '#9333ea',
+  '#ea580c',
+  '#0891b2',
+  '#4f46e5',
+  '#65a30d',
+];
 
 function parseEntries(jsonl) {
   const seen = new Set();
@@ -227,9 +237,146 @@ function replaceGeneratedBlock(readme, generated) {
   return `${before}\n${generated.trim()}\n${after}`;
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function emptyChart(title) {
+  return [
+    '<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 960 180">',
+    `  <title>${escapeXml(title)}</title>`,
+    '  <rect width="960" height="180" rx="12" fill="#ffffff" stroke="#d0d7de"/>',
+    '  <text x="480" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#57606a">No commits recorded</text>',
+    '</svg>',
+  ].join('\n');
+}
+
+function renderDailySvg(model) {
+  if (model.totalCommits === 0) {
+    return emptyChart('Commit activity by day');
+  }
+
+  const margin = { top: 66, right: 28, bottom: 92, left: 58 };
+  const chartWidth = Math.max(820, model.dates.length * 18);
+  const chartHeight = 300;
+  const legendColumns = Math.min(4, Math.max(1, model.contributors.length));
+  const legendRows = Math.ceil(model.contributors.length / legendColumns);
+  const width = margin.left + chartWidth + margin.right;
+  const height = margin.top + chartHeight + margin.bottom + legendRows * 26;
+  const totals = model.dates.map((date) => model.daily[date].reduce((sum, count) => sum + count, 0));
+  const maximum = Math.max(...totals, 1);
+  const barStep = chartWidth / model.dates.length;
+  const barWidth = Math.max(2, barStep * 0.72);
+  const labelEvery = Math.max(1, Math.ceil(model.dates.length / 10));
+  const yTicks = 4;
+  const lines = [
+    `<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 ${width} ${height}">`,
+    '  <title>Commit activity by day</title>',
+    `  <desc>${escapeXml(`${model.totalCommits} commits from ${model.dates[0]} through ${model.dates[model.dates.length - 1]}, grouped by contributor.`)}</desc>`,
+    `  <rect width="${width}" height="${height}" rx="12" fill="#ffffff" stroke="#d0d7de"/>`,
+    '  <style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.axis{fill:#57606a;font-size:11px}.heading{fill:#1f2328;font-size:18px;font-weight:600}.subheading{fill:#57606a;font-size:12px}.grid{stroke:#d8dee4;stroke-width:1}.legend{fill:#1f2328;font-size:12px}</style>',
+    `  <text class="heading" x="${margin.left}" y="30">Commits by day</text>`,
+    `  <text class="subheading" x="${margin.left}" y="49">Full changelog history · ${escapeXml(model.timeZone)}</text>`,
+  ];
+
+  for (let tick = 0; tick <= yTicks; tick += 1) {
+    const value = Math.round((maximum * tick) / yTicks);
+    const y = margin.top + chartHeight - (value / maximum) * chartHeight;
+    lines.push(`  <line class="grid" x1="${margin.left}" y1="${y.toFixed(2)}" x2="${margin.left + chartWidth}" y2="${y.toFixed(2)}"/>`);
+    lines.push(`  <text class="axis" x="${margin.left - 9}" y="${(y + 4).toFixed(2)}" text-anchor="end">${value}</text>`);
+  }
+
+  model.dates.forEach((date, dateIndex) => {
+    const x = margin.left + dateIndex * barStep + (barStep - barWidth) / 2;
+    let y = margin.top + chartHeight;
+    lines.push(`  <g data-date="${date}">`);
+    model.daily[date].forEach((count, contributorIndex) => {
+      if (count === 0) return;
+      const segmentHeight = (count / maximum) * chartHeight;
+      y -= segmentHeight;
+      const contributor = model.contributors[contributorIndex];
+      lines.push(`    <rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${segmentHeight.toFixed(2)}" fill="${PALETTE[contributorIndex % PALETTE.length]}"><title>${escapeXml(`${date} · ${contributor.name}: ${count}`)}</title></rect>`);
+    });
+    lines.push('  </g>');
+
+    if (dateIndex % labelEvery === 0 || dateIndex === model.dates.length - 1) {
+      const labelX = x + barWidth / 2;
+      const labelY = margin.top + chartHeight + 17;
+      lines.push(`  <text class="axis" x="${labelX.toFixed(2)}" y="${labelY}" text-anchor="end" transform="rotate(-42 ${labelX.toFixed(2)} ${labelY})">${date}</text>`);
+    }
+  });
+
+  const legendTop = margin.top + chartHeight + margin.bottom - 18;
+  const legendColumnWidth = chartWidth / legendColumns;
+  model.contributors.forEach((contributor, index) => {
+    const column = index % legendColumns;
+    const row = Math.floor(index / legendColumns);
+    const x = margin.left + column * legendColumnWidth;
+    const y = legendTop + row * 26;
+    lines.push(`  <rect x="${x.toFixed(2)}" y="${y}" width="12" height="12" rx="2" fill="${PALETTE[index % PALETTE.length]}"/>`);
+    lines.push(`  <text class="legend" x="${(x + 18).toFixed(2)}" y="${y + 11}">${escapeXml(contributor.name)} (${contributor.total})</text>`);
+  });
+
+  lines.push('</svg>');
+  return lines.join('\n');
+}
+
+function heatColor(count, maximum) {
+  if (count === 0) return '#ebedf0';
+  const opacity = 0.25 + (count / maximum) * 0.75;
+  return `rgba(37, 99, 235, ${opacity.toFixed(2)})`;
+}
+
+function renderHourlySvg(model) {
+  if (model.totalCommits === 0) {
+    return emptyChart('Commit activity by hour');
+  }
+
+  const margin = { top: 82, right: 28, bottom: 42, left: 180 };
+  const cellWidth = 34;
+  const rowHeight = 32;
+  const chartWidth = cellWidth * 24;
+  const width = margin.left + chartWidth + margin.right;
+  const height = margin.top + model.contributors.length * rowHeight + margin.bottom;
+  const maximum = Math.max(...model.hourly.flat(), 1);
+  const lines = [
+    `<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 ${width} ${height}">`,
+    '  <title>Commit activity by hour</title>',
+    `  <desc>${escapeXml(`${model.totalCommits} commits grouped into 24 local-hour columns for each contributor.`)}</desc>`,
+    `  <rect width="${width}" height="${height}" rx="12" fill="#ffffff" stroke="#d0d7de"/>`,
+    '  <style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.axis{fill:#57606a;font-size:11px}.heading{fill:#1f2328;font-size:18px;font-weight:600}.subheading{fill:#57606a;font-size:12px}.name{fill:#1f2328;font-size:12px}</style>',
+    `  <text class="heading" x="${margin.left}" y="30">Commits by hour</text>`,
+    `  <text class="subheading" x="${margin.left}" y="49">Local time · ${escapeXml(model.timeZone)} · darker cells mean more commits</text>`,
+  ];
+
+  for (let hour = 0; hour < 24; hour += 1) {
+    const x = margin.left + hour * cellWidth + cellWidth / 2;
+    lines.push(`  <text class="axis" x="${x}" y="70" text-anchor="middle">${String(hour).padStart(2, '0')}</text>`);
+  }
+
+  model.contributors.forEach((contributor, contributorIndex) => {
+    const y = margin.top + contributorIndex * rowHeight;
+    lines.push(`  <text class="name" x="${margin.left - 10}" y="${y + 20}" text-anchor="end">${escapeXml(contributor.name)}</text>`);
+    model.hourly[contributorIndex].forEach((count, hour) => {
+      const x = margin.left + hour * cellWidth;
+      lines.push(`  <rect data-hour="${hour}" x="${x + 2}" y="${y + 2}" width="${cellWidth - 4}" height="${rowHeight - 4}" rx="4" fill="${heatColor(count, maximum)}"><title>${escapeXml(`${contributor.name} · ${String(hour).padStart(2, '0')}:00: ${count}`)}</title></rect>`);
+    });
+  });
+
+  lines.push('</svg>');
+  return lines.join('\n');
+}
+
 module.exports = {
   aggregateEntries,
   parseEntries,
   renderDashboardMarkdown,
+  renderDailySvg,
+  renderHourlySvg,
   replaceGeneratedBlock,
 };
