@@ -103,30 +103,80 @@ function dateRange(first, last) {
   return dates;
 }
 
-function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
-  const byEmail = new Map();
+function parseAliases(json) {
+  let value;
+  try {
+    value = JSON.parse(json);
+  } catch {
+    throw new Error('Invalid contributor aliases JSON');
+  }
+
+  if (
+    value === null
+    || typeof value !== 'object'
+    || Array.isArray(value)
+    || !Array.isArray(value.contributors)
+  ) {
+    throw new Error('Contributor aliases must contain a contributors array');
+  }
+
+  const ids = new Set();
+  const aliases = new Map();
+  value.contributors.forEach((contributor, index) => {
+    if (contributor === null || typeof contributor !== 'object' || Array.isArray(contributor)) {
+      throw new Error(`Invalid contributor at index ${index}`);
+    }
+
+    const id = typeof contributor.id === 'string' ? contributor.id.trim() : '';
+    const name = typeof contributor.name === 'string' ? contributor.name.trim() : '';
+    if (!id) throw new Error(`Invalid contributor id at index ${index}`);
+    if (!name) throw new Error(`Invalid contributor name at index ${index}`);
+    if (ids.has(id)) throw new Error(`Duplicate contributor id: ${id}`);
+    if (!Array.isArray(contributor.emails) || contributor.emails.length === 0) {
+      throw new Error(`Invalid contributor emails at index ${index}`);
+    }
+    ids.add(id);
+
+    contributor.emails.forEach((email) => {
+      const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      if (!normalized) throw new Error(`Invalid email alias at index ${index}`);
+      if (aliases.has(normalized)) {
+        throw new Error(`Email alias belongs to multiple contributors: ${normalized}`);
+      }
+      aliases.set(normalized, { id, name });
+    });
+  });
+
+  return aliases;
+}
+
+function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new Map()) {
+  const byIdentity = new Map();
   let firstDate = null;
   let lastDate = null;
   let latestTimestampMs = null;
 
   for (const entry of entries) {
-    const emailKey = entry.email.trim().toLowerCase();
+    const normalizedEmail = entry.email.trim().toLowerCase();
+    const configured = aliases.get(normalizedEmail);
+    const identityKey = configured ? `alias:${configured.id}` : `email:${normalizedEmail}`;
     const local = localParts(entry.timestampMs, timeZone);
-    let contributor = byEmail.get(emailKey);
+    let contributor = byIdentity.get(identityKey);
 
     if (!contributor) {
       contributor = {
-        name: entry.author.trim(),
+        name: configured ? configured.name : entry.author.trim(),
+        configuredName: Boolean(configured),
         latestNameTimestampMs: entry.timestampMs,
         latestTimestampMs: entry.timestampMs,
         total: 0,
         days: new Map(),
         hours: Array(24).fill(0),
       };
-      byEmail.set(emailKey, contributor);
+      byIdentity.set(identityKey, contributor);
     }
 
-    if (entry.timestampMs >= contributor.latestNameTimestampMs) {
+    if (!contributor.configuredName && entry.timestampMs >= contributor.latestNameTimestampMs) {
       contributor.name = entry.author.trim();
       contributor.latestNameTimestampMs = entry.timestampMs;
     }
@@ -142,7 +192,7 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
       : Math.max(latestTimestampMs, entry.timestampMs);
   }
 
-  const states = [...byEmail.values()].sort(
+  const states = [...byIdentity.values()].sort(
     (left, right) => right.total - left.total || left.name.localeCompare(right.name, 'en'),
   );
   const dates = dateRange(firstDate, lastDate);
@@ -513,6 +563,7 @@ function runCli(argv) {
 module.exports = {
   aggregateEntries,
   generate,
+  parseAliases,
   parseEntries,
   renderDashboardMarkdown,
   renderDailySvg,
