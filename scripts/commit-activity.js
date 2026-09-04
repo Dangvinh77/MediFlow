@@ -2,6 +2,8 @@
 
 const HASH_PATTERN = /^[0-9a-f]{40}$/i;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
+const START_MARKER = '<!-- commit-activity:start -->';
+const END_MARKER = '<!-- commit-activity:end -->';
 
 function parseEntries(jsonl) {
   const seen = new Set();
@@ -161,7 +163,73 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
   };
 }
 
+function escapeMarkdown(value) {
+  return String(value).replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
+}
+
+function renderDashboardMarkdown(model) {
+  if (model.totalCommits === 0) {
+    return [
+      '## Commit activity',
+      '',
+      '_No commits recorded._',
+      '',
+      'Data source: `.changelog/entries.jsonl`.',
+    ].join('\n');
+  }
+
+  const rows = model.contributors.map((contributor) => [
+    escapeMarkdown(contributor.name),
+    contributor.total,
+    contributor.activeDays,
+    contributor.averagePerActiveDay.toFixed(2),
+    `${contributor.peakDay.date} (${contributor.peakDay.count})`,
+    `${String(contributor.peakHour.hour).padStart(2, '0')}:00 (${contributor.peakHour.count})`,
+    contributor.latest,
+  ].join(' | '));
+
+  return [
+    '## Commit activity',
+    '',
+    `Updated through **${model.generatedAt} ${model.timeZone}** · **${model.totalCommits} unique commits**`,
+    '',
+    '| Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |',
+    '|---|---:|---:|---:|---|---|---|',
+    ...rows.map((row) => `| ${row} |`),
+    '',
+    '![Commits by day](docs/assets/commit-activity-by-day.svg)',
+    '',
+    '![Commits by hour](docs/assets/commit-activity-by-hour.svg)',
+    '',
+    '_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._',
+  ].join('\n');
+}
+
+function replaceGeneratedBlock(readme, generated) {
+  const startCount = readme.split(START_MARKER).length - 1;
+  const endCount = readme.split(END_MARKER).length - 1;
+
+  if (startCount !== 1) {
+    throw new Error('README must contain exactly one start marker');
+  }
+  if (endCount !== 1) {
+    throw new Error('README must contain exactly one end marker');
+  }
+
+  const startIndex = readme.indexOf(START_MARKER);
+  const endIndex = readme.indexOf(END_MARKER);
+  if (endIndex < startIndex) {
+    throw new Error('README end marker must follow start marker');
+  }
+
+  const before = readme.slice(0, startIndex + START_MARKER.length);
+  const after = readme.slice(endIndex);
+  return `${before}\n${generated.trim()}\n${after}`;
+}
+
 module.exports = {
   aggregateEntries,
   parseEntries,
+  renderDashboardMarkdown,
+  replaceGeneratedBlock,
 };

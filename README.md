@@ -1,5 +1,9 @@
 # MediFlow — Hospital Microservices (Spring Boot Monorepo)
 
+<!-- commit-activity:start -->
+_Commit activity dashboard will be generated from `.changelog/entries.jsonl`._
+<!-- commit-activity:end -->
+
 **MediFlow** is a hospital/clinic management system built as **Spring Boot microservices** (Maven multi-module, monorepo). This repo ships with a **shared AI coding framework** so everyone — whether they use **Claude Code**, **Codex**, or **Cursor**, on **IntelliJ / VS Code / NetBeans** — produces code to the same standard after a `git pull`.
 
 > Repo: `git@github.com:Dangvinh77/MediFlow.git`
