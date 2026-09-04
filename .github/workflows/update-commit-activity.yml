@@ -1,0 +1,69 @@
+name: Update commit activity dashboard
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .changelog/entries.jsonl
+      - scripts/commit-activity.js
+      - scripts/commit-activity.test.js
+      - .github/workflows/update-commit-activity.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: commit-activity-dashboard
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'master' }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test generator
+        run: node --test scripts/commit-activity.test.js
+
+      - name: Generate dashboard
+        run: node scripts/commit-activity.js
+
+      - name: Create or update dashboard pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/commit-activity-dashboard
+        shell: bash
+        run: |
+          generated_status="$(git status --porcelain -- README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg)"
+          if [ -z "$generated_status" ]; then
+            echo 'Dashboard is already current.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          git switch -C "$BRANCH"
+          git add README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg
+          git commit -m 'docs(tooling): update commit activity dashboard'
+          git push --force-with-lease origin "HEAD:$BRANCH"
+
+          pr_number="$(gh pr list --head "$BRANCH" --base master --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            if ! pr_url="$(gh pr create --base master --head "$BRANCH" --title 'docs(tooling): update commit activity dashboard' --body 'Automated refresh from `.changelog/entries.jsonl`.')"; then
+              echo '::error::Unable to create the dashboard PR. In Settings > Actions > General > Workflow permissions, enable "Allow GitHub Actions to create and approve pull requests".'
+              exit 1
+            fi
+            pr_number="${pr_url##*/}"
+          fi
+
+          gh pr merge "$pr_number" --squash --auto || echo '::warning::Auto-merge is unavailable; maintainer merge required.'

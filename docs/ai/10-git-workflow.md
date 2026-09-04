@@ -2,7 +2,7 @@
 
 ## Branches
 
-- `main` — always buildable. Protected. No direct pushes.
+- `master` — always buildable. Protected. No direct pushes.
 - Feature: `feat/<service>-<short-desc>` e.g. `feat/patient-crud`.
 - Fix: `fix/<service>-<short-desc>`. Chore/docs: `chore/...`, `docs/...`.
 - One service / one concern per branch where possible (monorepo, but keep PRs focused).
@@ -99,6 +99,27 @@ node scripts/changelog.js --files            # xem chi tiết từng file + tác
 node scripts/changelog.js --scope feat       # lọc theo type hoặc service
 node scripts/changelog.js --since 2026-07-01 # lọc theo thời gian
 ```
+
+### Commit activity dashboard
+
+`README.md` chứa bảng thành viên và hai biểu đồ SVG được sinh từ toàn bộ lịch sử trong
+`.changelog/entries.jsonl`. Chạy lệnh sau để kiểm thử và cập nhật dashboard ở local:
+
+```bash
+node --test scripts/commit-activity.test.js
+node scripts/commit-activity.js
+```
+
+Trên `master`, thay đổi ở changelog hoặc bộ sinh dashboard sẽ kích hoạt
+`.github/workflows/update-commit-activity.yml`. Workflow cập nhật nhánh cố định
+`automation/commit-activity-dashboard`, mở hoặc làm mới một pull request duy nhất, rồi bật
+auto-merge nếu cấu hình repository cho phép. Email chỉ được dùng nội bộ để nhận diện thành viên
+và không bao giờ xuất hiện trong README hoặc biểu đồ.
+
+Để workflow có thể mở PR bằng `GITHUB_TOKEN`, maintainer phải bật **Settings → Actions →
+General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**.
+Nếu repository yêu cầu duyệt workflow hoặc review PR, maintainer vẫn phải thực hiện bước duyệt;
+auto-merge chỉ chạy sau khi mọi rule bảo vệ nhánh đã đạt.
 
 ### Xử lý sự cố
 
