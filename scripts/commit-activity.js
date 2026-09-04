@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 const HASH_PATTERN = /^[0-9a-f]{40}$/i;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
 const START_MARKER = '<!-- commit-activity:start -->';
@@ -372,11 +375,125 @@ function renderHourlySvg(model) {
   return lines.join('\n');
 }
 
+function atomicWrite(filePath, content) {
+  if (fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8') === content) {
+    return false;
+  }
+
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const temporaryPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    fs.writeFileSync(temporaryPath, content, 'utf8');
+    fs.renameSync(temporaryPath, filePath);
+  } catch (error) {
+    fs.rmSync(temporaryPath, { force: true });
+    throw error;
+  }
+  return true;
+}
+
+function generate({
+  rootDir = path.resolve(__dirname, '..'),
+  timeZone = DEFAULT_TIME_ZONE,
+  write = true,
+} = {}) {
+  const entriesPath = path.join(rootDir, '.changelog', 'entries.jsonl');
+  const readmePath = path.join(rootDir, 'README.md');
+  const entries = parseEntries(fs.readFileSync(entriesPath, 'utf8'));
+  const model = aggregateEntries(entries, timeZone);
+  const targets = [
+    {
+      relativePath: 'README.md',
+      content: replaceGeneratedBlock(
+        fs.readFileSync(readmePath, 'utf8'),
+        renderDashboardMarkdown(model),
+      ),
+    },
+    {
+      relativePath: 'docs/assets/commit-activity-by-day.svg',
+      content: `${renderDailySvg(model)}\n`,
+    },
+    {
+      relativePath: 'docs/assets/commit-activity-by-hour.svg',
+      content: `${renderHourlySvg(model)}\n`,
+    },
+  ];
+  const changed = [];
+
+  for (const target of targets) {
+    const filePath = path.join(rootDir, ...target.relativePath.split('/'));
+    const differs = !fs.existsSync(filePath) || fs.readFileSync(filePath, 'utf8') !== target.content;
+    if (!differs) continue;
+
+    changed.push(target.relativePath);
+    if (write) atomicWrite(filePath, target.content);
+  }
+
+  return { changed, model };
+}
+
+function parseOptions(argv) {
+  const options = {
+    rootDir: path.resolve(__dirname, '..'),
+    timeZone: DEFAULT_TIME_ZONE,
+    write: true,
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index];
+    if (argument === '--check') {
+      options.write = false;
+    } else if (argument === '--root') {
+      options.rootDir = path.resolve(argv[++index]);
+    } else if (argument === '--time-zone') {
+      options.timeZone = argv[++index];
+    } else if (argument === '--help' || argument === '-h') {
+      options.help = true;
+    } else {
+      throw new Error(`Unknown option: ${argument}`);
+    }
+  }
+
+  return options;
+}
+
+function runCli(argv) {
+  const options = parseOptions(argv);
+  if (options.help) {
+    process.stdout.write('Usage: node scripts/commit-activity.js [--check] [--root DIR] [--time-zone ZONE]\n');
+    return 0;
+  }
+
+  const result = generate(options);
+  if (result.changed.length === 0) {
+    process.stdout.write('Commit activity dashboard is up to date.\n');
+    return 0;
+  }
+
+  if (!options.write) {
+    process.stderr.write(`Commit activity dashboard is stale: ${result.changed.join(', ')}\n`);
+    return 1;
+  }
+
+  process.stdout.write(`Updated: ${result.changed.join(', ')}\n`);
+  return 0;
+}
+
 module.exports = {
   aggregateEntries,
+  generate,
   parseEntries,
   renderDashboardMarkdown,
   renderDailySvg,
   renderHourlySvg,
   replaceGeneratedBlock,
 };
+
+if (require.main === module) {
+  try {
+    process.exitCode = runCli(process.argv.slice(2));
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exitCode = 1;
+  }
+}

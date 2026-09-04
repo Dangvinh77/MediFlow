@@ -1,7 +1,23 @@
 # MediFlow — Hospital Microservices (Spring Boot Monorepo)
 
 <!-- commit-activity:start -->
-_Commit activity dashboard will be generated from `.changelog/entries.jsonl`._
+## Commit activity
+
+Updated through **2026-09-04 20:13:09 Asia/Saigon** · **99 unique commits**
+
+| Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
+|---|---:|---:|---:|---|---|---|
+| Harori | 70 | 11 | 6.36 | 2026-07-28 (16) | 14:00 (13) | 2026-09-04 20:13:09 |
+| LQHuy0210 | 13 | 7 | 1.86 | 2026-08-13 (4) | 15:00 (4) | 2026-09-04 18:32:31 |
+| Harori | 9 | 5 | 1.80 | 2026-09-04 (3) | 18:00 (4) | 2026-09-04 18:57:35 |
+| locgit-89 | 5 | 2 | 2.50 | 2026-09-04 (4) | 14:00 (2) | 2026-09-04 15:37:39 |
+| TranHoangAnh94 | 2 | 2 | 1.00 | 2026-08-13 (1) | 18:00 (1) | 2026-09-04 18:21:27 |
+
+![Commits by day](docs/assets/commit-activity-by-day.svg)
+
+![Commits by hour](docs/assets/commit-activity-by-hour.svg)
+
+_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
 
 **MediFlow** is a hospital/clinic management system built as **Spring Boot microservices** (Maven multi-module, monorepo). This repo ships with a **shared AI coding framework** so everyone — whether they use **Claude Code**, **Codex**, or **Cursor**, on **IntelliJ / VS Code / NetBeans** — produces code to the same standard after a `git pull`.
