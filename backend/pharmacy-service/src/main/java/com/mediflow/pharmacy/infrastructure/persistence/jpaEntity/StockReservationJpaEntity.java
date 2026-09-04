@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
+import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,8 +65,18 @@ public class StockReservationJpaEntity {
     @Column(name = "status", length = 20, nullable = false)
     private ReservationStatus status;
 
-    @Column(name = "expires_at")
+    @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "release_reason", length = 50)
+    private ReservationReleaseReason releaseReason;
+
+    @Column(name = "released_at")
+    private Instant releasedAt;
+
+    @Column(name = "released_by")
+    private UUID releasedBy;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

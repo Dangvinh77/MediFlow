@@ -1,5 +1,6 @@
 package com.mediflow.pharmacy.application.port.out;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,13 +24,33 @@ public interface StockReservationRepositoryPort {
     List<StockReservation> findByPrescription(UUID prescriptionId);
 
     /**
+     * Đọc và khóa toàn bộ reservation của một đơn theo thứ tự {@code drugId} ổn định.
+     *
+     * <p>Use case hủy và hết hạn dùng kết quả này để kiểm tra lại trạng thái sau khi đã lấy khóa,
+     * tránh ghi đè một reservation vừa được xuất ở transaction khác.</p>
+     *
+     * @param prescriptionId mã đơn thuốc
+     * @return các reservation đã khóa
+     */
+    List<StockReservation> findByPrescriptionForUpdate(UUID prescriptionId);
+
+    /**
      * Tất cả giữ chỗ đang {@code RESERVED} của một thuốc — kê đơn dùng để tính
      * số tồn "có thể bán": {@code stock - Σ reserved}.
      */
     List<StockReservation> findReservedByDrug(UUID drugId);
 
-    /** Các giữ chỗ đã quá hạn (status = RESERVED và expires_at < now) — job release TTL. */
-    List<StockReservation> findExpired();
+    /**
+     * Tìm các đơn có ít nhất một reservation đang giữ đã hết TTL.
+     *
+     * <p>Đây chỉ là danh sách ứng viên không khóa. Use case phải khóa prescription và đọc lại
+     * reservation trước khi chuyển trạng thái.</p>
+     *
+     * @param now mốc thời gian đánh giá TTL
+     * @param limit số đơn tối đa trả về
+     * @return danh sách mã đơn không trùng nhau
+     */
+    List<UUID> findExpiredPrescriptionIds(Instant now, int limit);
 
     /**
      * Bản KHÓA GHI khi đọc giữ chỗ của một đơn — dành riêng cho luồng dispense

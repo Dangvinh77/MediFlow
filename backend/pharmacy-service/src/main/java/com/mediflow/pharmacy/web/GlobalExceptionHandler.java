@@ -6,6 +6,7 @@ import com.mediflow.common.api.ApiResponse.ErrorDetail;
 import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ResourceNotFoundException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionCancellationForbiddenException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +79,22 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 exception.getCode(),
+                exception.getMessage());
+    }
+
+    /**
+     * Trả về 403 khi người dùng có role phù hợp nhưng không có quyền sở hữu để hủy đơn.
+     *
+     * @param exception lỗi phân quyền nghiệp vụ từ application layer
+     * @return phản hồi lỗi {@code 403 Forbidden}
+     */
+    @ExceptionHandler(PrescriptionCancellationForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> cancellationForbidden(
+            PrescriptionCancellationForbiddenException exception) {
+
+        return build(
+                HttpStatus.FORBIDDEN,
+                PrescriptionCancellationForbiddenException.CODE,
                 exception.getMessage());
     }
 

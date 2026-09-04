@@ -21,7 +21,6 @@ import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.ManageDrugUseCase;
-import com.mediflow.pharmacy.application.port.in.ReleaseExpiredReservationsUseCase;
 import com.mediflow.pharmacy.application.port.in.ReactToPaymentUseCase;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
@@ -40,7 +39,6 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
-import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -69,7 +67,7 @@ import java.util.UUID;
 @Service
 public class PharmacyApplicationService implements
         ManageDrugUseCase, CreatePrescriptionUseCase, DispensePrescriptionUseCase,
-        ReactToPaymentUseCase, ReleaseExpiredReservationsUseCase {
+        ReactToPaymentUseCase {
 
     /** id "hệ thống" dùng khi xuất thuốc do consumer payment.completed kích hoạt (không phải dược sĩ). */
     private static final UUID SYSTEM_USER = UUID.fromString("00000000-0000-0000-0000-000000000000");
@@ -506,36 +504,4 @@ private void validateNoDuplicateDrugIds(
         processedEventPort.markProcessed(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY);
     }
 
-    // ============================================================
-    // ReleaseExpiredReservationsUseCase — job TTL trả lại chỗ đã giữ
-    // ============================================================
-
-    @Override
-    @Transactional
-    public int releaseExpiredReservations() {
-        List<StockReservation> expired = reservationRepo.findExpired(); // RESERVED && expires_at < now
-        if (expired.isEmpty()) {
-            return 0;
-        }
-
-        // Sắp theo drugId trước khi khóa — tránh deadlock (BR-D10).
-        List<StockReservation> sorted = expired.stream()
-                .sorted(java.util.Comparator.comparing(StockReservation::getDrugId))
-                .toList();
-
-        int released = 0;
-        for (StockReservation r : sorted) {
-            Drug drug = drugRepo.findByIdForUpdate(r.getDrugId())
-                    .orElse(null);
-            if (drug == null) {
-                continue; // thuốc đã bị xóa — chỉ cần đánh dấu hết hạn, không trả lại chỗ được
-            }
-            // Khóa thuốc → trả lại chỗ giữ (RESERVED → EXPIRED). Không trừ/thêm stock_quantity —
-            // giữ chỗ chưa hề trừ kho thật, nên release chỉ là trả lại "chỗ" trong số tồn có thể bán.
-            r.expire();
-            reservationRepo.save(r);
-            released++;
-        }
-        return released;
-    }
 }

@@ -20,6 +20,17 @@ public interface PrescriptionRepositoryPort {
     /** Đọc 1 đơn kèm các dòng. Không có thì trả {@link Optional#empty()} — application sẽ ném PrescriptionNotFoundException. */
     Optional<Prescription> findById(UUID id);
 
+    /**
+     * Đọc và khóa ghi aggregate đơn thuốc cho một thao tác chuyển trạng thái.
+     *
+     * <p>Adapter persistence phải dùng khóa bi quan để hủy, hết hạn và xuất thuốc không cùng
+     * xử lý một trạng thái {@code ACTIVE} cũ.</p>
+     *
+     * @param id mã đơn thuốc
+     * @return đơn đã khóa hoặc rỗng nếu không tồn tại
+     */
+    Optional<Prescription> findByIdForUpdate(UUID id);
+
     /** Danh sách đơn của 1 bệnh nhân — màn hình lịch sử kê đơn. */
     List<Prescription> findByPatient(UUID patientId);
 }
