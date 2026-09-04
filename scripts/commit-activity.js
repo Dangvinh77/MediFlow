@@ -33,14 +33,20 @@ function parseEntries(jsonl) {
       throw new Error(`Invalid JSON at line ${lineNumber}`);
     }
 
-    if (!HASH_PATTERN.test(value.hash || '')) {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error(`Invalid record at line ${lineNumber}`);
+    }
+    if (typeof value.hash !== 'string' || !HASH_PATTERN.test(value.hash)) {
       throw new Error(`Invalid hash at line ${lineNumber}`);
     }
-    if (!String(value.author || '').trim()) {
+    if (typeof value.author !== 'string' || !value.author.trim()) {
       throw new Error(`Invalid author at line ${lineNumber}`);
     }
-    if (!String(value.email || '').trim()) {
+    if (typeof value.email !== 'string' || !value.email.trim()) {
       throw new Error(`Invalid email at line ${lineNumber}`);
+    }
+    if (typeof value.timestamp !== 'string') {
+      throw new Error(`Invalid timestamp at line ${lineNumber}`);
     }
 
     const timestampMs = Date.parse(value.timestamp);
@@ -177,20 +183,10 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
 }
 
 function escapeMarkdown(value) {
-  return String(value).replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
+  return String(value).replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
 }
 
 function renderDashboardMarkdown(model) {
-  if (model.totalCommits === 0) {
-    return [
-      '## Commit activity',
-      '',
-      '_No commits recorded._',
-      '',
-      'Data source: `.changelog/entries.jsonl`.',
-    ].join('\n');
-  }
-
   const rows = model.contributors.map((contributor) => [
     escapeMarkdown(contributor.name),
     contributor.total,
@@ -200,11 +196,17 @@ function renderDashboardMarkdown(model) {
     `${String(contributor.peakHour.hour).padStart(2, '0')}:00 (${contributor.peakHour.count})`,
     contributor.latest,
   ].join(' | '));
+  if (rows.length === 0) {
+    rows.push('_No commits recorded._ | 0 | 0 | 0.00 | — | — | —');
+  }
+  const updateStatus = model.totalCommits === 0
+    ? `No commits · **0 unique commits** · ${model.timeZone}`
+    : `Updated through **${model.generatedAt} ${model.timeZone}** · **${model.totalCommits} unique commits**`;
 
   return [
     '## Commit activity',
     '',
-    `Updated through **${model.generatedAt} ${model.timeZone}** · **${model.totalCommits} unique commits**`,
+    updateStatus,
     '',
     '| Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |',
     '|---|---:|---:|---:|---|---|---|',
@@ -276,7 +278,7 @@ function renderDailySvg(model) {
   const barStep = chartWidth / model.dates.length;
   const barWidth = Math.max(2, barStep * 0.72);
   const labelEvery = Math.max(1, Math.ceil(model.dates.length / 10));
-  const yTicks = 4;
+  const yTicks = Math.min(4, maximum);
   const lines = [
     `<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 ${width} ${height}">`,
     '  <title>Commit activity by day</title>',
@@ -394,39 +396,46 @@ function atomicWrite(filePath, content) {
 
 function generate({
   rootDir = path.resolve(__dirname, '..'),
+  changelog,
+  readme,
+  daily,
+  hourly,
   timeZone = DEFAULT_TIME_ZONE,
   write = true,
 } = {}) {
-  const entriesPath = path.join(rootDir, '.changelog', 'entries.jsonl');
-  const readmePath = path.join(rootDir, 'README.md');
+  const entriesPath = path.resolve(rootDir, changelog || '.changelog/entries.jsonl');
+  const readmePath = path.resolve(rootDir, readme || 'README.md');
+  const dailyPath = path.resolve(rootDir, daily || 'docs/assets/commit-activity-by-day.svg');
+  const hourlyPath = path.resolve(rootDir, hourly || 'docs/assets/commit-activity-by-hour.svg');
   const entries = parseEntries(fs.readFileSync(entriesPath, 'utf8'));
   const model = aggregateEntries(entries, timeZone);
   const targets = [
     {
-      relativePath: 'README.md',
+      filePath: readmePath,
       content: replaceGeneratedBlock(
         fs.readFileSync(readmePath, 'utf8'),
         renderDashboardMarkdown(model),
       ),
     },
     {
-      relativePath: 'docs/assets/commit-activity-by-day.svg',
+      filePath: dailyPath,
       content: `${renderDailySvg(model)}\n`,
     },
     {
-      relativePath: 'docs/assets/commit-activity-by-hour.svg',
+      filePath: hourlyPath,
       content: `${renderHourlySvg(model)}\n`,
     },
   ];
   const changed = [];
 
   for (const target of targets) {
-    const filePath = path.join(rootDir, ...target.relativePath.split('/'));
-    const differs = !fs.existsSync(filePath) || fs.readFileSync(filePath, 'utf8') !== target.content;
+    const relativePath = path.relative(rootDir, target.filePath).replace(/\\/g, '/');
+    const differs = !fs.existsSync(target.filePath)
+      || fs.readFileSync(target.filePath, 'utf8') !== target.content;
     if (!differs) continue;
 
-    changed.push(target.relativePath);
-    if (write) atomicWrite(filePath, target.content);
+    changed.push(relativePath);
+    if (write) atomicWrite(target.filePath, target.content);
   }
 
   return { changed, model };
@@ -438,17 +447,28 @@ function parseOptions(argv) {
     timeZone: DEFAULT_TIME_ZONE,
     write: true,
   };
+  const valueOptions = {
+    '--input': 'changelog',
+    '--readme': 'readme',
+    '--daily': 'daily',
+    '--hourly': 'hourly',
+    '--timezone': 'timeZone',
+    '--time-zone': 'timeZone',
+    '--root': 'rootDir',
+  };
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--check') {
       options.write = false;
-    } else if (argument === '--root') {
-      options.rootDir = path.resolve(argv[++index]);
-    } else if (argument === '--time-zone') {
-      options.timeZone = argv[++index];
     } else if (argument === '--help' || argument === '-h') {
       options.help = true;
+    } else if (valueOptions[argument]) {
+      const value = argv[index + 1];
+      if (!value) throw new Error(`Missing value for ${argument}`);
+      index += 1;
+      const property = valueOptions[argument];
+      options[property] = property === 'rootDir' ? path.resolve(value) : value;
     } else {
       throw new Error(`Unknown option: ${argument}`);
     }
@@ -460,22 +480,33 @@ function parseOptions(argv) {
 function runCli(argv) {
   const options = parseOptions(argv);
   if (options.help) {
-    process.stdout.write('Usage: node scripts/commit-activity.js [--check] [--root DIR] [--time-zone ZONE]\n');
+    process.stdout.write([
+      'Usage: node scripts/commit-activity.js [options]',
+      '',
+      '  --input PATH       Changelog JSONL input',
+      '  --readme PATH      README output',
+      '  --daily PATH       Daily SVG output',
+      '  --hourly PATH      Hourly SVG output',
+      '  --timezone ZONE    IANA timezone (default: Asia/Saigon)',
+      '  --check            Exit 1 when generated files are stale',
+      '  --root DIR         Base directory for relative paths',
+      '',
+    ].join('\n'));
     return 0;
   }
 
   const result = generate(options);
   if (result.changed.length === 0) {
-    process.stdout.write('Commit activity dashboard is up to date.\n');
+    process.stdout.write('[commit-activity] Dashboard is up to date.\n');
     return 0;
   }
 
   if (!options.write) {
-    process.stderr.write(`Commit activity dashboard is stale: ${result.changed.join(', ')}\n`);
+    process.stderr.write(`[commit-activity] Dashboard is stale: ${result.changed.join(', ')}\n`);
     return 1;
   }
 
-  process.stdout.write(`Updated: ${result.changed.join(', ')}\n`);
+  process.stdout.write(`[commit-activity] Updated: ${result.changed.join(', ')}\n`);
   return 0;
 }
 
@@ -493,7 +524,7 @@ if (require.main === module) {
   try {
     process.exitCode = runCli(process.argv.slice(2));
   } catch (error) {
-    process.stderr.write(`${error.message}\n`);
+    process.stderr.write(`[commit-activity] ${error.message}\n`);
     process.exitCode = 1;
   }
 }

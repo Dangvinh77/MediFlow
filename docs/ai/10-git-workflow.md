@@ -116,6 +116,11 @@ Trên `master`, thay đổi ở changelog hoặc bộ sinh dashboard sẽ kích 
 auto-merge nếu cấu hình repository cho phép. Email chỉ được dùng nội bộ để nhận diện thành viên
 và không bao giờ xuất hiện trong README hoặc biểu đồ.
 
+Để workflow có thể mở PR bằng `GITHUB_TOKEN`, maintainer phải bật **Settings → Actions →
+General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**.
+Nếu repository yêu cầu duyệt workflow hoặc review PR, maintainer vẫn phải thực hiện bước duyệt;
+auto-merge chỉ chạy sau khi mọi rule bảo vệ nhánh đã đạt.
+
 ### Xử lý sự cố
 
 ```bash
