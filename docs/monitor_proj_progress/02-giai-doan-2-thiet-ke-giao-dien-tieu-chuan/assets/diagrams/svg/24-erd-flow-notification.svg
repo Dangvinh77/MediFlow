@@ -29,7 +29,7 @@
 <g class="subgraph" data-id="NOTIFICATION" data-label="Notification Service · mediflow_notification">
   <rect x="484.281" y="42.375000000000014" width="564.814" height="179.325" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <rect x="484.281" y="42.375000000000014" width="564.814" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="496.281" y="56.375000000000014" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Notification Service · mediflow_notification</text>
+  <text font-family="Arial" x="496.281" y="56.375000000000014" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Notification Service · mediflow_notification</text>
 </g>
 <polyline class="edge" data-from="EMAIL" data-to="SENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish final status" points="1318.0725,89.50000000000003 1487.1470000000002,89.50000000000003 1487.1470000000002,157.95000000000002 1499.1470000000002,157.95000000000002" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
 <polyline class="edge" data-from="SMS" data-to="SENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish final status" points="1315.8495,162.40000000000003 1487.1470000000002,162.40000000000003 1487.1470000000002,167.175 1499.1470000000002,167.175" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
@@ -42,39 +42,39 @@
 <polyline class="edge" data-from="PROCESSED_EVENT" data-to="NOTICE" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe then create" points="674.1289999999999,128.72500000000002 836.067,128.72500000000002 836.067,137.9666666666667 874.067,137.9666666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
 <g class="edge-label" data-from="EMAIL" data-to="SENT" data-label="publish final status">
   <rect x="1375.961" y="73.50000000000003" width="103.18600000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1427.554" y="88.65000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
+  <text font-family="Arial" x="1427.554" y="88.65000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
 </g>
 <g class="edge-label" data-from="SMS" data-to="SENT" data-label="publish final status">
   <rect x="1349.961" y="146.40000000000003" width="103.18600000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1401.554" y="161.55000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
+  <text font-family="Arial" x="1401.554" y="161.55000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
 </g>
 <g class="edge-label" data-from="IN_APP" data-to="SENT" data-label="publish final status">
   <rect x="1375.961" y="219.30000000000004" width="103.18600000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1427.554" y="234.45000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
+  <text font-family="Arial" x="1427.554" y="234.45000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish final status</text>
 </g>
 <g class="edge-label" data-from="INPUTS" data-to="PROCESSED_EVENT" data-label="consume one queue">
   <rect x="320.779" y="85.15" width="111.50200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="376.53000000000003" y="100.30000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume one queue</text>
+  <text font-family="Arial" x="376.53000000000003" y="100.30000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume one queue</text>
 </g>
 <g class="edge-label" data-from="PATIENT" data-to="NOTICE" data-label="patient_id · UUID logic">
   <rect x="311.86899999999997" y="217.20000000000002" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="372.075" y="232.35000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
+  <text font-family="Arial" x="372.075" y="232.35000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
 </g>
 <g class="edge-label" data-from="NOTICE" data-to="EMAIL" data-label="EMAIL">
   <rect x="1115.3680000000002" y="73.50000000000003" width="50.32000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1140.5280000000002" y="88.65000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">EMAIL</text>
+  <text font-family="Arial" x="1140.5280000000002" y="88.65000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">EMAIL</text>
 </g>
 <g class="edge-label" data-from="NOTICE" data-to="SMS" data-label="SMS">
   <rect x="1101.095" y="146.40000000000003" width="40.816" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1121.503" y="161.55000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">SMS</text>
+  <text font-family="Arial" x="1121.503" y="161.55000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">SMS</text>
 </g>
 <g class="edge-label" data-from="NOTICE" data-to="IN_APP" data-label="IN_APP">
   <rect x="1101.577" y="219.30000000000007" width="54.478" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1128.816" y="234.45000000000007" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">IN_APP</text>
+  <text font-family="Arial" x="1128.816" y="234.45000000000007" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">IN_APP</text>
 </g>
 <g class="edge-label" data-from="PROCESSED_EVENT" data-to="NOTICE" data-label="dedupe then create">
   <rect x="720.1289999999999" y="112.72500000000001" width="107.93800000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="774.098" y="127.87500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe then create</text>
+  <text font-family="Arial" x="774.098" y="127.87500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe then create</text>
 </g>
 <g class="node" data-id="INPUTS" data-label="Integration events
 patient.created
@@ -84,28 +84,28 @@ prescription.filled
 payment.completed
 payment.failed" data-shape="rectangle">
   <rect x="114.269" y="32" width="160.51" height="138.3" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="194.524" y="101.15" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="194.524" dy="-46.150000000000006">Integration events</tspan><tspan x="194.524" dy="16.900000000000002">patient.created</tspan><tspan x="194.524" dy="16.900000000000002">appointment.created</tspan><tspan x="194.524" dy="16.900000000000002">lab.result.created</tspan><tspan x="194.524" dy="16.900000000000002">prescription.filled</tspan><tspan x="194.524" dy="16.900000000000002">payment.completed</tspan><tspan x="194.524" dy="16.900000000000002">payment.failed</tspan></text>
+  <text font-family="Arial" x="194.524" y="101.15" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="194.524" dy="-46.150000000000006">Integration events</tspan><tspan x="194.524" dy="16.900000000000002">patient.created</tspan><tspan x="194.524" dy="16.900000000000002">appointment.created</tspan><tspan x="194.524" dy="16.900000000000002">lab.result.created</tspan><tspan x="194.524" dy="16.900000000000002">prescription.filled</tspan><tspan x="194.524" dy="16.900000000000002">payment.completed</tspan><tspan x="194.524" dy="16.900000000000002">payment.failed</tspan></text>
 </g>
 <g class="node" data-id="PATIENT" data-label="Patient identity/contact projection
 patient_id" data-shape="rectangle">
   <rect x="32" y="206.3" width="233.86899999999997" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="148.93449999999999" y="233.20000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="148.93449999999999" dy="-3.9000000000000012">Patient identity/contact projection</tspan><tspan x="148.93449999999999" dy="16.900000000000002">patient_id</tspan></text>
+  <text font-family="Arial" x="148.93449999999999" y="233.20000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="148.93449999999999" dy="-3.9000000000000012">Patient identity/contact projection</tspan><tspan x="148.93449999999999" dy="16.900000000000002">patient_id</tspan></text>
 </g>
 <g class="node" data-id="EMAIL" data-label="Email sender" data-shape="rectangle">
   <rect x="1199.7995" y="71.05000000000001" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="1258.9360000000001" y="89.50000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Email sender</text>
+  <text font-family="Arial" x="1258.9360000000001" y="89.50000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Email sender</text>
 </g>
 <g class="node" data-id="SMS" data-label="SMS sender" data-shape="rectangle">
   <rect x="1199.7995" y="143.95000000000002" width="116.05" height="36.900000000000006" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="1257.8245000000002" y="162.40000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">SMS sender</text>
+  <text font-family="Arial" x="1257.8245000000002" y="162.40000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">SMS sender</text>
 </g>
 <g class="node" data-id="IN_APP" data-label="In-app channel" data-shape="rectangle">
   <rect x="1199.7995" y="216.85000000000002" width="127.90599999999999" height="36.900000000000006" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="1263.7525" y="235.3" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">In-app channel</text>
+  <text font-family="Arial" x="1263.7525" y="235.3" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">In-app channel</text>
 </g>
 <g class="node" data-id="SENT" data-label="notification.sent" data-shape="stadium">
   <rect x="1499.1470000000002" y="148.72500000000002" width="132.352" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="1565.323" y="167.175" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">notification.sent</text>
+  <text font-family="Arial" x="1565.323" y="167.175" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">notification.sent</text>
 </g>
 <g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT
 PK event_id
@@ -115,7 +115,7 @@ routing_key" data-shape="cylinder">
   <line x1="674.1289999999999" y1="93.37500000000001" x2="674.1289999999999" y2="164.07500000000002" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="587.2049999999999" cy="164.07500000000002" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="587.2049999999999" cy="93.37500000000001" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
-  <text x="587.2049999999999" y="128.72500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="587.2049999999999" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="587.2049999999999" dy="16.900000000000002">PK event_id</tspan><tspan x="587.2049999999999" dy="16.900000000000002">routing_key</tspan></text>
+  <text font-family="Arial" x="587.2049999999999" y="128.72500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="587.2049999999999" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="587.2049999999999" dy="16.900000000000002">PK event_id</tspan><tspan x="587.2049999999999" dy="16.900000000000002">routing_key</tspan></text>
 </g>
 <g class="node" data-id="NOTICE" data-label="NOTIFICATION
 PK notification_id
@@ -126,6 +126,6 @@ status · retry_count" data-shape="cylinder">
   <line x1="1033.095" y1="111.1" x2="1033.095" y2="198.7" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="953.581" cy="198.7" rx="79.514" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="953.581" cy="111.1" rx="79.514" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
-  <text x="953.581" y="154.9" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="953.581" dy="-20.8">NOTIFICATION</tspan><tspan x="953.581" dy="16.900000000000002">PK notification_id</tspan><tspan x="953.581" dy="16.900000000000002">patient_id · channel</tspan><tspan x="953.581" dy="16.900000000000002">status · retry_count</tspan></text>
+  <text font-family="Arial" x="953.581" y="154.9" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="953.581" dy="-20.8">NOTIFICATION</tspan><tspan x="953.581" dy="16.900000000000002">PK notification_id</tspan><tspan x="953.581" dy="16.900000000000002">patient_id · channel</tspan><tspan x="953.581" dy="16.900000000000002">status · retry_count</tspan></text>
 </g>
 </svg>

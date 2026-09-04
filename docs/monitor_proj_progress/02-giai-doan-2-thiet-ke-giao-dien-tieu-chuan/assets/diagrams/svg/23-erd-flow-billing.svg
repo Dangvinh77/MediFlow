@@ -29,7 +29,7 @@
 <g class="subgraph" data-id="BILLING" data-label="Billing Service · mediflow_billing">
   <rect x="667.009" y="249.2333333333333" width="848.0840000000001" height="258.71999999999997" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
   <rect x="667.009" y="249.2333333333333" width="848.0840000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="679.009" y="263.2333333333333" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Billing Service · mediflow_billing</text>
+  <text font-family="Arial" x="679.009" y="263.2333333333333" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Billing Service · mediflow_billing</text>
 </g>
 <polyline class="edge" data-from="CLINICAL" data-to="FEE" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record/department UUID logic" points="436.48049999999995,58.900000000000006 649.009,58.89999999999999 649.009,303.39333333333326 1314.662,303.39333333333326 1314.662,313.5533333333333 1352.662,313.5533333333333" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
 <polyline class="edge" data-from="PATIENT" data-to="FEE" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="163.611,411.39166666666654 176.168,411.39166666666654 176.168,132.79999999999998 637.009,132.79999999999998 637.009,320.0533333333333 1314.662,320.0533333333333 1314.662,333.8733333333333 1352.662,333.8733333333333" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
@@ -49,118 +49,118 @@
 <polyline class="edge" data-from="PROCESSED_EVENT" data-to="INVOICE" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe saga" points="856.857,422.91666666666663 868.857,422.91666666666663 868.857,456.27 989.689,456.27 989.689,441.1533333333333 1027.6889999999999,441.1533333333333" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
 <g class="edge-label" data-from="CLINICAL" data-to="FEE" data-label="record/department UUID logic">
   <rect x="484.95699999999994" y="42.89999999999999" width="156.052" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="562.983" y="58.04999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">record/department UUID logic</text>
+  <text font-family="Arial" x="562.983" y="58.04999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">record/department UUID logic</text>
 </g>
 <g class="edge-label" data-from="PATIENT" data-to="FEE" data-label="patient_id · UUID logic">
   <rect x="508.597" y="116.79999999999998" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="568.803" y="131.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
+  <text font-family="Arial" x="568.803" y="131.95" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
 </g>
 <g class="edge-label" data-from="PATIENT" data-to="INVOICE" data-label="patient_id · UUID logic">
   <rect x="520.597" y="701.3" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="580.803" y="716.4499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
+  <text font-family="Arial" x="580.803" y="716.4499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
 </g>
 <g class="edge-label" data-from="PHARMACY" data-to="INVOICE" data-label="prescription/dispense UUID logic">
   <rect x="444.32500000000005" y="189.99999999999994" width="172.684" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="530.667" y="205.14999999999995" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">prescription/dispense UUID logic</text>
+  <text font-family="Arial" x="530.667" y="205.14999999999995" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">prescription/dispense UUID logic</text>
 </g>
 <g class="edge-label" data-from="RECORD_CREATED" data-to="PROCESSED_EVENT" data-label="consume · EXAM fee">
   <rect x="512.7549999999999" y="635.8499999999999" width="116.25400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="570.8819999999998" y="650.9999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · EXAM fee</text>
+  <text font-family="Arial" x="570.8819999999998" y="650.9999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · EXAM fee</text>
 </g>
 <g class="edge-label" data-from="LAB_RESULT" data-to="PROCESSED_EVENT" data-label="consume · LAB fee">
   <rect x="497.66499999999996" y="490.04999999999995" width="107.34400000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="551.337" y="505.19999999999993" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · LAB fee</text>
+  <text font-family="Arial" x="551.337" y="505.19999999999993" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · LAB fee</text>
 </g>
 <g class="edge-label" data-from="APPOINTMENT_CHANGED" data-to="PROCESSED_EVENT" data-label="consume · ARRIVED fee">
   <rect x="473.905" y="271.3499999999999" width="131.10399999999998" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="539.457" y="286.4999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · ARRIVED fee</text>
+  <text font-family="Arial" x="539.457" y="286.4999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · ARRIVED fee</text>
 </g>
 <g class="edge-label" data-from="PRESCRIPTION_CREATED" data-to="PROCESSED_EVENT" data-label="consume · start saga">
   <rect x="476.1609999999999" y="344.25" width="116.84800000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="534.5849999999999" y="359.4" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · start saga</text>
+  <text font-family="Arial" x="534.5849999999999" y="359.4" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · start saga</text>
 </g>
 <g class="edge-label" data-from="PRESCRIPTION_FILLED" data-to="PROCESSED_EVENT" data-label="consume · complete saga">
   <rect x="479.9649999999999" y="562.9499999999999" width="137.04400000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="548.487" y="578.0999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · complete saga</text>
+  <text font-family="Arial" x="548.487" y="578.0999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · complete saga</text>
 </g>
 <g class="edge-label" data-from="DISPENSE_FAILED" data-to="PROCESSED_EVENT" data-label="consume · compensate">
   <rect x="466.06299999999993" y="417.1499999999999" width="126.946" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="529.536" y="432.2999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · compensate</text>
+  <text font-family="Arial" x="529.536" y="432.2999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · compensate</text>
 </g>
 <g class="edge-label" data-from="INVOICE" data-to="INVOICE_CREATED" data-label="publish">
   <rect x="1567.093" y="435.3133333333333" width="52.102" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1593.144" y="450.46333333333325" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish</text>
+  <text font-family="Arial" x="1593.144" y="450.46333333333325" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish</text>
 </g>
 <g class="edge-label" data-from="INVOICE" data-to="PAYMENT_COMPLETED" data-label="publish after paid">
   <rect x="1567.093" y="508.21333333333325" width="97.24600000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1615.7160000000001" y="523.3633333333332" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish after paid</text>
+  <text font-family="Arial" x="1615.7160000000001" y="523.3633333333332" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish after paid</text>
 </g>
 <g class="edge-label" data-from="INVOICE" data-to="PAYMENT_FAILED" data-label="failure/compensation">
   <rect x="1567.093" y="362.4133333333333" width="115.66000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1624.923" y="377.5633333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">failure/compensation</text>
+  <text font-family="Arial" x="1624.923" y="377.5633333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">failure/compensation</text>
 </g>
 <g class="edge-label" data-from="INVOICE" data-to="FEE" data-label="1:N khoản phí">
   <rect x="1226.048" y="377.8533333333333" width="80.614" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1266.355" y="393.0033333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N khoản phí</text>
+  <text font-family="Arial" x="1266.355" y="393.0033333333333" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N khoản phí</text>
 </g>
 <g class="edge-label" data-from="PROCESSED_EVENT" data-to="FEE" data-label="dedupe fee">
   <rect x="1069.2045" y="328.0533333333333" width="69.328" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="1103.8685" y="343.20333333333326" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe fee</text>
+  <text font-family="Arial" x="1103.8685" y="343.20333333333326" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe fee</text>
 </g>
 <g class="edge-label" data-from="PROCESSED_EVENT" data-to="INVOICE" data-label="dedupe saga">
   <rect x="902.8569999999999" y="440.27" width="78.83200000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="942.2729999999999" y="455.41999999999996" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe saga</text>
+  <text font-family="Arial" x="942.2729999999999" y="455.41999999999996" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe saga</text>
 </g>
 <g class="node" data-id="CLINICAL" data-label="Clinical Service
 record_id, department_id" data-shape="rectangle">
   <rect x="247.0715" y="32" width="189.40899999999996" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="341.77599999999995" y="58.900000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="341.77599999999995" dy="-3.9000000000000012">Clinical Service</tspan><tspan x="341.77599999999995" dy="16.900000000000002">record_id, department_id</tspan></text>
+  <text font-family="Arial" x="341.77599999999995" y="58.900000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="341.77599999999995" dy="-3.9000000000000012">Clinical Service</tspan><tspan x="341.77599999999995" dy="16.900000000000002">record_id, department_id</tspan></text>
 </g>
 <g class="node" data-id="PATIENT" data-label="Patient Service
 patient_id" data-shape="rectangle">
   <rect x="32" y="393.4583333333332" width="131.611" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="97.8055" y="420.3583333333332" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="97.8055" dy="-3.9000000000000012">Patient Service</tspan><tspan x="97.8055" dy="16.900000000000002">patient_id</tspan></text>
+  <text font-family="Arial" x="97.8055" y="420.3583333333332" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="97.8055" dy="-3.9000000000000012">Patient Service</tspan><tspan x="97.8055" dy="16.900000000000002">patient_id</tspan></text>
 </g>
 <g class="node" data-id="PHARMACY" data-label="Pharmacy Service
 prescription_id, dispense_id" data-shape="rectangle">
   <rect x="247.0715" y="179.09999999999994" width="210.15699999999998" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
-  <text x="352.15" y="205.99999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="352.15" dy="-3.9000000000000012">Pharmacy Service</tspan><tspan x="352.15" dy="16.900000000000002">prescription_id, dispense_id</tspan></text>
+  <text font-family="Arial" x="352.15" y="205.99999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="352.15" dy="-3.9000000000000012">Pharmacy Service</tspan><tspan x="352.15" dy="16.900000000000002">prescription_id, dispense_id</tspan></text>
 </g>
 <g class="node" data-id="RECORD_CREATED" data-label="medicalrecord.created" data-shape="stadium">
   <rect x="247.0715" y="633.3999999999999" width="176.81199999999998" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="335.47749999999996" y="651.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">medicalrecord.created</text>
+  <text font-family="Arial" x="335.47749999999996" y="651.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">medicalrecord.created</text>
 </g>
 <g class="node" data-id="LAB_RESULT" data-label="lab.result.created" data-shape="stadium">
   <rect x="247.0715" y="487.5999999999999" width="145.69" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="319.9165" y="506.0499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">lab.result.created</text>
+  <text font-family="Arial" x="319.9165" y="506.0499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">lab.result.created</text>
 </g>
 <g class="node" data-id="APPOINTMENT_CHANGED" data-label="appointment.status.changed" data-shape="stadium">
   <rect x="247.0715" y="268.9" width="204.96999999999997" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="349.55649999999997" y="287.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">appointment.status.changed</text>
+  <text font-family="Arial" x="349.55649999999997" y="287.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">appointment.status.changed</text>
 </g>
 <g class="node" data-id="PRESCRIPTION_CREATED" data-label="prescription.created" data-shape="stadium">
   <rect x="247.0715" y="341.79999999999995" width="163.474" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="328.8085" y="360.24999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.created</text>
+  <text font-family="Arial" x="328.8085" y="360.24999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.created</text>
 </g>
 <g class="node" data-id="PRESCRIPTION_FILLED" data-label="prescription.filled" data-shape="stadium">
   <rect x="247.0715" y="560.4999999999999" width="144.20800000000003" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="319.1755" y="578.9499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.filled</text>
+  <text font-family="Arial" x="319.1755" y="578.9499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.filled</text>
 </g>
 <g class="node" data-id="DISPENSE_FAILED" data-label="prescription.dispense.failed" data-shape="stadium">
   <rect x="247.0715" y="414.69999999999993" width="206.45199999999994" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="350.29749999999996" y="433.1499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.dispense.failed</text>
+  <text font-family="Arial" x="350.29749999999996" y="433.1499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">prescription.dispense.failed</text>
 </g>
 <g class="node" data-id="INVOICE_CREATED" data-label="invoice.created" data-shape="stadium">
   <rect x="1665.1950000000002" y="432.8633333333333" width="133.834" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="1732.112" y="451.3133333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">invoice.created</text>
+  <text font-family="Arial" x="1732.112" y="451.3133333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">invoice.created</text>
 </g>
 <g class="node" data-id="PAYMENT_COMPLETED" data-label="payment.completed" data-shape="stadium">
   <rect x="1719.5460000000003" y="505.76333333333326" width="153.1" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="1796.0960000000002" y="524.2133333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.completed</text>
+  <text font-family="Arial" x="1796.0960000000002" y="524.2133333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.completed</text>
 </g>
 <g class="node" data-id="PAYMENT_FAILED" data-label="payment.failed" data-shape="stadium">
   <rect x="1719.5460000000003" y="359.96333333333325" width="124.94200000000001" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
-  <text x="1782.0170000000003" y="378.41333333333324" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.failed</text>
+  <text font-family="Arial" x="1782.0170000000003" y="378.41333333333324" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.failed</text>
 </g>
 <g class="node" data-id="FEE" data-label="FEE
 PK fee_id
@@ -171,7 +171,7 @@ FK invoice_id" data-shape="cylinder">
   <line x1="1499.093" y1="300.2333333333333" x2="1499.093" y2="387.8333333333333" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="1425.8775" cy="387.8333333333333" rx="73.21549999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="1425.8775" cy="300.2333333333333" rx="73.21549999999999" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
-  <text x="1425.8775" y="344.0333333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1425.8775" dy="-20.8">FEE</tspan><tspan x="1425.8775" dy="16.900000000000002">PK fee_id</tspan><tspan x="1425.8775" dy="16.900000000000002">UK source_ref_id</tspan><tspan x="1425.8775" dy="16.900000000000002">FK invoice_id</tspan></text>
+  <text font-family="Arial" x="1425.8775" y="344.0333333333333" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1425.8775" dy="-20.8">FEE</tspan><tspan x="1425.8775" dy="16.900000000000002">PK fee_id</tspan><tspan x="1425.8775" dy="16.900000000000002">UK source_ref_id</tspan><tspan x="1425.8775" dy="16.900000000000002">FK invoice_id</tspan></text>
 </g>
 <g class="node" data-id="INVOICE" data-label="INVOICE
 PK invoice_id
@@ -182,7 +182,7 @@ saga_status" data-shape="cylinder">
   <line x1="1180.0479999999998" y1="397.35333333333324" x2="1180.0479999999998" y2="484.95333333333326" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="1103.8684999999998" cy="484.95333333333326" rx="76.1795" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="1103.8684999999998" cy="397.35333333333324" rx="76.1795" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
-  <text x="1103.8684999999998" y="441.15333333333325" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1103.8684999999998" dy="-20.8">INVOICE</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">PK invoice_id</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">UK prescription_id</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">saga_status</tspan></text>
+  <text font-family="Arial" x="1103.8684999999998" y="441.15333333333325" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1103.8684999999998" dy="-20.8">INVOICE</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">PK invoice_id</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">UK prescription_id</tspan><tspan x="1103.8684999999998" dy="16.900000000000002">saga_status</tspan></text>
 </g>
 <g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT
 PK event_id
@@ -192,6 +192,6 @@ routing_key" data-shape="cylinder">
   <line x1="856.857" y1="373.44999999999993" x2="856.857" y2="444.1499999999999" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="769.933" cy="444.1499999999999" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
   <ellipse cx="769.933" cy="373.44999999999993" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
-  <text x="769.933" y="408.79999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="769.933" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="769.933" dy="16.900000000000002">PK event_id</tspan><tspan x="769.933" dy="16.900000000000002">routing_key</tspan></text>
+  <text font-family="Arial" x="769.933" y="408.79999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="769.933" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="769.933" dy="16.900000000000002">PK event_id</tspan><tspan x="769.933" dy="16.900000000000002">routing_key</tspan></text>
 </g>
 </svg>
