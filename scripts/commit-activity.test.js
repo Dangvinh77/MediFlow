@@ -4,6 +4,8 @@ const assert = require('node:assert/strict');
 const {
   parseEntries,
   aggregateEntries,
+  renderDashboardMarkdown,
+  replaceGeneratedBlock,
 } = require('./commit-activity');
 
 function entry(overrides = {}) {
@@ -98,4 +100,61 @@ test('aggregateEntries includes dates with zero commits', () => {
 
   assert.deepEqual(model.dates, ['2026-09-01', '2026-09-02', '2026-09-03']);
   assert.equal(model.daily['2026-09-02'][0], 0);
+});
+
+test('renderDashboardMarkdown escapes names and never renders email', () => {
+  const model = aggregateEntries(parseEntries(`${JSON.stringify(entry({
+    author: 'A | <B>',
+    email: 'secret@example.com',
+  }))}\n`));
+
+  const markdown = renderDashboardMarkdown(model);
+
+  assert.equal(markdown.includes('A \\| <B>'), true);
+  assert.doesNotMatch(markdown, /secret@example\.com/);
+  assert.match(markdown, /docs\/assets\/commit-activity-by-day\.svg/);
+  assert.match(markdown, /docs\/assets\/commit-activity-by-hour\.svg/);
+});
+
+test('renderDashboardMarkdown handles an empty changelog', () => {
+  const markdown = renderDashboardMarkdown(aggregateEntries([]));
+
+  assert.match(markdown, /No commits recorded/);
+});
+
+test('replaceGeneratedBlock changes only the single marked section', () => {
+  const readme = '# Title\n\nBefore\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\nAfter\n';
+  const updated = replaceGeneratedBlock(readme, 'new');
+
+  assert.equal(
+    updated,
+    '# Title\n\nBefore\n<!-- commit-activity:start -->\nnew\n<!-- commit-activity:end -->\nAfter\n',
+  );
+});
+
+test('replaceGeneratedBlock rejects missing markers', () => {
+  assert.throws(
+    () => replaceGeneratedBlock('# Title\n', 'new'),
+    /exactly one start marker/i,
+  );
+});
+
+test('replaceGeneratedBlock rejects duplicate markers', () => {
+  assert.throws(
+    () => replaceGeneratedBlock(
+      '<!-- commit-activity:start -->\n<!-- commit-activity:start -->\n<!-- commit-activity:end -->',
+      'new',
+    ),
+    /exactly one start marker/i,
+  );
+});
+
+test('replaceGeneratedBlock rejects reversed markers', () => {
+  assert.throws(
+    () => replaceGeneratedBlock(
+      '<!-- commit-activity:end -->\n<!-- commit-activity:start -->',
+      'new',
+    ),
+    /end marker must follow/i,
+  );
 });
