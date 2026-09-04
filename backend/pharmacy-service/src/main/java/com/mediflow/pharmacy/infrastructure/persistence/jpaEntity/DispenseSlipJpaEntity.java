@@ -9,12 +9,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.util.UUID;
 
+/** JPA entity lưu bằng chứng trạng thái của quy trình xuất thuốc cho một prescription. */
 @Entity
 @Table(name = "DISPENSE_SLIP")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class DispenseSlipJpaEntity {
-  @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "dispense_id", updatable = false, nullable = false)
     private UUID dispenseId;
@@ -32,7 +33,7 @@ public class DispenseSlipJpaEntity {
     @Column(name = "dispensed_by")
     private UUID dispensedBy;
 
-    @Column(name = "failure_reason", length = 255)
+    @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
     @CreationTimestamp

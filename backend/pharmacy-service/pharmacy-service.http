@@ -1,0 +1,38 @@
+###
+# MediFlow pharmacy-service live API collection
+#
+# IntelliJ users can set `token` globally from auth.http. VS Code users may uncomment
+# the next line and use a local development token. Never commit a real token.
+# @token = replace-with-local-development-token
+@baseUrl = http://localhost:8085
+
+### Create prescription
+POST {{baseUrl}}/api/v1/pharmacy/prescriptions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-Id: pharmacy-create-demo
+
+{
+  "recordId": "10000000-0000-0000-0000-000000000001",
+  "patientId": "20000000-0000-0000-0000-000000000001",
+  "doctorId": "30000000-0000-0000-0000-000000000001",
+  "departmentId": "40000000-0000-0000-0000-000000000001",
+  "prescribedDate": "2026-09-04",
+  "lines": [
+    {
+      "drugId": "50000000-0000-0000-0000-000000000001",
+      "quantity": 2,
+      "dosage": "Uống 1 viên sau ăn sáng và tối"
+    }
+  ]
+}
+
+### Cancel prescription and release reserved stock
+PUT {{baseUrl}}/api/v1/pharmacy/prescriptions/60000000-0000-0000-0000-000000000001/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-Id: pharmacy-cancel-demo
+
+{
+  "reason": "Bác sĩ thay đổi phác đồ điều trị"
+}

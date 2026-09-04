@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
+import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 
 /** Quy tắc vòng đời của một dòng giữ chỗ tồn kho (domain — thuần Java, không Spring). */
@@ -54,14 +55,17 @@ class StockReservationTest {
     @Test
     void release_reservedToReleased() {
         StockReservation r = StockReservation.create(DRUG, RX, 5, EXPIRY);
-        r.release();
+        r.release(
+                ReservationReleaseReason.PRESCRIPTION_CANCELLED,
+                UUID.randomUUID(),
+                Instant.now());
         assertThat(r.getStatus()).isEqualTo(ReservationStatus.RELEASED);
     }
 
     @Test
     void expire_reservedToExpired() {
         StockReservation r = StockReservation.create(DRUG, RX, 5, EXPIRY);
-        r.expire();
+        r.expire(EXPIRY.plusSeconds(1));
         assertThat(r.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
     }
 
@@ -69,9 +73,13 @@ class StockReservationTest {
     void transitionFromFulfilled_throws() {
         StockReservation r = StockReservation.create(DRUG, RX, 5, EXPIRY);
         r.markFulfilled();
-        assertThatThrownBy(r::release).isInstanceOf(StockReservationRuleException.class)
+        assertThatThrownBy(() -> r.release(
+                ReservationReleaseReason.PRESCRIPTION_CANCELLED,
+                UUID.randomUUID(),
+                Instant.now())).isInstanceOf(StockReservationRuleException.class)
                 .hasMessageContaining("không còn ở trạng thái RESERVED");
-        assertThatThrownBy(r::expire).isInstanceOf(StockReservationRuleException.class);
+        assertThatThrownBy(() -> r.expire(EXPIRY.plusSeconds(1)))
+                .isInstanceOf(StockReservationRuleException.class);
         assertThatThrownBy(r::markFulfilled).isInstanceOf(StockReservationRuleException.class);
     }
 }

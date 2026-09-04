@@ -1,7 +1,9 @@
 package com.mediflow.pharmacy.application.port.out;
 
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
+import com.mediflow.pharmacy.application.event.PrescriptionCancelledEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.pharmacy.application.event.PrescriptionExpiredEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
 
@@ -14,6 +16,9 @@ import com.mediflow.pharmacy.application.event.StockLowEvent;
  */
 public interface PharmacyEventPublisherPort {
 
+    /** Publish {@code prescription.cancelled} sau khi đơn và các giữ chỗ được hủy thành công. */
+    void publishPrescriptionCancelled(PrescriptionCancelledEvent event);
+
     /** Publish {@code prescription.created} sau khi kê đơn commit — billing tạo hóa đơn (khởi đầu saga). */
     void publishPrescriptionCreated(PrescriptionCreatedEvent event);
 
@@ -22,6 +27,9 @@ public interface PharmacyEventPublisherPort {
 
     /** Publish {@code prescription.dispense.failed} khi xuất thất bại — kích hoạt bù trừ saga (BR-D6). */
     void publishPrescriptionDispenseFailed(PrescriptionDispenseFailedEvent event);
+
+    /** Publish {@code prescription.expired} sau khi toàn bộ giữ chỗ của đơn hết TTL. */
+    void publishPrescriptionExpired(PrescriptionExpiredEvent event);
 
     /**
      * Publish {@code stock.low} khi tồn kho chạm/dưới ngưỡng (BR-D11).
