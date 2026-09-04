@@ -447,6 +447,7 @@ function atomicWrite(filePath, content) {
 function generate({
   rootDir = path.resolve(__dirname, '..'),
   changelog,
+  aliases,
   readme,
   daily,
   hourly,
@@ -454,11 +455,15 @@ function generate({
   write = true,
 } = {}) {
   const entriesPath = path.resolve(rootDir, changelog || '.changelog/entries.jsonl');
+  const aliasesPath = path.resolve(rootDir, aliases || '.changelog/contributor-aliases.json');
   const readmePath = path.resolve(rootDir, readme || 'README.md');
   const dailyPath = path.resolve(rootDir, daily || 'docs/assets/commit-activity-by-day.svg');
   const hourlyPath = path.resolve(rootDir, hourly || 'docs/assets/commit-activity-by-hour.svg');
   const entries = parseEntries(fs.readFileSync(entriesPath, 'utf8'));
-  const model = aggregateEntries(entries, timeZone);
+  const aliasMap = fs.existsSync(aliasesPath)
+    ? parseAliases(fs.readFileSync(aliasesPath, 'utf8'))
+    : new Map();
+  const model = aggregateEntries(entries, timeZone, aliasMap);
   const targets = [
     {
       filePath: readmePath,
@@ -499,6 +504,7 @@ function parseOptions(argv) {
   };
   const valueOptions = {
     '--input': 'changelog',
+    '--aliases': 'aliases',
     '--readme': 'readme',
     '--daily': 'daily',
     '--hourly': 'hourly',
@@ -534,6 +540,7 @@ function runCli(argv) {
       'Usage: node scripts/commit-activity.js [options]',
       '',
       '  --input PATH       Changelog JSONL input',
+      '  --aliases PATH     Contributor alias registry',
       '  --readme PATH      README output',
       '  --daily PATH       Daily SVG output',
       '  --hourly PATH      Hourly SVG output',

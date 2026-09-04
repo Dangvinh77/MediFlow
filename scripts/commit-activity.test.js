@@ -345,14 +345,58 @@ test('generate writes all dashboard artifacts atomically and is idempotent', (t)
   );
 });
 
+test('generate loads an explicit contributor alias registry', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-aliases-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(rootDir, '.changelog'));
+  fs.writeFileSync(
+    path.join(rootDir, '.changelog', 'entries.jsonl'),
+    `${[
+      entry({ email: 'first@example.com' }),
+      entry({ hash: 'b'.repeat(40), email: 'second@example.com' }),
+    ].map(JSON.stringify).join('\n')}\n`,
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'aliases.json'),
+    JSON.stringify({
+      contributors: [{
+        id: 'harori',
+        name: 'Harori',
+        emails: ['first@example.com', 'second@example.com'],
+      }],
+    }),
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'README.md'),
+    '# Test\n\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+
+  const result = generate({ rootDir, aliases: 'aliases.json' });
+
+  assert.equal(result.model.contributors.length, 1);
+  assert.equal(result.model.contributors[0].name, 'Harori');
+  assert.equal(result.model.contributors[0].total, 2);
+});
+
 test('CLI accepts explicit input and output paths and prefixes failures', (t) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-cli-'));
   t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
   const changelog = path.join(rootDir, 'source.jsonl');
+  const aliases = path.join(rootDir, 'aliases.json');
   const readme = path.join(rootDir, 'custom-readme.md');
   const daily = path.join(rootDir, 'charts', 'daily.svg');
   const hourly = path.join(rootDir, 'charts', 'hourly.svg');
-  fs.writeFileSync(changelog, `${JSON.stringify(entry())}\n`);
+  fs.writeFileSync(changelog, `${[
+    entry({ email: 'first@example.com' }),
+    entry({ hash: 'b'.repeat(40), email: 'second@example.com' }),
+  ].map(JSON.stringify).join('\n')}\n`);
+  fs.writeFileSync(aliases, JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: ['first@example.com', 'second@example.com'],
+    }],
+  }));
   fs.writeFileSync(
     readme,
     '# Test\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
@@ -361,6 +405,7 @@ test('CLI accepts explicit input and output paths and prefixes failures', (t) =>
   const success = spawnSync(process.execPath, [
     path.join(__dirname, 'commit-activity.js'),
     '--input', changelog,
+    '--aliases', aliases,
     '--readme', readme,
     '--daily', daily,
     '--hourly', hourly,
@@ -375,6 +420,10 @@ test('CLI accepts explicit input and output paths and prefixes failures', (t) =>
   assert.equal(success.status, 0, success.stderr);
   assert.equal(fs.existsSync(daily), true);
   assert.equal(fs.existsSync(hourly), true);
+  assert.equal(
+    (fs.readFileSync(readme, 'utf8').match(/^\| Harori \|/gm) || []).length,
+    1,
+  );
   assert.equal(failure.status, 1);
   assert.match(failure.stderr, /^\[commit-activity\] Unknown option:/);
 });
