@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const {
   parseEntries,
@@ -55,6 +56,25 @@ for (const [field, value] of [
   });
 }
 
+for (const [field, value] of [
+  ['hash', 123],
+  ['author', 123],
+  ['email', 123],
+  ['timestamp', 123],
+]) {
+  test(`parseEntries rejects non-string ${field} with a line number`, () => {
+    assert.throws(
+      () => parseEntries(`${JSON.stringify(entry({ [field]: value }))}\n`),
+      new RegExp(`Invalid ${field} at line 1`, 'i'),
+    );
+  });
+}
+
+test('parseEntries rejects non-object records with a line number', () => {
+  assert.throws(() => parseEntries('null\n'), /Invalid record at line 1/i);
+  assert.throws(() => parseEntries('[]\n'), /Invalid record at line 1/i);
+});
+
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
   const entries = [
     entry({
@@ -93,7 +113,21 @@ test('aggregateEntries calculates daily and hourly statistics in Asia/Saigon', (
   assert.equal(contributor.averagePerActiveDay, 1.5);
   assert.deepEqual(contributor.peakDay, { date: '2026-09-04', count: 2 });
   assert.deepEqual(contributor.peakHour, { hour: 1, count: 2 });
+  assert.equal(contributor.latest, '2026-09-05 01:30:00');
   assert.deepEqual(model.dates, ['2026-09-04', '2026-09-05']);
+});
+
+test('contributor ordering and chart color assignment are deterministic', () => {
+  const records = [
+    entry({ author: 'Zulu', email: 'z@example.com' }),
+    entry({ hash: 'b'.repeat(40), author: 'Alpha', email: 'a@example.com' }),
+  ];
+  const forward = aggregateEntries(parseEntries(records.map(JSON.stringify).join('\n')));
+  const reverse = aggregateEntries(parseEntries(records.reverse().map(JSON.stringify).join('\n')));
+
+  assert.deepEqual(forward.contributors.map(({ name }) => name), ['Alpha', 'Zulu']);
+  assert.equal(renderDailySvg(forward), renderDailySvg(reverse));
+  assert.match(renderDailySvg(forward), /#2563eb[\s\S]*Alpha/);
 });
 
 test('aggregateEntries includes dates with zero commits', () => {
@@ -126,6 +160,10 @@ test('renderDashboardMarkdown handles an empty changelog', () => {
   const markdown = renderDashboardMarkdown(aggregateEntries([]));
 
   assert.match(markdown, /No commits recorded/);
+  assert.match(markdown, /0 unique commits/);
+  assert.match(markdown, /\| Contributor \| Commits \|/);
+  assert.match(markdown, /commit-activity-by-day\.svg/);
+  assert.match(markdown, /commit-activity-by-hour\.svg/);
 });
 
 test('replaceGeneratedBlock changes only the single marked section', () => {
@@ -143,6 +181,10 @@ test('replaceGeneratedBlock rejects missing markers', () => {
     () => replaceGeneratedBlock('# Title\n', 'new'),
     /exactly one start marker/i,
   );
+  assert.throws(
+    () => replaceGeneratedBlock('<!-- commit-activity:start -->\nold', 'new'),
+    /exactly one end marker/i,
+  );
 });
 
 test('replaceGeneratedBlock rejects duplicate markers', () => {
@@ -152,6 +194,13 @@ test('replaceGeneratedBlock rejects duplicate markers', () => {
       'new',
     ),
     /exactly one start marker/i,
+  );
+  assert.throws(
+    () => replaceGeneratedBlock(
+      '<!-- commit-activity:start -->\n<!-- commit-activity:end -->\n<!-- commit-activity:end -->',
+      'new',
+    ),
+    /exactly one end marker/i,
   );
 });
 
@@ -234,4 +283,49 @@ test('generate writes all dashboard artifacts atomically and is idempotent', (t)
     fs.readdirSync(path.join(rootDir, 'docs', 'assets')).filter((name) => name.includes('.tmp-')),
     [],
   );
+});
+
+test('CLI accepts explicit input and output paths and prefixes failures', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-cli-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  const changelog = path.join(rootDir, 'source.jsonl');
+  const readme = path.join(rootDir, 'custom-readme.md');
+  const daily = path.join(rootDir, 'charts', 'daily.svg');
+  const hourly = path.join(rootDir, 'charts', 'hourly.svg');
+  fs.writeFileSync(changelog, `${JSON.stringify(entry())}\n`);
+  fs.writeFileSync(
+    readme,
+    '# Test\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+
+  const success = spawnSync(process.execPath, [
+    path.join(__dirname, 'commit-activity.js'),
+    '--input', changelog,
+    '--readme', readme,
+    '--daily', daily,
+    '--hourly', hourly,
+    '--timezone', 'Asia/Saigon',
+  ], { encoding: 'utf8' });
+  const failure = spawnSync(
+    process.execPath,
+    [path.join(__dirname, 'commit-activity.js'), '--unknown'],
+    { encoding: 'utf8' },
+  );
+
+  assert.equal(success.status, 0, success.stderr);
+  assert.equal(fs.existsSync(daily), true);
+  assert.equal(fs.existsSync(hourly), true);
+  assert.equal(failure.status, 1);
+  assert.match(failure.stderr, /^\[commit-activity\] Unknown option:/);
+});
+
+test('workflow detects untracked generated files and checks out the triggering push', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '..', '.github', 'workflows', 'update-commit-activity.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /git status --porcelain/);
+  assert.match(workflow, /github\.event_name == 'push'.*github\.sha/);
+  assert.match(workflow, /Allow GitHub Actions to create and approve pull requests/);
 });

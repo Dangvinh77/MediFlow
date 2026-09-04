@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ github.event_name == 'push' && github.sha || 'master' }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -43,7 +43,8 @@ jobs:
           BRANCH: automation/commit-activity-dashboard
         shell: bash
         run: |
-          if git diff --quiet -- README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg; then
+          generated_status="$(git status --porcelain -- README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg)"
+          if [ -z "$generated_status" ]; then
             echo 'Dashboard is already current.'
             exit 0
           fi
@@ -58,7 +59,10 @@ jobs:
 
           pr_number="$(gh pr list --head "$BRANCH" --base master --state open --json number --jq '.[0].number // empty')"
           if [ -z "$pr_number" ]; then
-            pr_url="$(gh pr create --base master --head "$BRANCH" --title 'docs(tooling): update commit activity dashboard' --body 'Automated refresh from `.changelog/entries.jsonl`.')"
+            if ! pr_url="$(gh pr create --base master --head "$BRANCH" --title 'docs(tooling): update commit activity dashboard' --body 'Automated refresh from `.changelog/entries.jsonl`.')"; then
+              echo '::error::Unable to create the dashboard PR. In Settings > Actions > General > Workflow permissions, enable "Allow GitHub Actions to create and approve pull requests".'
+              exit 1
+            fi
             pr_number="${pr_url##*/}"
           fi
 
