@@ -5,9 +5,11 @@ import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO;
+import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.infrastructure.config.SecurityConfig;
 import com.mediflow.pharmacy.infrastructure.security.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,9 @@ class PrescriptionControllerTest {
 
     @MockBean
     private CreatePrescriptionUseCase useCase;
+
+    @MockBean
+    private CancelPrescriptionUseCase cancelPrescriptionUseCase;
 
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "DOCTOR"})
@@ -169,7 +174,12 @@ class PrescriptionControllerTest {
                         new BigDecimal("1000.00"),
                         "Ngày 2 lần",
                         new BigDecimal("2000.00"))),
+                PrescriptionStatus.ACTIVE,
                 DispenseStatus.PENDING,
-                Instant.now());
+                null,
+                null,
+                null,
+                Instant.now(),
+                null);
     }
 }

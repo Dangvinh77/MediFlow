@@ -24,12 +24,29 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface PrescriptionDtoMapper {
 
-    /** Domain → DTO, kèm trạng thái phiếu xuất hiện tại của đơn. */
-    @Mapping(target = "dispenseStatus", source = "status")
+    /**
+     * Chuyển aggregate đơn thuốc thành response DTO.
+     *
+     * @param prescription aggregate đơn thuốc
+     * @param dispenseStatus trạng thái phiếu xuất tương ứng
+     * @param lineDtos các dòng đã bổ sung tên thuốc
+     * @return DTO hoàn chỉnh gửi qua HTTP
+     */
+    @Mapping(target = "status", source = "prescription.status")
+    @Mapping(target = "dispenseStatus", source = "dispenseStatus")
     @Mapping(target = "lines", source = "lineDtos")
-    PrescriptionDTO toDto(Prescription prescription, DispenseStatus status, List<PrescriptionLineDTO> lineDtos);
+    PrescriptionDTO toDto(
+            Prescription prescription,
+            DispenseStatus dispenseStatus,
+            List<PrescriptionLineDTO> lineDtos);
 
-    /** Một dòng → DTO, kèm tên thuốc (nạp từ kho). */
+    /**
+     * Chuyển một dòng domain thành DTO và bổ sung tên thuốc đã nạp.
+     *
+     * @param line dòng đơn thuốc
+     * @param drugName tên thuốc dùng để hiển thị
+     * @return DTO của dòng đơn thuốc
+     */
     @Mapping(target = "drugName", source = "drugName")
     PrescriptionLineDTO toLineDto(PrescriptionLine line, String drugName);
 }

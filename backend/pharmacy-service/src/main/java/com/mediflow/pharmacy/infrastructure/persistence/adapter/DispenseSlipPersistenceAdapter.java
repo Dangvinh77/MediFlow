@@ -39,6 +39,12 @@ public class DispenseSlipPersistenceAdapter implements DispenseSlipRepositoryPor
         return jpaRepo.findByPrescriptionId(prescriptionId).map(this::toDomain);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public Optional<DispenseSlip> findByPrescriptionForUpdate(UUID prescriptionId) {
+        return jpaRepo.findByPrescriptionIdForUpdate(prescriptionId).map(this::toDomain);
+    }
+
     // ---- map entity ↔ domain (thủ công) ----
 
     private DispenseSlip toDomain(DispenseSlipJpaEntity e) {
