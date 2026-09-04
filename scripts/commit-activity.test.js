@@ -7,6 +7,7 @@ const { spawnSync } = require('node:child_process');
 
 const {
   parseEntries,
+  parseAliases,
   aggregateEntries,
   renderDashboardMarkdown,
   renderDailySvg,
@@ -75,6 +76,36 @@ test('parseEntries rejects non-object records with a line number', () => {
   assert.throws(() => parseEntries('[]\n'), /Invalid record at line 1/i);
 });
 
+test('parseAliases normalizes emails and returns canonical identities', () => {
+  const aliases = parseAliases(JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: [' FIRST@Example.com ', 'second@example.com'],
+    }],
+  }));
+
+  assert.deepEqual(aliases.get('first@example.com'), { id: 'harori', name: 'Harori' });
+  assert.deepEqual(aliases.get('second@example.com'), { id: 'harori', name: 'Harori' });
+});
+
+test('parseAliases rejects ambiguous or malformed configuration', () => {
+  assert.throws(() => parseAliases('{broken'), /Invalid contributor aliases JSON/);
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: '', name: 'A', emails: ['a@example.com'] }],
+    })),
+    /Invalid contributor id at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({ contributors: [
+      { id: 'a', name: 'A', emails: ['same@example.com'] },
+      { id: 'b', name: 'B', emails: ['same@example.com'] },
+    ] })),
+    /Email alias belongs to multiple contributors: same@example.com/,
+  );
+});
+
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
   const entries = [
     entry({
@@ -96,6 +127,35 @@ test('aggregateEntries groups by normalized email and uses the latest name', () 
   assert.equal(model.contributors.length, 1);
   assert.equal(model.contributors[0].name, 'New Name');
   assert.equal(JSON.stringify(model).includes('person@example.com'), false);
+});
+
+test('aggregateEntries merges configured aliases under the canonical name', () => {
+  const entries = parseEntries([
+    entry({ author: 'Old Harori', email: 'first@example.com' }),
+    entry({ hash: 'b'.repeat(40), author: 'Other Name', email: 'SECOND@example.com' }),
+  ].map(JSON.stringify).join('\n'));
+  const aliases = parseAliases(JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: ['first@example.com', 'second@example.com'],
+    }],
+  }));
+
+  const model = aggregateEntries(entries, 'Asia/Saigon', aliases);
+
+  assert.equal(model.contributors.length, 1);
+  assert.equal(model.contributors[0].name, 'Harori');
+  assert.equal(model.contributors[0].total, 2);
+});
+
+test('aggregateEntries keeps unconfigured identical display names separate', () => {
+  const entries = parseEntries([
+    entry({ author: 'Same', email: 'first@example.com' }),
+    entry({ hash: 'b'.repeat(40), author: 'Same', email: 'second@example.com' }),
+  ].map(JSON.stringify).join('\n'));
+
+  assert.equal(aggregateEntries(entries).contributors.length, 2);
 });
 
 test('aggregateEntries calculates daily and hourly statistics in Asia/Saigon', () => {
