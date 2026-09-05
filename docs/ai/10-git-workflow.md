@@ -121,6 +121,11 @@ General → Workflow permissions → Allow GitHub Actions to create and approve 
 Nếu repository yêu cầu duyệt workflow hoặc review PR, maintainer vẫn phải thực hiện bước duyệt;
 auto-merge chỉ chạy sau khi mọi rule bảo vệ nhánh đã đạt.
 
+Khi một thành viên commit bằng nhiều email, khai báo một canonical contributor trong
+`.changelog/contributor-aliases.json`. Mỗi email chỉ được thuộc một contributor; generator sẽ
+dừng với lỗi rõ ràng nếu ID hoặc email bị trùng. Email không có trong registry vẫn được nhóm độc
+lập theo email chuẩn hóa.
+
 ### Xử lý sự cố
 
 ```bash
