@@ -72,6 +72,12 @@ Mỗi commit tự động được ghi vào `.changelog/entries.jsonl` (text, 1 
 toàn bộ source. SQLite cache (`.changelog/cache.db`) được rebuild từ JSONL cho
 query nhanh — file này gitignored.
 
+Hook local là cơ chế ghi nhanh, không phải cơ chế thu thập duy nhất. Merge commit được tạo trực
+tiếp trên GitHub không chạy hook của máy dev, vì vậy workflow trên `master` chạy
+`node scripts/changelog.js --sync` để bổ sung các commit còn thiếu từ Git history. Sync giữ
+commit thường và merge commit của thành viên, nhưng loại tài khoản `[bot]` và commit chỉ dùng
+để tự cập nhật dashboard.
+
 ### Cách hoạt động với multi-branch
 
 JSONL là text file, mỗi dòng 1 commit. Khi 2 branch cùng append dòng mới:
@@ -98,6 +104,7 @@ node scripts/changelog.js --summary          # thống kê (total, by type, by a
 node scripts/changelog.js --files            # xem chi tiết từng file + tác giả + số dòng
 node scripts/changelog.js --scope feat       # lọc theo type hoặc service
 node scripts/changelog.js --since 2026-07-01 # lọc theo thời gian
+node scripts/changelog.js --sync              # bổ sung commit Git còn thiếu vào JSONL
 ```
 
 ### Commit activity dashboard
@@ -106,15 +113,20 @@ node scripts/changelog.js --since 2026-07-01 # lọc theo thời gian
 `.changelog/entries.jsonl`. Chạy lệnh sau để kiểm thử và cập nhật dashboard ở local:
 
 ```bash
-node --test scripts/commit-activity.test.js
+node --test scripts/changelog-sync.test.js scripts/commit-activity.test.js
 node scripts/commit-activity.js
 ```
 
-Trên `master`, thay đổi ở changelog hoặc bộ sinh dashboard sẽ kích hoạt
-`.github/workflows/update-commit-activity.yml`. Workflow cập nhật nhánh cố định
-`automation/commit-activity-dashboard`, mở hoặc làm mới một pull request duy nhất, rồi bật
-auto-merge nếu cấu hình repository cho phép. Email chỉ được dùng nội bộ để nhận diện thành viên
-và không bao giờ xuất hiện trong README hoặc biểu đồ.
+Mọi push lên `master` đều kích hoạt `.github/workflows/update-commit-activity.yml`. Workflow
+đồng bộ commit Git còn thiếu trước khi sinh dashboard, rồi đưa changelog, README và hai SVG vào
+nhánh cố định `automation/commit-activity-dashboard`. Nó mở hoặc làm mới một pull request duy
+nhất và bật auto-merge nếu cấu hình repository cho phép. Lần chạy sau khi PR automation được merge
+sẽ bỏ qua chính commit bot/dashboard đó và thoát khi không còn thay đổi, nên không tạo vòng lặp.
+
+README gắn digest nội dung vào URL của từng SVG. Khi dữ liệu hoặc alias thay đổi, URL cũng đổi để
+GitHub không hiển thị ảnh cache cũ. Dòng `Changelog updated through` là thời gian của commit hợp lệ
+mới nhất đã được ghi trong changelog, không phải thời gian workflow chạy. Email chỉ được dùng nội bộ
+để nhận diện thành viên và không bao giờ xuất hiện trong README hoặc biểu đồ.
 
 Để workflow có thể mở PR bằng `GITHUB_TOKEN`, maintainer phải bật **Settings → Actions →
 General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**.
@@ -135,6 +147,9 @@ node scripts/changelog.js --rebuild
 
 # Init từ đầu (scan toàn bộ git log)
 node scripts/changelog.js --init
+
+# Bổ sung commit bị thiếu do merge trên GitHub hoặc máy chưa bật hook
+node scripts/changelog.js --sync
 ```
 
 ### Lưu ý
@@ -142,3 +157,5 @@ node scripts/changelog.js --init
 - Yêu cầu `sqlite3` CLI trên PATH (Windows: winget install sqlite, macOS: brew install sqlite3, Linux: apt install sqlite3).
 - Nếu không có sqlite3, vẫn đọc được entries từ JSONL nhưng query chậm hơn.
 - `post-commit` hook ghi entries.jsonl + update cache. `post-merge` hook rebuild cache.
+- Workflow `master` tự bù commit bị thiếu; hook local vẫn nên bật để changelog hữu ích ngay trước
+  khi push.
