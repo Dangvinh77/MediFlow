@@ -614,6 +614,14 @@ test('workflow synchronizes every master push before generating dashboard output
   assert.match(workflow, /Dashboard is already current\./);
   assert.match(workflow, /github\.event_name == 'push'.*github\.sha/);
   assert.match(workflow, /Allow GitHub Actions to create and approve pull requests/);
+  assert.match(workflow, /git config user\.name 'Harori'/);
+  assert.match(
+    workflow,
+    /git config user\.email '100329525\+Dangvinh77@users\.noreply\.github\.com'/,
+  );
+  assert.match(workflow, /gh pr merge "\$pr_number" --rebase --auto/);
+  assert.doesNotMatch(workflow, /41898282\+github-actions\[bot\]/);
+  assert.doesNotMatch(workflow, /gh pr merge "\$pr_number" --squash/);
 });
 
 test('repository aliases merge Harori identities', () => {
