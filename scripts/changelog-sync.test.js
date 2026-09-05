@@ -61,6 +61,7 @@ test('--sync appends every missing human commit oldest first and is idempotent',
 
   const initial = sync(root);
   assert.equal(initial.status, 0, initial.stderr);
+  assert.doesNotMatch(initial.stderr, /no such table/i);
   assert.deepEqual(entries(root).map((entry) => entry.hash), [first, second]);
   const afterFirstSync = fs.readFileSync(
     path.join(root, '.changelog', 'entries.jsonl'),

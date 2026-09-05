@@ -316,7 +316,9 @@ function cmdSync() {
   }
 
   writeEntriesAtomically(existing.source, additions);
-  for (const entry of additions) insertCacheEntry(entry);
+  if (additions.length > 0 && hasSqlite3() && sqliteExec(SCHEMA)) {
+    for (const entry of additions) insertCacheEntry(entry);
+  }
   console.log(
     `[changelog] Sync complete: scanned ${hashes.length}, added ${additions.length}, excluded ${excluded}.`,
   );
