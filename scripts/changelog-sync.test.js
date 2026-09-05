@@ -88,3 +88,60 @@ test('--sync rejects malformed existing JSONL without modifying it', (t) => {
   assert.match(result.stderr, /line 1/i);
   assert.equal(fs.readFileSync(changelog, 'utf8'), '{broken\n');
 });
+
+test('--sync excludes bots and dashboard automation but retains human merges', (t) => {
+  const root = createRepository(t);
+  const human = commit(
+    root,
+    'human.txt',
+    'feat: human work',
+    '2026-09-05T04:00:00+07:00',
+  );
+
+  git(root, ['switch', '-c', 'feature']);
+  const feature = commit(
+    root,
+    'feature.txt',
+    'feat: branch work',
+    '2026-09-05T05:00:00+07:00',
+  );
+  git(root, ['switch', 'master']);
+  git(root, ['merge', '--no-ff', 'feature', '-m', 'Merge feature'], {
+    GIT_AUTHOR_NAME: 'Maintainer',
+    GIT_AUTHOR_EMAIL: 'maintainer@example.com',
+    GIT_AUTHOR_DATE: '2026-09-05T06:00:00+07:00',
+    GIT_COMMITTER_NAME: 'Maintainer',
+    GIT_COMMITTER_EMAIL: 'maintainer@example.com',
+    GIT_COMMITTER_DATE: '2026-09-05T06:00:00+07:00',
+  });
+  const humanMerge = git(root, ['rev-parse', 'HEAD']);
+
+  commit(
+    root,
+    'bot.txt',
+    'chore: generated bot work',
+    '2026-09-05T07:00:00+07:00',
+    {
+      name: 'github-actions[bot]',
+      email: '41898282+github-actions[bot]@users.noreply.github.com',
+    },
+  );
+  commit(
+    root,
+    'dashboard.txt',
+    'docs(tooling): update commit activity dashboard (#11)',
+    '2026-09-05T08:00:00+07:00',
+  );
+  commit(
+    root,
+    'dashboard-merge.txt',
+    'Merge pull request #12 from Dangvinh77/automation/commit-activity-dashboard',
+    '2026-09-05T09:00:00+07:00',
+  );
+
+  const result = sync(root);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(entries(root).map((entry) => entry.hash), [human, feature, humanMerge]);
+  assert.match(result.stdout, /excluded 3/i);
+});

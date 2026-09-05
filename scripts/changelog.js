@@ -141,6 +141,19 @@ function generateSummary(type, scope, subject, files) {
   return `${prefix}${svc}: ${subject}${fs}`;
 }
 
+function isDashboardAutomationCommit(entry) {
+  const name = entry.author.trim().toLowerCase();
+  const email = entry.email.trim().toLowerCase();
+  const subject = entry.message.trim();
+  const bot = name.endsWith('[bot]')
+    || /^[^@]*\[bot\]@users\.noreply\.github\.com$/i.test(email);
+  const dashboardSubject =
+    /^docs\(tooling\): update commit activity dashboard(?: \(#\d+\))?$/i.test(subject);
+  const dashboardMerge =
+    /^Merge pull request #\d+ from .+\/automation\/commit-activity-dashboard$/i.test(subject);
+  return bot || dashboardSubject || dashboardMerge;
+}
+
 // ─── Build entry object from HEAD ─────────────────────────────────
 
 function buildEntry(hash) {
@@ -287,11 +300,16 @@ function cmdSync() {
   }
 
   const additions = [];
+  let excluded = 0;
   for (const hash of hashes) {
     if (existing.hashes.has(hash)) continue;
     const entry = buildEntry(hash);
     if (!entry) {
       throw new Error(`Unable to build changelog entry for ${hash}`);
+    }
+    if (isDashboardAutomationCommit(entry)) {
+      excluded += 1;
+      continue;
     }
     additions.push(entry);
   }
@@ -299,7 +317,7 @@ function cmdSync() {
   writeEntriesAtomically(existing.source, additions);
   for (const entry of additions) insertCacheEntry(entry);
   console.log(
-    `[changelog] Sync complete: scanned ${hashes.length}, added ${additions.length}, excluded 0.`,
+    `[changelog] Sync complete: scanned ${hashes.length}, added ${additions.length}, excluded ${excluded}.`,
   );
 }
 
