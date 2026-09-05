@@ -20,7 +20,15 @@
  */
 
 const { execSync } = require('child_process');
-const { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, unlinkSync } = require('fs');
+const {
+  existsSync,
+  mkdirSync,
+  appendFileSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  renameSync,
+} = require('fs');
 const { join } = require('path');
 
 const REPO_ROOT = execSync('git rev-parse --show-toplevel').toString().trim();
@@ -72,6 +80,52 @@ function ensureDir() {
 }
 
 function esc(s) { return (s || '').replace(/'/g, "''"); }
+
+function readExistingJsonl() {
+  if (!existsSync(JSONL_PATH)) {
+    return { source: '', entries: [], hashes: new Set() };
+  }
+
+  const source = readFileSync(JSONL_PATH, 'utf8');
+  const entries = [];
+  for (const [index, line] of source.split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      throw new Error(`Invalid changelog JSON at line ${index + 1}`);
+    }
+    if (!entry || typeof entry.hash !== 'string' || !/^[0-9a-f]{40}$/i.test(entry.hash)) {
+      throw new Error(`Invalid changelog hash at line ${index + 1}`);
+    }
+    entries.push(entry);
+  }
+
+  return {
+    source,
+    entries,
+    hashes: new Set(entries.map((entry) => entry.hash)),
+  };
+}
+
+function writeEntriesAtomically(existingSource, additions) {
+  if (additions.length === 0) return;
+
+  const prefix = existingSource.length === 0 || existingSource.endsWith('\n')
+    ? existingSource
+    : `${existingSource}\n`;
+  const output = `${prefix}${additions.map(JSON.stringify).join('\n')}\n`;
+  const temporaryPath = `${JSONL_PATH}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    writeFileSync(temporaryPath, output, 'utf8');
+    renameSync(temporaryPath, JSONL_PATH);
+  } catch (error) {
+    if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    throw error;
+  }
+}
 
 function parseConventionalCommit(msg) {
   const match = msg.match(/^(feat|fix|refactor|docs|chore|test|build|ci)(?:\(([^)]+)\))?:\s*(.+)$/);
@@ -222,6 +276,31 @@ function cmdUpdate() {
 
   appendFileSync(JSONL_PATH, JSON.stringify(entry) + '\n');
   insertCacheEntry(entry);
+}
+
+function cmdSync() {
+  ensureDir();
+  const existing = readExistingJsonl();
+  const hashes = run('git log --reverse --format="%H" HEAD').split('\n').filter(Boolean);
+  if (hashes.length === 0) {
+    throw new Error('Unable to read Git history from HEAD');
+  }
+
+  const additions = [];
+  for (const hash of hashes) {
+    if (existing.hashes.has(hash)) continue;
+    const entry = buildEntry(hash);
+    if (!entry) {
+      throw new Error(`Unable to build changelog entry for ${hash}`);
+    }
+    additions.push(entry);
+  }
+
+  writeEntriesAtomically(existing.source, additions);
+  for (const entry of additions) insertCacheEntry(entry);
+  console.log(
+    `[changelog] Sync complete: scanned ${hashes.length}, added ${additions.length}, excluded 0.`,
+  );
 }
 
 function cmdRebuild() {
@@ -380,6 +459,7 @@ function cmdRead(opts) {
 
 function main() {
   const args = process.argv.slice(2);
+  if (args.includes('--sync')) { cmdSync(); return; }
   if (args.includes('--init')) { cmdInit(); return; }
   if (args.includes('--update')) { cmdUpdate(); return; }
   if (args.includes('--rebuild')) { cmdRebuild(); return; }
@@ -398,4 +478,9 @@ function main() {
   });
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  console.error(`[changelog] ${error.message}`);
+  process.exitCode = 1;
+}
