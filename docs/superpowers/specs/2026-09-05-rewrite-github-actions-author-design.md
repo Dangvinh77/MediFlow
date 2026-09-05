@@ -58,6 +58,8 @@ git config user.email '100329525+Dangvinh77@users.noreply.github.com'
 
 The workflow may continue to run under GitHub's automation token and may continue to open pull requests as `github-actions[bot]`. The requirement applies to Git commit authorship; the automation actor in the Actions audit trail and the pull-request creator are not disguised or removed.
 
+Dashboard pull requests must be merged with **rebase merge**, not squash merge. GitHub credits the pull-request creator as the author of a squash commit, so a bot-created pull request would reintroduce the bot on `master` even when the branch commit is authored by Harori. Rebase merge carries the Harori-authored dashboard commit onto `master` while GitHub updates only its committer metadata and SHA.
+
 ## Changelog and dashboard reconciliation
 
 Existing `.changelog/entries.jsonl` hashes after the first rewritten commit become stale. The final rewritten tree must therefore rebuild the changelog from the rewritten `master` history rather than append to the old JSONL file.
@@ -82,13 +84,14 @@ Before pushing, verify all of the following in the isolated clone:
 - Dashboard generation is idempotent and `--check` passes.
 - README and each chart contain one canonical Harori contributor row or legend entry.
 - The workflow contains no bot identity in its Git author configuration.
+- The workflow requests rebase merge and contains no squash-merge command for dashboard pull requests.
 
 After pushing, verify:
 
 - Remote `master` equals the verified rewritten SHA.
 - The workflow run succeeds and creates a dashboard pull request when an update is required.
 - The automation commit in that pull request is authored by Harori.
-- The dashboard pull request is merged and the follow-up workflow is successful.
+- The dashboard pull request is rebase-merged, the resulting `master` commit is authored by Harori, and the follow-up workflow is successful.
 - The primary workspace is synchronized to the rewritten remote without losing uncommitted user files.
 
 ## Collaboration impact
