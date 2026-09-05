@@ -47,6 +47,10 @@ For every commit reachable from `master`:
 
 Rewriting a commit changes its SHA and therefore changes every descendant SHA. This is expected and must be reflected in the changelog data.
 
+## Commit signatures
+
+The rewrite changes the SHA of 16 previously signed commits, so their `gpgsig` headers and GitHub `Verified` status are lost. We will not re-sign commits authored by other people. The user explicitly accepted this signature loss before any remote push.
+
 ## Workflow change
 
 In `.github/workflows/update-commit-activity.yml`, configure Git before the automation commit with:
