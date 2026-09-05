@@ -169,6 +169,8 @@ git -C $rewriteRepo config user.email '100329525+Dangvinh77@users.noreply.github
 
 Expected: the isolated `master` contains the captured remote plus the approved spec, plan, and workflow fix; the safety ref records the lease SHA.
 
+The rewrite clone intentionally serves `master` only; it is not a backup of every ref. Keep the verified bundle as the complete recovery source, and do not import refs or stash entries into the clone.
+
 ### Task 3: Rewrite only the exact bot identity
 
 **Files:**
@@ -187,7 +189,9 @@ try {
   $beforeCount = [int](git rev-list --count master)
   $beforeMergeCount = [int](git rev-list --count --merges master)
   $beforeHistory = @(git log --reverse --format='%T%x09%an%x09%ae%x09%cn%x09%ce%x09%aI%x09%cI%x09%s' master)
-  $beforeBot = @(git log master --author=$botEmail --format='%H%x09%T%x09%aI%x09%cI%x09%s')
+  $beforeBot = @(git log master --format='%ae%x09%H%x09%T%x09%aI%x09%cI%x09%s' | Where-Object {
+    ($_ -split "`t", 2)[0] -eq $botEmail
+  })
   if ($beforeBot.Count -ne 3) {
     throw "Expected exactly 3 bot-authored commits, found $($beforeBot.Count)."
   }
