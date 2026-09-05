@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 
 const HASH_PATTERN = /^[0-9a-f]{40}$/i;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
@@ -244,7 +245,15 @@ function escapeMarkdown(value) {
   return String(value).replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
 }
 
-function renderDashboardMarkdown(model) {
+function contentDigest(content) {
+  return createHash('sha256').update(content, 'utf8').digest('hex').slice(0, 12);
+}
+
+function renderDashboardMarkdown(model, versions) {
+  const assetVersions = versions || {
+    daily: contentDigest(`${renderDailySvg(model)}\n`),
+    hourly: contentDigest(`${renderHourlySvg(model)}\n`),
+  };
   const rows = model.contributors.map((contributor) => [
     escapeMarkdown(contributor.name),
     contributor.total,
@@ -259,7 +268,7 @@ function renderDashboardMarkdown(model) {
   }
   const updateStatus = model.totalCommits === 0
     ? `No commits · **0 unique commits** · ${model.timeZone}`
-    : `Updated through **${model.generatedAt} ${model.timeZone}** · **${model.totalCommits} unique commits**`;
+    : `Changelog updated through **${model.generatedAt} ${model.timeZone}** · **${model.totalCommits} unique commits**`;
 
   return [
     '## Commit activity',
@@ -270,9 +279,9 @@ function renderDashboardMarkdown(model) {
     '|---|---:|---:|---:|---|---|---|',
     ...rows.map((row) => `| ${row} |`),
     '',
-    '![Commits by day](docs/assets/commit-activity-by-day.svg)',
+    `![Commits by day](docs/assets/commit-activity-by-day.svg?v=${assetVersions.daily})`,
     '',
-    '![Commits by hour](docs/assets/commit-activity-by-hour.svg)',
+    `![Commits by hour](docs/assets/commit-activity-by-hour.svg?v=${assetVersions.hourly})`,
     '',
     '_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._',
   ].join('\n');
@@ -478,21 +487,26 @@ function generate({
     ? parseAliases(fs.readFileSync(aliasesPath, 'utf8'))
     : new Map();
   const model = aggregateEntries(entries, timeZone, aliasMap);
+  const dailyContent = `${renderDailySvg(model)}\n`;
+  const hourlyContent = `${renderHourlySvg(model)}\n`;
   const targets = [
     {
       filePath: readmePath,
       content: replaceGeneratedBlock(
         fs.readFileSync(readmePath, 'utf8'),
-        renderDashboardMarkdown(model),
+        renderDashboardMarkdown(model, {
+          daily: contentDigest(dailyContent),
+          hourly: contentDigest(hourlyContent),
+        }),
       ),
     },
     {
       filePath: dailyPath,
-      content: `${renderDailySvg(model)}\n`,
+      content: dailyContent,
     },
     {
       filePath: hourlyPath,
-      content: `${renderHourlySvg(model)}\n`,
+      content: hourlyContent,
     },
   ];
   const changed = [];
@@ -583,6 +597,7 @@ function runCli(argv) {
 
 module.exports = {
   aggregateEntries,
+  contentDigest,
   generate,
   parseAliases,
   parseEntries,

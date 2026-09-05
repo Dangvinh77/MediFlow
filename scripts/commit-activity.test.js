@@ -13,6 +13,7 @@ const {
   renderDailySvg,
   renderHourlySvg,
   replaceGeneratedBlock,
+  contentDigest,
   generate,
 } = require('./commit-activity');
 
@@ -417,6 +418,42 @@ test('generate writes all dashboard artifacts atomically and is idempotent', (t)
   );
 });
 
+test('generated README versions each SVG from its content', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-versioned-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(rootDir, '.changelog'));
+  fs.writeFileSync(
+    path.join(rootDir, '.changelog', 'entries.jsonl'),
+    `${JSON.stringify(entry())}\n`,
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'README.md'),
+    '# Test\n\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+
+  const first = generate({ rootDir });
+  const readme = fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8');
+  const daily = fs.readFileSync(
+    path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'),
+    'utf8',
+  );
+  const hourly = fs.readFileSync(
+    path.join(rootDir, 'docs', 'assets', 'commit-activity-by-hour.svg'),
+    'utf8',
+  );
+
+  assert.match(
+    readme,
+    new RegExp(`commit-activity-by-day\\.svg\\?v=${contentDigest(daily)}`),
+  );
+  assert.match(
+    readme,
+    new RegExp(`commit-activity-by-hour\\.svg\\?v=${contentDigest(hourly)}`),
+  );
+  assert.deepEqual(generate({ rootDir }).changed, []);
+  assert.ok(first.changed.includes('README.md'));
+});
+
 test('generate loads an explicit contributor alias registry', (t) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-aliases-'));
   t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
@@ -444,17 +481,25 @@ test('generate loads an explicit contributor alias registry', (t) => {
   );
 
   const first = generate({ rootDir, aliases: 'aliases.json' });
-  const rendered = [
-    fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8'),
-    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'), 'utf8'),
-    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-hour.svg'), 'utf8'),
-  ].join('\n');
+  const readme = fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8');
+  const daily = fs.readFileSync(
+    path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'),
+    'utf8',
+  );
+  const hourly = fs.readFileSync(
+    path.join(rootDir, 'docs', 'assets', 'commit-activity-by-hour.svg'),
+    'utf8',
+  );
+  const rendered = [readme, daily, hourly].join('\n');
   const second = generate({ rootDir, aliases: 'aliases.json' });
 
   assert.equal(first.model.contributors.length, 1);
   assert.equal(first.model.contributors[0].name, 'Harori');
   assert.equal(first.model.contributors[0].total, 2);
   assert.deepEqual(second.changed, []);
+  assert.equal((readme.match(/^\| Harori \|/gm) || []).length, 1);
+  assert.equal((daily.match(/>Harori \(\d+\)<\/text>/g) || []).length, 1);
+  assert.equal((hourly.match(/<text class="name"[^>]*>Harori<\/text>/g) || []).length, 1);
   assert.doesNotMatch(rendered, /first@example\.com|second@example\.com/);
 });
 
