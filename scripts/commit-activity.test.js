@@ -104,6 +104,25 @@ test('parseAliases rejects ambiguous or malformed configuration', () => {
     ] })),
     /Email alias belongs to multiple contributors: same@example.com/,
   );
+  assert.throws(
+    () => parseAliases(JSON.stringify({ contributors: [
+      { id: 'same', name: 'A', emails: ['a@example.com'] },
+      { id: 'same', name: 'B', emails: ['b@example.com'] },
+    ] })),
+    /Duplicate contributor id: same/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: '', emails: ['a@example.com'] }],
+    })),
+    /Invalid contributor name at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: 'A', emails: [] }],
+    })),
+    /Invalid contributor emails at index 0/,
+  );
 });
 
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
@@ -437,4 +456,26 @@ test('workflow detects untracked generated files and checks out the triggering p
   assert.match(workflow, /git status --porcelain/);
   assert.match(workflow, /github\.event_name == 'push'.*github\.sha/);
   assert.match(workflow, /Allow GitHub Actions to create and approve pull requests/);
+});
+
+test('repository aliases merge Harori and trigger dashboard automation', () => {
+  const root = path.join(__dirname, '..');
+  const aliases = parseAliases(fs.readFileSync(
+    path.join(root, '.changelog', 'contributor-aliases.json'),
+    'utf8',
+  ));
+  const workflow = fs.readFileSync(
+    path.join(root, '.github', 'workflows', 'update-commit-activity.yml'),
+    'utf8',
+  );
+
+  assert.deepEqual(
+    aliases.get('phamdangvinh2002@gmail.com'),
+    { id: 'harori', name: 'Harori' },
+  );
+  assert.deepEqual(
+    aliases.get('100329525+dangvinh77@users.noreply.github.com'),
+    { id: 'harori', name: 'Harori' },
+  );
+  assert.match(workflow, /\.changelog\/contributor-aliases\.json/);
 });
