@@ -1,9 +1,23 @@
 [features]
 hooks = true
-
+multi_agent = true
 [mcp_servers."codebase-memory-mcp"]
 command = "codebase-memory-mcp"
 startup_timeout_sec = 30
 
 [mcp_servers.mermaidchart]
 url = "https://mcp.mermaid.ai/mcp"
+
+[features.multi_agent_v2]
+enabled = true
+expose_spawn_agent_model_overrides = true
+max_concurrent_threads_per_session = 12
+wait_agent_enabled = true
+default_wait_timeout_ms = 30000
+min_wait_timeout_ms = 10000
+max_wait_timeout_ms = 300000
+
+[agents]
+default_subagent_model = "gpt-5.6-luna"
+default_subagent_reasoning_effort = "max"
+interrupt_message = true
