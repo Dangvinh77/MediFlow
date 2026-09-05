@@ -7,6 +7,7 @@
  *
  * Usage:
  *   node scripts/changelog.js --init            Scan full git log → entries.jsonl + cache.db
+ *   node scripts/changelog.js --sync            Append missing eligible commits from Git history
  *   node scripts/changelog.js --update          Record the latest commit (append + cache)
  *   node scripts/changelog.js --rebuild         Rebuild cache.db from entries.jsonl (after merge)
  *   node scripts/changelog.js --dedup           Deduplicate entries.jsonl by hash (resolve merge conflicts)
