@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - .changelog/entries.jsonl
+      - .changelog/contributor-aliases.json
       - scripts/commit-activity.js
       - scripts/commit-activity.test.js
       - .github/workflows/update-commit-activity.yml
