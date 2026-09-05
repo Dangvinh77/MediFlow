@@ -1,7 +1,7 @@
 # Changelog Auto-Sync and Chart Cache Design
 
-**Date:** 2026-09-05  
-**Status:** Approved  
+**Date:** 2026-09-05
+**Status:** Approved
 **Scope:** Keep `.changelog/entries.jsonl`, the README activity summary, and both SVG charts synchronized with `master`
 
 ## Problem
