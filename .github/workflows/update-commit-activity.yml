@@ -3,12 +3,6 @@ name: Update commit activity dashboard
 on:
   push:
     branches: [master]
-    paths:
-      - .changelog/entries.jsonl
-      - .changelog/contributor-aliases.json
-      - scripts/commit-activity.js
-      - scripts/commit-activity.test.js
-      - .github/workflows/update-commit-activity.yml
   workflow_dispatch:
 
 permissions:
@@ -32,8 +26,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Test generator
-        run: node --test scripts/commit-activity.test.js
+      - name: Test changelog and dashboard
+        run: node --test scripts/changelog-sync.test.js scripts/commit-activity.test.js
+
+      - name: Synchronize changelog
+        run: node scripts/changelog.js --sync
 
       - name: Generate dashboard
         run: node scripts/commit-activity.js
@@ -44,7 +41,7 @@ jobs:
           BRANCH: automation/commit-activity-dashboard
         shell: bash
         run: |
-          generated_status="$(git status --porcelain -- README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg)"
+          generated_status="$(git status --porcelain -- .changelog/entries.jsonl README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg)"
           if [ -z "$generated_status" ]; then
             echo 'Dashboard is already current.'
             exit 0
@@ -54,7 +51,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
           git switch -C "$BRANCH"
-          git add README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg
+          git add .changelog/entries.jsonl README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg
           git commit -m 'docs(tooling): update commit activity dashboard'
           git push --force-with-lease origin "HEAD:$BRANCH"
 
