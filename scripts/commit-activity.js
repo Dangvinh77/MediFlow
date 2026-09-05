@@ -103,31 +103,89 @@ function dateRange(first, last) {
   return dates;
 }
 
-function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
-  const byEmail = new Map();
+function publicDisplayName(value) {
+  const displayName = String(value).trim();
+  return displayName.includes('@') || !displayName ? '[redacted]' : displayName;
+}
+
+function parseAliases(json) {
+  let value;
+  try {
+    value = JSON.parse(json);
+  } catch {
+    throw new Error('Invalid contributor aliases JSON');
+  }
+
+  if (
+    value === null
+    || typeof value !== 'object'
+    || Array.isArray(value)
+    || !Array.isArray(value.contributors)
+  ) {
+    throw new Error('Contributor aliases must contain a contributors array');
+  }
+
+  const ids = new Set();
+  const aliases = new Map();
+  value.contributors.forEach((contributor, index) => {
+    if (contributor === null || typeof contributor !== 'object' || Array.isArray(contributor)) {
+      throw new Error(`Invalid contributor at index ${index}`);
+    }
+
+    const id = typeof contributor.id === 'string' ? contributor.id.trim() : '';
+    const name = typeof contributor.name === 'string' ? contributor.name.trim() : '';
+    if (!id) throw new Error(`Invalid contributor id at index ${index}`);
+    if (!name) throw new Error(`Invalid contributor name at index ${index}`);
+    if (name.includes('@')) {
+      throw new Error(`Contributor name must not contain an email address at index ${index}`);
+    }
+    if (ids.has(id)) throw new Error(`Duplicate contributor id: ${id}`);
+    if (!Array.isArray(contributor.emails) || contributor.emails.length === 0) {
+      throw new Error(`Invalid contributor emails at index ${index}`);
+    }
+    ids.add(id);
+
+    contributor.emails.forEach((email) => {
+      const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      if (!normalized) throw new Error(`Invalid email alias at index ${index}`);
+      if (aliases.has(normalized)) {
+        throw new Error(`Email alias belongs to multiple contributors: ${normalized}`);
+      }
+      aliases.set(normalized, { id, name });
+    });
+  });
+
+  return aliases;
+}
+
+function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new Map()) {
+  const byIdentity = new Map();
   let firstDate = null;
   let lastDate = null;
   let latestTimestampMs = null;
 
   for (const entry of entries) {
-    const emailKey = entry.email.trim().toLowerCase();
+    const normalizedEmail = entry.email.trim().toLowerCase();
+    const configured = aliases.get(normalizedEmail);
+    const identityKey = configured ? `alias:${configured.id}` : `email:${normalizedEmail}`;
     const local = localParts(entry.timestampMs, timeZone);
-    let contributor = byEmail.get(emailKey);
+    let contributor = byIdentity.get(identityKey);
 
     if (!contributor) {
       contributor = {
-        name: entry.author.trim(),
+        name: configured ? configured.name : publicDisplayName(entry.author),
+        configuredName: Boolean(configured),
         latestNameTimestampMs: entry.timestampMs,
         latestTimestampMs: entry.timestampMs,
         total: 0,
         days: new Map(),
         hours: Array(24).fill(0),
       };
-      byEmail.set(emailKey, contributor);
+      byIdentity.set(identityKey, contributor);
     }
 
-    if (entry.timestampMs >= contributor.latestNameTimestampMs) {
-      contributor.name = entry.author.trim();
+    if (!contributor.configuredName && entry.timestampMs >= contributor.latestNameTimestampMs) {
+      contributor.name = publicDisplayName(entry.author);
       contributor.latestNameTimestampMs = entry.timestampMs;
     }
     contributor.latestTimestampMs = Math.max(contributor.latestTimestampMs, entry.timestampMs);
@@ -142,7 +200,7 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE) {
       : Math.max(latestTimestampMs, entry.timestampMs);
   }
 
-  const states = [...byEmail.values()].sort(
+  const states = [...byIdentity.values()].sort(
     (left, right) => right.total - left.total || left.name.localeCompare(right.name, 'en'),
   );
   const dates = dateRange(firstDate, lastDate);
@@ -397,6 +455,7 @@ function atomicWrite(filePath, content) {
 function generate({
   rootDir = path.resolve(__dirname, '..'),
   changelog,
+  aliases,
   readme,
   daily,
   hourly,
@@ -404,11 +463,21 @@ function generate({
   write = true,
 } = {}) {
   const entriesPath = path.resolve(rootDir, changelog || '.changelog/entries.jsonl');
+  const aliasesPath = path.resolve(
+    rootDir,
+    aliases === undefined ? '.changelog/contributor-aliases.json' : aliases,
+  );
   const readmePath = path.resolve(rootDir, readme || 'README.md');
   const dailyPath = path.resolve(rootDir, daily || 'docs/assets/commit-activity-by-day.svg');
   const hourlyPath = path.resolve(rootDir, hourly || 'docs/assets/commit-activity-by-hour.svg');
   const entries = parseEntries(fs.readFileSync(entriesPath, 'utf8'));
-  const model = aggregateEntries(entries, timeZone);
+  if (aliases !== undefined && !fs.existsSync(aliasesPath)) {
+    throw new Error(`Contributor aliases file not found: ${aliasesPath}`);
+  }
+  const aliasMap = fs.existsSync(aliasesPath)
+    ? parseAliases(fs.readFileSync(aliasesPath, 'utf8'))
+    : new Map();
+  const model = aggregateEntries(entries, timeZone, aliasMap);
   const targets = [
     {
       filePath: readmePath,
@@ -449,6 +518,7 @@ function parseOptions(argv) {
   };
   const valueOptions = {
     '--input': 'changelog',
+    '--aliases': 'aliases',
     '--readme': 'readme',
     '--daily': 'daily',
     '--hourly': 'hourly',
@@ -465,7 +535,7 @@ function parseOptions(argv) {
       options.help = true;
     } else if (valueOptions[argument]) {
       const value = argv[index + 1];
-      if (!value) throw new Error(`Missing value for ${argument}`);
+      if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`);
       index += 1;
       const property = valueOptions[argument];
       options[property] = property === 'rootDir' ? path.resolve(value) : value;
@@ -484,6 +554,7 @@ function runCli(argv) {
       'Usage: node scripts/commit-activity.js [options]',
       '',
       '  --input PATH       Changelog JSONL input',
+      '  --aliases PATH     Contributor alias registry',
       '  --readme PATH      README output',
       '  --daily PATH       Daily SVG output',
       '  --hourly PATH      Hourly SVG output',
@@ -513,6 +584,7 @@ function runCli(argv) {
 module.exports = {
   aggregateEntries,
   generate,
+  parseAliases,
   parseEntries,
   renderDashboardMarkdown,
   renderDailySvg,

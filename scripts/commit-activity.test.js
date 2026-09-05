@@ -7,6 +7,7 @@ const { spawnSync } = require('node:child_process');
 
 const {
   parseEntries,
+  parseAliases,
   aggregateEntries,
   renderDashboardMarkdown,
   renderDailySvg,
@@ -75,6 +76,67 @@ test('parseEntries rejects non-object records with a line number', () => {
   assert.throws(() => parseEntries('[]\n'), /Invalid record at line 1/i);
 });
 
+test('parseAliases normalizes emails and returns canonical identities', () => {
+  const aliases = parseAliases(JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: [' FIRST@Example.com ', 'second@example.com'],
+    }],
+  }));
+
+  assert.deepEqual(aliases.get('first@example.com'), { id: 'harori', name: 'Harori' });
+  assert.deepEqual(aliases.get('second@example.com'), { id: 'harori', name: 'Harori' });
+});
+
+test('parseAliases rejects ambiguous or malformed configuration', () => {
+  assert.throws(() => parseAliases('{broken'), /Invalid contributor aliases JSON/);
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: '', name: 'A', emails: ['a@example.com'] }],
+    })),
+    /Invalid contributor id at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({ contributors: [
+      { id: 'a', name: 'A', emails: ['same@example.com'] },
+      { id: 'b', name: 'B', emails: ['same@example.com'] },
+    ] })),
+    /Email alias belongs to multiple contributors: same@example.com/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({ contributors: [
+      { id: 'same', name: 'A', emails: ['a@example.com'] },
+      { id: 'same', name: 'B', emails: ['b@example.com'] },
+    ] })),
+    /Duplicate contributor id: same/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: '', emails: ['a@example.com'] }],
+    })),
+    /Invalid contributor name at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: 'A', emails: [] }],
+    })),
+    /Invalid contributor emails at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: 'private@example.com', emails: ['a@example.com'] }],
+    })),
+    /Contributor name must not contain an email address at index 0/,
+  );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: '用户@例子.公司', emails: ['a@example.com'] }],
+    })),
+    /Contributor name must not contain an email address at index 0/,
+  );
+});
+
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
   const entries = [
     entry({
@@ -96,6 +158,76 @@ test('aggregateEntries groups by normalized email and uses the latest name', () 
   assert.equal(model.contributors.length, 1);
   assert.equal(model.contributors[0].name, 'New Name');
   assert.equal(JSON.stringify(model).includes('person@example.com'), false);
+});
+
+test('aggregateEntries merges configured aliases under the canonical name', () => {
+  const entries = parseEntries([
+    entry({
+      author: 'Old Harori',
+      email: 'first@example.com',
+      timestamp: 'Tue Sep 1 01:00:00 2026 +0700',
+    }),
+    entry({
+      hash: 'b'.repeat(40),
+      author: 'Other Name',
+      email: 'SECOND@example.com',
+      timestamp: 'Wed Sep 2 02:00:00 2026 +0700',
+    }),
+    entry({
+      hash: 'c'.repeat(40),
+      author: 'Other Name',
+      email: 'second@example.com',
+      timestamp: 'Wed Sep 2 02:30:00 2026 +0700',
+    }),
+  ].map(JSON.stringify).join('\n'));
+  const aliases = parseAliases(JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: ['first@example.com', 'second@example.com'],
+    }],
+  }));
+
+  const model = aggregateEntries(entries, 'Asia/Saigon', aliases);
+
+  assert.equal(model.contributors.length, 1);
+  assert.equal(model.contributors[0].name, 'Harori');
+  assert.equal(model.contributors[0].total, 3);
+  assert.equal(model.contributors[0].activeDays, 2);
+  assert.equal(model.contributors[0].averagePerActiveDay, 1.5);
+  assert.deepEqual(model.contributors[0].peakDay, { date: '2026-09-02', count: 2 });
+  assert.deepEqual(model.contributors[0].peakHour, { hour: 2, count: 2 });
+  assert.equal(model.contributors[0].latest, '2026-09-02 02:30:00');
+  assert.deepEqual(model.daily['2026-09-01'], [1]);
+  assert.deepEqual(model.daily['2026-09-02'], [2]);
+  assert.equal(model.hourly[0][1], 1);
+  assert.equal(model.hourly[0][2], 2);
+});
+
+test('aggregateEntries keeps unconfigured identical display names separate', () => {
+  const entries = parseEntries([
+    entry({ author: 'Same', email: 'first@example.com' }),
+    entry({ hash: 'b'.repeat(40), author: 'Same', email: 'second@example.com' }),
+  ].map(JSON.stringify).join('\n'));
+
+  assert.equal(aggregateEntries(entries).contributors.length, 2);
+});
+
+test('Git author names containing at-signs are redacted from every public renderer', () => {
+  for (const author of ['private@[192.0.2.1]', '用户@例子.公司']) {
+    const model = aggregateEntries(parseEntries(JSON.stringify(entry({
+      author,
+      email: 'identity@example.com',
+    }))));
+    const output = [
+      renderDashboardMarkdown(model),
+      renderDailySvg(model),
+      renderHourlySvg(model),
+    ].join('\n');
+
+    assert.equal(model.contributors[0].name, '[redacted]');
+    assert.equal(output.includes(author), false);
+  }
 });
 
 test('aggregateEntries calculates daily and hourly statistics in Asia/Saigon', () => {
@@ -285,14 +417,104 @@ test('generate writes all dashboard artifacts atomically and is idempotent', (t)
   );
 });
 
+test('generate loads an explicit contributor alias registry', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-aliases-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(rootDir, '.changelog'));
+  fs.writeFileSync(
+    path.join(rootDir, '.changelog', 'entries.jsonl'),
+    `${[
+      entry({ email: 'first@example.com' }),
+      entry({ hash: 'b'.repeat(40), email: 'second@example.com' }),
+    ].map(JSON.stringify).join('\n')}\n`,
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'aliases.json'),
+    JSON.stringify({
+      contributors: [{
+        id: 'harori',
+        name: 'Harori',
+        emails: ['first@example.com', 'second@example.com'],
+      }],
+    }),
+  );
+  fs.writeFileSync(
+    path.join(rootDir, 'README.md'),
+    '# Test\n\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+
+  const first = generate({ rootDir, aliases: 'aliases.json' });
+  const rendered = [
+    fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8'),
+    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'), 'utf8'),
+    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-hour.svg'), 'utf8'),
+  ].join('\n');
+  const second = generate({ rootDir, aliases: 'aliases.json' });
+
+  assert.equal(first.model.contributors.length, 1);
+  assert.equal(first.model.contributors[0].name, 'Harori');
+  assert.equal(first.model.contributors[0].total, 2);
+  assert.deepEqual(second.changed, []);
+  assert.doesNotMatch(rendered, /first@example\.com|second@example\.com/);
+});
+
+test('explicit alias paths fail when the value or file is missing', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-alias-cli-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  const changelog = path.join(rootDir, 'source.jsonl');
+  const readme = path.join(rootDir, 'README.md');
+  const daily = path.join(rootDir, 'daily.svg');
+  const hourly = path.join(rootDir, 'hourly.svg');
+  fs.writeFileSync(changelog, `${JSON.stringify(entry())}\n`);
+  fs.writeFileSync(
+    readme,
+    '# Test\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+  const common = [
+    path.join(__dirname, 'commit-activity.js'),
+    '--root', rootDir,
+    '--input', changelog,
+    '--readme', readme,
+    '--daily', daily,
+    '--hourly', hourly,
+  ];
+
+  const missingValue = spawnSync(process.execPath, [...common, '--aliases', '--check'], {
+    encoding: 'utf8',
+  });
+  const missingFile = spawnSync(
+    process.execPath,
+    [...common, '--aliases', path.join(rootDir, 'missing.json')],
+    { encoding: 'utf8' },
+  );
+
+  assert.equal(missingValue.status, 1);
+  assert.match(missingValue.stderr, /Missing value for --aliases/);
+  assert.equal(missingFile.status, 1);
+  assert.match(missingFile.stderr, /Contributor aliases file not found/);
+  assert.equal(fs.existsSync(daily), false);
+  assert.equal(fs.existsSync(hourly), false);
+});
+
 test('CLI accepts explicit input and output paths and prefixes failures', (t) => {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-cli-'));
   t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
   const changelog = path.join(rootDir, 'source.jsonl');
+  const aliases = path.join(rootDir, 'aliases.json');
   const readme = path.join(rootDir, 'custom-readme.md');
   const daily = path.join(rootDir, 'charts', 'daily.svg');
   const hourly = path.join(rootDir, 'charts', 'hourly.svg');
-  fs.writeFileSync(changelog, `${JSON.stringify(entry())}\n`);
+  fs.writeFileSync(changelog, `${[
+    entry({ email: 'first@example.com' }),
+    entry({ hash: 'b'.repeat(40), email: 'second@example.com' }),
+  ].map(JSON.stringify).join('\n')}\n`);
+  fs.writeFileSync(aliases, JSON.stringify({
+    contributors: [{
+      id: 'harori',
+      name: 'Harori',
+      emails: ['first@example.com', 'second@example.com'],
+    }],
+  }));
   fs.writeFileSync(
     readme,
     '# Test\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
@@ -301,6 +523,7 @@ test('CLI accepts explicit input and output paths and prefixes failures', (t) =>
   const success = spawnSync(process.execPath, [
     path.join(__dirname, 'commit-activity.js'),
     '--input', changelog,
+    '--aliases', aliases,
     '--readme', readme,
     '--daily', daily,
     '--hourly', hourly,
@@ -315,6 +538,10 @@ test('CLI accepts explicit input and output paths and prefixes failures', (t) =>
   assert.equal(success.status, 0, success.stderr);
   assert.equal(fs.existsSync(daily), true);
   assert.equal(fs.existsSync(hourly), true);
+  assert.equal(
+    (fs.readFileSync(readme, 'utf8').match(/^\| Harori \|/gm) || []).length,
+    1,
+  );
   assert.equal(failure.status, 1);
   assert.match(failure.stderr, /^\[commit-activity\] Unknown option:/);
 });
@@ -328,4 +555,26 @@ test('workflow detects untracked generated files and checks out the triggering p
   assert.match(workflow, /git status --porcelain/);
   assert.match(workflow, /github\.event_name == 'push'.*github\.sha/);
   assert.match(workflow, /Allow GitHub Actions to create and approve pull requests/);
+});
+
+test('repository aliases merge Harori and trigger dashboard automation', () => {
+  const root = path.join(__dirname, '..');
+  const aliases = parseAliases(fs.readFileSync(
+    path.join(root, '.changelog', 'contributor-aliases.json'),
+    'utf8',
+  ));
+  const workflow = fs.readFileSync(
+    path.join(root, '.github', 'workflows', 'update-commit-activity.yml'),
+    'utf8',
+  );
+
+  assert.deepEqual(
+    aliases.get('phamdangvinh2002@gmail.com'),
+    { id: 'harori', name: 'Harori' },
+  );
+  assert.deepEqual(
+    aliases.get('100329525+dangvinh77@users.noreply.github.com'),
+    { id: 'harori', name: 'Harori' },
+  );
+  assert.match(workflow, /\.changelog\/contributor-aliases\.json/);
 });
