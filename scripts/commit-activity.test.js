@@ -129,6 +129,12 @@ test('parseAliases rejects ambiguous or malformed configuration', () => {
     })),
     /Contributor name must not contain an email address at index 0/,
   );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: '用户@例子.公司', emails: ['a@example.com'] }],
+    })),
+    /Contributor name must not contain an email address at index 0/,
+  );
 });
 
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
@@ -207,19 +213,21 @@ test('aggregateEntries keeps unconfigured identical display names separate', () 
   assert.equal(aggregateEntries(entries).contributors.length, 2);
 });
 
-test('email-like Git author names are redacted from every public renderer', () => {
-  const model = aggregateEntries(parseEntries(JSON.stringify(entry({
-    author: 'private@example.com',
-    email: 'identity@example.com',
-  }))));
-  const output = [
-    renderDashboardMarkdown(model),
-    renderDailySvg(model),
-    renderHourlySvg(model),
-  ].join('\n');
+test('Git author names containing at-signs are redacted from every public renderer', () => {
+  for (const author of ['private@[192.0.2.1]', '用户@例子.公司']) {
+    const model = aggregateEntries(parseEntries(JSON.stringify(entry({
+      author,
+      email: 'identity@example.com',
+    }))));
+    const output = [
+      renderDashboardMarkdown(model),
+      renderDailySvg(model),
+      renderHourlySvg(model),
+    ].join('\n');
 
-  assert.equal(model.contributors[0].name, '[redacted]');
-  assert.doesNotMatch(output, /private@example\.com/);
+    assert.equal(model.contributors[0].name, '[redacted]');
+    assert.equal(output.includes(author), false);
+  }
 });
 
 test('aggregateEntries calculates daily and hourly statistics in Asia/Saigon', () => {

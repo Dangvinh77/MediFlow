@@ -4,8 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HASH_PATTERN = /^[0-9a-f]{40}$/i;
-const EMAIL_LIKE_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
-const EMAIL_LIKE_GLOBAL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
 const START_MARKER = '<!-- commit-activity:start -->';
 const END_MARKER = '<!-- commit-activity:end -->';
@@ -106,8 +104,8 @@ function dateRange(first, last) {
 }
 
 function publicDisplayName(value) {
-  const redacted = String(value).replace(EMAIL_LIKE_GLOBAL_PATTERN, '[redacted]').trim();
-  return redacted || '[redacted]';
+  const displayName = String(value).trim();
+  return displayName.includes('@') || !displayName ? '[redacted]' : displayName;
 }
 
 function parseAliases(json) {
@@ -138,7 +136,7 @@ function parseAliases(json) {
     const name = typeof contributor.name === 'string' ? contributor.name.trim() : '';
     if (!id) throw new Error(`Invalid contributor id at index ${index}`);
     if (!name) throw new Error(`Invalid contributor name at index ${index}`);
-    if (EMAIL_LIKE_PATTERN.test(name)) {
+    if (name.includes('@')) {
       throw new Error(`Contributor name must not contain an email address at index ${index}`);
     }
     if (ids.has(id)) throw new Error(`Duplicate contributor id: ${id}`);
