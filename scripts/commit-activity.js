@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HASH_PATTERN = /^[0-9a-f]{40}$/i;
+const EMAIL_LIKE_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+const EMAIL_LIKE_GLOBAL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 const DEFAULT_TIME_ZONE = 'Asia/Saigon';
 const START_MARKER = '<!-- commit-activity:start -->';
 const END_MARKER = '<!-- commit-activity:end -->';
@@ -103,6 +105,11 @@ function dateRange(first, last) {
   return dates;
 }
 
+function publicDisplayName(value) {
+  const redacted = String(value).replace(EMAIL_LIKE_GLOBAL_PATTERN, '[redacted]').trim();
+  return redacted || '[redacted]';
+}
+
 function parseAliases(json) {
   let value;
   try {
@@ -131,6 +138,9 @@ function parseAliases(json) {
     const name = typeof contributor.name === 'string' ? contributor.name.trim() : '';
     if (!id) throw new Error(`Invalid contributor id at index ${index}`);
     if (!name) throw new Error(`Invalid contributor name at index ${index}`);
+    if (EMAIL_LIKE_PATTERN.test(name)) {
+      throw new Error(`Contributor name must not contain an email address at index ${index}`);
+    }
     if (ids.has(id)) throw new Error(`Duplicate contributor id: ${id}`);
     if (!Array.isArray(contributor.emails) || contributor.emails.length === 0) {
       throw new Error(`Invalid contributor emails at index ${index}`);
@@ -165,7 +175,7 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new M
 
     if (!contributor) {
       contributor = {
-        name: configured ? configured.name : entry.author.trim(),
+        name: configured ? configured.name : publicDisplayName(entry.author),
         configuredName: Boolean(configured),
         latestNameTimestampMs: entry.timestampMs,
         latestTimestampMs: entry.timestampMs,
@@ -177,7 +187,7 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new M
     }
 
     if (!contributor.configuredName && entry.timestampMs >= contributor.latestNameTimestampMs) {
-      contributor.name = entry.author.trim();
+      contributor.name = publicDisplayName(entry.author);
       contributor.latestNameTimestampMs = entry.timestampMs;
     }
     contributor.latestTimestampMs = Math.max(contributor.latestTimestampMs, entry.timestampMs);
@@ -455,11 +465,17 @@ function generate({
   write = true,
 } = {}) {
   const entriesPath = path.resolve(rootDir, changelog || '.changelog/entries.jsonl');
-  const aliasesPath = path.resolve(rootDir, aliases || '.changelog/contributor-aliases.json');
+  const aliasesPath = path.resolve(
+    rootDir,
+    aliases === undefined ? '.changelog/contributor-aliases.json' : aliases,
+  );
   const readmePath = path.resolve(rootDir, readme || 'README.md');
   const dailyPath = path.resolve(rootDir, daily || 'docs/assets/commit-activity-by-day.svg');
   const hourlyPath = path.resolve(rootDir, hourly || 'docs/assets/commit-activity-by-hour.svg');
   const entries = parseEntries(fs.readFileSync(entriesPath, 'utf8'));
+  if (aliases !== undefined && !fs.existsSync(aliasesPath)) {
+    throw new Error(`Contributor aliases file not found: ${aliasesPath}`);
+  }
   const aliasMap = fs.existsSync(aliasesPath)
     ? parseAliases(fs.readFileSync(aliasesPath, 'utf8'))
     : new Map();
@@ -521,7 +537,7 @@ function parseOptions(argv) {
       options.help = true;
     } else if (valueOptions[argument]) {
       const value = argv[index + 1];
-      if (!value) throw new Error(`Missing value for ${argument}`);
+      if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`);
       index += 1;
       const property = valueOptions[argument];
       options[property] = property === 'rootDir' ? path.resolve(value) : value;
