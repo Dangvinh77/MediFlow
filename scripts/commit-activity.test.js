@@ -123,6 +123,12 @@ test('parseAliases rejects ambiguous or malformed configuration', () => {
     })),
     /Invalid contributor emails at index 0/,
   );
+  assert.throws(
+    () => parseAliases(JSON.stringify({
+      contributors: [{ id: 'a', name: 'private@example.com', emails: ['a@example.com'] }],
+    })),
+    /Contributor name must not contain an email address at index 0/,
+  );
 });
 
 test('aggregateEntries groups by normalized email and uses the latest name', () => {
@@ -150,8 +156,23 @@ test('aggregateEntries groups by normalized email and uses the latest name', () 
 
 test('aggregateEntries merges configured aliases under the canonical name', () => {
   const entries = parseEntries([
-    entry({ author: 'Old Harori', email: 'first@example.com' }),
-    entry({ hash: 'b'.repeat(40), author: 'Other Name', email: 'SECOND@example.com' }),
+    entry({
+      author: 'Old Harori',
+      email: 'first@example.com',
+      timestamp: 'Tue Sep 1 01:00:00 2026 +0700',
+    }),
+    entry({
+      hash: 'b'.repeat(40),
+      author: 'Other Name',
+      email: 'SECOND@example.com',
+      timestamp: 'Wed Sep 2 02:00:00 2026 +0700',
+    }),
+    entry({
+      hash: 'c'.repeat(40),
+      author: 'Other Name',
+      email: 'second@example.com',
+      timestamp: 'Wed Sep 2 02:30:00 2026 +0700',
+    }),
   ].map(JSON.stringify).join('\n'));
   const aliases = parseAliases(JSON.stringify({
     contributors: [{
@@ -165,7 +186,16 @@ test('aggregateEntries merges configured aliases under the canonical name', () =
 
   assert.equal(model.contributors.length, 1);
   assert.equal(model.contributors[0].name, 'Harori');
-  assert.equal(model.contributors[0].total, 2);
+  assert.equal(model.contributors[0].total, 3);
+  assert.equal(model.contributors[0].activeDays, 2);
+  assert.equal(model.contributors[0].averagePerActiveDay, 1.5);
+  assert.deepEqual(model.contributors[0].peakDay, { date: '2026-09-02', count: 2 });
+  assert.deepEqual(model.contributors[0].peakHour, { hour: 2, count: 2 });
+  assert.equal(model.contributors[0].latest, '2026-09-02 02:30:00');
+  assert.deepEqual(model.daily['2026-09-01'], [1]);
+  assert.deepEqual(model.daily['2026-09-02'], [2]);
+  assert.equal(model.hourly[0][1], 1);
+  assert.equal(model.hourly[0][2], 2);
 });
 
 test('aggregateEntries keeps unconfigured identical display names separate', () => {
@@ -175,6 +205,21 @@ test('aggregateEntries keeps unconfigured identical display names separate', () 
   ].map(JSON.stringify).join('\n'));
 
   assert.equal(aggregateEntries(entries).contributors.length, 2);
+});
+
+test('email-like Git author names are redacted from every public renderer', () => {
+  const model = aggregateEntries(parseEntries(JSON.stringify(entry({
+    author: 'private@example.com',
+    email: 'identity@example.com',
+  }))));
+  const output = [
+    renderDashboardMarkdown(model),
+    renderDailySvg(model),
+    renderHourlySvg(model),
+  ].join('\n');
+
+  assert.equal(model.contributors[0].name, '[redacted]');
+  assert.doesNotMatch(output, /private@example\.com/);
 });
 
 test('aggregateEntries calculates daily and hourly statistics in Asia/Saigon', () => {
@@ -390,11 +435,57 @@ test('generate loads an explicit contributor alias registry', (t) => {
     '# Test\n\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
   );
 
-  const result = generate({ rootDir, aliases: 'aliases.json' });
+  const first = generate({ rootDir, aliases: 'aliases.json' });
+  const rendered = [
+    fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8'),
+    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-day.svg'), 'utf8'),
+    fs.readFileSync(path.join(rootDir, 'docs', 'assets', 'commit-activity-by-hour.svg'), 'utf8'),
+  ].join('\n');
+  const second = generate({ rootDir, aliases: 'aliases.json' });
 
-  assert.equal(result.model.contributors.length, 1);
-  assert.equal(result.model.contributors[0].name, 'Harori');
-  assert.equal(result.model.contributors[0].total, 2);
+  assert.equal(first.model.contributors.length, 1);
+  assert.equal(first.model.contributors[0].name, 'Harori');
+  assert.equal(first.model.contributors[0].total, 2);
+  assert.deepEqual(second.changed, []);
+  assert.doesNotMatch(rendered, /first@example\.com|second@example\.com/);
+});
+
+test('explicit alias paths fail when the value or file is missing', (t) => {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commit-activity-alias-cli-'));
+  t.after(() => fs.rmSync(rootDir, { recursive: true, force: true }));
+  const changelog = path.join(rootDir, 'source.jsonl');
+  const readme = path.join(rootDir, 'README.md');
+  const daily = path.join(rootDir, 'daily.svg');
+  const hourly = path.join(rootDir, 'hourly.svg');
+  fs.writeFileSync(changelog, `${JSON.stringify(entry())}\n`);
+  fs.writeFileSync(
+    readme,
+    '# Test\n<!-- commit-activity:start -->\nold\n<!-- commit-activity:end -->\n',
+  );
+  const common = [
+    path.join(__dirname, 'commit-activity.js'),
+    '--root', rootDir,
+    '--input', changelog,
+    '--readme', readme,
+    '--daily', daily,
+    '--hourly', hourly,
+  ];
+
+  const missingValue = spawnSync(process.execPath, [...common, '--aliases', '--check'], {
+    encoding: 'utf8',
+  });
+  const missingFile = spawnSync(
+    process.execPath,
+    [...common, '--aliases', path.join(rootDir, 'missing.json')],
+    { encoding: 'utf8' },
+  );
+
+  assert.equal(missingValue.status, 1);
+  assert.match(missingValue.stderr, /Missing value for --aliases/);
+  assert.equal(missingFile.status, 1);
+  assert.match(missingFile.stderr, /Contributor aliases file not found/);
+  assert.equal(fs.existsSync(daily), false);
+  assert.equal(fs.existsSync(hourly), false);
 });
 
 test('CLI accepts explicit input and output paths and prefixes failures', (t) => {
