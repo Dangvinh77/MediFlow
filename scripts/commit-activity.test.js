@@ -591,27 +591,37 @@ test('CLI accepts explicit input and output paths and prefixes failures', (t) =>
   assert.match(failure.stderr, /^\[commit-activity\] Unknown option:/);
 });
 
-test('workflow detects untracked generated files and checks out the triggering push', () => {
+test('workflow synchronizes every master push before generating dashboard output', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'update-commit-activity.yml'),
     'utf8',
   );
 
-  assert.match(workflow, /git status --porcelain/);
+  assert.match(workflow, /push:\s*\n\s+branches: \[master\]/);
+  assert.doesNotMatch(workflow, /\n\s+paths:/);
+  assert.ok(
+    workflow.indexOf('node scripts/changelog.js --sync')
+      < workflow.indexOf('node scripts/commit-activity.js'),
+  );
+  assert.match(
+    workflow,
+    /git status --porcelain -- \.changelog\/entries\.jsonl README\.md/,
+  );
+  assert.match(
+    workflow,
+    /git add \.changelog\/entries\.jsonl README\.md docs\/assets\/commit-activity-by-day\.svg docs\/assets\/commit-activity-by-hour\.svg/,
+  );
+  assert.match(workflow, /Dashboard is already current\./);
   assert.match(workflow, /github\.event_name == 'push'.*github\.sha/);
   assert.match(workflow, /Allow GitHub Actions to create and approve pull requests/);
 });
 
-test('repository aliases merge Harori and trigger dashboard automation', () => {
+test('repository aliases merge Harori identities', () => {
   const root = path.join(__dirname, '..');
   const aliases = parseAliases(fs.readFileSync(
     path.join(root, '.changelog', 'contributor-aliases.json'),
     'utf8',
   ));
-  const workflow = fs.readFileSync(
-    path.join(root, '.github', 'workflows', 'update-commit-activity.yml'),
-    'utf8',
-  );
 
   assert.deepEqual(
     aliases.get('phamdangvinh2002@gmail.com'),
@@ -621,5 +631,4 @@ test('repository aliases merge Harori and trigger dashboard automation', () => {
     aliases.get('100329525+dangvinh77@users.noreply.github.com'),
     { id: 'harori', name: 'Harori' },
   );
-  assert.match(workflow, /\.changelog\/contributor-aliases\.json/);
 });
