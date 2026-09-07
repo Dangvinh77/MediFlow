@@ -9,14 +9,14 @@ const DEFAULT_TIME_ZONE = 'Asia/Saigon';
 const START_MARKER = '<!-- commit-activity:start -->';
 const END_MARKER = '<!-- commit-activity:end -->';
 const PALETTE = [
-  '#2563eb',
-  '#16a34a',
-  '#dc2626',
-  '#9333ea',
-  '#ea580c',
-  '#0891b2',
-  '#4f46e5',
-  '#65a30d',
+  '#0072B2',
+  '#E69F00',
+  '#009E73',
+  '#CC79A7',
+  '#D55E00',
+  '#56B4E9',
+  '#333333',
+  '#8C6D31',
 ];
 
 function parseEntries(jsonl) {
@@ -159,7 +159,9 @@ function parseAliases(json) {
   return aliases;
 }
 
-function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new Map()) {
+function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new Map(), now = Date.now()) {
+  const endHour = Math.floor(now / 3_600_000) * 3_600_000;
+  const startHour = endHour - 71 * 3_600_000;
   const byIdentity = new Map();
   let firstDate = null;
   let lastDate = null;
@@ -181,6 +183,7 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new M
         total: 0,
         days: new Map(),
         hours: Array(24).fill(0),
+        recentHours: Array(72).fill(0),
       };
       byIdentity.set(identityKey, contributor);
     }
@@ -193,6 +196,10 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new M
     contributor.total += 1;
     contributor.days.set(local.date, (contributor.days.get(local.date) || 0) + 1);
     contributor.hours[local.hour] += 1;
+    const recentIndex = Math.floor((entry.timestampMs - startHour) / 3_600_000);
+    if (recentIndex >= 0 && recentIndex < 72 && entry.timestampMs <= now) {
+      contributor.recentHours[recentIndex] += 1;
+    }
 
     firstDate = firstDate === null || local.date < firstDate ? local.date : firstDate;
     lastDate = lastDate === null || local.date > lastDate ? local.date : lastDate;
@@ -238,6 +245,10 @@ function aggregateEntries(entries, timeZone = DEFAULT_TIME_ZONE, aliases = new M
       dates.map((date) => [date, states.map((state) => state.days.get(date) || 0)]),
     ),
     hourly: states.map((state) => [...state.hours]),
+    recentHourly: states.map((state) => [...state.recentHours]),
+    recentLabels: Array.from({ length: 72 }, (_, index) => (
+      localParts(startHour + index * 3_600_000, timeZone).display.slice(0, 16)
+    )),
   };
 }
 
@@ -281,7 +292,7 @@ function renderDashboardMarkdown(model, versions) {
     '',
     `![Commits by day](docs/assets/commit-activity-by-day.svg?v=${assetVersions.daily})`,
     '',
-    `![Commits by hour](docs/assets/commit-activity-by-hour.svg?v=${assetVersions.hourly})`,
+    `![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=${assetVersions.hourly})`,
     '',
     '_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._',
   ].join('\n');
@@ -398,45 +409,45 @@ function renderDailySvg(model) {
   return lines.join('\n');
 }
 
-function heatColor(count, maximum) {
+function heatColor(count, maximum, color) {
   if (count === 0) return '#ebedf0';
-  const opacity = 0.25 + (count / maximum) * 0.75;
-  return `rgba(37, 99, 235, ${opacity.toFixed(2)})`;
+  const rgb = color.slice(1).match(/../g).map((channel) => parseInt(channel, 16));
+  return `rgba(${rgb.join(', ')}, ${(0.4 + 0.6 * count / maximum).toFixed(2)})`;
 }
 
 function renderHourlySvg(model) {
   if (model.totalCommits === 0) {
-    return emptyChart('Commit activity by hour');
+    return emptyChart('Commits — last 72 hours');
   }
 
   const margin = { top: 82, right: 28, bottom: 42, left: 180 };
-  const cellWidth = 34;
+  const cellWidth = 12;
   const rowHeight = 32;
-  const chartWidth = cellWidth * 24;
+  const chartWidth = cellWidth * 72;
   const width = margin.left + chartWidth + margin.right;
   const height = margin.top + model.contributors.length * rowHeight + margin.bottom;
-  const maximum = Math.max(...model.hourly.flat(), 1);
+  const maximum = Math.max(...model.recentHourly.flat(), 1);
   const lines = [
     `<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 ${width} ${height}">`,
-    '  <title>Commit activity by hour</title>',
-    `  <desc>${escapeXml(`${model.totalCommits} commits grouped into 24 local-hour columns for each contributor.`)}</desc>`,
+    '  <title>Commits — last 72 hours</title>',
+    `  <desc>${escapeXml(`${model.recentHourly.flat().reduce((sum, count) => sum + count, 0)} commits across 72 consecutive hourly buckets, including the current partial hour.`)}</desc>`,
     `  <rect width="${width}" height="${height}" rx="12" fill="#ffffff" stroke="#d0d7de"/>`,
     '  <style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.axis{fill:#57606a;font-size:11px}.heading{fill:#1f2328;font-size:18px;font-weight:600}.subheading{fill:#57606a;font-size:12px}.name{fill:#1f2328;font-size:12px}</style>',
-    `  <text class="heading" x="${margin.left}" y="30">Commits by hour</text>`,
-    `  <text class="subheading" x="${margin.left}" y="49">Local time · ${escapeXml(model.timeZone)} · darker cells mean more commits</text>`,
+    `  <text class="heading" x="${margin.left}" y="30">Commits — last 72 hours</text>`,
+    `  <text class="subheading" x="${margin.left}" y="49">${escapeXml(model.recentLabels[0])} → ${escapeXml(model.recentLabels[71])} · ${escapeXml(model.timeZone)} · current hour partial</text>`,
   ];
 
-  for (let hour = 0; hour < 24; hour += 1) {
+  for (let hour = 0; hour < 72; hour += 6) {
     const x = margin.left + hour * cellWidth + cellWidth / 2;
-    lines.push(`  <text class="axis" x="${x}" y="70" text-anchor="middle">${String(hour).padStart(2, '0')}</text>`);
+    lines.push(`  <text class="axis" x="${x}" y="70" text-anchor="middle">${model.recentLabels[hour].slice(5)}</text>`);
   }
 
   model.contributors.forEach((contributor, contributorIndex) => {
     const y = margin.top + contributorIndex * rowHeight;
     lines.push(`  <text class="name" x="${margin.left - 10}" y="${y + 20}" text-anchor="end">${escapeXml(contributor.name)}</text>`);
-    model.hourly[contributorIndex].forEach((count, hour) => {
+    model.recentHourly[contributorIndex].forEach((count, hour) => {
       const x = margin.left + hour * cellWidth;
-      lines.push(`  <rect data-hour="${hour}" x="${x + 2}" y="${y + 2}" width="${cellWidth - 4}" height="${rowHeight - 4}" rx="4" fill="${heatColor(count, maximum)}"><title>${escapeXml(`${contributor.name} · ${String(hour).padStart(2, '0')}:00: ${count}`)}</title></rect>`);
+      lines.push(`  <rect data-hour="${hour}" x="${x + 1}" y="${y + 2}" width="${cellWidth - 2}" height="${rowHeight - 4}" rx="2" fill="${heatColor(count, maximum, PALETTE[contributorIndex % PALETTE.length])}"><title>${escapeXml(`${contributor.name} · ${model.recentLabels[hour]}: ${count}`)}</title></rect>`);
     });
   });
 
