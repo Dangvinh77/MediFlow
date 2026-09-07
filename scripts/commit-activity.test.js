@@ -635,7 +635,7 @@ test('workflow synchronizes every master push before generating dashboard output
     workflow,
     /git config user\.email '100329525\+Dangvinh77@users\.noreply\.github\.com'/,
   );
-  assert.match(workflow, /gh pr merge "\$pr_number" --rebase --auto/);
+  assert.match(workflow, /gh pr merge "\$pr_number" --rebase --admin --match-head-commit "\$head_sha" --delete-branch/);
   assert.doesNotMatch(workflow, /41898282\+github-actions\[bot\]/);
   assert.doesNotMatch(workflow, /gh pr merge "\$pr_number" --squash/);
 });

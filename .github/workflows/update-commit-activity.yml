@@ -85,4 +85,4 @@ jobs:
 
           # Bind merge to the exact commit generated and checked in this run.
           head_sha="$(git rev-parse HEAD)"
-          gh pr merge "$pr_number" --rebase --auto --match-head-commit "$head_sha" --delete-branch
+          gh pr merge "$pr_number" --rebase --admin --match-head-commit "$head_sha" --delete-branch
