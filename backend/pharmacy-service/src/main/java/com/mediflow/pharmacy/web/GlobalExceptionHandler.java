@@ -5,8 +5,10 @@ import com.mediflow.common.api.ApiResponse.ApiError;
 import com.mediflow.common.api.ApiResponse.ErrorDetail;
 import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.common.exception.DuplicateResourceException;
+import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionCancellationForbiddenException;
+
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,13 +90,13 @@ public class GlobalExceptionHandler {
      * @param exception lỗi phân quyền nghiệp vụ từ application layer
      * @return phản hồi lỗi {@code 403 Forbidden}
      */
-    @ExceptionHandler(PrescriptionCancellationForbiddenException.class)
+    @ExceptionHandler(ForbiddenOperationException.class)
     public ResponseEntity<ApiResponse<Void>> cancellationForbidden(
-            PrescriptionCancellationForbiddenException exception) {
+            ForbiddenOperationException exception) {
 
         return build(
                 HttpStatus.FORBIDDEN,
-                PrescriptionCancellationForbiddenException.CODE,
+                exception.getCode(),
                 exception.getMessage());
     }
 

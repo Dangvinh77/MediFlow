@@ -10,9 +10,14 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
-/** Issues and validates MediFlow JWTs (HS256). */
+/**
+ * Issues and validates MediFlow JWTs using HS256.
+ *
+ * <p>The JWT subject always contains the authenticated user's UUID.
+ */
 @Service
 public class JwtTokenService {
 
@@ -20,31 +25,54 @@ public class JwtTokenService {
     private final JwtProperties props;
 
     public JwtTokenService(JwtProperties props) {
-        this.props = props;
-        this.key = Keys.hmacShaKeyFor(props.secret().getBytes(StandardCharsets.UTF_8));
+        this.props = Objects.requireNonNull(props, "props is required");
+        this.key = Keys.hmacShaKeyFor(
+                props.secret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String issueAccessToken(String userId, String role) {
-        return build(userId, role, props.accessTokenMinutes() * 60);
+    public String issueAccessToken(UUID userId, String role) {
+        return build(
+                userId,
+                role,
+                props.accessTokenMinutes() * 60);
     }
 
-    public String issueRefreshToken(String userId, String role) {
-        return build(userId, role, props.refreshTokenMinutes() * 60);
+    public String issueRefreshToken(UUID userId, String role) {
+        return build(
+                userId,
+                role,
+                props.refreshTokenMinutes() * 60);
     }
 
-    private String build(String userId, String role, long ttlSeconds) {
+    private String build(
+            UUID userId,
+            String role,
+            long ttlSeconds) {
+
+        Objects.requireNonNull(userId, "userId is required");
+        Objects.requireNonNull(role, "role is required");
+
         Instant now = Instant.now();
+
         return Jwts.builder()
-                .subject(userId)
+                .subject(userId.toString())
                 .claim(JwtClaims.ROLE, role)
-                .claim(JwtClaims.CORRELATION_ID, UUID.randomUUID().toString())
+                .claim(
+                        JwtClaims.CORRELATION_ID,
+                        UUID.randomUUID().toString())
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(ttlSeconds)))
+                .expiration(Date.from(
+                        now.plusSeconds(ttlSeconds)))
                 .signWith(key)
                 .compact();
     }
 
-    /** @return parsed claims if the token is valid; throws JwtException otherwise. */
+    /**
+     * Parses and validates a signed JWT.
+     *
+     * @param token encoded JWT
+     * @return validated claims
+     */
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(key)

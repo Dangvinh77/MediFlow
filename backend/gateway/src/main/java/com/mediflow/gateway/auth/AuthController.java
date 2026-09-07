@@ -16,22 +16,43 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * STUB authentication for MediFlow. Issues JWTs for a small demo user directory so the
- * end-to-end flow works. REPLACE the credential check with a real user store / auth service
- * before any non-dev use. See docs/ai/07-security-rbac.md.
+ * Stub authentication for local development.
+ *
+ * <p>Every demo user has a stable UUID so downstream services can
+ * safely use the JWT subject for ownership checks.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
-    // demo users: username -> {password, role}. Placeholder only.
-    private static final Map<String, String[]> DEMO_USERS = Map.of(
-            "admin", new String[]{"admin123", Roles.ADMIN},
-            "doctor", new String[]{"doctor123", Roles.DOCTOR},
-            "nurse", new String[]{"nurse123", Roles.NURSE},
-            "pharmacist", new String[]{"pharmacist123", Roles.PHARMACIST}
+    private static final Map<String, DemoUser> DEMO_USERS = Map.of(
+            "admin",
+            new DemoUser(
+                    UUID.fromString(
+                            "00000000-0000-0000-0000-000000000001"),
+                    "admin123",
+                    Roles.ADMIN),
+            "doctor",
+            new DemoUser(
+                    UUID.fromString(
+                            "00000000-0000-0000-0000-000000000002"),
+                    "doctor123",
+                    Roles.DOCTOR),
+            "nurse",
+            new DemoUser(
+                    UUID.fromString(
+                            "00000000-0000-0000-0000-000000000003"),
+                    "nurse123",
+                    Roles.NURSE),
+            "pharmacist",
+            new DemoUser(
+                    UUID.fromString(
+                            "00000000-0000-0000-0000-000000000004"),
+                    "pharmacist123",
+                    Roles.PHARMACIST)
     );
 
     private final JwtTokenService jwt;
@@ -41,28 +62,67 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-        String[] entry = DEMO_USERS.get(req.username());
-        if (entry == null || !entry[0].equals(req.password())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "INVALID_CREDENTIALS"));
+    public ResponseEntity<?> login(
+            @RequestBody LoginRequest request) {
+
+        DemoUser user = DEMO_USERS.get(request.username());
+
+        if (user == null
+                || !user.password().equals(request.password())) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "error",
+                            "INVALID_CREDENTIALS"));
         }
-        String role = entry[1];
-        String access = jwt.issueAccessToken(req.username(), role);
-        String refresh = jwt.issueRefreshToken(req.username(), role);
-        return ResponseEntity.ok(new LoginResponse(access, refresh, role));
+
+        String accessToken =
+                jwt.issueAccessToken(user.userId(), user.role());
+
+        String refreshToken =
+                jwt.issueRefreshToken(user.userId(), user.role());
+
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        accessToken,
+                        refreshToken,
+                        user.role()));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody RefreshRequest req) {
+    public ResponseEntity<?> refresh(
+            @RequestBody RefreshRequest request) {
+
         try {
-            Claims claims = jwt.parse(req.refreshToken());
-            String access = jwt.issueAccessToken(
-                    claims.getSubject(), claims.get(JwtClaims.ROLE, String.class));
-            return ResponseEntity.ok(new RefreshResponse(access));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "INVALID_REFRESH_TOKEN"));
+            Claims claims =
+                    jwt.parse(request.refreshToken());
+
+            UUID userId =
+                    UUID.fromString(claims.getSubject());
+
+            String role =
+                    claims.get(
+                            JwtClaims.ROLE,
+                            String.class);
+
+            String accessToken =
+                    jwt.issueAccessToken(userId, role);
+
+            return ResponseEntity.ok(
+                    new RefreshResponse(accessToken));
+        } catch (Exception exception) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "error",
+                            "INVALID_REFRESH_TOKEN"));
         }
+    }
+
+    private record DemoUser(
+            UUID userId,
+            String password,
+            String role) {
     }
 }
