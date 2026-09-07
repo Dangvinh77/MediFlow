@@ -85,4 +85,14 @@ jobs:
 
           # Bind merge to the exact commit generated and checked in this run.
           head_sha="$(git rev-parse HEAD)"
+          # GitHub recomputes mergeability asynchronously after updating a PR.
+          for attempt in {1..12}; do
+            mergeable="$(gh pr view "$pr_number" --json mergeable --jq .mergeable)"
+            if [ "$mergeable" = MERGEABLE ]; then break; fi
+            if [ "$mergeable" = CONFLICTING ]; then
+              echo '::error::Dashboard PR has conflicts'; exit 1
+            fi
+            sleep 5
+          done
+          test "$mergeable" = MERGEABLE
           gh pr merge "$pr_number" --rebase --admin --match-head-commit "$head_sha" --delete-branch
