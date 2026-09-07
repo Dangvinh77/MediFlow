@@ -260,7 +260,7 @@ test('contributor ordering and chart color assignment are deterministic', () => 
 
   assert.deepEqual(forward.contributors.map(({ name }) => name), ['Alpha', 'Zulu']);
   assert.equal(renderDailySvg(forward), renderDailySvg(reverse));
-  assert.match(renderDailySvg(forward), /#2563eb[\s\S]*Alpha/);
+  assert.match(renderDailySvg(forward), /#0072B2[\s\S]*Alpha/);
 });
 
 test('aggregateEntries includes dates with zero commits', () => {
@@ -367,15 +367,31 @@ test('renderDailySvg renders every date, contributor legend, and accessible text
   assert.doesNotMatch(svg, /@example\.com/);
 });
 
-test('renderHourlySvg renders 24 columns and escaped tooltips', () => {
+test('renderHourlySvg renders 72 consecutive columns and escaped tooltips', () => {
   const model = aggregateEntries(parseEntries(JSON.stringify(entry({ author: 'A < B' }))));
 
   const svg = renderHourlySvg(model);
 
-  assert.match(svg, /<title>Commit activity by hour<\/title>/);
-  assert.equal((svg.match(/data-hour=/g) || []).length, 24);
+  assert.match(svg, /<title>Commits — last 72 hours<\/title>/);
+  assert.equal((svg.match(/data-hour=/g) || []).length, 72);
   assert.match(svg, /A &lt; B/);
   assert.doesNotMatch(svg, /@example\.com/);
+});
+
+test('recent hourly buckets exclude old and future commits and preserve separate dates', () => {
+  const now = Date.parse('2026-09-07T12:30:00Z');
+  const timestamps = ['2026-09-04T12:59:59Z', '2026-09-04T13:00:00Z',
+    '2026-09-06T12:00:00Z', '2026-09-07T12:00:00Z', '2026-09-07T12:31:00Z'];
+  const entries = parseEntries(timestamps.map((timestamp, index) => JSON.stringify(entry({
+    hash: String(index + 1).padStart(40, '0'), timestamp,
+  }))).join('\n'));
+  const model = aggregateEntries(entries, 'Asia/Saigon', new Map(), now);
+  assert.equal(model.recentHourly[0].length, 72);
+  assert.equal(model.recentHourly[0].reduce((sum, count) => sum + count, 0), 3);
+  assert.equal(model.recentHourly[0][0], 1);
+  assert.equal(model.recentHourly[0][47], 1);
+  assert.equal(model.recentHourly[0][71], 1);
+  assert.equal(model.recentLabels[71], '2026-09-07 19:00');
 });
 
 test('chart renderers handle an empty changelog', () => {

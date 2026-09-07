@@ -12,9 +12,9 @@ Changelog updated through **2026-09-06 00:26:55 Asia/Saigon** · **139 unique co
 | locgit-89 | 5 | 2 | 2.50 | 2026-09-04 (4) | 14:00 (2) | 2026-09-04 15:37:39 |
 | TranHoangAnh94 | 2 | 2 | 1.00 | 2026-08-13 (1) | 18:00 (1) | 2026-09-04 18:21:27 |
 
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=81d09c2830c7)
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=13411b0e87fb)
 
-![Commits by hour](docs/assets/commit-activity-by-hour.svg?v=ea52123a92e0)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=9bb3c79c24db)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
