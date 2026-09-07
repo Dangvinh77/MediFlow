@@ -6,21 +6,30 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: commit-activity-dashboard
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
+      - name: Create dashboard App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: Iv23liRNMJfjhwhBK16V
+          private-key: ${{ secrets.DASHBOARD_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'push' && github.sha || 'master' }}
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -37,7 +46,7 @@ jobs:
 
       - name: Create or update dashboard pull request
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: automation/commit-activity-dashboard
         shell: bash
         run: |
@@ -46,6 +55,16 @@ jobs:
             echo 'Dashboard is already current.'
             exit 0
           fi
+
+          # Reject unexpected tracked changes before granting Git write access.
+          while IFS= read -r file; do
+            case "$file" in
+              .changelog/entries.jsonl|README.md|docs/assets/commit-activity-by-day.svg|docs/assets/commit-activity-by-hour.svg) ;;
+              *) echo "::error::Unexpected generated file: $file"; exit 1 ;;
+            esac
+          done < <(git diff --name-only HEAD)
+          git diff --check
+          gh auth setup-git
 
           git config user.name 'Harori'
           git config user.email '100329525+Dangvinh77@users.noreply.github.com'
@@ -64,4 +83,6 @@ jobs:
             pr_number="${pr_url##*/}"
           fi
 
-          gh pr merge "$pr_number" --rebase --auto || echo '::warning::Auto-merge is unavailable; maintainer merge required.'
+          # Bind merge to the exact commit generated and checked in this run.
+          head_sha="$(git rev-parse HEAD)"
+          gh pr merge "$pr_number" --rebase --auto --match-head-commit "$head_sha" --delete-branch
