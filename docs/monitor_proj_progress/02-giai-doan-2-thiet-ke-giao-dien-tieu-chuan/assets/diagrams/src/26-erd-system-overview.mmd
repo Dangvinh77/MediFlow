@@ -1,0 +1,67 @@
+flowchart LR
+    ORGANIZATION[(Organization DB<br/>DEPARTMENT · STAFF · ACCOUNT)]
+    PATIENT[(Patient DB<br/>PATIENT)]
+    CLINICAL[(Clinical DB<br/>APPOINTMENT · MEDICAL_RECORD · DIAGNOSIS)]
+    LAB[(Lab DB<br/>LAB_TEST · LAB_RESULT · PROCESSED_EVENT)]
+    PHARMACY[(Pharmacy DB<br/>DRUG · PRESCRIPTION · LINE<br/>DISPENSE_SLIP · RESERVATION · PROCESSED_EVENT)]
+    BILLING[(Billing DB<br/>FEE · INVOICE · PROCESSED_EVENT)]
+    NOTIFICATION[(Notification DB<br/>NOTIFICATION · PROCESSED_EVENT)]
+    REPORT[(Report DB<br/>DAILY_VISIT · MONTHLY_REVENUE<br/>DRUG_STATISTIC · PROCESSED_EVENT)]
+    EVENTS[(RabbitMQ<br/>mediflow.events)]
+
+    ORGANIZATION -.->|doctor_id, department_id · UUID/REST| CLINICAL
+    PATIENT -.->|patient_id · UUID/REST| CLINICAL
+    CLINICAL -.->|record_id · UUID logic| LAB
+    PATIENT -.->|patient_id · UUID logic| LAB
+    ORGANIZATION -.->|department_id · UUID logic| LAB
+    CLINICAL -.->|record_id · UUID logic| PHARMACY
+    PATIENT -.->|patient_id · UUID logic| PHARMACY
+    ORGANIZATION -.->|doctor/department/staff UUID| PHARMACY
+    PATIENT -.->|patient_id · UUID logic| BILLING
+    CLINICAL -.->|record_id · UUID logic| BILLING
+    ORGANIZATION -.->|department_id · UUID logic| BILLING
+    PHARMACY -.->|prescription_id, dispense_id · UUID| BILLING
+    PATIENT -.->|patient_id · UUID logic| NOTIFICATION
+    ORGANIZATION -.->|department_id dimension| REPORT
+    PHARMACY -.->|drug_id dimension| REPORT
+
+    ORGANIZATION -.->|publish organization events| EVENTS
+    PATIENT -.->|publish patient events| EVENTS
+    CLINICAL -.->|publish clinical events| EVENTS
+    LAB -.->|publish lab events| EVENTS
+    PHARMACY -.->|publish prescription events| EVENTS
+    BILLING -.->|publish billing events| EVENTS
+    NOTIFICATION -.->|publish notification.sent| EVENTS
+    EVENTS -.->|result / prescription events| CLINICAL
+    EVENTS -.->|medicalrecord + payment| LAB
+    EVENTS -.->|payment.completed| PHARMACY
+    EVENTS -.->|clinical + lab + prescription| BILLING
+    EVENTS -.->|6 notification triggers| NOTIFICATION
+    EVENTS -.->|6 report projection events| REPORT
+
+    LEGEND[Chú giải<br/>Trong mỗi DB: quan hệ vật lý xem ERD 2.3.1–2.3.8<br/>Nét đứt xanh: UUID/REST logic · không phải FK<br/>Nét đứt cam: integration event qua RabbitMQ]
+
+    classDef organization fill:#E0F2FE,stroke:#0369A1,color:#0C4A6E
+    classDef patient fill:#ECFDF5,stroke:#047857,color:#064E3B
+    classDef clinical fill:#EEF2FF,stroke:#4F46E5,color:#312E81
+    classDef lab fill:#F0FDFA,stroke:#0F766E,color:#134E4A
+    classDef pharmacy fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    classDef billing fill:#FEF3C7,stroke:#D97706,color:#78350F
+    classDef notification fill:#FDF2F8,stroke:#DB2777,color:#831843
+    classDef report fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    classDef legend fill:#FFFFFF,stroke:#64748B,color:#0F172A
+
+    class ORGANIZATION organization
+    class PATIENT patient
+    class CLINICAL clinical
+    class LAB lab
+    class PHARMACY pharmacy
+    class BILLING billing
+    class NOTIFICATION notification
+    class REPORT report
+    class EVENTS event
+    class LEGEND legend
+
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 stroke:#2563EB,stroke-width:2px
+    linkStyle 15,16,17,18,19,20,21,22,23,24,25,26,27 stroke:#EA580C,stroke-width:2px

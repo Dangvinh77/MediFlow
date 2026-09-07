@@ -1,5 +1,24 @@
 # MediFlow — Hospital Microservices (Spring Boot Monorepo)
 
+<!-- commit-activity:start -->
+## Commit activity
+
+Changelog updated through **2026-09-07 19:38:57 Asia/Saigon** · **144 unique commits**
+
+| Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
+|---|---:|---:|---:|---|---|---|
+| Harori | 124 | 16 | 7.75 | 2026-09-04 (31) | 13:00 (14) | 2026-09-07 19:38:57 |
+| LQHuy0210 | 13 | 7 | 1.86 | 2026-08-13 (4) | 15:00 (4) | 2026-09-04 18:32:31 |
+| locgit-89 | 5 | 2 | 2.50 | 2026-09-04 (4) | 14:00 (2) | 2026-09-04 15:37:39 |
+| TranHoangAnh94 | 2 | 2 | 1.00 | 2026-08-13 (1) | 18:00 (1) | 2026-09-04 18:21:27 |
+
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=6896d633d257)
+
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=6d944c74ba5f)
+
+_Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
+<!-- commit-activity:end -->
+
 **MediFlow** is a hospital/clinic management system built as **Spring Boot microservices** (Maven multi-module, monorepo). This repo ships with a **shared AI coding framework** so everyone — whether they use **Claude Code**, **Codex**, or **Cursor**, on **IntelliJ / VS Code / NetBeans** — produces code to the same standard after a `git pull`.
 
 > Repo: `git@github.com:Dangvinh77/MediFlow.git`

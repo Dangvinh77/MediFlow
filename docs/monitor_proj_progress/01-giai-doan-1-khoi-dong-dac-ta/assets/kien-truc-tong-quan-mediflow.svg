@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-labelledby="title desc">
+  <title id="title">Kiến trúc tổng quan MediFlow</title>
+  <desc id="desc">Web và Mobile đi qua API Gateway tới tám dịch vụ nghiệp vụ. Mỗi dịch vụ sở hữu PostgreSQL riêng và trao đổi sự kiện qua RabbitMQ.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#EEF2FF"/>
+    </linearGradient>
+    <linearGradient id="gateway" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F4C81"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="service" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EFF6FF"/>
+    </linearGradient>
+    <linearGradient id="eventBus" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5B21B6"/>
+      <stop offset="0.52" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#9333EA"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrowRest" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#2563EB"/>
+    </marker>
+    <marker id="arrowEvent" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#7C3AED"/>
+    </marker>
+    <marker id="arrowData" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#64748B"/>
+    </marker>
+    <style>
+      .font { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .title { font-size: 34px; font-weight: 760; fill: #0F172A; letter-spacing: -0.7px; }
+      .subtitle { font-size: 16px; fill: #64748B; }
+      .layer { font-size: 12px; font-weight: 750; fill: #64748B; letter-spacing: 1.6px; }
+      .cardTitle { font-size: 16px; font-weight: 720; fill: #0F172A; }
+      .cardSub { font-size: 12px; fill: #64748B; }
+      .tiny { font-size: 11px; fill: #64748B; }
+      .whiteTitle { font-size: 20px; font-weight: 740; fill: #FFFFFF; }
+      .whiteSub { font-size: 13px; fill: #DBEAFE; }
+      .rest { fill: none; stroke: #2563EB; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowRest); }
+      .restLane { fill: none; stroke: #93C5FD; stroke-width: 2; stroke-linecap: round; }
+      .event { fill: none; stroke: #7C3AED; stroke-width: 2.4; stroke-dasharray: 8 7; stroke-linecap: round; marker-end: url(#arrowEvent); }
+      .data { fill: none; stroke: #64748B; stroke-width: 2; stroke-linecap: round; marker-end: url(#arrowData); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1040" rx="28" fill="url(#bg)"/>
+  <path d="M0 0 H1600 V7 H0 Z" fill="#2563EB"/>
+
+  <text x="72" y="61" class="font title">Kiến trúc tổng quan MediFlow</text>
+  <text x="72" y="91" class="font subtitle">Một cổng vào duy nhất · Dữ liệu tách theo bounded context · Giao tiếp REST và event</text>
+  <g transform="translate(1212,42)">
+    <rect width="316" height="52" rx="14" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <circle cx="25" cy="18" r="5" fill="#2563EB"/>
+    <path d="M25 23 V34 H132" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrowRest)"/>
+    <text x="48" y="23" class="font tiny">REST đồng bộ</text>
+    <path d="M174 27 H232" stroke="#7C3AED" stroke-width="2.4" stroke-dasharray="7 6" marker-end="url(#arrowEvent)"/>
+    <text x="246" y="31" class="font tiny">Event</text>
+  </g>
+
+  <text x="72" y="154" class="font layer">KÊNH TRUY CẬP</text>
+  <g filter="url(#softShadow)">
+    <rect x="450" y="120" width="270" height="86" rx="20" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.5"/>
+    <rect x="880" y="120" width="270" height="86" rx="20" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(480,141)">
+    <rect width="54" height="39" rx="5" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+    <path d="M19 47 H35 M27 39 V47" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+    <text x="76" y="19" class="font cardTitle">Web Next.js</text>
+    <text x="76" y="41" class="font cardSub">Nhân viên · Quản lý · Bệnh nhân</text>
+  </g>
+  <g transform="translate(910,136)">
+    <rect x="8" width="36" height="52" rx="8" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+    <line x1="19" y1="7" x2="33" y2="7" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="26" cy="45" r="2" fill="#2563EB"/>
+    <text x="76" y="24" class="font cardTitle">Mobile Flutter</text>
+    <text x="76" y="46" class="font cardSub">Truy cập qua gateway</text>
+  </g>
+
+  <path d="M585 206 V234 H738" class="restLane"/>
+  <path d="M1015 206 V234 H862" class="restLane"/>
+  <path d="M800 234 V259" class="rest"/>
+  <rect x="696" y="220" width="208" height="28" rx="14" fill="#EFF6FF" stroke="#BFDBFE"/>
+  <text x="800" y="239" text-anchor="middle" class="font tiny">HTTPS · JSON · /api/v1</text>
+
+  <text x="72" y="300" class="font layer">LỚP TRUY CẬP &amp; ĐIỀU PHỐI</text>
+  <g filter="url(#shadow)">
+    <rect x="500" y="260" width="600" height="112" rx="24" fill="url(#gateway)"/>
+  </g>
+  <g transform="translate(536,287)">
+    <path d="M0 13 H38 M29 4 L38 13 L29 22 M38 41 H0 M9 32 L0 41 L9 50" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="66" y="21" class="font whiteTitle">API Gateway</text>
+    <text x="66" y="49" class="font whiteSub">JWT/RBAC · Routing · Rate limit · Correlation ID</text>
+  </g>
+  <g filter="url(#softShadow)">
+    <rect x="1200" y="274" width="292" height="84" rx="18" fill="#ECFDF5" stroke="#6EE7B7" stroke-width="1.5"/>
+  </g>
+  <g transform="translate(1230,295)">
+    <circle cx="23" cy="21" r="19" fill="#D1FAE5" stroke="#059669" stroke-width="2"/>
+    <circle cx="23" cy="21" r="5" fill="#059669"/>
+    <path d="M23 2 V9 M23 33 V40 M4 21 H11 M35 21 H42" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+    <text x="61" y="18" class="font cardTitle">Eureka Discovery</text>
+    <text x="61" y="41" class="font cardSub">Đăng ký và tìm instance</text>
+  </g>
+  <path d="M1100 316 H1200" fill="none" stroke="#059669" stroke-width="2.2" stroke-dasharray="5 5" marker-end="url(#arrowData)"/>
+
+  <path d="M800 372 V406" class="rest"/>
+  <path d="M170 406 H1430" class="restLane"/>
+
+  <text x="72" y="443" class="font layer">8 BUSINESS SERVICES</text>
+  <rect x="72" y="422" width="1456" height="316" rx="26" fill="#FFFFFF" fill-opacity="0.62" stroke="#CBD5E1" stroke-dasharray="6 6"/>
+
+  <!-- REST fan-out -->
+  <g class="restLane">
+    <path d="M180 406 V464"/>
+    <path d="M357 406 V464"/>
+    <path d="M534 406 V464"/>
+    <path d="M711 406 V464"/>
+    <path d="M888 406 V464"/>
+    <path d="M1065 406 V464"/>
+    <path d="M1242 406 V464"/>
+    <path d="M1419 406 V464"/>
+  </g>
+
+  <!-- Service cards -->
+  <g filter="url(#softShadow)">
+    <rect x="95" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="272" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="449" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="626" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="803" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="980" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="1157" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+    <rect x="1334" y="464" width="170" height="116" rx="18" fill="url(#service)" stroke="#60A5FA"/>
+  </g>
+
+  <g class="font" text-anchor="middle">
+    <g transform="translate(180,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-6 490 H6 M0 484 V496" stroke="#2563EB" stroke-width="2"/><text y="525" class="cardTitle">Organization</text><text y="548" class="cardSub">Khoa · Nhân sự</text><text y="565" class="tiny">Tài khoản</text></g>
+    <g transform="translate(357,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M0 482 A5 5 0 1 1 0 492 A5 5 0 1 1 0 482 M-8 500 Q0 493 8 500" fill="none" stroke="#2563EB" stroke-width="1.8"/><text y="525" class="cardTitle">Patient</text><text y="548" class="cardSub">Hồ sơ hành chính</text><text y="565" class="tiny">Định danh bệnh nhân</text></g>
+    <g transform="translate(534,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-7 490 H7 M0 483 V497" stroke="#2563EB" stroke-width="2.4"/><text y="525" class="cardTitle">Clinical</text><text y="548" class="cardSub">Lịch hẹn · Khám</text><text y="565" class="tiny">Hồ sơ bệnh án</text></g>
+    <g transform="translate(711,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-5 482 V489 L-9 499 H9 L5 489 V482 M-6 493 H6" fill="none" stroke="#2563EB" stroke-width="1.8"/><text y="525" class="cardTitle">Lab</text><text y="548" class="cardSub">Chỉ định · Kết quả</text><text y="565" class="tiny">Xét nghiệm</text></g>
+    <g transform="translate(888,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-8 494 L4 482 Q10 488 4 494 L-2 500 Q-8 500-8 494 Z M-2 488 L4 494" fill="none" stroke="#2563EB" stroke-width="1.7"/><text y="525" class="cardTitle">Pharmacy</text><text y="548" class="cardSub">Thuốc · Tồn kho</text><text y="565" class="tiny">Kê và cấp phát</text></g>
+    <g transform="translate(1065,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-7 484 H7 V498 H-7 Z M-3 488 H3 M-3 493 H5" fill="none" stroke="#2563EB" stroke-width="1.8"/><text y="525" class="cardTitle">Billing</text><text y="548" class="cardSub">Hóa đơn · Thanh toán</text><text y="565" class="tiny">Saga bù trừ</text></g>
+    <g transform="translate(1242,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M0 481 Q-7 483-7 490 V495 L-10 499 H10 L7 495 V490 Q7 483 0 481 Z" fill="none" stroke="#2563EB" stroke-width="1.7"/><text y="525" class="cardTitle">Notification</text><text y="548" class="cardSub">Thông báo · Lịch sử</text><text y="565" class="tiny">Đa kênh</text></g>
+    <g transform="translate(1419,0)"><circle cy="490" r="13" fill="#DBEAFE"/><path d="M-8 499 V491 H-3 V499 M-1 499 V485 H4 V499 M6 499 V480 H11 V499" fill="none" stroke="#2563EB" stroke-width="1.8"/><text y="525" class="cardTitle">Report</text><text y="548" class="cardSub">Read model</text><text y="565" class="tiny">Thống kê quản trị</text></g>
+  </g>
+
+  <!-- Databases -->
+  <g class="data">
+    <path d="M180 580 V626"/>
+    <path d="M357 580 V626"/>
+    <path d="M534 580 V626"/>
+    <path d="M711 580 V626"/>
+    <path d="M888 580 V626"/>
+    <path d="M1065 580 V626"/>
+    <path d="M1242 580 V626"/>
+    <path d="M1419 580 V626"/>
+  </g>
+  <g fill="#F8FAFC" stroke="#64748B" stroke-width="1.5">
+    <g transform="translate(145,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(322,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(499,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(676,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(853,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(1030,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(1207,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+    <g transform="translate(1384,628)"><ellipse cx="35" cy="7" rx="35" ry="7"/><path d="M0 7 V38 C0 48 70 48 70 38 V7 M0 23 C0 33 70 33 70 23"/></g>
+  </g>
+  <text x="800" y="704" text-anchor="middle" class="font cardSub">PostgreSQL riêng từng service · chỉ tham chiếu liên miền bằng UUID</text>
+
+  <!-- Event connections -->
+  <g class="event">
+    <path d="M147 580 C147 735 250 740 250 786"/>
+    <path d="M324 580 C324 720 400 735 400 786"/>
+    <path d="M501 580 C501 720 550 735 550 786"/>
+    <path d="M678 580 C678 720 700 735 700 786"/>
+    <path d="M855 580 C855 720 850 735 850 786"/>
+    <path d="M1032 580 C1032 720 1000 735 1000 786"/>
+    <path d="M1209 580 C1209 720 1150 735 1150 786"/>
+    <path d="M1386 580 C1386 735 1300 740 1300 786"/>
+  </g>
+
+  <text x="72" y="765" class="font layer">EVENT BACKBONE</text>
+  <g filter="url(#shadow)">
+    <rect x="150" y="786" width="1300" height="104" rx="24" fill="url(#eventBus)"/>
+  </g>
+  <g transform="translate(194,813)">
+    <path d="M0 12 H42 M0 27 H30 M0 42 H50" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="48" cy="12" r="4" fill="#FFFFFF"/><circle cx="36" cy="27" r="4" fill="#FFFFFF"/><circle cx="56" cy="42" r="4" fill="#FFFFFF"/>
+    <text x="82" y="22" class="font whiteTitle">RabbitMQ · mediflow.events</text>
+    <text x="82" y="49" class="font whiteSub">Topic exchange · Durable queue · Retry · DLQ · Idempotency theo eventId</text>
+  </g>
+  <g transform="translate(1118,808)">
+    <rect width="286" height="56" rx="14" fill="#FFFFFF" fill-opacity="0.14" stroke="#FFFFFF" stroke-opacity="0.35"/>
+    <text x="143" y="23" text-anchor="middle" class="font" font-size="13" font-weight="700" fill="#FFFFFF">Event envelope</text>
+    <text x="143" y="43" text-anchor="middle" class="font" font-size="11" fill="#EDE9FE">eventId · occurredAt · correlationId · version</text>
+  </g>
+
+  <text x="72" y="947" class="font layer">VẬN HÀNH XUYÊN SUỐT</text>
+  <rect x="310" y="916" width="980" height="70" rx="20" fill="#FFFFFF" stroke="#CBD5E1" filter="url(#softShadow)"/>
+  <g class="font" text-anchor="middle">
+    <text x="475" y="946" class="cardTitle">Security</text><text x="475" y="969" class="cardSub">JWT · RBAC · Audit</text>
+    <line x1="635" y1="934" x2="635" y2="972" stroke="#E2E8F0"/>
+    <text x="800" y="946" class="cardTitle">Observability</text><text x="800" y="969" class="cardSub">Health · Log · Trace · Correlation</text>
+    <line x1="965" y1="934" x2="965" y2="972" stroke="#E2E8F0"/>
+    <text x="1125" y="946" class="cardTitle">Resilience</text><text x="1125" y="969" class="cardSub">Timeout · Circuit breaker · DLQ</text>
+  </g>
+  <text x="800" y="1018" text-anchor="middle" class="font tiny">Mũi tên liền: request/response hoặc ghi dữ liệu · Mũi tên nét đứt: integration event bất đồng bộ</text>
+</svg>

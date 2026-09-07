@@ -1,0 +1,35 @@
+flowchart LR
+    ADMIN[Quản trị viên<br/>quản lý tổ chức]
+    CLINICAL[Clinical Service<br/>doctor_id, department_id]
+    REPORT[Report Service<br/>cập nhật theo khoa]
+
+    subgraph ORGANIZATION[Organization Service · mediflow_organization]
+        DEPARTMENT[(DEPARTMENT<br/>PK department_id<br/>UK abbreviation<br/>FK department_head_id)]
+        STAFF[(STAFF<br/>PK staff_id<br/>FK department_id<br/>license_number)]
+        ACCOUNT[(ACCOUNT<br/>PK account_id<br/>UK username<br/>FK staff_id<br/>role)]
+
+        DEPARTMENT -->|1:N nhân sự| STAFF
+        STAFF -->|1:0..1 tài khoản| ACCOUNT
+        STAFF -->|0..1 trưởng khoa| DEPARTMENT
+    end
+
+    DEPARTMENT_CREATED([department.created])
+    STAFF_CREATED([staff.created])
+    STAFF_CHANGED([staff.department.changed])
+
+    ADMIN -->|CRUD| DEPARTMENT
+    ADMIN -->|CRUD| STAFF
+    ADMIN -->|cấp tài khoản| ACCOUNT
+    CLINICAL -.->|REST validation · UUID logic| STAFF
+    CLINICAL -.->|department_id · UUID logic| DEPARTMENT
+    DEPARTMENT -.->|publish| DEPARTMENT_CREATED
+    STAFF -.->|publish| STAFF_CREATED
+    STAFF -.->|publish| STAFF_CHANGED
+    STAFF_CHANGED -.->|consume| REPORT
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class ADMIN,CLINICAL,REPORT external
+    class DEPARTMENT,STAFF,ACCOUNT owned
+    class DEPARTMENT_CREATED,STAFF_CREATED,STAFF_CHANGED event

@@ -1,0 +1,98 @@
+name: Update commit activity dashboard
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commit-activity-dashboard
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create dashboard App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: Iv23liRNMJfjhwhBK16V
+          private-key: ${{ secrets.DASHBOARD_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'master' }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test changelog and dashboard
+        run: node --test scripts/changelog-sync.test.js scripts/commit-activity.test.js
+
+      - name: Synchronize changelog
+        run: node scripts/changelog.js --sync
+
+      - name: Generate dashboard
+        run: node scripts/commit-activity.js
+
+      - name: Create or update dashboard pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BRANCH: automation/commit-activity-dashboard
+        shell: bash
+        run: |
+          generated_status="$(git status --porcelain -- .changelog/entries.jsonl README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg)"
+          if [ -z "$generated_status" ]; then
+            echo 'Dashboard is already current.'
+            exit 0
+          fi
+
+          # Reject unexpected tracked changes before granting Git write access.
+          while IFS= read -r file; do
+            case "$file" in
+              .changelog/entries.jsonl|README.md|docs/assets/commit-activity-by-day.svg|docs/assets/commit-activity-by-hour.svg) ;;
+              *) echo "::error::Unexpected generated file: $file"; exit 1 ;;
+            esac
+          done < <(git diff --name-only HEAD)
+          git diff --check
+          gh auth setup-git
+
+          git config user.name 'Harori'
+          git config user.email '100329525+Dangvinh77@users.noreply.github.com'
+          git fetch origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          git switch -C "$BRANCH"
+          git add .changelog/entries.jsonl README.md docs/assets/commit-activity-by-day.svg docs/assets/commit-activity-by-hour.svg
+          git commit -m 'docs(tooling): update commit activity dashboard'
+          git push --force-with-lease origin "HEAD:$BRANCH"
+
+          pr_number="$(gh pr list --head "$BRANCH" --base master --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            if ! pr_url="$(gh pr create --base master --head "$BRANCH" --title 'docs(tooling): update commit activity dashboard' --body 'Automated refresh from `.changelog/entries.jsonl`.')"; then
+              echo '::error::Unable to create the dashboard PR. In Settings > Actions > General > Workflow permissions, enable "Allow GitHub Actions to create and approve pull requests".'
+              exit 1
+            fi
+            pr_number="${pr_url##*/}"
+          fi
+
+          # Bind merge to the exact commit generated and checked in this run.
+          head_sha="$(git rev-parse HEAD)"
+          # GitHub recomputes mergeability asynchronously after updating a PR.
+          for attempt in {1..12}; do
+            mergeable="$(gh pr view "$pr_number" --json mergeable --jq .mergeable)"
+            if [ "$mergeable" = MERGEABLE ]; then break; fi
+            if [ "$mergeable" = CONFLICTING ]; then
+              echo '::error::Dashboard PR has conflicts'; exit 1
+            fi
+            sleep 5
+          done
+          test "$mergeable" = MERGEABLE
+          gh pr merge "$pr_number" --rebase --admin --match-head-commit "$head_sha" --delete-branch

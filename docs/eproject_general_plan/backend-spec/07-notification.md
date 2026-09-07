@@ -36,29 +36,35 @@ CREATE TABLE PROCESSED_EVENT (
 ## 2. Enum
 
 ```java
-public enum LoaiThongBao      { EMAIL, SMS, IN_APP }
-public enum TrangThaiThongBao { PENDING, SENT, FAILED }
+public enum NotificationChannel { EMAIL, SMS, IN_APP }
+public enum NotificationStatus  { PENDING, SENT, FAILED }
 ```
 
-## 3. Domain model — `ThongBao`
+## 3. Domain model — `Notification`
 
-Các trường: `maThongBao`, `maBenhNhan`, `tieuDe`, `noiDung`, `loai`, `diaChiNhan`, `trangThai`,
-`lyDoThatBai`, `soLanThu`, `ngayTao`, `ngayGui`.
+Các trường: `notificationId`, `patientId`, `title`, `content`, `channel`, `recipientAddress`,
+`status`, `failureReason`, `retryCount`, `createdAt`, `sentAt`.
+
+> **Tên class/field dùng tiếng Anh**, áp dụng thống nhất cho toàn bộ service (không chỉ nhánh C
+> pharmacy/billing/report — đây là chuẩn hoá riêng cho notification, chốt sau khi đối chiếu quy tắc
+> đặt tên cao nhất của nhóm là toàn bộ tiếng Anh). Bản cũ dùng tên tiếng Việt (`ThongBao`,
+> `maThongBao`, `tieuDe`...) — đã đổi hết, không dùng nữa. Message lỗi hiển thị cho người dùng vẫn
+> giữ tiếng Việt.
 
 ```java
-public static ThongBao taoMoi(UUID maBenhNhan, String tieuDe, String noiDung,
-                              LoaiThongBao loai, String diaChiNhan);
-public void danhDauDaGui(Instant thoiDiem);
-public void danhDauThatBai(String lyDo);
-public boolean coTheGui();      // trangThai == PENDING
+public static Notification create(UUID patientId, String title, String content,
+                                   NotificationChannel channel, String recipientAddress);
+public void markSent(Instant at);
+public void markFailed(String reason);
+public boolean canSend();      // status == PENDING
 
 /** BR-N1 / BR-N2 — một kênh chỉ dùng được khi địa chỉ của nó hợp lệ. */
-public static boolean emailHopLe(String email);   // regex kiểu RFC đơn giản
-public static boolean sdtHopLe(String sdt);       // ^0\d{9,10}$
+public static boolean isValidEmail(String email);   // regex kiểu RFC đơn giản
+public static boolean isValidPhone(String phone);    // ^0\d{9,10}$
 ```
 
-Bất biến: `tieuDe` và `noiDung` không rỗng; `loai` không null; với `EMAIL` thì địa chỉ phải thỏa
-`emailHopLe`, với `SMS` thì phải thỏa `sdtHopLe` — nếu không thì ném `NOTIFICATION_ADDRESS_INVALID`.
+Bất biến: `title` và `content` không rỗng; `channel` không null; với `EMAIL` thì địa chỉ phải thỏa
+`isValidEmail`, với `SMS` thì phải thỏa `isValidPhone` — nếu không thì ném `NOTIFICATION_ADDRESS_INVALID`.
 `IN_APP` không cần địa chỉ.
 
 Chuyển tiếp: `PENDING → SENT | FAILED`, cả hai đều kết thúc. Gửi lại một thông báo đã kết thúc →
@@ -73,18 +79,18 @@ Chuyển tiếp: `PENDING → SENT | FAILED`, cả hai đều kết thúc. Gửi
 
 ```java
 // out
-public interface ThongBaoRepositoryPort {
-    ThongBao save(ThongBao tb);
-    Optional<ThongBao> findById(UUID id);
-    PageResult<ThongBao> findByPatient(UUID maBenhNhan, PageQuery page);
+public interface NotificationRepositoryPort {
+    Notification save(Notification n);
+    Optional<Notification> findById(UUID id);
+    PageResult<Notification> findByPatient(UUID patientId, PageQuery page);
 }
 public interface ProcessedEventPort { boolean alreadyProcessed(UUID id); void markProcessed(UUID id, String rk); }
 
-/** Mỗi kênh một bản hiện thực, chọn theo LoaiThongBao. */
+/** Mỗi kênh một bản hiện thực, chọn theo NotificationChannel. */
 public interface NotificationSenderPort {
-    LoaiThongBao kenh();
+    NotificationChannel channel();
     /** @return rỗng nếu thành công, hoặc lý do thất bại. Không bao giờ ném lỗi khi gửi thất bại. */
-    Optional<String> gui(ThongBao tb);
+    Optional<String> send(Notification n);
 }
 
 public interface NotificationEventPublisherPort {
@@ -98,34 +104,34 @@ public interface SendNotificationUseCase {
 }
 public interface ReadNotificationUseCase {
     NotificationDTO getById(UUID id, UUID callerPatientId, boolean isStaff);
-    PageResult<NotificationDTO> byPatient(UUID maBenhNhan, PageQuery page);
+    PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page);
 }
 ```
 
 `NotificationTrigger` là một record nội bộ do consumer dựng, để use case không bao giờ thấy kiểu của AMQP:
 
 ```java
-public record NotificationTrigger(UUID eventId, String routingKey, UUID maBenhNhan,
-                                  String tieuDe, String noiDung,
-                                  String email, String sdt) {}
+public record NotificationTrigger(UUID eventId, String routingKey, UUID patientId,
+                                  String title, String content,
+                                  String email, String phone) {}
 ```
 
 ## 6. DTO
 
 ```java
 public record SendNotificationRequest(
-    @NotNull UUID maBenhNhan,
-    @NotBlank @Size(max = 255) String tieuDe,
-    @NotBlank String noiDung,
-    @NotNull LoaiThongBao loai,
-    @Size(max = 150) String diaChiNhan) {}
+    @NotNull UUID patientId,
+    @NotBlank @Size(max = 255) String title,
+    @NotBlank String content,
+    @NotNull NotificationChannel channel,
+    @Size(max = 150) String recipientAddress) {}
 
-public record NotificationDTO(UUID maThongBao, UUID maBenhNhan, String tieuDe, String noiDung,
-                              LoaiThongBao loai, TrangThaiThongBao trangThai, String lyDoThatBai,
-                              Instant ngayTao, Instant ngayGui) {}
+public record NotificationDTO(UUID notificationId, UUID patientId, String title, String content,
+                              NotificationChannel channel, NotificationStatus status, String failureReason,
+                              Instant createdAt, Instant sentAt) {}
 ```
 
-Không bao giờ lộ `diaChiNhan` hay `soLanThu` — chúng là PII / dữ liệu nội bộ.
+Không bao giờ lộ `recipientAddress` hay `retryCount` — chúng là PII / dữ liệu nội bộ.
 
 ## 7. Luồng xử lý
 
@@ -133,9 +139,10 @@ Với mọi event được tiêu thụ:
 
 1. khử trùng lặp theo `eventId` → đã xử lý thì return
 2. dựng nội dung từ **template** (xem §8)
-3. chọn kênh theo thứ tự ưu tiên: `EMAIL` nếu bệnh nhân có email hợp lệ, không thì `SMS` nếu số điện thoại hợp lệ, không nữa thì `IN_APP` (BR-N9)
-4. `ThongBao.taoMoi(...)` → lưu với trạng thái `PENDING`
-5. `sender.gui(tb)` → rỗng thì `danhDauDaGui(now)`, ngược lại `danhDauThatBai(reason)`
+3. chọn kênh theo thứ tự ưu tiên: `EMAIL` nếu bệnh nhân có email hợp lệ, không thì `SMS` nếu
+   số điện thoại hợp lệ, không nữa thì `IN_APP` (BR-N9)
+4. `Notification.create(...)` → lưu với trạng thái `PENDING`
+5. `sender.send(n)` → rỗng thì `markSent(now)`, ngược lại `markFailed(reason)`
 6. lưu; đánh dấu event đã xử lý **trong cùng transaction với bước 4**
 7. publish `notification.sent` kèm trạng thái cuối cùng
 
@@ -173,8 +180,8 @@ ngoài tên:
 phải chặn ở tầng service:
 
 ```java
-if (!isStaff && !notification.getMaBenhNhan().equals(callerPatientId))
-    throw new AccessDeniedDomainException("NOTIFICATION_ACCESS_DENIED", "Không có quyền xem thông báo này");
+if (!isStaff && !notification.getPatientId().equals(callerPatientId))
+    throw new NotificationAccessDeniedException("Không có quyền xem thông báo này");
 ```
 
 Id bệnh nhân của người gọi lấy từ claim `sub`/claim riêng trong JWT, **không bao giờ** lấy từ tham số
@@ -182,14 +189,14 @@ request.
 
 ## 10. Event
 
-**Publish:** `notification.sent` — `{envelope, notificationId, patientId, type, status}`
+**Publish:** `notification.sent` — `{envelope, notificationId, patientId, channel, status}`
 
 **Subscribe** — queue `notification.q`, bind vào sáu key:
 
 `patient.created` · `appointment.created` · `lab.result.created` · `prescription.filled` ·
 `payment.completed` · `payment.failed`
 
-Các event mang theo id chứ không mang thông tin liên hệ. V1: đưa `email`/`sdt` vào
+Các event mang theo id chứ không mang thông tin liên hệ. V1: đưa `email`/`phone` vào
 `patient.created` và `patient.updated` (chúng đã có sẵn) rồi giữ một bảng chiếu nhỏ ở local,
 **hoặc** chấp nhận chỉ dùng `IN_APP` cho các sự kiện còn lại. **Đừng** gọi REST sang patient-service
 từ trong consumer — làm vậy là biến một luồng bất đồng bộ thành phụ thuộc đồng bộ.
@@ -230,9 +237,9 @@ Base package `com.mediflow.notification`. Cây đầy đủ:
 notification-service/src/main/java/com/mediflow/notification/
 ├── NotificationServiceApplication.java                  # có sẵn
 ├── domain/model/
-│   ├── LoaiThongBao.java                                # enum { EMAIL, SMS, IN_APP }
-│   ├── TrangThaiThongBao.java                           # enum { PENDING, SENT, FAILED }
-│   └── ThongBao.java                                    # aggregate; emailHopLe/sdtHopLe (BR-N1/N2), coTheGui (BR-N7)
+│   ├── NotificationChannel.java                         # enum { EMAIL, SMS, IN_APP }
+│   ├── NotificationStatus.java                          # enum { PENDING, SENT, FAILED }
+│   └── Notification.java                                # aggregate; isValidEmail/isValidPhone (BR-N1/N2), canSend (BR-N7)
 ├── domain/exception/
 │   ├── NotificationNotFoundException.java               # 404, code NOTIFICATION_NOT_FOUND
 │   ├── NotificationAddressInvalidException.java         # 422, code NOTIFICATION_ADDRESS_INVALID (BR-N1/N2)
@@ -242,16 +249,16 @@ notification-service/src/main/java/com/mediflow/notification/
 │   ├── SendNotificationUseCase.java                     # send(request) + handleEvent(trigger)
 │   └── ReadNotificationUseCase.java                     # getById(id, callerPatientId, isStaff), byPatient
 ├── application/port/out/
-│   ├── ThongBaoRepositoryPort.java
+│   ├── NotificationRepositoryPort.java
 │   ├── ProcessedEventPort.java
-│   ├── NotificationSenderPort.java                      # kenh() + gui() — không bao giờ throw khi gửi thất bại
+│   ├── NotificationSenderPort.java                      # channel() + send() — không bao giờ throw khi gửi thất bại
 │   └── NotificationEventPublisherPort.java
 ├── application/dto/request/
 │   └── SendNotificationRequest.java
 ├── application/dto/response/
-│   └── NotificationDTO.java                             # KHÔNG có diaChiNhan/soLanThu (PII, §6)
+│   └── NotificationDTO.java                             # KHÔNG có recipientAddress/retryCount (PII, §6)
 ├── application/mapper/
-│   └── NotificationDtoMapper.java                       # MapStruct: ThongBao ↔ NotificationDTO
+│   └── NotificationDtoMapper.java                       # MapStruct: Notification ↔ NotificationDTO
 ├── application/service/
 │   ├── NotificationApplicationService.java              # hiện thực Send + Read; luồng 7 bước §7 (chọn kênh = BR-N9)
 │   └── NotificationTemplates.java                       # kho mẫu 6 sự kiện, §8
@@ -261,10 +268,10 @@ notification-service/src/main/java/com/mediflow/notification/
 ├── messaging/consumer/                   # DRIVING adapter (events) — gọi vào application
 │   └── NotificationEventConsumer.java                   # 1 class, @RabbitListener("notification.q"), switch theo routing key (6 nhánh)
 ├── infrastructure/persistence/           # DRIVEN adapter (DB) — hiện thực port out
-│   ├── ThongBaoJpaEntity.java
-│   ├── ThongBaoJpaRepository.java
-│   ├── ThongBaoPersistenceAdapter.java
-│   ├── ThongBaoPersistenceMapper.java
+│   ├── NotificationJpaEntity.java
+│   ├── NotificationJpaRepository.java
+│   ├── NotificationPersistenceAdapter.java
+│   ├── NotificationPersistenceMapper.java
 │   ├── ProcessedEventJpaEntity.java
 │   ├── ProcessedEventJpaRepository.java
 │   └── ProcessedEventPersistenceAdapter.java            # hiện thực ProcessedEventPort (bảng PROCESSED_EVENT)
@@ -277,9 +284,9 @@ notification-service/src/main/java/com/mediflow/notification/
 │   │                                        tự thêm vì "kênh gửi" không khớp persistence/messaging/client;
 │   │                                        cùng tinh thần với `PriceListAdapter` bên billing: 1 out-port,
 │   │                                        nhiều adapter, đổi sau này không đụng application/domain)
-│   ├── MockEmailSender.java                             # kenh() = EMAIL, log + luôn Optional.empty() (thành công)
-│   ├── MockSmsSender.java                                # kenh() = SMS, log + luôn thành công (chưa có nhà cung cấp SMS thật)
-│   └── InAppSender.java                                  # kenh() = IN_APP, thành công ngay (đã lưu DB là đủ, không gọi ra ngoài)
+│   ├── MockEmailSender.java                             # channel() = EMAIL, log + luôn Optional.empty() (thành công)
+│   ├── MockSmsSender.java                                # channel() = SMS, log + luôn thành công (chưa có nhà cung cấp SMS thật)
+│   └── InAppSender.java                                  # channel() = IN_APP, thành công ngay (đã lưu DB là đủ, không gọi ra ngoài)
 └── infrastructure/                        # phần còn lại
     ├── security/    JwtAuthFilter.java, JwtProperties.java
     └── config/      SecurityConfig.java, RabbitConfig.java, OpenApiConfig.java, MailConfig.java (tùy chọn, xem §12)
@@ -297,14 +304,14 @@ Các file boilerplate cần copy từ `docs/ai/reference/` hoặc một service 
 
 ```java
 // NotificationTrigger — record NỘI BỘ do consumer dựng, use case không bao giờ thấy kiểu AMQP
-public record NotificationTrigger(UUID eventId, String routingKey, UUID maBenhNhan,
-                                  String tieuDe, String noiDung,
-                                  String email, String sdt) {}
+public record NotificationTrigger(UUID eventId, String routingKey, UUID patientId,
+                                  String title, String content,
+                                  String email, String phone) {}
 
 // NotificationSentEvent — routing key "notification.sent", publish sau khi cập nhật trạng thái cuối
 public record NotificationSentEvent(
     UUID eventId, Instant occurredAt, String correlationId,
-    UUID notificationId, UUID patientId, LoaiThongBao type, TrangThaiThongBao status) {}
+    UUID notificationId, UUID patientId, NotificationChannel channel, NotificationStatus status) {}
 ```
 
 > 6 event tiêu thụ (`patient.created`, `appointment.created`, `lab.result.created`,
@@ -314,11 +321,11 @@ public record NotificationSentEvent(
 
 ### 13.3 Chi tiết persistence
 
-**`ThongBaoJpaRepository`:**
+**`NotificationJpaRepository`:**
 
 ```java
-public interface ThongBaoJpaRepository extends JpaRepository<ThongBaoJpaEntity, UUID> {
-    Page<ThongBaoJpaEntity> findByMaBenhNhanOrderByNgayTaoDesc(UUID maBenhNhan, Pageable pageable);
+public interface NotificationJpaRepository extends JpaRepository<NotificationJpaEntity, UUID> {
+    Page<NotificationJpaEntity> findByPatientIdOrderByCreatedAtDesc(UUID patientId, Pageable pageable);
 }
 ```
 
@@ -326,22 +333,25 @@ public interface ThongBaoJpaRepository extends JpaRepository<ThongBaoJpaEntity, 
 
 | Entity field | Domain field | Kiểu |
 |---|---|---|
-| `notification_id` | `maThongBao` | UUID |
-| `patient_id` | `maBenhNhan` | UUID |
-| `title` | `tieuDe` | String |
-| `content` | `noiDung` | String |
-| `channel` | `loai` | LoaiThongBao |
-| `recipient_address` | `diaChiNhan` | String (nullable) |
-| `status` | `trangThai` | TrangThaiThongBao |
-| `failure_reason` | `lyDoThatBai` | String (nullable) |
-| `retry_count` | `soLanThu` | int |
-| `created_at` | `ngayTao` | Instant |
-| `sent_at` | `ngayGui` | Instant (nullable) |
+| `notification_id` | `notificationId` | UUID |
+| `patient_id` | `patientId` | UUID |
+| `title` | `title` | String |
+| `content` | `content` | String |
+| `channel` | `channel` | NotificationChannel |
+| `recipient_address` | `recipientAddress` | String (nullable) |
+| `status` | `status` | NotificationStatus |
+| `failure_reason` | `failureReason` | String (nullable) |
+| `retry_count` | `retryCount` | int |
+| `created_at` | `createdAt` | Instant |
+| `sent_at` | `sentAt` | Instant (nullable) |
+
+> Tên field entity và domain nay trùng nhau (cả hai đều tiếng Anh) — MapStruct tự ánh xạ theo tên,
+> không cần khai `@Mapping` tường minh cho từng trường như khi field còn khác ngôn ngữ.
 
 **Adapter cần làm đúng:**
-1. `findByMaBenhNhanOrderByNgayTaoDesc` — dùng cho `ReadNotificationUseCase.byPatient`, ánh xạ truy vấn vào index `idx_notification_patient`.
-2. `NotificationDtoMapper` — **loại bỏ** tường minh `diaChiNhan`/`soLanThu` khỏi `NotificationDTO` (không phải MapStruct tự bỏ, phải khai báo `@Mapping(target = "...", ignore = true)` nếu field trùng tên mà không muốn map, hoặc đơn giản là DTO không có field đó nên MapStruct tự bỏ qua — kiểm tra lại DTO record).
-3. `MockEmailSender`/`MockSmsSender`/`InAppSender` implement `NotificationSenderPort`; Spring tự inject cả ba vào `NotificationApplicationService` dưới dạng `List<NotificationSenderPort>` hoặc `Map<LoaiThongBao, NotificationSenderPort>` — chọn đúng theo `loai` khi gọi `gui()` (BR-N9 chọn kênh nằm ở tầng application, **không** phải trong sender).
+1. `findByPatientIdOrderByCreatedAtDesc` — dùng cho `ReadNotificationUseCase.byPatient`, ánh xạ truy vấn vào index `idx_notification_patient`.
+2. `NotificationDtoMapper` — **loại bỏ** tường minh `recipientAddress`/`retryCount` khỏi `NotificationDTO` (không phải MapStruct tự bỏ, phải khai báo `@Mapping(target = "...", ignore = true)` nếu field trùng tên mà không muốn map, hoặc đơn giản là DTO không có field đó nên MapStruct tự bỏ qua — kiểm tra lại DTO record).
+3. `MockEmailSender`/`MockSmsSender`/`InAppSender` implement `NotificationSenderPort`; Spring tự inject cả ba vào `NotificationApplicationService` dưới dạng `List<NotificationSenderPort>` hoặc `Map<NotificationChannel, NotificationSenderPort>` — chọn đúng theo `channel` khi gọi `send()` (BR-N9 chọn kênh nằm ở tầng application, **không** phải trong sender).
 
 ### 13.4 RabbitConfig — hằng số & binding (notification)
 
@@ -368,22 +378,22 @@ Queue `notification.q` bind **6 routing key** (bỏ `notification.sent` vì là 
 
 | Rule | Tầng | Tên test | Cần gì |
 |---|---|---|---|
-| BR-N1 (EMAIL cần địa chỉ hợp lệ) | domain unit | `send_emailChannelInvalidAddress_throwsBusinessRule` | không Spring, test `ThongBao.emailHopLe` |
-| BR-N2 (SMS cần số hợp lệ) | domain unit | `send_smsChannelBadPhone_throwsBusinessRule` | không Spring, test `ThongBao.sdtHopLe` |
-| BR-N3 (lưu PENDING trước khi gửi) | application (mock port) | `handleEvent_persistsPendingBeforeSend` | mock `ThongBaoRepositoryPort`, verify thứ tự gọi |
+| BR-N1 (EMAIL cần địa chỉ hợp lệ) | domain unit | `send_emailChannelInvalidAddress_throwsBusinessRule` | không Spring, test `Notification.isValidEmail` |
+| BR-N2 (SMS cần số hợp lệ) | domain unit | `send_smsChannelBadPhone_throwsBusinessRule` | không Spring, test `Notification.isValidPhone` |
+| BR-N3 (lưu PENDING trước khi gửi) | application (mock port) | `handleEvent_persistsPendingBeforeSend` | mock `NotificationRepositoryPort`, verify thứ tự gọi |
 | BR-N4 (gửi thất bại → FAILED, không throw) | application | `handleEvent_senderFails_marksFailedNoThrow` | mock `NotificationSenderPort` trả `Optional.of(reason)` |
 | BR-N5 (consumer idempotent) | application | `handleEvent_sameEventTwice_createsOneNotification` | mock `ProcessedEventPort.alreadyProcessed` |
 | BR-N6 (PATIENT không đọc thông báo người khác) | application | `getById_otherPatient_throwsAccessDenied` | gọi `getById` với `isStaff=false`, `callerPatientId` khác chủ |
-| BR-N7 (không gửi lại thông báo đã kết thúc) | domain unit | `send_alreadySent_throwsAlreadyFinalised` | test `ThongBao.coTheGui()` |
+| BR-N7 (không gửi lại thông báo đã kết thúc) | domain unit | `send_alreadySent_throwsAlreadyFinalised` | test `Notification.canSend()` |
 | BR-N8 (`notification.sent` publish kèm trạng thái cuối) | application | `handleEvent_publishesSentWithStatus` | mock `NotificationEventPublisherPort`, verify payload |
 | BR-N9 (chọn kênh EMAIL → SMS → IN_APP) | application | `handleEvent_choosesChannelByPriorityEmailSmsThenInApp` | 3 case: có email hợp lệ / chỉ có sđt hợp lệ / không có cả hai |
 
 ### 13.6 Checklist hoàn thiện notification (Definition of Done)
 
 - [ ] `V1__init.sql` tạo đủ 2 bảng (`NOTIFICATION`, `PROCESSED_EVENT`), với tên bảng/cột tiếng Anh đúng quy ước.
-- [ ] Domain: 2 enum + 1 model (`ThongBao`) + 4 exception; `emailHopLe`/`sdtHopLe`/`coTheGui` không phụ thuộc Spring.
+- [ ] Domain: 2 enum + 1 model (`Notification`) + 4 exception; `isValidEmail`/`isValidPhone`/`canSend` không phụ thuộc Spring.
 - [ ] Ports đủ (4 out, 2 in); application service hiện thực, không import Spring Data/AMQP.
-- [ ] DTO record có Bean Validation; 1 MapStruct mapper — xác nhận `diaChiNhan`/`soLanThu` không lộ ra `NotificationDTO`.
+- [ ] DTO record có Bean Validation; 1 MapStruct mapper — xác nhận `recipientAddress`/`retryCount` không lộ ra `NotificationDTO`.
 - [ ] Controller với đúng danh sách role `@PreAuthorize` (ADMIN/NURSE/PATIENT/SYSTEM theo từng endpoint, §9); kiểm tra quyền sở hữu thủ công cho `PATIENT` (BR-N6).
 - [ ] `GlobalExceptionHandler` map đủ 403 cho `NotificationAccessDeniedException` (ngoài bảng chuẩn ở `00-overview.md` §10).
 - [ ] 1 event publish (`notification.sent`) + 1 consumer bind 6 routing key, idempotent theo `eventId`.

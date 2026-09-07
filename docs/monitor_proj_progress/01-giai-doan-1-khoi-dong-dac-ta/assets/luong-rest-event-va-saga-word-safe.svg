@@ -1,0 +1,146 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Luồng REST, Event và Saga trong MediFlow</title>
+  <desc id="desc">So sánh giao tiếp REST đồng bộ với event bất đồng bộ và minh họa saga thanh toán cấp thuốc có bù trừ.</desc>
+  <defs>
+    <marker id="blueArrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#2563EB" />
+    </marker>
+    <marker id="purpleArrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#7C3AED" />
+    </marker>
+    <marker id="greenArrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#10B981" />
+    </marker>
+    <marker id="redArrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#EF4444" />
+    </marker>
+  </defs>
+  <rect width="1600" height="1050" rx="28" fill="#F8FAFC" />
+  <path d="M0 0 H1600 V7 H0 Z" fill="#7C3AED" />
+  <text x="70" y="61" font-family="Arial, sans-serif" font-size="34px" font-weight="760" fill="#0F172A" letter-spacing="-0.7px">Giao tiếp phân tán và Saga MediFlow</text>
+  <text x="70" y="91" font-family="Arial, sans-serif" font-size="16px" fill="#64748B">Chọn đúng cơ chế theo nhu cầu phản hồi · Thiết kế rõ timeout, retry, idempotency và bù trừ</text>
+  <!-- REST panel -->
+  <g>
+    <rect x="60" y="126" width="720" height="500" rx="28" fill="#F4F8FF" stroke="#BFDBFE" stroke-width="1.5" />
+  </g>
+  <circle cx="102" cy="170" r="18" fill="#DBEAFE" />
+  <path d="M94 170 H110 M102 162 V178" stroke="#2563EB" stroke-width="2.6" stroke-linecap="round" />
+  <text x="136" y="176" font-family="Arial, sans-serif" font-size="22px" font-weight="750" fill="#0F172A">REST đồng bộ</text>
+  <text x="100" y="208" font-family="Arial, sans-serif" font-size="13px" fill="#64748B">Dùng khi request cần dữ liệu tức thời để hoàn tất phản hồi.</text>
+  <g>
+    <rect x="112" y="250" width="220" height="94" rx="20" fill="#FFFFFF" stroke="#60A5FA" />
+    <rect x="506" y="250" width="220" height="94" rx="20" fill="#FFFFFF" stroke="#60A5FA" />
+  </g>
+  <g text-anchor="middle" font-family="Inter, &quot;Segoe UI&quot;, Arial, sans-serif">
+    <text x="222" y="289" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Service gọi</text>
+    <text x="222" y="315" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Ví dụ: Clinical</text>
+    <text x="616" y="289" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Service được gọi</text>
+    <text x="616" y="315" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Ví dụ: Patient</text>
+  </g>
+  <path d="M332 297 H506" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#blueArrow)" />
+  <rect x="363" y="273" width="112" height="28" rx="14" fill="#EFF6FF" stroke="#BFDBFE" />
+  <text x="419" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="11px" fill="#64748B">request/response</text>
+  <path d="M616 344 V382 H222 V408" fill="none" stroke="#93C5FD" stroke-width="2.2" stroke-linecap="round" marker-end="url(#blueArrow)" />
+  <g>
+    <rect x="112" y="410" width="200" height="78" rx="17" fill="#FFFFFF" stroke="#F59E0B" />
+    <rect x="320" y="410" width="200" height="78" rx="17" fill="#FFFFFF" stroke="#F59E0B" />
+    <rect x="528" y="410" width="200" height="78" rx="17" fill="#FFFFFF" stroke="#F59E0B" />
+  </g>
+  <g text-anchor="middle" font-family="Inter, &quot;Segoe UI&quot;, Arial, sans-serif">
+    <text x="212" y="442" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">1 · Timeout</text>
+    <text x="212" y="466" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Connect 2s · Read 3s</text>
+    <text x="420" y="442" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">2 · Circuit breaker</text>
+    <text x="420" y="466" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Ngắt gọi khi lỗi liên tiếp</text>
+    <text x="628" y="442" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">3 · Fallback</text>
+    <text x="628" y="466" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Degraded mode / lỗi chuẩn</text>
+  </g>
+  <path d="M312 449 H320" stroke="#F59E0B" stroke-width="2" marker-end="url(#blueArrow)" />
+  <path d="M520 449 H528" stroke="#F59E0B" stroke-width="2" marker-end="url(#blueArrow)" />
+  <rect x="112" y="522" width="616" height="66" rx="17" fill="#EFF6FF" stroke="#BFDBFE" />
+  <text x="140" y="550" font-family="Arial, sans-serif" font-size="15px" font-weight="720" fill="#0F172A">Kết quả bắt buộc</text>
+  <text x="140" y="573" font-family="Arial, sans-serif" font-size="12px" fill="#64748B">Không chờ vô hạn · Không retry mù · Trả error envelope và giữ correlation ID xuyên suốt</text>
+  <!-- Event panel -->
+  <g>
+    <rect x="820" y="126" width="720" height="500" rx="28" fill="#F8F6FF" stroke="#DDD6FE" stroke-width="1.5" />
+  </g>
+  <circle cx="862" cy="170" r="18" fill="#EDE9FE" />
+  <path d="M852 164 H866 M852 171 H873 M852 178 H862" stroke="#7C3AED" stroke-width="2.4" stroke-linecap="round" />
+  <text x="896" y="176" font-family="Arial, sans-serif" font-size="22px" font-weight="750" fill="#0F172A">Event bất đồng bộ</text>
+  <text x="860" y="208" font-family="Arial, sans-serif" font-size="13px" fill="#64748B">Dùng để công bố thay đổi trạng thái và giảm phụ thuộc thời gian giữa dịch vụ.</text>
+  <g>
+    <rect x="852" y="250" width="142" height="86" rx="18" fill="#FFFFFF" stroke="#A78BFA" />
+    <rect x="1020" y="250" width="142" height="86" rx="18" fill="#FFFFFF" stroke="#A78BFA" />
+    <rect x="1188" y="250" width="142" height="86" rx="18" fill="#7C3AED" stroke="#6D28D9" />
+    <rect x="1356" y="250" width="142" height="86" rx="18" fill="#FFFFFF" stroke="#A78BFA" />
+  </g>
+  <g text-anchor="middle" font-family="Inter, &quot;Segoe UI&quot;, Arial, sans-serif">
+    <text x="923" y="286" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Producer</text>
+    <text x="923" y="310" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Service nguồn</text>
+    <text x="1091" y="286" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Local commit</text>
+    <text x="1091" y="310" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">DB / Outbox</text>
+    <text x="1259" y="286" font-size="16px" font-weight="740" fill="#FFFFFF" font-family="Arial, sans-serif">RabbitMQ</text>
+    <text x="1259" y="310" font-size="12px" fill="#CBD5E1" font-family="Arial, sans-serif">Topic exchange</text>
+    <text x="1427" y="286" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Durable queue</text>
+    <text x="1427" y="310" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Theo consumer</text>
+  </g>
+  <path d="M994 293 H1020" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 7" marker-end="url(#purpleArrow)" />
+  <path d="M1162 293 H1188" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 7" marker-end="url(#purpleArrow)" />
+  <path d="M1330 293 H1356" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 7" marker-end="url(#purpleArrow)" />
+  <g>
+    <rect x="852" y="406" width="192" height="90" rx="18" fill="#FFF7ED" stroke="#FB923C" />
+    <rect x="1114" y="406" width="192" height="90" rx="18" fill="#FFFFFF" stroke="#A78BFA" />
+    <rect x="1376" y="406" width="122" height="90" rx="18" fill="#FFFFFF" stroke="#A78BFA" />
+  </g>
+  <g text-anchor="middle" font-family="Inter, &quot;Segoe UI&quot;, Arial, sans-serif">
+    <text x="948" y="440" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Retry có giới hạn</text>
+    <text x="948" y="465" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Quá ngưỡng → DLQ</text>
+    <text x="1210" y="440" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Consumer idempotent</text>
+    <text x="1210" y="465" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Dedupe theo eventId</text>
+    <text x="1437" y="440" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Local DB</text>
+    <text x="1437" y="465" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Commit riêng</text>
+  </g>
+  <path d="M1427 336 V376 H1210 V406" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 7" marker-end="url(#purpleArrow)" />
+  <path d="M1306 451 H1376" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 7" marker-end="url(#purpleArrow)" />
+  <path d="M1114 470 H1044" fill="none" stroke="#EF4444" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 6" marker-end="url(#redArrow)" />
+  <rect x="852" y="522" width="646" height="66" rx="17" fill="#F5F3FF" stroke="#DDD6FE" />
+  <text x="880" y="550" font-family="Arial, sans-serif" font-size="15px" font-weight="720" fill="#0F172A">Event envelope bắt buộc</text>
+  <text x="880" y="573" font-family="Arial, sans-serif" font-size="12px" fill="#64748B">eventId · occurredAt · correlationId · version · payload nghiệp vụ tối thiểu</text>
+  <!-- Saga panel -->
+  <g>
+    <rect x="60" y="670" width="1480" height="316" rx="30" fill="#172033" />
+  </g>
+  <text x="100" y="716" font-size="13" font-weight="750" fill="#94A3B8" letter-spacing="1.6" font-family="Arial, sans-serif">SAGA THANH TOÁN — CẤP THUỐC</text>
+  <text x="100" y="751" font-size="22" font-weight="750" fill="#FFFFFF" font-family="Arial, sans-serif">Transaction cục bộ + event + hành động bù trừ</text>
+  <g>
+    <rect x="102" y="790" width="230" height="92" rx="20" fill="#FFFFFF" />
+    <rect x="486" y="790" width="230" height="92" rx="20" fill="#FFFFFF" />
+    <rect x="870" y="790" width="230" height="92" rx="20" fill="#FFFFFF" />
+    <rect x="1254" y="790" width="230" height="92" rx="20" fill="#FFFFFF" />
+  </g>
+  <g text-anchor="middle" font-family="Inter, &quot;Segoe UI&quot;, Arial, sans-serif">
+    <text x="217" y="827" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Billing</text>
+    <text x="217" y="853" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Ghi nhận thanh toán</text>
+    <text x="601" y="827" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Pharmacy</text>
+    <text x="601" y="853" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Khóa tồn và cấp phát</text>
+    <text x="985" y="827" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Clinical · Notification</text>
+    <text x="985" y="853" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Cập nhật và thông báo</text>
+    <text x="1369" y="827" font-size="15px" font-weight="720" fill="#0F172A" font-family="Arial, sans-serif">Report</text>
+    <text x="1369" y="853" font-size="12px" fill="#64748B" font-family="Arial, sans-serif">Cập nhật read model</text>
+  </g>
+  <path d="M332 836 H486" fill="none" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#greenArrow)" />
+  <rect x="347" y="804" width="124" height="26" rx="13" fill="#064E3B" stroke="#10B981" />
+  <text x="409" y="822" text-anchor="middle" font-size="11" fill="#D1FAE5" font-family="Arial, sans-serif">payment.completed</text>
+  <path d="M716 836 H870" fill="none" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#greenArrow)" />
+  <rect x="737" y="804" width="112" height="26" rx="13" fill="#064E3B" stroke="#10B981" />
+  <text x="793" y="822" text-anchor="middle" font-size="11" fill="#D1FAE5" font-family="Arial, sans-serif">prescription.filled</text>
+  <path d="M1100 836 H1254" fill="none" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#greenArrow)" />
+  <path d="M601 882 V932 H217 V884" fill="none" stroke="#EF4444" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 6" marker-end="url(#redArrow)" />
+  <rect x="321" y="910" width="184" height="28" rx="14" fill="#450A0A" stroke="#EF4444" />
+  <text x="413" y="929" text-anchor="middle" font-size="11" fill="#FECACA" font-family="Arial, sans-serif">dispense.failed* → hoàn tiền</text>
+  <rect x="1030" y="916" width="454" height="38" rx="14" fill="#263248" stroke="#475569" />
+  <text x="1257" y="940" text-anchor="middle" font-size="11" fill="#CBD5E1" font-family="Arial, sans-serif">* Tên event thất bại phải được chốt thống nhất trong event catalog trước khi triển khai.</text>
+  <!-- Cross-cutting correlation ribbon -->
+  <rect x="60" y="1004" width="1480" height="28" rx="14" fill="#E2E8F0" />
+  <text x="800" y="1023" text-anchor="middle" font-family="Arial, sans-serif" font-size="11px" fill="#64748B">Một correlation ID đi xuyên request, event, retry, DLQ và toàn bộ các bước của saga</text>
+</svg>
