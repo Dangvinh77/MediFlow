@@ -1,6 +1,6 @@
 # Clinical and Lab Application/Persistence Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement the Clinical and Lab application services and PostgreSQL persistence milestone without adding HTTP, messaging, security, or Feign adapters.
 
@@ -19,7 +19,7 @@
 - Modify: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/MedicalRecordRepositoryPort.java`
 - Create: `backend/clinical-service/src/test/java/com/mediflow/clinical/application/service/ClinicalApplicationServiceTest.java`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Cover the required orchestration with Mockito-backed ports:
 
@@ -31,11 +31,11 @@ Cover the required orchestration with Mockito-backed ports:
 @Test void addDiagnosis_persistsAggregateAndPublishesEvent() { /* capture saved record/event */ }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run `mvn -pl backend/clinical-service -Dtest=ClinicalApplicationServiceTest test`. Expected: compilation failure because the two application services and mutation-load port methods do not exist.
 
-- [ ] **Step 3: Implement the service and mutation ports**
+- [x] **Step 3: Implement the service and mutation ports**
 
 Add `findByIdForUpdate(UUID)` to both repositories. Implement `ManageAppointmentUseCase` and `ManageRecordUseCase` in separate `@Service` classes because their same-signature query methods return different DTO types. Mutation methods are `@Transactional`, queries are `@Transactional(readOnly = true)`. Use one correlation UUID per command and reuse it for the two record-creation events.
 
@@ -55,7 +55,7 @@ private void requireDoctorDepartment(UUID doctorId, UUID departmentId) {
 }
 ```
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run `mvn -pl backend/clinical-service -am test`. Expected: all Clinical tests pass. Commit `feat(clinical): implement application orchestration`.
 
@@ -66,7 +66,7 @@ Run `mvn -pl backend/clinical-service -am test`. Expected: all Clinical tests pa
 - Modify: `backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabTestRepositoryPort.java`
 - Create: `backend/lab-service/src/test/java/com/mediflow/lab/application/service/LabApplicationServiceTest.java`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```java
 @Test void create_valid_persistsAndPublishesRequest() { /* capture saved aggregate and event */ }
@@ -76,11 +76,11 @@ Run `mvn -pl backend/clinical-service -am test`. Expected: all Clinical tests pa
 @Test void markPaid_explicitTestId_marksAggregatePaid() { /* capture saved aggregate */ }
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run `mvn -pl backend/lab-service -Dtest=LabApplicationServiceTest test`. Expected: compilation failure because the service and mutation-load method do not exist.
 
-- [ ] **Step 3: Implement the service**
+- [x] **Step 3: Implement the service**
 
 Add `findByIdForUpdate(UUID)` to the repository port. Implement `ManageLabTestUseCase` and `ReactToClinicalUseCase`; map result items with `LabResult.create`, use `LocalDate.now()` only for explicit record-driven requests, and never infer a test ID from invoice or record IDs.
 
@@ -90,7 +90,7 @@ LabTest test = repository.save(LabTest.create(recordId, patientId, departmentId,
 publisher.publishRequestCreated(LabRequestCreatedEvent.from(test, UUID.randomUUID().toString()));
 ```
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run `mvn -pl backend/lab-service -am test`. Expected: all Lab tests pass. Commit `feat(lab): implement application orchestration`.
 
@@ -107,15 +107,15 @@ Run `mvn -pl backend/lab-service -am test`. Expected: all Lab tests pass. Commit
 - Create: `backend/clinical-service/src/main/java/com/mediflow/clinical/infrastructure/persistence/adapter/MedicalRecordPersistenceAdapter.java`
 - Create: `backend/clinical-service/src/test/java/com/mediflow/clinical/infrastructure/persistence/ClinicalPersistenceAdapterTest.java`
 
-- [ ] **Step 1: Write failing PostgreSQL tests**
+- [x] **Step 1: Write failing PostgreSQL tests**
 
 Test aggregate round trips, diagnosis cascade, patient/date search, partial uniqueness for pending appointments, partial uniqueness for record appointment IDs, and locked mutation loads. Use `@DataJpaTest`, `@Import` adapters, `@Testcontainers(disabledWithoutDocker = true)`, and PostgreSQL 16.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run `mvn -pl backend/clinical-service -Dtest=ClinicalPersistenceAdapterTest test`. Expected: compilation failure because persistence types do not exist.
 
-- [ ] **Step 3: Add the exact schema and adapters**
+- [x] **Step 3: Add the exact schema and adapters**
 
 Use the documented columns plus these concurrency constraints:
 
@@ -128,7 +128,7 @@ CREATE UNIQUE INDEX uq_medical_record_appointment
 
 Map domain values manually through `restore(...)`; cascade diagnoses through `MedicalRecordJpaEntity`. Repository mutation queries use `@Lock(PESSIMISTIC_WRITE)`.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run `mvn -pl backend/clinical-service -am test`. Expected: all unit and available PostgreSQL tests pass. Commit `feat(clinical): add PostgreSQL persistence`.
 
@@ -145,15 +145,15 @@ Run `mvn -pl backend/clinical-service -am test`. Expected: all unit and availabl
 - Create: `backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/persistence/adapter/ProcessedEventPersistenceAdapter.java`
 - Create: `backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/persistence/LabPersistenceAdapterTest.java`
 
-- [ ] **Step 1: Write failing PostgreSQL tests**
+- [x] **Step 1: Write failing PostgreSQL tests**
 
 Test aggregate/result round trips, patient/record/search queries, locked mutation loads, and duplicate processed-event insertion without overwrite.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run `mvn -pl backend/lab-service -Dtest=LabPersistenceAdapterTest test`. Expected: compilation failure because persistence types do not exist.
 
-- [ ] **Step 3: Add schema and adapters**
+- [x] **Step 3: Add schema and adapters**
 
 Use the spec's `lab_test`, `lab_result`, and `processed_event` tables. Cascade results through the aggregate entity and use insert-only SQL for dedupe:
 
@@ -163,7 +163,7 @@ Use the spec's `lab_test`, `lab_result`, and `processed_event` tables. Cascade r
 int insertIfAbsent(UUID eventId, String routingKey);
 ```
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 Run `mvn -pl backend/lab-service -am test`. Expected: all unit and available PostgreSQL tests pass. Commit `feat(lab): add PostgreSQL persistence`.
 
@@ -173,14 +173,15 @@ Run `mvn -pl backend/lab-service -am test`. Expected: all unit and available Pos
 - Modify: `backend/clinical-service/README.md`
 - Modify: `backend/lab-service/README.md`
 
-- [ ] **Step 1: Update status accurately**
+- [x] **Step 1: Update status accurately**
 
 State that application and persistence are implemented and that HTTP, security, Feign, RabbitMQ, and Clinical external attachments remain Part 5.
 
-- [ ] **Step 2: Run full focused verification**
+- [x] **Step 2: Run full focused verification**
 
 Run `mvn -pl backend/clinical-service,backend/lab-service -am verify`. Expected: reactor success with zero failures; report Docker skips explicitly if Docker is unavailable.
 
-- [ ] **Step 3: Check scope and commit**
+- [x] **Step 3: Check scope and commit**
 
 Run `git diff --check`, `git status --short`, and inspect `git diff --stat master...HEAD`. Commit `docs(clinical-lab): update implementation status`, then push `codex/clinical-lab-app-persistence` and open one focused PR against `master`.
+

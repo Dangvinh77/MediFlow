@@ -21,11 +21,11 @@ is exactly what `05-api-conventions.md` specifies.
 
 ## Status
 
-**Foundation implemented (domain + application contracts).** Rich domain models enforce appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the nonempty diagnosis aggregate. Request records validate nested data; MapStruct maps response records; ports and four published event records are available.
+**Application and persistence implemented.** Rich domain models enforce appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the nonempty diagnosis aggregate. Application services coordinate remote validation, record/appointment transactions and published events. Flyway and JPA adapters persist both aggregates with locked mutation reads and database uniqueness for pending daily appointments and appointment-linked records.
 
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
-Application orchestration, database migrations/adapters, HTTP/security adapters and RabbitMQ adapters are not implemented. No live clinical API is claimed; the `.http` collection remains a demo. Repository ports expose exclusion on pending-appointment updates and lookup by appointment for the future duplicate-record check; those rules still need transaction/concurrency integration tests.
+HTTP/security, Feign clients, RabbitMQ adapters and external-result attachments remain follow-up work. No live clinical API is claimed; the `.http` collection remains a demo. Future event publishers must dispatch after transaction commit.
 
 ## Run locally
 
@@ -54,6 +54,6 @@ Future adapters must use Feign with a 2s connect / 3s read timeout and a circuit
 ## Tests
 
 ```bash
-mvn -pl backend/clinical-service -am test    # domain, validation, mapping and JSON contracts
-mvn -pl backend/clinical-service -am verify  # current foundation build; no DB/RabbitMQ integration tests yet
+mvn -pl backend/clinical-service -am test    # unit/contract tests + PostgreSQL slices when Docker is available
+mvn -pl backend/clinical-service -am verify
 ```
