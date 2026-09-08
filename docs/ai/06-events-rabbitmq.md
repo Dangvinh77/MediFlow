@@ -13,7 +13,7 @@ Publish an event whenever a service **changes its own state and other contexts m
 
 ## Event payloads
 
-- One `record` per event in `infrastructure/messaging/payload/`, named `<Thing><PastTenseVerb>Event`.
+- One `record` per event, named `<Thing><PastTenseVerb>Event`. Published records used by application ports live in `application/event/`; adapter-only payload placement follows [the blueprint](04-microservice-blueprint.md). Application must never import an infrastructure payload.
 - Every event carries envelope fields plus the domain fields from the design doc:
   ```java
   public record PatientCreatedEvent(

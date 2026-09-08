@@ -2,26 +2,30 @@
 
 **Khoa Khám bệnh** — the outpatient examination workflow end to end: booking an appointment, the examination, the medical record and its diagnoses.
 
-Reference: [`docs/ai/services/clinical.md`](../docs/ai/services/clinical.md) · design doc [`EProject/clinical-service.html`](../docs/eproject_general_plan/clinical-service.html).
+Reference: [service rules](../../docs/ai/services/clinical.md) · [design](../../docs/eproject_general_plan/clinical-service.html) · [implementation spec](../../docs/eproject_general_plan/backend-spec/03-clinical.md).
 
 - **Port:** 8082 · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB:** `mediflow_clinical`
-- **Owns tables:** `LICH_HEN`, `HO_SO_BA`, `CHUAN_DOAN`
-- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md).
+- **Owns tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`
+- **Architecture:** clean architecture per [blueprint](../../docs/ai/04-microservice-blueprint.md).
 
 ## Why appointments and records are one service
 
 They are **one department's single workflow**: book, examine, record. Separating them would buy
 nothing but distributed-systems overhead:
 
-- `HO_SO_BA.ma_lich_hen` points straight at `LICH_HEN`. In one service that is a real foreign key; split apart it becomes a bare UUID across a network boundary.
-- Setting an appointment to `DA_DEN` when its record is created would need a published event — a message broker and eventual consistency doing the work of what is logically **one transaction**: the patient showed up and was examined.
+- `MEDICAL_RECORD.appointment_id` points straight at `APPOINTMENT`. In one service that is a real foreign key; split apart it becomes a bare UUID across a network boundary.
+- Setting an appointment to `ARRIVED` when its record is created belongs in **one local transaction**: the patient showed up and was examined.
 
 Kept together, that is a local transaction. The two URL prefixes remain distinct, so the public API
 is exactly what `05-api-conventions.md` specifies.
 
 ## Status
 
-**Skeleton only.** Module, dependencies, config and the mandated package layout are in place — no business code yet.
+**Foundation implemented (domain + application contracts).** Rich domain models enforce appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the nonempty diagnosis aggregate. Request records validate nested data; MapStruct maps response records; ports and four published event records are available.
+
+Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
+
+Application orchestration, database migrations/adapters, HTTP/security adapters and RabbitMQ adapters are not implemented. No live clinical API is claimed; the `.http` collection remains a demo. Repository ports expose exclusion on pending-appointment updates and lookup by appointment for the future duplicate-record check; those rules still need transaction/concurrency integration tests.
 
 ## Run locally
 
@@ -45,12 +49,11 @@ Swagger UI: http://localhost:8082/swagger-ui.html
 - `patient-service` — does this patient exist?
 - `organization-service` — does this doctor exist, and which department are they in?
 
-Both go through Feign with a 2s connect / 3s read timeout and a circuit breaker. A downstream outage
-must degrade this service, never cascade.
+Future adapters must use Feign with a 2s connect / 3s read timeout and a circuit breaker. A confirmed miss returns false/empty; an outage throws `UpstreamUnavailableException` (`UPSTREAM_UNAVAILABLE`, future HTTP 503 mapping). Returning false from every fallback would incorrectly report a missing patient or doctor.
 
 ## Tests
 
 ```bash
-mvn -pl backend/clinical-service test        # unit (domain + application, no Spring)
-mvn -pl backend/clinical-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/clinical-service -am test    # domain, validation, mapping and JSON contracts
+mvn -pl backend/clinical-service -am verify  # current foundation build; no DB/RabbitMQ integration tests yet
 ```
