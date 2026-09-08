@@ -117,3 +117,46 @@ service khác đổi:
 ### Kiểm tra
 `mvn -pl backend/billing-service,backend/notification-service -am test` →
 billing 48/48 (gồm 5 ArchitectureTest), notification 18/18. BUILD SUCCESS.
+
+---
+
+## Cập nhật Phần 4/5 — 2026-09-08 (theloc) · nhánh `theloc-phan4`
+
+Tầng infrastructure/persistence: JPA entity + Spring Data repo + adapter hiện thực các out-port,
+`V1__init.sql` (Flyway), `PriceListAdapter` (@ConfigurationProperties), và adapter cho
+`LabTestTypePort`. Map entity ↔ domain làm **thủ công trong adapter** (không MapStruct) — theo
+pharmacy-service, vì `Fee`/`Invoice`/`Notification` dùng static factory `restore(...)` với field
+`final`, hợp với map tay hơn. Coding map §12.3/§13.3 gợi ý `*PersistenceMapper` MapStruct; đây là
+sai khác có chủ ý, ghi lại ở đây.
+
+### Billing
+- `FEE`, `INVOICE`, `PROCESSED_EVENT` đúng lược đồ §1 — giữ nguyên **partial unique index**
+  `uq_fee_source` (BR-B7) và `uq_invoice_prescription` (BR-B6) dạng `WHERE ... IS NOT NULL`.
+- `FeePersistenceAdapter`, `InvoicePersistenceAdapter`, `ProcessedEventPersistenceAdapter`,
+  `PriceListAdapter`, `LabTestTypeProjectionAdapter`.
+- `sumRevenueByDepartment` (BR-B10): JPQL theta-join `INVOICE`×`FEE` qua `fee.invoice_id`, gom theo
+  `fee.department_id`, `SUM(fee.amount)` + `COUNT(DISTINCT invoice_id)`, lọc `is_paid = true` và
+  `paid_at ∈ [fromDate 00:00Z, toDate+1 00:00Z)`. `departmentId` null = mọi khoa.
+- Bảng chiếu `LAB_TEST_TYPE` (mục 2 dưới đây): entity + repo + `LabTestTypeProjectionAdapter`
+  hiện thực `LabTestTypePort.labType(labId)`, thêm `record(labId, labType)` cho consumer Phần 5/5.
+
+### Notification
+- `NOTIFICATION`, `PROCESSED_EVENT` đúng lược đồ §1 (không có `updated_at` — thông báo chuyển
+  `PENDING → SENT|FAILED` một lần).
+- `NotificationPersistenceAdapter` (lưu được cả `PENDING` lẫn bản kết thúc, cập nhật giữ
+  `created_at`), `ProcessedEventPersistenceAdapter`.
+- **Chưa** làm bảng chiếu email/phone của §10 — Phần 5/5 mới quyết (bảng chiếu từ
+  `patient.created`/`patient.updated`, hoặc chấp nhận IN_APP cho các event còn lại).
+
+### Ảnh hưởng tới các mục còn mở
+- Mục 2 (`labType`): phần persistence của bảng chiếu **đã xong**. CÒN MỞ: consumer
+  `lab.request.created` gọi `LabTestTypeProjectionAdapter.record(...)` + đăng ký routing key —
+  Phần 5/5.
+- Mục 1 (`recordId`) và `dispenseId`: không đổi, vẫn chờ chốt cross-team ở Phần 5/5.
+
+### Kiểm tra
+`mvn -pl backend/billing-service,backend/notification-service -am test` (không có Docker local):
+billing 68 chạy / 17 skip (persistence slice cần Testcontainers), notification 22 chạy / 4 skip.
+0 failure. `PriceListAdapterTest` + 5 ArchitectureTest xanh. Slice test persistence
+(`@DataJpaTest` + Testcontainers Postgres, `disabledWithoutDocker = true`) chạy trên CI —
+cùng khuôn với `pharmacy-service`.
