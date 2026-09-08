@@ -26,7 +26,7 @@ public class DiagnosisJpaEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "record_id", nullable = false) private MedicalRecordJpaEntity record;
     @Column(name = "diagnosis_name", nullable = false, length = 255) private String diagnosisName;
-    @Column(columnDefinition = "text") private String description;
+    @Column(name = "description", columnDefinition = "text") private String description;
     @Column(name = "icd_code", length = 10) private String icdCode;
     @CreationTimestamp @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
 }

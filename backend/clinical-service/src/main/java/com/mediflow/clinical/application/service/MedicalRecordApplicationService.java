@@ -57,16 +57,16 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
 
         Appointment appointment = null;
         if (request.appointmentId() != null) {
-            if (records.findByAppointmentId(request.appointmentId()).isPresent()) {
-                throw new InvalidClinicalDataException("RECORD_DUPLICATE_APPOINTMENT",
-                        "Appointment already has a medical record");
-            }
             appointment = appointments.findByIdForUpdate(request.appointmentId())
                     .orElseThrow(() -> new AppointmentNotFoundException(
                             "Appointment not found: " + request.appointmentId()));
             if (!appointment.getPatientId().equals(request.patientId())) {
                 throw new InvalidClinicalDataException("RECORD_APPOINTMENT_PATIENT_MISMATCH",
                         "Appointment belongs to another patient");
+            }
+            if (records.findByAppointmentId(request.appointmentId()).isPresent()) {
+                throw new InvalidClinicalDataException("RECORD_DUPLICATE_APPOINTMENT",
+                        "Appointment already has a medical record");
             }
         }
 

@@ -33,8 +33,8 @@ public class LabTestJpaEntity {
     @Column(name = "test_type", nullable = false, length = 50) private String testType;
     @Column(name = "requested_date", nullable = false) private LocalDate requestedDate;
     @Column(name = "performed_date") private LocalDate performedDate;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private LabTestStatus status;
-    @Column(columnDefinition = "text") private String conclusion;
+    @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false, length = 20) private LabTestStatus status;
+    @Column(name = "conclusion", columnDefinition = "text") private String conclusion;
     @Column(name = "is_paid", nullable = false) private boolean paid;
     @Builder.Default
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -30,7 +30,7 @@ public class MedicalRecordJpaEntity {
     @Column(name = "doctor_id", nullable = false) private UUID doctorId;
     @Column(name = "department_id", nullable = false) private UUID departmentId;
     @Column(name = "examination_date", nullable = false) private LocalDate examinationDate;
-    @Column(columnDefinition = "text") private String symptoms;
+    @Column(name = "symptoms", columnDefinition = "text") private String symptoms;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "appointment_id") private AppointmentJpaEntity appointment;
     @Builder.Default

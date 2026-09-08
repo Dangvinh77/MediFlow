@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import com.mediflow.clinical.application.dto.request.AddDiagnosisRequest;
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
@@ -95,6 +97,19 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void createAppointment_unknownPatient_stopsBeforeStaffAndPersistence() {
+        UUID patient = UUID.randomUUID();
+        when(patients.exists(patient)).thenReturn(false);
+        var request = new CreateAppointmentRequest(patient, UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+
+        assertThatThrownBy(() -> appointmentService.create(request))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "PATIENT_NOT_FOUND_REMOTE");
+        verifyNoInteractions(staff, appointments, publisher);
+    }
+
+    @Test
     void createRecord_withAppointment_marksArrivedAtomicallyAndCorrelatesEvents() {
         UUID patient = UUID.randomUUID();
         UUID doctor = UUID.randomUUID();
@@ -132,10 +147,14 @@ class ClinicalApplicationServiceTest {
         UUID doctor = UUID.randomUUID();
         UUID department = UUID.randomUUID();
         UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.PENDING, null,
+                java.time.Instant.now(), null);
         MedicalRecord existing = MedicalRecord.create(patient, doctor, department, LocalDate.now(), null,
                 appointmentId, List.of(Diagnosis.create("Existing", null, null)));
         when(patients.exists(patient)).thenReturn(true);
         when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
         when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.of(existing));
 
         var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), null,
@@ -144,8 +163,30 @@ class ClinicalApplicationServiceTest {
         assertThatThrownBy(() -> recordService.create(request))
                 .isInstanceOf(InvalidClinicalDataException.class)
                 .hasFieldOrPropertyWithValue("code", "RECORD_DUPLICATE_APPOINTMENT");
+        InOrder mutationOrder = inOrder(appointments, records);
+        mutationOrder.verify(appointments).findByIdForUpdate(appointmentId);
+        mutationOrder.verify(records).findByAppointmentId(appointmentId);
         verify(records, never()).save(any());
         verifyNoInteractions(publisher);
+    }
+
+    @Test
+    void createRecord_appointmentBelongsToOtherPatient_rejectsBeforeRecordLookup() {
+        UUID requestedPatient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        Appointment appointment = Appointment.create(UUID.randomUUID(), doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        when(patients.exists(requestedPatient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        var request = new CreateRecordRequest(requestedPatient, doctor, department, LocalDate.now(), null,
+                appointment.getAppointmentId(), List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        assertThatThrownBy(() -> recordService.create(request))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "RECORD_APPOINTMENT_PATIENT_MISMATCH");
+        verifyNoInteractions(records, publisher);
     }
 
     @Test

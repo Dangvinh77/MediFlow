@@ -29,8 +29,8 @@ public class AppointmentJpaEntity {
     @Column(name = "department_id", nullable = false) private UUID departmentId;
     @Column(name = "appointment_date", nullable = false) private LocalDate appointmentDate;
     @Column(name = "appointment_time", nullable = false) private LocalTime appointmentTime;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private AppointmentStatus status;
-    @Column(columnDefinition = "text") private String reason;
+    @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false, length = 20) private AppointmentStatus status;
+    @Column(name = "reason", columnDefinition = "text") private String reason;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at") private Instant updatedAt;
 }

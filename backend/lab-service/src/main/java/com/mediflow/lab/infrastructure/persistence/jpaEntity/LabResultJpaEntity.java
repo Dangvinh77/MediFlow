@@ -25,9 +25,9 @@ public class LabResultJpaEntity {
     @Id @Column(name = "result_id", nullable = false) private UUID resultId;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "test_id", nullable = false) private LabTestJpaEntity test;
-    @Column(nullable = false, length = 100) private String indicator;
-    @Column(nullable = false, length = 50) private String value;
-    @Column(length = 20) private String unit;
+    @Column(name = "indicator", nullable = false, length = 100) private String indicator;
+    @Column(name = "value", nullable = false, length = 50) private String value;
+    @Column(name = "unit", length = 20) private String unit;
     @Column(name = "reference_range", length = 50) private String referenceRange;
     @CreationTimestamp @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
 }

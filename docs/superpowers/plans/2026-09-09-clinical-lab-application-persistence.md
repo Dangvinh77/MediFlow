@@ -184,4 +184,3 @@ Run `mvn -pl backend/clinical-service,backend/lab-service -am verify`. Expected:
 - [x] **Step 3: Check scope and commit**
 
 Run `git diff --check`, `git status --short`, and inspect `git diff --stat master...HEAD`. Commit `docs(clinical-lab): update implementation status`, then push `codex/clinical-lab-app-persistence` and open one focused PR against `master`.
-
