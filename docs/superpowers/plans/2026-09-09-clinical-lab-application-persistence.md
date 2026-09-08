@@ -13,7 +13,8 @@
 ### Task 1: Clinical application orchestration
 
 **Files:**
-- Create: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalApplicationService.java`
+- Create: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/AppointmentApplicationService.java`
+- Create: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/MedicalRecordApplicationService.java`
 - Modify: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/AppointmentRepositoryPort.java`
 - Modify: `backend/clinical-service/src/main/java/com/mediflow/clinical/application/port/out/MedicalRecordRepositoryPort.java`
 - Create: `backend/clinical-service/src/test/java/com/mediflow/clinical/application/service/ClinicalApplicationServiceTest.java`
@@ -32,11 +33,11 @@ Cover the required orchestration with Mockito-backed ports:
 
 - [ ] **Step 2: Verify RED**
 
-Run `mvn -pl backend/clinical-service -Dtest=ClinicalApplicationServiceTest test`. Expected: compilation failure because `ClinicalApplicationService` and mutation-load port methods do not exist.
+Run `mvn -pl backend/clinical-service -Dtest=ClinicalApplicationServiceTest test`. Expected: compilation failure because the two application services and mutation-load port methods do not exist.
 
 - [ ] **Step 3: Implement the service and mutation ports**
 
-Add `findByIdForUpdate(UUID)` to both repositories. Implement `ManageAppointmentUseCase` and `ManageRecordUseCase` in one `@Service`; mutation methods are `@Transactional`, queries are `@Transactional(readOnly = true)`. Use one correlation UUID per command and reuse it for the two record-creation events.
+Add `findByIdForUpdate(UUID)` to both repositories. Implement `ManageAppointmentUseCase` and `ManageRecordUseCase` in separate `@Service` classes because their same-signature query methods return different DTO types. Mutation methods are `@Transactional`, queries are `@Transactional(readOnly = true)`. Use one correlation UUID per command and reuse it for the two record-creation events.
 
 ```java
 private void requirePatient(UUID patientId) {
