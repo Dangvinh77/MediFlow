@@ -104,7 +104,7 @@ public interface SendNotificationUseCase {
 }
 public interface ReadNotificationUseCase {
     NotificationDTO getById(UUID id, UUID callerPatientId, boolean isStaff);
-    PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page);
+    PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page, UUID callerPatientId, boolean isStaff);
 }
 ```
 

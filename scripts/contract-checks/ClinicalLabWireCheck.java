@@ -32,9 +32,18 @@ class ClinicalLabWireCheck {
         var result = json.readValue(json.writeValueAsBytes(event),
                 com.mediflow.billing.application.event.LabResultCreatedEvent.class);
         check(result.labId().equals(lab.getTestId()) && result.labType().equals("CBC")
+                && result.performedDate().equals(lab.getPerformedDate())
                 && result.recordId().equals(record.getRecordId()) && result.patientId().equals(patient)
                 && result.departmentId().equals(department), "lab result -> billing");
-        System.out.println("3 actual producer-to-billing JSON contract checks passed");
+        UUID invoice = UUID.randomUUID(), prescription = UUID.randomUUID();
+        var payment = new com.mediflow.billing.application.event.PaymentCompletedEvent(UUID.randomUUID(),
+                Instant.now(), invoice.toString(), invoice, patient, department, prescription,
+                java.math.BigDecimal.TEN, com.mediflow.billing.domain.model.PaymentMethod.CASH);
+        var command = json.readValue(json.writeValueAsBytes(payment),
+                com.mediflow.pharmacy.application.dto.command.PaymentCompletedCommand.class);
+        check(command.prescriptionId().equals(prescription) && command.correlationId().equals(invoice.toString())
+                && command.paymentMethod().equals("CASH"), "billing payment -> pharmacy");
+        System.out.println("4 actual cross-service JSON contract checks passed");
     }
     private static void check(boolean condition, String name) {
         if (!condition) throw new AssertionError(name);

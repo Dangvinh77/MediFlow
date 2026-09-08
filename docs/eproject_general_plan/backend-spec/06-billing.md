@@ -571,3 +571,17 @@ Queue `billing.q` bind **6 routing key** (bỏ `invoice.created`, `payment.*` v�
 - [ ] `GlobalExceptionHandler`, `SecurityConfig`, `RabbitConfig`, `OpenApiConfig`.
 - [ ] Test 5 tầng; 11 business rule được phủ.
 - [ ] `mvn -pl backend/billing-service -am -q -DskipTests install` xanh.
+
+
+### Integration clarifications (2026-09-08)
+
+- `appointment.status.changed` includes nullable `recordId`. ARRIVED with recordId and
+  `medicalrecord.created` deduplicate EXAM using the same recordId. Legacy ARRIVED without it
+  does not create an uncorrelated fee; medicalrecord.created remains the fee source.
+- `lab.result.created` includes `labType` and `performedDate`; use them for pricing/date.
+  Missing legacy projection data must remain retryable, never marked processed.
+- New ordinary invoices include only unpaid fees whose invoiceId is null. Future persistence
+  adapters must lock/reserve those fees atomically against concurrent invoice creation.
+- `payment.completed` applies to ordinary and prescription invoices. prescriptionId is null
+  for ordinary invoices; Pharmacy ignores those before constructing PaymentCompletedCommand.
+  InvoiceId supplies stable correlation for HTTP-originated payments.
