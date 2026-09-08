@@ -50,7 +50,7 @@ examination belong to, so every downstream fee, test and report can be attribute
 
 - **Publish:**
   - `appointment.created` `{appointmentId, patientId, doctorId, departmentId, appointmentDate, appointmentTime}`
-  - `appointment.status.changed` `{appointmentId, status, patientId, departmentId}`
+  - `appointment.status.changed` `{appointmentId, recordId, status, patientId, departmentId}` — `recordId` nullable until the record exists; billing must defer record-based fees when absent.
   - `medicalrecord.created` `{recordId, patientId, doctorId, departmentId, diagnosis, examinationDate}`
   - `diagnosis.added` `{recordId, diagnosisCode, diagnosisName}`
 - **Subscribe:**
