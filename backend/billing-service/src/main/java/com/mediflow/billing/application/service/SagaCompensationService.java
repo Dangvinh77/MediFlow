@@ -63,7 +63,7 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         if (processedEvent.alreadyProcessed(e.eventId())) {
             return;
         }
-        Optional<Invoice> found = invoiceRepo.findByPrescription(e.prescriptionId());
+        Optional<Invoice> found = invoiceRepo.findByPrescriptionForUpdate(e.prescriptionId());
         if (found.isEmpty()) {
             log.warn("Bỏ qua bù trừ: không có hóa đơn cho prescriptionId={} (event {})",
                     e.prescriptionId(), e.eventId());
@@ -100,7 +100,7 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         if (processedEvent.alreadyProcessed(e.eventId())) {
             return;
         }
-        Optional<Invoice> found = invoiceRepo.findByPrescription(e.prescriptionId());
+        Optional<Invoice> found = invoiceRepo.findByPrescriptionForUpdate(e.prescriptionId());
         if (found.isEmpty()) {
             log.warn("Bỏ qua hoàn tất saga: không có hóa đơn cho prescriptionId={} (event {})",
                     e.prescriptionId(), e.eventId());

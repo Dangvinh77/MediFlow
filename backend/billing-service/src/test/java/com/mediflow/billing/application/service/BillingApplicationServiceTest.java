@@ -101,7 +101,7 @@ class BillingApplicationServiceTest {
                 new BigDecimal("200000.00"), false, null, null, null, SagaStatus.NONE, null,
                 java.time.Instant.now(), null);
         List<Fee> fees = List.of(unpaidFee(UUID.randomUUID(), "120000.00"), unpaidFee(UUID.randomUUID(), "80000.00"));
-        when(invoiceRepo.findById(invoiceId)).thenReturn(Optional.of(invoice));
+        when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(invoice));
         when(feeRepo.findByInvoice(invoiceId)).thenReturn(fees);
         when(invoiceRepo.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
         when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
@@ -120,7 +120,7 @@ class BillingApplicationServiceTest {
         Invoice sagaInvoice = Invoice.restore(invoiceId, UUID.randomUUID(), LocalDate.now(),
                 new BigDecimal("300000.00"), false, null, null, UUID.randomUUID(),
                 SagaStatus.AWAITING_PAYMENT, null, java.time.Instant.now(), null);
-        when(invoiceRepo.findById(invoiceId)).thenReturn(Optional.of(sagaInvoice));
+        when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(sagaInvoice));
         when(feeRepo.findByInvoice(invoiceId)).thenReturn(List.of());
         when(invoiceRepo.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
         when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
@@ -161,7 +161,7 @@ class BillingApplicationServiceTest {
     @Test
     void pay_unknown_throwsNotFound() {
         UUID id = UUID.randomUUID();
-        when(invoiceRepo.findById(id)).thenReturn(Optional.empty());
+        when(invoiceRepo.findByIdForUpdate(id)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.pay(id, new PayInvoiceRequest(PaymentMethod.CASH)))
                 .isInstanceOf(InvoiceNotFoundException.class);
     }

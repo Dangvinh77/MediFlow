@@ -23,6 +23,12 @@ public interface InvoiceRepositoryPort {
     /** Tìm một hóa đơn. Không có thì trả {@link Optional#empty()} → application ném {@code InvoiceNotFoundException}. */
     Optional<Invoice> findById(UUID id);
 
+    /** Load and lock until transaction completion before payment or saga mutation. */
+    Optional<Invoice> findByIdForUpdate(UUID id);
+
+    /** Load and lock the prescription invoice before applying compensation/completion. */
+    Optional<Invoice> findByPrescriptionForUpdate(UUID prescriptionId);
+
     /**
      * Tìm hóa đơn theo đơn thuốc đã mở saga. Cột {@code prescription_id} có unique partial index
      * {@code uq_invoice_prescription} — mỗi đơn tối đa một hóa đơn (BR-B6), nên kết quả tối đa một.

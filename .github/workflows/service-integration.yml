@@ -1,0 +1,46 @@
+name: Service integration
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - 'pom.xml'
+      - 'scripts/contract-checks/**'
+      - '.github/workflows/service-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Require Docker for PostgreSQL and RabbitMQ tests
+        run: docker info
+      - name: Verify integrated services
+        run: mvn -B -q -pl backend/clinical-service,backend/lab-service,backend/billing-service,backend/notification-service,backend/pharmacy-service -am verify
+      - name: Verify cross-service JSON contracts
+        shell: pwsh
+        run: ./scripts/contract-checks/check-clinical-lab.ps1
+      - name: Require container tests to execute
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          reports = [ET.parse(p).getroot() for p in glob.glob('backend/*/target/surefire-reports/TEST-*.xml')]
+          if not reports:
+              raise SystemExit('No test reports found')
+          skipped = sum(int(r.get('skipped', 0)) for r in reports)
+          if skipped:
+              raise SystemExit(f'{skipped} tests skipped; container verification is incomplete')
+          print(f"All {sum(int(r.get('tests', 0)) for r in reports)} tests executed")
+          PY

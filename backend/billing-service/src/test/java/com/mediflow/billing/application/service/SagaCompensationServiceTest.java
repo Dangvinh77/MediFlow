@@ -62,7 +62,7 @@ class SagaCompensationServiceTest {
         Invoice invoice = paidAwaitingDispense(prescriptionId);
         List<Fee> fees = List.of(paidFee(), paidFee());
         when(processedEvent.alreadyProcessed(any())).thenReturn(false);
-        when(invoiceRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(invoice));
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
         when(feeRepo.findByInvoice(invoice.getInvoiceId())).thenReturn(fees);
         when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
 
@@ -81,7 +81,7 @@ class SagaCompensationServiceTest {
         UUID prescriptionId = UUID.randomUUID();
         Invoice invoice = paidAwaitingDispense(prescriptionId);
         when(processedEvent.alreadyProcessed(any())).thenReturn(false);
-        when(invoiceRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(invoice));
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
         when(feeRepo.findByInvoice(any())).thenReturn(List.of());
         when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
 
@@ -99,7 +99,7 @@ class SagaCompensationServiceTest {
     void onDispenseFailed_noInvoice_skipsQuietly() {
         UUID prescriptionId = UUID.randomUUID();
         when(processedEvent.alreadyProcessed(any())).thenReturn(false);
-        when(invoiceRepo.findByPrescription(prescriptionId)).thenReturn(Optional.empty());
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.empty());
 
         service.onDispenseFailed(new PrescriptionDispenseFailedEvent(
                 UUID.randomUUID(), Instant.now(), "corr", prescriptionId, null, null, "x", List.of()));
@@ -115,7 +115,7 @@ class SagaCompensationServiceTest {
         UUID prescriptionId = UUID.randomUUID();
         Invoice invoice = paidAwaitingDispense(prescriptionId);
         when(processedEvent.alreadyProcessed(any())).thenReturn(false);
-        when(invoiceRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(invoice));
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
 
         service.onPrescriptionFilled(new PrescriptionFilledEvent(
                 UUID.randomUUID(), Instant.now(), "corr", prescriptionId, invoice.getPatientId(),
