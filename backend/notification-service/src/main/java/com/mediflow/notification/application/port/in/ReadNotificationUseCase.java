@@ -27,5 +27,5 @@ public interface ReadNotificationUseCase {
     NotificationDTO getById(UUID id, UUID callerPatientId, boolean isStaff);
 
     /** Danh sách thông báo của một bệnh nhân, mới nhất trước, phân trang. */
-    PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page);
+    PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page, UUID callerPatientId, boolean isStaff);
 }

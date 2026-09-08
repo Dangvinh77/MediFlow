@@ -30,6 +30,10 @@ public class PaymentCompletedConsumer {
      */
     @RabbitListener(queues = "${mediflow.pharmacy.rabbit.queue:pharmacy.q}")
     public void consume(PaymentCompletedEvent event) {
+        // Ordinary hospital invoices are also published for notification/report consumers.
+        if (event.prescriptionId() == null) {
+            return;
+        }
         PaymentCompletedCommand command = new PaymentCompletedCommand(
                 event.eventId(),
                 event.occurredAt(),

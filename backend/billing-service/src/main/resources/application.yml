@@ -39,6 +39,15 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 
+# Bảng giá phí sinh tự động từ event (PriceListPort). Mặc định đã có trong PriceListProperties;
+# đặt exam-fee-by-department / lab-fee-by-type để override theo khoa / loại xét nghiệm.
+billing:
+  pricing:
+    default-exam-fee: ${MEDIFLOW_BILLING_DEFAULT_EXAM_FEE:150000}
+    default-lab-fee: ${MEDIFLOW_BILLING_DEFAULT_LAB_FEE:80000}
+    exam-fee-by-department: {}
+    lab-fee-by-type: {}
+
 management:
   endpoints:
     web:
