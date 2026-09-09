@@ -37,9 +37,9 @@ with stable error codes.
 
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
-Feign clients, RabbitMQ adapters and external-result attachments remain follow-up work. The
-`.http` requests match both controllers. Future event publishers must dispatch after transaction
-commit.
+The RabbitMQ publisher sends all four domain events as JSON to the durable shared exchange only
+after transaction commit. Feign clients, inbound RabbitMQ consumers and external-result
+attachments remain follow-up work. The `.http` requests match both controllers.
 
 ## Run locally
 
