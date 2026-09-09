@@ -21,7 +21,7 @@ is exactly what `05-api-conventions.md` specifies.
 
 ## Status
 
-**Application, persistence and HTTP API implemented.** Rich domain models enforce
+**Application, persistence, HTTP API and JWT security implemented.** Rich domain models enforce
 appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the
 nonempty diagnosis aggregate. Application services coordinate remote validation,
 record/appointment transactions and published events. Flyway and JPA adapters persist both
@@ -29,12 +29,14 @@ aggregates with locked mutation reads and database uniqueness for pending daily 
 appointment-linked records. `AppointmentController` and `MedicalRecordController` expose all
 eleven specified endpoints with validation, role declarations, standard response envelopes and
 web-slice coverage.
+Bearer tokens are verified locally using the gateway's shared HS256 secret; invalid or missing
+tokens and forbidden roles return the common API error envelope.
 
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
-JWT/security configuration, centralized HTTP exception mapping, Feign clients, RabbitMQ adapters
-and external-result attachments remain follow-up work. The `.http` requests match both
-controllers. Future event publishers must dispatch after transaction commit.
+Centralized HTTP exception mapping, Feign clients, RabbitMQ adapters and external-result
+attachments remain follow-up work. The `.http` requests match both controllers. Future event
+publishers must dispatch after transaction commit.
 
 ## Run locally
 
