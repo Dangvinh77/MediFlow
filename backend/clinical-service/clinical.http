@@ -1,7 +1,6 @@
 ### MediFlow — Clinical service (qua gateway :8080)
 ###
-### Các request lịch hẹn khớp với AppointmentController hiện tại.
-### Nhóm hồ sơ bệnh án vẫn là DEMO cho lượt triển khai tiếp theo.
+### Các request lịch hẹn và hồ sơ bệnh án khớp với hai controller hiện tại.
 ### Cấu hình xác thực JWT nội bộ vẫn là phần việc tiếp theo của service.
 ###
 ### Trước khi chạy:
@@ -102,7 +101,7 @@ Content-Type: application/json
   "status": "ARRIVED"
 }
 
-# ============ HỒ SƠ BỆNH ÁN /api/v1/records — DEMO ============
+# ============ HỒ SƠ BỆNH ÁN /api/v1/records ============
 
 ### Hồ sơ của một bệnh nhân
 GET {{host}}/api/v1/records/patient/00000000-0000-0000-0000-000000000000
