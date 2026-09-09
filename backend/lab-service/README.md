@@ -10,7 +10,8 @@ Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · design 
 
 ## Status
 
-The domain, application, persistence, HTTP controller and JWT security layers are in place:
+The domain, application, persistence, HTTP controller, JWT security and error handling layers are
+in place:
 `LabTest` owns its `LabResult` values, the application service handles creation, results,
 lifecycle and explicit payment updates, and published events carry the standard envelope. Flyway
 and JPA adapters persist aggregate results, use locked mutation reads and provide an insert-only
@@ -19,10 +20,10 @@ The controller exposes the six specified endpoints with validation, role declara
 response envelopes and web-slice coverage.
 Bearer tokens are verified locally using the gateway's shared HS256 secret; invalid or missing
 tokens and forbidden roles return the common API error envelope.
+Domain and validation failures are mapped to the specified HTTP statuses with stable error codes.
 
-Centralized HTTP exception mapping and RabbitMQ adapters remain follow-up work. Future event
-publishers must dispatch after transaction commit, and payment consumers still require an explicit
-test identifier.
+RabbitMQ adapters remain follow-up work. Future event publishers must dispatch after transaction
+commit, and payment consumers still require an explicit test identifier.
 
 Cross-service field choices and unresolved producer gaps are recorded in the
 [clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
