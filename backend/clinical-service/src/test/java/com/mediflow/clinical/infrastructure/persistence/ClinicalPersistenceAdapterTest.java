@@ -14,21 +14,25 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.Diagnosis;
+import com.mediflow.clinical.domain.model.ExternalResultType;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 import com.mediflow.clinical.domain.exception.DuplicatePendingAppointmentException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.infrastructure.persistence.adapter.AppointmentPersistenceAdapter;
+import com.mediflow.clinical.infrastructure.persistence.adapter.ExternalResultPersistenceAdapter;
 import com.mediflow.clinical.infrastructure.persistence.adapter.MedicalRecordPersistenceAdapter;
 import com.mediflow.common.api.PageQuery;
 
 @DataJpaTest
-@Import({AppointmentPersistenceAdapter.class, MedicalRecordPersistenceAdapter.class})
+@Import({AppointmentPersistenceAdapter.class, MedicalRecordPersistenceAdapter.class,
+        ExternalResultPersistenceAdapter.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
 class ClinicalPersistenceAdapterTest {
@@ -39,6 +43,8 @@ class ClinicalPersistenceAdapterTest {
 
     @Autowired AppointmentPersistenceAdapter appointments;
     @Autowired MedicalRecordPersistenceAdapter records;
+    @Autowired ExternalResultPersistenceAdapter externalResults;
+    @Autowired JdbcTemplate jdbc;
 
     @Test
     void recordRoundTrip_preservesDiagnosesAndAppointmentReference() {
@@ -96,6 +102,22 @@ class ClinicalPersistenceAdapterTest {
         assertThatThrownBy(() -> records.save(recordFor(appointment, "Second")))
                 .isInstanceOf(InvalidClinicalDataException.class)
                 .hasFieldOrPropertyWithValue("code", "RECORD_DUPLICATE_APPOINTMENT");
+    }
+
+    @Test
+    void repeatedExternalReference_isStoredOnce() {
+        MedicalRecord record = records.save(MedicalRecord.create(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(), null,
+                null, List.of(Diagnosis.create("Influenza", null, "J10"))));
+        UUID labId = UUID.randomUUID();
+
+        externalResults.attach(record.getRecordId(), ExternalResultType.LAB, labId, "Normal");
+        externalResults.attach(record.getRecordId(), ExternalResultType.LAB, labId, "Normal");
+
+        Integer count = jdbc.queryForObject(
+                "SELECT count(*) FROM attached_result WHERE record_id = ? AND type = ? AND reference_id = ?",
+                Integer.class, record.getRecordId(), "LAB", labId);
+        assertThat(count).isEqualTo(1);
     }
 
     private static MedicalRecord recordFor(Appointment appointment, String diagnosis) {

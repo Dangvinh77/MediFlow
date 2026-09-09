@@ -5,7 +5,7 @@
 Reference: [service rules](../../docs/ai/services/clinical.md) · [design](../../docs/eproject_general_plan/clinical-service.html) · [implementation spec](../../docs/eproject_general_plan/backend-spec/03-clinical.md).
 
 - **Port:** 8082 · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB:** `mediflow_clinical`
-- **Owns tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`
+- **Owns tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`, `ATTACHED_RESULT`
 - **Architecture:** clean architecture per [blueprint](../../docs/ai/04-microservice-blueprint.md).
 
 ## Why appointments and records are one service
@@ -38,8 +38,9 @@ with stable error codes.
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
 The RabbitMQ publisher sends all four domain events as JSON to the durable shared exchange only
-after transaction commit. Feign clients, inbound RabbitMQ consumers and external-result
-attachments remain follow-up work. The `.http` requests match both controllers.
+after transaction commit. External Lab and Pharmacy references are stored separately with an
+idempotent composite key instead of altering clinical text. Feign clients and inbound RabbitMQ
+consumers remain follow-up work. The `.http` requests match both controllers.
 
 ## Run locally
 
