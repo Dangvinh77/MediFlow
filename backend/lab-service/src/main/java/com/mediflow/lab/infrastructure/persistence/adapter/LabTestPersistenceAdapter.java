@@ -37,8 +37,18 @@ public class LabTestPersistenceAdapter implements LabTestRepositoryPort {
         return repository.findByRecordIdOrderByRequestedDateDesc(recordId).stream().map(this::toDomain).toList();
     }
     @Override public PageResult<LabTest> search(UUID departmentId, LabTestStatus status, PageQuery query) {
-        Page<LabTestJpaEntity> page = repository.search(departmentId, status, PageRequest.of(query.page(),
-                query.size(), Sort.by(Sort.Direction.DESC, "requestedDate", "createdAt")));
+        PageRequest pageable = PageRequest.of(query.page(), query.size(),
+                Sort.by(Sort.Direction.DESC, "requestedDate", "createdAt"));
+        Page<LabTestJpaEntity> page;
+        if (departmentId != null && status != null) {
+            page = repository.findByRequestingDepartmentIdAndStatus(departmentId, status, pageable);
+        } else if (departmentId != null) {
+            page = repository.findByRequestingDepartmentId(departmentId, pageable);
+        } else if (status != null) {
+            page = repository.findByStatus(status, pageable);
+        } else {
+            page = repository.findAll(pageable);
+        }
         return PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
                 page.getTotalElements(), query.page(), query.size());
     }

@@ -82,6 +82,9 @@ class ClinicalPersistenceAdapterTest {
         assertThat(page.content()).extracting(Appointment::getAppointmentId)
                 .containsExactly(matching.getAppointmentId());
         assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(appointments.search(null, date, new PageQuery(0, 10)).totalElements()).isEqualTo(2);
+        assertThat(appointments.search(department, null, new PageQuery(0, 10)).totalElements()).isEqualTo(1);
+        assertThat(appointments.search(null, null, new PageQuery(0, 10)).totalElements()).isEqualTo(2);
     }
 
     @Test

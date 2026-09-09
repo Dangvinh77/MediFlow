@@ -28,11 +28,8 @@ public interface LabTestJpaRepository extends JpaRepository<LabTestJpaEntity, UU
     List<LabTestJpaEntity> findByPatientIdOrderByRequestedDateDesc(UUID patientId);
     @EntityGraph(attributePaths = "results")
     List<LabTestJpaEntity> findByRecordIdOrderByRequestedDateDesc(UUID recordId);
-    @Query("""
-            SELECT t FROM LabTestJpaEntity t
-            WHERE (:departmentId IS NULL OR t.requestingDepartmentId = :departmentId)
-              AND (:status IS NULL OR t.status = :status)
-            """)
-    Page<LabTestJpaEntity> search(@Param("departmentId") UUID departmentId,
-                                  @Param("status") LabTestStatus status, Pageable pageable);
+    Page<LabTestJpaEntity> findByRequestingDepartmentIdAndStatus(
+            UUID requestingDepartmentId, LabTestStatus status, Pageable pageable);
+    Page<LabTestJpaEntity> findByRequestingDepartmentId(UUID requestingDepartmentId, Pageable pageable);
+    Page<LabTestJpaEntity> findByStatus(LabTestStatus status, Pageable pageable);
 }

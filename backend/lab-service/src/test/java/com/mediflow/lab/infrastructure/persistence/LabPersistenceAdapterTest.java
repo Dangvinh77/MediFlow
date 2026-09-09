@@ -77,5 +77,8 @@ class LabPersistenceAdapterTest {
                 .containsExactly(matching.getTestId());
         assertThat(tests.search(department, LabTestStatus.PENDING, new PageQuery(0, 10)).content())
                 .extracting(LabTest::getTestId).containsExactly(matching.getTestId());
+        assertThat(tests.search(department, null, new PageQuery(0, 10)).totalElements()).isEqualTo(1);
+        assertThat(tests.search(null, LabTestStatus.PENDING, new PageQuery(0, 10)).totalElements()).isEqualTo(2);
+        assertThat(tests.search(null, null, new PageQuery(0, 10)).totalElements()).isEqualTo(2);
     }
 }

@@ -25,11 +25,8 @@ public interface AppointmentJpaRepository extends JpaRepository<AppointmentJpaEn
     boolean existsByPatientIdAndAppointmentDateAndStatus(UUID patientId, LocalDate date, AppointmentStatus status);
     boolean existsByPatientIdAndAppointmentDateAndStatusAndAppointmentIdNot(
             UUID patientId, LocalDate date, AppointmentStatus status, UUID id);
-    @Query("""
-            SELECT a FROM AppointmentJpaEntity a
-            WHERE (:departmentId IS NULL OR a.departmentId = :departmentId)
-              AND (:date IS NULL OR a.appointmentDate = :date)
-            """)
-    Page<AppointmentJpaEntity> search(@Param("departmentId") UUID departmentId,
-                                      @Param("date") LocalDate date, Pageable pageable);
+    Page<AppointmentJpaEntity> findByDepartmentIdAndAppointmentDate(
+            UUID departmentId, LocalDate appointmentDate, Pageable pageable);
+    Page<AppointmentJpaEntity> findByDepartmentId(UUID departmentId, Pageable pageable);
+    Page<AppointmentJpaEntity> findByAppointmentDate(LocalDate appointmentDate, Pageable pageable);
 }

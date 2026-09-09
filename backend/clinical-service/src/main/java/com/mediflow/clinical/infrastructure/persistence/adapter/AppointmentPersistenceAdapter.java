@@ -45,8 +45,18 @@ public class AppointmentPersistenceAdapter implements AppointmentRepositoryPort 
                 .stream().map(this::toDomain).toList();
     }
     @Override public PageResult<Appointment> search(UUID departmentId, LocalDate date, PageQuery query) {
-        Page<AppointmentJpaEntity> page = repository.search(departmentId, date, PageRequest.of(query.page(),
-                query.size(), Sort.by(Sort.Direction.ASC, "appointmentDate", "appointmentTime")));
+        PageRequest pageable = PageRequest.of(query.page(), query.size(),
+                Sort.by(Sort.Direction.ASC, "appointmentDate", "appointmentTime"));
+        Page<AppointmentJpaEntity> page;
+        if (departmentId != null && date != null) {
+            page = repository.findByDepartmentIdAndAppointmentDate(departmentId, date, pageable);
+        } else if (departmentId != null) {
+            page = repository.findByDepartmentId(departmentId, pageable);
+        } else if (date != null) {
+            page = repository.findByAppointmentDate(date, pageable);
+        } else {
+            page = repository.findAll(pageable);
+        }
         return PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
                 page.getTotalElements(), query.page(), query.size());
     }
