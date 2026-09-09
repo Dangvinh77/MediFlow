@@ -1,9 +1,8 @@
-### MediFlow — Clinical service (qua gateway :8080) — DEMO / TEMPLATE
+### MediFlow — Clinical service (qua gateway :8080)
 ###
-### ⚠️ Trạng thái: clinical-service chưa có web layer (chưa có controller). Các request
-### bên dưới là DEMO soạn theo spec chuẩn:
-###   docs/eproject_general_plan/backend-spec/03-clinical.md
-### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+### Các request lịch hẹn khớp với AppointmentController hiện tại.
+### Nhóm hồ sơ bệnh án vẫn là DEMO cho lượt triển khai tiếp theo.
+### Cấu hình xác thực JWT nội bộ vẫn là phần việc tiếp theo của service.
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → clinical-service (8082) đang chạy.
@@ -103,7 +102,7 @@ Content-Type: application/json
   "status": "ARRIVED"
 }
 
-# ============ HỒ SƠ BỆNH ÁN /api/v1/records ============
+# ============ HỒ SƠ BỆNH ÁN /api/v1/records — DEMO ============
 
 ### Hồ sơ của một bệnh nhân
 GET {{host}}/api/v1/records/patient/00000000-0000-0000-0000-000000000000

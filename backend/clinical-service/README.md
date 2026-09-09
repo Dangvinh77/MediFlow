@@ -21,11 +21,20 @@ is exactly what `05-api-conventions.md` specifies.
 
 ## Status
 
-**Application and persistence implemented.** Rich domain models enforce appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the nonempty diagnosis aggregate. Application services coordinate remote validation, record/appointment transactions and published events. Flyway and JPA adapters persist both aggregates with locked mutation reads and database uniqueness for pending daily appointments and appointment-linked records.
+**Application, persistence and appointment HTTP API implemented.** Rich domain models enforce
+appointment dates/hours and transitions, required references, diagnosis names/ICD codes and the
+nonempty diagnosis aggregate. Application services coordinate remote validation,
+record/appointment transactions and published events. Flyway and JPA adapters persist both
+aggregates with locked mutation reads and database uniqueness for pending daily appointments and
+appointment-linked records. `AppointmentController` exposes all six specified appointment
+endpoints with validation, role declarations, standard response envelopes and web-slice coverage.
 
 Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
-HTTP/security, Feign clients, RabbitMQ adapters and external-result attachments remain follow-up work. No live clinical API is claimed; the `.http` collection remains a demo. Future event publishers must dispatch after transaction commit.
+The medical-record controller, JWT/security configuration, centralized HTTP exception mapping,
+Feign clients, RabbitMQ adapters and external-result attachments remain follow-up work. The
+appointment requests in `.http` match the controller; record requests remain demos. Future event
+publishers must dispatch after transaction commit.
 
 ## Run locally
 
