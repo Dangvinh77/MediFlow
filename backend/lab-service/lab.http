@@ -1,9 +1,7 @@
-### MediFlow — Lab service (qua gateway :8080) — DEMO / TEMPLATE
+### MediFlow — Lab service (qua gateway :8080)
 ###
-### ⚠️ Trạng thái: lab-service chưa có web layer (chưa có controller). Các request
-### bên dưới là DEMO soạn theo spec chuẩn:
-###   docs/eproject_general_plan/backend-spec/04-lab.md
-### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+### Các request bên dưới khớp với LabController và đặc tả 04-lab.md.
+### Cấu hình xác thực JWT nội bộ vẫn là phần việc tiếp theo của service.
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → lab-service (8084) đang chạy.

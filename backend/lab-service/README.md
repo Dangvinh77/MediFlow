@@ -10,13 +10,16 @@ Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · design 
 
 ## Status
 
-The domain, application and persistence layers are in place: `LabTest` owns its `LabResult` values,
-the application service handles creation, results, lifecycle and explicit payment updates, and
-published events carry the standard envelope. Flyway and JPA adapters persist aggregate results,
-use locked mutation reads and provide an insert-only processed-event ledger.
+The domain, application, persistence and HTTP controller layers are in place: `LabTest` owns its
+`LabResult` values, the application service handles creation, results, lifecycle and explicit
+payment updates, and published events carry the standard envelope. Flyway and JPA adapters persist
+aggregate results, use locked mutation reads and provide an insert-only processed-event ledger.
+The controller exposes the six specified endpoints with validation, role declarations, standard
+response envelopes and web-slice coverage.
 
-HTTP/security and RabbitMQ adapters remain follow-up work. Future event publishers must dispatch
-after transaction commit, and payment consumers still require an explicit test identifier.
+JWT/security configuration, centralized HTTP exception mapping and RabbitMQ adapters remain
+follow-up work. Future event publishers must dispatch after transaction commit, and payment
+consumers still require an explicit test identifier.
 
 Cross-service field choices and unresolved producer gaps are recorded in the
 [clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
