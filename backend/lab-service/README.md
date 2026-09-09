@@ -10,27 +10,27 @@ Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · design 
 
 ## Status
 
-The domain, application, persistence and HTTP controller layers are in place: `LabTest` owns its
-`LabResult` values, the application service handles creation, results, lifecycle and explicit
-payment updates, and published events carry the standard envelope. Flyway and JPA adapters persist
-aggregate results, use locked mutation reads and provide an insert-only processed-event ledger.
+The domain, application, persistence, HTTP controller and JWT security layers are in place:
+`LabTest` owns its `LabResult` values, the application service handles creation, results,
+lifecycle and explicit payment updates, and published events carry the standard envelope. Flyway
+and JPA adapters persist aggregate results, use locked mutation reads and provide an insert-only
+processed-event ledger.
 The controller exposes the six specified endpoints with validation, role declarations, standard
 response envelopes and web-slice coverage.
+Bearer tokens are verified locally using the gateway's shared HS256 secret; invalid or missing
+tokens and forbidden roles return the common API error envelope.
 
-JWT/security configuration, centralized HTTP exception mapping and RabbitMQ adapters remain
-follow-up work. Future event publishers must dispatch after transaction commit, and payment
-consumers still require an explicit test identifier.
+Centralized HTTP exception mapping and RabbitMQ adapters remain follow-up work. Future event
+publishers must dispatch after transaction commit, and payment consumers still require an explicit
+test identifier.
 
 Cross-service field choices and unresolved producer gaps are recorded in the
 [clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
 
-The remaining adapter packages are reserved for the follow-up service implementation:
+The remaining adapter packages are reserved for follow-up integration work:
 
 ```
-domain/model          domain/exception
-application/port/in   application/port/out   application/dto   application/mapper   application/service
-infrastructure/web    infrastructure/persistence   infrastructure/messaging   infrastructure/client
-infrastructure/security   infrastructure/config
+infrastructure/messaging   infrastructure/client   messaging/consumer
 ```
 
 ## Run locally
