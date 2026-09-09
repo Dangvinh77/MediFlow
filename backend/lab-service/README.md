@@ -50,7 +50,8 @@ Swagger UI: http://localhost:8084/swagger-ui.html
 ## Events
 
 - **Publish:** `lab.request.created`, `lab.result.created`
-- **Subscribe:** `medicalrecord.created`, `payment.completed`
+- **Subscribe:** `medicalrecord.created` (idempotently acknowledged; no test is auto-created because
+  the canonical Clinical payload does not contain an explicit lab order), `payment.completed`
 
 Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
 
