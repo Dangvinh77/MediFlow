@@ -20,4 +20,3 @@ public record JwtProperties(String secret) {
         }
     }
 }
-
