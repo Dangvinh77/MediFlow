@@ -39,8 +39,9 @@ Published records live in `application/event`, following billing/pharmacy, to ke
 
 The RabbitMQ publisher sends all four domain events as JSON to the durable shared exchange only
 after transaction commit. External Lab and Pharmacy references are stored separately with an
-idempotent composite key instead of altering clinical text. Feign clients and inbound RabbitMQ
-consumers remain follow-up work. The `.http` requests match both controllers.
+idempotent composite key instead of altering clinical text. The `lab.result.created` consumer uses
+a durable queue, dead-letter queue and processed-event ledger. Feign clients and the
+`prescription.filled` consumer remain follow-up work. The `.http` requests match both controllers.
 
 ## Run locally
 
