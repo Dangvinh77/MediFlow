@@ -1,7 +1,7 @@
 ### MediFlow — Lab service (qua gateway :8080)
 ###
 ### Các request bên dưới khớp với LabController và đặc tả 04-lab.md.
-### Cấu hình xác thực JWT nội bộ vẫn là phần việc tiếp theo của service.
+### Service xác minh lại Bearer JWT bằng cùng secret HS256 với gateway.
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → lab-service (8084) đang chạy.
