@@ -22,8 +22,9 @@ Bearer tokens are verified locally using the gateway's shared HS256 secret; inva
 tokens and forbidden roles return the common API error envelope.
 Domain and validation failures are mapped to the specified HTTP statuses with stable error codes.
 
-RabbitMQ adapters remain follow-up work. Future event publishers must dispatch after transaction
-commit, and payment consumers still require an explicit test identifier.
+The RabbitMQ publisher sends JSON events to the durable shared exchange only after transaction
+commit. Inbound consumers remain follow-up work, and payment consumers still require an explicit
+test identifier.
 
 Cross-service field choices and unresolved producer gaps are recorded in the
 [clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
@@ -31,7 +32,7 @@ Cross-service field choices and unresolved producer gaps are recorded in the
 The remaining adapter packages are reserved for follow-up integration work:
 
 ```
-infrastructure/messaging   infrastructure/client   messaging/consumer
+infrastructure/client   messaging/consumer
 ```
 
 ## Run locally
