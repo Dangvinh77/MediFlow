@@ -10,10 +10,13 @@ Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · design 
 
 ## Status
 
-The domain and application-contract foundation is in place: `LabTest` owns its `LabResult` values,
-validated request/response records and a MapStruct DTO mapper define the boundary, and published
-events carry the standard envelope. HTTP, persistence, application services and RabbitMQ adapters
-remain follow-up work.
+The domain, application and persistence layers are in place: `LabTest` owns its `LabResult` values,
+the application service handles creation, results, lifecycle and explicit payment updates, and
+published events carry the standard envelope. Flyway and JPA adapters persist aggregate results,
+use locked mutation reads and provide an insert-only processed-event ledger.
+
+HTTP/security and RabbitMQ adapters remain follow-up work. Future event publishers must dispatch
+after transaction commit, and payment consumers still require an explicit test identifier.
 
 Cross-service field choices and unresolved producer gaps are recorded in the
 [clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
@@ -55,6 +58,6 @@ must not infer one from `invoiceId` or `recordId`; `ReactToClinicalUseCase` and
 ## Tests
 
 ```bash
-mvn -pl backend/lab-service test        # unit (domain + application, no Spring)
-mvn -pl backend/lab-service verify      # current unit/contract checks; adapters/integration are follow-up work
+mvn -pl backend/lab-service test        # unit/contract tests + PostgreSQL slices when Docker is available
+mvn -pl backend/lab-service verify
 ```

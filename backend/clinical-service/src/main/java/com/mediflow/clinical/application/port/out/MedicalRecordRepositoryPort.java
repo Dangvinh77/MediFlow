@@ -8,6 +8,7 @@ import com.mediflow.clinical.domain.model.MedicalRecord;
 public interface MedicalRecordRepositoryPort {
     MedicalRecord save(MedicalRecord record);
     Optional<MedicalRecord> findById(UUID id);
+    Optional<MedicalRecord> findByIdForUpdate(UUID id);
     List<MedicalRecord> findByPatient(UUID patientId);
 
     /** BR-R2: detect an already recorded appointment, backed by a unique database constraint. */

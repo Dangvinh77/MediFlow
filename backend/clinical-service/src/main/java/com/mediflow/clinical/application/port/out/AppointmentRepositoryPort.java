@@ -12,6 +12,7 @@ import com.mediflow.clinical.domain.model.Appointment;
 public interface AppointmentRepositoryPort {
     Appointment save(Appointment appointment);
     Optional<Appointment> findById(UUID id);
+    Optional<Appointment> findByIdForUpdate(UUID id);
     List<Appointment> findByPatient(UUID patientId);
     PageResult<Appointment> search(UUID departmentId, LocalDate appointmentDate, PageQuery page);
     boolean existsPendingSameDay(UUID patientId, LocalDate appointmentDate);

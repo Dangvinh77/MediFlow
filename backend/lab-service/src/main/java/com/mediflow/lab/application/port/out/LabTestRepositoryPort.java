@@ -16,6 +16,8 @@ public interface LabTestRepositoryPort {
 
     Optional<LabTest> findById(UUID id);
 
+    Optional<LabTest> findByIdForUpdate(UUID id);
+
     List<LabTest> findByPatient(UUID patientId);
 
     List<LabTest> findByRecord(UUID recordId);
