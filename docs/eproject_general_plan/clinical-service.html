@@ -99,7 +99,7 @@
         <table>
             <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
             <tr><td>AppointmentCreatedEvent</td><td>{ appointmentId, patientId, doctorId, <strong>departmentId</strong>, appointmentDate, appointmentTime }</td><td>Khi tạo lịch hẹn</td></tr>
-            <tr><td>AppointmentStatusChangedEvent</td><td>{ appointmentId, status, patientId, <strong>departmentId</strong> }</td><td>Khi đổi trạng thái</td></tr>
+            <tr><td>AppointmentStatusChangedEvent</td><td>{ appointmentId, recordId, status, patientId, <strong>departmentId</strong> }</td><td>Khi đổi trạng thái; recordId nullable nếu chưa lập hồ sơ — billing chờ medicalrecord.created để thu phí theo hồ sơ</td></tr>
             <tr><td>MedicalRecordCreatedEvent</td><td>{ recordId, patientId, doctorId, <strong>departmentId</strong>, diagnosis, examinationDate }</td><td>Khi tạo hồ sơ mới</td></tr>
             <tr><td>DiagnosisAddedEvent</td><td>{ recordId, diagnosisCode, diagnosisName }</td><td>Khi thêm chẩn đoán</td></tr>
         </table>

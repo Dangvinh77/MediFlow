@@ -71,7 +71,7 @@
         <table>
             <tr><th>Tên Event</th><th>Schema</th><th>Khi nào bắn</th></tr>
             <tr><td>LabRequestCreatedEvent</td><td>{ labId, patientId, recordId, <strong>departmentId</strong>, labType, requestedDate }</td><td>Khi tạo yêu cầu xét nghiệm</td></tr>
-            <tr><td>LabResultCreatedEvent</td><td>{ labId, patientId, recordId, <strong>departmentId</strong>, results, conclusion }</td><td>Khi hoàn thành xét nghiệm</td></tr>
+            <tr><td>LabResultCreatedEvent</td><td>{ labId, patientId, recordId, <strong>departmentId</strong>, labType, performedDate, results, conclusion }</td><td>Khi hoàn thành xét nghiệm; labType để tính phí/thông báo, performedDate để thống kê theo ngày thực hiện</td></tr>
         </table>
     </div>
 

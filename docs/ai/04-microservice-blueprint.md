@@ -79,6 +79,7 @@ backend/patient-service/
     │   │   │   ├── dto/
     │   │   │   │   ├── request/            # CreateXxxRequest, UpdateXxxRequest (records)
     │   │   │   │   └── response/           # XxxDTO (records)
+    │   │   │   ├── event/                  # published event records used by application ports
     │   │   │   ├── mapper/                 # domain model <-> DTO (MapStruct)
     │   │   │   └── service/                # PatientApplicationService implements the in-ports
     │   │   │
@@ -95,7 +96,7 @@ backend/patient-service/
     │   │   │   │   └── PatientPersistenceAdapter.java
     │   │   │   ├── messaging/              #   driven (RabbitMQ) — publisher + payload
     │   │   │   │   ├── PatientEventPublisherAdapter.java
-    │   │   │   │   └── payload/            #     event records (XxxEvent)
+    │   │   │   │   └── payload/            #     optional adapter-only wire payloads
     │   │   │   ├── client/                 #   driven (REST to other services) — Feign + fallback
     │   │   │   ├── security/               #   JwtAuthFilter, JwtProperties
     │   │   │   └── config/                 #   SecurityConfig, RabbitConfig, OpenApiConfig
@@ -159,6 +160,13 @@ Purity is a means, not the goal. These three are allowed; everything else follow
 1. **`@Service` / `@Transactional` on the application service.** Keeps Spring wiring and transaction boundaries simple. The class stays otherwise framework-agnostic.
 2. **MapStruct `componentModel = SPRING` on mappers.** The mapper *interface* is plain; only generated code touches Spring.
 3. **`jakarta.validation` annotations on request DTOs.** These are a spec, not a framework, and they keep validation declarative at the edge.
+
+Published event records referenced by application ports live in `application/event/`, as in billing,
+pharmacy, clinical and lab. They may depend on domain value types, never on infrastructure.
+Adapter-only wire payloads remain in `infrastructure/messaging/payload/` (or
+`messaging/consumer/payload/` for inbound messages) and are converted at the adapter boundary.
+Jackson format annotations on DTO/event record components are allowed for explicit wire formats
+such as `HH:mm`; they do not belong in domain models.
 
 ## Definition of Done for a new service
 

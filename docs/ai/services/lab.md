@@ -21,7 +21,7 @@ Owns: lab tests (`LAB_TEST`) & results (`LAB_RESULT`). Does NOT own: patients, r
 | PUT | `/api/v1/lab/{id}/status` | ADMIN, LAB_TECH |
 
 ## Events
-- **Publish:** `lab.request.created` `{labId, patientId, recordId, departmentId, labType, requestedDate}`; `lab.result.created` `{labId, patientId, recordId, departmentId, results, conclusion}`.
+- **Publish:** `lab.request.created` `{labId, patientId, recordId, departmentId, labType, requestedDate}`; `lab.result.created` `{labId, patientId, recordId, departmentId, labType, performedDate, results, conclusion}`.
 - **Subscribe:** `medicalrecord.created` → auto-create sample lab test if indicated; `payment.completed` → update payment status for the test.
 
 ## Business rules

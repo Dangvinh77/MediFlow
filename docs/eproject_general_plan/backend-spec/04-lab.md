@@ -118,6 +118,7 @@ public interface ManageLabTestUseCase {
     List<LabTestDTO> byPatient(UUID patientId);
     LabTestDTO addResults(UUID id, AddResultRequest r);
     LabTestDTO changeStatus(UUID id, LabTestStatus status);
+    PageResult<LabTestDTO> search(UUID departmentId, LabTestStatus status, PageQuery page);
 }
 public interface ReactToClinicalUseCase {
     void autoCreateFromRecord(UUID recordId, UUID patientId, UUID departmentId, String labType);
@@ -170,9 +171,13 @@ public record LabResultDTO(UUID resultId, String indicator, String value, String
 | Routing key | Payload |
 |-------------|---------|
 | `lab.request.created` | `{envelope, labId, patientId, recordId, departmentId, labType, requestedDate}` |
-| `lab.result.created` | `{envelope, labId, patientId, recordId, departmentId, results, conclusion}` |
+| `lab.result.created` | `{envelope, labId, patientId, recordId, departmentId, labType, performedDate, results, conclusion}` |
 
 `lab.result.created` bắn từ `addResults`, sau khi commit. Trường `departmentId` lấy từ `requestingDepartmentId`.
+
+`labId` lấy từ `testId`; `labType` dùng tra giá bên billing và template notification,
+`performedDate` dùng làm ngày thống kê bên report. Xem [contract handoff](clinical-lab-contract-handoff.md)
+cho các điều kiện còn thiếu ở producer thanh toán và consumer.
 
 **Subscribe** — queue `lab.q`
 

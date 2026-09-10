@@ -68,4 +68,11 @@ class PaymentCompletedConsumerTest {
                 "CASH"
         ));
     }
+    @Test
+    void consume_ordinaryInvoice_doesNotStartDispensing() {
+        consumer.consume(new PaymentCompletedEvent(UUID.randomUUID(), Instant.now(), "corr",
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, BigDecimal.TEN, "CASH"));
+        org.mockito.Mockito.verifyNoInteractions(reactToPaymentUseCase);
+    }
+
 }

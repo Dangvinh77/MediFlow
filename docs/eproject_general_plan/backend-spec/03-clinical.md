@@ -129,15 +129,17 @@ public interface AppointmentRepositoryPort {
     List<Appointment> findByPatient(UUID patientId);
     PageResult<Appointment> search(UUID departmentId, LocalDate appointmentDate, PageQuery page);
     boolean existsPendingSameDay(UUID patientId, LocalDate appointmentDate);   // BR-A2
+    boolean existsPendingSameDayExcludingId(UUID patientId, LocalDate appointmentDate, UUID excludedId);
 }
 
 public interface MedicalRecordRepositoryPort {
     MedicalRecord save(MedicalRecord mr);
     Optional<MedicalRecord> findById(UUID id);
     List<MedicalRecord> findByPatient(UUID patientId);
+    Optional<MedicalRecord> findByAppointmentId(UUID appointmentId); // BR-R2
 }
 
-/** Đọc có chịu lỗi. Bản hiện thực trả rỗng/false khi fallback — không bao giờ ném lỗi Feign thô. */
+/** Chỉ trả rỗng/false khi xác nhận không tồn tại/không đủ điều kiện; lỗi hạ tầng ném UpstreamUnavailableException, không ném lỗi Feign thô. */
 public interface PatientLookupPort  { boolean exists(UUID patientId); }
 public interface StaffLookupPort    { Optional<UUID> departmentOf(UUID staffId); }
 
@@ -259,11 +261,16 @@ Hai controller trong `infrastructure/web/`: `AppointmentController`, `MedicalRec
 | Routing key | Payload |
 |-------------|---------|
 | `appointment.created` | `{envelope, appointmentId, patientId, doctorId, departmentId, appointmentDate, appointmentTime}` |
-| `appointment.status.changed` | `{envelope, appointmentId, status, patientId, departmentId}` |
+| `appointment.status.changed` | `{envelope, appointmentId, recordId, status, patientId, departmentId}` |
 | `medicalrecord.created` | `{envelope, recordId, patientId, doctorId, departmentId, diagnosis, examinationDate}` |
 | `diagnosis.added` | `{envelope, recordId, diagnosisCode, diagnosisName}` |
 
 **Subscribe** — queue `clinical.q`, DLX `mediflow.events.dlx`, DLQ `clinical.dlq`
+
+`recordId` của `appointment.status.changed` nullable: có giá trị khi tạo hồ sơ đồng thời đặt
+`ARRIVED`, chưa có khi chỉ đổi trạng thái lịch hẹn. Billing phải chờ `medicalrecord.created`
+nếu chưa có mã hồ sơ; không dùng `appointmentId` thay `recordId`. Hai event phải cùng tham chiếu
+hồ sơ để tránh thu phí khám hai lần. Xem [contract handoff](clinical-lab-contract-handoff.md).
 
 | Routing key | Xử lý |
 |-------------|-------|
@@ -296,5 +303,5 @@ Hai controller trong `infrastructure/web/`: `AppointmentController`, `MedicalRec
 
 - `MEDICAL_RECORD.appointment_id` là **khóa ngoại thật** — cả hai bảng nằm ở đây. Đừng mô hình hóa nó thành UUID trần.
 - `DIAGNOSIS` là con trong aggregate `MedicalRecord`: phía JPA dùng `@OneToMany(cascade = ALL, orphanRemoval = true)`, còn domain trả về danh sách không cho sửa.
-- Cả hai Feign client đều cần một `@Component` fallback trả `false` / `Optional.empty()`. Ánh xạ trường hợp đó thành `UPSTREAM_UNAVAILABLE` (503) trong service — **tuyệt đối không** coi "service chết" là "bệnh nhân không tồn tại".
+- Cả hai Feign client đều cần fallback chuyển timeout/circuit-open/5xx thành `UpstreamUnavailableException` (`UPSTREAM_UNAVAILABLE`, HTTP 503). Chỉ một phản hồi xác nhận không tồn tại mới trả `false` / `Optional.empty()`; **tuyệt đối không** coi "service chết" là "bệnh nhân không tồn tại".
 - `LocalTime` khi ra JSON cần `@JsonFormat(pattern = "HH:mm")` trên trường DTO, nếu không Jackson sẽ xuất ra một mảng.

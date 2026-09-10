@@ -13,8 +13,6 @@ public class PrescriptionCancellationForbiddenException extends ForbiddenOperati
     /** Mã lỗi ổn định trả cho client. */
     public static final String CODE = "PRESCRIPTION_CANCELLATION_FORBIDDEN";
 
-    
-
     /**
      * Tạo lỗi từ chối hủy đơn.
      *
