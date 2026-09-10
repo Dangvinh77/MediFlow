@@ -62,6 +62,11 @@ Swagger UI: http://localhost:8082/swagger-ui.html
 
 ## Cross-service reads (resilient)
 
+Clinical resolves patient existence through `patient-service` and doctor department membership
+through `organization-service` using short-timeout Feign clients. Confirmed 404 responses become
+domain lookup misses; transport failures, circuit-open responses and invalid envelopes become
+`UPSTREAM_UNAVAILABLE` (503). The caller's bearer token is forwarded to these internal reads.
+
 - `patient-service` — does this patient exist?
 - `organization-service` — does this doctor exist, and which department are they in?
 
