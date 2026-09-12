@@ -1,5 +1,5 @@
-// Types mirroring the backend contracts. Keep field names in Vietnamese camelCase
-// to match the services (see docs/ai/05-api-conventions.md).
+// Shared envelope types plus the legacy Patient demo contract. Feature DTOs live
+// under features/<context> and preserve each service's exact wire field names.
 
 /** Standard response envelope returned by every MediFlow service. */
 export interface ApiResponse<T> {
@@ -17,13 +17,16 @@ export interface ApiError {
 }
 
 /** Spring Data page shape (as serialized into ApiResponse.data). */
-export interface Page<T> {
+export interface PageResult<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
   number: number;
   size: number;
 }
+
+/** Compatibility alias for the existing Patient demo. */
+export type Page<T> = PageResult<T>;
 
 export type GioiTinh = "M" | "F";
 

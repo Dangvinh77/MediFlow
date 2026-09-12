@@ -4,6 +4,7 @@ Read [`docs/ai/14-flutter.md`](../docs/ai/14-flutter.md) before editing mobile c
 
 - Follow Clean Architecture: `presentation → domain ← data`; domain remains pure Dart.
 - Send all HTTP through the gateway using `core/network/api_client.dart`.
-- Mirror backend JSON with Vietnamese camelCase DTO fields.
+- Mirror each backend JSON contract exactly. Patient currently uses Vietnamese camelCase;
+  Clinical and Lab use English camelCase.
 - Use Riverpod for state and SecureStorage for JWTs.
 - Do not apply Java/JPA/Flyway rules or the Next.js frontend structure inside `mobile/`.
