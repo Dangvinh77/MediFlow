@@ -34,6 +34,28 @@ node scripts/changelog.js --files     # chi tiết từng file + tác giả + s�
 
 Authoritative business design: `docs/eproject_general_plan/*.html`. Coding standards: `docs/ai/`.
 
+## Developer ownership
+
+| Developer | Owned backend modules |
+|---|---|
+| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service` |
+| Huy (`LQHuy0210`) | `pharmacy-service`, `report-service` |
+| Hoàng Anh (`TranHoangAnh94`) | `organization-service`, `patient-service`, `gateway` |
+| Lộc (`locgit-89`) | `billing-service`, `notification-service` |
+
+- Production changes are limited to the active developer's owned modules unless the user explicitly
+  grants a task-scoped override naming another module or shared path.
+- Other services may be inspected read-only to verify API and event contracts. If a required
+  producer contract is missing, write a `HANDOFF` document under `docs/`; do not edit its service,
+  infer identifiers, query its database, or add temporary cross-service coupling.
+- `backend/common`, `backend/eureka-server`, root build files, `.github`, and repository scripts are
+  shared. Change them only when the task explicitly assigns that shared work.
+- Vinh may coordinate, review, and merge across the repository; this does not silently expand
+  Harori's production write scope beyond Clinical and Lab.
+- Subagents inherit the same ownership boundary. Delegation cannot bypass it.
+
+Each owned backend module has a nested `AGENTS.md` that identifies its owner and local verification.
+
 ## Read before you write code
 
 **Backend (Java — `*-service/`, `gateway/`, `common/`):**
