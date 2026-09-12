@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getRole, isAuthenticated, logout } from "@/lib/auth";
+import { useEffect } from "react";
+import { isAuthenticated, logout } from "@/lib/auth";
 
 const navigation = [
   { href: "/appointments", label: "Lịch hẹn" },
@@ -13,25 +13,16 @@ const navigation = [
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace("/login");
-      return;
     }
-    setRole(getRole());
-    setAuthorized(true);
   }, [router]);
 
   function onLogout() {
     logout();
     router.replace("/login");
-  }
-
-  if (!authorized) {
-    return <main className="mx-auto max-w-6xl px-6 py-10 text-zinc-500">Đang kiểm tra đăng nhập…</main>;
   }
 
   return (
@@ -47,7 +38,6 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
             ))}
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            {role && <span className="text-zinc-500">{role}</span>}
             <button
               type="button"
               onClick={onLogout}
