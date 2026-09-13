@@ -1,4 +1,6 @@
 package com.mediflow.organization.domain.model;
+
+
 /**
  * Loại của khoa/phòng trong bệnh viện.
  *
