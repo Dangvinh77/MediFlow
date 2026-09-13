@@ -127,7 +127,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 **File chính:** `web/PrescriptionController.java`, `infrastructure/security/JwtAuthFilter.java`, các command tạo/hủy, `PharmacyApplicationService`, `CancelPrescriptionService`, mapper/DTO và test tương ứng.
 
 - [x] P1.1 Đưa identity đã xác thực vào command dưới dạng giá trị rõ account/staff/roles; controller không tự tin `doctorId` client, application vẫn kiểm tra ownership. Đã có test actor bác sĩ lệch doctorId bị từ chối và Admin override dùng doctor đích.
-- [ ] P1.2 Doctor chỉ kê/hủy đơn của staff tương ứng; Admin override có audit account thực hiện và doctor đích; xác nhận tính hợp lệ doctor/khoa theo contract, không đọc DB service khác.
+- [x] P1.2 Doctor chỉ kê/hủy đơn của staff tương ứng; Admin override có audit account thực hiện và doctor đích; xác nhận tính hợp lệ doctor/khoa theo contract, không đọc DB service khác. Đã bổ sung unit test ownership khi hủy, ADMIN override và audit release actor/reason.
 - [x] P1.3 Giữ check drug trùng trước mutation; test create lưu đơn + lines + reservations + pending slip atomically, thiếu available thì không lưu phần nào.
 - [x] P1.4 Truyền correlation vào `publishCreated`, phản hồi HTTP, log và luồng hủy; nếu vắng thì chuẩn hóa/generate theo convention, không dùng chuỗi rỗng để lách validation. Command tự sinh UUID khi header trống và test boundary đã bổ sung.
 - [x] P1.5 Chốt hợp đồng DTO: bản hiện tại đã có `status` = PrescriptionStatus và `dispenseStatus` riêng. Kiểm tra consumer cũ; không đổi nghĩa field silently. Sửa Javadoc còn mô tả trạng thái đơn là PENDING.
@@ -169,12 +169,12 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 **File:** tách trách nhiệm khỏi `PharmacyApplicationService`; đề xuất `DispensePrescriptionService`, `DispenseTransactionService`, `RecordDispenseFailureService`, command mang prescription/payment/actor/correlation context; sửa repository ports/adapters, domain và test.
 
 - [x] P4.1 Khóa đơn + phiếu trước check, xác nhận ACTIVE/PENDING; đơn đã FULFILLED trả kết quả cũ; terminal khác trả kết quả/lỗi phù hợp, không gọi lại trừ kho. Unit tests đã bao phủ cấp thành công, reservation hết hạn và phiếu DISPENSED idempotent.
-- [ ] P4.2 Khóa drug/reservation theo mục 4.3; xác minh tập drug và quantity reservation khớp toàn bộ đơn, trạng thái RESERVED, TTL còn hiệu lực; kiểm tra hạn dùng thuốc theo ngày nghiệp vụ.
+- [x] P4.2 Khóa drug/reservation theo mục 4.3; xác minh tập drug và quantity reservation khớp toàn bộ đơn, trạng thái RESERVED, TTL còn hiệu lực; kiểm tra hạn dùng thuốc theo ngày nghiệp vụ. Đã chặn reservation thiếu/thừa, lệch quantity, hết TTL và thuốc hết hạn trước mutation; còn P6.3 theo dõi Clock cố định cho biên thời gian.
 - [ ] P4.3 Trừ toàn bộ thuốc, fulfill reservation, `prescription.markFulfilled(now)` và `slip.markDispensed(...)`, lưu tất cả và outbox filled trong cùng transaction.
 - [ ] P4.4 Orchestrator đợi rollback hoàn toàn rồi ghi thất bại ở bean khác; cập nhật đơn/slip/reservations và outbox compensation atomically. Không giữ self-proxy, không có transaction lớn bao ngoài cả hai bước.
 - [ ] P4.5 Phân loại lỗi: lỗi nghiệp vụ đã xác định → kết quả thất bại bền; DB timeout/deadlock/network → rollback và retry; dữ liệu hỏng → cảnh báo/quarantine theo chính sách được duyệt. Không catch mọi RuntimeException rồi tự động hoàn tiền.
 - [ ] P4.6 Failure context có patientId từ đơn, invoiceId từ receipt/event đáng tin, correlation, reasonCode và reason an toàn/giới hạn chiều dài; failedItems điền khi xác định được thuốc lỗi, không bịa thuốc hoặc invoice.
-- [ ] P4.7 Khi transaction failure chạy, kiểm tra lại trạng thái để không ghi đè kết quả thắng cuộc. Nếu ghi failure không commit được thì không ACK payment.
+- [x] P4.7 Khi transaction failure chạy, kiểm tra lại trạng thái để không ghi đè kết quả thắng cuộc. Nếu ghi failure không commit được thì không ACK payment. Đã có test transaction bù trừ bỏ qua đơn FULFILLED/phiếu DISPENSED.
 
 **Gate/test:** nhiều dòng lỗi ở dòng cuối rollback mọi stock/reservation; sau đó thất bại vẫn bền trong DB, giải phóng giữ tồn và có đúng logical failure event; thành công cập nhật đủ ba lifecycle; test hai luồng và không deadlock giữa transaction ngoài/trong. Chưa expose endpoint thủ công trước P5/P8.
 

@@ -540,6 +540,21 @@ private void validateNoDuplicateDrugIds(
                     .sorted()
                     .toList();
 
+            // Kiểm tra toàn bộ tập reservation trước khi mutate: không được bỏ sót dòng hoặc
+            // âm thầm bỏ qua reservation thừa của cùng đơn (BR-D10).
+            List<StockReservation> reservationSnapshot = reservationRepo.findByPrescription(prescriptionId);
+            Set<UUID> expectedDrugIds = Set.copyOf(sortedDrugIds);
+            Set<UUID> actualDrugIds = reservationSnapshot.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(StockReservation::getDrugId)
+                    .collect(Collectors.toSet());
+            if (reservationSnapshot.size() != expectedDrugIds.size()
+                    || !actualDrugIds.equals(expectedDrugIds)) {
+                throw new StockReservationRuleException(
+                        "RESERVATION_SET_MISMATCH",
+                        "Tập giữ chỗ không khớp toàn bộ dòng thuốc của đơn " + prescriptionId);
+            }
+
             // Khóa ghi + trừ kho + xác nhận giữ chỗ, trong một lần duy nhất cho mỗi thuốc (tránh đọc 2 lần).
             Map<UUID, Drug> locked = new LinkedHashMap<>();
             for (UUID drugId : sortedDrugIds) {
@@ -565,6 +580,11 @@ private void validateNoDuplicateDrugIds(
                 if (reservation.isExpiredAt(Instant.now())) {
                     throw new StockReservationRuleException(
                             "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + drugId + " đã hết hạn");
+                }
+                if (reservation.getQuantity() != qty) {
+                    throw new StockReservationRuleException(
+                            "RESERVATION_QUANTITY_MISMATCH",
+                            "Số lượng giữ chỗ của thuốc id=" + drugId + " không khớp với đơn thuốc");
                 }
                 drug.dispenseStock(qty); // trừ kho thật (BR-D4); BR-D2 vẫn được kiểm tra lúc xuất
                 reservation.markFulfilled(); // RESERVED → FULFILLED — giữ chỗ đã hoàn thành
