@@ -1,0 +1,13 @@
+{
+  "name": "@mediflow/loader",
+  "version": "0.1.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
+  }
+}
