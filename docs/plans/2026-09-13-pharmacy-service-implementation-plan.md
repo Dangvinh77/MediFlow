@@ -219,7 +219,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [ ] P7.1 Sau khóa drug, tính reserved và không cho `newOnHand < reserved` theo D7; vẫn chặn zero/âm tồn, overflow số lượng. Không âm thầm thay quantity đã kê.
 - [ ] P7.2 Lưu audit delta, before/after, reason, actor và timestamp trong cùng transaction; chốt reason bắt buộc cho giảm kho với người dùng API trước khi đổi validation.
 - [ ] P7.3 Phát event thay đổi kho theo tên/schema đã review; stock.low theo ngưỡng nhất quán. Không tự thêm routing key mà downstream được kỳ vọng phải hiểu ngay.
-- [ ] P7.4 Tăng test create/update domain có sẵn: giá âm, quantity/threshold âm, hạn dùng, rounding; không mở API update/delete thuốc chỉ vì domain đang có `updateInfo`.
+- [x] P7.4 Tăng test create/update domain có sẵn: giá âm, quantity/threshold âm, hạn dùng, rounding; không mở API update/delete thuốc chỉ vì domain đang có `updateInfo`. Đồng thời bổ sung invariant ngưỡng âm cho `Drug.updateInfo`.
 
 **Gate/test:** đang có reserved thì điều chỉnh không làm thiếu phần đã giữ; create reservation vs adjust chạy đồng thời vẫn đúng; audit/event rollback cùng tồn; chỉ ADMIN/PHARMACIST được điều chỉnh.
 

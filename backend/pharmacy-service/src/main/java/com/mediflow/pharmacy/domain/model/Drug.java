@@ -89,6 +89,8 @@ public class Drug {
             throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá thuốc không được âm");
         if (expiryDate == null || expiryDate.isBefore(LocalDate.now()))
             throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
+        if (lowStockThreshold < 0)
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Ngưỡng cảnh báo tồn kho không được âm");
         this.drugName = drugName;
         this.activeIngredient = activeIngredient;
         this.unit = unit;
