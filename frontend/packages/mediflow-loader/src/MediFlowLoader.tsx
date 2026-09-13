@@ -17,7 +17,6 @@ export interface MediFlowLoaderProps {
 
 const TRIANGLE_PATH = "M 15 18 L 85 18 L 50 78.62 Z";
 const INNER_TRIANGLE_PATH = "M 19 22 L 81 22 L 50 75.69 Z";
-const BASE_DURATION_SECONDS = 1.45;
 
 const INTRO_FROM_SCALE = 5;
 const INTRO_FROM_X = INTRO_FROM_SCALE * 30;
@@ -65,7 +64,6 @@ export function MediFlowLoader({
     Number.isFinite(exitDuration) && exitDuration > 0
       ? exitDuration
       : EXIT_DURATION_SECONDS;
-  const duration = `${BASE_DURATION_SECONDS / safeSpeed}s`;
   const statusLabel = label ?? "Loading";
   const instanceId = useId();
   const monogramClipId = `${instanceId}-monogram-clip`;
@@ -78,18 +76,20 @@ export function MediFlowLoader({
   const exit = safeExit;
 
   const introTotal = slide + 2 * stg;
-  // Một bộ: intro + hold + exit (exit cùng thứ tự với intro)
   const T = introTotal + hold + 2 * stg + exit;
   const totalDur = `${T}s`;
 
-  // Bộ B bắt đầu muộn hơn bộ A nửa chu kỳ
   const halfPeriod = T / 2;
   const beginA = "0s";
   const beginB = `${halfPeriod}s`;
 
+  // === TRACER ===
+  // Giữ nguyên công thức gốc (from/to), chỉ đổi duration cho khớp nhịp T/2
+  // speed vẫn điều chỉnh tốc độ tracer
+  const duration = `${halfPeriod / safeSpeed}s`;
+
   const kt = (t: number) => (t / T).toFixed(4);
 
-  // pieceIndex: 0=chóp, 1=M, 2=F
   const buildSlide = (pieceIndex: number) => {
     const offsetY = PIECE_OFFSET_Y[pieceIndex];
     const introStart = pieceIndex * stg;
@@ -189,7 +189,6 @@ export function MediFlowLoader({
     </g>
   );
 
-  // Render 1 bộ 3 miếng với begin offset
   const renderLogoSet = (begin: string, setKey: string) => (
     <g key={setKey} transform="translate(15 18)">
       {LOGO_PIECES.map((d, i) =>
@@ -264,6 +263,7 @@ export function MediFlowLoader({
           strokeWidth="1.35"
         />
 
+        {/* TRACER — giữ nguyên công thức gốc, chỉ đổi duration */}
         {glow ? (
           <path
             d={TRIANGLE_PATH}
@@ -317,7 +317,7 @@ export function MediFlowLoader({
           <animateMotion dur={duration} path={TRIANGLE_PATH} repeatCount="indefinite" />
         </circle>
 
-        {/* 2 bộ logo lệch pha nhau nửa chu kỳ → không có khoảng trống */}
+        {/* 2 bộ logo lệch pha nhau nửa chu kỳ */}
         <g clipPath={`url(#${monogramClipId})`}>
           {renderLogoSet(beginA, "set-a")}
           {renderLogoSet(beginB, "set-b")}
