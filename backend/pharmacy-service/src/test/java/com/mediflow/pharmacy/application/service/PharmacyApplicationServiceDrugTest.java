@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.application.service;
 
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
+import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.dto.response.DrugDTO;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,6 +40,7 @@ class PharmacyApplicationServiceDrugTest {
     private final DrugRepositoryPort drugRepo = mock(DrugRepositoryPort.class);
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final DrugDtoMapper drugDtoMapper = mock(DrugDtoMapper.class);
+    private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
 
     private final PharmacyApplicationService service = new PharmacyApplicationService(
             drugRepo,
@@ -45,7 +48,7 @@ class PharmacyApplicationServiceDrugTest {
             mock(DispenseSlipRepositoryPort.class),
             mock(ProcessedEventPort.class),
             reservationRepo,
-            mock(PharmacyEventPublisherPort.class),
+            eventPublisher,
             drugDtoMapper,
             mock(PrescriptionDtoMapper.class),
             mock(DispenseDtoMapper.class),
@@ -82,6 +85,28 @@ class PharmacyApplicationServiceDrugTest {
         verify(drugRepo).findByIdForUpdate(drugId);
         verify(drugRepo, never()).findById(drugId);
         verify(drugRepo).save(drug);
+    }
+
+    /** Mọi điều chỉnh hợp lệ phải phát event audit với before/after/delta và lý do chuẩn hóa. */
+    @Test
+    void adjustStock_publishesAuditEvent() {
+        UUID drugId = UUID.randomUUID();
+        Drug drug = Drug.restore(drugId, "Paracetamol", "Paracetamol", "viên",
+                new BigDecimal("1200.00"), 10, LocalDate.now().plusYears(1),
+                "MediFlow", 2, Instant.now(), Instant.now());
+        when(drugRepo.findByIdForUpdate(drugId)).thenReturn(Optional.of(drug));
+        when(reservationRepo.findReservedByDrug(drugId)).thenReturn(List.of());
+        when(drugRepo.save(drug)).thenReturn(drug);
+        when(drugDtoMapper.toDto(drug)).thenReturn(mock(DrugDTO.class));
+
+        service.adjustStock(drugId, new AdjustStockRequest(-3, "  Kiểm kê cuối ca  "));
+
+        var captor = forClass(StockAdjustedEvent.class);
+        verify(eventPublisher).publishStockAdjusted(captor.capture());
+        assertThat(captor.getValue().beforeStock()).isEqualTo(10);
+        assertThat(captor.getValue().afterStock()).isEqualTo(7);
+        assertThat(captor.getValue().delta()).isEqualTo(-3);
+        assertThat(captor.getValue().reason()).isEqualTo("Kiểm kê cuối ca");
     }
 
     /** Không được điều chỉnh tồn xuống thấp hơn tổng lượng reservation đang giữ. */

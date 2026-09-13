@@ -6,7 +6,12 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -124,5 +129,36 @@ public class RabbitConfig {
     @Bean
     public Jackson2JsonMessageConverter rabbitJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
+    }
+
+    /**
+     * Listener retry hữu hạn với backoff; sau lần cuối message bị reject để đi vào DLQ.
+     *
+     * @param connectionFactory connection factory do Spring Boot quản lý
+     * @param converter converter JSON dùng cho payload cross-service
+     * @param maxAttempts tổng số lần thử, tối thiểu 1
+     * @param initialIntervalMs backoff lần đầu theo mili-giây
+     * @param maxIntervalMs backoff tối đa theo mili-giây
+     * @return factory listener có retry policy bounded
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter converter,
+            @Value("${mediflow.pharmacy.rabbit.retry.max-attempts:3}") int maxAttempts,
+            @Value("${mediflow.pharmacy.rabbit.retry.initial-interval-ms:1000}") long initialIntervalMs,
+            @Value("${mediflow.pharmacy.rabbit.retry.max-interval-ms:10000}") long maxIntervalMs) {
+        if (maxAttempts < 1 || initialIntervalMs <= 0 || maxIntervalMs < initialIntervalMs) {
+            throw new IllegalArgumentException("Rabbit retry configuration is invalid");
+        }
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(converter);
+        factory.setAdviceChain(RetryInterceptorBuilder.stateless()
+                .maxAttempts(maxAttempts)
+                .backOffOptions(initialIntervalMs, 2.0, maxIntervalMs)
+                .recoverer(new RejectAndDontRequeueRecoverer())
+                .build());
+        return factory;
     }
 }

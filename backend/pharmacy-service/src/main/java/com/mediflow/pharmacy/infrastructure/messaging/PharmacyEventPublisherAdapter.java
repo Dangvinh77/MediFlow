@@ -6,6 +6,7 @@ import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionExpiredEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
+import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -43,6 +44,9 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
 
     private static final String STOCK_LOW =
             "stock.low";
+
+    private static final String STOCK_ADJUSTED =
+            "stock.adjusted";
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -84,6 +88,12 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     @Override
     public void publishStockLow(StockLowEvent event) {
         publishAfterCommit(STOCK_LOW, event);
+    }
+
+    /** Gửi audit stock adjustment sau commit. */
+    @Override
+    public void publishStockAdjusted(StockAdjustedEvent event) {
+        publishAfterCommit(STOCK_ADJUSTED, event);
     }
 
     /**

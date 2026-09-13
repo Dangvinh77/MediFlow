@@ -47,6 +47,11 @@ mediflow:
     reservation:
       batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}
       ttl: ${MEDIFLOW_PHARMACY_RESERVATION_TTL:PT24H}
+    rabbit:
+      retry:
+        max-attempts: ${MEDIFLOW_PHARMACY_RABBIT_RETRY_MAX_ATTEMPTS:3}
+        initial-interval-ms: ${MEDIFLOW_PHARMACY_RABBIT_RETRY_INITIAL_INTERVAL_MS:1000}
+        max-interval-ms: ${MEDIFLOW_PHARMACY_RABBIT_RETRY_MAX_INTERVAL_MS:10000}
 
 management:
   endpoints:

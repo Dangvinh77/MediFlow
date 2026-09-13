@@ -6,6 +6,7 @@ import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionExpiredEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
+import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 
 /**
  * Out-port — "tôi cần ai đó biết cách báo tin cho các service khác".
@@ -36,4 +37,7 @@ public interface PharmacyEventPublisherPort {
      * Kiểu "bắn-rồi-quên": lỗi khi gửi tin này không được làm hỏng một lần xuất đã thành công.
      */
     void publishStockLow(StockLowEvent event);
+
+    /** Publish {@code stock.adjusted} để audit thay đổi tồn thủ công. */
+    void publishStockAdjusted(StockAdjustedEvent event);
 }

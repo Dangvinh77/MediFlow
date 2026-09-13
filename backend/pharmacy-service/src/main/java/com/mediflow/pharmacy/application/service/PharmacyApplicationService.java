@@ -16,6 +16,7 @@ import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
+import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
 import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
@@ -43,6 +44,7 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -189,8 +191,22 @@ public class PharmacyApplicationService implements
                     "STOCK_BELOW_RESERVED",
                     "Không thể giảm tồn kho thấp hơn lượng đang giữ: " + reservedStock);
         }
+        int beforeStock = drug.getStockQuantity();
         drug.adjustStock(rq.quantity());
-        return drugDtoMapper.toDto(drugRepo.save(drug));
+        Drug saved = drugRepo.save(drug);
+        eventPublisher.publishStockAdjusted(new StockAdjustedEvent(
+                UUID.randomUUID(), Instant.now(clock), null, id, beforeStock,
+                saved.getStockQuantity(), rq.quantity(), normalizeAdjustmentReason(rq.reason())));
+        return drugDtoMapper.toDto(saved);
+    }
+
+    /** Chuẩn hóa lý do tồn kho để event audit không ghi chuỗi rỗng hoặc payload quá dài. */
+    private String normalizeAdjustmentReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "UNSPECIFIED";
+        }
+        String normalized = reason.trim();
+        return normalized.length() > 255 ? normalized.substring(0, 255) : normalized;
     }
 
     // ============================================================
@@ -503,12 +519,25 @@ private void validateNoDuplicateDrugIds(
      */
     @Override
     public DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        return dispense(prescriptionId, dispensedBy, null, correlationId);
+    }
+
+    /**
+     * Điều phối cấp thuốc với invoice context để failure event có thể bù trừ đúng hóa đơn.
+     *
+     * @param prescriptionId mã đơn cần cấp
+     * @param dispensedBy tác nhân thực hiện
+     * @param invoiceId hóa đơn thanh toán liên quan, có thể null khi cấp thủ công
+     * @param correlationId mã tương quan
+     * @return phiếu xuất sau khi cấp thành công
+     */
+    public DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy, UUID invoiceId, String correlationId) {
         // Transaction cấp thuốc được gọi qua proxy để transaction bù trừ chỉ bắt đầu
         // sau khi transaction chính đã rollback và nhả toàn bộ row lock.
         try {
             return self.dispenseInTransaction(prescriptionId, dispensedBy, correlationId);
         } catch (RuntimeException ex) {
-            self.markDispenseFailed(prescriptionId, dispensedBy, correlationId, ex.getMessage());
+            self.markDispenseFailed(prescriptionId, dispensedBy, invoiceId, correlationId, ex.getMessage());
             throw ex;
         }
     }
@@ -641,7 +670,7 @@ private void validateNoDuplicateDrugIds(
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markDispenseFailed(UUID prescriptionId, UUID dispensedBy, String reason) {
-        markDispenseFailed(prescriptionId, dispensedBy, null, reason);
+        markDispenseFailed(prescriptionId, dispensedBy, null, null, reason);
     }
 
     /**
@@ -654,6 +683,21 @@ private void validateNoDuplicateDrugIds(
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markDispenseFailed(UUID prescriptionId, UUID dispensedBy, String correlationId, String reason) {
+        markDispenseFailed(prescriptionId, dispensedBy, null, correlationId, reason);
+    }
+
+    /**
+     * Ghi failure event với invoiceId đáng tin từ payment context.
+     *
+     * @param prescriptionId mã đơn
+     * @param dispensedBy tác nhân
+     * @param invoiceId hóa đơn cần bù trừ
+     * @param correlationId mã tương quan
+     * @param reason lý do nội bộ
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markDispenseFailed(UUID prescriptionId, UUID dispensedBy, UUID invoiceId,
+                                   String correlationId, String reason) {
         Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId).orElse(null);
         if (prescription == null) {
             return;
@@ -679,7 +723,7 @@ private void validateNoDuplicateDrugIds(
         // không gắn với thuốc cụ thể (vd lỗi hạ tầng); khi mất giữ chỗ thì liệt kê từng thuốc.
         eventPublisher.publishPrescriptionDispenseFailed(new PrescriptionDispenseFailedEvent(
                 UUID.randomUUID(), failedAt, correlationId,
-                prescriptionId, null /* invoiceId — bổ sung từ payment context */, prescription.getPatientId(), reason,
+                prescriptionId, invoiceId, prescription.getPatientId(), reason,
                 List.of()));
     }
 
@@ -714,15 +758,50 @@ private void validateNoDuplicateDrugIds(
     @Override
     @Transactional
     public void onPaymentCompleted(PaymentCompletedCommand command) {
+        validatePaymentContext(command);
         // 1: claim atomically bằng unique eventId; hai consumer đồng thời chỉ một bên được chạy.
         if (!processedEventPort.claimIfAbsent(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY)) {
             return;
         }
 
         // 2: gọi lại dispense với người thực hiện là hệ thống.
-        dispense(command.prescriptionId(), SYSTEM_USER, command.correlationId());
+        try {
+            dispense(command.prescriptionId(), SYSTEM_USER, command.invoiceId(), command.correlationId());
+        } catch (RuntimeException exception) {
+            Prescription current = prescriptionRepo.findById(command.prescriptionId()).orElse(null);
+            if (current != null && current.getStatus() != PrescriptionStatus.ACTIVE) {
+                publishLatePaymentCompensation(command, current);
+                return;
+            }
+            throw exception;
+        }
 
         // 3: claim nằm trong cùng transaction với dispense; rollback sẽ nhả claim để broker retry.
+    }
+
+    /**
+     * Đối chiếu patient/department trong payment event với đơn thuốc trước khi claim.
+     * Không so tổng tiền vì invoice Billing có thể chứa phí khác ngoài thuốc.
+     *
+     * @param command payment command đã qua validation cấu trúc
+     */
+    private void validatePaymentContext(PaymentCompletedCommand command) {
+        Prescription prescription = prescriptionRepo.findById(command.prescriptionId())
+                .orElseThrow(() -> new PrescriptionNotFoundException(
+                        "Không tìm thấy đơn thuốc id=" + command.prescriptionId()));
+        if (!command.patientId().equals(prescription.getPatientId())
+                || !command.departmentId().equals(prescription.getDepartmentId())) {
+            throw new PrescriptionRuleException(
+                    "PAYMENT_CONTEXT_MISMATCH",
+                    "Payment event không khớp bệnh nhân hoặc khoa của đơn thuốc");
+        }
+    }
+
+    /** Phát compensation một lần cho payment đến sau khi đơn đã ở trạng thái terminal. */
+    private void publishLatePaymentCompensation(PaymentCompletedCommand command, Prescription prescription) {
+        eventPublisher.publishPrescriptionDispenseFailed(new PrescriptionDispenseFailedEvent(
+                UUID.randomUUID(), Instant.now(clock), command.correlationId(), command.prescriptionId(),
+                command.invoiceId(), prescription.getPatientId(), "PAYMENT_AFTER_TERMINAL_STATE", List.of()));
     }
 
 }

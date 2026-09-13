@@ -3,6 +3,7 @@ package com.mediflow.pharmacy.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
 import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
+import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
@@ -243,6 +245,29 @@ class PharmacyApplicationServiceDispenseTest {
         assertThat(slip.getStatus()).isEqualTo(DispenseStatus.DISPENSED);
         verify(reservationRepo, org.mockito.Mockito.never()).findByPrescriptionForUpdate(any());
         verify(eventPublisher, org.mockito.Mockito.never()).publishPrescriptionDispenseFailed(any());
+    }
+
+    /** Failure event phải giữ invoiceId/correlation từ payment để billing bù trừ đúng hóa đơn. */
+    @Test
+    void markDispenseFailed_preservesInvoiceContext() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID invoiceId = UUID.randomUUID();
+        Prescription prescription = prescription(prescriptionId, UUID.randomUUID());
+        DispenseSlip slip = pendingSlip(prescriptionId);
+        when(prescriptionRepo.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
+        when(reservationRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(List.of());
+        when(prescriptionRepo.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dispenseSlipRepo.save(any(DispenseSlip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.markDispenseFailed(prescriptionId, UUID.randomUUID(), invoiceId,
+                "payment-correlation", "STOCK_UNAVAILABLE");
+
+        var captor = forClass(PrescriptionDispenseFailedEvent.class);
+        verify(eventPublisher).publishPrescriptionDispenseFailed(captor.capture());
+        assertThat(captor.getValue().invoiceId()).isEqualTo(invoiceId);
+        assertThat(captor.getValue().correlationId()).isEqualTo("payment-correlation");
+        assertThat(captor.getValue().reason()).isEqualTo("STOCK_UNAVAILABLE");
     }
 
     /** Gọi lại sau khi đã cấp phải trả phiếu hiện hữu và không đụng tới tồn kho. */

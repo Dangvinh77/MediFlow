@@ -25,6 +25,7 @@ import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PrescriptionCancellationForbiddenException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
@@ -111,6 +112,24 @@ class CancelPrescriptionServiceTest {
         assertThat(result.releasedReservations()).isZero();
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
         verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+    }
+
+    /** Đơn đã cấp thuốc không thể bị hủy ngược và không được chạm reservation. */
+    @Test
+    void cancel_fulfilledPrescription_rejectsWithoutMutation() {
+        UUID prescriptionId = UUID.randomUUID();
+        Prescription prescription = prescription(prescriptionId, UUID.randomUUID());
+        prescription.markFulfilled(Instant.now());
+        when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
+
+        assertThatThrownBy(() -> service.cancel(new CancelPrescriptionCommand(
+                prescriptionId, UUID.randomUUID(), true, "Late cancel", "late-correlation")))
+                .isInstanceOf(PrescriptionRuleException.class)
+                .hasMessageContaining("ACTIVE");
+
+        verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
+        verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+        verify(eventPublisher, never()).publishPrescriptionCancelled(any());
     }
 
     /** Dựng đơn ACTIVE một dòng với bác sĩ sở hữu xác định. */

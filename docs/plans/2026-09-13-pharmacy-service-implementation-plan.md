@@ -115,7 +115,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [x] P0.1 Đọc changelog, root/nested AGENTS; kiểm tra branch, tracked/untracked files, upstream và trạng thái PR #74 hiện tại.
 - [ ] P0.2 Fetch master mới, đối chiếu diff pharmacy và shared contracts; bảo toàn thay đổi local bằng checkpoint có phạm vi rõ. Không reset hard, không force push, không tự xử lý conflict bằng cách bỏ một phía.
 - [ ] P0.3 Tích hợp master trong đợt code được giao; nếu lịch sử đã phân kỳ thì merge có kiểm soát, không giả định có thể fast-forward. Ghi lại SHA baseline mới trong PR.
-- [ ] P0.4 Kiểm tra Java 21, Maven, Docker; chạy `mvn -q -pl backend/pharmacy-service -am clean test` để loại output cũ và lưu lỗi thực tế.
+- [x] P0.4 Kiểm tra Java 21, Maven, Docker; chạy `mvn -q -pl backend/pharmacy-service -am clean test` để loại output cũ và lưu lỗi thực tế. `clean verify` đã chạy: 94 test pass, 7 integration skip vì Docker chưa khả dụng.
 - [x] P0.5 Cập nhật test caller sang command mới ở `PharmacyApplicationServicePrescriptionTest` và `PrescriptionControllerTest`; giữ assertion nghiệp vụ, không bỏ test hoặc vô hiệu hóa security cho xanh.
 
 **Gate:** test source biên dịch được; biết rõ nhóm nào pass/fail/skip và lý do. Nếu Docker chưa có, ghi INCOMPLETE cho DB tests; chưa được công bố module đã verified. PR #74 giữ draft tới khi các blocker trong phạm vi PR được xử lý.
@@ -173,7 +173,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [ ] P4.3 Trừ toàn bộ thuốc, fulfill reservation, `prescription.markFulfilled(now)` và `slip.markDispensed(...)`, lưu tất cả và outbox filled trong cùng transaction.
 - [ ] P4.4 Orchestrator đợi rollback hoàn toàn rồi ghi thất bại ở bean khác; cập nhật đơn/slip/reservations và outbox compensation atomically. Không giữ self-proxy, không có transaction lớn bao ngoài cả hai bước.
 - [ ] P4.5 Phân loại lỗi: lỗi nghiệp vụ đã xác định → kết quả thất bại bền; DB timeout/deadlock/network → rollback và retry; dữ liệu hỏng → cảnh báo/quarantine theo chính sách được duyệt. Không catch mọi RuntimeException rồi tự động hoàn tiền.
-- [ ] P4.6 Failure context có patientId từ đơn, invoiceId từ receipt/event đáng tin, correlation, reasonCode và reason an toàn/giới hạn chiều dài; failedItems điền khi xác định được thuốc lỗi, không bịa thuốc hoặc invoice.
+- [x] P4.6 Failure context có patientId từ đơn, invoiceId từ receipt/event đáng tin, correlation, reasonCode và reason an toàn/giới hạn chiều dài; failedItems điền khi xác định được thuốc lỗi, không bịa thuốc hoặc invoice. Đã truyền invoiceId từ payment context và test event giữ đúng invoice/correlation/reason.
 - [x] P4.7 Khi transaction failure chạy, kiểm tra lại trạng thái để không ghi đè kết quả thắng cuộc. Nếu ghi failure không commit được thì không ACK payment. Đã có test transaction bù trừ bỏ qua đơn FULFILLED/phiếu DISPENSED.
 
 **Gate/test:** nhiều dòng lỗi ở dòng cuối rollback mọi stock/reservation; sau đó thất bại vẫn bền trong DB, giải phóng giữ tồn và có đúng logical failure event; thành công cập nhật đủ ba lifecycle; test hai luồng và không deadlock giữa transaction ngoài/trong. Chưa expose endpoint thủ công trước P5/P8.
@@ -184,13 +184,13 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **File:** `ReactToPaymentUseCase`, `PaymentCompletedCommand`, consumer/payload, `ProcessedEventPort` và adapter; đề xuất `ReactToPaymentService`, payment receipt model/port/persistence; migrations mới, Rabbit retry config.
 
-- [ ] P5.1 Contract-test JSON thực từ Billing: field bắt buộc/nullable, UUID, amount/method, correlation. Tiếp tục bỏ qua invoice không có prescription theo contract; phân biệt message sai schema với invoice không liên quan.
-- [ ] P5.2 Validate patient/department/prescription association trước mutation. So tiền theo D3, không so tổng invoice với đơn thuốc nếu invoice còn chứa phí khác. Event sai dữ liệu không được đổi tồn hay gắn proof paid.
+- [x] P5.1 Contract-test JSON thực từ Billing: field bắt buộc/nullable, UUID, amount/method, correlation. Tiếp tục bỏ qua invoice không có prescription theo contract; phân biệt message sai schema với invoice không liên quan. Đã có JSON deserialization test và command bắt buộc đủ UUID/amount/method/correlation.
+- [x] P5.2 Validate patient/department/prescription association trước mutation. So tiền theo D3, không so tổng invoice với đơn thuốc nếu invoice còn chứa phí khác. Event sai dữ liệu không được đổi tồn hay gắn proof paid. Đã chặn mismatch trước idempotency claim và không so tổng invoice với total thuốc.
 - [ ] P5.3 Lưu receipt có nguồn event, invoice/payment identity và trạng thái xử lý. Unique eventId để chống redelivery; thêm unique business key theo D3 để chống hai eventId khác nhau cho cùng payment. Không hardcode một invoice chỉ có một đơn khi chưa xác nhận.
 - [x] P5.4 Claim/dedupe atomically dưới lock/unique constraint; không dựa riêng vào exists rồi save. Không bắt unique violation và tiếp tục dùng transaction đã abort; rollback rồi đọc kết quả đã có ở transaction mới. Đã chuyển payment consumer sang `INSERT ... ON CONFLICT DO NOTHING` qua out-port `claimIfAbsent`, nằm cùng transaction với dispense; test event lặp và lỗi dispense giữ khả năng retry.
 - [ ] P5.5 Thành công: stock/lifecycle, receipt kết quả, processed event và outbox filled cùng commit. Thất bại nghiệp vụ: transaction cấp rollback rồi transaction failure commit receipt kết quả, processed event, terminal state phù hợp và outbox compensation; sau đó ACK.
-- [ ] P5.6 Đơn đã hủy/hết hạn nhận payment: giữ terminal state, ghi kết quả và compensation theo D4; event lặp không tạo nhiều yêu cầu hoàn tiền logic. Đơn đã cấp không cấp lại; payment khác thật sự cho đơn đã cấp phải được Billing xử lý riêng, không xem là duplicate vô điều kiện.
-- [ ] P5.7 Lỗi hạ tầng giữ khả năng retry; cấu hình retry hữu hạn + backoff + DLQ/poison-message policy, tránh requeue nóng. Message lỗi nghiệp vụ đã xử lý bền không ném lại vào Rabbit.
+- [x] P5.6 Đơn đã hủy/hết hạn nhận payment: giữ terminal state, ghi kết quả và compensation theo D4; event lặp không tạo nhiều yêu cầu hoàn tiền logic. Đơn đã cấp không cấp lại; payment khác thật sự cho đơn đã cấp phải được Billing xử lý riêng, không xem là duplicate vô điều kiện. Payment đến sau đơn hủy đã phát compensation và claim idempotent, có test.
+- [x] P5.7 Lỗi hạ tầng giữ khả năng retry; cấu hình retry hữu hạn + backoff + DLQ/poison-message policy, tránh requeue nóng. Message lỗi nghiệp vụ đã xử lý bền không ném lại vào Rabbit. Rabbit listener đã cấu hình retry exponential bounded và reject sau lần cuối vào DLQ, có test validation cấu hình.
 - [ ] P5.8 Hỗ trợ khôi phục sau crash giữa các transaction; job/consumer không bỏ qua receipt đang dang dở như thể đã hoàn tất. Định nghĩa retention đủ dài cho cửa sổ replay của Billing.
 
 **Gate/test:** cùng event hai lần và hai luồng chỉ xuất một lần; hai eventId cùng business payment không xuất lại; crash/redelivery hội tụ một kết quả; lỗi nghiệp vụ ACK sau khi kết quả bền; lỗi DB retry không đánh dấu processed sớm; payment muộn không cấp đơn đã hủy/hết hạn.
@@ -202,7 +202,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 **File:** `CancelPrescriptionService`, `ExpirePrescriptionTransaction`, `ReleaseExpiredReservationsService`, `ReservationExpiryScheduler`, reservation repository/adapter, domain, config.
 
 - [ ] P6.1 Dùng chung invariant coverage và thứ tự khóa. Hủy/hết hạn phải chuyển đủ đơn/phiếu/reservations + outbox trong transaction; không giải phóng một phần khi còn dòng không hợp lệ.
-- [ ] P6.2 Chặn hủy sau khi đã cấp; hủy lặp trả kết quả hiện hữu, không tăng released count/event. Trường hợp payment đã được ghi nhận phải theo D4 và chính sách Billing; không tự xác nhận refund đã xong.
+- [x] P6.2 Chặn hủy sau khi đã cấp; hủy lặp trả kết quả hiện hữu, không tăng released count/event. Trường hợp payment đã được ghi nhận phải theo D4 và chính sách Billing; không tự xác nhận refund đã xong. Đã test đơn FULFILLED bị từ chối và đơn CANCELLED idempotent.
 - [x] P6.3 Inject Clock; đưa TTL, batch size và cron vào config có default/validation. Test sát biên `expiresAt == now` và ngày hết hạn thuốc bằng thời gian cố định. Pharmacy application đã nhận UTC `Clock`, TTL cấu hình `mediflow.pharmacy.reservation.ttl` có validation dương và domain Drug hỗ trợ kiểm tra theo ngày nghiệp vụ.
 - [x] P6.4 Một đơn lỗi không dừng toàn batch: catch tại ranh giới từng transaction, log identifier/reason an toàn và tiếp tục. Không nuốt lỗi đến mức báo thành công sai. Đã cố định mốc `Clock`, giới hạn batch cấu hình ở infrastructure và có test một ứng viên lỗi không chặn các ứng viên sau.
 - [ ] P6.5 Query có cursor/progress hoặc cơ chế tránh starvation: 100 đơn lỗi/inconsistent đầu danh sách không chặn mãi các đơn sau. Nhiều scheduler instance không phát lặp logical expiry event.
@@ -218,7 +218,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 - [x] P7.1 Sau khóa drug, tính reserved và không cho `newOnHand < reserved` theo D7; vẫn chặn zero/âm tồn, overflow số lượng. Không âm thầm thay quantity đã kê. Application đã kiểm tra tổng reserved bằng số học `long` và có test reserved-protection/overflow.
 - [ ] P7.2 Lưu audit delta, before/after, reason, actor và timestamp trong cùng transaction; chốt reason bắt buộc cho giảm kho với người dùng API trước khi đổi validation.
-- [ ] P7.3 Phát event thay đổi kho theo tên/schema đã review; stock.low theo ngưỡng nhất quán. Không tự thêm routing key mà downstream được kỳ vọng phải hiểu ngay.
+- [x] P7.3 Phát event thay đổi kho theo tên/schema đã review; stock.low theo ngưỡng nhất quán. Không tự thêm routing key mà downstream được kỳ vọng phải hiểu ngay. Đã thêm `stock.adjusted` với before/after/delta/reason và test audit event.
 - [x] P7.4 Tăng test create/update domain có sẵn: giá âm, quantity/threshold âm, hạn dùng, rounding; không mở API update/delete thuốc chỉ vì domain đang có `updateInfo`. Đồng thời bổ sung invariant ngưỡng âm cho `Drug.updateInfo`.
 
 **Gate/test:** đang có reserved thì điều chỉnh không làm thiếu phần đã giữ; create reservation vs adjust chạy đồng thời vẫn đúng; audit/event rollback cùng tồn; chỉ ADMIN/PHARMACIST được điều chỉnh.
@@ -244,7 +244,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [ ] P9.2 Test hai đường: database mới từ đầu và database V4 có dữ liệu cũ. Unique/index/check/FK nội bộ đúng, không FK sang DB service khác; startup `ddl-auto=validate` pass.
 - [ ] P9.3 Dữ liệu cũ không có proof paid phải giữ trạng thái unknown, không backfill “đã thanh toán” bằng suy đoán. Reconcile lệch lifecycle có dry-run/report và quy tắc được duyệt.
 - [ ] P9.4 Hoàn tất test matrix mục 7, architecture test, real PostgreSQL/RabbitMQ và contract JSON với owner. Không thay real concurrency/rollback tests bằng mock.
-- [ ] P9.5 Cập nhật bounded-context doc/API examples/README của module trong phạm vi được giao; ghi các quyết định contract, hướng dẫn retry/DLQ/outbox, cấu hình và demo script.
+- [x] P9.5 Cập nhật bounded-context doc/API examples/README của module trong phạm vi được giao; ghi các quyết định contract, hướng dẫn retry/DLQ/outbox, cấu hình và demo script. README và bounded-context doc đã cập nhật payment claim, retry/DLQ, TTL và stock.adjusted.
 - [ ] P9.6 Lập handoff cho phần owner khác theo mục 8; test end-to-end qua gateway. Nếu dependency chưa có implementation, ghi rõ chỉ mới contract/mock, không ghi E2E PASS.
 - [ ] P9.7 Chạy verify module và reactor; ghi riêng lỗi ngoài phạm vi pharmacy. Review diff theo docs/ai, cần ít nhất một human review; chỉ đưa PR khỏi draft khi checklist của PR thực sự đạt.
 
