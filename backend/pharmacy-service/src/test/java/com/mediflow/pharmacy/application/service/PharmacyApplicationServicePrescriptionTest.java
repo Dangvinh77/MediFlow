@@ -2,6 +2,7 @@ package com.mediflow.pharmacy.application.service;
 
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
@@ -19,6 +20,7 @@ import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,9 +90,10 @@ class PharmacyApplicationServicePrescriptionTest {
         when(reservationRepo.findReservedByDrug(secondDrugId)).thenReturn(List.of());
         stubSavedPrescription(prescriptionId);
 
-        service.create(requestOf(List.of(
+        CreatePrescriptionRequest request = requestOf(List.of(
                 new PrescriptionLineRequest(secondDrugId, 2, "Ngày 2 lần"),
-                new PrescriptionLineRequest(firstDrugId, 3, "Ngày 3 lần"))));
+                new PrescriptionLineRequest(firstDrugId, 3, "Ngày 3 lần")));
+        service.create(commandOf(request));
 
         InOrder lockOrder = inOrder(drugRepo);
         lockOrder.verify(drugRepo).findByIdForUpdate(firstDrugId);
@@ -126,6 +129,7 @@ class PharmacyApplicationServicePrescriptionTest {
         verify(eventPublisher, times(1)).publishPrescriptionCreated(eventCaptor.capture());
         PrescriptionCreatedEvent event = eventCaptor.getValue();
         assertThat(event.prescriptionId()).isEqualTo(prescriptionId);
+        assertThat(event.correlationId()).isEqualTo("test-correlation");
         assertThat(event.totalAmount()).isEqualByComparingTo("8000.00");
         assertThat(event.items()).extracting(PrescriptionCreatedEvent.Item::drugName)
                 .containsExactly("Paracetamol", "Amoxicillin");
@@ -141,7 +145,7 @@ class PharmacyApplicationServicePrescriptionTest {
                 new PrescriptionLineRequest(drugId, 2, "Buổi sáng"),
                 new PrescriptionLineRequest(drugId, 3, "Buổi tối")));
 
-        assertThatThrownBy(() -> service.create(request))
+        assertThatThrownBy(() -> service.create(commandOf(request)))
                 .isInstanceOfSatisfying(
                         PrescriptionRuleException.class,
                         exception -> assertThat(exception.getCode())
@@ -180,7 +184,7 @@ class PharmacyApplicationServicePrescriptionTest {
                 new PrescriptionLineRequest(firstDrugId, 2, "Ngày 2 lần"),
                 new PrescriptionLineRequest(secondDrugId, 4, "Ngày 2 lần")));
 
-        assertThatThrownBy(() -> service.create(request))
+        assertThatThrownBy(() -> service.create(commandOf(request)))
                 .isInstanceOfSatisfying(
                         StockReservationRuleException.class,
                         exception -> assertThat(exception.getCode())
@@ -190,6 +194,45 @@ class PharmacyApplicationServicePrescriptionTest {
         verify(reservationRepo, never()).save(any());
         verify(dispenseSlipRepo, never()).save(any());
         verify(eventPublisher, never()).publishPrescriptionCreated(any());
+    }
+
+    /** GET chi tiết phải đọc giá snapshot và trạng thái phiếu mà không khóa ghi. */
+    @Test
+    void getPrescriptionById_returnsLifecycleAndLineNames() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID drugId = UUID.randomUUID();
+        Prescription prescription = Prescription.restore(
+                prescriptionId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now(),
+                new BigDecimal("2000.00"),
+                List.of(com.mediflow.pharmacy.domain.model.PrescriptionLine.restore(
+                        UUID.randomUUID(), drugId, 2, new BigDecimal("1000.00"),
+                        "Ngày 2 lần", new BigDecimal("2000.00"))),
+                com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus.ACTIVE,
+                null, null, null, Instant.now(), Instant.now());
+        DispenseSlip slip = DispenseSlip.restore(
+                UUID.randomUUID(), prescriptionId, DispenseStatus.PENDING,
+                null, null, null, Instant.now(), Instant.now());
+        Drug drug = drug(drugId, "Paracetamol", 10, "1000.00");
+        PrescriptionDTO expected = new PrescriptionDTO(
+                prescriptionId, prescription.getRecordId(), prescription.getPatientId(),
+                prescription.getDoctorId(), prescription.getDepartmentId(), prescription.getPrescribedDate(),
+                prescription.getTotalAmount(), List.of(), prescription.getStatus(), slip.getStatus(),
+                null, null, null, prescription.getCreatedAt(), prescription.getUpdatedAt());
+
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(slip));
+        when(drugRepo.findById(drugId)).thenReturn(Optional.of(drug));
+        when(prescriptionDtoMapper.toLineDto(any(), any())).thenReturn(null);
+        when(prescriptionDtoMapper.toDto(any(), any(), any())).thenReturn(expected);
+
+        assertThat(service.getPrescriptionById(prescriptionId)).isSameAs(expected);
+        verify(prescriptionRepo, never()).findByIdForUpdate(prescriptionId);
+        verify(drugRepo).findById(drugId);
     }
 
     private void stubSavedPrescription(UUID prescriptionId) {
@@ -219,6 +262,11 @@ class PharmacyApplicationServicePrescriptionTest {
                 UUID.randomUUID(),
                 LocalDate.now(),
                 lines);
+    }
+
+    /** Tạo command với actor đúng doctorId để test orchestration không phụ thuộc JWT adapter. */
+    private CreatePrescriptionCommand commandOf(CreatePrescriptionRequest request) {
+        return new CreatePrescriptionCommand(request, request.doctorId(), false, "test-correlation");
     }
 
     private Drug drug(UUID id, String name, int stock, String price) {

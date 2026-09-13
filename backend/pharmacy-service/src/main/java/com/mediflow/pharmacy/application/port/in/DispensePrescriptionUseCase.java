@@ -35,4 +35,16 @@ public interface DispensePrescriptionUseCase {
      * @return phiếu xuất sau khi xử lý (status DISPENSED hoặc FAILED)
      */
     DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy);
+
+    /**
+     * Xuất thuốc và giữ mã tương quan của event hoặc request xuyên suốt các event kết quả.
+     *
+     * @param prescriptionId đơn cần xuất
+     * @param dispensedBy id nhân viên hoặc tác nhân hệ thống
+     * @param correlationId mã tương quan, có thể {@code null} với job nội bộ
+     * @return phiếu xuất sau khi xử lý
+     */
+    default DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        return dispense(prescriptionId, dispensedBy);
+    }
 }

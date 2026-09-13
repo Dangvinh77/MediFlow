@@ -3,10 +3,12 @@ package com.mediflow.pharmacy.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -57,17 +60,20 @@ class PrescriptionControllerTest {
     private CreatePrescriptionUseCase useCase;
 
     @MockBean
+    private GetPrescriptionUseCase getPrescriptionUseCase;
+
+    @MockBean
     private CancelPrescriptionUseCase cancelPrescriptionUseCase;
 
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "DOCTOR"})
     void create_allowedRole_returns201LocationAndPendingPrescription(String role) throws Exception {
         UUID prescriptionId = UUID.randomUUID();
-        when(useCase.create(any(CreatePrescriptionRequest.class)))
+        when(useCase.create(any(CreatePrescriptionCommand.class)))
                 .thenReturn(prescriptionDto(prescriptionId));
 
         mockMvc.perform(post(BASE_PATH)
-                        .with(user("creator").roles(role))
+                        .with(user(UUID.randomUUID().toString()).roles(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isCreated())
@@ -114,6 +120,7 @@ class PrescriptionControllerTest {
                 List.of());
 
         mockMvc.perform(post(BASE_PATH)
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -129,16 +136,41 @@ class PrescriptionControllerTest {
         CreatePrescriptionRequest request = requestWithLines(List.of(
                 new PrescriptionLineRequest(drugId, 1, "Buổi sáng"),
                 new PrescriptionLineRequest(drugId, 1, "Buổi tối")));
-        when(useCase.create(any(CreatePrescriptionRequest.class)))
+        when(useCase.create(any(CreatePrescriptionCommand.class)))
                 .thenThrow(new PrescriptionRuleException(
                         "PRESCRIPTION_DUPLICATE_DRUG",
                         "Một thuốc chỉ được xuất hiện một lần trong đơn"));
 
         mockMvc.perform(post(BASE_PATH)
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error.code").value("PRESCRIPTION_DUPLICATE_DRUG"));
+    }
+
+    /** Người dùng có role pharmacy được đọc chi tiết đơn qua API read-only. */
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMIN", "DOCTOR", "PHARMACIST"})
+    void get_allowedRole_returnsPrescription(String role) throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        when(getPrescriptionUseCase.getPrescriptionById(prescriptionId)).thenReturn(prescriptionDto(prescriptionId));
+
+        mockMvc.perform(get(BASE_PATH + "/" + prescriptionId)
+                        .with(user(UUID.randomUUID().toString()).roles(role)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.prescriptionId").value(prescriptionId.toString()))
+                .andExpect(jsonPath("$.data.dispenseStatus").value("PENDING"));
+    }
+
+    /** Không có JWT thì API đọc đơn bị từ chối ở security filter. */
+    @Test
+    void get_missingAuthentication_returns401() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+        verifyNoInteractions(getPrescriptionUseCase);
     }
 
     private CreatePrescriptionRequest validRequest() {

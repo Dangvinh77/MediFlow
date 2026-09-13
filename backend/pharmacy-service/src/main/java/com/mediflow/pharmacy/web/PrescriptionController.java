@@ -3,12 +3,14 @@ package com.mediflow.pharmacy.web;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.request.CancelPrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,6 +42,7 @@ import java.util.UUID;
 public class PrescriptionController {
 
     private final CreatePrescriptionUseCase createPrescriptionUseCase;
+    private final GetPrescriptionUseCase getPrescriptionUseCase;
     private final CancelPrescriptionUseCase cancelPrescriptionUseCase;
 
     /**
@@ -47,23 +51,35 @@ public class PrescriptionController {
      * @param request thông tin đơn và các dòng thuốc; không chứa giá
      * @return HTTP 201 kèm đơn đã tính giá, tổng tiền và trạng thái PENDING
      */
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
-            @Valid @RequestBody
-            CreatePrescriptionRequest request) {
+   @PostMapping
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
+        @Valid @RequestBody CreatePrescriptionRequest request,
+        Authentication authentication,
+        @RequestHeader(
+                value = JwtClaims.HEADER_CORRELATION_ID,
+                required = false) String correlationId) {
 
-        PrescriptionDTO created =
-                createPrescriptionUseCase.create(request);
+    UUID actorId = parseActorId(authentication);
 
-        URI location = URI.create(
-                "/api/v1/pharmacy/prescriptions/"
-                        + created.prescriptionId());
+    CreatePrescriptionCommand command =
+            new CreatePrescriptionCommand(
+                    request,
+                    actorId,
+                    isAdministrator(authentication),
+                    correlationId);
 
-        return ResponseEntity
-                .created(location)
-                .body(ApiResponse.ok(created));
-    }
+    PrescriptionDTO created =
+            createPrescriptionUseCase.create(command);
+
+    URI location = URI.create(
+            "/api/v1/pharmacy/prescriptions/"
+                    + created.prescriptionId());
+
+    return ResponseEntity
+            .created(location)
+            .body(ApiResponse.ok(created, correlationId));
+}
 
     /**
      * Hủy một đơn đang hoạt động và trả lại toàn bộ lượng tồn đang được giữ.
@@ -88,8 +104,8 @@ public class PrescriptionController {
                     required = false) String correlationId) {
 
         UUID actorId = parseActorId(authentication);
-        boolean administrator = authentication.getAuthorities().stream()
-                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+      boolean administrator =
+        isAdministrator(authentication);
 
         CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(
                 new CancelPrescriptionCommand(
@@ -100,6 +116,19 @@ public class PrescriptionController {
                         correlationId));
 
         return ResponseEntity.ok(ApiResponse.ok(result, correlationId));
+    }
+
+    /**
+     * Lấy chi tiết đơn thuốc, bao gồm lifecycle và trạng thái phiếu xuất.
+     *
+     * @param prescriptionId mã đơn thuốc cần đọc
+     * @return HTTP 200 với DTO đơn thuốc
+     */
+    @GetMapping("/{prescriptionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
+    public ResponseEntity<ApiResponse<PrescriptionDTO>> getById(
+            @PathVariable UUID prescriptionId) {
+        return ResponseEntity.ok(ApiResponse.ok(getPrescriptionUseCase.getPrescriptionById(prescriptionId)));
     }
 
     /**
@@ -122,4 +151,11 @@ public class PrescriptionController {
                     exception);
         }
     }
+    private boolean isAdministrator(Authentication authentication) {
+    return authentication.getAuthorities()
+            .stream()
+            .anyMatch(authority ->
+                    "ROLE_ADMIN".equals(
+                            authority.getAuthority()));
+}
 }
