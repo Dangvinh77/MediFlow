@@ -1,6 +1,6 @@
 # @mediflow/loader
 
-Dependency-free React/Next.js loader used by MediFlow. A comet-like tracer loops around a downward equilateral triangle while the clipped `MF` monogram remains continuously visible inside the frame.
+Dependency-free React/Next.js loader used by MediFlow. A comet-like tracer loops around a downward equilateral triangle while a seamless highlight flows through the clipped, continuously visible `MF` monogram.
 
 ## Use inside this repository
 

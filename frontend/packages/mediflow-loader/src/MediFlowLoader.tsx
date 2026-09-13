@@ -24,8 +24,8 @@ const BASE_DURATION_SECONDS = 1.45;
 /**
  * MediFlow's dependency-free animated loader for React/Next.js.
  *
- * The outer tracer loops around an equilateral triangle while the clipped MF
- * mark remains continuously visible inside the frame.
+ * The outer tracer loops around an equilateral triangle while a seamless
+ * highlight flows through the clipped, continuously visible MF mark.
  * Animation is declarative SVG (SMIL), so there is no timer, canvas, or
  * third-party animation runtime in the web bundle.
  */
@@ -42,7 +42,10 @@ export function MediFlowLoader({
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;
   const duration = `${BASE_DURATION_SECONDS / safeSpeed}s`;
   const statusLabel = label ?? "Loading";
-  const monogramClipId = `${useId()}-monogram-clip`;
+  const instanceId = useId();
+  const monogramClipId = `${instanceId}-monogram-clip`;
+  const monogramFlowId = `${instanceId}-monogram-flow`;
+  const monogramFill = `url(#${monogramFlowId})`;
 
   return (
     <div
@@ -63,6 +66,25 @@ export function MediFlowLoader({
           <clipPath id={monogramClipId}>
             <path d={INNER_TRIANGLE_PATH} />
           </clipPath>
+          <linearGradient
+            gradientUnits="userSpaceOnUse"
+            id={monogramFlowId}
+            spreadMethod="repeat"
+            x1="-24"
+            x2="0"
+            y1="-24"
+            y2="0"
+          >
+            <stop offset="0" stopColor={color} />
+            <stop offset="0.36" stopColor={color} />
+            <stop offset="0.5" stopColor={trailColor} />
+            <stop offset="0.64" stopColor={color} />
+            <stop offset="1" stopColor={color} />
+            <animate attributeName="x1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
+            <animate attributeName="x2" dur={duration} from="0" repeatCount="indefinite" to="24" />
+            <animate attributeName="y1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
+            <animate attributeName="y2" dur={duration} from="0" repeatCount="indefinite" to="24" />
+          </linearGradient>
         </defs>
 
         {glow ? (
@@ -161,15 +183,15 @@ export function MediFlowLoader({
               {/* Reference MF monogram, fitted to the inner triangle. */}
               <path
                 d="M 4 4 H 16.12 L 10.17 15.76 Z"
-                fill={color}
+                fill={monogramFill}
               />
               <path
                 d="M 17.85 4.08 L 28.66 17.86 L 41.27 4 H 66 L 61.15 12.91 H 44.04 L 33.23 36.1 V 21.06 L 27.07 27.78 L 19.93 18.28 V 33.66 L 11.27 17.7 Z"
-                fill={color}
+                fill={monogramFill}
               />
               <path
                 d="M 44.32 17.61 H 58.52 L 52.98 27.53 H 46.33 V 37.94 L 35.03 57.69 L 29.98 47.52 Z"
-                fill={color}
+                fill={monogramFill}
               />
             </g>
           </g>
