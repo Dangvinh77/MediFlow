@@ -27,9 +27,7 @@ jobs:
       - name: Require Docker for PostgreSQL and RabbitMQ tests
         run: docker info
       - name: Verify all backend modules
-        # patient-service is still a source-only scaffold without a Spring Boot main class.
-        # Skip executable-jar repackaging while still compiling every module and running all tests.
-        run: mvn -B -q -Dspring-boot.repackage.skip=true verify
+        run: mvn -B -q verify
       - name: Verify cross-service JSON contracts
         shell: pwsh
         run: ./scripts/contract-checks/check-clinical-lab.ps1
