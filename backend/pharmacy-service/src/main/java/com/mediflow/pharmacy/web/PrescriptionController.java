@@ -3,6 +3,7 @@ package com.mediflow.pharmacy.web;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.request.CancelPrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
@@ -47,23 +48,35 @@ public class PrescriptionController {
      * @param request thông tin đơn và các dòng thuốc; không chứa giá
      * @return HTTP 201 kèm đơn đã tính giá, tổng tiền và trạng thái PENDING
      */
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
-            @Valid @RequestBody
-            CreatePrescriptionRequest request) {
+   @PostMapping
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
+        @Valid @RequestBody CreatePrescriptionRequest request,
+        Authentication authentication,
+        @RequestHeader(
+                value = JwtClaims.HEADER_CORRELATION_ID,
+                required = false) String correlationId) {
 
-        PrescriptionDTO created =
-                createPrescriptionUseCase.create(request);
+    UUID actorId = parseActorId(authentication);
 
-        URI location = URI.create(
-                "/api/v1/pharmacy/prescriptions/"
-                        + created.prescriptionId());
+    CreatePrescriptionCommand command =
+            new CreatePrescriptionCommand(
+                    request,
+                    actorId,
+                    isAdministrator(authentication),
+                    correlationId);
 
-        return ResponseEntity
-                .created(location)
-                .body(ApiResponse.ok(created));
-    }
+    PrescriptionDTO created =
+            createPrescriptionUseCase.create(command);
+
+    URI location = URI.create(
+            "/api/v1/pharmacy/prescriptions/"
+                    + created.prescriptionId());
+
+    return ResponseEntity
+            .created(location)
+            .body(ApiResponse.ok(created, correlationId));
+}
 
     /**
      * Hủy một đơn đang hoạt động và trả lại toàn bộ lượng tồn đang được giữ.
@@ -88,8 +101,8 @@ public class PrescriptionController {
                     required = false) String correlationId) {
 
         UUID actorId = parseActorId(authentication);
-        boolean administrator = authentication.getAuthorities().stream()
-                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+      boolean administrator =
+        isAdministrator(authentication);
 
         CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(
                 new CancelPrescriptionCommand(
@@ -122,4 +135,11 @@ public class PrescriptionController {
                     exception);
         }
     }
+    private boolean isAdministrator(Authentication authentication) {
+    return authentication.getAuthorities()
+            .stream()
+            .anyMatch(authority ->
+                    "ROLE_ADMIN".equals(
+                            authority.getAuthority()));
+}
 }

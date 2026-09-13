@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.application.port.in;
 
-import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
+
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 
 /**
@@ -11,10 +12,14 @@ import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
  */
 public interface CreatePrescriptionUseCase {
 
-    /**
-     * Kê đơn từ request. Đơn phải có ít nhất 1 dòng (PRESCRIPTION_EMPTY);
-     * client không gửi giá (BR-D8); tổng tiền = tổng(giá × số lượng) (BR-D5);
-     * tự tạo phiếu xuất PENDING (BR-D3); không trừ kho.
+   /**
+     * Tạo đơn bằng danh tính đã được driving adapter xác thực.
+     *
+     * <p>Đơn phải có ít nhất một dòng; giá được lấy từ kho;
+     * không trừ tồn thực tế tại bước này.</p>
+     *
+     * @param command dữ liệu đơn và danh tính người thực hiện
+     * @return đơn thuốc đã được tạo
      */
-    PrescriptionDTO create(CreatePrescriptionRequest rq);
+    PrescriptionDTO create(CreatePrescriptionCommand command);
 }

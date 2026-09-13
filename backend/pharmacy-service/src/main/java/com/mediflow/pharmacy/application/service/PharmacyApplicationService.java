@@ -2,6 +2,7 @@ package com.mediflow.pharmacy.application.service;
 
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.command.PaymentCompletedCommand;
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
 import com.mediflow.pharmacy.application.dto.request.CreateDrugRequest;
@@ -30,6 +31,7 @@ import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionCreationForbiddenException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
@@ -157,7 +159,11 @@ public class PharmacyApplicationService implements
 
   @Override
 @Transactional
-public PrescriptionDTO create(CreatePrescriptionRequest request) {
+public PrescriptionDTO create(CreatePrescriptionCommand command) {
+        CreatePrescriptionRequest request =
+            command.request();
+
+    validatePrescriptionCreator(command);
     // 1. Thất bại sớm nếu một thuốc xuất hiện nhiều lần.
     validateNoDuplicateDrugIds(request.lines());
 
@@ -180,13 +186,15 @@ public PrescriptionDTO create(CreatePrescriptionRequest request) {
                     .toList();
 
     // 4. Domain tính lineTotal và totalAmount từ giá server đã chụp.
+    UUID prescribingDoctorId =
+        resolvePrescribingDoctorId(command);
     Prescription prescription = Prescription.create(
-            request.recordId(),
-            request.patientId(),
-            request.doctorId(),
-            request.departmentId(),
-            request.prescribedDate(),
-            prescriptionLines);
+             request.recordId(),
+        request.patientId(),
+        prescribingDoctorId,
+        request.departmentId(),
+        request.prescribedDate(),
+        prescriptionLines);
 
     // 5. Lưu aggregate Prescription + PrescriptionLine.
     Prescription savedPrescription =
@@ -207,6 +215,7 @@ public PrescriptionDTO create(CreatePrescriptionRequest request) {
 
         reservationRepo.save(reservation);
     }
+    
 
     // 7. Mỗi đơn luôn có đúng một phiếu xuất PENDING.
     DispenseSlip pendingSlip = dispenseSlipRepo.save(
@@ -229,6 +238,33 @@ public PrescriptionDTO create(CreatePrescriptionRequest request) {
             savedPrescription,
             pendingSlip.getStatus(),
             drugNames);
+}
+
+private void validatePrescriptionCreator(
+        CreatePrescriptionCommand command) {
+
+    if (command.administrator()) {
+        return;
+    }
+
+    UUID requestedDoctorId =
+            command.request().doctorId();
+
+    if (!command.actorId().equals(requestedDoctorId)) {
+        throw new PrescriptionCreationForbiddenException(
+                "Bác sĩ chỉ được tạo đơn thuốc "
+                        + "bằng danh tính của chính mình");
+    }
+}
+
+private UUID resolvePrescribingDoctorId(
+        CreatePrescriptionCommand command) {
+
+    if (command.administrator()) {
+        return command.request().doctorId();
+    }
+
+    return command.actorId();
 }
 
   /**
