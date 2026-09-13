@@ -22,4 +22,10 @@ public record CancelPrescriptionCommand(
         String reason,
         String correlationId
 ) {
+    /** Chuẩn hóa correlation để event hủy luôn truy vết được kể cả khi caller không gửi header. */
+    public CancelPrescriptionCommand {
+        correlationId = correlationId == null || correlationId.isBlank()
+                ? UUID.randomUUID().toString()
+                : correlationId.trim();
+    }
 }

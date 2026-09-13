@@ -112,11 +112,11 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **Ưu tiên:** bắt buộc đầu tiên. **Phụ thuộc:** không.
 
-- [ ] P0.1 Đọc changelog, root/nested AGENTS; kiểm tra branch, tracked/untracked files, upstream và trạng thái PR #74 hiện tại.
+- [x] P0.1 Đọc changelog, root/nested AGENTS; kiểm tra branch, tracked/untracked files, upstream và trạng thái PR #74 hiện tại.
 - [ ] P0.2 Fetch master mới, đối chiếu diff pharmacy và shared contracts; bảo toàn thay đổi local bằng checkpoint có phạm vi rõ. Không reset hard, không force push, không tự xử lý conflict bằng cách bỏ một phía.
 - [ ] P0.3 Tích hợp master trong đợt code được giao; nếu lịch sử đã phân kỳ thì merge có kiểm soát, không giả định có thể fast-forward. Ghi lại SHA baseline mới trong PR.
 - [ ] P0.4 Kiểm tra Java 21, Maven, Docker; chạy `mvn -q -pl backend/pharmacy-service -am clean test` để loại output cũ và lưu lỗi thực tế.
-- [ ] P0.5 Cập nhật test caller sang command mới ở `PharmacyApplicationServicePrescriptionTest` và `PrescriptionControllerTest`; giữ assertion nghiệp vụ, không bỏ test hoặc vô hiệu hóa security cho xanh.
+- [x] P0.5 Cập nhật test caller sang command mới ở `PharmacyApplicationServicePrescriptionTest` và `PrescriptionControllerTest`; giữ assertion nghiệp vụ, không bỏ test hoặc vô hiệu hóa security cho xanh.
 
 **Gate:** test source biên dịch được; biết rõ nhóm nào pass/fail/skip và lý do. Nếu Docker chưa có, ghi INCOMPLETE cho DB tests; chưa được công bố module đã verified. PR #74 giữ draft tới khi các blocker trong phạm vi PR được xử lý.
 
@@ -128,9 +128,9 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 - [ ] P1.1 Đưa identity đã xác thực vào command dưới dạng giá trị rõ account/staff/roles; controller không tự tin `doctorId` client, application vẫn kiểm tra ownership.
 - [ ] P1.2 Doctor chỉ kê/hủy đơn của staff tương ứng; Admin override có audit account thực hiện và doctor đích; xác nhận tính hợp lệ doctor/khoa theo contract, không đọc DB service khác.
-- [ ] P1.3 Giữ check drug trùng trước mutation; test create lưu đơn + lines + reservations + pending slip atomically, thiếu available thì không lưu phần nào.
-- [ ] P1.4 Truyền correlation vào `publishCreated`, phản hồi HTTP, log và luồng hủy; nếu vắng thì chuẩn hóa/generate theo convention, không dùng chuỗi rỗng để lách validation.
-- [ ] P1.5 Chốt hợp đồng DTO: bản hiện tại đã có `status` = PrescriptionStatus và `dispenseStatus` riêng. Kiểm tra consumer cũ; không đổi nghĩa field silently. Sửa Javadoc còn mô tả trạng thái đơn là PENDING.
+- [x] P1.3 Giữ check drug trùng trước mutation; test create lưu đơn + lines + reservations + pending slip atomically, thiếu available thì không lưu phần nào.
+- [x] P1.4 Truyền correlation vào `publishCreated`, phản hồi HTTP, log và luồng hủy; nếu vắng thì chuẩn hóa/generate theo convention, không dùng chuỗi rỗng để lách validation. Command tự sinh UUID khi header trống và test boundary đã bổ sung.
+- [x] P1.5 Chốt hợp đồng DTO: bản hiện tại đã có `status` = PrescriptionStatus và `dispenseStatus` riêng. Kiểm tra consumer cũ; không đổi nghĩa field silently. Sửa Javadoc còn mô tả trạng thái đơn là PENDING.
 - [ ] P1.6 Chuẩn hóa format phần sửa, bỏ wildcard/fully-qualified lặp nếu trái chuẩn; không refactor unrelated toàn repo.
 
 **Gate/test:** account UUID khác staff UUID vẫn cho đúng bác sĩ; giả doctorId bị 403 trước ghi DB; Admin override đúng audit; UUID lỗi/thiếu token/sai role đúng 400/401/403; duplicate line và available stock đúng lỗi theo spec; snapshot giá/tổng không bị client thay; correlation giữ xuyên suốt.
@@ -144,7 +144,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [x] P2.1 Thêm `GET /api/v1/pharmacy/prescriptions/{id}`, roles ADMIN/DOCTOR/PHARMACIST như đặc tả.
 - [x] P2.2 Read-only transaction trả đầy đủ lines, giá snapshot, total, status, dispenseStatus và audit; không trả JPA entity, không khóa ghi khi chỉ xem.
 - [x] P2.3 Không tính lại đơn cũ từ giá thuốc hiện tại. Tên thuốc hiện chưa được snapshot vào line: thống nhất là tên hiện tại hoặc bổ sung snapshot bằng migration riêng, không khẳng định đã có snapshot tên.
-- [ ] P2.4 Tránh query mỗi dòng nếu có thể batch-load; xử lý dữ liệu thiếu slip như lỗi nhất quán có quan sát, không tạo phiếu mới trong GET.
+- [x] P2.4 Tránh query mỗi dòng nếu có thể batch-load; xử lý dữ liệu thiếu slip như lỗi nhất quán có quan sát, không tạo phiếu mới trong GET. Drug lookup đã chuyển sang `findByIds` một lần cho toàn bộ dòng.
 
 **Gate/test:** 200 cho đơn ở mỗi lifecycle; 404 khi không tồn tại; 401/403 đúng role; giá giữ nguyên sau thay danh mục; dữ liệu trả đúng DB thật. List/filter đơn, phân trang đơn là mở rộng riêng, không mặc định thêm vào task này.
 

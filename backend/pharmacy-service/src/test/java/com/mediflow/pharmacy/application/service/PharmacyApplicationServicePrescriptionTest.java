@@ -226,13 +226,13 @@ class PharmacyApplicationServicePrescriptionTest {
 
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(slip));
-        when(drugRepo.findById(drugId)).thenReturn(Optional.of(drug));
+        when(drugRepo.findByIds(List.of(drugId))).thenReturn(List.of(drug));
         when(prescriptionDtoMapper.toLineDto(any(), any())).thenReturn(null);
         when(prescriptionDtoMapper.toDto(any(), any(), any())).thenReturn(expected);
 
         assertThat(service.getPrescriptionById(prescriptionId)).isSameAs(expected);
         verify(prescriptionRepo, never()).findByIdForUpdate(prescriptionId);
-        verify(drugRepo).findById(drugId);
+        verify(drugRepo).findByIds(List.of(drugId));
     }
 
     private void stubSavedPrescription(UUID prescriptionId) {

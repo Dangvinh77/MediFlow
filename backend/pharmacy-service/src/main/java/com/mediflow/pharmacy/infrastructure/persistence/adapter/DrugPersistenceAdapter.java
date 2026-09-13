@@ -1,5 +1,6 @@
 package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,6 +44,14 @@ public class DrugPersistenceAdapter implements DrugRepositoryPort {
     @Override
     public Optional<Drug> findById(UUID id) {
         return jpaRepo.findById(id).map(this::toDomain);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<Drug> findByIds(List<UUID> ids) {
+        return jpaRepo.findAllById(ids).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override

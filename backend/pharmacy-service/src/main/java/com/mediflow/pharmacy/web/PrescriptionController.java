@@ -78,7 +78,7 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
 
     return ResponseEntity
             .created(location)
-            .body(ApiResponse.ok(created, correlationId));
+            .body(ApiResponse.ok(created, command.correlationId()));
 }
 
     /**
@@ -107,15 +107,15 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
       boolean administrator =
         isAdministrator(authentication);
 
-        CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(
-                new CancelPrescriptionCommand(
+        CancelPrescriptionCommand command = new CancelPrescriptionCommand(
                         prescriptionId,
                         actorId,
                         administrator,
                         request.reason(),
-                        correlationId));
+                        correlationId);
+        CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(command);
 
-        return ResponseEntity.ok(ApiResponse.ok(result, correlationId));
+        return ResponseEntity.ok(ApiResponse.ok(result, command.correlationId()));
     }
 
     /**
