@@ -79,12 +79,12 @@ class PharmacyApplicationServicePaymentTest {
         when(processedEventPort.alreadyProcessed(eventId))
                 .thenReturn(false)
                 .thenReturn(true);
-        doReturn(result).when(service).dispense(prescriptionId, SYSTEM_USER);
+        doReturn(result).when(service).dispense(prescriptionId, SYSTEM_USER, "payment-flow-001");
 
         service.onPaymentCompleted(command);
         service.onPaymentCompleted(command);
 
-        verify(service, times(1)).dispense(prescriptionId, SYSTEM_USER);
+        verify(service, times(1)).dispense(prescriptionId, SYSTEM_USER, "payment-flow-001");
         verify(processedEventPort, times(1)).markProcessed(eventId, "payment.completed");
     }
 

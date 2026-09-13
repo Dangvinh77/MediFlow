@@ -3,6 +3,7 @@ package com.mediflow.pharmacy.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
@@ -63,11 +64,11 @@ class PrescriptionControllerTest {
     @ValueSource(strings = {"ADMIN", "DOCTOR"})
     void create_allowedRole_returns201LocationAndPendingPrescription(String role) throws Exception {
         UUID prescriptionId = UUID.randomUUID();
-        when(useCase.create(any(CreatePrescriptionRequest.class)))
+        when(useCase.create(any(CreatePrescriptionCommand.class)))
                 .thenReturn(prescriptionDto(prescriptionId));
 
         mockMvc.perform(post(BASE_PATH)
-                        .with(user("creator").roles(role))
+                        .with(user(UUID.randomUUID().toString()).roles(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isCreated())
@@ -114,6 +115,7 @@ class PrescriptionControllerTest {
                 List.of());
 
         mockMvc.perform(post(BASE_PATH)
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -129,12 +131,13 @@ class PrescriptionControllerTest {
         CreatePrescriptionRequest request = requestWithLines(List.of(
                 new PrescriptionLineRequest(drugId, 1, "Buổi sáng"),
                 new PrescriptionLineRequest(drugId, 1, "Buổi tối")));
-        when(useCase.create(any(CreatePrescriptionRequest.class)))
+        when(useCase.create(any(CreatePrescriptionCommand.class)))
                 .thenThrow(new PrescriptionRuleException(
                         "PRESCRIPTION_DUPLICATE_DRUG",
                         "Một thuốc chỉ được xuất hiện một lần trong đơn"));
 
         mockMvc.perform(post(BASE_PATH)
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())

@@ -2,6 +2,7 @@ package com.mediflow.pharmacy.application.service;
 
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
@@ -102,7 +103,8 @@ class PrescriptionCreationTransactionTest {
                         new PrescriptionLineRequest(firstDrugId, 2, "Ngày 2 lần"),
                         new PrescriptionLineRequest(secondDrugId, 3, "Ngày 3 lần")));
 
-        assertThatThrownBy(() -> useCase.create(request))
+        assertThatThrownBy(() -> useCase.create(new CreatePrescriptionCommand(
+                request, request.doctorId(), false, "test-correlation")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Mô phỏng lỗi lưu phiếu xuất");
 

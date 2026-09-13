@@ -2,6 +2,7 @@ package com.mediflow.pharmacy.application.service;
 
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
+import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
@@ -88,9 +89,10 @@ class PharmacyApplicationServicePrescriptionTest {
         when(reservationRepo.findReservedByDrug(secondDrugId)).thenReturn(List.of());
         stubSavedPrescription(prescriptionId);
 
-        service.create(requestOf(List.of(
+        CreatePrescriptionRequest request = requestOf(List.of(
                 new PrescriptionLineRequest(secondDrugId, 2, "Ngày 2 lần"),
-                new PrescriptionLineRequest(firstDrugId, 3, "Ngày 3 lần"))));
+                new PrescriptionLineRequest(firstDrugId, 3, "Ngày 3 lần")));
+        service.create(commandOf(request));
 
         InOrder lockOrder = inOrder(drugRepo);
         lockOrder.verify(drugRepo).findByIdForUpdate(firstDrugId);
@@ -126,6 +128,7 @@ class PharmacyApplicationServicePrescriptionTest {
         verify(eventPublisher, times(1)).publishPrescriptionCreated(eventCaptor.capture());
         PrescriptionCreatedEvent event = eventCaptor.getValue();
         assertThat(event.prescriptionId()).isEqualTo(prescriptionId);
+        assertThat(event.correlationId()).isEqualTo("test-correlation");
         assertThat(event.totalAmount()).isEqualByComparingTo("8000.00");
         assertThat(event.items()).extracting(PrescriptionCreatedEvent.Item::drugName)
                 .containsExactly("Paracetamol", "Amoxicillin");
@@ -141,7 +144,7 @@ class PharmacyApplicationServicePrescriptionTest {
                 new PrescriptionLineRequest(drugId, 2, "Buổi sáng"),
                 new PrescriptionLineRequest(drugId, 3, "Buổi tối")));
 
-        assertThatThrownBy(() -> service.create(request))
+        assertThatThrownBy(() -> service.create(commandOf(request)))
                 .isInstanceOfSatisfying(
                         PrescriptionRuleException.class,
                         exception -> assertThat(exception.getCode())
@@ -180,7 +183,7 @@ class PharmacyApplicationServicePrescriptionTest {
                 new PrescriptionLineRequest(firstDrugId, 2, "Ngày 2 lần"),
                 new PrescriptionLineRequest(secondDrugId, 4, "Ngày 2 lần")));
 
-        assertThatThrownBy(() -> service.create(request))
+        assertThatThrownBy(() -> service.create(commandOf(request)))
                 .isInstanceOfSatisfying(
                         StockReservationRuleException.class,
                         exception -> assertThat(exception.getCode())
@@ -219,6 +222,11 @@ class PharmacyApplicationServicePrescriptionTest {
                 UUID.randomUUID(),
                 LocalDate.now(),
                 lines);
+    }
+
+    /** Tạo command với actor đúng doctorId để test orchestration không phụ thuộc JWT adapter. */
+    private CreatePrescriptionCommand commandOf(CreatePrescriptionRequest request) {
+        return new CreatePrescriptionCommand(request, request.doctorId(), false, "test-correlation");
     }
 
     private Drug drug(UUID id, String name, int stock, String price) {

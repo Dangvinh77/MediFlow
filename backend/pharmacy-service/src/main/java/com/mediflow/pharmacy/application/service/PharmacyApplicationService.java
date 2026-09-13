@@ -91,7 +91,7 @@ public class PharmacyApplicationService implements
     private final DispenseDtoMapper dispenseDtoMapper;
 
     /**
-     * Self-reference để gọi {@link #markDispenseFailed(UUID, UUID, String)} qua proxy —
+     * Self-reference để gọi {@link #markDispenseFailed(UUID, UUID, String, String)} qua proxy —
      * bắt buộc để @Transactional(REQUIRES_NEW) thực sự mở transaction mới khi transaction chính
      * chuẩn bị rollback (spec §7.2 bước 6). Dùng @Lazy tránh vòng phụ thuộc.
      */
@@ -232,7 +232,7 @@ public PrescriptionDTO create(CreatePrescriptionCommand command) {
     }
 
     // Adapter sẽ trì hoãn việc gửi RabbitMQ tới sau commit.
-    publishCreated(savedPrescription, drugNames);
+    publishCreated(savedPrescription, drugNames, command.correlationId());
 
     return toPrescriptionDto(
             savedPrescription,
@@ -343,15 +343,17 @@ private ResolvedPrescriptionLine resolvePrescriptionLine(
             drug.getDrugName());
 }
 
-   /**
- * Tạo yêu cầu phát event cho đơn đã lưu.
+/**
+ * Tạo event kê đơn sau khi aggregate đã được lưu thành công.
  *
- * <p>Việc gửi RabbitMQ thật được adapter trì hoãn tới sau khi transaction
- * database commit thành công.</p>
+ * @param prescription aggregate đơn thuốc đã có mã persistence
+ * @param drugNames tên thuốc đã snapshot cho từng dòng
+ * @param correlationId mã tương quan của request, có thể {@code null}
  */
 private void publishCreated(
         Prescription prescription,
-        Map<UUID, String> drugNames) {
+        Map<UUID, String> drugNames,
+        String correlationId) {
 
     List<PrescriptionCreatedEvent.Item> items =
             prescription.getLines().stream()
@@ -366,7 +368,7 @@ private void publishCreated(
             new PrescriptionCreatedEvent(
                     UUID.randomUUID(),
                     Instant.now(),
-                    null,
+                    correlationId,
                     prescription.getPrescriptionId(),
                     prescription.getPatientId(),
                     prescription.getRecordId(),
@@ -405,24 +407,86 @@ private void validateNoDuplicateDrugIds(
     // DispensePrescriptionUseCase — spec §7.2
     // ============================================================
 
+    /**
+     * Điều phối cấp thuốc và ghi nhận thất bại sau khi transaction cấp đã rollback.
+     *
+     * @param prescriptionId mã đơn cần cấp
+     * @param dispensedBy người hoặc tác nhân hệ thống thực hiện
+     * @return phiếu xuất sau khi cấp thành công
+     * @throws RuntimeException nếu đơn không thể cấp hoặc không còn ở trạng thái chờ
+     */
     @Override
-    @Transactional
     public DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy) {
-        // 1: phiếu theo đơn — không có thì DISPENSE_NOT_FOUND.
-        DispenseSlip slip = dispenseSlipRepo.findByPrescription(prescriptionId)
+        return dispense(prescriptionId, dispensedBy, null);
+    }
+
+    /**
+     * Điều phối cấp thuốc và giữ correlationId cho các event phát sinh.
+     *
+     * @param prescriptionId mã đơn cần cấp
+     * @param dispensedBy người hoặc tác nhân hệ thống thực hiện
+     * @param correlationId mã tương quan của request/payment event
+     * @return phiếu xuất sau khi cấp thành công
+     * @throws RuntimeException nếu đơn không thể cấp hoặc không còn ở trạng thái chờ
+     */
+    @Override
+    public DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        // Transaction cấp thuốc được gọi qua proxy để transaction bù trừ chỉ bắt đầu
+        // sau khi transaction chính đã rollback và nhả toàn bộ row lock.
+        try {
+            return self.dispenseInTransaction(prescriptionId, dispensedBy, correlationId);
+        } catch (RuntimeException ex) {
+            self.markDispenseFailed(prescriptionId, dispensedBy, correlationId, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    /**
+     * Thực hiện cấp thuốc nguyên tử trong một transaction riêng.
+     *
+     * @param prescriptionId mã đơn cần cấp
+     * @param dispensedBy người hoặc tác nhân hệ thống thực hiện
+     * @return phiếu xuất sau khi đã chuyển DISPENSED
+     * @throws RuntimeException nếu cấp thuốc không thể hoàn tất; caller sẽ ghi nhận thất bại
+     */
+    @Transactional
+    public DispenseDTO dispenseInTransaction(UUID prescriptionId, UUID dispensedBy) {
+        return dispenseInTransaction(prescriptionId, dispensedBy, null);
+    }
+
+    /**
+     * Thực hiện cấp thuốc nguyên tử với correlationId cho event kết quả.
+     *
+     * @param prescriptionId mã đơn cần cấp
+     * @param dispensedBy người hoặc tác nhân hệ thống thực hiện
+     * @param correlationId mã tương quan
+     * @return phiếu xuất sau khi đã chuyển DISPENSED
+     */
+    @Transactional
+    public DispenseDTO dispenseInTransaction(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        // 1: khóa đơn trước, thống nhất thứ tự với cancel/expire để tránh deadlock.
+        Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId)
+                .orElseThrow(() -> new PrescriptionNotFoundException("Không tìm thấy đơn id=" + prescriptionId));
+
+        // 2: khóa phiếu trước khi kiểm tra trạng thái để chống cấp trùng đồng thời.
+        DispenseSlip slip = dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)
                 .orElseThrow(() -> new DispenseNotFoundException("Không tìm thấy phiếu xuất của đơn id=" + prescriptionId));
 
-        // 2: chống xuất 2 lần (BR-D9) — payment.completed gửi lại không được xuất thêm.
+        // 3: chống xuất 2 lần (BR-D9) — payment.completed gửi lại không được xuất thêm.
         if (!slip.isPending()) {
+            if (slip.getStatus() == DispenseStatus.DISPENSED) {
+                return dispenseDtoMapper.toDto(slip);
+            }
             throw new com.mediflow.pharmacy.domain.exception.DispenseRuleException(
                     "DISPENSE_ALREADY_DONE", "Phiếu không còn ở trạng thái chờ xuất");
         }
 
-        try {
-            // 3-5: nạp đơn + các dòng, sắp xếp theo drugId, khóa ghi từng dòng, chuyển giữ chỗ → xuất thật.
-            Prescription prescription = prescriptionRepo.findById(prescriptionId)
-                    .orElseThrow(() -> new PrescriptionNotFoundException("Không tìm thấy đơn id=" + prescriptionId));
+        if (!prescription.isActive()) {
+            throw new com.mediflow.pharmacy.domain.exception.DispenseRuleException(
+                    "PRESCRIPTION_NOT_ACTIVE", "Đơn thuốc không còn ở trạng thái ACTIVE");
+        }
 
+        // 4-6: sắp xếp theo drugId, khóa ghi từng dòng, chuyển giữ chỗ → xuất thật.
             List<UUID> sortedDrugIds = prescription.getLines().stream()
                     .map(PrescriptionLine::getDrugId)
                     .sorted()
@@ -450,7 +514,11 @@ private void validateNoDuplicateDrugIds(
                             "Giữ chỗ của thuốc id=" + drugId + " không còn hiệu lực");
                 }
 
-                drug.dispenseStock(qty); // trừ kho thật (BR-D4); BR-D2 (hết hạn) vẫn được kiểm tra lúc xuất
+                if (reservation.isExpiredAt(Instant.now())) {
+                    throw new StockReservationRuleException(
+                            "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + drugId + " đã hết hạn");
+                }
+                drug.dispenseStock(qty); // trừ kho thật (BR-D4); BR-D2 vẫn được kiểm tra lúc xuất
                 reservation.markFulfilled(); // RESERVED → FULFILLED — giữ chỗ đã hoàn thành
                 reservationRepo.save(reservation);
 
@@ -463,18 +531,14 @@ private void validateNoDuplicateDrugIds(
             // 7: đánh dấu phiếu DISPENSED và lưu.
             slip.markDispensed(dispensedBy, Instant.now());
             DispenseSlip saved = dispenseSlipRepo.save(slip);
+            prescription.markFulfilled(Instant.now());
+            prescriptionRepo.save(prescription);
 
             // 8-9: stock.low cho thuốc chạm ngưỡng (BR-D11) + filled (kết thúc thành công).
-            publishStockLowIfNeeded(sortedDrugIds);
-            publishFilled(saved, prescription);
+            publishStockLowIfNeeded(sortedDrugIds, correlationId);
+            publishFilled(saved, prescription, correlationId);
 
-            return dispenseDtoMapper.toDto(saved);
-        } catch (RuntimeException ex) {
-            // 6: nhánh bù trừ — mọi lỗi (hết hàng, hết hạn, không đủ) → phiếu FAILED trong
-            // transaction RIÊNG (REQUIRES_NEW) + event prescription.dispense.failed để billing bù trừ (BR-D6, BR-D12).
-            self.markDispenseFailed(prescriptionId, dispensedBy, ex.getMessage());
-            throw ex;
-        }
+        return dispenseDtoMapper.toDto(saved);
     }
 
     /**
@@ -484,20 +548,49 @@ private void validateNoDuplicateDrugIds(
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markDispenseFailed(UUID prescriptionId, UUID dispensedBy, String reason) {
-        dispenseSlipRepo.findByPrescription(prescriptionId)
-                .ifPresent(slip -> {
-                    slip.markFailed(reason == null || reason.isBlank() ? "Xuất thuốc thất bại" : reason);
-                    dispenseSlipRepo.save(slip);
-                });
+        markDispenseFailed(prescriptionId, dispensedBy, null, reason);
+    }
+
+    /**
+     * Ghi nhận cấp thất bại trong transaction mới và phát event bù trừ có correlation.
+     *
+     * @param prescriptionId mã đơn
+     * @param dispensedBy tác nhân thực hiện
+     * @param correlationId mã tương quan payment/request
+     * @param reason lý do thất bại
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markDispenseFailed(UUID prescriptionId, UUID dispensedBy, String correlationId, String reason) {
+        Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId).orElse(null);
+        if (prescription == null) {
+            return;
+        }
+        DispenseSlip slip = dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId).orElse(null);
+        if (slip == null || !slip.isPending() || !prescription.isActive()) {
+            return;
+        }
+        Instant failedAt = Instant.now();
+        List<StockReservation> reservations = reservationRepo.findByPrescriptionForUpdate(prescriptionId);
+        for (StockReservation reservation : reservations) {
+            if (reservation.isReserved()) {
+                reservation.release(com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason.DISPENSE_FAILED,
+                        dispensedBy, failedAt);
+                reservationRepo.save(reservation);
+            }
+        }
+        prescription.markDispenseFailed(failedAt);
+        prescriptionRepo.save(prescription);
+        slip.markFailed(reason == null || reason.isBlank() ? "Xuất thuốc thất bại" : reason);
+        dispenseSlipRepo.save(slip);
         // BR-D6: phát event bù trừ để billing hoàn/hủy hóa đơn. failedItems rỗng khi lỗi
         // không gắn với thuốc cụ thể (vd lỗi hạ tầng); khi mất giữ chỗ thì liệt kê từng thuốc.
         eventPublisher.publishPrescriptionDispenseFailed(new PrescriptionDispenseFailedEvent(
-                UUID.randomUUID(), Instant.now(), null,
-                prescriptionId, null /* invoiceId — chưa biết ở pharmacy */, null /* patientId */, reason,
+                UUID.randomUUID(), failedAt, correlationId,
+                prescriptionId, null /* invoiceId — bổ sung từ payment context */, prescription.getPatientId(), reason,
                 List.of()));
     }
 
-    private void publishStockLowIfNeeded(List<UUID> drugIds) {
+    private void publishStockLowIfNeeded(List<UUID> drugIds, String correlationId) {
         for (UUID drugId : drugIds) {
             Drug drug = drugRepo.findById(drugId).orElse(null);
             if (drug != null && drug.belowLowStockThreshold()) { // BR-D11
@@ -508,7 +601,7 @@ private void validateNoDuplicateDrugIds(
         }
     }
 
-    private void publishFilled(DispenseSlip slip, Prescription prescription) {
+    private void publishFilled(DispenseSlip slip, Prescription prescription, String correlationId) {
         List<PrescriptionFilledEvent.DispensedItem> items = prescription.getLines().stream()
                 .map(l -> new PrescriptionFilledEvent.DispensedItem(
                         l.getDrugId(),
@@ -516,7 +609,7 @@ private void validateNoDuplicateDrugIds(
                         l.getQuantity()))
                 .toList();
         eventPublisher.publishPrescriptionFilled(new PrescriptionFilledEvent(
-                UUID.randomUUID(), Instant.now(), null,
+                UUID.randomUUID(), Instant.now(), correlationId,
                 slip.getPrescriptionId(), prescription.getPatientId(),
                 prescription.getDepartmentId(), prescription.getTotalAmount(), items));
     }
@@ -526,7 +619,6 @@ private void validateNoDuplicateDrugIds(
     // ============================================================
 
     @Override
-    @Transactional
     public void onPaymentCompleted(PaymentCompletedCommand command) {
         // 1: chống trùng theo eventId thật — RabbitMQ có thể gửi lại cùng một message (BR-D9).
         if (processedEventPort.alreadyProcessed(command.eventId())) {
@@ -534,9 +626,9 @@ private void validateNoDuplicateDrugIds(
         }
 
         // 2: gọi lại dispense với người thực hiện là hệ thống.
-        dispense(command.prescriptionId(), SYSTEM_USER);
+        dispense(command.prescriptionId(), SYSTEM_USER, command.correlationId());
 
-        // 3: đánh dấu đã xử lý trong cùng transaction.
+        // 3: ghi nhận sau khi transaction cấp đã commit; adapter persistence tự quản lý transaction save.
         processedEventPort.markProcessed(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY);
     }
 
