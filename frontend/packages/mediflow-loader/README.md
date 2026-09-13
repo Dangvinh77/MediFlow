@@ -1,6 +1,6 @@
 # @mediflow/loader
 
-Dependency-free React/Next.js loader used by MediFlow. A comet-like tracer loops around a downward equilateral triangle while a seamless highlight flows through the clipped, continuously visible `MF` monogram.
+Dependency-free React/Next.js loader used by MediFlow. A comet-like tracer loops around a downward equilateral triangle while two staggered sets assemble and release the clipped `MF` monogram without leaving the frame empty.
 
 ## Use inside this repository
 
@@ -42,6 +42,11 @@ With a visible label:
 | `glow` | `true` | Enables the wider translucent glow |
 | `label` | — | Optional visible and accessible status text |
 | `className` | — | Tailwind classes for the outer wrapper |
+| `intro` | `true` | Enables the staggered MF assembly loop |
+| `slideDuration` | `1.4` | Seconds for each piece to enter |
+| `stagger` | `0.5` | Delay in seconds between pieces |
+| `holdDuration` | `0.5` | Seconds the assembled mark remains in place |
+| `exitDuration` | `1` | Seconds for each piece to leave |
 
 The base loop is 1.45 seconds. The implementation uses declarative SVG animation, so there is no timer, canvas runtime, Rive/Lottie dependency, or client-side React state.
 
