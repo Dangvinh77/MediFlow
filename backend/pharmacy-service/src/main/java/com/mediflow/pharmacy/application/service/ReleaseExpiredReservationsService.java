@@ -25,6 +25,7 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
     private final ExpirePrescriptionTransaction expireTransaction;
     private final Clock clock;
     private final int batchSize;
+    private UUID cursor;
 
     /**
      * Tạo batch service với đồng hồ và giới hạn có thể kiểm thử/cấu hình.
@@ -54,12 +55,21 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
      * @return tổng số dòng reservation đã chuyển sang {@code EXPIRED}
      */
     @Override
-    public int releaseExpiredReservations() {
+    public synchronized int releaseExpiredReservations() {
         Instant now = Instant.now(clock);
         int expiredReservations = 0;
+        java.util.List<UUID> candidates = reservationRepository
+                .findExpiredPrescriptionIdsAfter(now, cursor, batchSize);
+        if (candidates.isEmpty() && cursor != null) {
+            cursor = null;
+            candidates = reservationRepository
+                    .findExpiredPrescriptionIdsAfter(now, null, batchSize);
+        }
+        if (!candidates.isEmpty()) {
+            cursor = candidates.get(candidates.size() - 1);
+        }
 
-        for (UUID prescriptionId : reservationRepository
-                .findExpiredPrescriptionIds(now, batchSize)) {
+        for (UUID prescriptionId : candidates) {
             try {
                 expiredReservations += expireTransaction.expire(prescriptionId, now);
             } catch (RuntimeException exception) {

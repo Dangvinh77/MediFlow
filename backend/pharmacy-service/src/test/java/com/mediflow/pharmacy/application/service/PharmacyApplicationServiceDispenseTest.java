@@ -21,14 +21,11 @@ import org.junit.jupiter.api.Test;
 
 import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
-import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
-import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
-import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
@@ -42,28 +39,27 @@ import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 
 /** Kiểm tra các invariant cấp thuốc trong transaction nghiệp vụ. */
-class PharmacyApplicationServiceDispenseTest {
+class DispenseApplicationServiceTest {
 
     private final DrugRepositoryPort drugRepo = mock(DrugRepositoryPort.class);
     private final PrescriptionRepositoryPort prescriptionRepo = mock(PrescriptionRepositoryPort.class);
     private final DispenseSlipRepositoryPort dispenseSlipRepo = mock(DispenseSlipRepositoryPort.class);
-    private final ProcessedEventPort processedEventPort = mock(ProcessedEventPort.class);
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
-    private final DrugDtoMapper drugDtoMapper = mock(DrugDtoMapper.class);
-    private final PrescriptionDtoMapper prescriptionDtoMapper = mock(PrescriptionDtoMapper.class);
     private final DispenseDtoMapper dispenseDtoMapper = mock(DispenseDtoMapper.class);
-    private final PharmacyApplicationService self = mock(PharmacyApplicationService.class);
 
-    private PharmacyApplicationService service;
+    private DispenseTransactionService transactionService;
+    private RecordDispenseFailureService failureService;
 
     /** Khởi tạo service với các out-port cô lập để chỉ kiểm tra orchestration. */
     @BeforeEach
     void setUp() {
-        service = new PharmacyApplicationService(
-                drugRepo, prescriptionRepo, dispenseSlipRepo, processedEventPort,
-                reservationRepo, eventPublisher, drugDtoMapper, prescriptionDtoMapper,
-                dispenseDtoMapper, self);
+        transactionService = new DispenseTransactionService(
+                prescriptionRepo, dispenseSlipRepo, drugRepo, reservationRepo,
+                eventPublisher, dispenseDtoMapper, Clock.systemUTC());
+        failureService = new RecordDispenseFailureService(
+                prescriptionRepo, dispenseSlipRepo, reservationRepo, drugRepo,
+                eventPublisher, Clock.systemUTC());
     }
 
     /** Cấp thành công phải cập nhật cả phiếu, reservation, đơn và trừ kho đúng một lần. */
@@ -94,7 +90,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(drugRepo.findById(drugId)).thenReturn(Optional.of(drug));
         when(dispenseDtoMapper.toDto(slip)).thenReturn(dto);
 
-        DispenseDTO result = service.dispenseInTransaction(prescriptionId, actorId);
+        DispenseDTO result = transactionService.execute(prescriptionId, actorId, null);
 
         assertThat(result.status()).isEqualTo(DispenseStatus.DISPENSED);
         assertThat(prescription.getStatus()).isEqualTo(PrescriptionStatus.FULFILLED);
@@ -123,7 +119,7 @@ class PharmacyApplicationServiceDispenseTest {
                 .thenReturn(Optional.of(reservation));
         when(reservationRepo.findByPrescription(prescriptionId)).thenReturn(List.of(reservation));
 
-        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+        assertThatThrownBy(() -> transactionService.execute(prescriptionId, UUID.randomUUID(), null))
                 .isInstanceOfSatisfying(StockReservationRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("RESERVATION_EXPIRED"));
         assertThat(drug.getStockQuantity()).isEqualTo(10);
@@ -147,7 +143,7 @@ class PharmacyApplicationServiceDispenseTest {
                 .thenReturn(Optional.of(reservation));
         when(reservationRepo.findByPrescription(prescriptionId)).thenReturn(List.of(reservation));
 
-        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+        assertThatThrownBy(() -> transactionService.execute(prescriptionId, UUID.randomUUID(), null))
                 .isInstanceOfSatisfying(StockReservationRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("RESERVATION_QUANTITY_MISMATCH"));
         assertThat(drug.getStockQuantity()).isEqualTo(10);
@@ -173,7 +169,7 @@ class PharmacyApplicationServiceDispenseTest {
                 .thenReturn(Optional.of(reservation));
         when(reservationRepo.findByPrescription(prescriptionId)).thenReturn(List.of(reservation));
 
-        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+        assertThatThrownBy(() -> transactionService.execute(prescriptionId, UUID.randomUUID(), null))
                 .isInstanceOfSatisfying(DrugRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("DRUG_EXPIRED"));
         assertThat(expiredDrug.getStockQuantity()).isEqualTo(10);
@@ -194,7 +190,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
         when(reservationRepo.findByPrescription(prescriptionId)).thenReturn(List.of(expected, extra));
 
-        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+        assertThatThrownBy(() -> transactionService.execute(prescriptionId, UUID.randomUUID(), null))
                 .isInstanceOfSatisfying(StockReservationRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("RESERVATION_SET_MISMATCH"));
         verify(drugRepo, org.mockito.Mockito.never()).findByIdForUpdate(any());
@@ -204,11 +200,9 @@ class PharmacyApplicationServiceDispenseTest {
     @Test
     void dispense_reservationExpiresExactlyAtNow_isRejected() {
         Instant now = Instant.parse("2026-09-13T08:00:00Z");
-        service = new PharmacyApplicationService(
-                drugRepo, prescriptionRepo, dispenseSlipRepo, processedEventPort,
-                reservationRepo, eventPublisher, drugDtoMapper, prescriptionDtoMapper,
-                dispenseDtoMapper, self, Clock.fixed(now, java.time.ZoneOffset.UTC),
-                java.time.Duration.ofHours(24));
+        transactionService = new DispenseTransactionService(
+                prescriptionRepo, dispenseSlipRepo, drugRepo, reservationRepo,
+                eventPublisher, dispenseDtoMapper, Clock.fixed(now, java.time.ZoneOffset.UTC));
         UUID prescriptionId = UUID.randomUUID();
         UUID drugId = UUID.randomUUID();
         Prescription prescription = prescription(prescriptionId, drugId);
@@ -221,7 +215,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(reservationRepo.findReservedByPrescriptionForUpdate(prescriptionId, drugId))
                 .thenReturn(Optional.of(reservation));
 
-        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+        assertThatThrownBy(() -> transactionService.execute(prescriptionId, UUID.randomUUID(), null))
                 .isInstanceOfSatisfying(StockReservationRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("RESERVATION_EXPIRED"));
     }
@@ -239,7 +233,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(prescriptionRepo.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
 
-        service.markDispenseFailed(prescriptionId, UUID.randomUUID(), "should-not-overwrite");
+        failureService.record(prescriptionId, UUID.randomUUID(), null, null, "should-not-overwrite");
 
         assertThat(prescription.getStatus()).isEqualTo(PrescriptionStatus.FULFILLED);
         assertThat(slip.getStatus()).isEqualTo(DispenseStatus.DISPENSED);
@@ -260,7 +254,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(prescriptionRepo.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(dispenseSlipRepo.save(any(DispenseSlip.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.markDispenseFailed(prescriptionId, UUID.randomUUID(), invoiceId,
+        failureService.record(prescriptionId, UUID.randomUUID(), invoiceId,
                 "payment-correlation", "STOCK_UNAVAILABLE");
 
         var captor = forClass(PrescriptionDispenseFailedEvent.class);
@@ -287,7 +281,7 @@ class PharmacyApplicationServiceDispenseTest {
         when(dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
         when(dispenseDtoMapper.toDto(slip)).thenReturn(dto);
 
-        assertThat(service.dispenseInTransaction(prescriptionId, actorId, "retry-correlation"))
+        assertThat(transactionService.execute(prescriptionId, actorId, "retry-correlation"))
                 .isSameAs(dto);
         verify(drugRepo, org.mockito.Mockito.never()).findByIdForUpdate(any());
         verify(reservationRepo, org.mockito.Mockito.never())

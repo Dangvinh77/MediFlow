@@ -3,14 +3,9 @@ package com.mediflow.pharmacy.application.service;
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
 import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.dto.response.DrugDTO;
-import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
-import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
-import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
-import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
-import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.StockReservation;
@@ -22,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
@@ -35,24 +31,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /** Kiểm tra orchestration của các use case quản lý danh mục thuốc. */
-class PharmacyApplicationServiceDrugTest {
+class DrugApplicationServiceTest {
 
     private final DrugRepositoryPort drugRepo = mock(DrugRepositoryPort.class);
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final DrugDtoMapper drugDtoMapper = mock(DrugDtoMapper.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
 
-    private final PharmacyApplicationService service = new PharmacyApplicationService(
+    private final DrugApplicationService service = new DrugApplicationService(
             drugRepo,
-            mock(PrescriptionRepositoryPort.class),
-            mock(DispenseSlipRepositoryPort.class),
-            mock(ProcessedEventPort.class),
             reservationRepo,
             eventPublisher,
             drugDtoMapper,
-            mock(PrescriptionDtoMapper.class),
-            mock(DispenseDtoMapper.class),
-            mock(PharmacyApplicationService.class));
+            Clock.systemUTC());
 
     /** Điều chỉnh tồn kho phải đọc bằng khóa ghi trước khi thay đổi số lượng. */
     @Test

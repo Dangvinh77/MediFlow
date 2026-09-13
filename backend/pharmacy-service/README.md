@@ -12,7 +12,7 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. Transactional
-outbox and real PostgreSQL/RabbitMQ integration gates remain before release.
+transactional outbox is enabled for durable event delivery; real PostgreSQL/RabbitMQ integration gates remain before release.
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 

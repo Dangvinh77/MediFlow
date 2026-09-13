@@ -6,8 +6,10 @@ import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO;
+import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
@@ -33,11 +35,14 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,6 +69,9 @@ class PrescriptionControllerTest {
 
     @MockBean
     private CancelPrescriptionUseCase cancelPrescriptionUseCase;
+
+    @MockBean
+    private DispensePrescriptionUseCase dispensePrescriptionUseCase;
 
     @ParameterizedTest
     @ValueSource(strings = {"ADMIN", "DOCTOR"})
@@ -171,6 +179,43 @@ class PrescriptionControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
         verifyNoInteractions(getPrescriptionUseCase);
+    }
+
+    /** ADMIN và PHARMACIST được xuất thủ công với actor/correlation lấy từ request đã xác thực. */
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMIN", "PHARMACIST"})
+    void dispense_allowedRole_passesActorAndCorrelation(String role) throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        DispenseDTO response = new DispenseDTO(
+                UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
+                Instant.now(), actorId, null);
+        when(dispensePrescriptionUseCase.dispense(
+                prescriptionId, actorId, "manual-dispense-correlation"))
+                .thenReturn(response);
+
+        mockMvc.perform(put(BASE_PATH + "/{prescriptionId}/dispense", prescriptionId)
+                        .with(user(actorId.toString()).roles(role))
+                        .header("X-Correlation-ID", "manual-dispense-correlation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.prescriptionId").value(prescriptionId.toString()))
+                .andExpect(jsonPath("$.data.status").value("DISPENSED"))
+                .andExpect(jsonPath("$.correlationId").value("manual-dispense-correlation"));
+
+        verify(dispensePrescriptionUseCase).dispense(
+                eq(prescriptionId), eq(actorId), eq("manual-dispense-correlation"));
+    }
+
+    /** DOCTOR không được phép gọi endpoint xuất thuốc. */
+    @Test
+    void dispense_doctorRole_returns403() throws Exception {
+        mockMvc.perform(put(BASE_PATH + "/{prescriptionId}/dispense", UUID.randomUUID())
+                        .with(user(UUID.randomUUID().toString()).roles("DOCTOR")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(dispensePrescriptionUseCase);
     }
 
     private CreatePrescriptionRequest validRequest() {

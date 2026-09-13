@@ -139,6 +139,7 @@ public class RabbitConfig {
      * @param maxAttempts tổng số lần thử, tối thiểu 1
      * @param initialIntervalMs backoff lần đầu theo mili-giây
      * @param maxIntervalMs backoff tối đa theo mili-giây
+     * @param autoStartup có tự khởi động listener cùng application context hay không
      * @return factory listener có retry policy bounded
      */
     @Bean
@@ -147,13 +148,15 @@ public class RabbitConfig {
             Jackson2JsonMessageConverter converter,
             @Value("${mediflow.pharmacy.rabbit.retry.max-attempts:3}") int maxAttempts,
             @Value("${mediflow.pharmacy.rabbit.retry.initial-interval-ms:1000}") long initialIntervalMs,
-            @Value("${mediflow.pharmacy.rabbit.retry.max-interval-ms:10000}") long maxIntervalMs) {
+            @Value("${mediflow.pharmacy.rabbit.retry.max-interval-ms:10000}") long maxIntervalMs,
+            @Value("${spring.rabbitmq.listener.simple.auto-startup:true}") boolean autoStartup) {
         if (maxAttempts < 1 || initialIntervalMs <= 0 || maxIntervalMs < initialIntervalMs) {
             throw new IllegalArgumentException("Rabbit retry configuration is invalid");
         }
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(converter);
+        factory.setAutoStartup(autoStartup);
         factory.setAdviceChain(RetryInterceptorBuilder.stateless()
                 .maxAttempts(maxAttempts)
                 .backOffOptions(initialIntervalMs, 2.0, maxIntervalMs)

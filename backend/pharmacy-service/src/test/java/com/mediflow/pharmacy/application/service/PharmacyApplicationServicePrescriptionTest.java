@@ -3,15 +3,14 @@ package com.mediflow.pharmacy.application.service;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
-import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
 import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
-import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionCreationForbiddenException;
@@ -31,6 +30,8 @@ import org.mockito.InOrder;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,34 +48,28 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /** Kiểm tra orchestration của use case kê đơn thuốc. */
-class PharmacyApplicationServicePrescriptionTest {
+class PrescriptionApplicationServiceTest {
 
     private final DrugRepositoryPort drugRepo = mock(DrugRepositoryPort.class);
     private final PrescriptionRepositoryPort prescriptionRepo = mock(PrescriptionRepositoryPort.class);
     private final DispenseSlipRepositoryPort dispenseSlipRepo = mock(DispenseSlipRepositoryPort.class);
-    private final ProcessedEventPort processedEventPort = mock(ProcessedEventPort.class);
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
-    private final DrugDtoMapper drugDtoMapper = mock(DrugDtoMapper.class);
     private final PrescriptionDtoMapper prescriptionDtoMapper = mock(PrescriptionDtoMapper.class);
-    private final DispenseDtoMapper dispenseDtoMapper = mock(DispenseDtoMapper.class);
-    private final PharmacyApplicationService self = mock(PharmacyApplicationService.class);
 
-    private PharmacyApplicationService service;
+    private PrescriptionApplicationService service;
 
     @BeforeEach
     void setUp() {
-        service = new PharmacyApplicationService(
+        service = new PrescriptionApplicationService(
                 drugRepo,
                 prescriptionRepo,
                 dispenseSlipRepo,
-                processedEventPort,
                 reservationRepo,
                 eventPublisher,
-                drugDtoMapper,
                 prescriptionDtoMapper,
-                dispenseDtoMapper,
-                self);
+                Clock.systemUTC(),
+                Duration.ofHours(24));
     }
 
     @Test
@@ -167,7 +162,7 @@ class PharmacyApplicationServicePrescriptionTest {
         UUID actorId = UUID.randomUUID();
 
         assertThatThrownBy(() -> service.create(new CreatePrescriptionCommand(
-                request, actorId, false, "identity-test")))
+                request, new ActorIdentity(actorId, null, "DOCTOR"), "identity-test")))
                 .isInstanceOf(PrescriptionCreationForbiddenException.class);
 
         verifyNoInteractions(drugRepo, prescriptionRepo, reservationRepo, dispenseSlipRepo, eventPublisher);
@@ -188,7 +183,8 @@ class PharmacyApplicationServicePrescriptionTest {
                 UUID.randomUUID(), UUID.randomUUID(), requestedDoctorId, UUID.randomUUID(),
                 LocalDate.now(), List.of(new PrescriptionLineRequest(drugId, 1, "Ngày 1 lần")));
 
-        service.create(new CreatePrescriptionCommand(request, adminId, true, "admin-test"));
+        service.create(new CreatePrescriptionCommand(
+                request, new ActorIdentity(adminId, null, "ADMIN"), "admin-test"));
 
         ArgumentCaptor<Prescription> captor = ArgumentCaptor.forClass(Prescription.class);
         verify(prescriptionRepo).save(captor.capture());
@@ -303,7 +299,10 @@ class PharmacyApplicationServicePrescriptionTest {
 
     /** Tạo command với actor đúng doctorId để test orchestration không phụ thuộc JWT adapter. */
     private CreatePrescriptionCommand commandOf(CreatePrescriptionRequest request) {
-        return new CreatePrescriptionCommand(request, request.doctorId(), false, "test-correlation");
+        return new CreatePrescriptionCommand(
+                request,
+                new ActorIdentity(UUID.randomUUID(), request.doctorId(), "DOCTOR"),
+                "test-correlation");
     }
 
     private Drug drug(UUID id, String name, int stock, String price) {

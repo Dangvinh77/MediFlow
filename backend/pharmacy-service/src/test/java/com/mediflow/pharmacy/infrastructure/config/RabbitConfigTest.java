@@ -20,7 +20,7 @@ class RabbitConfigTest {
     @Test
     void listenerFactory_validRetryConfiguration_isCreated() {
         SimpleRabbitListenerContainerFactory factory = config.rabbitListenerContainerFactory(
-                connectionFactory, converter, 3, 1000, 10000);
+                connectionFactory, converter, 3, 1000, 10000, false);
 
         assertThat(factory).isNotNull();
     }
@@ -29,10 +29,10 @@ class RabbitConfigTest {
     @Test
     void listenerFactory_invalidRetryConfiguration_isRejected() {
         assertThatThrownBy(() -> config.rabbitListenerContainerFactory(
-                connectionFactory, converter, 0, 1000, 10000))
+                connectionFactory, converter, 0, 1000, 10000, true))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.rabbitListenerContainerFactory(
-                connectionFactory, converter, 3, 10000, 1000))
+                connectionFactory, converter, 3, 10000, 1000, true))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

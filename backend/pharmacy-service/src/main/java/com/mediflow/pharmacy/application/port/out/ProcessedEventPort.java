@@ -23,6 +23,11 @@ public interface ProcessedEventPort {
      */
     boolean claimIfAbsent(UUID eventId, String routingKey);
 
-    /** Đánh dấu event đã được xử lý — gọi trong cùng transaction với nghiệp vụ để chống xử lý trùng (BR-D9). */
+    /**
+     * Ghi dấu event theo cách tương thích với caller cũ.
+     *
+     * @deprecated use {@link #claimIfAbsent(UUID, String)} so concurrent consumers cannot both win
+     */
+    @Deprecated(forRemoval = false)
     void markProcessed(UUID eventId, String routingKey);
 }

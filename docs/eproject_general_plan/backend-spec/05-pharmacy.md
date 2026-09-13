@@ -95,6 +95,20 @@ CREATE TABLE PROCESSED_EVENT (
     processed_at TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
+-- Outbox bền vững: ghi cùng transaction nghiệp vụ, dispatcher gửi RabbitMQ sau commit.
+CREATE TABLE PHARMACY_EVENT_OUTBOX (
+    event_id     UUID PRIMARY KEY,
+    routing_key  VARCHAR(100) NOT NULL,
+    payload      TEXT NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    published_at TIMESTAMPTZ,
+    attempts     INT NOT NULL DEFAULT 0,
+    last_error   VARCHAR(500)
+);
+CREATE INDEX idx_pharmacy_outbox_pending
+    ON PHARMACY_EVENT_OUTBOX (created_at)
+    WHERE published_at IS NULL;
+
 -- Giữ chỗ tồn kho (stock reservation): kê đơn = "hứa" có thuốc ngay lúc kê.
 -- Vòng đời: RESERVED --xuất--> FULFILLED | --hủy/hết hạn--> RELEASED / EXPIRED.
 -- Số tồn "có thể bán" = stock_quantity - Σ(quantity) của các dòng RESERVED.
@@ -344,7 +358,7 @@ public interface StockReservationRepositoryPort {
 
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
-**Vì sao cần:** application phải "báo tin" cho các service khác nhưng không được đụng RabbitMQ. Adapter trong `infrastructure/messaging` làm thật (publish **sau khi** transaction commit).
+**Vì sao cần:** application phải "báo tin" cho các service khác nhưng không được đụng RabbitMQ. Adapter trong `infrastructure/messaging` ghi transactional outbox trong cùng transaction; dispatcher publish **sau khi** transaction commit để không mất event khi service crash.
 
 ```java
 public interface PharmacyEventPublisherPort {
@@ -545,7 +559,7 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 
 ## 9. Event
 
-> Quy tắc chung (`docs/ai/06-events-rabbitmq.md`): mọi event bắt đầu bằng `eventId, occurredAt, correlationId`; publish **sau khi** transaction commit; consumer phải chống trùng (dedupe theo `eventId`).
+> Quy tắc chung (`docs/ai/06-events-rabbitmq.md`): mọi event bắt đầu bằng `eventId, occurredAt, correlationId`; dispatcher publish từ transactional outbox **sau khi** transaction commit; consumer phải chống trùng (dedupe theo `eventId`).
 
 ### Publish
 
@@ -653,7 +667,13 @@ pharmacy-service/src/main/java/com/mediflow/pharmacy/
 │   ├── PrescriptionDtoMapper.java                       # MapStruct: Prescription ↔ PrescriptionDTO
 │   └── DispenseDtoMapper.java                           # MapStruct: DispenseSlip ↔ DispenseDTO
 ├── application/service/
-│   └── PharmacyApplicationService.java                  # thực hiện 4 in-port
+│   ├── DrugApplicationService.java                      # ManageDrugUseCase
+│   ├── PrescriptionApplicationService.java              # Create/GetPrescriptionUseCase
+│   ├── DispenseApplicationService.java                  # DispensePrescriptionUseCase
+│   ├── PaymentApplicationService.java                   # ReactToPaymentUseCase
+│   ├── DispenseTransactionService.java                  # transaction owner
+│   ├── RecordDispenseFailureService.java                # REQUIRES_NEW failure writer
+│   └── LatePaymentCompensationService.java              # terminal payment compensation
 ├── web/                                    # DRIVING adapter (HTTP) — gọi vào application
 │   ├── DrugController.java                              # /api/v1/pharmacy/drugs (4 endpoints)
 │   ├── PrescriptionController.java                      # POST, GET /{id}, PUT /{id}/dispense

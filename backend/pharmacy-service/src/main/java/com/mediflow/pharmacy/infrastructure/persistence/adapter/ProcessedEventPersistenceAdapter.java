@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.ProcessedEventJpaEntity;
@@ -15,9 +16,9 @@ import lombok.RequiredArgsConstructor;
  * Adapter cho {@link ProcessedEventPort} — sổ chống xử lý trùng (BR-D9). Khi RabbitMQ gửi
  * lại cùng một event, bảng PROCESSED_EVENT cho biết đã xử lý rồi để consumer bỏ qua.
  *
- * <p>{@code markProcessed} được gọi trong CÙNG transaction với nghiệp vụ (onPaymentCompleted),
- * nên nếu nghiệp vụ rollback thì dấu "đã xử lý" cũng rollback theo — đúng ý muốn: chỉ đánh dấu
- * xử lý khi cả chuỗi thành công.
+ * <p>{@code claimIfAbsent} được gọi sau khi nghiệp vụ đạt trạng thái terminal. Claim chạy trong
+ * transaction riêng và dùng unique key ở database, nên lỗi hạ tầng tạm thời không làm mất event
+ * trước khi RabbitMQ retry.
  */
 @Component
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventPort {
      * @return true khi row mới được tạo, false khi event đã được claim
      */
     @Override
+    @Transactional
     public boolean claimIfAbsent(UUID eventId, String routingKey) {
         return jpaRepo.insertIfAbsent(eventId, routingKey) == 1;
     }

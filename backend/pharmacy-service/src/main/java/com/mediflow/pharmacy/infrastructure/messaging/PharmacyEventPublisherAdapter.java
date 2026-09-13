@@ -8,24 +8,22 @@ import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.application.event.StockLowEvent;
 import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
-import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import java.util.UUID;
 
 /**
  * Adapter phát các sự kiện nghiệp vụ của pharmacy-service.
  *
- * <p>Khi đang có transaction, payload chỉ được gửi sau commit thành công.
- * Nếu transaction rollback, callback afterCommit không được thực thi và bên
- * ngoài sẽ không nhìn thấy sự kiện cho dữ liệu không tồn tại.</p>
+ * <p>Trong production payload được ghi vào transactional outbox cùng transaction nghiệp vụ.
+ * Dispatcher sẽ gửi lại các dòng chưa published sau commit; vì vậy crash giữa DB commit và
+ * RabbitMQ không làm mất event.</p>
  */
 @Component
-@RequiredArgsConstructor
 public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort {
-
-    private static final String EXCHANGE = "mediflow.events";
 
     private static final String PRESCRIPTION_CANCELLED =
             "prescription.cancelled";
@@ -48,87 +46,75 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     private static final String STOCK_ADJUSTED =
             "stock.adjusted";
 
-    private final RabbitTemplate rabbitTemplate;
+    private final PharmacyEventOutboxJpaRepository outboxRepository;
+    private final ObjectMapper objectMapper;
+
+    /** Creates the adapter that persists events before the surrounding transaction commits. */
+    public PharmacyEventPublisherAdapter(
+            PharmacyEventOutboxJpaRepository outboxRepository,
+            ObjectMapper objectMapper) {
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void publishPrescriptionCancelled(
             PrescriptionCancelledEvent event) {
 
-        publishAfterCommit(PRESCRIPTION_CANCELLED, event);
+        enqueue(PRESCRIPTION_CANCELLED, event.eventId(), event);
     }
 
     @Override
     public void publishPrescriptionCreated(
             PrescriptionCreatedEvent event) {
 
-        publishAfterCommit(PRESCRIPTION_CREATED, event);
+        enqueue(PRESCRIPTION_CREATED, event.eventId(), event);
     }
 
     @Override
     public void publishPrescriptionFilled(
             PrescriptionFilledEvent event) {
 
-        publishAfterCommit(PRESCRIPTION_FILLED, event);
+        enqueue(PRESCRIPTION_FILLED, event.eventId(), event);
     }
 
     @Override
     public void publishPrescriptionDispenseFailed(
             PrescriptionDispenseFailedEvent event) {
 
-        publishAfterCommit(PRESCRIPTION_DISPENSE_FAILED, event);
+        enqueue(PRESCRIPTION_DISPENSE_FAILED, event.eventId(), event);
     }
 
     @Override
     public void publishPrescriptionExpired(
             PrescriptionExpiredEvent event) {
 
-        publishAfterCommit(PRESCRIPTION_EXPIRED, event);
+        enqueue(PRESCRIPTION_EXPIRED, event.eventId(), event);
     }
 
     @Override
     public void publishStockLow(StockLowEvent event) {
-        publishAfterCommit(STOCK_LOW, event);
+        enqueue(STOCK_LOW, event.eventId(), event);
     }
 
-    /** Gửi audit stock adjustment sau commit. */
+    /** Records stock-adjustment audit for durable delivery. */
     @Override
     public void publishStockAdjusted(StockAdjustedEvent event) {
-        publishAfterCommit(STOCK_ADJUSTED, event);
+        enqueue(STOCK_ADJUSTED, event.eventId(), event);
     }
 
     /**
-     * Đăng ký gửi payload sau commit nếu đang ở trong transaction.
-     *
-     * <p>Khi adapter được gọi ngoài transaction, chẳng hạn từ unit test hoặc
-     * một tác vụ độc lập, payload được gửi ngay.</p>
+     * Serializes and stores one event in the durable outbox.
      */
-    private void publishAfterCommit(
+    private void enqueue(
             String routingKey,
+            UUID eventId,
             Object payload) {
-
-        if (!TransactionSynchronizationManager
-                .isSynchronizationActive()) {
-
-            publishNow(routingKey, payload);
-            return;
+        try {
+            String json = objectMapper.writeValueAsString(payload);
+            outboxRepository.save(new PharmacyEventOutboxJpaEntity(eventId, routingKey, json));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Không thể serialize pharmacy event", exception);
         }
-
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        publishNow(routingKey, payload);
-                    }
-                });
-    }
-
-    private void publishNow(
-            String routingKey,
-            Object payload) {
-
-        rabbitTemplate.convertAndSend(
-                EXCHANGE,
-                routingKey,
-                payload);
     }
 }

@@ -1,0 +1,56 @@
+package com.mediflow.pharmacy.application.dto.command;
+
+import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Authenticated identity crossing the driving-adapter/application boundary.
+ *
+ * <p>{@code accountId} is the JWT subject and is never treated as a staff id. A staff id is
+ * optional until the Gateway contract supplies the signed {@code staffId} claim. Use
+ * {@link #requireStaffId()} for business operations whose ownership is defined by staff identity.
+ */
+public record ActorIdentity(UUID accountId, UUID staffId, String role) {
+
+    /** Creates a validated identity snapshot from signed JWT claims. */
+    public ActorIdentity {
+        Objects.requireNonNull(accountId, "accountId is required");
+        if (role == null || role.isBlank()) {
+            throw new IllegalArgumentException("role is required");
+        }
+        role = role.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /** Returns whether this account has the administrative role. */
+    public boolean isAdministrator() {
+        return "ADMIN".equals(role);
+    }
+
+    /** Returns whether this identity represents a technical system actor. */
+    public boolean isSystem() {
+        return "SYSTEM".equals(role);
+    }
+
+    /** Returns the staff id or fails closed when the signed claim is unavailable. */
+    public UUID requireStaffId() {
+        if (staffId == null) {
+            throw new IllegalStateException("STAFF_ID_REQUIRED");
+        }
+        return staffId;
+    }
+
+    /**
+     * Returns an audit actor without pretending an account UUID is a staff UUID.
+     * Staff-backed operations use staffId; technical/admin operations retain accountId.
+     */
+    public UUID auditActorId() {
+        return staffId != null ? staffId : accountId;
+    }
+
+    /** Keeps Spring Security's {@code Authentication#getName()} compatible with JWT subject. */
+    @Override
+    public String toString() {
+        return accountId.toString();
+    }
+}

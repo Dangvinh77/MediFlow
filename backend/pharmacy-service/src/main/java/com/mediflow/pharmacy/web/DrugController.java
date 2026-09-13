@@ -9,9 +9,11 @@ import com.mediflow.common.api.PageQuery;
 
 import lombok.RequiredArgsConstructor;
 import com.mediflow.common.api.PageResult;
+import com.mediflow.common.security.JwtClaims;
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
 import com.mediflow.pharmacy.application.dto.request.CreateDrugRequest;
 import com.mediflow.pharmacy.application.dto.response.DrugDTO;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 
 import java.net.URI;
 import java.util.UUID;
@@ -19,6 +21,8 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * REST controller cung cấp các API quản lý danh mục thuốc và tồn kho.
@@ -88,11 +92,41 @@ public class DrugController {
   */
  @PutMapping("/{id}/stock")
  @PreAuthorize("hasAnyRole('ADMIN','PHARMACIST')")
- public ResponseEntity<ApiResponse<DrugDTO>> adjustStock(
-    @PathVariable UUID id,
-    @Valid @RequestBody AdjustStockRequest request){
-    DrugDTO updated  = manageDrugUseCase.adjustStock(id, request);
-    return ResponseEntity.ok(ApiResponse.ok(updated));
+  public ResponseEntity<ApiResponse<DrugDTO>> adjustStock(
+     @PathVariable UUID id,
+     @Valid @RequestBody AdjustStockRequest request,
+     Authentication authentication,
+     @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId){
+     ActorIdentity actor = parseActor(authentication);
+     DrugDTO updated  = manageDrugUseCase.adjustStock(
+             id, request, actor.auditActorId(), correlationId);
+     return ResponseEntity.ok(ApiResponse.ok(updated, correlationId));
+ }
+
+ /**
+  * Parses the shared JWT subject contract without exposing malformed identities as HTTP 500.
+  *
+  * @param authentication authenticated principal
+  * @return actor UUID used in stock audit events
+  * @throws AccessDeniedException when the JWT subject is absent or not a UUID
+  */
+ private ActorIdentity parseActor(Authentication authentication) {
+     if (authentication == null || authentication.getName() == null) {
+         throw new AccessDeniedException("Không xác định được người dùng từ JWT subject");
+     }
+     if (authentication.getPrincipal() instanceof ActorIdentity actor) {
+         return actor;
+     }
+     try {
+         UUID accountId = UUID.fromString(authentication.getName());
+         String role = authentication.getAuthorities().stream()
+                 .findFirst()
+                 .map(authority -> authority.getAuthority().replaceFirst("^ROLE_", ""))
+                 .orElseThrow(() -> new AccessDeniedException("JWT không có role hợp lệ"));
+         return new ActorIdentity(accountId, null, role);
+     } catch (IllegalArgumentException exception) {
+         throw new AccessDeniedException("JWT subject không phải mã người dùng hợp lệ", exception);
+     }
  }
  
 }

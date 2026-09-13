@@ -2,7 +2,9 @@ package com.mediflow.pharmacy.application.service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
 
@@ -88,19 +91,20 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
 
         List<StockReservation> reservations = reservationRepository
                 .findByPrescriptionForUpdate(command.prescriptionId());
-        requireAllReserved(reservations, command.prescriptionId());
+        requireAllReserved(reservations, prescription);
 
         Instant cancelledAt = Instant.now();
-        ReservationReleaseReason releaseReason = command.administrator()
+        UUID auditActorId = command.actor().auditActorId();
+        ReservationReleaseReason releaseReason = command.actor().isAdministrator()
                 ? ReservationReleaseReason.ADMIN_OVERRIDE
                 : ReservationReleaseReason.PRESCRIPTION_CANCELLED;
 
         for (StockReservation reservation : reservations) {
-            reservation.release(releaseReason, command.actorId(), cancelledAt);
+            reservation.release(releaseReason, auditActorId, cancelledAt);
             reservationRepository.save(reservation);
         }
 
-        prescription.cancel(command.actorId(), command.reason(), cancelledAt);
+        prescription.cancel(auditActorId, command.reason(), cancelledAt);
         slip.markCancelled(command.reason(), cancelledAt);
         Prescription savedPrescription = prescriptionRepository.save(prescription);
         dispenseSlipRepository.save(slip);
@@ -111,7 +115,7 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
                 command.correlationId(),
                 savedPrescription.getPrescriptionId(),
                 savedPrescription.getPatientId(),
-                command.actorId(),
+                auditActorId,
                 savedPrescription.getCancellationReason()));
 
         return new CancelPrescriptionResult(
@@ -127,7 +131,7 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
      * @param command lệnh do web adapter tạo
      */
     private void requireValidCommand(CancelPrescriptionCommand command) {
-        if (command == null || command.prescriptionId() == null || command.actorId() == null) {
+        if (command == null || command.prescriptionId() == null || command.actor() == null) {
             throw new PrescriptionRuleException(
                     "PRESCRIPTION_CANCEL_COMMAND_INVALID",
                     "Mã đơn và người thực hiện hủy là bắt buộc");
@@ -144,10 +148,18 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
             CancelPrescriptionCommand command,
             Prescription prescription) {
 
-        if (!command.administrator()
-                && !command.actorId().equals(prescription.getDoctorId())) {
-            throw new PrescriptionCancellationForbiddenException(
-                    "Chỉ bác sĩ kê đơn hoặc quản trị viên được phép hủy đơn thuốc");
+        if (!command.actor().isAdministrator()) {
+            UUID staffId;
+            try {
+                staffId = command.actor().requireStaffId();
+            } catch (IllegalStateException exception) {
+                throw new PrescriptionCancellationForbiddenException(
+                        "Không thể hủy đơn khi JWT chưa cung cấp staffId đã xác thực");
+            }
+            if (!staffId.equals(prescription.getDoctorId())) {
+                throw new PrescriptionCancellationForbiddenException(
+                        "Chỉ bác sĩ kê đơn hoặc quản trị viên được phép hủy đơn thuốc");
+            }
         }
     }
 
@@ -155,21 +167,32 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
      * Bảo đảm aggregate reservation đầy đủ và chưa có dòng nào kết thúc.
      *
      * @param reservations các reservation đã khóa theo drugId
-     * @param prescriptionId mã đơn dùng trong thông báo lỗi
+     * @param prescription prescription đã khóa, dùng để đối chiếu đầy đủ các dòng thuốc
      */
     private void requireAllReserved(
             List<StockReservation> reservations,
-            UUID prescriptionId) {
+            Prescription prescription) {
 
         if (reservations.isEmpty()) {
             throw new PrescriptionRuleException(
                     "PRESCRIPTION_RESERVATION_MISSING",
-                    "Đơn thuốc id=" + prescriptionId + " không có giữ chỗ tồn kho");
+                    "Đơn thuốc id=" + prescription.getPrescriptionId() + " không có giữ chỗ tồn kho");
         }
         if (reservations.stream().anyMatch(reservation -> !reservation.isReserved())) {
             throw new PrescriptionRuleException(
                     "PRESCRIPTION_RESERVATION_INCONSISTENT",
                     "Không thể hủy đơn vì một phần giữ chỗ đã kết thúc");
+        }
+        Set<UUID> expectedDrugIds = prescription.getLines().stream()
+                .map(PrescriptionLine::getDrugId)
+                .collect(Collectors.toSet());
+        Set<UUID> actualDrugIds = reservations.stream()
+                .map(StockReservation::getDrugId)
+                .collect(Collectors.toSet());
+        if (reservations.size() != expectedDrugIds.size() || !actualDrugIds.equals(expectedDrugIds)) {
+            throw new PrescriptionRuleException(
+                    "PRESCRIPTION_RESERVATION_INCONSISTENT",
+                    "Không thể hủy đơn vì tập giữ chỗ không khớp các dòng thuốc");
         }
     }
 }

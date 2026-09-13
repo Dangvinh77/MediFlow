@@ -109,6 +109,19 @@ class DrugTest {
                 .hasMessageContaining("tồn kho âm");
     }
 
+    /** Điều chỉnh vượt giới hạn int phải có mã lỗi số lượng, không bị báo nhầm là hết hàng. */
+    @Test
+    void adjustStock_overflow_throwsQuantityError() {
+        Drug drug = Drug.restore(
+                java.util.UUID.randomUUID(), "Paracetamol", "Paracetamol", "viên",
+                new BigDecimal("1200.00"), Integer.MAX_VALUE, LocalDate.now().plusDays(30),
+                "MediFlow", 2, null, null);
+
+        assertThatThrownBy(() -> drug.adjustStock(1))
+                .isInstanceOf(DrugRuleException.class)
+                .hasMessageContaining("vượt giới hạn");
+    }
+
     private Drug create(int stockQuantity) {
         return Drug.create(
                 "Paracetamol", "Paracetamol", "viên", new BigDecimal("1200.00"), stockQuantity,

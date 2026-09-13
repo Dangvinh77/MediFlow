@@ -1,7 +1,7 @@
 ### MediFlow — Pharmacy service qua gateway :8080
 ###
 ### Danh mục thuốc bên dưới là request LIVE, khớp với DrugController hiện tại.
-### Phần đơn thuốc ở cuối file vẫn được đánh dấu DEMO vì PrescriptionController chưa được triển khai.
+### Các request bên dưới khớp với PrescriptionController hiện tại.
 ###
 ### Trước khi chạy:
 ###  - eureka-server → gateway → pharmacy-service đang hoạt động.
@@ -103,9 +103,9 @@ Content-Type: application/json
   "expiryDate": "2030-12-31"
 }
 
-# ============ ĐƠN THUỐC — DEMO, CHƯA CÓ CONTROLLER ============
+# ============ ĐƠN THUỐC ============
 
-### Kê đơn — dự kiến 201, role ADMIN/DOCTOR
+### Kê đơn — 201, role ADMIN/DOCTOR
 POST {{host}}/api/v1/pharmacy/prescriptions
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -125,10 +125,10 @@ Content-Type: application/json
   ]
 }
 
-### Xem đơn thuốc — DEMO
+### Xem đơn thuốc
 GET {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
-### Xuất thuốc — DEMO, role ADMIN/PHARMACIST
+### Xuất thuốc thủ công — 200, role ADMIN/PHARMACIST
 PUT {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000/dispense
 Authorization: Bearer {{token}}

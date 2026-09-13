@@ -62,4 +62,17 @@ public interface StockReservationJpaRepository extends JpaRepository<StockReserv
             @Param("status") ReservationStatus status,
             @Param("now") java.time.Instant now,
             Pageable pageable);
+
+    /** Returns the next cursor page so a poison aggregate cannot starve later rows. */
+    @Query("""
+            SELECT DISTINCT r.prescriptionId FROM StockReservationJpaEntity r
+            WHERE r.status = :status AND r.expiresAt <= :now
+              AND (:afterId IS NULL OR r.prescriptionId > :afterId)
+            ORDER BY r.prescriptionId
+            """)
+    List<UUID> findExpiredPrescriptionIdsAfter(
+            @Param("status") ReservationStatus status,
+            @Param("now") java.time.Instant now,
+            @Param("afterId") UUID afterId,
+            Pageable pageable);
 }

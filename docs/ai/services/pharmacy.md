@@ -79,6 +79,10 @@ Ràng buộc DB: `price >= 0`, `stock_quantity >= 0` — đây là "tuyến phò
 
 `event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin (xem quy tắc BR-D9). Payment consumer claim bằng `INSERT ... ON CONFLICT DO NOTHING` trong cùng transaction với dispense.
 
+### `PHARMACY_EVENT_OUTBOX` — hàng đợi event bền vững
+
+`event_id` UUID PK · `routing_key` · `payload` JSON · `created_at` · `published_at` · `attempts` · `last_error`. Application ghi dòng outbox trong cùng transaction nghiệp vụ; dispatcher gửi các dòng chưa published theo thứ tự tạo và giữ lại khi RabbitMQ lỗi (at-least-once).
+
 ## 5. Các cổng (ports) — phần quan trọng nhất
 
 ### 5.0 Port là gì?
@@ -171,7 +175,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
-**Vì sao cần:** application phải "báo tin" cho các service khác khi có thay đổi, nhưng không được đụng vào RabbitMQ. Interface này liệt kê các tin pharmacy có thể gửi; `PharmacyEventPublisherAdapter` trong `infrastructure/messaging` làm thật (publish **sau khi** transaction commit để không báo tin cho giao dịch bị hủy).
+**Vì sao cần:** application phải "báo tin" cho các service khác khi có thay đổi, nhưng không được đụng vào RabbitMQ. Interface này liệt kê các tin pharmacy có thể gửi; adapter ghi event vào **transactional outbox** trong cùng transaction, dispatcher mới chuyển sang RabbitMQ sau commit.
 
 | Phương thức | Gửi tin gì | Khi nào / vì sao |
 |-------------|-----------|------------------|
@@ -179,7 +183,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 | `publishPrescriptionFilled(...)` | `prescription.filled` | sau khi xuất thuốc thành công — clinical/notification/report quan tâm |
 | `publishPrescriptionDispenseFailed(...)` | `prescription.dispense.failed` | xuất thất bại — **kích hoạt bù trừ** của billing (BR-D6) |
 | `publishStockLow(...)` | `stock.low` | tồn kho chạm ngưỡng (BR-D11). Kiểu "bắn rồi quên": lỗi gửi tin này không được làm hỏng lần xuất thuốc vừa thành công |
-| `publishStockAdjusted(...)` | `stock.adjusted` | audit điều chỉnh tồn với before/after/delta/reason |
+| `publishStockAdjusted(...)` | `stock.adjusted` | audit điều chỉnh tồn với actor/before/after/delta/reason |
 
 ## 6. Luồng nghiệp vụ chính
 

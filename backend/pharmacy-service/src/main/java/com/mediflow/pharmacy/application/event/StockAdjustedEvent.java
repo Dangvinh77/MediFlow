@@ -8,6 +8,7 @@ public record StockAdjustedEvent(
         UUID eventId,
         Instant occurredAt,
         String correlationId,
+        UUID actorId,
         UUID drugId,
         int beforeStock,
         int afterStock,

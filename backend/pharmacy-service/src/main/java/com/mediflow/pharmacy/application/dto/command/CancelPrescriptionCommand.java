@@ -10,20 +10,20 @@ import java.util.UUID;
  * hoặc nâng quyền khi yêu cầu hủy đơn.</p>
  *
  * @param prescriptionId mã đơn thuốc cần hủy
- * @param actorId mã người dùng thực hiện thao tác, lấy từ JWT subject
- * @param administrator {@code true} khi người thực hiện có role {@code ADMIN}
+ * @param actor danh tính đã tách accountId/staffId/role từ JWT đã xác thực
  * @param reason lý do hủy do người dùng cung cấp
  * @param correlationId mã tương quan của request để truyền sang domain event
  */
 public record CancelPrescriptionCommand(
         UUID prescriptionId,
-        UUID actorId,
-        boolean administrator,
+        ActorIdentity actor,
         String reason,
         String correlationId
 ) {
     /** Chuẩn hóa correlation để event hủy luôn truy vết được kể cả khi caller không gửi header. */
     public CancelPrescriptionCommand {
+        java.util.Objects.requireNonNull(prescriptionId, "prescriptionId is required");
+        java.util.Objects.requireNonNull(actor, "actor is required");
         correlationId = correlationId == null || correlationId.isBlank()
                 ? UUID.randomUUID().toString()
                 : correlationId.trim();

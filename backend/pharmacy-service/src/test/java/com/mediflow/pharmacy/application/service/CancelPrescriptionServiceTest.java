@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
@@ -61,7 +62,9 @@ class CancelPrescriptionServiceTest {
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
 
         assertThatThrownBy(() -> service.cancel(new CancelPrescriptionCommand(
-                prescriptionId, anotherDoctor, false, "Sai đơn", "cancel-correlation")))
+                prescriptionId,
+                new ActorIdentity(UUID.randomUUID(), anotherDoctor, "DOCTOR"),
+                "Sai đơn", "cancel-correlation")))
                 .isInstanceOf(PrescriptionCancellationForbiddenException.class);
 
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
@@ -76,7 +79,8 @@ class CancelPrescriptionServiceTest {
         UUID actorId = UUID.randomUUID();
         Prescription prescription = prescription(prescriptionId, UUID.randomUUID());
         DispenseSlip slip = pendingSlip(prescriptionId);
-        StockReservation reservation = reservation(prescriptionId, UUID.randomUUID());
+        StockReservation reservation = reservation(
+                prescriptionId, prescription.getLines().get(0).getDrugId());
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepository.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
         when(reservationRepository.findByPrescriptionForUpdate(prescriptionId))
@@ -86,7 +90,9 @@ class CancelPrescriptionServiceTest {
         when(reservationRepository.save(any(StockReservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CancelPrescriptionResult result = service.cancel(new CancelPrescriptionCommand(
-                prescriptionId, actorId, true, "Điều chỉnh khẩn", "cancel-correlation"));
+                prescriptionId,
+                new ActorIdentity(actorId, null, "ADMIN"),
+                "Điều chỉnh khẩn", "cancel-correlation"));
 
         assertThat(result.status()).isEqualTo(PrescriptionStatus.CANCELLED);
         assertThat(result.releasedReservations()).isEqualTo(1);
@@ -106,7 +112,9 @@ class CancelPrescriptionServiceTest {
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
 
         CancelPrescriptionResult result = service.cancel(new CancelPrescriptionCommand(
-                prescriptionId, UUID.randomUUID(), true, "Retry", "retry-correlation"));
+                prescriptionId,
+                new ActorIdentity(UUID.randomUUID(), null, "ADMIN"),
+                "Retry", "retry-correlation"));
 
         assertThat(result.status()).isEqualTo(PrescriptionStatus.CANCELLED);
         assertThat(result.releasedReservations()).isZero();
@@ -123,7 +131,9 @@ class CancelPrescriptionServiceTest {
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
 
         assertThatThrownBy(() -> service.cancel(new CancelPrescriptionCommand(
-                prescriptionId, UUID.randomUUID(), true, "Late cancel", "late-correlation")))
+                prescriptionId,
+                new ActorIdentity(UUID.randomUUID(), null, "ADMIN"),
+                "Late cancel", "late-correlation")))
                 .isInstanceOf(PrescriptionRuleException.class)
                 .hasMessageContaining("ACTIVE");
 

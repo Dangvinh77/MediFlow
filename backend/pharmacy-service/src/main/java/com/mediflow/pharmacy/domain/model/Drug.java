@@ -11,6 +11,7 @@ import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 
 import lombok.Getter;
 
+/** Aggregate containing drug catalogue data and stock invariants. */
 @Getter
 public class Drug {
   private final UUID drugId;
@@ -41,6 +42,7 @@ public class Drug {
         this.updatedAt = updatedAt;
   }
 
+  /** Creates a drug after validating catalogue and stock invariants. */
   public static Drug create(String drugName, String activeIngredient, String unit, BigDecimal price, int stockQuantity,
                             LocalDate expiryDate, String manufacturer, int lowStockThreshold
   ){
@@ -72,6 +74,7 @@ public class Drug {
   }
   
     /** Dựng lại từ dữ liệu đã lưu — không chạy lại quy tắc lúc tạo. */
+    /** Restores a drug from persistence without re-running creation validation. */
     public static Drug restore(UUID drugId, String drugName, String activeIngredient, String unit, BigDecimal price,
                                int stockQuantity, LocalDate expiryDate, String manufacturer, int lowStockThreshold,
                                Instant createdAt, Instant updatedAt) {
@@ -79,6 +82,7 @@ public class Drug {
                 expiryDate, manufacturer, lowStockThreshold, createdAt, updatedAt);
     }
 
+    /** Updates catalogue information while preserving the current stock quantity. */
     public void updateInfo(String drugName, String activeIngredient, String unit, BigDecimal price,
                            LocalDate expiryDate, String manufacturer, int lowStockThreshold) {
         if (drugName == null || drugName.isBlank())
@@ -98,13 +102,18 @@ public class Drug {
         this.expiryDate = expiryDate;
         this.manufacturer = manufacturer;
         this.lowStockThreshold = lowStockThreshold;
+        this.updatedAt = Instant.now();
     }
 
     /** Nhập kho. */
     public void restock(int quantity) {
         if (quantity <= 0)
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng nhập phải lớn hơn 0");
-        this.stockQuantity += quantity;
+        long newStock = (long) this.stockQuantity + quantity;
+        if (newStock > Integer.MAX_VALUE) {
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng tồn kho vượt giới hạn");
+        }
+        this.stockQuantity = (int) newStock;
     }
 
     /** Điều chỉnh tồn kho thủ công; không cho phép tồn kho âm. */
@@ -112,10 +121,14 @@ public class Drug {
         if (quantity == 0) {
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng điều chỉnh không được bằng 0");
         }
-        if (stockQuantity + quantity < 0) {
+        long newStock = (long) stockQuantity + quantity;
+        if (newStock < 0) {
             throw new DrugRuleException("DRUG_OUT_OF_STOCK", "Điều chỉnh làm tồn kho âm");
         }
-        this.stockQuantity += quantity;
+        if (newStock > Integer.MAX_VALUE) {
+            throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng tồn kho vượt giới hạn");
+        }
+        this.stockQuantity = (int) newStock;
     }
 
     /** Xuất kho theo ngày hệ thống — ném nếu vi phạm BR-D1 hoặc BR-D2. */
@@ -139,10 +152,12 @@ public class Drug {
         this.stockQuantity -= quantity;
     }
 
+    /** Returns whether the current stock can satisfy the requested quantity. */
     public boolean hasStock(int quantity) {
         return stockQuantity >= quantity;
     }
 
+    /** Returns whether the drug is expired according to the machine's current date. */
     public boolean isExpired() {
         return isExpiredOn(LocalDate.now());
     }
@@ -152,6 +167,7 @@ public class Drug {
         return businessDate == null || expiryDate == null || expiryDate.isBefore(businessDate);
     }
 
+    /** Returns whether stock is at or below the configured warning threshold. */
     public boolean belowLowStockThreshold() {
         return stockQuantity <= lowStockThreshold;
     }

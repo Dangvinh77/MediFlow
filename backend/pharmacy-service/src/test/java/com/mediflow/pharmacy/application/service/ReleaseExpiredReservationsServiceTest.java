@@ -43,7 +43,7 @@ class ReleaseExpiredReservationsServiceTest {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
         UUID third = UUID.randomUUID();
-        when(reservationRepository.findExpiredPrescriptionIds(NOW, 3))
+        when(reservationRepository.findExpiredPrescriptionIdsAfter(NOW, null, 3))
                 .thenReturn(List.of(first, second, third));
         when(expireTransaction.expire(first, NOW)).thenReturn(2);
         when(expireTransaction.expire(second, NOW))
@@ -61,10 +61,32 @@ class ReleaseExpiredReservationsServiceTest {
     /** Batch rỗng phải trả nhanh và vẫn truyền đúng mốc thời gian cùng giới hạn query. */
     @Test
     void releaseExpired_emptyBatch_returnsZero() {
-        when(reservationRepository.findExpiredPrescriptionIds(NOW, 3)).thenReturn(List.of());
+        when(reservationRepository.findExpiredPrescriptionIdsAfter(NOW, null, 3)).thenReturn(List.of());
 
         assertThat(service.releaseExpiredReservations()).isZero();
-        verify(reservationRepository).findExpiredPrescriptionIds(NOW, 3);
+        verify(reservationRepository).findExpiredPrescriptionIdsAfter(NOW, null, 3);
+    }
+
+    /** Cursor advances even after a poison aggregate and wraps after reaching the final page. */
+    @Test
+    void releaseExpired_poisonAggregate_nextRunContinuesThenWraps() {
+        UUID poison = UUID.randomUUID();
+        UUID later = UUID.randomUUID();
+        when(reservationRepository.findExpiredPrescriptionIdsAfter(NOW, null, 3))
+                .thenReturn(List.of(poison));
+        when(reservationRepository.findExpiredPrescriptionIdsAfter(NOW, poison, 3))
+                .thenReturn(List.of(later));
+        when(reservationRepository.findExpiredPrescriptionIdsAfter(NOW, later, 3))
+                .thenReturn(List.of());
+        when(expireTransaction.expire(poison, NOW)).thenThrow(new IllegalStateException("poison"));
+        when(expireTransaction.expire(later, NOW)).thenReturn(1);
+
+        assertThat(service.releaseExpiredReservations()).isZero();
+        assertThat(service.releaseExpiredReservations()).isEqualTo(1);
+        assertThat(service.releaseExpiredReservations()).isZero();
+
+        verify(reservationRepository).findExpiredPrescriptionIdsAfter(NOW, poison, 3);
+        verify(reservationRepository).findExpiredPrescriptionIdsAfter(NOW, later, 3);
     }
 
     /** Không cho phép cấu hình batch bằng không hoặc âm vì sẽ làm scheduler không tiến triển. */

@@ -62,6 +62,20 @@ public class StockReservationPersistenceAdapter implements StockReservationRepos
                 PageRequest.of(0, limit));
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public List<UUID> findExpiredPrescriptionIdsAfter(
+            Instant now, UUID afterPrescriptionId, int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Giới hạn batch phải lớn hơn 0");
+        }
+        return jpaRepo.findExpiredPrescriptionIdsAfter(
+                ReservationStatus.RESERVED,
+                now,
+                afterPrescriptionId,
+                PageRequest.of(0, limit));
+    }
+
     @Override
     public Optional<StockReservation> findReservedByPrescriptionForUpdate(UUID prescriptionId, UUID drugId) {
         return jpaRepo.findByPrescriptionAndDrugForUpdate(prescriptionId, drugId).map(this::toDomain);
