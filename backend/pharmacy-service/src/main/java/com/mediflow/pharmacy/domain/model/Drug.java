@@ -118,13 +118,23 @@ public class Drug {
         this.stockQuantity += quantity;
     }
 
-    /** Xuất kho — ném nếu vi phạm BR-D1 (hết hàng) hoặc BR-D2 (hết hạn). */
+    /** Xuất kho theo ngày hệ thống — ném nếu vi phạm BR-D1 hoặc BR-D2. */
     public void dispenseStock(int quantity) {
+        dispenseStock(quantity, LocalDate.now());
+    }
+
+    /**
+     * Xuất kho theo ngày nghiệp vụ do application cung cấp để test không phụ thuộc đồng hồ máy.
+     *
+     * @param quantity số lượng xuất
+     * @param businessDate ngày nghiệp vụ dùng để kiểm tra hạn thuốc
+     */
+    public void dispenseStock(int quantity, LocalDate businessDate) {
         if (quantity <= 0)
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng xuất phải lớn hơn 0");
         if (stockQuantity < quantity)
             throw new DrugRuleException("DRUG_OUT_OF_STOCK", "Không đủ hàng tồn kho");
-        if (isExpired())
+        if (businessDate == null || isExpiredOn(businessDate))
             throw new DrugRuleException("DRUG_EXPIRED", "Thuốc đã hết hạn sử dụng");
         this.stockQuantity -= quantity;
     }
@@ -134,7 +144,12 @@ public class Drug {
     }
 
     public boolean isExpired() {
-        return expiryDate == null || expiryDate.isBefore(LocalDate.now());
+        return isExpiredOn(LocalDate.now());
+    }
+
+    /** Kiểm tra hạn thuốc theo ngày nghiệp vụ được inject từ application. */
+    public boolean isExpiredOn(LocalDate businessDate) {
+        return businessDate == null || expiryDate == null || expiryDate.isBefore(businessDate);
     }
 
     public boolean belowLowStockThreshold() {

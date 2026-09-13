@@ -30,6 +30,18 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventPort {
         return jpaRepo.existsById(eventId);
     }
 
+    /**
+     * Claim idempotency key bằng một INSERT ... ON CONFLICT duy nhất.
+     *
+     * @param eventId mã event cần claim
+     * @param routingKey routing key nguồn
+     * @return true khi row mới được tạo, false khi event đã được claim
+     */
+    @Override
+    public boolean claimIfAbsent(UUID eventId, String routingKey) {
+        return jpaRepo.insertIfAbsent(eventId, routingKey) == 1;
+    }
+
     @Override
     public void markProcessed(UUID eventId, String routingKey) {
         jpaRepo.save(ProcessedEventJpaEntity.builder()

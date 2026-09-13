@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -195,6 +196,32 @@ class PharmacyApplicationServiceDispenseTest {
                 .isInstanceOfSatisfying(StockReservationRuleException.class,
                         error -> assertThat(error.getCode()).isEqualTo("RESERVATION_SET_MISMATCH"));
         verify(drugRepo, org.mockito.Mockito.never()).findByIdForUpdate(any());
+    }
+
+    /** Biên expiresAt == now phải được xem là hết hạn với Clock nghiệp vụ cố định. */
+    @Test
+    void dispense_reservationExpiresExactlyAtNow_isRejected() {
+        Instant now = Instant.parse("2026-09-13T08:00:00Z");
+        service = new PharmacyApplicationService(
+                drugRepo, prescriptionRepo, dispenseSlipRepo, processedEventPort,
+                reservationRepo, eventPublisher, drugDtoMapper, prescriptionDtoMapper,
+                dispenseDtoMapper, self, Clock.fixed(now, java.time.ZoneOffset.UTC),
+                java.time.Duration.ofHours(24));
+        UUID prescriptionId = UUID.randomUUID();
+        UUID drugId = UUID.randomUUID();
+        Prescription prescription = prescription(prescriptionId, drugId);
+        DispenseSlip slip = pendingSlip(prescriptionId);
+        StockReservation reservation = reservation(prescriptionId, drugId, 2, now);
+        when(prescriptionRepo.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
+        when(drugRepo.findByIdForUpdate(drugId)).thenReturn(Optional.of(drug(drugId, 10)));
+        when(reservationRepo.findByPrescription(prescriptionId)).thenReturn(List.of(reservation));
+        when(reservationRepo.findReservedByPrescriptionForUpdate(prescriptionId, drugId))
+                .thenReturn(Optional.of(reservation));
+
+        assertThatThrownBy(() -> service.dispenseInTransaction(prescriptionId, UUID.randomUUID()))
+                .isInstanceOfSatisfying(StockReservationRuleException.class,
+                        error -> assertThat(error.getCode()).isEqualTo("RESERVATION_EXPIRED"));
     }
 
     /** Nhánh bù trừ không được ghi đè đơn đã đạt trạng thái kết thúc thắng cuộc. */

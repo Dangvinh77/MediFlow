@@ -79,6 +79,18 @@ class DrugTest {
         assertThat(drug.getPrice()).isEqualByComparingTo("1200.005");
     }
 
+    /** Hạn bằng ngày nghiệp vụ vẫn còn dùng được; ngày sau đó mới bị xem là hết hạn. */
+    @Test
+    void isExpiredOn_usesBusinessDateBoundary() {
+        Drug drug = Drug.restore(
+                java.util.UUID.randomUUID(), "Paracetamol", "Paracetamol", "viên",
+                new BigDecimal("1200.00"), 10, LocalDate.of(2026, 9, 13),
+                "MediFlow", 2, null, null);
+
+        assertThat(drug.isExpiredOn(LocalDate.of(2026, 9, 13))).isFalse();
+        assertThat(drug.isExpiredOn(LocalDate.of(2026, 9, 14))).isTrue();
+    }
+
     @Test
     void adjustStock_negativeQuantity_decrementsWithoutGoingBelowZero() {
         Drug drug = create(10);

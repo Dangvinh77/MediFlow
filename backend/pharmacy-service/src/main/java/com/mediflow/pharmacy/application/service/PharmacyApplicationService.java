@@ -45,12 +45,15 @@ import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 
 import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.Instant;
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,9 +83,6 @@ public class PharmacyApplicationService implements
     /** Routing key được ghi vào sổ idempotency sau khi xử lý thanh toán thành công. */
     private static final String PAYMENT_COMPLETED_ROUTING_KEY = "payment.completed";
 
-    /** Thời gian một dòng giữ chỗ tồn kho có hiệu lực — hết hạn thì job TTL trả lại chỗ. */
-    private static final java.time.Duration RESERVATION_TTL = java.time.Duration.ofHours(24);
-
     private final DrugRepositoryPort drugRepo;
     private final PrescriptionRepositoryPort prescriptionRepo;
     private final DispenseSlipRepositoryPort dispenseSlipRepo;
@@ -92,6 +92,8 @@ public class PharmacyApplicationService implements
     private final DrugDtoMapper drugDtoMapper;
     private final PrescriptionDtoMapper prescriptionDtoMapper;
     private final DispenseDtoMapper dispenseDtoMapper;
+    private final Clock clock;
+    private final java.time.Duration reservationTtl;
 
     /**
      * Self-reference để gọi {@link #markDispenseFailed(UUID, UUID, String, String)} qua proxy —
@@ -100,12 +102,15 @@ public class PharmacyApplicationService implements
      */
     private final PharmacyApplicationService self;
 
+    /** Khởi tạo service với clock nghiệp vụ do Spring quản lý để test thời gian deterministically. */
+    @Autowired
     public PharmacyApplicationService(DrugRepositoryPort drugRepo, PrescriptionRepositoryPort prescriptionRepo,
                                       DispenseSlipRepositoryPort dispenseSlipRepo, ProcessedEventPort processedEventPort,
                                       StockReservationRepositoryPort reservationRepo,
                                       PharmacyEventPublisherPort eventPublisher, DrugDtoMapper drugDtoMapper,
                                       PrescriptionDtoMapper prescriptionDtoMapper, DispenseDtoMapper dispenseDtoMapper,
-                                      @Lazy PharmacyApplicationService self) {
+                                      @Lazy PharmacyApplicationService self, Clock clock,
+                                      @Value("${mediflow.pharmacy.reservation.ttl:PT24H}") java.time.Duration reservationTtl) {
         this.drugRepo = drugRepo;
         this.prescriptionRepo = prescriptionRepo;
         this.dispenseSlipRepo = dispenseSlipRepo;
@@ -116,6 +121,25 @@ public class PharmacyApplicationService implements
         this.prescriptionDtoMapper = prescriptionDtoMapper;
         this.dispenseDtoMapper = dispenseDtoMapper;
         this.self = self;
+        this.clock = clock;
+        if (reservationTtl == null || reservationTtl.isZero() || reservationTtl.isNegative()) {
+            throw new IllegalArgumentException("mediflow.pharmacy.reservation.ttl must be positive");
+        }
+        this.reservationTtl = reservationTtl;
+    }
+
+    /**
+     * Constructor tương thích cho unit test cũ; runtime Spring luôn dùng overload có Clock.
+     */
+    public PharmacyApplicationService(DrugRepositoryPort drugRepo, PrescriptionRepositoryPort prescriptionRepo,
+                                      DispenseSlipRepositoryPort dispenseSlipRepo, ProcessedEventPort processedEventPort,
+                                      StockReservationRepositoryPort reservationRepo,
+                                      PharmacyEventPublisherPort eventPublisher, DrugDtoMapper drugDtoMapper,
+                                      PrescriptionDtoMapper prescriptionDtoMapper, DispenseDtoMapper dispenseDtoMapper,
+                                      @Lazy PharmacyApplicationService self) {
+        this(drugRepo, prescriptionRepo, dispenseSlipRepo, processedEventPort, reservationRepo,
+                eventPublisher, drugDtoMapper, prescriptionDtoMapper, dispenseDtoMapper, self,
+                Clock.systemUTC(), java.time.Duration.ofHours(24));
     }
 
     // ============================================================
@@ -218,7 +242,7 @@ public PrescriptionDTO create(CreatePrescriptionCommand command) {
 
     // 6. Một thời điểm hết hạn thống nhất cho toàn bộ đơn.
     Instant reservationExpiresAt =
-            Instant.now().plus(RESERVATION_TTL);
+            Instant.now(clock).plus(reservationTtl);
 
     for (ResolvedPrescriptionLine resolved : resolvedLines) {
         PrescriptionLine line = resolved.line();
@@ -415,7 +439,7 @@ private void publishCreated(
     PrescriptionCreatedEvent event =
             new PrescriptionCreatedEvent(
                     UUID.randomUUID(),
-                    Instant.now(),
+                    Instant.now(clock),
                     correlationId,
                     prescription.getPrescriptionId(),
                     prescription.getPatientId(),
@@ -577,7 +601,7 @@ private void validateNoDuplicateDrugIds(
                             "Giữ chỗ của thuốc id=" + drugId + " không còn hiệu lực");
                 }
 
-                if (reservation.isExpiredAt(Instant.now())) {
+                if (reservation.isExpiredAt(Instant.now(clock))) {
                     throw new StockReservationRuleException(
                             "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + drugId + " đã hết hạn");
                 }
@@ -586,7 +610,8 @@ private void validateNoDuplicateDrugIds(
                             "RESERVATION_QUANTITY_MISMATCH",
                             "Số lượng giữ chỗ của thuốc id=" + drugId + " không khớp với đơn thuốc");
                 }
-                drug.dispenseStock(qty); // trừ kho thật (BR-D4); BR-D2 vẫn được kiểm tra lúc xuất
+                drug.dispenseStock(qty, java.time.LocalDate.now(clock));
+                // trừ kho thật (BR-D4); BR-D2 kiểm tra theo ngày nghiệp vụ cố định
                 reservation.markFulfilled(); // RESERVED → FULFILLED — giữ chỗ đã hoàn thành
                 reservationRepo.save(reservation);
 
@@ -597,9 +622,9 @@ private void validateNoDuplicateDrugIds(
             locked.values().forEach(drugRepo::save);
 
             // 7: đánh dấu phiếu DISPENSED và lưu.
-            slip.markDispensed(dispensedBy, Instant.now());
+            slip.markDispensed(dispensedBy, Instant.now(clock));
             DispenseSlip saved = dispenseSlipRepo.save(slip);
-            prescription.markFulfilled(Instant.now());
+            prescription.markFulfilled(Instant.now(clock));
             prescriptionRepo.save(prescription);
 
             // 8-9: stock.low cho thuốc chạm ngưỡng (BR-D11) + filled (kết thúc thành công).
@@ -637,7 +662,7 @@ private void validateNoDuplicateDrugIds(
         if (slip == null || !slip.isPending() || !prescription.isActive()) {
             return;
         }
-        Instant failedAt = Instant.now();
+        Instant failedAt = Instant.now(clock);
         List<StockReservation> reservations = reservationRepo.findByPrescriptionForUpdate(prescriptionId);
         for (StockReservation reservation : reservations) {
             if (reservation.isReserved()) {
@@ -663,7 +688,7 @@ private void validateNoDuplicateDrugIds(
             Drug drug = drugRepo.findById(drugId).orElse(null);
             if (drug != null && drug.belowLowStockThreshold()) { // BR-D11
                 eventPublisher.publishStockLow(new StockLowEvent(
-                        UUID.randomUUID(), Instant.now(), null,
+                        UUID.randomUUID(), Instant.now(clock), null,
                         drugId, drug.getDrugName(), drug.getStockQuantity(), drug.getLowStockThreshold()));
             }
         }
@@ -677,7 +702,7 @@ private void validateNoDuplicateDrugIds(
                         l.getQuantity()))
                 .toList();
         eventPublisher.publishPrescriptionFilled(new PrescriptionFilledEvent(
-                UUID.randomUUID(), Instant.now(), correlationId,
+                UUID.randomUUID(), Instant.now(clock), correlationId,
                 slip.getPrescriptionId(), prescription.getPatientId(),
                 prescription.getDepartmentId(), prescription.getTotalAmount(), items));
     }
@@ -687,17 +712,17 @@ private void validateNoDuplicateDrugIds(
     // ============================================================
 
     @Override
+    @Transactional
     public void onPaymentCompleted(PaymentCompletedCommand command) {
-        // 1: chống trùng theo eventId thật — RabbitMQ có thể gửi lại cùng một message (BR-D9).
-        if (processedEventPort.alreadyProcessed(command.eventId())) {
+        // 1: claim atomically bằng unique eventId; hai consumer đồng thời chỉ một bên được chạy.
+        if (!processedEventPort.claimIfAbsent(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY)) {
             return;
         }
 
         // 2: gọi lại dispense với người thực hiện là hệ thống.
         dispense(command.prescriptionId(), SYSTEM_USER, command.correlationId());
 
-        // 3: ghi nhận sau khi transaction cấp đã commit; adapter persistence tự quản lý transaction save.
-        processedEventPort.markProcessed(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY);
+        // 3: claim nằm trong cùng transaction với dispense; rollback sẽ nhả claim để broker retry.
     }
 
 }

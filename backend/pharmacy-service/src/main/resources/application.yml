@@ -46,6 +46,7 @@ mediflow:
   pharmacy:
     reservation:
       batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}
+      ttl: ${MEDIFLOW_PHARMACY_RESERVATION_TTL:PT24H}
 
 management:
   endpoints:

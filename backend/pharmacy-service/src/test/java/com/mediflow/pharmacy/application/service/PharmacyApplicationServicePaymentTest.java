@@ -1,6 +1,8 @@
 package com.mediflow.pharmacy.application.service;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -76,16 +78,34 @@ class PharmacyApplicationServicePaymentTest {
                 UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
                 Instant.parse("2026-08-31T03:01:00Z"), SYSTEM_USER, null);
 
-        when(processedEventPort.alreadyProcessed(eventId))
-                .thenReturn(false)
-                .thenReturn(true);
+        when(processedEventPort.claimIfAbsent(eventId, "payment.completed"))
+                .thenReturn(true)
+                .thenReturn(false);
         doReturn(result).when(service).dispense(prescriptionId, SYSTEM_USER, "payment-flow-001");
 
         service.onPaymentCompleted(command);
         service.onPaymentCompleted(command);
 
         verify(service, times(1)).dispense(prescriptionId, SYSTEM_USER, "payment-flow-001");
-        verify(processedEventPort, times(1)).markProcessed(eventId, "payment.completed");
+        verify(processedEventPort, times(2)).claimIfAbsent(eventId, "payment.completed");
+        verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
+    }
+
+    /** Lỗi dispense phải phát ra để broker retry và không ghi dấu processed riêng lần nữa. */
+    @Test
+    void onPaymentCompleted_dispenseFailure_propagatesForRetry() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        when(processedEventPort.claimIfAbsent(eventId, "payment.completed")).thenReturn(true);
+        doThrow(new IllegalStateException("temporary database outage"))
+                .when(service).dispense(prescriptionId, SYSTEM_USER, "payment-flow-001");
+
+        assertThatThrownBy(() -> service.onPaymentCompleted(command))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("temporary database outage");
+        verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
+        verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
     }
 
     private PaymentCompletedCommand command(UUID eventId, UUID prescriptionId) {
