@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.infrastructure.config;
 
 import java.time.Clock;
+import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,27 @@ import com.mediflow.pharmacy.application.service.ReleaseExpiredReservationsServi
  */
 @Configuration
 public class ReservationReleaseConfig {
+
+    /**
+     * Binds the reservation time-to-live used by prescription creation.
+     *
+     * <p>The application service deliberately depends on the JDK {@link Duration} value rather
+     * than Spring's configuration API.  Exposing the validated property as an infrastructure
+     * bean keeps that inward dependency boundary intact and makes the same value available in
+     * full Spring Boot integration tests.</p>
+     *
+     * @param reservationTtl configured reservation lifetime (for example, {@code PT24H})
+     * @return reservation lifetime shared by prescription use cases
+     */
+    @Bean
+    public Duration reservationTtl(
+            @Value("${mediflow.pharmacy.reservation.ttl:PT24H}") Duration reservationTtl) {
+        if (reservationTtl.isZero() || reservationTtl.isNegative()) {
+            throw new IllegalArgumentException(
+                    "mediflow.pharmacy.reservation.ttl must be positive");
+        }
+        return reservationTtl;
+    }
 
     /**
      * Creates the scheduler use-case implementation with the configured batch limit.
