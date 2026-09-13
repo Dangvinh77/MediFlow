@@ -14,6 +14,7 @@ import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
+import com.mediflow.pharmacy.domain.exception.PrescriptionCreationForbiddenException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Drug;
@@ -156,6 +157,42 @@ class PharmacyApplicationServicePrescriptionTest {
         verifyNoInteractions(reservationRepo);
         verifyNoInteractions(dispenseSlipRepo);
         verifyNoInteractions(eventPublisher);
+    }
+
+    /** Bác sĩ không được mạo danh doctorId khác trong request tạo đơn. */
+    @Test
+    void create_doctorActorMismatch_rejectedBeforeMutation() {
+        CreatePrescriptionRequest request = requestOf(List.of(
+                new PrescriptionLineRequest(UUID.randomUUID(), 1, "Ngày 1 lần")));
+        UUID actorId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> service.create(new CreatePrescriptionCommand(
+                request, actorId, false, "identity-test")))
+                .isInstanceOf(PrescriptionCreationForbiddenException.class);
+
+        verifyNoInteractions(drugRepo, prescriptionRepo, reservationRepo, dispenseSlipRepo, eventPublisher);
+    }
+
+    /** Admin được chỉ định doctor đích khác actor và vẫn giữ audit actor trong command. */
+    @Test
+    void create_adminOverride_usesRequestedDoctorId() {
+        UUID drugId = UUID.randomUUID();
+        UUID requestedDoctorId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
+        when(drugRepo.findByIdForUpdate(drugId))
+                .thenReturn(Optional.of(drug(drugId, "Paracetamol", 10, "1000.00")));
+        when(reservationRepo.findReservedByDrug(drugId)).thenReturn(List.of());
+        stubSavedPrescription(UUID.randomUUID());
+
+        CreatePrescriptionRequest request = new CreatePrescriptionRequest(
+                UUID.randomUUID(), UUID.randomUUID(), requestedDoctorId, UUID.randomUUID(),
+                LocalDate.now(), List.of(new PrescriptionLineRequest(drugId, 1, "Ngày 1 lần")));
+
+        service.create(new CreatePrescriptionCommand(request, adminId, true, "admin-test"));
+
+        ArgumentCaptor<Prescription> captor = ArgumentCaptor.forClass(Prescription.class);
+        verify(prescriptionRepo).save(captor.capture());
+        assertThat(captor.getValue().getDoctorId()).isEqualTo(requestedDoctorId);
     }
 
     @Test

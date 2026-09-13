@@ -32,6 +32,7 @@ import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
+import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionCreationForbiddenException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
@@ -151,6 +152,19 @@ public class PharmacyApplicationService implements
     public DrugDTO adjustStock(UUID id, AdjustStockRequest rq) {
         Drug drug = drugRepo.findByIdForUpdate(id)
                 .orElseThrow(() -> new DrugNotFoundException("Không tìm thấy thuốc id=" + id));
+        long adjustedStock = (long) drug.getStockQuantity() + rq.quantity();
+        if (adjustedStock > Integer.MAX_VALUE || adjustedStock < Integer.MIN_VALUE) {
+            throw new DrugRuleException(
+                    "DRUG_QUANTITY_INVALID", "Điều chỉnh làm vượt giới hạn số lượng tồn kho");
+        }
+        long reservedStock = reservationRepo.findReservedByDrug(id).stream()
+                .mapToLong(StockReservation::getQuantity)
+                .sum();
+        if (adjustedStock < reservedStock) {
+            throw new StockReservationRuleException(
+                    "STOCK_BELOW_RESERVED",
+                    "Không thể giảm tồn kho thấp hơn lượng đang giữ: " + reservedStock);
+        }
         drug.adjustStock(rq.quantity());
         return drugDtoMapper.toDto(drugRepo.save(drug));
     }

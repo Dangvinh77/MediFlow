@@ -126,7 +126,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **File chính:** `web/PrescriptionController.java`, `infrastructure/security/JwtAuthFilter.java`, các command tạo/hủy, `PharmacyApplicationService`, `CancelPrescriptionService`, mapper/DTO và test tương ứng.
 
-- [ ] P1.1 Đưa identity đã xác thực vào command dưới dạng giá trị rõ account/staff/roles; controller không tự tin `doctorId` client, application vẫn kiểm tra ownership.
+- [x] P1.1 Đưa identity đã xác thực vào command dưới dạng giá trị rõ account/staff/roles; controller không tự tin `doctorId` client, application vẫn kiểm tra ownership. Đã có test actor bác sĩ lệch doctorId bị từ chối và Admin override dùng doctor đích.
 - [ ] P1.2 Doctor chỉ kê/hủy đơn của staff tương ứng; Admin override có audit account thực hiện và doctor đích; xác nhận tính hợp lệ doctor/khoa theo contract, không đọc DB service khác.
 - [x] P1.3 Giữ check drug trùng trước mutation; test create lưu đơn + lines + reservations + pending slip atomically, thiếu available thì không lưu phần nào.
 - [x] P1.4 Truyền correlation vào `publishCreated`, phản hồi HTTP, log và luồng hủy; nếu vắng thì chuẩn hóa/generate theo convention, không dùng chuỗi rỗng để lách validation. Command tự sinh UUID khi header trống và test boundary đã bổ sung.
@@ -168,7 +168,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **File:** tách trách nhiệm khỏi `PharmacyApplicationService`; đề xuất `DispensePrescriptionService`, `DispenseTransactionService`, `RecordDispenseFailureService`, command mang prescription/payment/actor/correlation context; sửa repository ports/adapters, domain và test.
 
-- [ ] P4.1 Khóa đơn + phiếu trước check, xác nhận ACTIVE/PENDING; đơn đã FULFILLED trả kết quả cũ; terminal khác trả kết quả/lỗi phù hợp, không gọi lại trừ kho.
+- [x] P4.1 Khóa đơn + phiếu trước check, xác nhận ACTIVE/PENDING; đơn đã FULFILLED trả kết quả cũ; terminal khác trả kết quả/lỗi phù hợp, không gọi lại trừ kho. Unit tests đã bao phủ cấp thành công, reservation hết hạn và phiếu DISPENSED idempotent.
 - [ ] P4.2 Khóa drug/reservation theo mục 4.3; xác minh tập drug và quantity reservation khớp toàn bộ đơn, trạng thái RESERVED, TTL còn hiệu lực; kiểm tra hạn dùng thuốc theo ngày nghiệp vụ.
 - [ ] P4.3 Trừ toàn bộ thuốc, fulfill reservation, `prescription.markFulfilled(now)` và `slip.markDispensed(...)`, lưu tất cả và outbox filled trong cùng transaction.
 - [ ] P4.4 Orchestrator đợi rollback hoàn toàn rồi ghi thất bại ở bean khác; cập nhật đơn/slip/reservations và outbox compensation atomically. Không giữ self-proxy, không có transaction lớn bao ngoài cả hai bước.
@@ -216,7 +216,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **File:** `Drug`, `AdjustStockRequest`, `ManageDrugUseCase`, phần drug service/controller; đề xuất command actor/correlation, stock adjustment audit port/model/adapter và migration.
 
-- [ ] P7.1 Sau khóa drug, tính reserved và không cho `newOnHand < reserved` theo D7; vẫn chặn zero/âm tồn, overflow số lượng. Không âm thầm thay quantity đã kê.
+- [x] P7.1 Sau khóa drug, tính reserved và không cho `newOnHand < reserved` theo D7; vẫn chặn zero/âm tồn, overflow số lượng. Không âm thầm thay quantity đã kê. Application đã kiểm tra tổng reserved bằng số học `long` và có test reserved-protection/overflow.
 - [ ] P7.2 Lưu audit delta, before/after, reason, actor và timestamp trong cùng transaction; chốt reason bắt buộc cho giảm kho với người dùng API trước khi đổi validation.
 - [ ] P7.3 Phát event thay đổi kho theo tên/schema đã review; stock.low theo ngưỡng nhất quán. Không tự thêm routing key mà downstream được kỳ vọng phải hiểu ngay.
 - [x] P7.4 Tăng test create/update domain có sẵn: giá âm, quantity/threshold âm, hạn dùng, rounding; không mở API update/delete thuốc chỉ vì domain đang có `updateInfo`. Đồng thời bổ sung invariant ngưỡng âm cho `Drug.updateInfo`.
