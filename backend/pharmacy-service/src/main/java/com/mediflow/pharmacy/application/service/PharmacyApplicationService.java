@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Application service của pharmacy — hiện thực 5 in-port nghiệp vụ.
@@ -258,12 +259,18 @@ public PrescriptionDTO create(CreatePrescriptionCommand command) {
                 .orElseThrow(() -> new DispenseNotFoundException(
                         "Không tìm thấy phiếu xuất của đơn id=" + prescriptionId));
 
-        Map<UUID, String> drugNames = new LinkedHashMap<>();
-        for (PrescriptionLine line : prescription.getLines()) {
-            drugNames.put(line.getDrugId(), drugRepo.findById(line.getDrugId())
-                    .map(Drug::getDrugName)
-                    .orElse(null));
-        }
+        List<UUID> drugIds = prescription.getLines().stream()
+                .map(PrescriptionLine::getDrugId)
+                .distinct()
+                .toList();
+        Map<UUID, String> drugNames = drugRepo.findByIds(drugIds).stream()
+                .collect(Collectors.toMap(
+                        Drug::getDrugId,
+                        Drug::getDrugName,
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+        drugIds.stream().filter(id -> !drugNames.containsKey(id))
+                .forEach(id -> drugNames.put(id, null));
         return toPrescriptionDto(prescription, slip.getStatus(), drugNames);
     }
 

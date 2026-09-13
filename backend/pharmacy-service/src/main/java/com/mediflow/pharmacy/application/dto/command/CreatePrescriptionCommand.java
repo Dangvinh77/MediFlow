@@ -22,5 +22,13 @@ public record CreatePrescriptionCommand(
     public CreatePrescriptionCommand {
         Objects.requireNonNull(request, "request is required");
         Objects.requireNonNull(actorId, "actorId is required");
+        correlationId = normalizeCorrelationId(correlationId);
+    }
+
+    /** Chuẩn hóa correlation để event và HTTP response luôn có mã truy vết hợp lệ. */
+    private static String normalizeCorrelationId(String value) {
+        return value == null || value.isBlank()
+                ? UUID.randomUUID().toString()
+                : value.trim();
     }
 }

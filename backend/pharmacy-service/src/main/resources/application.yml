@@ -43,6 +43,9 @@ eureka:
 mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+  pharmacy:
+    reservation:
+      batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}
 
 management:
   endpoints:

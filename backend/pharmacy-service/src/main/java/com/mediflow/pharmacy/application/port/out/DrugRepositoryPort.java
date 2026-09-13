@@ -1,11 +1,12 @@
 package com.mediflow.pharmacy.application.port.out;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.pharmacy.domain.model.Drug;
-
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Out-port — "tôi cần ai đó biết cách lưu và tìm thuốc".
@@ -19,6 +20,14 @@ public interface DrugRepositoryPort {
 
     /** Tìm một thuốc. Không có thì trả {@link Optional#empty()} — application sẽ ném DrugNotFoundException. */
     Optional<Drug> findById(UUID id);
+
+    /**
+     * Tìm nhiều thuốc trong một lần đọc để dựng DTO chi tiết mà không tạo N+1 query.
+     *
+     * @param ids các mã thuốc cần tìm
+     * @return các thuốc tồn tại; thứ tự không được dùng làm hợp đồng
+     */
+    List<Drug> findByIds(List<UUID> ids);
 
     /**
      * Bản KHÓA GHI khi đọc — dành riêng cho luồng xuất thuốc.
