@@ -204,7 +204,7 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 - [ ] P6.1 Dùng chung invariant coverage và thứ tự khóa. Hủy/hết hạn phải chuyển đủ đơn/phiếu/reservations + outbox trong transaction; không giải phóng một phần khi còn dòng không hợp lệ.
 - [ ] P6.2 Chặn hủy sau khi đã cấp; hủy lặp trả kết quả hiện hữu, không tăng released count/event. Trường hợp payment đã được ghi nhận phải theo D4 và chính sách Billing; không tự xác nhận refund đã xong.
 - [ ] P6.3 Inject Clock; đưa TTL, batch size và cron vào config có default/validation. Test sát biên `expiresAt == now` và ngày hết hạn thuốc bằng thời gian cố định.
-- [ ] P6.4 Một đơn lỗi không dừng toàn batch: catch tại ranh giới từng transaction, log identifier/reason an toàn và tiếp tục. Không nuốt lỗi đến mức báo thành công sai.
+- [x] P6.4 Một đơn lỗi không dừng toàn batch: catch tại ranh giới từng transaction, log identifier/reason an toàn và tiếp tục. Không nuốt lỗi đến mức báo thành công sai. Đã cố định mốc `Clock`, giới hạn batch cấu hình ở infrastructure và có test một ứng viên lỗi không chặn các ứng viên sau.
 - [ ] P6.5 Query có cursor/progress hoặc cơ chế tránh starvation: 100 đơn lỗi/inconsistent đầu danh sách không chặn mãi các đơn sau. Nhiều scheduler instance không phát lặp logical expiry event.
 - [ ] P6.6 Đối chiếu bất thường legacy như ACTIVE nhưng slip đã DISPENSED/FAILED, reservation thiếu/dư. Báo cáo trước và sửa bằng migration/job reconciliation được review; không tự giải phóng reservation không xác định.
 
