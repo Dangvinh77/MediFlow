@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.infrastructure.security;
 
 import com.mediflow.common.security.JwtClaims;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -22,13 +23,15 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Servlet filter xác minh JWT cho mọi HTTP request đi vào pharmacy-service.
  *
  * <p>Filter đọc access token từ header {@code Authorization: Bearer <token>}, kiểm tra chữ ký HS256
  * và thời hạn token bằng JJWT, sau đó chuyển claim {@code role} thành authority theo quy ước của
- * Spring Security ({@code ROLE_ADMIN}, {@code ROLE_DOCTOR}, {@code ROLE_PHARMACIST}, ...).</p>
+ * Spring Security ({@code ROLE_ADMIN}, {@code ROLE_DOCTOR}, {@code ROLE_PHARMACIST}, ...). Principal
+ * được tạo thành {@link ActorIdentity}, giữ riêng accountId từ {@code sub} và staffId tùy chọn.</p>
  *
  * <p>Filter không tin các header định danh do client tự gửi như {@code X-User-Role}. Danh tính và
  * quyền chỉ được lấy từ token có chữ ký hợp lệ. Nhờ đó việc gọi trực tiếp cổng 8085 vẫn phải qua
@@ -107,9 +110,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
+            UUID accountId = UUID.fromString(subject);
+            UUID staffId = optionalUuid(claims.get("staffId"));
+            ActorIdentity actor = new ActorIdentity(accountId, staffId, role);
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            subject,
+                            actor,
                             null,
                             List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
 
@@ -135,5 +141,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    /** Parses optional signed staff identity; malformed identity fails authentication closed. */
+    private UUID optionalUuid(Object value) {
+        if (value == null || value.toString().isBlank()) {
+            return null;
+        }
+        return UUID.fromString(value.toString());
     }
 }

@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -161,12 +163,13 @@ class DrugControllerTest {
     @ValueSource(strings = {"ADMIN", "PHARMACIST"})
     void adjustStock_allowedRoles_returnsUpdatedDrug(String role) throws Exception {
         UUID drugId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
         AdjustStockRequest request = new AdjustStockRequest(20, "Nhập thêm lô mới");
-        when(manageDrugUseCase.adjustStock(drugId, request))
+        when(manageDrugUseCase.adjustStock(eq(drugId), eq(request), eq(actorId), nullable(String.class)))
                 .thenReturn(drugDto(drugId, 120));
 
         mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
-                        .with(user("writer").roles(role))
+                        .with(user(actorId.toString()).roles(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -193,12 +196,14 @@ class DrugControllerTest {
     @WithMockUser(roles = "PHARMACIST")
     void adjustStock_wouldMakeStockNegative_returns422() throws Exception {
         UUID drugId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
         AdjustStockRequest request = new AdjustStockRequest(-200, "Điều chỉnh kiểm kê");
-        when(manageDrugUseCase.adjustStock(drugId, request))
+        when(manageDrugUseCase.adjustStock(eq(drugId), eq(request), eq(actorId), nullable(String.class)))
                 .thenThrow(new DrugRuleException(
                         "DRUG_OUT_OF_STOCK", "Điều chỉnh làm tồn kho âm"));
 
         mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
+                        .with(user(actorId.toString()).roles("PHARMACIST"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())

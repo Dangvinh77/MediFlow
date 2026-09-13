@@ -19,9 +19,11 @@ class CommandCorrelationTest {
                 java.time.LocalDate.now(), java.util.List.of());
 
         CreatePrescriptionCommand create = new CreatePrescriptionCommand(
-                request, UUID.randomUUID(), false, "  request-1  ");
+                request, new ActorIdentity(UUID.randomUUID(), UUID.randomUUID(), "DOCTOR"), "  request-1  ");
         CancelPrescriptionCommand cancel = new CancelPrescriptionCommand(
-                UUID.randomUUID(), UUID.randomUUID(), false, "reason", " ");
+                UUID.randomUUID(),
+                new ActorIdentity(UUID.randomUUID(), UUID.randomUUID(), "DOCTOR"),
+                "reason", " ");
 
         assertThat(create.correlationId()).isEqualTo("request-1");
         assertThat(cancel.correlationId()).isNotBlank();

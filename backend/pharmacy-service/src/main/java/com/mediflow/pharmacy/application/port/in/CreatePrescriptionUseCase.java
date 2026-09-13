@@ -8,7 +8,7 @@ import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
  * In-port — "kê đơn thuốc" (bước khởi đầu của saga). Bác sĩ ghi nhận ý định dùng thuốc:
  * chỉ là ghi nhận, KHÔNG trừ kho ở đây. Server tự chụp giá từ kho tại thời điểm kê đơn,
  * tự tạo phiếu xuất PENDING, và publish prescription.created để billing tạo hóa đơn.
- * Đây chỉ là hợp đồng — PharmacyApplicationService sẽ hiện thực.
+ * Đây chỉ là hợp đồng — {@code PrescriptionApplicationService} sẽ hiện thực.
  */
 public interface CreatePrescriptionUseCase {
 

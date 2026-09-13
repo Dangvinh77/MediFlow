@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
         "spring.rabbitmq.listener.simple.auto-startup=false",
+        "mediflow.pharmacy.outbox.enabled=false",
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes"
 })
 @Testcontainers(disabledWithoutDocker = true)
@@ -104,7 +105,10 @@ class PrescriptionCreationTransactionTest {
                         new PrescriptionLineRequest(secondDrugId, 3, "Ngày 3 lần")));
 
         assertThatThrownBy(() -> useCase.create(new CreatePrescriptionCommand(
-                request, request.doctorId(), false, "test-correlation")))
+                request,
+                new com.mediflow.pharmacy.application.dto.command.ActorIdentity(
+                        UUID.randomUUID(), request.doctorId(), "DOCTOR"),
+                "test-correlation")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Mô phỏng lỗi lưu phiếu xuất");
 

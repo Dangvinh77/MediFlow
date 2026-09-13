@@ -1,85 +1,67 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
-import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
-/** Kiểm tra routing key và thời điểm publish mà không cần RabbitMQ thật. */
+/** Tests that application events cross the adapter only through the transactional outbox. */
 class PharmacyEventPublisherAdapterTest {
 
-    private final RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+    private final PharmacyEventOutboxJpaRepository repository =
+            mock(PharmacyEventOutboxJpaRepository.class);
+    private final ObjectMapper objectMapper = mock(ObjectMapper.class);
     private final PharmacyEventPublisherAdapter adapter =
-            new PharmacyEventPublisherAdapter(rabbitTemplate);
+            new PharmacyEventPublisherAdapter(repository, objectMapper);
 
-    @AfterEach
-    void clearTransactionSynchronization() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
-
+    /** A created event is serialized under the exact contract routing key. */
     @Test
-    void publishPrescriptionCreated_withoutTransaction_sendsImmediatelyWithContractRoutingKey() {
+    void publishPrescriptionCreated_validEvent_persistsSerializedOutboxRow() throws Exception {
         PrescriptionCreatedEvent event = event();
+        when(objectMapper.writeValueAsString(event)).thenReturn("{\"eventId\":\"test\"}");
 
         adapter.publishPrescriptionCreated(event);
 
-        verify(rabbitTemplate).convertAndSend(
-                "mediflow.events",
-                "prescription.created",
-                event);
+        ArgumentCaptor<PharmacyEventOutboxJpaEntity> captor =
+                ArgumentCaptor.forClass(PharmacyEventOutboxJpaEntity.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getEventId()).isEqualTo(event.eventId());
+        assertThat(captor.getValue().getRoutingKey()).isEqualTo("prescription.created");
+        assertThat(captor.getValue().getPayload()).isEqualTo("{\"eventId\":\"test\"}");
     }
 
+    /** Serialization failure aborts the business transaction instead of storing corrupt JSON. */
     @Test
-    void publishPrescriptionCreated_activeTransaction_sendsExactlyOnceAfterCommit() {
-        TransactionSynchronizationManager.initSynchronization();
+    void publishPrescriptionCreated_serializationFails_doesNotPersist() throws Exception {
         PrescriptionCreatedEvent event = event();
+        when(objectMapper.writeValueAsString(event)).thenThrow(new JsonProcessingException("bad event") { });
 
-        adapter.publishPrescriptionCreated(event);
+        assertThatThrownBy(() -> adapter.publishPrescriptionCreated(event))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("serialize");
 
-        verifyNoInteractions(rabbitTemplate);
-        List<TransactionSynchronization> synchronizations =
-                TransactionSynchronizationManager.getSynchronizations();
-        assertThat(synchronizations).hasSize(1);
-
-        synchronizations.forEach(TransactionSynchronization::afterCommit);
-
-        verify(rabbitTemplate, times(1)).convertAndSend(
-                "mediflow.events",
-                "prescription.created",
-                event);
-    }
-
-    @Test
-    void publishPrescriptionCreated_rolledBackTransaction_sendsNothing() {
-        TransactionSynchronizationManager.initSynchronization();
-
-        adapter.publishPrescriptionCreated(event());
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(synchronization -> synchronization.afterCompletion(
-                        TransactionSynchronization.STATUS_ROLLED_BACK));
-
-        verifyNoInteractions(rabbitTemplate);
+        verify(repository, never()).save(any());
     }
 
     private PrescriptionCreatedEvent event() {
         return new PrescriptionCreatedEvent(
                 UUID.randomUUID(),
-                Instant.now(),
+                Instant.parse("2026-09-13T09:00:00Z"),
                 "correlation-test",
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -87,9 +69,6 @@ class PharmacyEventPublisherAdapterTest {
                 UUID.randomUUID(),
                 new BigDecimal("2000.00"),
                 List.of(new PrescriptionCreatedEvent.Item(
-                        UUID.randomUUID(),
-                        "Paracetamol",
-                        2,
-                        new BigDecimal("1000.00"))));
+                        UUID.randomUUID(), "Paracetamol", 2, new BigDecimal("1000.00"))));
     }
 }

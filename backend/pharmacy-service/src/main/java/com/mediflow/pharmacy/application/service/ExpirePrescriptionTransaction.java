@@ -2,7 +2,9 @@ package com.mediflow.pharmacy.application.service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -15,6 +17,7 @@ import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 
 import lombok.RequiredArgsConstructor;
@@ -59,7 +62,15 @@ public class ExpirePrescriptionTransaction {
 
         List<StockReservation> reservations = reservationRepository
                 .findByPrescriptionForUpdate(prescriptionId);
+        Set<UUID> expectedDrugIds = prescription.getLines().stream()
+                .map(PrescriptionLine::getDrugId)
+                .collect(Collectors.toSet());
+        Set<UUID> actualDrugIds = reservations.stream()
+                .map(StockReservation::getDrugId)
+                .collect(Collectors.toSet());
         if (reservations.isEmpty()
+                || reservations.size() != expectedDrugIds.size()
+                || !actualDrugIds.equals(expectedDrugIds)
                 || reservations.stream().anyMatch(reservation -> !reservation.isReserved())
                 || reservations.stream().anyMatch(reservation -> !reservation.isExpiredAt(now))) {
             return 0;
@@ -78,7 +89,7 @@ public class ExpirePrescriptionTransaction {
         eventPublisher.publishPrescriptionExpired(new PrescriptionExpiredEvent(
                 UUID.randomUUID(),
                 now,
-                null,
+                "reservation-expiry:" + prescriptionId,
                 prescription.getPrescriptionId(),
                 prescription.getPatientId(),
                 reservations.size()));

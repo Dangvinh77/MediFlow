@@ -53,6 +53,22 @@ public interface StockReservationRepositoryPort {
     List<UUID> findExpiredPrescriptionIds(Instant now, int limit);
 
     /**
+     * Finds the next page of expired prescription ids after an exclusive cursor.
+     *
+     * <p>The cursor lets the scheduler move past a permanently failing aggregate instead of
+     * selecting the same first page forever.</p>
+     *
+     * @param now mốc thời gian đánh giá TTL
+     * @param afterPrescriptionId cursor UUID loại trừ; {@code null} để bắt đầu từ đầu
+     * @param limit số đơn tối đa trả về
+     * @return batch kế tiếp theo thứ tự UUID ổn định
+     */
+    default List<UUID> findExpiredPrescriptionIdsAfter(
+            Instant now, UUID afterPrescriptionId, int limit) {
+        return findExpiredPrescriptionIds(now, limit);
+    }
+
+    /**
      * Bản KHÓA GHI khi đọc giữ chỗ của một đơn — dành riêng cho luồng dispense
      * (chống tương tranh với job release, BR-D10). Cơ chế khóa (PESSIMISTIC_WRITE)
      * là chuyện của adapter bên infrastructure.

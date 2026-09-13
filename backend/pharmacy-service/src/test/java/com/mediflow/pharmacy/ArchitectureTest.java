@@ -55,6 +55,29 @@ public class ArchitectureTest {
             .allowEmptyShould(true)
             .as("application must not depend on Spring Data, JPA, AMQP, HTTP, or infrastructure/web/messaging");
 
+    /** In/out contracts and DTOs must never expose persistence entities or Spring Data types. */
+    @ArchTest
+    static final ArchRule application_contracts_are_framework_free = noClasses()
+            .that().resideInAnyPackage("..application.port.in..", "..application.dto..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "..infrastructure.persistence.jpaEntity..",
+                    "..infrastructure.persistence.entity..",
+                    "org.springframework.data..",
+                    "jakarta.persistence..")
+            .allowEmptyShould(true)
+            .as("application contracts must not expose JPA entities or Spring Data");
+
+    /** Driving adapters must call application contracts, never persistence repositories or adapters. */
+    @ArchTest
+    static final ArchRule driving_adapters_do_not_bypass_application = noClasses()
+            .that().resideInAnyPackage("..web..", "..messaging.consumer..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "..infrastructure.persistence..",
+                    "..infrastructure.messaging..",
+                    "..infrastructure.scheduling..")
+            .allowEmptyShould(true)
+            .as("driving adapters must not bypass application ports");
+
     /** web/ (driving HTTP) depends only on application — never on persistence/messaging/infrastructure/domain. */
     @ArchTest
     static final ArchRule web_depends_only_on_application = noClasses()

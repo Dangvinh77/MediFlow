@@ -77,7 +77,11 @@ Ràng buộc DB: `price >= 0`, `stock_quantity >= 0` — đây là "tuyến phò
 
 ### `PROCESSED_EVENT` — sổ ghi các event đã xử lý
 
-`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin (xem quy tắc BR-D9).
+`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin (xem quy tắc BR-D9). Payment consumer claim bằng `INSERT ... ON CONFLICT DO NOTHING` trong cùng transaction với dispense.
+
+### `PHARMACY_EVENT_OUTBOX` — hàng đợi event bền vững
+
+`event_id` UUID PK · `routing_key` · `payload` JSON · `created_at` · `published_at` · `attempts` · `last_error`. Application ghi dòng outbox trong cùng transaction nghiệp vụ; dispatcher gửi các dòng chưa published theo thứ tự tạo và giữ lại khi RabbitMQ lỗi (at-least-once).
 
 ## 5. Các cổng (ports) — phần quan trọng nhất
 
@@ -167,12 +171,11 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 | Phương thức | Làm gì | Quy tắc khớp |
 |-------------|--------|--------------|
-| `alreadyProcessed(UUID eventId)` | kiểm tra event đã xử lý chưa | BR-D9 |
-| `markProcessed(UUID eventId, String routingKey)` | đánh dấu đã xử lý | BR-D9 |
+| `claimIfAbsent(UUID eventId, String routingKey)` | claim atomically bằng unique `event_id` | BR-D9, chống race hai consumer |
 
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
-**Vì sao cần:** application phải "báo tin" cho các service khác khi có thay đổi, nhưng không được đụng vào RabbitMQ. Interface này liệt kê các tin pharmacy có thể gửi; `PharmacyEventPublisherAdapter` trong `infrastructure/messaging` làm thật (publish **sau khi** transaction commit để không báo tin cho giao dịch bị hủy).
+**Vì sao cần:** application phải "báo tin" cho các service khác khi có thay đổi, nhưng không được đụng vào RabbitMQ. Interface này liệt kê các tin pharmacy có thể gửi; adapter ghi event vào **transactional outbox** trong cùng transaction, dispatcher mới chuyển sang RabbitMQ sau commit.
 
 | Phương thức | Gửi tin gì | Khi nào / vì sao |
 |-------------|-----------|------------------|
@@ -180,6 +183,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 | `publishPrescriptionFilled(...)` | `prescription.filled` | sau khi xuất thuốc thành công — clinical/notification/report quan tâm |
 | `publishPrescriptionDispenseFailed(...)` | `prescription.dispense.failed` | xuất thất bại — **kích hoạt bù trừ** của billing (BR-D6) |
 | `publishStockLow(...)` | `stock.low` | tồn kho chạm ngưỡng (BR-D11). Kiểu "bắn rồi quên": lỗi gửi tin này không được làm hỏng lần xuất thuốc vừa thành công |
+| `publishStockAdjusted(...)` | `stock.adjusted` | audit điều chỉnh tồn với actor/before/after/delta/reason |
 
 ## 6. Luồng nghiệp vụ chính
 
@@ -207,10 +211,10 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 ### 6.3 Nhận tin "đã thanh toán" (`onPaymentCompleted`)
 
-1. Kiểm tra `alreadyProcessed(eventId)` — đã xử lý rồi thì dừng (BR-D9).
-2. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ.
-3. Đánh dấu `markProcessed(...)` trong cùng transaction.
-4. Lỗi nghiệp vụ **không** ném ngược về RabbitMQ (đã có event bù trừ); chỉ lỗi hệ thống mới đưa vào dead-letter.
+1. Đối chiếu `patientId`/`departmentId` của event với đơn trước khi claim; không so tổng invoice với tổng thuốc vì invoice có thể gồm phí khác.
+2. Claim `eventId` atomically — đã có owner thì dừng (BR-D9).
+3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation.
+4. Lỗi hạ tầng được retry hữu hạn với exponential backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát compensation một lần.
 
 ## 7. API
 

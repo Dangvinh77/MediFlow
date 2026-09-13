@@ -12,7 +12,7 @@ import com.mediflow.pharmacy.application.dto.response.DrugDTO;
  * In-port — "bảng công việc quản lý danh mục thuốc" (DRUG).
  * Bên ngoài (web/controller) nhờ service làm 4 việc: thêm thuốc, xem 1 thuốc, tìm kiếm
  * theo tên và điều chỉnh tồn kho. Đây chỉ là hợp đồng — <b>không có code làm thật</b>;
- * {@code PharmacyApplicationService} sẽ hiện thực. Controller (driving adapter) gọi qua
+ * {@code DrugApplicationService} sẽ hiện thực. Controller (driving adapter) gọi qua
  * in-port này, không bao giờ gọi thẳng application service.
  */
 public interface ManageDrugUseCase {
@@ -32,4 +32,9 @@ public interface ManageDrugUseCase {
      * Dương = nhập kho, âm = giảm. Quy tắc số lượng &gt; 0 nằm trong {@code Drug.restock}.
      */
     DrugDTO adjustStock(UUID id, AdjustStockRequest arq);
+
+    /** Adjusts stock while preserving the authenticated actor and correlation for audit. */
+    default DrugDTO adjustStock(UUID id, AdjustStockRequest request, UUID actorId, String correlationId) {
+        return adjustStock(id, request);
+    }
 }

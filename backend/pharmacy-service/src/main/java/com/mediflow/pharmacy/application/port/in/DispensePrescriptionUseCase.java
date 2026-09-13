@@ -16,7 +16,7 @@ import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
  * </ul>
  * Cả hai cùng đi qua <b>một</b> use case này — không bao giờ viết logic xuất hai lần.
  *
- * <p>Đây chỉ là hợp đồng — {@code PharmacyApplicationService} sẽ hiện thực.
+ * <p>Đây chỉ là hợp đồng — {@code DispenseApplicationService} sẽ hiện thực.
  */
 public interface DispensePrescriptionUseCase {
 
@@ -46,5 +46,22 @@ public interface DispensePrescriptionUseCase {
      */
     default DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy, String correlationId) {
         return dispense(prescriptionId, dispensedBy);
+    }
+
+    /**
+     * Xuất thuốc trong ngữ cảnh payment để failure event có thể bù trừ đúng invoice.
+     *
+     * @param prescriptionId đơn cần xuất
+     * @param dispensedBy tác nhân thực hiện
+     * @param invoiceId invoice liên quan, null với đường thủ công chưa có payment context
+     * @param correlationId mã tương quan của saga
+     * @return phiếu xuất sau khi xử lý
+     */
+    default DispenseDTO dispense(
+            UUID prescriptionId,
+            UUID dispensedBy,
+            UUID invoiceId,
+            String correlationId) {
+        return dispense(prescriptionId, dispensedBy, correlationId);
     }
 }

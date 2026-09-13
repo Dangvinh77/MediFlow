@@ -7,8 +7,6 @@ import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
-import com.mediflow.pharmacy.domain.exception.PrescriptionCancellationForbiddenException;
-
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

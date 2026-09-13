@@ -10,7 +10,9 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 
 ## Status
 
-**In progress.** Domain, application ports/services, persistence adapters, stock reservations and the expiry scheduler are present. HTTP, JWT security, RabbitMQ topology/consumer and integration tests remain to be implemented.
+**In progress.** Domain, application ports/services, persistence adapters, stock reservations,
+expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. Transactional
+transactional outbox is enabled for durable event delivery; real PostgreSQL/RabbitMQ integration gates remain before release.
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 
@@ -40,6 +42,13 @@ Swagger UI: http://localhost:8085/swagger-ui.html
 - **Subscribe:** `payment.completed`
 
 Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
+
+Payment events are claimed atomically by `eventId`; duplicate deliveries are ignored. Listener
+retries are bounded (default 3 attempts with exponential backoff) and poison messages are routed
+to `pharmacy.dlq`. Configure with `MEDIFLOW_PHARMACY_RABBIT_RETRY_*` environment variables.
+
+Reservation TTL defaults to 24 hours and is configurable with
+`MEDIFLOW_PHARMACY_RESERVATION_TTL` (ISO-8601 duration, for example `PT24H`).
 
 ## Tests
 

@@ -14,6 +14,20 @@ public interface ProcessedEventPort {
     /** Kiểm tra event (theo eventId) đã được xử lý chưa. Đã xử lý rồi thì consumer phải bỏ qua (BR-D9). */
     boolean alreadyProcessed(UUID eventId);
 
-    /** Đánh dấu event đã được xử lý — gọi trong cùng transaction với nghiệp vụ để chống xử lý trùng (BR-D9). */
+    /**
+     * Claim event atomically bằng unique key eventId.
+     *
+     * @param eventId mã event từ message broker
+     * @param routingKey routing key để audit
+     * @return {@code true} nếu caller giành quyền xử lý; {@code false} nếu event đã có owner
+     */
+    boolean claimIfAbsent(UUID eventId, String routingKey);
+
+    /**
+     * Ghi dấu event theo cách tương thích với caller cũ.
+     *
+     * @deprecated use {@link #claimIfAbsent(UUID, String)} so concurrent consumers cannot both win
+     */
+    @Deprecated(forRemoval = false)
     void markProcessed(UUID eventId, String routingKey);
 }

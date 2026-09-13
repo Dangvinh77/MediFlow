@@ -7,7 +7,7 @@ import com.mediflow.pharmacy.application.dto.command.PaymentCompletedCommand;
  * SAU khi bệnh nhân trả tiền; event {@code payment.completed} do billing publish chính
  * là tín hiệu đó. Driving adapter gọi in-port này là consumer trong {@code messaging/consumer}.
  *
- * <p>Đây chỉ là hợp đồng — {@code PharmacyApplicationService} sẽ hiện thực. Application
+ * <p>Đây chỉ là hợp đồng — {@code PaymentApplicationService} sẽ hiện thực. Application
  * không đụng tới RabbitMQ: port nhận application command, không nhận event AMQP thô.
  */
 public interface ReactToPaymentUseCase {

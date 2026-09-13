@@ -1,406 +1,1074 @@
-# Kế hoạch code tiếp theo — Pharmacy Service
-
-> Ngày lập: **13/09/2026**. Module thực tế: `backend/pharmacy-service` (phần người dùng gọi là pharma-service).
-> Đây là kế hoạch triển khai dựa trên code đã kiểm tra, không phải xác nhận các chức năng đã hoàn thành hoặc yêu cầu triển khai tất cả ngay lập tức.
-
-## 1. Mục tiêu, phạm vi và mốc đối chiếu
-
-**Mục tiêu:** hoàn thiện chu trình kê đơn → giữ tồn → thanh toán → cấp thuốc; hủy/hết hạn giải phóng đúng lượng giữ tồn; cấp thất bại có kết quả bù trừ tin cậy; API có phân quyền và kiểm thử chứng minh không xuất trùng, không mất event, không làm sai tồn kho.
-
-| Nội dung | Mốc đã kiểm tra khi lập kế hoạch |
-| --- | --- |
-| Nhánh local | `Huy`, commit `693b58f6bf4174a9fe6709b32a7a527bb207ab1f` |
-| Master đã fetch | `e1c56232d77605037eb1183fb6deef64b518ec6c`; chưa tích hợp vào nhánh local tại mốc này |
-| Công việc đang review | [Draft PR #74](https://github.com/Dangvinh77/MediFlow/pull/74): thay đổi tạo đơn và danh tính người kê |
-| Dữ liệu local cần giữ | `.changelog/entries.jsonl` đang thay đổi; không xóa hoặc ghi đè khi đồng bộ Git |
-| Migration hiện có | V1 khởi tạo, V2 reservation, V3 unique reservation theo đơn/thuốc, V4 lifecycle và audit |
-| API hiện có | 4 API thuốc; POST tạo đơn; PUT hủy đơn |
-| Kiểm thử baseline | Báo cáo lần chạy trước trong phiên làm việc ngày 13/09: **61 ca, 6 errors, 7 skipped**, thuộc 17 lớp test Java |
-| Nguyên nhân cần xử lý trước | Caller trong test chưa theo `CreatePrescriptionCommand`; nhóm Testcontainers chưa chạy do Docker không khả dụng |
-
-Số liệu test trên lấy từ báo cáo Surefire còn lưu tại thời điểm lập tài liệu, **không phải kết quả chạy lại sau khi sửa**. Có dấu hiệu output biên dịch cũ/IDE (`Unresolved compilation problems`), vì vậy phải chạy build sạch ở P0. Không dùng số test pass này để suy ra phần trăm hoàn thành nghiệp vụ.
-
-Phạm vi ghi code: pharmacy-service và tài liệu liên quan. Gateway, Organization, Billing, Notification, Medical Record, frontend chỉ đối chiếu contract và phối hợp chủ sở hữu; không tự sửa các service đó. File ownership trên master đã fetch quy định Pharmacy thuộc Huy; đọc lại bản `AGENTS.md` gần nhất sau khi đồng bộ.
-
-Nguồn bắt buộc đối chiếu khi bắt đầu code:
-
-- [Quy tắc chung](../ai/README.md), [blueprint](../ai/04-microservice-blueprint.md), [bounded context pharmacy](../ai/services/pharmacy.md).
-- [Đặc tả pharmacy](../eproject_general_plan/backend-spec/05-pharmacy.md), [hợp đồng dùng chung](../eproject_general_plan/backend-spec/00-overview.md), [thiết kế nghiệp vụ](../eproject_general_plan/pharmacy-service.html).
-- [API](../ai/05-api-conventions.md), [event](../ai/06-events-rabbitmq.md), [RBAC](../ai/07-security-rbac.md), [kiểm thử](../ai/09-testing.md), [Git](../ai/10-git-workflow.md).
-
-Đặc tả có đoạn cũ không đồng nhất với reservation/lifecycle mới, ví dụ ghi chỉ dispense cần khóa trong khi create cũng phải khóa để giữ tồn. Khi gặp mâu thuẫn: ghi quyết định và xác nhận contract trước; không sao chép nguyên pseudocode gây mất tính nhất quán. Giữ ngoại lệ tên field/DB tiếng Anh của pharmacy theo đặc tả; không đổi hàng loạt sang tiếng Việt.
-
-## 2. Hiện trạng và khoảng trống có bằng chứng
-
-Trong các bảng bên dưới, đường dẫn Java rút gọn tính từ `backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/`. Đường dẫn test tính từ package tương ứng trong `src/test/java/`.
-
-| Luồng | Phần đã có | Phần cần làm tiếp / rủi ro cụ thể |
-| --- | --- | --- |
-| Danh mục và tồn kho | `web/DrugController.java`: search, get, create, adjust; khóa drug khi điều chỉnh | `adjustStock` cho giảm tồn nhưng mới chặn tồn âm, chưa bảo vệ lượng đang giữ; `reason` chưa được lưu audit; chưa phát event thay đổi tồn ở luồng này |
-| Kê đơn và giữ tồn | `application/service/PharmacyApplicationService.java`: loại drug trùng, khóa theo UUID, tính available, snapshot giá, tạo reservation và phiếu PENDING trong transaction | Đang so JWT subject với `doctorId`; correlation từ command không đi vào `prescription.created`; test chưa theo chữ ký mới |
-| Tra cứu đơn | Có `PrescriptionDTO`, mapper, repository | Chưa có GET chi tiết đơn và query use case; cần kiểm tra tương thích khi DTO thêm lifecycle |
-| Cấp thuốc | Có use case, khóa thuốc/reservation, trừ kho và đánh dấu phiếu DISPENSED | Chưa khóa đơn/phiếu trước kiểm tra trạng thái; chưa kiểm tra TTL ở thời điểm cấp; chưa gọi `Prescription.markFulfilled(now)` và lưu lại |
-| Cấp thất bại | Có `markDispenseFailed` dùng `REQUIRES_NEW` qua self-proxy | Được gọi khi transaction ngoài chưa rollback xong; bắt mọi RuntimeException; chưa chuyển đơn sang DISPENSE_FAILED và giải phóng reservation; payload thiếu invoice/patient/correlation |
-| Nhận thanh toán | `messaging/consumer/PaymentCompletedConsumer.java` nhận event, có bảng processed event | Application chỉ dùng eventId/prescriptionId; chưa lưu bằng chứng thanh toán; dedupe kiểu check rồi save chưa chứng minh an toàn đồng thời; lỗi nghiệp vụ bị ném lại dẫn đến redelivery |
-| Hủy đơn | `CancelPrescriptionService`: khóa đơn → phiếu → reservation, kiểm tra quyền và audit, hủy lặp không giải phóng thêm | Cùng vấn đề accountId/staffId; kiểm tra reservation chưa chứng minh đủ đúng tất cả dòng và quantity; chưa định nghĩa payment đến sau hủy |
-| Hết hạn giữ tồn | Scheduler + `ReleaseExpiredReservationsService` + `ExpirePrescriptionTransaction`, một transaction mỗi đơn | TTL tạo đơn hardcode 24 giờ; batch cố định 100; một lỗi có thể dừng phần còn lại; cần xử lý starvation và cạnh tranh với payment/dispense |
-| Phát event | `PharmacyEventPublisherAdapter` gửi trong callback afterCommit; Rabbit có main queue/DLQ | AfterCommit không bảo đảm gửi lại khi broker lỗi; chưa có outbox bền; việc khai báo DLQ chưa chứng minh đã có retry hữu hạn |
-| Kiểm thử | Domain, application, web, security, persistence, architecture đã có khung | Thiếu bằng chứng DB thật cho cấp thuốc đồng thời, rollback nhiều dòng, failure transaction, cancel/expire race và broker outage |
-
-Hai phân biệt quan trọng:
-
-- **Có implementation không đồng nghĩa đã nghiệm thu.** Luồng hủy/TTL đã có code nhưng chưa đủ test để đánh dấu hoàn thành.
-- **Payload thiếu `invoiceId` vẫn là vấn đề contract**, dù Billing local hiện tìm invoice bằng `prescriptionId`; không khẳng định chỉ riêng field null này đã làm mọi phiên bản Billing lỗi ngay.
-
-## 3. Quyết định phải chốt trước khi code phần phụ thuộc
-
-| ID | Quyết định / phương án đề xuất | Chủ thể xác nhận | Chặn phần nào |
-| --- | --- | --- | --- |
-| D1 | JWT `sub` là account ID; `doctorId` tham chiếu staff. Tách `actorAccountId` dùng audit và `actorStaffId` dùng ownership. Lấy staff từ claim đã xác thực theo contract được duyệt; nếu không có, mapping qua resilient REST trước transaction. Không tự đặt tên claim/URL hoặc coi hai UUID là một | Gateway + Organization + Pharmacy | Hoàn tất quyền tạo/hủy; audit người cấp thủ công |
-| D2 | Giữ luồng tự động cấp sau `payment.completed` như đặc tả. Endpoint thủ công chỉ dùng cùng core và phải có bằng chứng thanh toán do backend xác nhận; không nhận `paid=true` từ client | Billing + Pharmacy | Payment receipt và endpoint dispense |
-| D3 | Xác định invoice có bao nhiêu đơn, `amount` là tổng hóa đơn hay phần thuốc, field nào nullable, khóa định danh thanh toán ổn định. Không mặc định `amount == prescription.totalAmount` | Billing + Pharmacy | Validation event, unique business key |
-| D4 | Đơn CANCELLED/EXPIRED nhận payment muộn: không hồi sinh và không xuất thuốc; ghi nhận yêu cầu bù trừ theo contract. Không ghi đè trạng thái cũ thành DISPENSE_FAILED | Billing + Pharmacy | Terminal-state payment handling |
-| D5 | Chốt mốc TTL: đề xuất dùng thời điểm xử lý cấp thuốc, `expiresAt <= now` là không còn hiệu lực. Nếu muốn ưu tiên thời điểm thanh toán thì phải thiết kế lại phối hợp TTL/receipt; không tự gia hạn | Billing + Pharmacy | Ca sát thời điểm hết hạn |
-| D6 | Hệ thống tự cấp không phải một nhân viên thật. Chốt biểu diễn system actor; UUID toàn số 0 hiện tại không được diễn giải là staff đã tồn tại | Organization + Pharmacy | Audit `dispensedBy` và contract DTO |
-| D7 | Đề xuất không cho giảm tồn vật lý dưới tổng RESERVED. Nếu kiểm kê thực tế bắt buộc giảm, cần workflow xử lý thiếu hàng riêng, không âm thầm hủy giữ tồn | Pharmacy / người phụ trách nghiệp vụ | Điều chỉnh kho |
-| D8 | Bổ sung transactional outbox, receipt/inbox và audit là phần tăng độ tin cậy được đề xuất, chưa phải tính năng hiện hữu. Chốt schema, retention, retry, vận hành và nguồn lực trước implementation | Pharmacy + người review kiến trúc | P3, P5, P7 |
-
-Khi D1 chưa có nguồn danh tính đáng tin: từ chối quyền cần ownership, không fallback về so account với staff. Token không hợp lệ → 401; token hợp lệ nhưng thiếu quyền/danh tính bắt buộc → 403; dependency mapping không khả dụng → lỗi dependency theo API convention, không giả thành “không có quyền”.
-
-Nếu chưa chốt một quyết định, chỉ làm task không phụ thuộc nó và đánh dấu BLOCKED rõ lý do. Không dùng dữ liệu giả để vượt gate.
-
-## 4. Mô hình trạng thái và transaction đích
-
-### 4.1. Invariant cần giữ
-
-1. Giá đơn do server lấy từ thuốc tại lúc kê; tổng tiền dùng `BigDecimal`, scale/rounding theo spec. Client không thay được snapshot.
-2. Tạo đơn không trừ tồn vật lý. `available = onHand - tổng quantity của RESERVED`; một reservation cho mỗi cặp đơn/thuốc, đủ đúng số lượng của dòng.
-3. Reservation đã quá TTL nhưng chưa được job chuyển trạng thái vẫn được tính RESERVED một cách bảo thủ khi kiểm tra available; không “bán lại” phần đó trong khi dispense vẫn có thể dùng nó.
-4. Cấp thành công cập nhật thuốc, tất cả reservation, phiếu và đơn trong **cùng một transaction**; lỗi bất kỳ dòng nào không được trừ một phần.
-5. Không giữ khóa DB trong lúc gọi REST hoặc gửi RabbitMQ. Ghi outbox trong DB được phép; gửi message thật sau đó ở worker.
-6. Các timestamp nghiệp vụ lấy từ `Clock` được inject, cùng một `now` cho một quyết định. Domain nhận `Instant`/`LocalDate` cần thiết, không phụ thuộc Spring.
-7. Đọc trạng thái trước khóa không đủ chống trùng; phải khóa rồi đọc/kiểm tra lại trước mutation.
-
-### 4.2. Bảng chuyển trạng thái cần test
-
-| Kết quả | Prescription | DispenseSlip | Reservation | Tồn vật lý / event |
-| --- | --- | --- | --- | --- |
-| Kê thành công | ACTIVE | PENDING | RESERVED | Không trừ; `prescription.created` |
-| Cấp thành công | FULFILLED | DISPENSED | FULFILLED | Trừ đúng quantity một lần; `prescription.filled`, có thể `stock.low` |
-| Hủy hợp lệ | CANCELLED | CANCELLED | RELEASED + reason/actor/time | Không thay tồn; `prescription.cancelled` |
-| Hết TTL | EXPIRED | EXPIRED | EXPIRED + audit | Không thay tồn; `prescription.expired` |
-| Cấp thất bại nghiệp vụ trên đơn ACTIVE | DISPENSE_FAILED | FAILED | RELEASED + DISPENSE_FAILED | Transaction cấp rollback; ghi kết quả thất bại và event bù trừ bền |
-| Payment muộn sau CANCELLED/EXPIRED | Giữ nguyên | Giữ nguyên | Giữ nguyên | Không trừ; receipt và yêu cầu bù trừ theo D4 |
-| Lỗi hạ tầng tạm thời | Không chuyển sang terminal do lỗi này | Không đổi | Không đổi | Rollback; retry hữu hạn, không hoàn tiền chỉ vì DB/broker timeout |
-| Gửi lại cùng yêu cầu đã thành công | FULFILLED | DISPENSED | FULFILLED | Trả kết quả đã lưu / ACK; không trừ hoặc tạo event nghiệp vụ mới |
-
-### 4.3. Thứ tự khóa và ranh giới transaction
-
-- Với đơn đã tồn tại: **prescription → dispense slip → các drug theo drugId tăng dần → các reservation theo drugId tăng dần**. Khóa hết nhóm drug cần dùng trước khi khóa nhóm reservation, không xen kẽ mỗi luồng theo thứ tự khác nhau.
-- Cancel/expire không cần sửa drug có thể bỏ nhóm drug nhưng không đảo thứ tự. Điều chỉnh kho chỉ khóa drug và đọc tổng giữ tồn; không khóa reservation rồi quay lại khóa prescription.
-- Create chưa có aggregate tồn tại: khóa các drug theo thứ tự, kiểm tra available và lưu aggregate mới; không thêm đường gọi ngược từ create sang đơn khác.
-- Inbox/receipt cần một thứ tự khóa được ghi rõ: đề xuất cùng gate prescription trước các thao tác claim cho đơn đó. Consumer/manual/cancel phải dùng thống nhất; không có đường claim trước prescription ở một nơi và làm ngược ở nơi khác.
-- Orchestrator cấp thuốc **không có transaction bao ngoài**. Nó gọi bean transaction cấp; chỉ khi lời gọi đó đã rollback hoàn toàn mới gọi bean transaction ghi thất bại. Bỏ self-injection `@Lazy`.
-- Transaction ghi thất bại khóa và kiểm tra trạng thái lại. Nếu tiến trình khác đã cấp/hủy/hết hạn trong khoảng giữa hai transaction, không ghi đè kết quả; xử lý theo trạng thái mới và payment context.
-- Nếu tiến trình chết giữa rollback và ghi thất bại, message chưa ACK phải được gửi lại; thiết kế receipt/inbox cho phép tiếp tục, không đánh dấu hoàn tất sớm.
-
-## 5. Backlog triển khai theo thứ tự
-
-Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằng chứng gate. Tên lớp **đề xuất mới** bên dưới có thể tinh chỉnh theo blueprint, nhưng trách nhiệm và tiêu chí nghiệm thu phải giữ.
-
-### P0 — Chốt baseline, đồng bộ an toàn và tái hiện lỗi
-
-**Ưu tiên:** bắt buộc đầu tiên. **Phụ thuộc:** không.
-
-- [x] P0.1 Đọc changelog, root/nested AGENTS; kiểm tra branch, tracked/untracked files, upstream và trạng thái PR #74 hiện tại.
-- [ ] P0.2 Fetch master mới, đối chiếu diff pharmacy và shared contracts; bảo toàn thay đổi local bằng checkpoint có phạm vi rõ. Không reset hard, không force push, không tự xử lý conflict bằng cách bỏ một phía.
-- [ ] P0.3 Tích hợp master trong đợt code được giao; nếu lịch sử đã phân kỳ thì merge có kiểm soát, không giả định có thể fast-forward. Ghi lại SHA baseline mới trong PR.
-- [ ] P0.4 Kiểm tra Java 21, Maven, Docker; chạy `mvn -q -pl backend/pharmacy-service -am clean test` để loại output cũ và lưu lỗi thực tế.
-- [x] P0.5 Cập nhật test caller sang command mới ở `PharmacyApplicationServicePrescriptionTest` và `PrescriptionControllerTest`; giữ assertion nghiệp vụ, không bỏ test hoặc vô hiệu hóa security cho xanh.
-
-**Gate:** test source biên dịch được; biết rõ nhóm nào pass/fail/skip và lý do. Nếu Docker chưa có, ghi INCOMPLETE cho DB tests; chưa được công bố module đã verified. PR #74 giữ draft tới khi các blocker trong phạm vi PR được xử lý.
-
-### P1 — Sửa tạo đơn, quyền sở hữu và correlation
-
-**Ưu tiên:** P0 về an toàn. **Phụ thuộc:** P0; D1, D6 cho phần danh tính.
-
-**File chính:** `web/PrescriptionController.java`, `infrastructure/security/JwtAuthFilter.java`, các command tạo/hủy, `PharmacyApplicationService`, `CancelPrescriptionService`, mapper/DTO và test tương ứng.
-
-- [ ] P1.1 Đưa identity đã xác thực vào command dưới dạng giá trị rõ account/staff/roles; controller không tự tin `doctorId` client, application vẫn kiểm tra ownership.
-- [ ] P1.2 Doctor chỉ kê/hủy đơn của staff tương ứng; Admin override có audit account thực hiện và doctor đích; xác nhận tính hợp lệ doctor/khoa theo contract, không đọc DB service khác.
-- [x] P1.3 Giữ check drug trùng trước mutation; test create lưu đơn + lines + reservations + pending slip atomically, thiếu available thì không lưu phần nào.
-- [x] P1.4 Truyền correlation vào `publishCreated`, phản hồi HTTP, log và luồng hủy; nếu vắng thì chuẩn hóa/generate theo convention, không dùng chuỗi rỗng để lách validation. Command tự sinh UUID khi header trống và test boundary đã bổ sung.
-- [x] P1.5 Chốt hợp đồng DTO: bản hiện tại đã có `status` = PrescriptionStatus và `dispenseStatus` riêng. Kiểm tra consumer cũ; không đổi nghĩa field silently. Sửa Javadoc còn mô tả trạng thái đơn là PENDING.
-- [ ] P1.6 Chuẩn hóa format phần sửa, bỏ wildcard/fully-qualified lặp nếu trái chuẩn; không refactor unrelated toàn repo.
-
-**Gate/test:** account UUID khác staff UUID vẫn cho đúng bác sĩ; giả doctorId bị 403 trước ghi DB; Admin override đúng audit; UUID lỗi/thiếu token/sai role đúng 400/401/403; duplicate line và available stock đúng lỗi theo spec; snapshot giá/tổng không bị client thay; correlation giữ xuyên suốt.
-
-### P2 — Bổ sung API đọc chi tiết đơn
-
-**Ưu tiên:** P1. **Phụ thuộc:** P0, hợp đồng DTO P1.5; có thể làm trong lúc chờ D1.
-
-**File:** sửa `web/PrescriptionController.java`; đề xuất mới `application/port/in/GetPrescriptionUseCase.java`, `application/service/GetPrescriptionService.java`; dùng lại `PrescriptionDTO`, mapper và repository ports.
-
-- [x] P2.1 Thêm `GET /api/v1/pharmacy/prescriptions/{id}`, roles ADMIN/DOCTOR/PHARMACIST như đặc tả.
-- [x] P2.2 Read-only transaction trả đầy đủ lines, giá snapshot, total, status, dispenseStatus và audit; không trả JPA entity, không khóa ghi khi chỉ xem.
-- [x] P2.3 Không tính lại đơn cũ từ giá thuốc hiện tại. Tên thuốc hiện chưa được snapshot vào line: thống nhất là tên hiện tại hoặc bổ sung snapshot bằng migration riêng, không khẳng định đã có snapshot tên.
-- [x] P2.4 Tránh query mỗi dòng nếu có thể batch-load; xử lý dữ liệu thiếu slip như lỗi nhất quán có quan sát, không tạo phiếu mới trong GET. Drug lookup đã chuyển sang `findByIds` một lần cho toàn bộ dòng.
-
-**Gate/test:** 200 cho đơn ở mỗi lifecycle; 404 khi không tồn tại; 401/403 đúng role; giá giữ nguyên sau thay danh mục; dữ liệu trả đúng DB thật. List/filter đơn, phân trang đơn là mở rộng riêng, không mặc định thêm vào task này.
-
-### P3 — Làm bền việc phát event bằng transactional outbox
-
-**Ưu tiên:** P0 về độ tin cậy saga. **Phụ thuộc:** P0, D8; phần envelope đối chiếu P1.4.
-
-**File:** `application/port/out/PharmacyEventPublisherPort.java`, `infrastructure/messaging/PharmacyEventPublisherAdapter.java`, `infrastructure/config/RabbitConfig.java`, config ứng dụng; thêm model/port outbox và adapters persistence/worker đúng blueprint, migration mới.
-
-- [ ] P3.1 Ghi yêu cầu phát event vào bảng outbox cùng transaction nghiệp vụ. Transaction rollback không để lại outbox; không gửi RabbitMQ trong đoạn đang khóa DB.
-- [ ] P3.2 Worker claim theo batch/lease hoặc cơ chế khóa phù hợp, hỗ trợ nhiều instance; gửi persistent message, kiểm tra publisher confirms và unroutable return. Chỉ đánh dấu sent sau kết quả thành công.
-- [ ] P3.3 Retry có backoff và giới hạn/cảnh báo; lỗi một message không làm kẹt cả batch. EventId/payload giữ ổn định qua retry; consumer vẫn phải idempotent vì crash sau gửi trước mark sent có thể gây trùng.
-- [ ] P3.4 Chuyển created/filled/dispense.failed/cancelled/expired sang đường gửi bền; `stock.low` độc lập retry, broker lỗi không làm hỏng lần cấp đã commit hoặc ngăn filled được gửi.
-- [ ] P3.5 Có metric pending/oldest age/retry/failure và quy trình replay; không ghi JWT, hồ sơ bệnh án hoặc payload nhạy cảm nguyên vẹn vào log.
-
-**Gate/test:** broker tắt sau DB commit rồi bật lại vẫn nhận event; rollback không phát event; crash/retry không đổi eventId; hai worker không xử lý claim đang còn lease của nhau; unroutable không bị đánh dấu sent. Test DB + Rabbit thật, không chỉ verify mock `convertAndSend`.
-
-### P4 — Hoàn thiện core cấp thuốc và ghi nhận thất bại
-
-**Ưu tiên:** P0. **Phụ thuộc:** P0, P3; D5 và quy tắc transaction mục 4.
-
-**File:** tách trách nhiệm khỏi `PharmacyApplicationService`; đề xuất `DispensePrescriptionService`, `DispenseTransactionService`, `RecordDispenseFailureService`, command mang prescription/payment/actor/correlation context; sửa repository ports/adapters, domain và test.
-
-- [ ] P4.1 Khóa đơn + phiếu trước check, xác nhận ACTIVE/PENDING; đơn đã FULFILLED trả kết quả cũ; terminal khác trả kết quả/lỗi phù hợp, không gọi lại trừ kho.
-- [ ] P4.2 Khóa drug/reservation theo mục 4.3; xác minh tập drug và quantity reservation khớp toàn bộ đơn, trạng thái RESERVED, TTL còn hiệu lực; kiểm tra hạn dùng thuốc theo ngày nghiệp vụ.
-- [ ] P4.3 Trừ toàn bộ thuốc, fulfill reservation, `prescription.markFulfilled(now)` và `slip.markDispensed(...)`, lưu tất cả và outbox filled trong cùng transaction.
-- [ ] P4.4 Orchestrator đợi rollback hoàn toàn rồi ghi thất bại ở bean khác; cập nhật đơn/slip/reservations và outbox compensation atomically. Không giữ self-proxy, không có transaction lớn bao ngoài cả hai bước.
-- [ ] P4.5 Phân loại lỗi: lỗi nghiệp vụ đã xác định → kết quả thất bại bền; DB timeout/deadlock/network → rollback và retry; dữ liệu hỏng → cảnh báo/quarantine theo chính sách được duyệt. Không catch mọi RuntimeException rồi tự động hoàn tiền.
-- [ ] P4.6 Failure context có patientId từ đơn, invoiceId từ receipt/event đáng tin, correlation, reasonCode và reason an toàn/giới hạn chiều dài; failedItems điền khi xác định được thuốc lỗi, không bịa thuốc hoặc invoice.
-- [ ] P4.7 Khi transaction failure chạy, kiểm tra lại trạng thái để không ghi đè kết quả thắng cuộc. Nếu ghi failure không commit được thì không ACK payment.
-
-**Gate/test:** nhiều dòng lỗi ở dòng cuối rollback mọi stock/reservation; sau đó thất bại vẫn bền trong DB, giải phóng giữ tồn và có đúng logical failure event; thành công cập nhật đủ ba lifecycle; test hai luồng và không deadlock giữa transaction ngoài/trong. Chưa expose endpoint thủ công trước P5/P8.
-
-### P5 — Payment receipt, idempotency và bù trừ đúng một kết quả nghiệp vụ
-
-**Ưu tiên:** P0. **Phụ thuộc:** P3, P4; D2–D5 đã chốt.
-
-**File:** `ReactToPaymentUseCase`, `PaymentCompletedCommand`, consumer/payload, `ProcessedEventPort` và adapter; đề xuất `ReactToPaymentService`, payment receipt model/port/persistence; migrations mới, Rabbit retry config.
-
-- [ ] P5.1 Contract-test JSON thực từ Billing: field bắt buộc/nullable, UUID, amount/method, correlation. Tiếp tục bỏ qua invoice không có prescription theo contract; phân biệt message sai schema với invoice không liên quan.
-- [ ] P5.2 Validate patient/department/prescription association trước mutation. So tiền theo D3, không so tổng invoice với đơn thuốc nếu invoice còn chứa phí khác. Event sai dữ liệu không được đổi tồn hay gắn proof paid.
-- [ ] P5.3 Lưu receipt có nguồn event, invoice/payment identity và trạng thái xử lý. Unique eventId để chống redelivery; thêm unique business key theo D3 để chống hai eventId khác nhau cho cùng payment. Không hardcode một invoice chỉ có một đơn khi chưa xác nhận.
-- [ ] P5.4 Claim/dedupe atomically dưới lock/unique constraint; không dựa riêng vào exists rồi save. Không bắt unique violation và tiếp tục dùng transaction đã abort; rollback rồi đọc kết quả đã có ở transaction mới.
-- [ ] P5.5 Thành công: stock/lifecycle, receipt kết quả, processed event và outbox filled cùng commit. Thất bại nghiệp vụ: transaction cấp rollback rồi transaction failure commit receipt kết quả, processed event, terminal state phù hợp và outbox compensation; sau đó ACK.
-- [ ] P5.6 Đơn đã hủy/hết hạn nhận payment: giữ terminal state, ghi kết quả và compensation theo D4; event lặp không tạo nhiều yêu cầu hoàn tiền logic. Đơn đã cấp không cấp lại; payment khác thật sự cho đơn đã cấp phải được Billing xử lý riêng, không xem là duplicate vô điều kiện.
-- [ ] P5.7 Lỗi hạ tầng giữ khả năng retry; cấu hình retry hữu hạn + backoff + DLQ/poison-message policy, tránh requeue nóng. Message lỗi nghiệp vụ đã xử lý bền không ném lại vào Rabbit.
-- [ ] P5.8 Hỗ trợ khôi phục sau crash giữa các transaction; job/consumer không bỏ qua receipt đang dang dở như thể đã hoàn tất. Định nghĩa retention đủ dài cho cửa sổ replay của Billing.
-
-**Gate/test:** cùng event hai lần và hai luồng chỉ xuất một lần; hai eventId cùng business payment không xuất lại; crash/redelivery hội tụ một kết quả; lỗi nghiệp vụ ACK sau khi kết quả bền; lỗi DB retry không đánh dấu processed sớm; payment muộn không cấp đơn đã hủy/hết hạn.
-
-### P6 — Gia cố hủy đơn và giải phóng giữ tồn hết hạn
-
-**Ưu tiên:** P0 cho race, P1 cho vận hành. **Phụ thuộc:** P1 identity, P3–P5; D4/D5.
-
-**File:** `CancelPrescriptionService`, `ExpirePrescriptionTransaction`, `ReleaseExpiredReservationsService`, `ReservationExpiryScheduler`, reservation repository/adapter, domain, config.
-
-- [ ] P6.1 Dùng chung invariant coverage và thứ tự khóa. Hủy/hết hạn phải chuyển đủ đơn/phiếu/reservations + outbox trong transaction; không giải phóng một phần khi còn dòng không hợp lệ.
-- [ ] P6.2 Chặn hủy sau khi đã cấp; hủy lặp trả kết quả hiện hữu, không tăng released count/event. Trường hợp payment đã được ghi nhận phải theo D4 và chính sách Billing; không tự xác nhận refund đã xong.
-- [ ] P6.3 Inject Clock; đưa TTL, batch size và cron vào config có default/validation. Test sát biên `expiresAt == now` và ngày hết hạn thuốc bằng thời gian cố định.
-- [x] P6.4 Một đơn lỗi không dừng toàn batch: catch tại ranh giới từng transaction, log identifier/reason an toàn và tiếp tục. Không nuốt lỗi đến mức báo thành công sai. Đã cố định mốc `Clock`, giới hạn batch cấu hình ở infrastructure và có test một ứng viên lỗi không chặn các ứng viên sau.
-- [ ] P6.5 Query có cursor/progress hoặc cơ chế tránh starvation: 100 đơn lỗi/inconsistent đầu danh sách không chặn mãi các đơn sau. Nhiều scheduler instance không phát lặp logical expiry event.
-- [ ] P6.6 Đối chiếu bất thường legacy như ACTIVE nhưng slip đã DISPENSED/FAILED, reservation thiếu/dư. Báo cáo trước và sửa bằng migration/job reconciliation được review; không tự giải phóng reservation không xác định.
-
-**Gate/test:** cancel vs dispense, expire vs dispense, cancel vs expire chạy đồng thời chỉ một transition hợp lệ thắng; không kho âm, không giữ tồn mồ côi; đơn 101+ vẫn được xử lý khi batch có lỗi; chạy job lặp không đổi kết quả đã hoàn tất.
-
-### P7 — Điều chỉnh kho an toàn và audit
-
-**Ưu tiên:** P1. **Phụ thuộc:** P3; D7/D8. Có thể làm độc lập với P5 sau khi thống nhất khóa.
-
-**File:** `Drug`, `AdjustStockRequest`, `ManageDrugUseCase`, phần drug service/controller; đề xuất command actor/correlation, stock adjustment audit port/model/adapter và migration.
-
-- [ ] P7.1 Sau khóa drug, tính reserved và không cho `newOnHand < reserved` theo D7; vẫn chặn zero/âm tồn, overflow số lượng. Không âm thầm thay quantity đã kê.
-- [ ] P7.2 Lưu audit delta, before/after, reason, actor và timestamp trong cùng transaction; chốt reason bắt buộc cho giảm kho với người dùng API trước khi đổi validation.
-- [ ] P7.3 Phát event thay đổi kho theo tên/schema đã review; stock.low theo ngưỡng nhất quán. Không tự thêm routing key mà downstream được kỳ vọng phải hiểu ngay.
-- [ ] P7.4 Tăng test create/update domain có sẵn: giá âm, quantity/threshold âm, hạn dùng, rounding; không mở API update/delete thuốc chỉ vì domain đang có `updateInfo`.
-
-**Gate/test:** đang có reserved thì điều chỉnh không làm thiếu phần đã giữ; create reservation vs adjust chạy đồng thời vẫn đúng; audit/event rollback cùng tồn; chỉ ADMIN/PHARMACIST được điều chỉnh.
-
-### P8 — Bổ sung endpoint cấp thuốc có chặn thanh toán
-
-**Ưu tiên:** P1. **Phụ thuộc:** P1 identity, P4/P5/P6; D2/D6.
-
-**File:** `web/PrescriptionController.java`, dispense command/in-port, error handler, HTTP/web/security tests.
-
-- [ ] P8.1 Thêm `PUT /api/v1/pharmacy/prescriptions/{id}/dispense`, roles ADMIN/PHARMACIST, dùng cùng core với consumer, không copy logic tồn kho.
-- [ ] P8.2 Chưa có payment proof hợp lệ → từ chối, không trừ tồn. Event chưa đến thì trả trạng thái/lỗi chờ được document; không tin frontend và không gọi Billing dưới DB lock.
-- [ ] P8.3 Nếu automatic consumer đã cấp, trả DispenseDTO đã lưu và không tạo event mới. Nếu receipt hợp lệ còn chờ xử lý, đi qua cùng claim/lock và kết quả bền, không bỏ quên processed-event bookkeeping.
-- [ ] P8.4 Admin cũng không được bỏ qua payment gate. Ghi audit staff/account đúng D1/D6 và correlation; không nhận `dispensedBy` tùy ý từ request.
-
-**Gate/test:** chưa trả tiền/sai role/đơn đã hủy/hết hạn không cấp; đã trả tiền cấp đúng một lần; manual vs consumer đồng thời không xuất trùng; Location của API create có GET tương ứng hoạt động.
-
-### P9 — Migration, kiểm thử tích hợp, tài liệu và nghiệm thu
-
-**Ưu tiên:** bắt buộc trước release. **Phụ thuộc:** mọi P trong phạm vi release; không trì hoãn viết test/migration tới P9 mới bắt đầu.
-
-- [ ] P9.1 Mỗi P có schema mới phải thêm migration cùng PR. Sau đồng bộ master chọn số V tiếp theo thực tế; **không sửa V1–V4 đã áp dụng**, không reset database để làm migration pass.
-- [ ] P9.2 Test hai đường: database mới từ đầu và database V4 có dữ liệu cũ. Unique/index/check/FK nội bộ đúng, không FK sang DB service khác; startup `ddl-auto=validate` pass.
-- [ ] P9.3 Dữ liệu cũ không có proof paid phải giữ trạng thái unknown, không backfill “đã thanh toán” bằng suy đoán. Reconcile lệch lifecycle có dry-run/report và quy tắc được duyệt.
-- [ ] P9.4 Hoàn tất test matrix mục 7, architecture test, real PostgreSQL/RabbitMQ và contract JSON với owner. Không thay real concurrency/rollback tests bằng mock.
-- [ ] P9.5 Cập nhật bounded-context doc/API examples/README của module trong phạm vi được giao; ghi các quyết định contract, hướng dẫn retry/DLQ/outbox, cấu hình và demo script.
-- [ ] P9.6 Lập handoff cho phần owner khác theo mục 8; test end-to-end qua gateway. Nếu dependency chưa có implementation, ghi rõ chỉ mới contract/mock, không ghi E2E PASS.
-- [ ] P9.7 Chạy verify module và reactor; ghi riêng lỗi ngoài phạm vi pharmacy. Review diff theo docs/ai, cần ít nhất một human review; chỉ đưa PR khỏi draft khi checklist của PR thực sự đạt.
-
-**Gate:** đạt Definition of Done mục 10 với báo cáo test mới và SHA rõ ràng; không có migration phá dữ liệu hoặc bước tích hợp chưa được công bố.
-
-## 6. API và event cần nghiệm thu
-
-Prefix API: `/api/v1/pharmacy`. Không gọi service port trực tiếp từ frontend; request đi qua gateway.
-
-| API | Trạng thái baseline | Quyền / điểm nghiệm thu |
-| --- | --- | --- |
-| GET `/drugs` | Đã có | ADMIN/DOCTOR/PHARMACIST; page envelope, keyword, giới hạn page/size |
-| GET `/drugs/{id}` | Đã có | ADMIN/DOCTOR/PHARMACIST; 404 đúng envelope |
-| POST `/drugs` | Đã có | ADMIN/PHARMACIST; validation và 201/Location |
-| PUT `/drugs/{id}/stock` | Có, cần gia cố | ADMIN/PHARMACIST; bảo vệ reserved, audit |
-| POST `/prescriptions` | Có, cần sửa | ADMIN/DOCTOR; ownership, snapshot, reserve atomically |
-| GET `/prescriptions/{id}` | Cần thêm P2 | ADMIN/DOCTOR/PHARMACIST; lifecycle và giá snapshot |
-| PUT `/prescriptions/{id}/cancel` | Có, cần gia cố | ADMIN/DOCTOR; ownership, terminal gate, idempotency |
-| PUT `/prescriptions/{id}/dispense` | Cần thêm P8 | ADMIN/PHARMACIST; payment gate, cấp đúng một lần |
-
-Chốt error-code/HTTP matrix trước sửa controller: request sai → 400; thiếu/xác thực token lỗi → 401; quyền sai → 403; không tồn tại → 404; nghiệp vụ theo convention/spec (ví dụ thiếu available là 422). Các mã mới như chưa trả tiền/trạng thái conflict phải được document, không trả 500 cho lỗi nghiệp vụ dự kiến.
-
-| Routing key | Dữ liệu/chứng minh bắt buộc |
-| --- | --- |
-| `payment.completed` (inbound) | Envelope, invoice/prescription/patient/department, semantics amount/method theo D3; JSON fixture do Billing xác nhận |
-| `prescription.created` | Giá/item/total snapshot, record/patient/department; correlation từ request |
-| `prescription.filled` | Đơn/patient/department, total, dispensedItems; event chỉ ứng với cấp đã commit |
-| `prescription.dispense.failed` | Invoice từ payment context, patient từ đơn, reason an toàn, failedItems khi có; logical compensation không lặp |
-| `prescription.cancelled` / `prescription.expired` | Payload đối chiếu record hiện tại và Billing/Notification; audit/released items đúng; không xem hai event này tự động là refund đã hoàn tất |
-| `stock.low` | Stock thực sau mutation và threshold; failure gửi không làm hỏng transaction đã thành công |
-
-`PrescriptionFilledEvent` hiện chưa có `dispenseId`, trong khi Billing có nhu cầu gắn phiếu xuất. Nếu cần bổ sung, thực hiện additive contract được hai bên duyệt và test compatibility; không coi field mới là bắt buộc với message cũ ngay lập tức.
-
-## 7. Ma trận kiểm thử bắt buộc
-
-### 7.1. Đặc tả BR-D1 đến BR-D12
-
-| Rule | Ca cần chứng minh | Tầng / giai đoạn |
-| --- | --- | --- |
-| BR-D1 | Thiếu stock không cấp; create dùng available đã trừ giữ tồn | Domain/application + DB; P1/P4 |
-| BR-D2 | Thuốc hết hạn bị từ chối; ngày đúng hạn được xử lý theo spec | Domain với ngày cố định + transaction; P4 |
-| BR-D3 | Create tạo pending slip và đúng reservation, không trừ vật lý | PostgreSQL transaction; P1 |
-| BR-D4 | Cấp thành công trừ đúng một lần, kể cả gọi lại | Application + DB; P4/P5 |
-| BR-D5 | Tổng nhiều dòng, số lẻ, rounding đúng BigDecimal | Domain; P1 |
-| BR-D6 | Failure có event bù trừ đúng invoice/patient, chỉ sau commit failure | Application + outbox/Rabbit; P3–P5 |
-| BR-D7 | Đổi giá danh mục không đổi giá/tổng đơn cũ | Application/persistence/query; P1/P2 |
-| BR-D8 | Client gửi price/total không thay được giá do server quyết định | Web + application; P1 |
-| BR-D9 | Redelivery tuần tự và đồng thời chỉ tạo một kết quả nghiệp vụ | PostgreSQL + Rabbit; P5 |
-| BR-D10 | Hai luồng thực không bán vượt tồn; lock order không deadlock | Spring integration + PostgreSQL; P4/P6/P7 |
-| BR-D11 | Đúng ngưỡng và dưới ngưỡng tạo stock.low; broker lỗi không làm sai lần cấp | Application + outbox/Rabbit; P3/P4/P7 |
-| BR-D12 | Rollback cấp không cuốn theo phiếu FAILED được lưu sau đó | PostgreSQL, bean transaction thật; P4 |
-
-### 7.2. Các ca bổ sung không được bỏ qua
-
-| Nhóm | Ca kiểm thử tối thiểu |
-| --- | --- |
-| Identity | Account khác staff; giả doctorId; Admin override; missing claim; dependency identity lỗi; token/role sai |
-| Reservation | Hai create cùng drug chỉ còn ít available; reservation thiếu/dư/sai quantity; TTL đã hết nhưng scheduler chưa chạy; giải phóng đúng một lần |
-| Atomicity | Hai thuốc, thuốc cuối lỗi; stock của thuốc đầu không đổi sau rollback; mọi reservation nhất quán; failure outbox cùng commit với terminal state |
-| Cạnh tranh | Cùng đơn cấp hai lần; hai đơn dùng chung drug; cancel vs dispense; expire vs dispense; cancel vs expire; adjust vs create; manual vs consumer |
-| Payment | Cùng eventId khác payload phải cảnh báo; hai eventId cùng payment; payment muộn; payment patient sai; invoice thường không có prescription; amount nullable/mismatch theo contract |
-| Khôi phục | Crash trước/sau commit; giữa rollback và ghi failure; sau send trước mark outbox sent; retry failure transaction; message poison vào DLQ sau số lần hữu hạn |
-| Scheduler | Hơn 100 đơn hết hạn; một đơn lỗi không chặn các đơn sau; hai scheduler; Clock đúng boundary; batch không starvation |
-| Migration | Fresh DB; nâng V4 có dữ liệu; legacy lifecycle lệch; unique violation; dữ liệu cũ thiếu payment evidence không được biến thành paid |
-| API/query | 400/401/403/404/422 theo contract; endpoint có roles; lifecycle DTO; no entity leakage; query không thay DB |
-
-Tên test mới gợi ý: `DispenseTransactionTest`, `DispenseFailureTransactionTest`, `PaymentIdempotencyTest`, `PrescriptionLifecycleConcurrencyTest`, `CancelPrescriptionServiceTest`, `ReservationExpiryTest`, `PharmacyOutboxIntegrationTest`, `PharmacyMigrationTest`. Đặt đúng package của tầng; dùng PostgreSQL thật cho locks/rollback. Test concurrency dùng barrier/latch và timeout hữu hạn, không chỉ sleep rồi đoán hai luồng đã chạy cùng lúc.
-
-### 7.3. Lệnh kiểm chứng
-
-Chạy tại root repository; Docker phải hoạt động cho nhóm integration:
-
-```powershell
-node scripts/changelog.js --summary
-node scripts/changelog.js --limit 5
-java -version
-mvn -version
-docker info
-mvn -q -pl backend/pharmacy-service -am clean test
-mvn -q -pl backend/pharmacy-service -am verify
-git diff --check
+# Kế hoạch hoàn thiện Pharmacy Service theo Clean/Hexagonal Architecture
+
+> Cập nhật: **13/09/2026**
+> Module: `backend/pharmacy-service`
+> Nhánh triển khai: `Huy`
+> Phạm vi ghi code: `backend/pharmacy-service/**` và tài liệu/handoff được người dùng giao rõ ràng.
+
+## 0. Mục tiêu và cách sử dụng plan
+
+Mục tiêu cuối cùng là hoàn thiện toàn bộ phần code còn lại của Pharmacy Service theo thứ tự:
+
+1. Hiểu và giữ đúng **Clean Architecture/Hexagonal Architecture**.
+2. Xác định business rule trước khi viết implementation.
+3. Chia mỗi feature thành các task có phạm vi nhỏ, đầu ra và gate rõ ràng.
+4. Triển khai lần lượt từng task theo vòng lặp **rule → test → code → refactor → audit**.
+5. Chỉ đánh dấu task `DONE` khi code, Javadocs, test và audit đều đạt.
+
+Trạng thái dùng trong tài liệu:
+
+- `DONE`: đã có code và bằng chứng kiểm thử.
+- `IN_PROGRESS`: đang triển khai.
+- `TODO`: chưa bắt đầu.
+- `BLOCKED`: thiếu contract/quyết định từ service khác; không được tự suy đoán.
+
+Baseline kiểm chứng gần nhất:
+
+| Nội dung | Kết quả |
+|---|---|
+| Test Pharmacy Service | **142 total, 133 passed, 0 failures, 0 errors, 9 skipped** (Testcontainers cần Docker) |
+| PostgreSQL integration | Chưa chạy ở lượt này vì Docker daemon không khả dụng; baseline trước đó đã chạy Flyway V1–V5 thành công |
+| Javadocs | Thành công |
+| Maven verify | Thành công |
+| Git diff check | Thành công |
+| Audit chất lượng đợt gần nhất | GO, không còn blocker trong phạm vi đã sửa |
+
+### 0.1 Nguồn chuẩn và thứ tự ưu tiên
+
+| Ưu tiên | Nguồn | Dùng để quyết định |
+|---:|---|---|
+| 1 | [Thiết kế nghiệp vụ Pharmacy](../eproject_general_plan/pharmacy-service.html) | Pharmacy phải làm gì |
+| 2 | [Backend spec Pharmacy](../eproject_general_plan/backend-spec/05-pharmacy.md) | DDL, DTO, port, thuật toán, event và rule-test map |
+| 3 | [Shared backend contracts](../eproject_general_plan/backend-spec/00-overview.md) | Envelope, type, naming và contract chung |
+| 4 | [AI golden rules](../ai/README.md) | Quy tắc triển khai bắt buộc |
+| 5 | [System architecture](../ai/01-architecture.md) | Boundary service, REST/event và saga |
+| 6 | [Microservice blueprint](../ai/04-microservice-blueprint.md) | Package/layer/dependency direction |
+| 7 | [API conventions](../ai/05-api-conventions.md) | URL, status, DTO và response envelope |
+| 8 | [RabbitMQ conventions](../ai/06-events-rabbitmq.md) | Event envelope, queue, DLQ và idempotency |
+| 9 | [RBAC](../ai/07-security-rbac.md) | JWT, role và default deny |
+| 10 | [Testing](../ai/09-testing.md) | Tầng test và acceptance bar |
+| 11 | Code/migration/test đang chạy | Bằng chứng hiện trạng, không tự thay thế business spec |
+
+Khi tài liệu mâu thuẫn:
+
+- Design/spec quyết định **what**.
+- `docs/ai` quyết định **how**.
+- Migration đã deploy là lịch sử bất biến; giải quyết chênh lệch bằng migration mới.
+- Contract cross-service chưa rõ phải được xác nhận bằng fixture/handoff, không dựa vào suy đoán.
+
+### 0.2 Phạm vi và non-goals
+
+Trong phạm vi:
+
+- Drug catalog và stock quantity hiện tại.
+- Prescription, prescription lines và price snapshot.
+- Stock reservation và TTL.
+- Dispense lifecycle.
+- Payment proof/receipt cho saga Pharmacy.
+- Cancel/expire/late-payment compensation.
+- Transactional outbox và Pharmacy Rabbit consumer.
+- Pharmacy API, security, persistence, scheduling, tests và module docs.
+
+Ngoài phạm vi nếu chưa có yêu cầu riêng:
+
+- Supplier, purchase order, batch/lot, FEFO, nhiều kho.
+- Trả thuốc sau khi đã cấp, thu hồi thuốc hoặc kiểm kê toàn bệnh viện.
+- Sửa Billing, Organization, Gateway, Notification hoặc Report production code.
+- Frontend/mobile.
+- Cross-service database query, shared entity hoặc distributed transaction.
+- API vận hành/replay công khai chưa có security spec.
+
+### 0.3 Definition of Ready cho một task
+
+Một task chỉ được chuyển từ TODO sang IN_PROGRESS khi:
+
+- [ ] Business rule và expected outcome đã được ghi rõ.
+- [ ] Task owner và phạm vi file không giao nhau với thay đổi đang chạy khác.
+- [ ] In-port/out-port/aggregate chịu trách nhiệm đã xác định.
+- [ ] Contract ngoài service đã có fixture hoặc task không phụ thuộc contract đó.
+- [ ] Migration number đã kiểm tra sau fetch nếu task đổi schema.
+- [ ] Test thất bại cần viết đã được đặt tên và chọn đúng tầng.
+- [ ] Rollback/recovery path đã được mô tả nếu task đổi transaction hoặc messaging.
+- [ ] Worktree và file ngoài phạm vi đã được ghi nhận để bảo toàn.
+
+## 1. Kiến trúc bắt buộc
+
+### 1.1 Quy tắc phụ thuộc
+
+```text
+Driving adapters                         Core                         Driven adapters
+
+web/controller ─┐                                             ┌─ persistence/JPA
+Rabbit consumer ├─> application/port/in -> application/service ├─ messaging/outbox/RabbitMQ
+scheduler ──────┘                       -> domain              └─ resilient REST client
+
+infrastructure  ───────────────────────> application ────────> domain
 ```
 
-Kiểm tra tương thích toàn reactor sau khi module xanh: `mvn -q verify`. Lỗi ở module khác phải ghi rõ module và log, không sửa ngoài quyền sở hữu để làm xanh.
+Mọi dependency chỉ hướng vào trong:
 
-POM pharmacy hiện không khai báo riêng Failsafe. Nếu đặt integration test đuôi `*IT`, phải bổ sung cấu hình chạy integration-test/verify và xác nhận test được discover; nếu dùng `*Test` như hiện tại thì kiểm tra Surefire reports. Không ghi “verify pass” khi test quan trọng bị skip do Docker hoặc không được discovery. CI gate phải kiểm tra số test/skip và bắt buộc chạy nhóm DB/Rabbit, không mặc định `disabledWithoutDocker` là đạt.
+- `domain`: Java thuần, chứa model, value object, state transition và invariant. Không Spring, JPA, AMQP, HTTP hoặc I/O.
+- `application/port/in`: hợp đồng use case mà controller, consumer và scheduler được phép gọi.
+- `application/port/out`: hợp đồng mà use case cần từ database, event publisher hoặc service ngoài.
+- `application/service`: điều phối use case, transaction, gọi domain và port; không biết JPA/RabbitTemplate/HTTP.
+- `web`, `messaging/consumer`, `infrastructure/scheduling`: driving adapter; chỉ chuyển input thành command rồi gọi in-port.
+- `infrastructure/persistence`, `infrastructure/messaging`, `infrastructure/client`: driven adapter; hiện thực out-port.
 
-## 8. Phối hợp với các service khác
+### 1.2 Quy tắc thiết kế code
 
-| Bên nhận | Nội dung handoff | Bằng chứng đóng phụ thuộc |
-| --- | --- | --- |
-| Gateway + Organization | D1/D6: account/staff identity, signed claims hoặc endpoint mapping, system actor, audit semantics | Contract đã duyệt + token/response fixture, test accountId khác staffId |
-| Billing | D2–D5: payment receipt, amount, business key, nullable fields, late payment/cancel/expiry compensation, optional dispenseId | JSON fixtures hai chiều + test success/failure/redelivery/late-payment trên phiên bản thật |
-| Medical Record | record/patient/doctor/department liên kết đúng; hợp đồng tạo/đọc đơn và quyền kê | Request fixture và kịch bản record hợp lệ/không hợp lệ; không truy cập DB chéo |
-| Notification | Subscribe stock.low và các lifecycle cần thông báo; nhận lặp không gửi lặp ngoài chính sách | Consumer contract + kiểm thử event thực |
-| Frontend | DTO lifecycle/dispenseStatus, GET detail, lỗi payment pending/403/422, cancel/dispense chỉ hiển thị đúng role | Gọi qua gateway; UX không thay backend authorization |
-| CI/vận hành | PostgreSQL/Rabbit test, retry/DLQ, outbox backlog, migration/backup | Pipeline chạy test thật; runbook có replay và cảnh báo |
+1. Một use case có một trách nhiệm chính; không tiếp tục mở rộng god service.
+2. Controller/consumer/scheduler không chứa business rule và không gọi repository.
+3. Application không import `jakarta.persistence`, Spring Data, AMQP hoặc Web.
+4. Domain model và JPA entity là hai model riêng; business rule không nằm trong entity.
+5. DTO/event là `record` khi phù hợp; không trả JPA entity qua boundary.
+6. Thay đổi trạng thái phải ghi event intent qua out-port; adapter outbox đảm bảo phát bền.
+7. Tiền dùng `BigDecimal`; ID dùng `UUID`; thời gian dùng `Clock`, `Instant`, `LocalDate`.
+8. Public class, public constructor, public use-case method và rule không hiển nhiên phải có Javadocs.
+9. Mỗi business rule phải có ít nhất một test ở tầng thấp nhất có thể chứng minh rule đó.
+10. Không truy cập database service khác; liên kết ngoài Pharmacy chỉ là UUID.
 
-Khi triển khai, ghi yêu cầu cross-service trong tài liệu HANDOFF dưới `docs/` theo ownership hiện hành, gồm: provider/consumer, field/types/nullability, trigger, lỗi, idempotency, compatibility, fixture, người xác nhận và PR liên quan. Không chỉ ghi “chờ Billing” thiếu chi tiết.
+### 1.3 Ranh giới transaction và thứ tự khóa
 
-## 9. Cách chia PR và theo dõi công việc
+- Create prescription: khóa drug theo `drugId` tăng dần → tính available → lưu prescription, lines, reservations, pending slip và outbox trong một transaction.
+- Dispense thành công: khóa prescription → dispense slip → drug theo `drugId` tăng dần → reservation theo cùng thứ tự → cập nhật tất cả lifecycle và outbox trong một transaction.
+- Dispense thất bại nghiệp vụ: transaction cấp phải rollback hoàn toàn; sau đó bean khác ghi FAILED/release/compensation bằng transaction `REQUIRES_NEW`.
+- Cancel/expire: khóa prescription → slip → reservations; kiểm tra lại trạng thái sau khi khóa.
+- Payment consumer không giữ một transaction bao ngoài hai transaction success/failure.
+- Không gọi REST hoặc chờ RabbitMQ trong khi giữ khóa database.
+- Outbox row được ghi cùng transaction nghiệp vụ; dispatcher gửi sau commit.
 
-| Đợt | Nội dung gợi ý | Điều kiện trước review |
-| --- | --- | --- |
-| 1 | P0 + P1: sửa baseline và create/identity/correlation; cập nhật PR #74 nếu vẫn là phạm vi phù hợp | Test caller + ownership + create transaction đạt; D1 rõ |
-| 2 | P2: GET chi tiết đơn | DTO contract và query/security tests đạt |
-| 3 | P3: outbox hạ tầng pharmacy | Migration + broker failure/retry tests đạt |
-| 4 | P4: transaction cấp/thất bại và lifecycle | Atomicity + rollback + concurrency DB thật đạt |
-| 5 | P5: receipt/dedupe và Billing saga | Contract Billing + duplicate/late payment/recovery đạt |
-| 6 | P6: hủy/TTL race và scheduler | Lifecycle race + batch recovery đạt |
-| 7 | P7: kho/audit | Reserved protection + migration/audit tests đạt |
-| 8 | P8 + phần còn lại P9: endpoint cấp, E2E, tài liệu release | Payment gate + manual/consumer race + toàn bộ DoD đạt |
+## 2. Danh mục business rules
 
-Đây là thứ tự phụ thuộc kỹ thuật, không phải lịch ngày đã cam kết. Ưu tiên đợt 1 và 4–5 cho tính đúng; đợt 2 là phần độc lập nhỏ có thể hoàn thành trong thời gian chờ contract. Không tách merge một API cho phép cấp chưa thanh toán chỉ để đủ số endpoint.
+### 2.1 Quy tắc cốt lõi từ đặc tả
 
-Giữ `Huy` cho công việc hiện hữu khi phù hợp; nếu tạo nhánh task mới trong Codex dùng prefix mặc định `codex/`, ví dụ `codex/pharmacy-dispense-atomicity`, và ghi rõ base/dependency. Commit theo Conventional Commits, phạm vi pharmacy; không push trực tiếp master, không force push nhánh dùng chung. Merge/review theo quy trình nhóm.
+| ID | Business rule | Trạng thái |
+|---|---|---|
+| BR-D1 | Không xuất khi tồn vật lý nhỏ hơn số lượng yêu cầu. | DONE |
+| BR-D2 | Không xuất thuốc đã hết hạn tại ngày nghiệp vụ. | DONE |
+| BR-D3 | Tạo đơn phải tạo đúng một phiếu xuất `PENDING`. | DONE |
+| BR-D4 | Mỗi đơn chỉ được trừ kho đúng một lần. | DONE |
+| BR-D5 | Tổng tiền bằng tổng `quantity × unitPrice`, scale 2, HALF_UP. | DONE |
+| BR-D6 | Xuất thất bại nghiệp vụ phải tạo compensation event bền. | DONE |
+| BR-D7 | Giá được snapshot khi kê; đổi giá thuốc không đổi đơn cũ. | DONE |
+| BR-D8 | Client không được quyết định giá hoặc tổng tiền. | DONE |
+| BR-D9 | Redelivery `payment.completed` không tạo hiệu ứng nghiệp vụ lặp. | DONE theo eventId; còn business-key ở BR-P3 |
+| BR-D10 | Tồn kho không âm khi hai luồng chạy đồng thời. | DONE với PostgreSQL concurrency test |
+| BR-D11 | Tồn chạm ngưỡng phải tạo `stock.low`. | DONE |
+| BR-D12 | Lỗi ở dòng thuốc sau phải rollback dòng trước nhưng vẫn lưu phiếu FAILED. | DONE với transaction integration test |
 
-Trạng thái task: TODO → IN_PROGRESS → BLOCKED hoặc READY_FOR_REVIEW → DONE. Khi cập nhật, ghi PR/SHA, lệnh test, số pass/fail/skip và dependency. Nếu cần phần trăm: số tiêu chí nghiệm thu đã chứng minh đạt / tổng tiêu chí của phạm vi đã chốt; không lấy số file/lớp/API hiện có làm phần trăm hoàn thành và không tính BLOCKED là DONE.
+### 2.2 Quy tắc mở rộng cần hoàn tất
 
-## 10. Definition of Done và việc bắt đầu ngay
+| ID | Business rule | Trạng thái |
+|---|---|---|
+| BR-R1 | Kê đơn giữ tồn khả dụng nhưng không trừ tồn vật lý. | DONE |
+| BR-R2 | `available = onHand - tổng RESERVED`; điều chỉnh kho không được phá lượng đã giữ. | DONE |
+| BR-R3 | Tập reservation phải khớp chính xác drug và quantity của đơn trước dispense/cancel/expire. | DONE |
+| BR-R4 | Reservation chỉ chuyển trạng thái một lần; TTL dùng điều kiện `expiresAt <= now`. | DONE |
+| BR-L1 | `FULFILLED/CANCELLED/EXPIRED/DISPENSE_FAILED` là terminal; không ghi đè kết quả thắng race. | DONE ở unit; còn concurrency matrix |
+| BR-P1 | Cấp thuốc thủ công chỉ hợp lệ khi Pharmacy có payment proof bền, không tin cờ từ client. | TODO |
+| BR-P2 | Payment event phải khớp prescription, patient và department trước mutation. | DONE |
+| BR-P3 | Chống trùng theo eventId và business key thanh toán đã thống nhất với Billing. | PARTIAL |
+| BR-P4 | Payment đến sau cancel/expire tạo compensation đúng một lần và giữ nguyên terminal state. | DONE theo eventId |
+| BR-P5 | Crash giữa receipt, dispense và terminal claim phải có thể resume an toàn. | TODO |
+| BR-E1 | Event intent phải commit/rollback cùng thay đổi nghiệp vụ. | DONE |
+| BR-E2 | Chỉ đánh dấu outbox published sau publisher ACK và không bị returned. | DONE |
+| BR-E3 | Nhiều instance dispatcher không gửi vượt thứ tự/giành cùng row ngoài semantics at-least-once. | TODO |
+| BR-E4 | Retry outbox có backoff, quan sát được và có thao tác replay an toàn. | TODO |
+| BR-A1 | Điều chỉnh kho phải lưu audit before/after/delta/reason/actor/correlation cùng transaction. | PARTIAL: event có, bảng audit chưa có |
+| BR-S1 | Mọi endpoint có role; actor và correlation lấy từ context đã xác thực. | DONE ở endpoint hiện có |
+| BR-S2 | Account identity, staff identity và system actor không được đồng nhất bằng UUID giả. | TODO, cần contract Organization/Gateway |
+| BR-M1 | Migration mới chỉ được thêm; fresh DB và nâng từ V4/V5 có dữ liệu đều phải thành công. | PARTIAL |
 
-- [ ] Baseline đã đồng bộ và thay đổi local được giữ; test sạch không còn lỗi compile/caller cũ.
-- [ ] Account/staff identity đúng contract; mọi endpoint có RBAC, ownership nơi cần và audit phù hợp.
-- [ ] Kê đơn snapshot giá, giữ tồn và tạo pending slip atomically; GET trả đúng lifecycle.
-- [ ] Cấp chỉ khi có bằng chứng thanh toán hợp lệ; cập nhật stock/đơn/phiếu/reservation đầy đủ, đúng một lần.
-- [ ] Lỗi nghiệp vụ rollback tồn rồi lưu failure/release/outbox bền; lỗi hạ tầng retry, không tự biến thành refund.
-- [ ] Payment trùng, đến muộn và manual/consumer race được xử lý theo contract đã duyệt.
-- [ ] Hủy/TTL không mất/giải phóng trùng reservation; scheduler không kẹt batch.
-- [ ] Event quan trọng không mất khi broker lỗi; dedupe và replay an toàn; có retry/DLQ/quan sát.
-- [ ] Điều chỉnh tồn không phá lượng đang giữ và có audit theo phạm vi đã chốt.
-- [ ] Migration nâng dữ liệu cũ pass; không bịa payment evidence, không sửa migration đã chạy.
-- [ ] BR-D1–BR-D12 cùng các ca race/rollback bắt buộc đã chạy trên DB/Rabbit thật; không còn skipped test quan trọng trong gate nghiệm thu.
-- [ ] Contract cross-service, API examples và runbook cập nhật; E2E qua gateway có bằng chứng hoặc công bố dependency chưa hoàn tất, không gọi đó là release hoàn chỉnh.
-- [ ] Verify module đạt, kết quả reactor được báo riêng; review tiêu chuẩn và human review hoàn tất trước merge.
+## 3. Bản đồ feature và tiến độ
 
-**Đợt code nên giao tiếp theo:** P0 → P1, đồng thời chốt D1 với Gateway/Organization và D2–D5 với Billing. Sau đó triển khai P3 → P4 → P5; chưa mở endpoint dispense trước payment gate. Mỗi đợt dừng ở gate có thể kiểm chứng, cập nhật checklist rồi mới chuyển tiếp.
+Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không tính theo số file hoặc số dòng.
 
-**Ngoài phạm vi kế hoạch cốt lõi:** nhà cung cấp, mua hàng, quản lý lô/FEFO, nhiều kho, trả thuốc sau cấp, dashboard/báo cáo mới, CRUD thuốc đầy đủ, frontend/mobile mới. Chỉ thêm khi có đặc tả và yêu cầu riêng; không dùng các tính năng này để trì hoãn sửa tính đúng của saga hiện tại.
+| Feature | Trọng số | Đã đạt | Còn lại |
+|---|---:|---:|---|
+| Kiến trúc và phân tách use case | 10% | 10% | Gia cố architecture tests và xóa compatibility code |
+| Danh mục thuốc và an toàn tồn kho | 10% | 7% | Audit persistence cho stock adjustment |
+| Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
+| Dispense và failure transaction | 15% | 13% | Payment gate cho đường thủ công và payment outcome atomic |
+| Payment receipt/idempotency/recovery | 15% | 7% | Receipt model, business key, resume sau crash |
+| Event/outbox/RabbitMQ | 15% | 8% | Claim/lease đa instance, backoff, metrics, real broker test |
+| Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
+| API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
+| Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **71%** | **29%** |
 
-## 11. Lệnh bắt buộc sau mỗi đợt code
+## 4. Thứ tự task triển khai phần code còn lại
 
-Thực hiện tuần tự, tại root repository. Không push nếu audit còn Blocker hoặc verify thất bại.
+| Thứ tự | Task | Feature | Phụ thuộc | Trạng thái |
+|---:|---|---|---|---|
+| 01 | Tách application service theo từng in-port | Architecture | — | DONE |
+| 02 | Gia cố architecture tests và xóa compatibility code | Architecture | T01 | DONE |
+| 03 | Chốt identity account/staff/system actor | Security/Identity | Contract Gateway/Organization | BLOCKED — chờ producer claim |
+| 04 | Tạo domain model và state machine payment receipt | Payment | Contract Billing | TODO |
+| 05 | Thêm payment receipt port, adapter và migration V6 | Payment/Persistence | T04 | TODO |
+| 06 | Viết payment workflow có thể resume sau crash | Payment/Dispense | T01, T05 | TODO |
+| 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | TODO |
+| 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | TODO |
+| 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | TODO |
+| 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | TODO |
+| 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | TODO |
+| 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | TODO |
+| 13 | Scheduler đa instance và reconciliation dữ liệu lệch | Lifecycle/Ops | T09, T12 | TODO |
+| 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | TODO |
+| 15 | Test RabbitMQ thật: confirm, return, outage, redelivery, DLQ | Messaging/Test | T10 | TODO |
+| 16 | Contract/E2E với Gateway, Billing và Notification | Integration | T03–T15 | TODO |
+| 17 | Audit cuối, tài liệu, cập nhật plan và release/PR gate | Release | T01–T16 | TODO |
+
+Nếu T03 hoặc T04 bị chặn bởi contract bên ngoài, tiếp tục các task độc lập T09 → T11 → T12 → T14 → T15; không tạo field, claim hoặc endpoint giả để lách dependency.
+
+## 5. Task cards
+
+### T01 — Tách application service theo feature
+
+**Mục tiêu:** loại bỏ god service nhưng không thay đổi hành vi.
+
+Tách `PharmacyApplicationService` thành:
+
+- `DrugApplicationService implements ManageDrugUseCase`
+- `PrescriptionApplicationService implements CreatePrescriptionUseCase, GetPrescriptionUseCase`
+- `DispenseApplicationService implements DispensePrescriptionUseCase`
+- `PaymentApplicationService implements ReactToPaymentUseCase`
+
+Giữ các transaction service chuyên biệt đã có:
+
+- `DispenseTransactionService`
+- `RecordDispenseFailureService`
+- `LatePaymentCompensationService`
+- `CancelPrescriptionService`
+- `ExpirePrescriptionTransaction`
+
+Checklist:
+
+- [x] Di chuyển logic theo use case, không copy.
+- [x] Constructor injection, không self-injection, không dependency nullable.
+- [x] Controller/consumer chỉ phụ thuộc đúng in-port.
+- [x] Test hiện tại được chia theo service mới và giữ nguyên assertion.
+- [x] Thêm Javadocs cho mọi public API.
+- [x] 142 test hiện tại pass (0 failure, 0 error; 9 skipped do môi trường Docker).
+
+**Bằng chứng hoàn thành:** `mvn -q -pl backend/pharmacy-service -am test` và Javadocs đã chạy thành công; `PharmacyApplicationService` đã được xóa, bốn application service mới nhận đúng in-port và các test đã chuyển sang service chuyên trách.
+
+### T02 — Architecture gate
+
+- [x] Mở rộng ArchUnit để cấm framework trong domain.
+- [x] Cấm application import infrastructure, Spring Data, AMQP và Web.
+- [x] Cấm controller/consumer gọi JPA repository hoặc driven adapter.
+- [x] Cấm JPA entity xuất hiện trong chữ ký in-port/DTO.
+- [x] Xóa constructor compatibility, dead helper và import thừa sau T01.
+- [x] Chạy architecture test riêng rồi toàn module.
+
+**Bằng chứng hoàn thành:** `ArchitectureTest` chạy riêng thành công với các rule bổ sung; toàn bộ module cũng pass trong lượt regression.
+
+### T03 — Identity và actor contract
+
+- [x] Đối chiếu JWT claims thật từ Gateway/Organization.
+- [x] Phân biệt `accountId`, `staffId`, role và system actor trong application command.
+- [ ] Nếu cần lookup, khai báo `StaffIdentityLookupPort`; adapter REST phải timeout/circuit-breaker/fallback. *(Chưa cần lookup trong phạm vi này.)*
+- [x] Không so account UUID với doctor/staff UUID nếu contract không xác nhận chúng giống nhau.
+- [x] Không dùng UUID toàn số 0 để giả nhân viên.
+- [x] Test account khác staff, thiếu claim, sai role, Admin override và dependency unavailable.
+- [x] Nếu producer contract thiếu, tạo HANDOFF; không sửa Organization/Gateway.
+
+**Trạng thái:** BLOCKED ở phần end-to-end cho tới khi Gateway phát claim `staffId` theo [identity handoff](../eproject_general_plan/backend-spec/pharmacy-identity-contract-handoff.md).
+
+**Bằng chứng phần đã hoàn thành:** `ActorIdentity` tách account/staff/role; JWT filter fail-closed với
+subject hoặc `staffId` sai định dạng; prescription/cancel ownership chỉ dùng `staffId`; test account
+khác staff, thiếu claim và malformed claim đều pass.
+
+### T04 — Payment receipt domain
+
+Tạo domain model/value type sau khi chốt contract Billing:
+
+- `PaymentReceipt`
+- `PaymentReceiptStatus` tối thiểu: `RECEIVED`, `DISPENSED`, `COMPENSATED`
+- Transition methods phải idempotent và từ chối chuyển trạng thái ngược.
+
+Receipt giữ dữ liệu có nguồn đáng tin: eventId, invoiceId, prescriptionId, patientId, departmentId, payment identity/time nếu contract có, status, failure code và timestamps.
+
+Test domain:
+
+- [ ] Receipt mới ở `RECEIVED`.
+- [ ] Mark dispensed/compensated chỉ một lần.
+- [ ] Terminal state không bị ghi đè.
+- [ ] Cùng invoice/prescription nhưng payload xung đột bị phát hiện.
+
+### T05 — Payment receipt persistence và migration V6
+
+- [ ] Khai báo `PaymentReceiptRepositoryPort`.
+- [ ] Thêm JPA entity, mapper, repository và persistence adapter.
+- [ ] Migration V6 thêm bảng receipt/inbox; không sửa V1–V5.
+- [ ] Unique `event_id` và business key đúng contract Billing.
+- [ ] Query claim dùng thao tác atomic; không dùng `exists → save`.
+- [ ] Persistence tests chạy PostgreSQL thật.
+- [ ] Test fresh insert, duplicate eventId, duplicate business key và payload conflict.
+
+### T06 — Payment workflow có thể resume
+
+- [ ] Consumer parse/validate rồi gọi duy nhất `ReactToPaymentUseCase`.
+- [ ] Ghi/claim receipt trước khi xử lý nhưng không coi `RECEIVED` là terminal.
+- [ ] Redelivery gặp receipt `RECEIVED` phải tiếp tục xử lý.
+- [ ] Nhánh success cập nhật dispense lifecycle, receipt terminal, processed claim và outbox nhất quán.
+- [ ] Nhánh business failure rollback stock rồi ghi failure lifecycle, receipt terminal, processed claim và compensation outbox trong transaction mới.
+- [ ] Lỗi hạ tầng giữ receipt ở trạng thái có thể retry và không ACK sai.
+- [ ] Crash ở mọi điểm giữa các transaction đều resume mà không trừ kho/gửi compensation logic hai lần.
+
+### T07 — Payment gate cho dispense thủ công
+
+- [ ] Endpoint `PUT /prescriptions/{id}/dispense` không nhận `paid=true` từ client.
+- [ ] Application tra payment proof qua port trước mutation.
+- [ ] Chưa có proof trả lỗi nghiệp vụ ổn định, không trừ kho.
+- [ ] ADMIN cũng không được bỏ qua payment gate.
+- [ ] Actor/correlation lấy từ JWT/request context.
+- [ ] Manual và consumer dùng chung core transaction.
+- [ ] Cập nhật `pharmacy.http`, README và OpenAPI.
+
+### T08 — Payment/manual concurrency tests
+
+- [ ] Cùng eventId chạy đồng thời chỉ một outcome.
+- [ ] Hai eventId cho cùng business payment theo policy đã chốt.
+- [ ] Manual dispense và consumer chạy đồng thời chỉ trừ kho một lần.
+- [ ] Payment đến sau CANCELLED/EXPIRED compensation một lần.
+- [ ] Payment đến sau DISPENSED không tạo filled event mới.
+- [ ] Context patient/department sai không ghi receipt terminal hoặc đổi stock.
+- [ ] Tất cả test dùng barrier/latch và timeout hữu hạn.
+
+### T09 — Outbox đa instance và migration V7
+
+- [ ] Thêm trạng thái/lease cần thiết: `available_at`, `locked_at`, `locked_by` hoặc thiết kế tương đương.
+- [ ] Claim batch bằng transaction ngắn và `FOR UPDATE SKIP LOCKED`/cơ chế PostgreSQL tương đương.
+- [ ] Không giữ transaction database trong lúc chờ publisher confirm.
+- [ ] Lease hết hạn cho phép instance khác lấy lại.
+- [ ] EventId và payload không thay đổi qua retry.
+- [ ] Một instance không làm event của instance khác bị đánh dấu published.
+- [ ] Migration V7 chỉ thêm mới và có index cho pending/available rows.
+
+### T10 — Outbox retry, metrics, replay và retention
+
+- [ ] Exponential backoff có giới hạn và cấu hình ngoài code.
+- [ ] Phân biệt NACK, unroutable return, timeout và serialization error.
+- [ ] Micrometer metrics: pending count, oldest age, published, retry, permanent failure.
+- [ ] Log eventId/routing key nhưng không log token hoặc PII/payload đầy đủ.
+- [ ] Có thao tác replay an toàn cho row lỗi, không tạo eventId mới.
+- [ ] Có retention/cleanup cho row đã publish; không xóa pending.
+- [ ] Unit và PostgreSQL integration tests cho lease/backoff/replay.
+
+### T11 — Stock adjustment audit và migration V8
+
+- [ ] Tạo domain model `StockAdjustment`.
+- [ ] Lưu drug mutation và audit trong cùng transaction.
+- [ ] Audit gồm drugId, before, delta, after, reason, actor, correlationId, occurredAt.
+- [ ] Reason bắt buộc khi giảm; được trim và giới hạn chiều dài.
+- [ ] `stock.adjusted` outbox commit/rollback cùng audit.
+- [ ] Migration V8 thêm bảng/index/check constraint.
+- [ ] Test rollback audit/event khi mutation lỗi và race adjust/create reservation.
+
+### T12 — Lifecycle concurrency matrix
+
+Chạy bằng Spring Boot + PostgreSQL thật:
+
+- [ ] cancel vs dispense
+- [ ] expire vs dispense
+- [ ] cancel vs expire
+- [ ] adjust stock vs create prescription
+- [ ] hai đơn tranh cùng drug
+- [ ] reservation thiếu/dư/sai quantity
+
+Gate: chỉ một transition hợp lệ thắng; không stock âm, không release hai lần, không outbox logical duplicate và không deadlock vượt timeout.
+
+### T13 — Scheduler đa instance và reconciliation
+
+- [ ] Claim candidate theo cursor/lease để nhiều scheduler không xử lý cùng aggregate.
+- [ ] Poison aggregate không gây starvation cho aggregate phía sau.
+- [ ] Expiry event logical chỉ phát một lần.
+- [ ] Viết reconciliation chế độ dry-run cho lifecycle/reservation legacy lệch.
+- [ ] Không tự sửa dữ liệu không xác định; báo prescriptionId và loại bất thường.
+- [ ] Test hơn một batch, wrap cursor, hai scheduler và một aggregate lỗi.
+
+### T14 — Migration compatibility
+
+- [ ] Fresh database chạy V1 → migration mới nhất.
+- [ ] Database V4/V5 có dữ liệu mẫu nâng lên migration mới nhất.
+- [ ] `ddl-auto=validate` pass.
+- [ ] Unique/index/check/FK nội bộ đúng; không FK cross-service.
+- [ ] Dữ liệu cũ thiếu payment proof giữ trạng thái unknown, không backfill thành paid.
+- [ ] Rollback/backup note và migration runbook được cập nhật.
+
+### T15 — RabbitMQ integration thật
+
+Dùng Testcontainers PostgreSQL + RabbitMQ:
+
+- [ ] Transaction rollback không để lại outbox.
+- [ ] ACK mới mark published.
+- [ ] NACK/timeout giữ pending và tăng attempt.
+- [ ] Mandatory return giữ pending.
+- [ ] Broker outage không làm rollback nghiệp vụ đã commit.
+- [ ] Crash sau send trước mark tạo redelivery nhưng consumer vẫn idempotent.
+- [ ] Poison payment message retry hữu hạn rồi vào DLQ.
+- [ ] Không test các hành vi này chỉ bằng mock `RabbitTemplate`.
+
+### T16 — Contract và E2E
+
+- [ ] JSON fixtures `payment.completed`, `prescription.created`, `filled`, `dispense.failed` được đối chiếu với owner.
+- [ ] E2E qua Gateway: create prescription → invoice → payment → dispense.
+- [ ] E2E nhánh compensation.
+- [ ] E2E redelivery và broker restart.
+- [ ] Notification/report consumer compatibility được ghi nhận.
+- [ ] Dependency chưa có phải được ghi trong HANDOFF, không tuyên bố E2E pass.
+
+### T17 — Release gate
+
+- [ ] Cập nhật checkbox và bằng chứng trong file plan sau từng task.
+- [ ] Chạy toàn bộ test module, integration và migration.
+- [ ] Chạy Javadocs, verify, architecture test và `git diff --check`.
+- [ ] Audit theo `docs/ai/` và spec Pharmacy; báo Blocker/Should-fix/Nit.
+- [ ] Không còn blocker hoặc skipped test quan trọng.
+- [ ] Human review trước merge.
+- [ ] Commit theo Conventional Commits, không stage file ngoài phạm vi.
+- [ ] Chỉ sau audit đạt mới push nhánh `Huy` và cập nhật/tạo pull request khi người dùng yêu cầu.
+
+## 6. Quy trình bắt buộc cho từng task
+
+### Trước khi code
+
+1. Đọc changelog, AGENTS, architecture rule và phần spec liên quan.
+2. Kiểm tra worktree; giữ nguyên thay đổi không thuộc task.
+3. Ghi rõ business rule và acceptance test của task.
+4. Xác định in-port, out-port, domain behavior và adapter cần thiết.
+5. Nếu contract ngoài service chưa rõ, chuyển task sang BLOCKED và làm task độc lập tiếp theo.
+
+### Trong khi code
+
+1. Viết/chỉnh test business rule trước.
+2. Implement domain behavior.
+3. Implement application port và use-case service.
+4. Implement persistence/messaging/client adapter.
+5. Implement controller/consumer/scheduler cuối cùng.
+6. Thêm Javadocs ngay trong cùng task.
+7. Không mở rộng sang service khác hoặc refactor ngoài feature.
+
+### Sau khi code
 
 ```powershell
-mvn -q -pl backend/pharmacy-service -am clean verify
+mvn -q -pl backend/pharmacy-service -am test
+mvn -q -pl backend/pharmacy-service -am javadoc:javadoc
+mvn -q -pl backend/pharmacy-service -am verify
 git diff --check
-git diff --stat
 git status --short
 ```
 
-Sau đó audit diff theo `docs/ai/` và đặc tả pharmacy: blueprint/package, boundary, RBAC, API envelope, event envelope/correlation, transaction/lock order, migration, Javadocs và test BR-D. Ghi kết quả theo ba nhóm Blocker / Should-fix / Nit cùng `file:line`; chỉ Blocker mới chặn push. Cuối cùng:
+Sau đó:
 
-```powershell
-git add <các file thuộc đợt triển khai>
-git commit -m "feat(pharmacy): <mô tả ngắn theo Conventional Commits>"
-git push origin <branch-hiện-tại>
+1. Audit dependency direction, business rules, transaction/lock, RBAC, event/outbox và migration.
+2. Sửa hết blocker; chạy lại gate bị ảnh hưởng.
+3. Cập nhật task trong plan: trạng thái, test count, migration và SHA nếu có.
+4. Commit tập trung theo task; không commit file ngoài phạm vi.
+5. Push/PR chỉ thực hiện sau audit và theo yêu cầu Git hiện hành của người dùng.
+
+## 7. Definition of Done toàn Pharmacy Service
+
+- [ ] `PharmacyApplicationService` đã được tách; mỗi use case có trách nhiệm rõ.
+- [ ] Clean/Hexagonal dependency được ArchUnit bảo vệ.
+- [ ] BR-D1–BR-D12 và toàn bộ rule mở rộng có test.
+- [ ] Manual dispense bắt buộc có payment proof.
+- [ ] Payment receipt chống duplicate event/business payment và resume sau crash.
+- [ ] Dispense/cancel/expire/adjust concurrency cho kết quả nhất quán.
+- [ ] Outbox an toàn đa instance, có backoff, metrics, replay và retention.
+- [ ] Stock adjustment có audit persistence cùng transaction.
+- [ ] Identity account/staff/system actor đúng contract.
+- [ ] Fresh/upgrade migrations pass trên PostgreSQL thật.
+- [ ] Rabbit confirm/return/outage/redelivery/DLQ pass trên RabbitMQ thật.
+- [ ] API/RBAC/error envelope/`.http`/OpenAPI đúng contract.
+- [ ] E2E qua Gateway và Billing pass hoặc dependency chưa có được công bố rõ.
+- [ ] Javadocs, test, verify, audit và human review đều đạt.
+- [ ] Plan được cập nhật bằng bằng chứng thực tế; không suy diễn phần trăm từ số file.
+
+## 8. Kiến trúc đích chi tiết theo code
+
+### 8.1 Hiện trạng cần giữ
+
+Các thành phần sau đã đúng hướng Hexagonal và phải được giữ khi refactor:
+
+| Nhóm | Thành phần hiện có | Vai trò |
+|---|---|---|
+| Domain | `Drug`, `Prescription`, `PrescriptionLine`, `DispenseSlip`, `StockReservation` | Aggregate/model chứa invariant |
+| In-port | 7 interface trong `application/port/in` | Hợp đồng cho web, consumer và scheduler |
+| Out-port | 6 interface trong `application/port/out` | Persistence và event intent |
+| Driving HTTP | `DrugController`, `PrescriptionController` | Validate/authenticate/map request |
+| Driving event | `PaymentCompletedConsumer` | Map AMQP payload sang application command |
+| Driving scheduler | `ReservationExpiryScheduler` | Kích hoạt use case hết TTL |
+| Driven persistence | 5 persistence adapter và các JPA repository/entity | Lưu aggregate, lock và query |
+| Driven messaging | `PharmacyEventPublisherAdapter` | Serialize và ghi transactional outbox |
+| Outbox delivery | `PharmacyOutboxDispatcher` | Gửi RabbitMQ sau commit, chờ publisher confirm |
+| Transaction specialist | `DispenseTransactionService`, `RecordDispenseFailureService`, `ExpirePrescriptionTransaction` | Ranh giới transaction quan trọng |
+
+### 8.2 Vấn đề kiến trúc còn lại
+
+| ID | Hiện trạng | Tác động | Task xử lý |
+|---|---|---|---|
+| AR-01 | `PharmacyApplicationService` hiện thực 5 in-port và giữ quá nhiều dependency | Khó cô lập rule, dễ tạo transaction boundary sai | T01 |
+| AR-02 | Có constructor tương thích tự tạo service con và dependency nullable | Bỏ qua Spring proxy, che giấu wiring lỗi | T01–T02 |
+| AR-03 | Payment idempotency mới lưu terminal eventId, chưa có receipt state machine | Không resume rõ ràng sau crash | T04–T08 |
+| AR-04 | Manual dispense gọi core nhưng chưa có payment-proof port | Có thể cấp thuốc trước thanh toán | T07 |
+| AR-05 | Outbox polling chưa có claim/lease đa instance | Hai replica có thể cùng gửi một row | T09 |
+| AR-06 | Stock adjustment chỉ có event audit, chưa có audit record bền | Khó điều tra nếu consumer/event gặp sự cố | T11 |
+| AR-07 | Account, staff và system actor chưa có model contract rõ | Audit/ownership có nguy cơ sai danh tính | T03 |
+
+### 8.3 Cây package đích
+
+Tên file mới dưới đây là tên dự kiến chính thức. Nếu implementation phát hiện tên chưa diễn đạt đúng
+nghiệp vụ thì được đổi trong cùng task, nhưng trách nhiệm lớp không được nhập lại thành god service.
+
+```text
+com.mediflow.pharmacy/
+├── domain/
+│   ├── model/
+│   │   ├── Drug.java
+│   │   ├── Prescription.java
+│   │   ├── PrescriptionLine.java
+│   │   ├── DispenseSlip.java
+│   │   ├── StockReservation.java
+│   │   ├── PaymentReceipt.java                    # T04
+│   │   └── StockAdjustment.java                   # T11
+│   ├── model/enums/
+│   │   ├── DispenseStatus.java
+│   │   ├── PrescriptionStatus.java
+│   │   ├── ReservationStatus.java
+│   │   ├── ReservationReleaseReason.java
+│   │   └── PaymentReceiptStatus.java              # T04
+│   └── exception/
+│       ├── PaymentReceiptRuleException.java       # T04
+│       ├── PaymentProofRequiredException.java     # T07
+│       └── ... existing typed exceptions
+├── application/
+│   ├── dto/command/
+│   │   ├── AuthenticatedActor.java                # T03
+│   │   ├── CreatePrescriptionCommand.java
+│   │   ├── CancelPrescriptionCommand.java
+│   │   ├── DispensePrescriptionCommand.java       # T03/T07
+│   │   └── PaymentCompletedCommand.java
+│   ├── port/in/                                   # existing contracts, refine only when needed
+│   ├── port/out/
+│   │   ├── PaymentReceiptRepositoryPort.java      # T05
+│   │   ├── StockAdjustmentRepositoryPort.java     # T11
+│   │   ├── StaffIdentityLookupPort.java           # T03, only if contract requires lookup
+│   │   └── ... existing repository/event ports
+│   └── service/
+│       ├── DrugApplicationService.java            # T01
+│       ├── PrescriptionApplicationService.java    # T01
+│       ├── DispenseApplicationService.java        # T01
+│       ├── PaymentApplicationService.java         # T01/T06
+│       ├── DispenseTransactionService.java
+│       ├── RecordDispenseFailureService.java
+│       ├── LatePaymentCompensationService.java
+│       ├── CancelPrescriptionService.java
+│       ├── ReleaseExpiredReservationsService.java
+│       └── ExpirePrescriptionTransaction.java
+├── web/                                           # driving HTTP adapters
+├── messaging/consumer/                            # driving AMQP adapters
+└── infrastructure/
+    ├── persistence/
+    │   ├── adapter/
+    │   │   ├── PaymentReceiptPersistenceAdapter.java     # T05
+    │   │   └── StockAdjustmentPersistenceAdapter.java    # T11
+    │   ├── jpaEntity/
+    │   │   ├── PaymentReceiptJpaEntity.java               # T05
+    │   │   └── StockAdjustmentJpaEntity.java              # T11
+    │   └── repository/
+    │       ├── PaymentReceiptJpaRepository.java           # T05
+    │       └── StockAdjustmentJpaRepository.java          # T11
+    ├── messaging/
+    │   ├── PharmacyEventPublisherAdapter.java
+    │   ├── PharmacyOutboxDispatcher.java
+    │   └── PharmacyOutboxClaimRepository.java             # T09, infrastructure-only
+    ├── client/                                             # T03 only if REST mapping is approved
+    ├── scheduling/
+    ├── security/
+    └── config/
 ```
 
-Sau push, cập nhật PR bằng SHA, lệnh kiểm thử, số pass/fail/skip, các Should-fix còn lại và trạng thái Docker/Testcontainers. Không stage hoặc xóa thay đổi không thuộc đợt triển khai; không force push nhánh dùng chung.
+### 8.4 Quyết định kiến trúc cố định
+
+| ADR | Quyết định | Lý do |
+|---|---|---|
+| ADR-PH-01 | Outbox là chi tiết của messaging adapter, không tạo `OutboxPort` cho application | Application chỉ nói “publish event”; không biết cơ chế giao |
+| ADR-PH-02 | Payment receipt là domain/application concept, khác `PROCESSED_EVENT` | Receipt biểu diễn bằng chứng và outcome; processed-event chỉ là dedupe terminal |
+| ADR-PH-03 | Security principal được chuyển thành application command/value, không truyền `Authentication` vào application | Giữ application độc lập Spring Security |
+| ADR-PH-04 | `Clock` được inject ở application/config, domain nhận thời điểm làm tham số | Test boundary thời gian deterministically |
+| ADR-PH-05 | Core dispense dùng chung cho consumer và manual endpoint | Ngăn hai implementation trừ kho khác nhau |
+| ADR-PH-06 | Business failure và infrastructure failure có đường xử lý khác nhau | Không tự compensation do timeout/deadlock tạm thời |
+| ADR-PH-07 | Lock order là contract kỹ thuật của toàn service | Ngăn deadlock giữa dispense/cancel/expire/adjust |
+| ADR-PH-08 | Không thêm API admin replay công khai nếu chưa có security/operations spec | Tránh tạo bề mặt tấn công; ưu tiên internal operation/runbook |
+
+## 9. Aggregate, invariant và transaction map
+
+### 9.1 Aggregate ownership
+
+| Aggregate/record | Sở hữu dữ liệu | Invariant chính | Không được làm |
+|---|---|---|---|
+| `Drug` | Giá, tồn vật lý, hạn dùng, ngưỡng | Giá/tồn/ngưỡng hợp lệ; không overflow; không xuất thuốc hết hạn | Không tự đọc reservation hoặc publish event |
+| `Prescription` + lines | Ý định kê, giá snapshot, tổng tiền, lifecycle | Có dòng; drug không trùng; tổng chính xác; terminal không đảo ngược | Không tham chiếu JPA entity hoặc Billing invoice entity |
+| `DispenseSlip` | Bằng chứng cấp thuốc | Một phiếu/đơn; transition hợp lệ; failure reason bounded | Không tự trừ stock |
+| `StockReservation` | Phần tồn đã giữ | Quantity dương; RESERVED chỉ chuyển một lần | Không thay stock vật lý |
+| `PaymentReceipt` | Payment proof và outcome cục bộ | Dedupe; context khớp; terminal không ghi đè; resume RECEIVED | Không coi receipt RECEIVED là đã xử lý xong |
+| `StockAdjustment` | Audit bất biến | before + delta = after; actor/reason/correlation đầy đủ | Không dùng làm current stock |
+| Outbox row | Delivery state hạ tầng | Payload/eventId ổn định; published chỉ sau ACK | Không chứa business transition |
+
+### 9.2 Transaction matrix
+
+| Use case | Transaction | Khóa/claim | Ghi dữ liệu | Event intent |
+|---|---|---|---|---|
+| Create drug | 1 transaction | Không cần cross-row lock | DRUG | Không bắt buộc nếu contract không yêu cầu |
+| Adjust stock | 1 transaction | Drug → đọc tổng RESERVED | DRUG + STOCK_ADJUSTMENT | stock.adjusted, có thể stock.low |
+| Create prescription | 1 transaction | Drugs sorted | PRESCRIPTION + LINE + RESERVATION + SLIP | prescription.created |
+| Read prescription | read-only | Không khóa ghi | Không ghi | Không |
+| Cancel | 1 transaction | Prescription → slip → reservations | Lifecycle + release audit | prescription.cancelled |
+| Expire | 1 transaction/aggregate | Prescription → slip → reservations | Lifecycle + expiry audit | prescription.expired |
+| Dispense success | 1 transaction | Prescription → slip → drugs sorted → reservations sorted | Drug + reservation + prescription + slip + receipt/processed nếu payment-driven | filled + stock.low |
+| Dispense business failure | transaction cấp rollback, rồi 1 `REQUIRES_NEW` | Khóa lại prescription → slip → reservations | FAILED/released + receipt terminal/processed | dispense.failed |
+| Payment arrival | Orchestrator không có transaction dài | Atomic receipt claim; sau đó gọi transaction specialist | Receipt RECEIVED rồi terminal | Qua transaction success/failure |
+| Outbox dispatch | Claim ngắn; network ngoài DB transaction; finalize ngắn | Lease/owner token | attempts, publishedAt, lastError | Gửi RabbitMQ |
+
+### 9.3 Lock-order checklist bắt buộc
+
+Trước khi thêm query `FOR UPDATE`, reviewer phải trả lời đủ:
+
+- [ ] Aggregate nào được khóa trước?
+- [ ] Có đường code khác khóa các row tương tự theo thứ tự ngược không?
+- [ ] Danh sách UUID đã sort ổn định chưa?
+- [ ] Có I/O mạng hoặc publisher confirm bên trong transaction không?
+- [ ] Nếu process chết khi đang giữ lease/lock, hệ thống tự phục hồi thế nào?
+- [ ] Timeout/deadlock được coi là infrastructure failure và còn khả năng retry chưa?
+
+## 10. Port contract map
+
+### 10.1 In-port hiện tại và owner đích
+
+| In-port | Driving adapter | Service đích sau T01 | Transaction owner |
+|---|---|---|---|
+| `ManageDrugUseCase` | `DrugController` | `DrugApplicationService` | Service method |
+| `CreatePrescriptionUseCase` | `PrescriptionController` | `PrescriptionApplicationService` | Create method |
+| `GetPrescriptionUseCase` | `PrescriptionController` | `PrescriptionApplicationService` | Read-only method |
+| `DispensePrescriptionUseCase` | `PrescriptionController`, payment application | `DispenseApplicationService` | Transaction specialist |
+| `ReactToPaymentUseCase` | `PaymentCompletedConsumer` | `PaymentApplicationService` | Resume-safe orchestrator |
+| `CancelPrescriptionUseCase` | `PrescriptionController` | `CancelPrescriptionService` | Service method |
+| `ReleaseExpiredReservationsUseCase` | `ReservationExpiryScheduler` | `ReleaseExpiredReservationsService` | Một transaction/aggregate |
+
+### 10.2 Out-port hiện tại
+
+| Out-port | Adapter | Aggregate/use case sử dụng |
+|---|---|---|
+| `DrugRepositoryPort` | `DrugPersistenceAdapter` | Drug, prescription create, dispense, adjustment |
+| `PrescriptionRepositoryPort` | `PrescriptionPersistenceAdapter` | Create/read/cancel/expire/dispense/payment validation |
+| `DispenseSlipRepositoryPort` | `DispenseSlipPersistenceAdapter` | Create/cancel/expire/dispense |
+| `StockReservationRepositoryPort` | `StockReservationPersistenceAdapter` | Available stock, create, lifecycle, scheduler |
+| `ProcessedEventPort` | `ProcessedEventPersistenceAdapter` | Terminal payment-event dedupe |
+| `PharmacyEventPublisherPort` | `PharmacyEventPublisherAdapter` | Ghi event intent vào outbox |
+
+### 10.3 Out-port mới dự kiến
+
+| Port | Trách nhiệm | Kết quả cần biểu diễn |
+|---|---|---|
+| `PaymentReceiptRepositoryPort` | Claim receipt, đọc proof, lưu terminal outcome | Claimed, duplicate-same, duplicate-conflict; không chỉ boolean |
+| `StockAdjustmentRepositoryPort` | Lưu audit stock bất biến | Audit đã persist cùng transaction |
+| `StaffIdentityLookupPort` | Map account → staff nếu JWT không có claim được duyệt | Found, not-found, dependency-unavailable |
+
+Nguyên tắc chữ ký port:
+
+- Không dùng `Pageable`, JPA entity, `Authentication`, AMQP `Message` hoặc HTTP response.
+- Kết quả nhiều trạng thái dùng enum/record có nghĩa; không dùng `null` hoặc boolean mơ hồ.
+- Phương thức khóa ghi đặt tên `...ForUpdate`; application yêu cầu semantics, adapter chọn kỹ thuật.
+- Port mới phải có Javadocs mô tả consistency/idempotency contract.
+
+## 11. Dữ liệu và migration plan
+
+### 11.1 Schema hiện có
+
+| Migration | Nội dung | Trạng thái |
+|---|---|---|
+| V1 | DRUG, PRESCRIPTION, LINE, DISPENSE_SLIP, PROCESSED_EVENT | Đã áp dụng |
+| V2 | STOCK_RESERVATION | Đã áp dụng |
+| V3 | Unique prescription/drug reservation | Đã áp dụng |
+| V4 | Prescription lifecycle và reservation audit | Đã áp dụng |
+| V5 | PHARMACY_EVENT_OUTBOX | Đã áp dụng và test fresh DB |
+
+Không được sửa V1–V5. Số migration tiếp theo phải được kiểm tra lại sau `git fetch`; V6–V8 dưới
+đây là thứ tự logic hiện tại, không được giữ số nếu master đã chiếm số đó.
+
+### 11.2 V6 dự kiến — PAYMENT_RECEIPT
+
+| Cột | Kiểu/constraint | Ý nghĩa |
+|---|---|---|
+| receipt_id | UUID PK | ID nội bộ |
+| event_id | UUID UNIQUE NOT NULL | Dedupe broker delivery |
+| invoice_id | UUID NOT NULL | Billing reference |
+| prescription_id | UUID NOT NULL | Pharmacy aggregate |
+| patient_id | UUID NOT NULL | Context validation |
+| department_id | UUID NOT NULL | Context/report |
+| total_amount | DECIMAL(15,2) NOT NULL | Giá trị từ Billing; không mặc định bằng tiền thuốc |
+| payment_method | VARCHAR | Theo contract Billing |
+| payment_occurred_at | TIMESTAMPTZ NOT NULL | Thời điểm event |
+| correlation_id | VARCHAR NOT NULL | Trace xuyên saga |
+| payload_fingerprint | VARCHAR | Phát hiện cùng key nhưng payload khác |
+| status | VARCHAR NOT NULL | RECEIVED/DISPENSED/COMPENSATED |
+| failure_code | VARCHAR NULL | Mã outcome thất bại |
+| created_at/updated_at | TIMESTAMPTZ | Audit |
+
+Index tối thiểu: `event_id`, `prescription_id + status`, business key được Billing xác nhận.
+Không đặt FK đến BILLING/PATIENT/ORGANIZATION.
+
+### 11.3 V7 dự kiến — outbox lease/retry
+
+| Cột | Kiểu | Mục đích |
+|---|---|---|
+| available_at | TIMESTAMPTZ | Backoff; chỉ claim khi đến hạn |
+| locked_at | TIMESTAMPTZ | Bắt đầu lease |
+| locked_by | VARCHAR | Instance owner |
+| lock_token | UUID | Chống owner cũ finalize row |
+| published_at | TIMESTAMPTZ hiện có | Terminal delivery success |
+| attempts/last_error | hiện có | Quan sát retry |
+
+Index cần phục vụ `published_at IS NULL AND available_at <= now`. Query/plan phải được kiểm tra
+bằng PostgreSQL thật; không giả định H2 có semantics tương đương.
+
+### 11.4 V8 dự kiến — STOCK_ADJUSTMENT
+
+| Cột | Kiểu/constraint |
+|---|---|
+| adjustment_id | UUID PK |
+| drug_id | UUID NOT NULL, FK nội bộ DRUG |
+| quantity_before | INT NOT NULL CHECK >= 0 |
+| delta | INT NOT NULL CHECK <> 0 |
+| quantity_after | INT NOT NULL CHECK >= 0 |
+| reason | VARCHAR(500) NOT NULL |
+| actor_id | UUID NOT NULL sau khi T03 chốt contract |
+| correlation_id | VARCHAR |
+| occurred_at | TIMESTAMPTZ NOT NULL |
+
+Application/domain vẫn kiểm tra `before + delta = after`; DB constraint là tuyến phòng thủ cuối.
+
+### 11.5 Migration acceptance
+
+- [ ] Checksum V1–V5 không đổi.
+- [ ] Fresh database migrate đến latest.
+- [ ] V4 sample data → latest.
+- [ ] V5 outbox pending/published sample → latest.
+- [ ] Duplicate data tạo lỗi dễ hiểu trước khi thêm unique, hoặc có migration reconciliation rõ.
+- [ ] `ddl-auto=validate` pass.
+- [ ] Index được dùng cho query chính bằng `EXPLAIN` khi dữ liệu đủ lớn.
+- [ ] Không seed payment proof giả cho dữ liệu cũ.
+- [ ] Có hướng dẫn backup/rollback; migration destructive cần review riêng.
+
+## 12. API, security và error contract
+
+### 12.1 Endpoint matrix
+
+| Method/path | Role | In-port | Success | Test bắt buộc |
+|---|---|---|---|---|
+| GET `/drugs` | ADMIN/DOCTOR/PHARMACIST | ManageDrug | 200 page envelope | auth, page bounds, keyword |
+| GET `/drugs/{id}` | ADMIN/DOCTOR/PHARMACIST | ManageDrug | 200 | 404, malformed UUID |
+| POST `/drugs` | ADMIN/PHARMACIST | ManageDrug | 201 + Location | validation, role |
+| PUT `/drugs/{id}/stock` | ADMIN/PHARMACIST | ManageDrug | 200 | actor, reason, reserved guard |
+| POST `/prescriptions` | ADMIN/DOCTOR | CreatePrescription | 201 + Location | ownership, duplicate line, atomicity |
+| GET `/prescriptions/{id}` | ADMIN/DOCTOR/PHARMACIST | GetPrescription | 200 | snapshot, lifecycle, 404 |
+| PUT `/prescriptions/{id}/cancel` | ADMIN/DOCTOR | CancelPrescription | 200 | ownership, idempotency, terminal |
+| PUT `/prescriptions/{id}/dispense` | ADMIN/PHARMACIST | DispensePrescription | 200 | payment proof, concurrency, actor |
+
+### 12.2 Error matrix đích
+
+| Nhóm | HTTP | Mã ví dụ |
+|---|---:|---|
+| Request/JSON/validation sai | 400 | VALIDATION_ERROR, INVALID_UUID |
+| Thiếu hoặc token không hợp lệ | 401 | UNAUTHORIZED |
+| Role/ownership/identity không đủ | 403 | FORBIDDEN, PRESCRIPTION_CREATE_FORBIDDEN |
+| Resource không tồn tại | 404 | DRUG_NOT_FOUND, PRESCRIPTION_NOT_FOUND, DISPENSE_NOT_FOUND |
+| Duplicate resource/business key | 409 | PAYMENT_RECEIPT_CONFLICT |
+| Business rule | 422 | DRUG_OUT_OF_STOCK, DRUG_EXPIRED, DISPENSE_NOT_PAID |
+| Dependency đồng bộ lỗi | 503 | IDENTITY_SERVICE_UNAVAILABLE |
+| Lỗi bất ngờ | 500 | INTERNAL_ERROR, không lộ stack trace |
+
+Mọi response lỗi phải giữ correlationId. Controller không catch `Exception` để tự trả status; dùng
+typed exception và `GlobalExceptionHandler`.
+
+### 12.3 Identity acceptance
+
+- JWT thiếu/invalid → 401.
+- JWT hợp lệ nhưng role sai → 403.
+- Subject không parse được theo contract → 403, không 500.
+- Doctor không được kê/hủy bằng staffId khác.
+- Admin override vẫn lưu actor thật và target doctor riêng.
+- System-triggered dispense phải có biểu diễn actor được contract hóa, không dùng nhân viên giả.
+- Không log token hoặc dữ liệu bệnh nhân đầy đủ.
+
+## 13. Event, idempotency và delivery contract
+
+### 13.1 Outbound event matrix
+
+| Routing key | Business trigger | Idempotency key | Trường bắt buộc |
+|---|---|---|---|
+| prescription.created | Aggregate kê đơn commit | eventId | envelope, prescription/patient/record/department, total, items |
+| prescription.filled | Dispense success commit | eventId | envelope, prescription/patient/department, total, dispensedItems |
+| prescription.dispense.failed | Failure outcome commit | eventId | prescription, invoice nếu payment-driven, patient, reason, failedItems |
+| prescription.cancelled | Cancel commit | eventId | prescription, actor/reason/released items theo contract |
+| prescription.expired | Expiry commit | eventId/deterministic logical key | prescription, expiry/released context |
+| stock.low | Stock mutation commit | eventId | drug, name, currentStock, threshold |
+| stock.adjusted | Manual adjustment commit | eventId | drug, before/after/delta/reason/actor |
+
+### 13.2 Inbound payment contract hiện tại
+
+`PaymentCompletedEvent`/`PaymentCompletedCommand` hiện có:
+
+- `eventId: UUID`
+- `occurredAt: Instant`
+- `correlationId: String`
+- `invoiceId: UUID`
+- `patientId: UUID`
+- `departmentId: UUID`
+- `prescriptionId: UUID`
+- `totalAmount: BigDecimal`
+- `paymentMethod: String`
+
+Các câu hỏi phải chốt với Billing trước T04/T05:
+
+1. Một invoice có thể chứa nhiều prescription không?
+2. Một prescription có thể có nhiều payment attempt/thanh toán bổ sung không?
+3. Business key chính xác là invoiceId, paymentId hay tổ hợp nào?
+4. `totalAmount` là tổng invoice hay phần thuốc?
+5. Payment reversal/refund có event riêng không?
+6. Field nào nullable và quy tắc tương thích payload cũ?
+
+### 13.3 Delivery semantics
+
+- Outbox cung cấp **at-least-once**, không tuyên bố exactly-once.
+- Publisher confirm chứng minh broker nhận message, không chứng minh consumer đã xử lý.
+- Crash sau send/trước mark published có thể gửi lại cùng eventId.
+- Consumer dedupe terminal theo eventId và kiểm tra business key/payload conflict.
+- Không sinh eventId mới khi retry/replay cùng logical event.
+- Lỗi serialization phải rollback transaction tạo event intent.
+- Lỗi broker sau business commit giữ row pending, không rollback nghiệp vụ đã commit.
+
+## 14. Traceability: rule → code → test → task
+
+### 14.1 Core BR-D1–BR-D12
+
+| Rule | Code chịu trách nhiệm | Bằng chứng hiện tại | Test cần bổ sung | Task |
+|---|---|---|---|---|
+| BR-D1 | Drug + DispenseTransactionService | Unit dispense/Drug | two prescriptions same drug | T12 |
+| BR-D2 | Drug.isExpiredOn/dispenseStock | DrugTest + dispense tests | timezone/business-date integration | T12 |
+| BR-D3 | Prescription create transaction | Application + rollback integration | — | DONE |
+| BR-D4 | Slip/prescription locks + idempotent return | Unit + concurrent same prescription | manual vs consumer | T08 |
+| BR-D5 | Prescription/line money calculation | PrescriptionTest | max precision/overflow DB | T14 |
+| BR-D6 | RecordDispenseFailureService + outbox | Unit failure/outbox | Rabbit delivery integration | T15 |
+| BR-D7 | PrescriptionLine snapshot | Persistence test | upgrade-data preservation | T14 |
+| BR-D8 | Request DTO/controller | Web test | OpenAPI schema assertion | T17 |
+| BR-D9 | ProcessedEvent + payment workflow | Unit event redelivery | concurrent/business-key/crash | T08 |
+| BR-D10 | Pessimistic locks + sorted UUID | PostgreSQL concurrency | cross-use-case race/deadlock | T12 |
+| BR-D11 | StockLowEvent + outbox | Unit | broker outage delivery | T15 |
+| BR-D12 | Separate transaction beans | PostgreSQL rollback test | receipt terminal atomicity | T06/T08 |
+
+### 14.2 Extended rules
+
+| Rule | Test class/method đích | Tầng | Task |
+|---|---|---|---|
+| BR-P1 | `PrescriptionControllerTest.dispense_withoutPaymentProof_returns422` | Web/application | T07 |
+| BR-P3 | `PaymentReceiptPersistenceAdapterTest.claim_sameBusinessKeyDifferentPayload_reportsConflict` | PostgreSQL | T05 |
+| BR-P5 | `PaymentRecoveryIntegrationTest.receivedReceipt_redeliveryResumesDispense` | Integration | T08 |
+| BR-E3 | `PharmacyOutboxLeaseIntegrationTest.twoDispatchers_eachRowOwnedOncePerLease` | PostgreSQL | T09 |
+| BR-E4 | `PharmacyOutboxDispatcherTest.nack_schedulesExponentialBackoff` | Unit | T10 |
+| BR-A1 | `StockAdjustmentIntegrationTest.auditAndEventRollbackWithStock` | Integration | T11 |
+| BR-L1 | `PrescriptionLifecycleConcurrencyTest.cancelVsDispense_singleWinner` | PostgreSQL | T12 |
+| BR-S2 | `ActorIdentityTest.accountAndStaffRemainDistinct` | Unit/web | T03 |
+| BR-M1 | `PharmacyMigrationTest.upgradeFromV5_preservesRows` | PostgreSQL/Flyway | T14 |
+
+### 14.3 Test suite đích
+
+| Tầng | Mục tiêu | Không được thay bằng |
+|---|---|---|
+| Domain unit | State transition, invariant, money/time | Spring context |
+| Application unit | Use case với mock out-port | Mock JPA repository |
+| Web slice | Validation, envelope, role, actor/correlation mapping | Unit controller gọi trực tiếp |
+| Persistence slice | Mapping, constraint, lock/query | H2 |
+| Integration PostgreSQL | Transaction rollback và concurrency thật | Mockito |
+| Integration RabbitMQ | Confirm/return/outage/redelivery/DLQ | Mock RabbitTemplate |
+| Contract test | JSON fixture tương thích service owner | Payload tự bịa |
+| Architecture test | Dependency direction/cycle/boundary | Review thủ công duy nhất |
+
+Mỗi integration test đồng thời phải có timeout hữu hạn, cleanup deterministic và không phụ thuộc
+thứ tự chạy test.
+
+## 15. File-impact manifest theo task
+
+| Task | Production files chính | Test files chính | Migration/config |
+|---|---|---|---|
+| T01 | 4 application services mới; xóa dần PharmacyApplicationService | Chia 4 test class cũ theo service | — |
+| T02 | Xóa compatibility constructors/dead code | ArchitectureTest | — |
+| T03 | AuthenticatedActor, dispense command, optional identity port/client | ActorIdentityTest, controller/security tests | timeout/circuit-breaker nếu có client |
+| T04 | PaymentReceipt, PaymentReceiptStatus, typed exception | PaymentReceiptTest | — |
+| T05 | Receipt port/entity/repository/mapper/adapter | Receipt persistence tests | V6 |
+| T06 | PaymentApplicationService + success/failure transaction integration | PaymentWorkflowIntegrationTest | — |
+| T07 | Dispense in-port/service/controller contract | Controller + application tests | pharmacy.http/OpenAPI |
+| T08 | Không thêm logic nếu test lộ lỗi; sửa đúng owner lớp | PaymentRecovery/Lifecycle tests | — |
+| T09 | Outbox claim repository/entity/dispatcher | Outbox lease integration | V7 |
+| T10 | Dispatcher policy + metrics/maintenance components | Retry/replay/retention tests | application.yml/README |
+| T11 | StockAdjustment domain/port/persistence + drug service | Domain/application/integration tests | V8 |
+| T12 | Lock/query changes tối thiểu nếu race test fail | LifecycleConcurrencyTest | DB timeout test config |
+| T13 | Scheduler claim/reconciliation components | Scheduler multi-instance tests | scheduler properties; migration nếu cần |
+| T14 | Không sửa migration cũ; test fixtures | PharmacyMigrationTest | migration test resources |
+| T15 | Rabbit topology/dispatcher/consumer nếu test lộ lỗi | PharmacyRabbitIntegrationTest | Rabbit Testcontainer config |
+| T16 | Chỉ Pharmacy contract adapters/fixtures; service khác read-only | E2E/contract tests | HANDOFF docs |
+| T17 | Javadocs/docs/HTTP examples | Full regression | Release notes/plan |
+
+## 16. Dependency graph và milestone
+
+### 16.1 Dependency graph
+
+```text
+T01 ──> T02
+ │
+ ├──────────────> T11 ──> T12 ──> T13
+ │
+ └─> T04 ──> T05 ──> T06 ──> T07 ──> T08
+                       ▲       ▲
+T03 ───────────────────┘───────┘
+
+T09 ──> T10 ──> T15
+ │              ▲
+ └──────> T13   │
+
+T05 + T09 + T11 ──> T14
+T03..T15 ─────────> T16 ──> T17
+```
+
+### 16.2 Lanes có thể tiếp tục khi dependency ngoài bị chặn
+
+| Lane | Chuỗi task | Có thể chạy độc lập với |
+|---|---|---|
+| A — Architecture | T01 → T02 | Mọi contract ngoài |
+| B — Payment | T04 → T05 → T06 → T07 → T08 | Bị chặn ở contract Billing/Identity |
+| C — Outbox | T09 → T10 → T15 | Identity |
+| D — Inventory/lifecycle | T11 → T12 → T13 | Billing, trừ test manual/payment |
+| E — Release | T14 → T16 → T17 | Chờ các lane trước hoàn thành |
+
+Không triển khai song song hai task cùng sửa một transaction owner hoặc cùng migration number.
+
+### 16.3 Milestone và mức tăng dự kiến
+
+| Milestone | Task | Gate | Điểm hoàn thành tích lũy mục tiêu |
+|---|---|---|---:|
+| M1 — Application boundaries | T01–T02 | Architecture + regression pass | 71% |
+| M2 — Identity/payment proof | T03–T08 | Payment recovery/manual gate pass | 80% |
+| M3 — Delivery/inventory reliability | T09–T13 | Multi-instance/outbox/audit/race pass | 91% |
+| M4 — Production verification | T14–T16 | Migration + Rabbit + E2E pass | 98% |
+| M5 — Release ready | T17 | Audit/human review/PR gate | 100% |
+
+Các phần trăm là trọng số acceptance criteria. Nếu task code xong nhưng integration test bị skip,
+điểm tương ứng chưa được cộng.
+
+## 17. Risk register và phương án kiểm soát
+
+| Risk | Dấu hiệu kích hoạt | Mức | Kiểm soát | Chặn task |
+|---|---|---:|---|---|
+| R-01 Billing business key chưa rõ | Không xác định duplicate payment khác eventId | Cao | Contract fixture + HANDOFF, không tự chọn key | T04–T08 |
+| R-02 Account/staff contract chưa rõ | JWT chỉ có subject account | Cao | T03, lookup port hoặc claim đã duyệt | T03/T07/T11 |
+| R-03 Migration number bị master chiếm | Fetch xuất hiện V6/V7/V8 mới | Cao | Đánh số lại trước commit, không sửa migration đã áp dụng | T05/T09/T11 |
+| R-04 Outbox gửi trùng | Crash sau send trước mark | Bình thường | Giữ eventId, consumer idempotent, metric redelivery | Không chặn |
+| R-05 Deadlock | Lock timeout/SQLState deadlock | Cao | Lock order + concurrency tests + retry infrastructure | T12 |
+| R-06 CI không có Docker/Rabbit | Integration tests skipped | Cao | CI provision container; skipped = chưa đạt gate | T14/T15 |
+| R-07 Manual dispense bypass payment | Endpoint gọi thẳng core | Critical | T07 payment proof bắt buộc | Release |
+| R-08 Legacy lifecycle lệch | ACTIVE nhưng slip/reservation terminal | Cao | Dry-run reconciliation, không tự sửa mù | T13/T14 |
+| R-09 Dirty worktree ngoài Pharmacy | File user/shared đang thay đổi | Trung bình | Không stage/revert; commit path cụ thể | Mọi task |
+| R-10 Log lộ dữ liệu | Payload/token xuất hiện trong WARN/ERROR | Cao | Log eventId/code; test/log review | T10/T17 |
+
+## 18. Cách tính và cập nhật tiến độ
+
+### 18.1 Công thức
+
+```text
+Service completion (%) =
+  tổng trọng số acceptance criterion đã có đủ code + test + audit
+  ------------------------------------------------------------- × 100
+                  tổng trọng số toàn service
+```
+
+Không tính là hoàn thành khi:
+
+- Code tồn tại nhưng test quan trọng bị skip.
+- Unit test pass nhưng rule yêu cầu PostgreSQL/RabbitMQ thật.
+- Contract ngoài service đang được giả định.
+- Migration chỉ chạy fresh DB nhưng chưa test upgrade.
+- Audit còn blocker.
+- Tài liệu/HTTP example không khớp code vừa đổi.
+
+### 18.2 Mẫu cập nhật sau mỗi task
+
+```markdown
+#### Task Txx — <tên>
+- Status: DONE | IN_PROGRESS | BLOCKED
+- Business rules: BR-...
+- Files changed: ...
+- Migration: none | V...
+- Tests: <passed>/<failed>/<skipped>
+- Commands: ...
+- Audit: Blocker 0 | Should-fix n | Nit n
+- External dependency: none | HANDOFF link
+- Commit/SHA: local | <sha>
+- Remote/PR: not pushed | <link>
+- Progress: before x% → after y%
+- Remaining risk: ...
+```
+
+### 18.3 Điều kiện chuyển task
+
+Chỉ chuyển sang task tiếp theo khi:
+
+- [ ] Acceptance criteria task hiện tại được tick bằng bằng chứng.
+- [ ] Test bị ảnh hưởng chạy pass, không skip ngoài lý do đã công bố.
+- [ ] Javadocs và compilation pass.
+- [ ] `git diff --check` pass.
+- [ ] Audit không còn blocker.
+- [ ] Plan đã cập nhật status/test count.
+- [ ] Worktree không mất hoặc ghi đè file ngoài phạm vi.
+
+## 19. Git, audit và rollback checklist
+
+### 19.1 Trước commit
+
+- [ ] Fetch và đối chiếu `origin/master` nhưng không reset/checkout đè local.
+- [ ] Xác nhận branch hiện tại và upstream.
+- [ ] Kiểm tra migration number không xung đột.
+- [ ] Stage theo path của task; không dùng stage-all khi worktree có file ngoài phạm vi.
+- [ ] Commit message dạng `type(pharmacy): mô tả`.
+
+### 19.2 Audit bắt buộc
+
+| Nhóm | Câu hỏi |
+|---|---|
+| Architecture | Dependency có hướng vào trong? Controller/consumer mỏng? |
+| Domain | Rule nằm đúng aggregate? Typed exception? |
+| Transaction | Atomicity, rollback, proxy boundary và lock order đúng? |
+| Persistence | Mapping/constraint/index/migration upgrade đúng? |
+| Messaging | Event envelope, correlation, idempotency, outbox semantics đúng? |
+| Security | Role, actor, ownership, secret/config đúng? |
+| API | Status/envelope/validation/`.http` tương thích? |
+| Tests | Rule/failure/race/recovery được chứng minh ở đúng tầng? |
+| Javadocs | Public/non-obvious behavior được giải thích? |
+| Scope | Không sửa service ngoài quyền sở hữu? |
+
+### 19.3 Rollback theo loại thay đổi
+
+- Refactor T01/T02: revert commit tập trung; không có schema/data impact.
+- Additive migration: không xóa column/table đã chạy; phát hành forward-fix migration.
+- Feature mới chưa bật: dùng property/feature switch chỉ khi đã được thiết kế trong task, không để
+  switch trở thành đường bypass business rule.
+- Outbox dispatcher lỗi: tắt dispatcher có kiểm soát, giữ pending rows, không xóa dữ liệu.
+- Payment workflow lỗi: dừng consumer, giữ receipt/outbox để replay; không sửa stock thủ công không audit.
+- Tuyệt đối không `git reset --hard`, force-push nhánh dùng chung hoặc sửa checksum migration đã deploy.
+
+## 20. Task bắt đầu tiếp theo
+
+Task kế tiếp mặc định là **T01 — tách `PharmacyApplicationService` theo từng in-port**.
+
+Đây là refactor hành vi-bất-biến, tạo nền để các feature payment receipt, payment gate, stock audit và outbox hardening được triển khai mà không tiếp tục tăng coupling. Sau T01 đã chạy lại toàn bộ 138 test hiện tại trước khi chuyển T02.

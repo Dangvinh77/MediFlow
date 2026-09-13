@@ -32,7 +32,7 @@ public record JwtProperties(String secret) {
      * @throws IllegalArgumentException nếu secret bị thiếu hoặc ngắn hơn yêu cầu của HS256
      */
     public JwtProperties {
-        if (secret == null || secret.isBlank()) {
+        if (secret == null || secret.isBlank() || secret.startsWith("${")) {
             throw new IllegalArgumentException("mediflow.jwt.secret không được để trống");
         }
 

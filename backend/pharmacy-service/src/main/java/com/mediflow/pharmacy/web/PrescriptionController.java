@@ -4,12 +4,14 @@ import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.request.CancelPrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class PrescriptionController {
     private final CreatePrescriptionUseCase createPrescriptionUseCase;
     private final GetPrescriptionUseCase getPrescriptionUseCase;
     private final CancelPrescriptionUseCase cancelPrescriptionUseCase;
+    private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
 
     /**
      * Tạo một đơn thuốc mới.
@@ -60,13 +63,12 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
                 value = JwtClaims.HEADER_CORRELATION_ID,
                 required = false) String correlationId) {
 
-    UUID actorId = parseActorId(authentication);
+    ActorIdentity actor = parseActor(authentication);
 
     CreatePrescriptionCommand command =
             new CreatePrescriptionCommand(
                     request,
-                    actorId,
-                    isAdministrator(authentication),
+                    actor,
                     correlationId);
 
     PrescriptionDTO created =
@@ -84,8 +86,8 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
     /**
      * Hủy một đơn đang hoạt động và trả lại toàn bộ lượng tồn đang được giữ.
      *
-     * <p>Danh tính người thực hiện được lấy từ JWT subject. Application layer tiếp tục kiểm tra
-     * quyền sở hữu: bác sĩ chỉ được hủy đơn do chính mình kê, còn ADMIN được phép override.</p>
+     * <p>JWT subject là accountId; application layer dùng staffId đã ký để kiểm tra quyền sở hữu:
+     * bác sĩ chỉ được hủy đơn do chính mình kê, còn ADMIN được phép override.</p>
      *
      * @param prescriptionId mã đơn thuốc cần hủy
      * @param request lý do hủy đã qua Bean Validation
@@ -103,14 +105,11 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String correlationId) {
 
-        UUID actorId = parseActorId(authentication);
-      boolean administrator =
-        isAdministrator(authentication);
+        ActorIdentity actor = parseActor(authentication);
 
         CancelPrescriptionCommand command = new CancelPrescriptionCommand(
                         prescriptionId,
-                        actorId,
-                        administrator,
+                        actor,
                         request.reason(),
                         correlationId);
         CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(command);
@@ -132,30 +131,51 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
     }
 
     /**
+     * Xuất thuốc thủ công sau khi dược sĩ đã xác nhận thanh toán tại quầy.
+     *
+     * @param prescriptionId mã đơn cần xuất
+     * @param authentication danh tính dược sĩ hoặc quản trị viên
+     * @param correlationId mã tương quan của request
+     * @return HTTP 200 với phiếu xuất đã chuyển DISPENSED
+     */
+    @PutMapping("/{prescriptionId}/dispense")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
+    public ResponseEntity<ApiResponse<com.mediflow.pharmacy.application.dto.response.DispenseDTO>> dispense(
+            @PathVariable UUID prescriptionId,
+            Authentication authentication,
+            @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId) {
+        ActorIdentity actor = parseActor(authentication);
+        var result = dispensePrescriptionUseCase.dispense(
+                prescriptionId, actor.auditActorId(), correlationId);
+        return ResponseEntity.ok(ApiResponse.ok(result, correlationId));
+    }
+
+    /**
      * Chuyển JWT subject theo hợp đồng chung thành mã người dùng UUID.
      *
      * @param authentication authentication hiện tại
      * @return mã người dùng đã xác thực
      * @throws AccessDeniedException nếu principal không tuân thủ hợp đồng UUID
      */
-    private UUID parseActorId(Authentication authentication) {
+    private ActorIdentity parseActor(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new AccessDeniedException(
                     "Không xác định được người dùng từ JWT subject");
         }
+        if (authentication.getPrincipal() instanceof ActorIdentity actor) {
+            return actor;
+        }
         try {
-            return UUID.fromString(authentication.getName());
+            UUID accountId = UUID.fromString(authentication.getName());
+            String role = authentication.getAuthorities().stream()
+                    .findFirst()
+                    .map(authority -> authority.getAuthority().replaceFirst("^ROLE_", ""))
+                    .orElseThrow(() -> new AccessDeniedException("JWT không có role hợp lệ"));
+            return new ActorIdentity(accountId, null, role);
         } catch (IllegalArgumentException exception) {
             throw new AccessDeniedException(
                     "JWT subject không phải mã người dùng hợp lệ",
                     exception);
         }
     }
-    private boolean isAdministrator(Authentication authentication) {
-    return authentication.getAuthorities()
-            .stream()
-            .anyMatch(authority ->
-                    "ROLE_ADMIN".equals(
-                            authority.getAuthority()));
-}
 }
