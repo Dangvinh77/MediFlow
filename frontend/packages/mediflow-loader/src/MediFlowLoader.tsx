@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 export interface MediFlowLoaderProps {
   /** Square loader size in CSS pixels. */
   size?: number;
@@ -16,6 +18,7 @@ export interface MediFlowLoaderProps {
 }
 
 const TRIANGLE_PATH = "M 15 18 L 85 18 L 50 78.62 Z";
+const INNER_TRIANGLE_PATH = "M 19 22 L 81 22 L 50 75.69 Z";
 const BASE_DURATION_SECONDS = 1.45;
 
 /**
@@ -39,6 +42,7 @@ export function MediFlowLoader({
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;
   const duration = `${BASE_DURATION_SECONDS / safeSpeed}s`;
   const statusLabel = label ?? "Loading";
+  const monogramClipId = `${useId()}-monogram-clip`;
 
   return (
     <div
@@ -55,6 +59,12 @@ export function MediFlowLoader({
         viewBox="0 0 100 100"
         width={safeSize}
       >
+        <defs>
+          <clipPath id={monogramClipId}>
+            <path d={INNER_TRIANGLE_PATH} />
+          </clipPath>
+        </defs>
+
         {glow ? (
           <path
             d={TRIANGLE_PATH}
@@ -151,33 +161,35 @@ export function MediFlowLoader({
           The near-instant scale jump happens while opacity is zero, making the
           loop read as shrink -> disappear -> restart rather than reverse.
         */}
-        <g transform="translate(15 18)">
-          <g>
-            <animateTransform
-              attributeName="transform"
-              dur={duration}
-              keyTimes="0;0.68;0.76;0.761;1"
-              repeatCount="indefinite"
-              type="scale"
-              values="1;0.06;0.06;1;1"
-            />
-            <animate
-              attributeName="opacity"
-              dur={duration}
-              keyTimes="0;0.55;0.72;0.761;1"
-              repeatCount="indefinite"
-              values="1;1;0;0;1"
-            />
+        <g clipPath={`url(#${monogramClipId})`}>
+          <g transform="translate(15 18)">
+            <g>
+              <animateTransform
+                attributeName="transform"
+                dur={duration}
+                keyTimes="0;0.68;0.76;0.761;1"
+                repeatCount="indefinite"
+                type="scale"
+                values="1;0.06;0.06;1;1"
+              />
+              <animate
+                attributeName="opacity"
+                dur={duration}
+                keyTimes="0;0.55;0.72;0.761;1"
+                repeatCount="indefinite"
+                values="1;1;0;0;1"
+              />
 
-            {/* Original angular MF monogram; coordinates are relative to (15, 18). */}
-            <path
-              d="M 9 12 H 16 L 23 24 L 30 12 H 37 V 40 H 30 V 25 L 23 37 L 16 25 V 40 H 9 Z"
-              fill={color}
-            />
-            <path
-              d="M 41 12 H 61 L 58 19 H 48 V 24 H 57 L 54 31 H 48 V 40 H 41 Z"
-              fill={color}
-            />
+              {/* Original angular MF monogram; coordinates are relative to (15, 18). */}
+              <path
+                d="M 9 12 H 16 L 23 24 L 30 12 H 37 V 40 H 30 V 25 L 23 37 L 16 25 V 40 H 9 Z"
+                fill={color}
+              />
+              <path
+                d="M 41 12 H 61 L 58 19 H 48 V 24 H 57 L 54 31 H 48 V 40 H 41 Z"
+                fill={color}
+              />
+            </g>
           </g>
         </g>
       </svg>
