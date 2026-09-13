@@ -180,13 +180,17 @@ export function MediFlowLoader({
                 values="1;1;0;0;1"
               />
 
-              {/* Original angular MF monogram; coordinates are relative to (15, 18). */}
+              {/* Reference MF monogram, fitted to the inner triangle. */}
               <path
-                d="M 9 12 H 16 L 23 24 L 30 12 H 37 V 40 H 30 V 25 L 23 37 L 16 25 V 40 H 9 Z"
+                d="M 4 4 H 16.12 L 10.17 15.76 Z"
                 fill={color}
               />
               <path
-                d="M 41 12 H 61 L 58 19 H 48 V 24 H 57 L 54 31 H 48 V 40 H 41 Z"
+                d="M 17.85 4.08 L 28.66 17.86 L 41.27 4 H 66 L 61.15 12.91 H 44.04 L 33.23 36.1 V 21.06 L 27.07 27.78 L 19.93 18.28 V 33.66 L 11.27 17.7 Z"
+                fill={color}
+              />
+              <path
+                d="M 44.32 17.61 H 58.52 L 52.98 27.53 H 46.33 V 37.94 L 35.03 57.69 L 29.98 47.52 Z"
                 fill={color}
               />
             </g>
