@@ -46,7 +46,9 @@ file, and that request matches the real controller.**
 
 - Requests: `CreateXxxRequest`, `UpdateXxxRequest` — Java `record`, validated with Bean Validation.
 - Responses: `XxxDTO` — Java `record`. **Never return JPA entities.**
-- Field names: **Vietnamese camelCase** matching the design docs (`hoTen`, `ngaySinh`, `maBenhNhan`).
+- Field names must match each service's Java DTO and wire contract exactly. Patient and Organization
+  currently use Vietnamese camelCase examples such as `hoTen`, `ngaySinh`, and `maBenhNhan`;
+  Clinical and Lab use English camelCase such as `appointmentId`, `recordId`, and `testId`.
 
 Example (patient):
 ```java

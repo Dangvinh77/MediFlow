@@ -27,6 +27,24 @@ export default function Home() {
         >
           Danh sách bệnh nhân
         </Link>
+        <Link
+          href="/appointments"
+          className="rounded-lg border border-zinc-300 px-5 py-2.5 font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          Lịch hẹn
+        </Link>
+        <Link
+          href="/records"
+          className="rounded-lg border border-zinc-300 px-5 py-2.5 font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          Hồ sơ khám
+        </Link>
+        <Link
+          href="/lab"
+          className="rounded-lg border border-zinc-300 px-5 py-2.5 font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          Xét nghiệm
+        </Link>
       </div>
 
       <p className="text-sm text-zinc-500">

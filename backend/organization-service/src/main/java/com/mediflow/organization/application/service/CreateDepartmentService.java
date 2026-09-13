@@ -18,76 +18,73 @@ import com.mediflow.organization.domain.model.DepartmentType;
  * - Publish event.
  */
 public class CreateDepartmentService
-        implements CreateDepartmentUseCase {
+                implements CreateDepartmentUseCase {
 
-    private final DepartmentRepository departmentRepository;
-    private final EventPublisher eventPublisher;
+        private final DepartmentRepository departmentRepository;
+        private final EventPublisher eventPublisher;
 
-    public CreateDepartmentService(
-            DepartmentRepository departmentRepository,
-            EventPublisher eventPublisher
-    ) {
-        this.departmentRepository = departmentRepository;
-        this.eventPublisher = eventPublisher;
-    }
-
-    @Override
-    public UUID execute(
-            String departmentName,
-            String abbreviation,
-            DepartmentType departmentType,
-            String location
-    ) {
-
-        /*
-         * Rule uniqueness cần database.
-         *
-         * Domain không thể tự biết abbreviation
-         * đã tồn tại trong hệ thống hay chưa.
-         */
-        if (departmentRepository.existsByAbbreviation(abbreviation)) {
-            throw new IllegalArgumentException(
-                    "Department abbreviation already exists: "
-                            + abbreviation
-            );
+        public CreateDepartmentService(
+                        DepartmentRepository departmentRepository,
+                        EventPublisher eventPublisher) {
+                this.departmentRepository = departmentRepository;
+                this.eventPublisher = eventPublisher;
         }
 
-        /*
-         * Gọi Domain Factory.
-         *
-         * Các invariant nội tại của Department
-         * được kiểm tra trong Domain.
+        @Override
+        public UUID execute(
+                        String departmentName,
+                        String abbreviation,
+                        DepartmentType departmentType,
+                        String location) {
+
+                /*
+                 * Rule uniqueness cần database.
+                 *
+                 * Domain không thể tự biết abbreviation
+                 * đã tồn tại trong hệ thống hay chưa.
+                 */
+                if (departmentRepository.existsByAbbreviation(abbreviation)) {
+                        throw new IllegalArgumentException(
+                                        "Department abbreviation already exists: "
+                                                        + abbreviation);
+                }
+
+                /*
+                 * Gọi Domain Factory.
+                 *
+                 * Các invariant nội tại của Department
+                 * được kiểm tra trong Domain.
+                 */
+                Department department = Department.create(
+                                UUID.randomUUID(),
+                                departmentName,
+                                abbreviation,
+                                departmentType,
+                                location);
+
+                /*
+                 * Persist.
+                 */
+                departmentRepository.save(department);
+
+                /*
+                 * Publish department.created.
+                 */
+                eventPublisher.publish(
+                                new DepartmentCreatedEvent(
+                                                department.getDepartmentId(),
+                                                department.getDepartmentName(),
+                                                department.getDepartmentType().name()));
+
+                return department.getDepartmentId();
+        }
+
+        /**
+         * Event được publish sau khi Department được tạo.
          */
-        Department department = Department.create(
-                UUID.randomUUID(),
-                departmentName,
-                abbreviation,
-                departmentType,
-                location
-        );
-
-        /*
-         * Persist.
-         */
-        departmentRepository.save(department);
-
-        /*
-         * Publish department.created.
-         */
-        eventPublisher.publish(
-                new DepartmentCreatedEvent(
-                        department.getDepartmentId()
-                )
-        );
-
-        return department.getDepartmentId();
-    }
-
-    /**
-     * Event được publish sau khi Department được tạo.
-     */
-    public record DepartmentCreatedEvent(
-            UUID departmentId
-    ) {
-    }
+        public record DepartmentCreatedEvent(
+                        UUID departmentId,
+                        String departmentName,
+                        String departmentType) {
+        }
 }

@@ -25,7 +25,9 @@ A feature never imports from another feature. Cross-feature code moves up to `co
 
 - Gateway only via `/api/*`. Never call a service port (`:8081`…) directly.
 - Every HTTP call goes through `src/lib/api.ts`. No raw `fetch` in components.
-- Per-feature DTOs in `features/<ctx>/types.ts`, **Vietnamese camelCase** (`hoTen`, `maBenhNhan`), mirroring the backend exactly.
+- Per-feature DTOs in `features/<ctx>/types.ts` mirror the backend wire contract exactly. Patient
+  uses Vietnamese camelCase (`hoTen`, `maBenhNhan`); Clinical and Lab use English camelCase
+  (`appointmentId`, `recordId`, `testId`).
 - **Tailwind utilities only** — no CSS-in-JS, no component library, no ad-hoc per-component CSS files.
 - **No data-fetching library** (no TanStack Query, SWR). Fetch directly through `api.ts`.
 - Role-based UI hiding is UX, not security — the backend enforces authorization.
@@ -34,8 +36,8 @@ A feature never imports from another feature. Cross-feature code moves up to `co
 
 `../docs/ai/04-microservice-blueprint.md` describes clean architecture for the **Java services**.
 In this folder: no `domain/application/infrastructure`, no ports, no adapters, no JPA or
-`BigDecimal` rules. The only thing that carries over is the wire contract — Vietnamese camelCase
-fields and the shared `ApiResponse` envelope.
+`BigDecimal` rules. The only thing that carries over is the exact per-service wire contract and
+the shared `ApiResponse` envelope.
 
 ## Commands
 

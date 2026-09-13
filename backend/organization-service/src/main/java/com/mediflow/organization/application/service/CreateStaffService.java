@@ -6,15 +6,13 @@ import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.domain.exception.DepartmentInactiveException;
+import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 
-/**
- * Application Service thực thi CreateStaffUseCase.
- */
-public class CreateStaffService
-        implements CreateStaffUseCase {
+public class CreateStaffService implements CreateStaffUseCase {
 
     private final StaffRepository staffRepository;
     private final DepartmentRepository departmentRepository;
@@ -23,8 +21,8 @@ public class CreateStaffService
     public CreateStaffService(
             StaffRepository staffRepository,
             DepartmentRepository departmentRepository,
-            EventPublisher eventPublisher
-    ) {
+            EventPublisher eventPublisher) {
+
         this.staffRepository = staffRepository;
         this.departmentRepository = departmentRepository;
         this.eventPublisher = eventPublisher;
@@ -38,42 +36,18 @@ public class CreateStaffService
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email
-    ) {
+            String email) {
 
-        /*
-         * Staff phải thuộc một Department.
-         *
-         * Đây là dữ liệu nằm ngoài Staff aggregate,
-         * nên Application phải query Repository.
-         */
         Department department = departmentRepository
                 .findById(departmentId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Department not found: "
-                                        + departmentId
-                        )
-                );
+                        new DepartmentNotFoundException(departmentId));
 
-        /*
-         * Không cho tạo Staff vào Department inactive.
-         */
         if (!department.isActive()) {
-            throw new IllegalArgumentException(
-                    "Department is inactive: "
-                            + departmentId
-            );
+            throw new DepartmentInactiveException(departmentId);
         }
 
-        /*
-         * Domain chịu trách nhiệm invariant của Staff.
-         *
-         * Ví dụ:
-         * DOCTOR → licenseNumber bắt buộc.
-         */
         Staff staff = Staff.create(
-                UUID.randomUUID(),
                 fullName,
                 departmentId,
                 jobTitle,
@@ -83,30 +57,24 @@ public class CreateStaffService
                 email
         );
 
-        /*
-         * Persist Staff.
-         */
         staffRepository.save(staff);
 
-        /*
-         * Publish staff.created.
-         */
         eventPublisher.publish(
                 new StaffCreatedEvent(
                         staff.getStaffId(),
-                        staff.getDepartmentId()
+                        staff.getFullName(),
+                        staff.getDepartmentId(),
+                        staff.getJobTitle().name()
                 )
         );
 
         return staff.getStaffId();
     }
 
-    /**
-     * Event staff.created.
-     */
     public record StaffCreatedEvent(
             UUID staffId,
-            UUID departmentId
-    ) {
-    }
+            String fullName,
+            UUID departmentId,
+            String jobTitle
+    ) {}
 }

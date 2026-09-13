@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mediflow/loader": ["./packages/mediflow-loader/src/index.ts"]
     }
   },
   "include": [

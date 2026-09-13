@@ -150,7 +150,9 @@ Never call the gateway path from a component. Components call `patientApi.*`.
 ## Types mirror the backend, exactly
 
 - **Shared** (`lib/types.ts`): `ApiResponse<T>`, `ApiError`, `PageResult<T>` — the envelope from `05`. Defined once.
-- **Per feature** (`features/<ctx>/types.ts`): the DTOs of that context, in **Vietnamese camelCase**, field-for-field identical to the Java records — `hoTen`, `maBenhNhan`, `ngaySinh`.
+- **Per feature** (`features/<ctx>/types.ts`): the DTOs of that context, field-for-field identical
+  to its Java records. Patient currently uses Vietnamese camelCase (`hoTen`, `maBenhNhan`,
+  `ngaySinh`); Clinical and Lab use English camelCase (`appointmentId`, `recordId`, `testId`).
 
 When a backend DTO changes, the matching `features/<ctx>/types.ts` changes **in the same PR**. A
 frontend type that has drifted from its DTO is a bug that TypeScript cannot catch for you.
@@ -189,7 +191,7 @@ beats marking the whole page client.
 ## Adding a feature — the checklist
 
 1. `src/features/<context>/` with `api.ts`, `types.ts`, `components/`.
-2. Types copied field-for-field from the service's DTO records (VN camelCase).
+2. Types copied field-for-field from the service's DTO records, preserving that service's wire names.
 3. `api.ts` built on `lib/api.ts`, paths from `05-api-conventions.md`.
 4. Route under `app/(dashboard)/<resource>/page.tsx`, thin — compose feature components.
 5. Handle all three states explicitly: **loading**, **error** (`ApiRequestError.message`), **empty**.
