@@ -189,12 +189,12 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | Danh mục thuốc và an toàn tồn kho | 10% | 7% | Audit persistence cho stock adjustment |
 | Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
 | Dispense và failure transaction | 15% | 13% | Payment gate cho đường thủ công và payment outcome atomic |
-| Payment receipt/idempotency/recovery | 15% | 7% | Receipt model, business key, resume sau crash |
+| Payment receipt/idempotency/recovery | 15% | 9% | Business key Billing, resume sau crash |
 | Event/outbox/RabbitMQ | 15% | 8% | Claim/lease đa instance, backoff, metrics, real broker test |
 | Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
 | API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
 | Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
-| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **71%** | **29%** |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **73%** | **27%** |
 
 ## 4. Thứ tự task triển khai phần code còn lại
 
@@ -203,8 +203,8 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | 01 | Tách application service theo từng in-port | Architecture | — | DONE |
 | 02 | Gia cố architecture tests và xóa compatibility code | Architecture | T01 | DONE |
 | 03 | Chốt identity account/staff/system actor | Security/Identity | Contract Gateway/Organization | BLOCKED — chờ producer claim |
-| 04 | Tạo domain model và state machine payment receipt | Payment | Contract Billing | TODO |
-| 05 | Thêm payment receipt port, adapter và migration V6 | Payment/Persistence | T04 | TODO |
+| 04 | Tạo domain model và state machine payment receipt | Payment | Contract Billing hiện tại | DONE (business-key còn chờ Billing) |
+| 05 | Thêm payment receipt port, adapter và migration V6 | Payment/Persistence | T04 | PARTIAL (business-key còn chờ Billing) |
 | 06 | Viết payment workflow có thể resume sau crash | Payment/Dispense | T01, T05 | TODO |
 | 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | TODO |
 | 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | TODO |
@@ -291,20 +291,20 @@ Receipt giữ dữ liệu có nguồn đáng tin: eventId, invoiceId, prescripti
 
 Test domain:
 
-- [ ] Receipt mới ở `RECEIVED`.
-- [ ] Mark dispensed/compensated chỉ một lần.
-- [ ] Terminal state không bị ghi đè.
-- [ ] Cùng invoice/prescription nhưng payload xung đột bị phát hiện.
+- [x] Receipt mới ở `RECEIVED`.
+- [x] Mark dispensed/compensated chỉ một lần (lặp lại cùng outcome là no-op).
+- [x] Terminal state không bị ghi đè.
+- [ ] Cùng invoice/prescription nhưng payload xung đột bị phát hiện — chờ Billing chốt business key/attempt policy.
 
 ### T05 — Payment receipt persistence và migration V6
 
-- [ ] Khai báo `PaymentReceiptRepositoryPort`.
-- [ ] Thêm JPA entity, mapper, repository và persistence adapter.
-- [ ] Migration V6 thêm bảng receipt/inbox; không sửa V1–V5.
-- [ ] Unique `event_id` và business key đúng contract Billing.
-- [ ] Query claim dùng thao tác atomic; không dùng `exists → save`.
-- [ ] Persistence tests chạy PostgreSQL thật.
-- [ ] Test fresh insert, duplicate eventId, duplicate business key và payload conflict.
+- [x] Khai báo `PaymentReceiptRepositoryPort` với kết quả `CLAIMED`/`DUPLICATE_SAME`/`DUPLICATE_CONFLICT`.
+- [x] Thêm JPA entity, mapper thủ công, repository và persistence adapter.
+- [x] Migration V6 thêm bảng receipt; không sửa V1–V5.
+- [ ] Unique `event_id` đã có; unique business key đúng contract Billing — chờ Billing chốt key.
+- [x] Query claim dùng thao tác atomic `INSERT ... ON CONFLICT`; không dùng `exists → save`.
+- [x] Có PostgreSQL integration tests (tự skip khi Docker không chạy).
+- [x] Test fresh insert, duplicate eventId và payload conflict; duplicate business key để sau khi contract chốt.
 
 ### T06 — Payment workflow có thể resume
 
