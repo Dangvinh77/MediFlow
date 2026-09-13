@@ -6,13 +6,13 @@ import com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCas
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.domain.exception.DepartmentInactiveException;
+import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
+import com.mediflow.organization.domain.exception.StaffAlreadyInDepartmentException;
+import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.Staff;
 
-/**
- * Application Service thực thi
- * ChangeStaffDepartmentUseCase.
- */
 public class ChangeStaffDepartmentService
         implements ChangeStaffDepartmentUseCase {
 
@@ -23,8 +23,8 @@ public class ChangeStaffDepartmentService
     public ChangeStaffDepartmentService(
             StaffRepository staffRepository,
             DepartmentRepository departmentRepository,
-            EventPublisher eventPublisher
-    ) {
+            EventPublisher eventPublisher) {
+
         this.staffRepository = staffRepository;
         this.departmentRepository = departmentRepository;
         this.eventPublisher = eventPublisher;
@@ -33,78 +33,32 @@ public class ChangeStaffDepartmentService
     @Override
     public void execute(
             UUID staffId,
-            UUID newDepartmentId
-    ) {
+            UUID newDepartmentId) {
 
-        /*
-         * 1. Tìm Staff hiện tại.
-         */
         Staff staff = staffRepository
                 .findById(staffId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Staff not found: " + staffId
-                        )
-                );
+                        new StaffNotFoundException(staffId));
 
-        /*
-         * 2. Tìm Department mới.
-         */
         Department newDepartment = departmentRepository
                 .findById(newDepartmentId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Department not found: "
-                                        + newDepartmentId
-                        )
-                );
+                        new DepartmentNotFoundException(newDepartmentId));
 
-        /*
-         * 3. Department mới phải ACTIVE.
-         */
         if (!newDepartment.isActive()) {
-            throw new IllegalArgumentException(
-                    "Cannot transfer staff to inactive department: "
-                            + newDepartmentId
-            );
+            throw new DepartmentInactiveException(newDepartmentId);
         }
 
-        /*
-         * 4. Không transfer nếu đã ở Department đó.
-         */
         if (staff.getDepartmentId().equals(newDepartmentId)) {
-            throw new IllegalArgumentException(
-                    "Staff already belongs to department: "
-                            + newDepartmentId
-            );
+            throw new StaffAlreadyInDepartmentException(newDepartmentId);
         }
 
-        /*
-         * Lưu Department cũ để đưa vào event.
-         */
         UUID oldDepartmentId = staff.getDepartmentId();
 
-        /*
-         * 5. Domain thay đổi state.
-         *
-         * Không dùng:
-         *
-         * staff.setDepartmentId(...)
-         *
-         * mà dùng business behavior của Domain.
-         */
         staff.changeDepartment(newDepartmentId);
 
-        /*
-         * 6. Persist Staff.
-         */
         staffRepository.save(staff);
 
-        /*
-         * 7. Publish event.
-         *
-         * staff.department.changed
-         */
         eventPublisher.publish(
                 new StaffDepartmentChangedEvent(
                         staff.getStaffId(),
@@ -114,13 +68,9 @@ public class ChangeStaffDepartmentService
         );
     }
 
-    /**
-     * Event khi Staff chuyển Department.
-     */
     public record StaffDepartmentChangedEvent(
             UUID staffId,
             UUID oldDepartmentId,
             UUID newDepartmentId
-    ) {
-    }
+    ) {}
 }
