@@ -24,8 +24,8 @@ const BASE_DURATION_SECONDS = 1.45;
 /**
  * MediFlow's dependency-free animated loader for React/Next.js.
  *
- * The outer tracer follows an equilateral triangle while the inner MF mark
- * collapses toward the upper-left vertex, then resets for the next loop.
+ * The outer tracer loops around an equilateral triangle while the clipped MF
+ * mark remains continuously visible inside the frame.
  * Animation is declarative SVG (SMIL), so there is no timer, canvas, or
  * third-party animation runtime in the web bundle.
  */
@@ -155,31 +155,9 @@ export function MediFlowLoader({
           />
         </circle>
 
-        {/*
-          The local origin is the upper-left triangle vertex (15, 18), so a
-          scale transform naturally collapses the whole inner mark into it.
-          The near-instant scale jump happens while opacity is zero, making the
-          loop read as shrink -> disappear -> restart rather than reverse.
-        */}
         <g clipPath={`url(#${monogramClipId})`}>
           <g transform="translate(15 18)">
             <g>
-              <animateTransform
-                attributeName="transform"
-                dur={duration}
-                keyTimes="0;0.68;0.76;0.761;1"
-                repeatCount="indefinite"
-                type="scale"
-                values="1;0.06;0.06;1;1"
-              />
-              <animate
-                attributeName="opacity"
-                dur={duration}
-                keyTimes="0;0.55;0.72;0.761;1"
-                repeatCount="indefinite"
-                values="1;1;0;0;1"
-              />
-
               {/* Reference MF monogram, fitted to the inner triangle. */}
               <path
                 d="M 4 4 H 16.12 L 10.17 15.76 Z"

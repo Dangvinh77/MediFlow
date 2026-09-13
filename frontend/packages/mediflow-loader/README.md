@@ -1,6 +1,6 @@
 # @mediflow/loader
 
-Dependency-free React/Next.js loader used by MediFlow. The animation keeps the FC Online-inspired motion language without copying the FC logo: a comet-like tracer runs around a downward equilateral triangle while an original `MF` monogram collapses toward the upper-left vertex and restarts.
+Dependency-free React/Next.js loader used by MediFlow. A comet-like tracer loops around a downward equilateral triangle while the clipped `MF` monogram remains continuously visible inside the frame.
 
 ## Use inside this repository
 
