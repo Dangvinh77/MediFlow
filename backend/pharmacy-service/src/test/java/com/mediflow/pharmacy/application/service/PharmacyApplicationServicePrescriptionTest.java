@@ -20,6 +20,7 @@ import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -193,6 +194,45 @@ class PharmacyApplicationServicePrescriptionTest {
         verify(reservationRepo, never()).save(any());
         verify(dispenseSlipRepo, never()).save(any());
         verify(eventPublisher, never()).publishPrescriptionCreated(any());
+    }
+
+    /** GET chi tiết phải đọc giá snapshot và trạng thái phiếu mà không khóa ghi. */
+    @Test
+    void getPrescriptionById_returnsLifecycleAndLineNames() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID drugId = UUID.randomUUID();
+        Prescription prescription = Prescription.restore(
+                prescriptionId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now(),
+                new BigDecimal("2000.00"),
+                List.of(com.mediflow.pharmacy.domain.model.PrescriptionLine.restore(
+                        UUID.randomUUID(), drugId, 2, new BigDecimal("1000.00"),
+                        "Ngày 2 lần", new BigDecimal("2000.00"))),
+                com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus.ACTIVE,
+                null, null, null, Instant.now(), Instant.now());
+        DispenseSlip slip = DispenseSlip.restore(
+                UUID.randomUUID(), prescriptionId, DispenseStatus.PENDING,
+                null, null, null, Instant.now(), Instant.now());
+        Drug drug = drug(drugId, "Paracetamol", 10, "1000.00");
+        PrescriptionDTO expected = new PrescriptionDTO(
+                prescriptionId, prescription.getRecordId(), prescription.getPatientId(),
+                prescription.getDoctorId(), prescription.getDepartmentId(), prescription.getPrescribedDate(),
+                prescription.getTotalAmount(), List.of(), prescription.getStatus(), slip.getStatus(),
+                null, null, null, prescription.getCreatedAt(), prescription.getUpdatedAt());
+
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(slip));
+        when(drugRepo.findById(drugId)).thenReturn(Optional.of(drug));
+        when(prescriptionDtoMapper.toLineDto(any(), any())).thenReturn(null);
+        when(prescriptionDtoMapper.toDto(any(), any(), any())).thenReturn(expected);
+
+        assertThat(service.getPrescriptionById(prescriptionId)).isSameAs(expected);
+        verify(prescriptionRepo, never()).findByIdForUpdate(prescriptionId);
+        verify(drugRepo).findById(drugId);
     }
 
     private void stubSavedPrescription(UUID prescriptionId) {

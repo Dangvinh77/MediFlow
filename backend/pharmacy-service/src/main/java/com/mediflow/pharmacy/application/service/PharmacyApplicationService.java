@@ -21,6 +21,7 @@ import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
 import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.ManageDrugUseCase;
 import com.mediflow.pharmacy.application.port.in.ReactToPaymentUseCase;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
@@ -69,7 +70,7 @@ import java.util.UUID;
 @Service
 public class PharmacyApplicationService implements
         ManageDrugUseCase, CreatePrescriptionUseCase, DispensePrescriptionUseCase,
-        ReactToPaymentUseCase {
+        ReactToPaymentUseCase, GetPrescriptionUseCase {
 
     /** id "hệ thống" dùng khi xuất thuốc do consumer payment.completed kích hoạt (không phải dược sĩ). */
     private static final UUID SYSTEM_USER = UUID.fromString("00000000-0000-0000-0000-000000000000");
@@ -215,7 +216,6 @@ public PrescriptionDTO create(CreatePrescriptionCommand command) {
 
         reservationRepo.save(reservation);
     }
-    
 
     // 7. Mỗi đơn luôn có đúng một phiếu xuất PENDING.
     DispenseSlip pendingSlip = dispenseSlipRepo.save(
@@ -239,6 +239,33 @@ public PrescriptionDTO create(CreatePrescriptionCommand command) {
             pendingSlip.getStatus(),
             drugNames);
 }
+
+    /**
+     * Đọc chi tiết đơn thuốc và trạng thái phiếu xuất hiện tại.
+     *
+     * @param prescriptionId mã đơn thuốc
+     * @return DTO read-only có các dòng, giá snapshot và lifecycle
+     * @throws PrescriptionNotFoundException nếu không tìm thấy đơn
+     * @throws DispenseNotFoundException nếu dữ liệu đơn không có phiếu xuất bắt buộc
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PrescriptionDTO getPrescriptionById(UUID prescriptionId) {
+        Prescription prescription = prescriptionRepo.findById(prescriptionId)
+                .orElseThrow(() -> new PrescriptionNotFoundException(
+                        "Không tìm thấy đơn thuốc id=" + prescriptionId));
+        DispenseSlip slip = dispenseSlipRepo.findByPrescription(prescriptionId)
+                .orElseThrow(() -> new DispenseNotFoundException(
+                        "Không tìm thấy phiếu xuất của đơn id=" + prescriptionId));
+
+        Map<UUID, String> drugNames = new LinkedHashMap<>();
+        for (PrescriptionLine line : prescription.getLines()) {
+            drugNames.put(line.getDrugId(), drugRepo.findById(line.getDrugId())
+                    .map(Drug::getDrugName)
+                    .orElse(null));
+        }
+        return toPrescriptionDto(prescription, slip.getStatus(), drugNames);
+    }
 
 private void validatePrescriptionCreator(
         CreatePrescriptionCommand command) {

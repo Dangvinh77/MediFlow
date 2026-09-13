@@ -10,6 +10,7 @@ import com.mediflow.pharmacy.application.dto.response.CancelPrescriptionResult;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,6 +42,7 @@ import java.util.UUID;
 public class PrescriptionController {
 
     private final CreatePrescriptionUseCase createPrescriptionUseCase;
+    private final GetPrescriptionUseCase getPrescriptionUseCase;
     private final CancelPrescriptionUseCase cancelPrescriptionUseCase;
 
     /**
@@ -113,6 +116,19 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
                         correlationId));
 
         return ResponseEntity.ok(ApiResponse.ok(result, correlationId));
+    }
+
+    /**
+     * Lấy chi tiết đơn thuốc, bao gồm lifecycle và trạng thái phiếu xuất.
+     *
+     * @param prescriptionId mã đơn thuốc cần đọc
+     * @return HTTP 200 với DTO đơn thuốc
+     */
+    @GetMapping("/{prescriptionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
+    public ResponseEntity<ApiResponse<PrescriptionDTO>> getById(
+            @PathVariable UUID prescriptionId) {
+        return ResponseEntity.ok(ApiResponse.ok(getPrescriptionUseCase.getPrescriptionById(prescriptionId)));
     }
 
     /**

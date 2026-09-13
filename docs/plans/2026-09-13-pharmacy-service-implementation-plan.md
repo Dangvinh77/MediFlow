@@ -141,9 +141,9 @@ Mỗi giai đoạn chỉ được đánh dấu DONE khi có code, test và bằn
 
 **File:** sửa `web/PrescriptionController.java`; đề xuất mới `application/port/in/GetPrescriptionUseCase.java`, `application/service/GetPrescriptionService.java`; dùng lại `PrescriptionDTO`, mapper và repository ports.
 
-- [ ] P2.1 Thêm `GET /api/v1/pharmacy/prescriptions/{id}`, roles ADMIN/DOCTOR/PHARMACIST như đặc tả.
-- [ ] P2.2 Read-only transaction trả đầy đủ lines, giá snapshot, total, status, dispenseStatus và audit; không trả JPA entity, không khóa ghi khi chỉ xem.
-- [ ] P2.3 Không tính lại đơn cũ từ giá thuốc hiện tại. Tên thuốc hiện chưa được snapshot vào line: thống nhất là tên hiện tại hoặc bổ sung snapshot bằng migration riêng, không khẳng định đã có snapshot tên.
+- [x] P2.1 Thêm `GET /api/v1/pharmacy/prescriptions/{id}`, roles ADMIN/DOCTOR/PHARMACIST như đặc tả.
+- [x] P2.2 Read-only transaction trả đầy đủ lines, giá snapshot, total, status, dispenseStatus và audit; không trả JPA entity, không khóa ghi khi chỉ xem.
+- [x] P2.3 Không tính lại đơn cũ từ giá thuốc hiện tại. Tên thuốc hiện chưa được snapshot vào line: thống nhất là tên hiện tại hoặc bổ sung snapshot bằng migration riêng, không khẳng định đã có snapshot tên.
 - [ ] P2.4 Tránh query mỗi dòng nếu có thể batch-load; xử lý dữ liệu thiếu slip như lỗi nhất quán có quan sát, không tạo phiếu mới trong GET.
 
 **Gate/test:** 200 cho đơn ở mỗi lifecycle; 404 khi không tồn tại; 401/403 đúng role; giá giữ nguyên sau thay danh mục; dữ liệu trả đúng DB thật. List/filter đơn, phân trang đơn là mở rộng riêng, không mặc định thêm vào task này.
