@@ -22,8 +22,13 @@ import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimResult;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimStatus;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.exception.PaymentReceiptRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
@@ -37,6 +42,7 @@ class PaymentApplicationServiceTest {
 
     private final PrescriptionRepositoryPort prescriptionRepo = mock(PrescriptionRepositoryPort.class);
     private final ProcessedEventPort processedEventPort = mock(ProcessedEventPort.class);
+    private final PaymentReceiptRepositoryPort paymentReceiptRepo = mock(PaymentReceiptRepositoryPort.class);
     private final DispensePrescriptionUseCase dispenseUseCase = mock(DispensePrescriptionUseCase.class);
     private final LatePaymentCompensationService latePaymentCompensationService = mock(LatePaymentCompensationService.class);
 
@@ -46,7 +52,8 @@ class PaymentApplicationServiceTest {
     @BeforeEach
     void setUp() {
         service = new PaymentApplicationService(
-                prescriptionRepo, processedEventPort, dispenseUseCase, latePaymentCompensationService);
+                prescriptionRepo, processedEventPort, paymentReceiptRepo, dispenseUseCase,
+                latePaymentCompensationService);
     }
 
     /**
@@ -61,11 +68,10 @@ class PaymentApplicationServiceTest {
                 UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
                 Instant.parse("2026-08-31T03:01:00Z"), SYSTEM_USER, null);
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
-        when(processedEventPort.alreadyProcessed(eventId)).thenReturn(false, true);
-
-        when(processedEventPort.claimIfAbsent(eventId, "payment.completed"))
-                .thenReturn(true)
-                .thenReturn(false);
+        PaymentReceipt receipt = receipt(command);
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
         when(dispenseUseCase.dispense(
                 prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001"))
                 .thenReturn(result);
@@ -75,7 +81,7 @@ class PaymentApplicationServiceTest {
 
         verify(dispenseUseCase, times(1)).dispense(
                 prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
-        verify(processedEventPort, times(1)).claimIfAbsent(eventId, "payment.completed");
+        verify(processedEventPort, times(2)).claimIfAbsent(eventId, "payment.completed");
         verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
     }
 
@@ -86,7 +92,9 @@ class PaymentApplicationServiceTest {
         UUID prescriptionId = UUID.randomUUID();
         PaymentCompletedCommand command = command(eventId, prescriptionId);
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
-        when(processedEventPort.claimIfAbsent(eventId, "payment.completed")).thenReturn(true);
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(
+                        PaymentReceiptClaimStatus.CLAIMED, receipt(command)));
         doThrow(new IllegalStateException("temporary database outage")).when(dispenseUseCase).dispense(
                 prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
 
@@ -121,6 +129,49 @@ class PaymentApplicationServiceTest {
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString());
     }
 
+    /** Payload xung đột cùng eventId phải dừng workflow, không được chạm vào tồn kho. */
+    @Test
+    void onPaymentCompleted_receiptConflict_rejectsBeforeDispense() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(
+                        PaymentReceiptClaimStatus.DUPLICATE_CONFLICT, receipt(command)));
+
+        assertThatThrownBy(() -> service.onPaymentCompleted(command))
+                .isInstanceOf(PaymentReceiptRuleException.class)
+                .hasMessageContaining("payload xung đột");
+        verify(dispenseUseCase, org.mockito.Mockito.never()).dispense(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    /** Receipt RECEIVED từ lần chạy trước phải được dùng để resume thay vì bỏ qua event. */
+    @Test
+    void onPaymentCompleted_receivedReceipt_resumesWorkflow() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        PaymentReceipt receipt = receipt(command);
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
+        when(dispenseUseCase.dispense(
+                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId()))
+                .thenReturn(new DispenseDTO(
+                        UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
+                        Instant.now(), SYSTEM_USER, command.correlationId()));
+
+        service.onPaymentCompleted(command);
+
+        verify(dispenseUseCase).dispense(
+                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+        verify(paymentReceiptRepo).save(receipt);
+        verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
+    }
+
     /** Payment đến sau khi đơn đã hủy phải được claim và phát compensation, không retry vô hạn. */
     @Test
     void onPaymentCompleted_cancelledPrescription_publishesCompensation() {
@@ -130,7 +181,9 @@ class PaymentApplicationServiceTest {
         Prescription cancelled = prescriptionFor(command);
         cancelled.cancel(UUID.randomUUID(), "Hủy trước thanh toán", Instant.now());
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(cancelled));
-        when(processedEventPort.claimIfAbsent(eventId, "payment.completed")).thenReturn(true);
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(
+                        PaymentReceiptClaimStatus.CLAIMED, receipt(command)));
         doThrow(new IllegalStateException("PRESCRIPTION_NOT_ACTIVE")).when(dispenseUseCase).dispense(
                 prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
 
@@ -151,6 +204,14 @@ class PaymentApplicationServiceTest {
                 new BigDecimal("125000.00"),
                 "CASH"
         );
+    }
+
+    /** Tạo payment receipt hợp lệ tương ứng với command cho các test workflow. */
+    private PaymentReceipt receipt(PaymentCompletedCommand command) {
+        return PaymentReceipt.receive(
+                command.eventId(), command.invoiceId(), command.prescriptionId(), command.patientId(),
+                command.departmentId(), command.totalAmount(), command.paymentMethod(),
+                command.occurredAt(), command.correlationId(), null);
     }
 
     /** Dựng đơn có patient/department khớp payment để test qua được context gate. */

@@ -189,12 +189,12 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | Danh mục thuốc và an toàn tồn kho | 10% | 7% | Audit persistence cho stock adjustment |
 | Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
 | Dispense và failure transaction | 15% | 13% | Payment gate cho đường thủ công và payment outcome atomic |
-| Payment receipt/idempotency/recovery | 15% | 9% | Business key Billing, resume sau crash |
+| Payment receipt/idempotency/recovery | 15% | 12% | Business key Billing, crash integration/recovery matrix |
 | Event/outbox/RabbitMQ | 15% | 8% | Claim/lease đa instance, backoff, metrics, real broker test |
 | Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
 | API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
 | Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
-| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **73%** | **27%** |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **76%** | **24%** |
 
 ## 4. Thứ tự task triển khai phần code còn lại
 
@@ -308,13 +308,21 @@ Test domain:
 
 ### T06 — Payment workflow có thể resume
 
-- [ ] Consumer parse/validate rồi gọi duy nhất `ReactToPaymentUseCase`.
-- [ ] Ghi/claim receipt trước khi xử lý nhưng không coi `RECEIVED` là terminal.
-- [ ] Redelivery gặp receipt `RECEIVED` phải tiếp tục xử lý.
-- [ ] Nhánh success cập nhật dispense lifecycle, receipt terminal, processed claim và outbox nhất quán.
-- [ ] Nhánh business failure rollback stock rồi ghi failure lifecycle, receipt terminal, processed claim và compensation outbox trong transaction mới.
-- [ ] Lỗi hạ tầng giữ receipt ở trạng thái có thể retry và không ACK sai.
+- [x] Consumer parse/validate rồi gọi duy nhất `ReactToPaymentUseCase`.
+- [x] Ghi/claim receipt trước khi xử lý nhưng không coi `RECEIVED` là terminal.
+- [x] Redelivery gặp receipt `RECEIVED` phải tiếp tục xử lý.
+- [x] Nhánh success cập nhật dispense lifecycle, receipt terminal, processed claim và outbox nhất quán.
+- [x] Nhánh business failure rollback stock rồi ghi failure lifecycle, receipt terminal, processed claim và compensation outbox trong transaction mới.
+- [x] Lỗi hạ tầng giữ receipt ở trạng thái có thể retry và không ACK sai.
 - [ ] Crash ở mọi điểm giữa các transaction đều resume mà không trừ kho/gửi compensation logic hai lần.
+
+**Trạng thái:** IN_PROGRESS — workflow production và các nhánh idempotency đã hoàn thành; còn
+integration test mô phỏng crash giữa các transaction (T08).
+
+**Bằng chứng phần đã hoàn thành:** `PaymentApplicationService` claim receipt atomic trước dispense,
+resume receipt `RECEIVED`, từ chối payload conflict, chốt `DISPENSED`/`COMPENSATED` và chỉ claim
+`payment.completed` sau outcome. `PaymentApplicationServiceTest` bao phủ success, redelivery,
+payload conflict, context mismatch, business failure và late payment.
 
 ### T07 — Payment gate cho dispense thủ công
 
