@@ -14,7 +14,7 @@ Changelog updated through **2026-09-14 23:57:09 Asia/Saigon** · **353 unique co
 
 ![Commits by day](docs/assets/commit-activity-by-day.svg?v=22d5739a9d78)
 
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=f724606c4813)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=17531463584e)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
