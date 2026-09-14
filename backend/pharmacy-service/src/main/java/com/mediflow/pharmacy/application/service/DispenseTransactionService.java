@@ -76,6 +76,7 @@ public class DispenseTransactionService {
      */
     @Transactional
     public DispenseDTO execute(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        Instant now = Instant.now(clock);
         Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId)
                 .orElseThrow(() -> new com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException(
                         "Không tìm thấy đơn id=" + prescriptionId));
@@ -128,7 +129,7 @@ public class DispenseTransactionService {
                 throw new StockReservationRuleException(
                         "RESERVATION_INVALID_TRANSITION", "Giữ chỗ không còn hiệu lực");
             }
-            if (reservation.isExpiredAt(Instant.now(clock))) {
+            if (reservation.isExpiredAt(now)) {
                 throw new StockReservationRuleException(
                         "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + drugId + " đã hết hạn");
             }
@@ -137,13 +138,12 @@ public class DispenseTransactionService {
                         "RESERVATION_QUANTITY_MISMATCH", "Số lượng giữ chỗ không khớp với đơn thuốc");
             }
             drug.dispenseStock(requestedQuantity, java.time.LocalDate.now(clock));
-            reservation.markFulfilled();
+            reservation.markFulfilled(now);
             reservationRepo.save(reservation);
             lockedDrugs.put(drugId, drug);
         }
 
         lockedDrugs.values().forEach(drugRepo::save);
-        Instant now = Instant.now(clock);
         slip.markDispensed(dispensedBy, now);
         DispenseSlip savedSlip = dispenseSlipRepo.save(slip);
         prescription.markFulfilled(now);

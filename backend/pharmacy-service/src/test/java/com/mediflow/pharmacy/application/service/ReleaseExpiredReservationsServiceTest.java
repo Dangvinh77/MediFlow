@@ -21,6 +21,7 @@ import org.springframework.dao.CannotAcquireLockException;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseClaim;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.TransientFailureClassifierPort;
 
 /** Kiểm tra boundary thời gian và khả năng phục hồi từng phần của job hết TTL. */
 class ReleaseExpiredReservationsServiceTest {
@@ -30,6 +31,7 @@ class ReleaseExpiredReservationsServiceTest {
     private final StockReservationRepositoryPort reservationRepository = mock(StockReservationRepositoryPort.class);
     private final ExpirePrescriptionTransaction expireTransaction = mock(ExpirePrescriptionTransaction.class);
     private final ReservationExpiryLeaseRepositoryPort leaseRepository = mock(ReservationExpiryLeaseRepositoryPort.class);
+    private final TransientFailureClassifierPort transientFailureClassifier = mock(TransientFailureClassifierPort.class);
     private static final UUID LEASE_TOKEN = UUID.fromString("00000000-0000-0000-0000-000000000012");
 
     private ReleaseExpiredReservationsService service;
@@ -41,7 +43,7 @@ class ReleaseExpiredReservationsServiceTest {
                 reservationRepository,
                 expireTransaction,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                3, leaseRepository, "test", Duration.ofMinutes(5));
+                3, leaseRepository, "test", Duration.ofMinutes(5), transientFailureClassifier);
         when(leaseRepository.tryAcquire(any(), any(), any(), any())).thenReturn(
                 java.util.Optional.of(new ReservationExpiryLeaseClaim(null, LEASE_TOKEN)));
     }
@@ -110,6 +112,7 @@ class ReleaseExpiredReservationsServiceTest {
                 .thenReturn(List.of(candidate));
         when(expireTransaction.expire(candidate, NOW))
                 .thenThrow(new CannotAcquireLockException("deadlock"));
+        when(transientFailureClassifier.isTransient(any(CannotAcquireLockException.class))).thenReturn(true);
 
         assertThat(org.assertj.core.api.Assertions.catchThrowable(
                 service::releaseExpiredReservations)).isInstanceOf(CannotAcquireLockException.class);
@@ -126,6 +129,6 @@ class ReleaseExpiredReservationsServiceTest {
                 reservationRepository,
                 expireTransaction,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                0, leaseRepository, "test", Duration.ofMinutes(5)));
+                0, leaseRepository, "test", Duration.ofMinutes(5), transientFailureClassifier));
     }
 }

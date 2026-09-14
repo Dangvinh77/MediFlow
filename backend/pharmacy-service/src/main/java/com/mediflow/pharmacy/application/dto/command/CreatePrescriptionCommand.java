@@ -16,6 +16,7 @@ public record CreatePrescriptionCommand(
     ActorIdentity actor,
     String correlationId
 ) {
+    /** Validates command references and guarantees a non-empty correlation id. */
     public CreatePrescriptionCommand {
         Objects.requireNonNull(request, "request is required");
         Objects.requireNonNull(actor, "actor is required");

@@ -40,7 +40,16 @@ public class DrugApplicationService implements ManageDrugUseCase {
     private final Clock clock;
     private final StockAdjustmentRepositoryPort adjustmentRepository;
 
-    /** Creates the drug feature service with durable stock audit persistence. */
+    /**
+     * Creates the drug feature service with durable stock audit persistence.
+     *
+     * @param drugRepository drug catalogue port
+     * @param reservationRepository reservation lookup port
+     * @param eventPublisher domain event port
+     * @param drugDtoMapper response mapper
+     * @param clock business clock
+     * @param adjustmentRepository stock audit port
+     */
     public DrugApplicationService(
             DrugRepositoryPort drugRepository,
             StockReservationRepositoryPort reservationRepository,
@@ -131,14 +140,15 @@ public class DrugApplicationService implements ManageDrugUseCase {
         }
 
         int beforeStock = drug.getStockQuantity();
-        drug.adjustStock(request.quantity());
+        Instant adjustedAt = Instant.now(clock);
+        drug.adjustStock(request.quantity(), adjustedAt);
         Drug saved = drugRepository.save(drug);
         adjustmentRepository.save(StockAdjustment.create(
                 id, beforeStock, request.quantity(), saved.getStockQuantity(),
-                request.reason(), actorId, correlationId, Instant.now(clock)));
+                request.reason(), actorId, correlationId, adjustedAt));
         eventPublisher.publishStockAdjusted(new StockAdjustedEvent(
                 UUID.randomUUID(),
-                Instant.now(clock),
+                adjustedAt,
                 correlationId,
                 actorId,
                 id,

@@ -132,7 +132,7 @@ public class Drug {
     }
 
     /** Điều chỉnh tồn kho thủ công; không cho phép tồn kho âm. */
-    public void adjustStock(int quantity) {
+    public void adjustStock(int quantity, Instant updatedAt) {
         if (quantity == 0) {
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng điều chỉnh không được bằng 0");
         }
@@ -143,7 +143,23 @@ public class Drug {
         if (newStock > Integer.MAX_VALUE) {
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Số lượng tồn kho vượt giới hạn");
         }
+        if (updatedAt == null) {
+            throw new DrugRuleException(
+                    "DRUG_UPDATE_TIME_REQUIRED", "Thời điểm cập nhật thuốc là bắt buộc");
+        }
         this.stockQuantity = (int) newStock;
+        this.updatedAt = updatedAt;
+    }
+
+    /**
+     * Legacy convenience overload retained for source compatibility.
+     *
+     * @param quantity stock delta
+     * @deprecated callers should provide the application clock timestamp explicitly
+     */
+    @Deprecated(forRemoval = false)
+    public void adjustStock(int quantity) {
+        adjustStock(quantity, Instant.now());
     }
 
     /** Xuất kho theo ngày hệ thống — ném nếu vi phạm BR-D1 hoặc BR-D2. */

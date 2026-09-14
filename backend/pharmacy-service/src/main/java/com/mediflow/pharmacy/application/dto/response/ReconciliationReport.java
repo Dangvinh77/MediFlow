@@ -3,7 +3,14 @@ package com.mediflow.pharmacy.application.dto.response;
 import java.util.List;
 
 /** Immutable result of a lifecycle reconciliation dry-run. */
-public record ReconciliationReport(boolean dryRun, List<ReconciliationFinding> findings) {
+/** Result returned by the lifecycle reconciliation use case.
+ *
+ * @param dryRun whether changes were suppressed
+ * @param findings detected lifecycle anomalies
+ */
+public record ReconciliationReport(
+        boolean dryRun,
+        List<ReconciliationFinding> findings) {
 
     /** Always returns an immutable finding list to prevent accidental repair by callers. */
     public ReconciliationReport {

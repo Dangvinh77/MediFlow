@@ -11,6 +11,16 @@ import java.util.UUID;
  *
  * <p>Ba trường đầu (eventId, occurredAt, correlationId) là envelope chuẩn của mọi event
  * (docs/ai/06-events-rabbitmq.md). {@code departmentId} bắt buộc vì report group theo khoa.
+ *
+ * @param eventId event identifier
+ * @param occurredAt event timestamp
+ * @param correlationId saga correlation identifier
+ * @param prescriptionId prescription identifier
+ * @param patientId patient identifier
+ * @param recordId medical record identifier
+ * @param departmentId department identifier
+ * @param totalAmount prescription total
+ * @param items captured drug lines
  */
 public record PrescriptionCreatedEvent(
         UUID eventId,
@@ -23,6 +33,11 @@ public record PrescriptionCreatedEvent(
         BigDecimal totalAmount,
         java.util.List<Item> items
 ) {
-    /** Một dòng thuốc trong đơn — price là giá chụp tại thời điểm kê (BR-D7). */
+    /** Một dòng thuốc trong đơn — price là giá chụp tại thời điểm kê (BR-D7).
+     * @param drugId drug identifier
+     * @param drugName drug name snapshot
+     * @param quantity prescribed quantity
+     * @param price captured unit price
+     */
     public record Item(UUID drugId, String drugName, int quantity, BigDecimal price) {}
 }

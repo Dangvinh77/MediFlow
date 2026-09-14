@@ -7,15 +7,11 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.dao.PessimisticLockingFailureException;
-import org.springframework.dao.TransientDataAccessException;
-
 import com.mediflow.pharmacy.application.port.in.ReleaseExpiredReservationsUseCase;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseClaim;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.TransientFailureClassifierPort;
 
 /**
  * Tìm các prescription có giữ chỗ quá TTL và xử lý theo batch giới hạn.
@@ -36,6 +32,7 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
     private final Clock clock;
     private final int batchSize;
     private final ReservationExpiryLeaseRepositoryPort leaseRepository;
+    private final TransientFailureClassifierPort transientFailureClassifier;
     private final String leaseOwner;
     private final Duration leaseDuration;
     private UUID cursor;
@@ -50,6 +47,7 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
      * @param leaseRepository durable lease adapter
      * @param leaseOwner unique instance identity
      * @param leaseDuration maximum time another instance waits before reclaiming
+     * @param transientFailureClassifier classifier for retryable infrastructure failures
      */
     public ReleaseExpiredReservationsService(
             StockReservationRepositoryPort reservationRepository,
@@ -58,7 +56,8 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
             int batchSize,
             ReservationExpiryLeaseRepositoryPort leaseRepository,
             String leaseOwner,
-            Duration leaseDuration) {
+            Duration leaseDuration,
+            TransientFailureClassifierPort transientFailureClassifier) {
         if (batchSize <= 0) {
             throw new IllegalArgumentException("Giới hạn batch phải lớn hơn 0");
         }
@@ -74,6 +73,10 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
             throw new IllegalArgumentException("Durable scheduler lease repository is required");
         }
         this.leaseRepository = leaseRepository;
+        if (transientFailureClassifier == null) {
+            throw new IllegalArgumentException("Transient failure classifier is required");
+        }
+        this.transientFailureClassifier = transientFailureClassifier;
         this.leaseOwner = leaseOwner;
         this.leaseDuration = leaseDuration;
     }
@@ -113,7 +116,7 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
                 try {
                     expiredReservations += expireTransaction.expire(prescriptionId, now);
                 } catch (RuntimeException exception) {
-                    if (isTransientInfrastructureFailure(exception)) {
+                    if (transientFailureClassifier.isTransient(exception)) {
                         // Không được bỏ qua lỗi hạ tầng: giữ nguyên cursor để lần chạy sau retry.
                         throw exception;
                     }
@@ -134,11 +137,4 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
         }
     }
 
-    /** Returns whether an exception should be retried instead of being quarantined as poison data. */
-    private boolean isTransientInfrastructureFailure(RuntimeException exception) {
-        return exception instanceof TransientDataAccessException
-                || exception instanceof CannotAcquireLockException
-                || exception instanceof PessimisticLockingFailureException
-                || exception instanceof DataAccessResourceFailureException;
-    }
 }

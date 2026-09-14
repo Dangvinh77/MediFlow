@@ -10,6 +10,14 @@ import java.util.UUID;
  *
  * <p>Kiểu "bắn-rồi-quên": lỗi khi gửi tin này KHÔNG được làm rollback một lần xuất đã thành
  * công (spec §12). Ba trường đầu (eventId, occurredAt, correlationId) là envelope chuẩn.
+ *
+ * @param eventId event identifier
+ * @param occurredAt event timestamp
+ * @param correlationId request correlation identifier
+ * @param drugId drug identifier
+ * @param drugName drug name snapshot
+ * @param currentStock current stock quantity
+ * @param threshold configured low-stock threshold
  */
 public record StockLowEvent(
         UUID eventId,
