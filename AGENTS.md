@@ -139,6 +139,12 @@ Start order: `eureka-server` (8761) → `gateway` (8080) → business services (
 
 [`docs/ai/10-git-workflow.md`](docs/ai/10-git-workflow.md) — Conventional Commits, focused per-service PRs, pre-merge checklist.
 
+**Commit identity rule:** every commit must have exactly one human author listed in
+[`scripts/allowed-contributors.json`](scripts/allowed-contributors.json). AI agents and subagents
+must never add `Co-Authored-By`, AI session trailers, or themselves as author/co-author. Do not
+impersonate another contributor by changing Git identity; use the identity of the developer who owns
+the current task. The local hooks and the `Commit policy` workflow enforce this rule.
+
 ## Note on tooling availability
 
 Two optional AI code-intelligence tools can speed up exploration:

@@ -18,8 +18,8 @@ fi
 git config core.hooksPath scripts/git-hooks
 
 echo "[ok] Git hooks enabled: core.hooksPath = scripts/git-hooks"
-echo "     - prepare-commit-msg strips 'Co-Authored-By:' lines"
-echo "     - commit-msg rejects any commit that still carries one (single-author policy)"
+echo "     - prepare-commit-msg strips AI attribution trailers"
+echo "     - commit-msg allows exactly the 4 contributors in scripts/allowed-contributors.json"
 echo "     - post-commit / post-merge maintain the changelog (.changelog/)"
 
 HP="$(git config --get core.hooksPath)"
