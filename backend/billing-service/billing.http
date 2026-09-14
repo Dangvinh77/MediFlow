@@ -1,9 +1,7 @@
-### MediFlow — Billing service (qua gateway :8080) — DEMO / TEMPLATE
+### MediFlow — Billing service (qua gateway :8080) — LIVE
 ###
-### ⚠️ Trạng thái: billing-service chưa có web layer (chưa có controller). Các request
-### bên dưới là DEMO soạn theo spec chuẩn:
+### Khớp với InvoiceController/RevenueController hiện tại (Phần 5/5). Spec gốc:
 ###   docs/eproject_general_plan/backend-spec/06-billing.md
-### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
 ###
 ### Quy ước nhánh C: billing dùng tên field tiếng Anh (invoiceId, patientId, totalAmount, ...).
 ###
