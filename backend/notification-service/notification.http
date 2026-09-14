@@ -1,9 +1,10 @@
-### MediFlow — Notification service (qua gateway :8080) — DEMO / TEMPLATE
+### MediFlow — Notification service (qua gateway :8080) — LIVE
 ###
-### ⚠️ Trạng thái: notification-service chưa có web layer (chưa có controller). Các request
-### bên dưới là DEMO soạn theo spec chuẩn:
+### Khớp với NotificationController hiện tại (Phần 5/5). Spec gốc:
 ###   docs/eproject_general_plan/backend-spec/07-notification.md
-### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+###
+### Quy ước: notification dùng tên field tiếng Anh (patientId, title, content, channel,
+### recipientAddress) — quyết định đặt tên áp dụng cho toàn bộ service (§3 spec).
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → notification-service (8087) đang chạy.
@@ -22,26 +23,26 @@
 
 # ============ THÔNG BÁO /api/v1/notifications ============
 
-### Thông báo của một bệnh nhân (phân trang)
+### Thông báo của một bệnh nhân (phân trang) — role ADMIN/NURSE/PATIENT
 GET {{host}}/api/v1/notifications/patient/00000000-0000-0000-0000-000000000000?page=0&size=20
 Authorization: Bearer {{token}}
 
-### Xem một thông báo (PATIENT chỉ đọc được của chính mình — khác người → 403)
+### Xem một thông báo (role ADMIN/PATIENT — PATIENT chỉ đọc được của chính mình, khác người → 403 NOTIFICATION_ACCESS_DENIED)
 GET {{host}}/api/v1/notifications/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
-### Gửi thông báo thủ công (201 — role ADMIN/SYSTEM; loai: EMAIL | SMS | IN_APP)
-### - EMAIL cần diaChiNhan hợp lệ, SMS cần ^0\d{9,10}$; sai → 422 NOTIFICATION_ADDRESS_INVALID
-### - IN_APP không cần diaChiNhan
+### Gửi thông báo thủ công (201 — role ADMIN/SYSTEM; channel: EMAIL | SMS | IN_APP)
+### - EMAIL cần recipientAddress hợp lệ, SMS cần ^0\d{9,10}$; sai → 422 NOTIFICATION_ADDRESS_INVALID
+### - IN_APP không cần recipientAddress
 POST {{host}}/api/v1/notifications/send
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "tieuDe": "Lịch khám định kỳ",
-  "noiDung": "Bạn có lịch khám định kỳ vào 15/08/2026. Vui lòng có mặt trước 15 phút.",
-  "loai": "IN_APP"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "title": "Lịch khám định kỳ",
+  "content": "Bạn có lịch khám định kỳ vào 15/08/2026. Vui lòng có mặt trước 15 phút.",
+  "channel": "IN_APP"
 }
 
 ### Gửi EMAIL với địa chỉ sai → 422 NOTIFICATION_ADDRESS_INVALID
@@ -50,11 +51,11 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "tieuDe": "Kết quả xét nghiệm",
-  "noiDung": "Kết quả xét nghiệm của bạn đã sẵn sàng.",
-  "loai": "EMAIL",
-  "diaChiNhan": "sai-dia-chi"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "title": "Kết quả xét nghiệm",
+  "content": "Kết quả xét nghiệm của bạn đã sẵn sàng.",
+  "channel": "EMAIL",
+  "recipientAddress": "sai-dia-chi"
 }
 
 ### Gửi SMS với số điện thoại sai → 422 NOTIFICATION_ADDRESS_INVALID
@@ -63,9 +64,9 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "maBenhNhan": "00000000-0000-0000-0000-000000000000",
-  "tieuDe": "Nhắc tái khám",
-  "noiDung": "Vui lòng tái khám đúng hẹn.",
-  "loai": "SMS",
-  "diaChiNhan": "12345"
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "title": "Nhắc tái khám",
+  "content": "Vui lòng tái khám đúng hẹn.",
+  "channel": "SMS",
+  "recipientAddress": "12345"
 }
