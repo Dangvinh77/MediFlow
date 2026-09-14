@@ -1,0 +1,25 @@
+name: GitHub App token compatibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate stateful and stateless tokens
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Test token format handling
+        run: node --test scripts/github-app-token-compatibility.test.mjs
+      - name: Exercise both installation token formats
+        env:
+          APP_CLIENT_ID: Iv23liRNMJfjhwhBK16V
+          APP_PRIVATE_KEY: ${{ secrets.DASHBOARD_APP_PRIVATE_KEY }}
+        run: node scripts/github-app-token-compatibility.mjs

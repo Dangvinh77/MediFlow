@@ -139,6 +139,14 @@ General → Workflow permissions → Allow GitHub Actions to create and approve 
 Nếu repository yêu cầu duyệt workflow hoặc review PR, maintainer vẫn phải thực hiện bước duyệt;
 auto-merge chỉ chạy sau khi mọi rule bảo vệ nhánh đã đạt.
 
+### GitHub App installation token compatibility
+
+Dashboard App token được xem là chuỗi opaque: không cắt, không kiểm tra độ dài tối đa và không
+lưu vào database. Workflow thủ công `.github/workflows/github-app-token-compatibility.yml` dùng
+header override tạm thời của GitHub để tạo cả token stateful và stateless, sau đó kiểm tra REST API,
+GitHub CLI và Git transport. Chạy lại workflow này khi GitHub thông báo đổi token format; không thêm
+header override vào workflow dashboard chạy production.
+
 Khi một thành viên commit bằng nhiều email, khai báo một canonical contributor trong
 `.changelog/contributor-aliases.json`. Mỗi email chỉ được thuộc một contributor; generator sẽ
 dừng với lỗi rõ ràng nếu ID hoặc email bị trùng. Email không có trong registry vẫn được nhóm độc
