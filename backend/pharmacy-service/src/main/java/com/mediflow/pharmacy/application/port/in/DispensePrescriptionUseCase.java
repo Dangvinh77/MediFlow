@@ -64,4 +64,22 @@ public interface DispensePrescriptionUseCase {
             String correlationId) {
         return dispense(prescriptionId, dispensedBy, correlationId);
     }
+
+    /**
+     * Dispenses from the trusted payment workflow after its receipt has been claimed.
+     * Driving adapters must never expose this method directly to clients.
+     *
+     * @param prescriptionId prescription to dispense
+     * @param dispensedBy trusted system actor
+     * @param invoiceId related invoice
+     * @param correlationId saga correlation id
+     * @return resulting dispense slip
+     */
+    default DispenseDTO dispenseWithPaymentProof(
+            UUID prescriptionId,
+            UUID dispensedBy,
+            UUID invoiceId,
+            String correlationId) {
+        return dispense(prescriptionId, dispensedBy, invoiceId, correlationId);
+    }
 }

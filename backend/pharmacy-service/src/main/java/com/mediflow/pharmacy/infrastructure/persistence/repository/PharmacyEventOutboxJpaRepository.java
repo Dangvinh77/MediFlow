@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repository for durable pharmacy event delivery. */
 public interface PharmacyEventOutboxJpaRepository
@@ -13,6 +16,45 @@ public interface PharmacyEventOutboxJpaRepository
 
     /** Returns the oldest events that still need delivery. */
     List<PharmacyEventOutboxJpaEntity> findByPublishedAtIsNullOrderByCreatedAtAsc(Pageable pageable);
+
+    /** Selects claimable rows while preventing another replica from selecting the same rows. */
+    @Query(value = """
+            SELECT * FROM PHARMACY_EVENT_OUTBOX
+            WHERE published_at IS NULL
+              AND available_at <= :now
+              AND (locked_at IS NULL OR locked_at < :now - (:leaseSeconds * interval '1 second'))
+            ORDER BY created_at
+            LIMIT :batchSize
+            FOR UPDATE SKIP LOCKED
+            """, nativeQuery = true)
+    List<PharmacyEventOutboxJpaEntity> findClaimable(
+            @Param("now") Instant now,
+            @Param("leaseSeconds") long leaseSeconds,
+            @Param("batchSize") int batchSize);
+
+    /** Marks a row published only when this replica still owns its lease. */
+    @Modifying
+    @org.springframework.data.jpa.repository.Query("""
+            update PharmacyEventOutboxJpaEntity e
+               set e.publishedAt = :publishedAt, e.lastError = null,
+                   e.lockedAt = null, e.lockedBy = null
+             where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null
+            """)
+    int markPublishedIfOwned(
+            @Param("eventId") UUID eventId,
+            @Param("owner") String owner,
+            @Param("publishedAt") Instant publishedAt);
+
+    /** Records a failed attempt only when this replica still owns its lease. */
+    @Modifying
+    @org.springframework.data.jpa.repository.Query("""
+            update PharmacyEventOutboxJpaEntity e
+               set e.attempts = e.attempts + 1, e.lastError = :error,
+                   e.lockedAt = null, e.lockedBy = null
+             where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null
+            """)
+    int markFailureIfOwned(@Param("eventId") UUID eventId, @Param("owner") String owner,
+            @Param("error") String error);
 
     /** Marks an event delivered and records the delivery timestamp. */
     default void markPublished(PharmacyEventOutboxJpaEntity event, Instant publishedAt) {

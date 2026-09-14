@@ -42,10 +42,20 @@ public class PharmacyEventOutboxJpaEntity {
     @Column(name = "last_error", length = 500)
     private String lastError;
 
+    @Column(name = "available_at", nullable = false)
+    private Instant availableAt;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
+    @Column(name = "locked_by", length = 100)
+    private String lockedBy;
+
     /** Creates a new pending outbox row. */
     public PharmacyEventOutboxJpaEntity(UUID eventId, String routingKey, String payload) {
         this.eventId = eventId;
         this.routingKey = routingKey;
         this.payload = payload;
+        this.availableAt = Instant.now();
     }
 }

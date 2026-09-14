@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
@@ -14,6 +15,8 @@ import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
@@ -77,6 +80,9 @@ class DispenseIntegrationTest {
     @MockBean
     private PharmacyEventPublisherPort eventPublisher;
 
+    @MockBean
+    private PaymentReceiptRepositoryPort paymentReceiptRepository;
+
     /** Removes aggregate rows in foreign-key order between integration cases. */
     @AfterEach
     void cleanDatabase() {
@@ -92,6 +98,8 @@ class DispenseIntegrationTest {
         DrugJpaEntity drug = drugRepository.saveAndFlush(drug("Concurrent drug", 10));
         PrescriptionDTO prescription = createPrescription(List.of(
                 new PrescriptionLineRequest(drug.getDrugId(), 2, "Ngày 2 lần")));
+        when(paymentReceiptRepository.findByPrescriptionId(prescription.prescriptionId()))
+                .thenReturn(List.of(paymentReceipt(prescription.prescriptionId())));
         UUID actorId = UUID.randomUUID();
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
@@ -133,6 +141,8 @@ class DispenseIntegrationTest {
         DrugJpaEntity laterLockedDrug = sorted.get(1);
         laterLockedDrug.setExpiryDate(LocalDate.now().minusDays(1));
         drugRepository.saveAndFlush(laterLockedDrug);
+        when(paymentReceiptRepository.findByPrescriptionId(prescription.prescriptionId()))
+                .thenReturn(List.of(paymentReceipt(prescription.prescriptionId())));
 
         assertThatThrownBy(() -> dispensePrescriptionUseCase.dispense(
                 prescription.prescriptionId(), UUID.randomUUID(), "failure-correlation"))
@@ -188,5 +198,12 @@ class DispenseIntegrationTest {
                 .manufacturer("MediFlow")
                 .lowStockThreshold(1)
                 .build();
+    }
+
+    private PaymentReceipt paymentReceipt(UUID prescriptionId) {
+        return PaymentReceipt.receive(
+                UUID.randomUUID(), UUID.randomUUID(), prescriptionId,
+                UUID.randomUUID(), UUID.randomUUID(), BigDecimal.TEN, "CASH",
+                java.time.Instant.now(), "integration-payment-correlation", null);
     }
 }

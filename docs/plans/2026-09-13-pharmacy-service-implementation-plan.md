@@ -188,13 +188,13 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | Kiến trúc và phân tách use case | 10% | 10% | Gia cố architecture tests và xóa compatibility code |
 | Danh mục thuốc và an toàn tồn kho | 10% | 7% | Audit persistence cho stock adjustment |
 | Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
-| Dispense và failure transaction | 15% | 13% | Payment gate cho đường thủ công và payment outcome atomic |
-| Payment receipt/idempotency/recovery | 15% | 12% | Business key Billing, crash integration/recovery matrix |
-| Event/outbox/RabbitMQ | 15% | 8% | Claim/lease đa instance, backoff, metrics, real broker test |
+| Dispense và failure transaction | 15% | 14% | Payment outcome atomic, crash integration |
+| Payment receipt/idempotency/recovery | 15% | 13% | Business key Billing, crash integration/recovery matrix |
+| Event/outbox/RabbitMQ | 15% | 10% | Backoff, metrics, lease integration, real broker test |
 | Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
 | API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
 | Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
-| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **76%** | **24%** |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **80%** | **20%** |
 
 ## 4. Thứ tự task triển khai phần code còn lại
 
@@ -205,10 +205,10 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | 03 | Chốt identity account/staff/system actor | Security/Identity | Contract Gateway/Organization | BLOCKED — chờ producer claim |
 | 04 | Tạo domain model và state machine payment receipt | Payment | Contract Billing hiện tại | DONE (business-key còn chờ Billing) |
 | 05 | Thêm payment receipt port, adapter và migration V6 | Payment/Persistence | T04 | PARTIAL (business-key còn chờ Billing) |
-| 06 | Viết payment workflow có thể resume sau crash | Payment/Dispense | T01, T05 | TODO |
-| 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | TODO |
-| 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | TODO |
-| 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | TODO |
+| 06 | Viết payment workflow có thể resume sau crash | Payment/Dispense | T01, T05 | IN_PROGRESS — còn crash integration |
+| 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | DONE |
+| 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | PARTIAL — concurrency manual đã có; payment race/recovery còn lại |
+| 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | PARTIAL — code + V7 xong; PostgreSQL multi-instance test còn lại |
 | 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | TODO |
 | 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | TODO |
 | 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | TODO |
@@ -326,19 +326,19 @@ payload conflict, context mismatch, business failure và late payment.
 
 ### T07 — Payment gate cho dispense thủ công
 
-- [ ] Endpoint `PUT /prescriptions/{id}/dispense` không nhận `paid=true` từ client.
-- [ ] Application tra payment proof qua port trước mutation.
-- [ ] Chưa có proof trả lỗi nghiệp vụ ổn định, không trừ kho.
-- [ ] ADMIN cũng không được bỏ qua payment gate.
-- [ ] Actor/correlation lấy từ JWT/request context.
-- [ ] Manual và consumer dùng chung core transaction.
-- [ ] Cập nhật `pharmacy.http`, README và OpenAPI.
+- [x] Endpoint `PUT /prescriptions/{id}/dispense` không nhận `paid=true` từ client.
+- [x] Application tra payment proof qua port trước mutation.
+- [x] Chưa có proof trả lỗi nghiệp vụ ổn định, không trừ kho.
+- [x] ADMIN cũng không được bỏ qua payment gate.
+- [x] Actor/correlation lấy từ JWT/request context.
+- [x] Manual và consumer dùng chung core transaction.
+- [x] Cập nhật `pharmacy.http`, README và contract Swagger runtime.
 
 ### T08 — Payment/manual concurrency tests
 
-- [ ] Cùng eventId chạy đồng thời chỉ một outcome.
+- [x] Cùng eventId chạy đồng thời chỉ một outcome (per-event lock + bounded executor test).
 - [ ] Hai eventId cho cùng business payment theo policy đã chốt.
-- [ ] Manual dispense và consumer chạy đồng thời chỉ trừ kho một lần.
+- [x] Manual dispense và consumer chạy đồng thời chỉ trừ kho một lần (PostgreSQL test có barrier/latch).
 - [ ] Payment đến sau CANCELLED/EXPIRED compensation một lần.
 - [ ] Payment đến sau DISPENSED không tạo filled event mới.
 - [ ] Context patient/department sai không ghi receipt terminal hoặc đổi stock.
@@ -346,13 +346,13 @@ payload conflict, context mismatch, business failure và late payment.
 
 ### T09 — Outbox đa instance và migration V7
 
-- [ ] Thêm trạng thái/lease cần thiết: `available_at`, `locked_at`, `locked_by` hoặc thiết kế tương đương.
-- [ ] Claim batch bằng transaction ngắn và `FOR UPDATE SKIP LOCKED`/cơ chế PostgreSQL tương đương.
-- [ ] Không giữ transaction database trong lúc chờ publisher confirm.
-- [ ] Lease hết hạn cho phép instance khác lấy lại.
-- [ ] EventId và payload không thay đổi qua retry.
-- [ ] Một instance không làm event của instance khác bị đánh dấu published.
-- [ ] Migration V7 chỉ thêm mới và có index cho pending/available rows.
+- [x] Thêm trạng thái/lease cần thiết: `available_at`, `locked_at`, `locked_by`.
+- [x] Claim batch bằng transaction ngắn và `FOR UPDATE SKIP LOCKED`.
+- [x] Không giữ transaction database trong lúc chờ publisher confirm.
+- [x] Lease hết hạn cho phép instance khác lấy lại (query reclaim).
+- [x] EventId và payload không thay đổi qua retry.
+- [x] Một instance không làm event của instance khác bị đánh dấu published (owner-guarded update).
+- [x] Migration V7 chỉ thêm mới và có index cho pending/available rows.
 
 ### T10 — Outbox retry, metrics, replay và retention
 
@@ -1077,6 +1077,6 @@ Chỉ chuyển sang task tiếp theo khi:
 
 ## 20. Task bắt đầu tiếp theo
 
-Task kế tiếp mặc định là **T01 — tách `PharmacyApplicationService` theo từng in-port**.
+Task kế tiếp mặc định là **T08 — hoàn thiện payment/recovery concurrency tests**.
 
 Đây là refactor hành vi-bất-biến, tạo nền để các feature payment receipt, payment gate, stock audit và outbox hardening được triển khai mà không tiếp tục tăng coupling. Sau T01 đã chạy lại toàn bộ 138 test hiện tại trước khi chuyển T02.

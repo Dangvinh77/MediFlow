@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
@@ -40,6 +41,8 @@ public class PharmacyOutboxDispatcher {
     private final PharmacyEventOutboxJpaRepository repository;
     private final RabbitTemplate rabbitTemplate;
     private final Clock clock;
+    private final PharmacyOutboxClaimService claimService;
+    private final String owner;
     private final int batchSize;
     private final long confirmTimeoutMs;
 
@@ -50,6 +53,18 @@ public class PharmacyOutboxDispatcher {
             Clock clock,
             @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
             @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs) {
+        this(repository, rabbitTemplate, clock, batchSize, confirmTimeoutMs, null);
+    }
+
+    /** Creates a lease-aware dispatcher; broker calls happen after the claim transaction ends. */
+    @Autowired
+    public PharmacyOutboxDispatcher(
+            PharmacyEventOutboxJpaRepository repository,
+            RabbitTemplate rabbitTemplate,
+            Clock clock,
+            @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
+            @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs,
+            PharmacyOutboxClaimService claimService) {
         if (batchSize <= 0 || confirmTimeoutMs <= 0) {
             throw new IllegalArgumentException("Pharmacy outbox batch size and confirm timeout must be positive");
         }
@@ -58,13 +73,16 @@ public class PharmacyOutboxDispatcher {
         this.clock = clock;
         this.batchSize = batchSize;
         this.confirmTimeoutMs = confirmTimeoutMs;
+        this.claimService = claimService;
+        this.owner = java.util.UUID.randomUUID().toString();
     }
 
     /** Attempts delivery of the oldest pending events on a fixed delay. */
     @Scheduled(fixedDelayString = "${mediflow.pharmacy.outbox.dispatch-delay-ms:1000}")
     public void dispatchPending() {
-        List<PharmacyEventOutboxJpaEntity> events = repository
-                .findByPublishedAtIsNullOrderByCreatedAtAsc(PageRequest.of(0, batchSize));
+        List<PharmacyEventOutboxJpaEntity> events = claimService == null
+                ? repository.findByPublishedAtIsNullOrderByCreatedAtAsc(PageRequest.of(0, batchSize))
+                : claimService.claim(batchSize, owner);
         for (PharmacyEventOutboxJpaEntity event : events) {
             try {
                 Message message = MessageBuilder.withBody(event.getPayload().getBytes(StandardCharsets.UTF_8))
@@ -72,15 +90,29 @@ public class PharmacyOutboxDispatcher {
                         .setMessageId(event.getEventId().toString())
                         .build();
                 awaitBrokerConfirmation(event, message);
-                repository.markPublished(event, Instant.now(clock));
+                if (claimService == null) {
+                    repository.markPublished(event, Instant.now(clock));
+                } else {
+                    claimService.markPublished(event.getEventId(), owner, Instant.now(clock));
+                }
             } catch (RuntimeException exception) {
-                repository.markFailure(event, exception.getMessage());
+                if (claimService == null) {
+                    repository.markFailure(event, exception.getMessage());
+                } else {
+                    claimService.markFailure(event.getEventId(), owner, safeError(exception));
+                }
                 log.warn("Không thể phát event outbox {} qua {}: {}",
                         event.getEventId(), event.getRoutingKey(), exception.getMessage());
                 // Preserve causal order: a later event must not overtake the oldest failed event.
                 break;
             }
         }
+    }
+
+    private String safeError(RuntimeException exception) {
+        String message = exception.getMessage();
+        return message == null ? "Unknown publish failure"
+                : message.substring(0, Math.min(message.length(), 500));
     }
 
     private void awaitBrokerConfirmation(PharmacyEventOutboxJpaEntity event, Message message) {

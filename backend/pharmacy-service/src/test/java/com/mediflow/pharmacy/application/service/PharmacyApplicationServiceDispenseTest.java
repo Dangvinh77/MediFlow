@@ -27,6 +27,8 @@ import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
+import com.mediflow.pharmacy.domain.exception.PaymentProofRequiredException;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
@@ -47,6 +49,7 @@ class DispenseApplicationServiceTest {
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
     private final DispenseDtoMapper dispenseDtoMapper = mock(DispenseDtoMapper.class);
+    private final PaymentReceiptRepositoryPort paymentReceiptRepo = mock(PaymentReceiptRepositoryPort.class);
 
     private DispenseTransactionService transactionService;
     private RecordDispenseFailureService failureService;
@@ -98,6 +101,21 @@ class DispenseApplicationServiceTest {
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.FULFILLED);
         assertThat(drug.getStockQuantity()).isEqualTo(8);
         verify(prescriptionRepo).save(prescription);
+    }
+
+    /** Manual dispense without a durable receipt fails before the stock transaction is entered. */
+    @Test
+    void manualDispense_withoutPaymentProof_isRejectedBeforeMutation() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        DispenseApplicationService service = new DispenseApplicationService(
+                transactionService, failureService, paymentReceiptRepo);
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.dispense(prescriptionId, actorId, "corr"))
+                .isInstanceOf(PaymentProofRequiredException.class)
+                .hasMessageContaining("bằng chứng thanh toán");
+        verify(paymentReceiptRepo).findByPrescriptionId(prescriptionId);
     }
 
     /** Reservation hết TTL phải chặn cấp trước khi trừ tồn vật lý. */
