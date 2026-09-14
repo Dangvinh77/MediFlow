@@ -86,6 +86,6 @@ class ReleaseExpiredReservationsLeaseTest {
             String owner) {
         return new ReleaseExpiredReservationsService(
                 reservations, expiry, Clock.fixed(NOW, ZoneOffset.UTC), 10, leases, owner,
-                Duration.ofMinutes(5));
+                Duration.ofMinutes(5), exception -> false);
     }
 }

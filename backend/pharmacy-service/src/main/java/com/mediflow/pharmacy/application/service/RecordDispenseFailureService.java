@@ -38,7 +38,16 @@ public class RecordDispenseFailureService {
     private final PharmacyEventPublisherPort eventPublisher;
     private final Clock clock;
 
-    /** Creates the compensation writer. */
+    /**
+     * Creates the compensation writer.
+     *
+     * @param prescriptionRepo prescription persistence port
+     * @param dispenseSlipRepo dispense slip persistence port
+     * @param reservationRepo reservation persistence port
+     * @param drugRepo drug lookup port
+     * @param eventPublisher compensation event port
+     * @param clock business clock
+     */
     public RecordDispenseFailureService(
             PrescriptionRepositoryPort prescriptionRepo,
             DispenseSlipRepositoryPort dispenseSlipRepo,
@@ -90,7 +99,7 @@ public class RecordDispenseFailureService {
         prescription.markDispenseFailed(failedAt);
         prescriptionRepo.save(prescription);
         String safeReason = normalizeReason(reason);
-        slip.markFailed(safeReason);
+        slip.markFailed(safeReason, failedAt);
         dispenseSlipRepo.save(slip);
         eventPublisher.publishPrescriptionDispenseFailed(new PrescriptionDispenseFailedEvent(
                 UUID.randomUUID(), failedAt, correlationId, prescriptionId, invoiceId,

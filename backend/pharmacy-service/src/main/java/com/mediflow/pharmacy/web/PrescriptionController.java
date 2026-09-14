@@ -126,8 +126,11 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
     @GetMapping("/{prescriptionId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
     public ResponseEntity<ApiResponse<PrescriptionDTO>> getById(
-            @PathVariable UUID prescriptionId) {
-        return ResponseEntity.ok(ApiResponse.ok(getPrescriptionUseCase.getPrescriptionById(prescriptionId)));
+            @PathVariable UUID prescriptionId,
+            @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                getPrescriptionUseCase.getPrescriptionById(prescriptionId),
+                normalizeCorrelationId(correlationId)));
     }
 
     /**

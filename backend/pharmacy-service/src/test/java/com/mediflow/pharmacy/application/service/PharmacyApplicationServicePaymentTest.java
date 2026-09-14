@@ -11,7 +11,9 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,7 +61,8 @@ class PaymentApplicationServiceTest {
     void setUp() {
         service = new PaymentApplicationService(
                 prescriptionRepo, processedEventPort, paymentReceiptRepo, dispenseUseCase,
-                latePaymentCompensationService);
+                latePaymentCompensationService,
+                Clock.fixed(Instant.parse("2026-09-13T04:00:00Z"), ZoneOffset.UTC));
     }
 
     /**

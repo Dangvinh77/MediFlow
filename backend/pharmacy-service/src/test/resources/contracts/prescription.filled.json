@@ -1,0 +1,16 @@
+{
+  "eventId": "99999999-9999-9999-9999-999999999999",
+  "occurredAt": "2026-09-14T10:02:00Z",
+  "correlationId": "fixture-prescription-001",
+  "prescriptionId": "55555555-5555-5555-5555-555555555555",
+  "patientId": "33333333-3333-3333-3333-333333333333",
+  "departmentId": "44444444-4444-4444-4444-444444444444",
+  "totalAmount": 125000.00,
+  "dispensedItems": [
+    {
+      "drugId": "88888888-8888-8888-8888-888888888888",
+      "drugName": "Paracetamol",
+      "quantity": 10
+    }
+  ]
+}

@@ -71,11 +71,14 @@ class DrugControllerTest {
         when(manageDrugUseCase.getById(drugId)).thenReturn(drugDto(drugId, 25));
 
         mockMvc.perform(get(BASE_PATH + "/{id}", drugId)
-                        .with(user("reader").roles(role)))
+                        .with(user("reader").roles(role))
+                        .header("X-Correlation-ID", "drug-read-001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.drugId").value(drugId.toString()))
-                .andExpect(jsonPath("$.data.drugName").value("Paracetamol 500mg"));
+                .andExpect(jsonPath("$.data.drugName").value("Paracetamol 500mg"))
+                .andExpect(jsonPath("$.correlationId").value("drug-read-001"));
+
     }
 
     @Test
@@ -157,10 +160,12 @@ class DrugControllerTest {
         when(manageDrugUseCase.getById(drugId))
                 .thenThrow(new DrugNotFoundException("Không tìm thấy thuốc id=" + drugId));
 
-        mockMvc.perform(get(BASE_PATH + "/{id}", drugId))
+        mockMvc.perform(get(BASE_PATH + "/{id}", drugId)
+                        .header("X-Correlation-ID", "drug-error-001"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("DRUG_NOT_FOUND"));
+                .andExpect(jsonPath("$.error.code").value("DRUG_NOT_FOUND"))
+                .andExpect(jsonPath("$.correlationId").value("drug-error-001"));
     }
 
     @ParameterizedTest

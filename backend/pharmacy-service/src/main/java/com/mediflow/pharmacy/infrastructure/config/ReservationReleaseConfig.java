@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.TransientFailureClassifierPort;
 import com.mediflow.pharmacy.application.service.ExpirePrescriptionTransaction;
 import com.mediflow.pharmacy.application.service.ReleaseExpiredReservationsService;
 
@@ -47,9 +48,13 @@ public class ReservationReleaseConfig {
      * Creates the scheduler use-case implementation with the configured batch limit.
      *
      * @param reservationRepository repository adapter for reservation candidates
+     * @param leaseRepository durable scheduler lease adapter
      * @param expireTransaction transaction boundary for one prescription
      * @param clock shared UTC business clock
      * @param batchSize maximum candidates processed per scheduler run
+     * @param leaseOwner unique scheduler instance identity
+     * @param leaseDuration lease TTL
+     * @param transientFailureClassifier classifier for retryable infrastructure failures
      * @return configured expiry service
      */
     @Bean
@@ -60,9 +65,10 @@ public class ReservationReleaseConfig {
             Clock clock,
             @Value("${mediflow.pharmacy.reservation.batch-size:100}") int batchSize,
             @Value("${mediflow.pharmacy.reservation.lease-owner:${HOSTNAME:pharmacy-local}}") String leaseOwner,
-            @Value("${mediflow.pharmacy.reservation.lease:PT5M}") Duration leaseDuration) {
+            @Value("${mediflow.pharmacy.reservation.lease:PT5M}") Duration leaseDuration,
+            TransientFailureClassifierPort transientFailureClassifier) {
         return new ReleaseExpiredReservationsService(
                 reservationRepository, expireTransaction, clock, batchSize, leaseRepository,
-                leaseOwner, leaseDuration);
+                leaseOwner, leaseDuration, transientFailureClassifier);
     }
 }

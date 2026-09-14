@@ -34,6 +34,7 @@ spring:
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
     publisher-confirm-type: correlated
+    publisher-returns: true
     template:
       mandatory: true
 

@@ -10,6 +10,10 @@ import java.util.UUID;
  * <p>{@code accountId} is the JWT subject and is never treated as a staff id. A staff id is
  * optional until the Gateway contract supplies the signed {@code staffId} claim. Use
  * {@link #requireStaffId()} for business operations whose ownership is defined by staff identity.
+ *
+ * @param accountId JWT subject account identifier
+ * @param staffId signed staff identifier, when available
+ * @param role normalized role name
  */
 public record ActorIdentity(UUID accountId, UUID staffId, String role) {
 
@@ -22,17 +26,23 @@ public record ActorIdentity(UUID accountId, UUID staffId, String role) {
         role = role.trim().toUpperCase(Locale.ROOT);
     }
 
-    /** Returns whether this account has the administrative role. */
+    /** Returns whether this account has the administrative role.
+     * @return {@code true} when role is ADMIN
+     */
     public boolean isAdministrator() {
         return "ADMIN".equals(role);
     }
 
-    /** Returns whether this identity represents a technical system actor. */
+    /** Returns whether this identity represents a technical system actor.
+     * @return {@code true} when role is SYSTEM
+     */
     public boolean isSystem() {
         return "SYSTEM".equals(role);
     }
 
-    /** Returns the staff id or fails closed when the signed claim is unavailable. */
+    /** Returns the staff id or fails closed when the signed claim is unavailable.
+     * @return signed staff identifier
+     */
     public UUID requireStaffId() {
         if (staffId == null) {
             throw new IllegalStateException("STAFF_ID_REQUIRED");
@@ -44,6 +54,8 @@ public record ActorIdentity(UUID accountId, UUID staffId, String role) {
      * Returns the identifier allowed to own an audit record.
      * Staff-backed operations fail closed when the signed staff claim is missing;
      * technical/admin operations retain accountId.
+     *
+     * @return identifier to persist as the audit actor
      */
     public UUID auditActorId() {
         if (staffId != null || isAdministrator() || isSystem()) {
