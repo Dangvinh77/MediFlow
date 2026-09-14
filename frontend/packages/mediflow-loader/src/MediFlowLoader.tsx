@@ -1,18 +1,32 @@
 import { useId } from "react";
 
 export interface MediFlowLoaderProps {
+  // Kích thước loader tính bằng CSS pixel (hình vuông). Mặc định 64.
   size?: number;
+  // Màu viền tam giác và chữ MF (khi flow = false). Mặc định #0F766E.
   color?: string;
+  // Màu của vệt sáng (tracer + gradient monogram). Mặc định #2DD4BF.
   trailColor?: string;
+  // Hệ số tốc độ animation. 1 = tốc độ chuẩn. Mặc định 1.
   speed?: number;
+  // Bật/tắt viền sáng dày bao quanh tam giác + tracer chạy quanh. Mặc định true.
   glow?: boolean;
+  // Nhãn hiển thị bên dưới loader. Cũng dùng làm aria-label. Mặc định "Loading".
   label?: string;
+  // Class names áp cho wrapper ngoài, để host app style bằng Tailwind.
   className?: string;
+  // Bật/tắt animation intro/exit cho 3 miếng logo. Mặc định true.
   intro?: boolean;
+  // Thời gian trượt của mỗi miếng logo trong pha intro (giây). Mặc định 1.4.
   slideDuration?: number;
+  // Khoảng lệch pha giữa các miếng logo khi intro/exit (giây). Mặc định 0.5.
   stagger?: number;
+  // Thời gian giữ logo hoàn chỉnh trước khi exit (giây). Mặc định 0.5.
   holdDuration?: number;
+  // Thời gian exit của mỗi miếng logo (giây). Mặc định 1.0.
   exitDuration?: number;
+  // Bật/tắt hiệu ứng gradient lóa sáng chạy qua monogram. Mặc định true.
+  flow?: boolean;
 }
 
 const TRIANGLE_PATH = "M 15 18 L 85 18 L 50 78.62 Z";
@@ -53,6 +67,7 @@ export function MediFlowLoader({
   stagger = STAGGER_SECONDS,
   holdDuration = HOLD_DURATION_SECONDS,
   exitDuration = EXIT_DURATION_SECONDS,
+  flow = true,
 }: MediFlowLoaderProps) {
   const safeSize = Number.isFinite(size) && size > 0 ? size : 64;
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1;
@@ -68,7 +83,6 @@ export function MediFlowLoader({
   const instanceId = useId();
   const monogramClipId = `${instanceId}-monogram-clip`;
   const monogramFlowId = `${instanceId}-monogram-flow`;
-  const monogramFill = `url(#${monogramFlowId})`;
 
   const slide = slideDuration;
   const stg = stagger;
@@ -83,10 +97,10 @@ export function MediFlowLoader({
   const beginA = "0s";
   const beginB = `${halfPeriod}s`;
 
-  // === TRACER ===
-  // Giữ nguyên công thức gốc (from/to), chỉ đổi duration cho khớp nhịp T/2
-  // speed vẫn điều chỉnh tốc độ tracer
   const duration = `${halfPeriod / safeSpeed}s`;
+
+  // Màu fill cho monogram: gradient nếu flow = true, màu tĩnh nếu false
+  const monogramFill = flow ? `url(#${monogramFlowId})` : color;
 
   const kt = (t: number) => (t / T).toFixed(4);
 
@@ -223,25 +237,29 @@ export function MediFlowLoader({
           <clipPath id={monogramClipId}>
             <path d={INNER_TRIANGLE_PATH} />
           </clipPath>
-          <linearGradient
-            gradientUnits="userSpaceOnUse"
-            id={monogramFlowId}
-            spreadMethod="repeat"
-            x1="-24"
-            x2="0"
-            y1="-24"
-            y2="0"
-          >
-            <stop offset="0" stopColor={color} />
-            <stop offset="0.36" stopColor={color} />
-            <stop offset="0.5" stopColor={trailColor} />
-            <stop offset="0.64" stopColor={color} />
-            <stop offset="1" stopColor={color} />
-            <animate attributeName="x1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
-            <animate attributeName="x2" dur={duration} from="0" repeatCount="indefinite" to="24" />
-            <animate attributeName="y1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
-            <animate attributeName="y2" dur={duration} from="0" repeatCount="indefinite" to="24" />
-          </linearGradient>
+
+          {/* Chỉ khai báo gradient khi flow = true */}
+          {flow ? (
+            <linearGradient
+              gradientUnits="userSpaceOnUse"
+              id={monogramFlowId}
+              spreadMethod="repeat"
+              x1="-24"
+              x2="0"
+              y1="-24"
+              y2="0"
+            >
+              <stop offset="0" stopColor={color} />
+              <stop offset="0.36" stopColor={color} />
+              <stop offset="0.5" stopColor={trailColor} />
+              <stop offset="0.64" stopColor={color} />
+              <stop offset="1" stopColor={color} />
+              <animate attributeName="x1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
+              <animate attributeName="x2" dur={duration} from="0" repeatCount="indefinite" to="24" />
+              <animate attributeName="y1" dur={duration} from="-24" repeatCount="indefinite" to="0" />
+              <animate attributeName="y2" dur={duration} from="0" repeatCount="indefinite" to="24" />
+            </linearGradient>
+          ) : null}
         </defs>
 
         {glow ? (
