@@ -93,9 +93,13 @@ class LifecycleReconciliationPersistenceIntegrationTest {
                     assertThat(finding.prescriptionId()).isEqualTo(prescriptionId);
                     assertThat(finding.anomalyType()).isEqualTo("ACTIVE_SLIP_MISMATCH");
                 });
+        // Prescription stays ACTIVE (not terminal) with a FULFILLED reservation, so the matching
+        // anomaly is ACTIVE_RESERVATION_TERMINAL — TERMINAL_RESERVATION_STATUS_MISMATCH only fires
+        // for prescriptions whose own status is already terminal (FULFILLED/CANCELLED/EXPIRED/
+        // DISPENSE_FAILED), which this fixture never reaches.
         assertThat(reconciliation.findMismatches(20))
                 .extracting(finding -> finding.anomalyType())
-                .contains("RESERVATION_QUANTITY_MISMATCH", "TERMINAL_RESERVATION_STATUS_MISMATCH");
+                .contains("RESERVATION_QUANTITY_MISMATCH", "ACTIVE_RESERVATION_TERMINAL");
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM PRESCRIPTION WHERE prescription_id = ?", String.class, prescriptionId))
                 .isEqualTo("ACTIVE");
