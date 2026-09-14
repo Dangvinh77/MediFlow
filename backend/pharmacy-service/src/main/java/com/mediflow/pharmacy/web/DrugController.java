@@ -49,11 +49,12 @@ public class DrugController {
  public ResponseEntity<ApiResponse<PageResult<DrugDTO>>> search(
     @RequestParam(required = false) String keyword,
     @RequestParam(required = false) Integer page,
-    @RequestParam(required = false) Integer size
+    @RequestParam(required = false) Integer size,
+    @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId
 ) 
     {
      PageResult<DrugDTO> result = manageDrugUseCase.search(keyword, PageQuery.of(page, size));
-     return ResponseEntity.ok(ApiResponse.ok(result));
+     return ResponseEntity.ok(ApiResponse.ok(result, normalizeCorrelationId(correlationId)));
  }
 
  /**
@@ -64,8 +65,10 @@ public class DrugController {
   */
  @GetMapping("/{id}")
  @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
- public ResponseEntity<ApiResponse<DrugDTO>> getById(@PathVariable UUID id){
-    return ResponseEntity.ok(ApiResponse.ok(manageDrugUseCase.getById(id)));
+ public ResponseEntity<ApiResponse<DrugDTO>> getById(
+         @PathVariable UUID id,
+         @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId){
+    return ResponseEntity.ok(ApiResponse.ok(manageDrugUseCase.getById(id), normalizeCorrelationId(correlationId)));
  }
 
  /**
@@ -76,11 +79,13 @@ public class DrugController {
   */
   @PostMapping
   @PreAuthorize("hasAnyRole('ADMIN','PHARMACIST')")
- public ResponseEntity<ApiResponse<DrugDTO>> create(@Valid @RequestBody CreateDrugRequest request){
+ public ResponseEntity<ApiResponse<DrugDTO>> create(
+         @Valid @RequestBody CreateDrugRequest request,
+         @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId){
       DrugDTO created = manageDrugUseCase.create(request);
       URI location = URI.create("/api/v1/pharmacy/drugs/" + created.drugId());
 
-    return ResponseEntity.created(location).body(ApiResponse.ok(created));
+    return ResponseEntity.created(location).body(ApiResponse.ok(created, normalizeCorrelationId(correlationId)));
  }
 
  /**
@@ -139,6 +144,11 @@ public class DrugController {
           throw new AccessDeniedException(
                   "JWT chưa cung cấp staffId đã xác thực cho thao tác nghiệp vụ", exception);
       }
+  }
+
+  /** Generates a trace id for direct calls that do not pass through the gateway. */
+  private String normalizeCorrelationId(String value) {
+      return value == null || value.isBlank() ? UUID.randomUUID().toString() : value.trim();
   }
 
  }

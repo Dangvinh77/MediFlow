@@ -10,6 +10,10 @@ import jakarta.validation.constraints.Size;
  * Một dòng thuốc trong đơn — client báo "kê thuốc nào, bao nhiêu, liều dùng ra sao".
  * Không có trường giá: giá phải để server tự chụp từ kho tại thời điểm kê đơn (BR-D8),
  * client không được đặt giá.
+ *
+ * @param drugId drug reference
+ * @param quantity requested quantity
+ * @param dosage dosage instructions
  */
 public record PrescriptionLineRequest(
         @NotNull UUID drugId,

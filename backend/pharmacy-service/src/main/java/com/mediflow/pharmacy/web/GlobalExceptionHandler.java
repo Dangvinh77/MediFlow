@@ -7,6 +7,7 @@ import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
+import com.mediflow.common.security.JwtClaims;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 
@@ -120,7 +123,7 @@ public class GlobalExceptionHandler {
                 details);
 
         return ResponseEntity.badRequest()
-                .body(ApiResponse.fail(error));
+                .body(ApiResponse.fail(error, correlationId()));
     }
 
     /**
@@ -189,6 +192,15 @@ public class GlobalExceptionHandler {
             String message) {
 
         return ResponseEntity.status(status)
-                .body(ApiResponse.fail(ApiError.of(code, message)));
+                .body(ApiResponse.fail(ApiError.of(code, message), correlationId()));
+    }
+
+    /** Returns the inbound tracing id when a servlet request is active. */
+    private String correlationId() {
+        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
+            return null;
+        }
+        String value = attributes.getRequest().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

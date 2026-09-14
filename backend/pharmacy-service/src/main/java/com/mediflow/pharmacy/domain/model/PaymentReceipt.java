@@ -136,15 +136,31 @@ public final class PaymentReceipt {
     /**
      * Đánh dấu workflow xuất thuốc thành công. Gọi lặp lại ở trạng thái DISPENSED là no-op;
      * gọi ngược từ COMPENSATED bị từ chối để không ghi đè terminal outcome.
+     *
+     * @param timestamp thời điểm hoàn tất workflow
      */
-    public void markDispensed() {
+    public void markDispensed(Instant timestamp) {
         if (status == PaymentReceiptStatus.DISPENSED) {
             return;
         }
         requireReceived("DISPENSED");
+        if (timestamp == null) {
+            throw new PaymentReceiptRuleException(
+                    "PAYMENT_RECEIPT_TIME_REQUIRED", "Thời điểm hoàn tất receipt là bắt buộc");
+        }
         status = PaymentReceiptStatus.DISPENSED;
         failureCode = null;
-        updatedAt = Instant.now();
+        updatedAt = timestamp;
+    }
+
+    /**
+     * Legacy convenience overload retained for source compatibility.
+     *
+     * @deprecated callers should provide the application clock timestamp explicitly
+     */
+    @Deprecated(forRemoval = false)
+    public void markDispensed() {
+        markDispensed(Instant.now());
     }
 
     /**
@@ -152,8 +168,9 @@ public final class PaymentReceipt {
      * là no-op; mọi attempt ghi đè terminal khác đều bị từ chối.
      *
      * @param code mã lỗi nghiệp vụ ổn định
+     * @param timestamp thời điểm ghi nhận bù trừ
      */
-    public void markCompensated(String code) {
+    public void markCompensated(String code, Instant timestamp) {
         String normalized = requireText(code, "PAYMENT_RECEIPT_FAILURE_REQUIRED", "failureCode");
         if (status == PaymentReceiptStatus.COMPENSATED) {
             if (!Objects.equals(failureCode, normalized.trim())) {
@@ -162,9 +179,24 @@ public final class PaymentReceipt {
             return;
         }
         requireReceived("COMPENSATED");
+        if (timestamp == null) {
+            throw new PaymentReceiptRuleException(
+                    "PAYMENT_RECEIPT_TIME_REQUIRED", "Thời điểm bù trừ receipt là bắt buộc");
+        }
         status = PaymentReceiptStatus.COMPENSATED;
         failureCode = normalized.trim();
-        updatedAt = Instant.now();
+        updatedAt = timestamp;
+    }
+
+    /**
+     * Legacy convenience overload retained for source compatibility.
+     *
+     * @param code mã lỗi nghiệp vụ ổn định
+     * @deprecated callers should provide the application clock timestamp explicitly
+     */
+    @Deprecated(forRemoval = false)
+    public void markCompensated(String code) {
+        markCompensated(code, Instant.now());
     }
 
     /** @return true nếu receipt đã có outcome terminal */

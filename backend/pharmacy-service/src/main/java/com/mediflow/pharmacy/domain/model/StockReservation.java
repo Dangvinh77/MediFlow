@@ -142,10 +142,25 @@ public class StockReservation {
     }
 
     /** Chuyển giữ chỗ đang hiệu lực sang trạng thái đã xuất thuốc. */
-    public void markFulfilled() {
+    public void markFulfilled(Instant now) {
         requireReserved();
+        if (now == null) {
+            throw new StockReservationRuleException(
+                    "RESERVATION_FULFILLMENT_TIME_REQUIRED",
+                    "Thời điểm hoàn tất giữ chỗ là bắt buộc");
+        }
         status = ReservationStatus.FULFILLED;
-        updatedAt = Instant.now();
+        updatedAt = now;
+    }
+
+    /**
+     * Legacy convenience overload retained for source compatibility.
+     *
+     * @deprecated callers should provide the application clock timestamp explicitly
+     */
+    @Deprecated(forRemoval = false)
+    public void markFulfilled() {
+        markFulfilled(Instant.now());
     }
 
     /**

@@ -109,12 +109,24 @@ public class DispenseSlip {
      * Đánh dấu quy trình xuất thất bại (BR-D12).
      *
      * @param reason nguyên nhân thất bại
+     * @param timestamp thời điểm ghi nhận thất bại
      */
-    public void markFailed(String reason) {
+    public void markFailed(String reason, Instant timestamp) {
         requirePending();
         status = DispenseStatus.FAILED;
         failureReason = normalizeReason(reason, "Xuất thuốc thất bại");
-        updatedAt = Instant.now();
+        updatedAt = requireTimestamp(timestamp);
+    }
+
+    /**
+     * Legacy convenience overload retained for source compatibility.
+     *
+     * @param reason nguyên nhân thất bại
+     * @deprecated callers should provide the application clock timestamp explicitly
+     */
+    @Deprecated(forRemoval = false)
+    public void markFailed(String reason) {
+        markFailed(reason, Instant.now());
     }
 
     /**

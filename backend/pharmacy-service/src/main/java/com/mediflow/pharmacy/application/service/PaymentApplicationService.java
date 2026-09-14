@@ -14,6 +14,8 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -35,19 +37,31 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
     private final PaymentReceiptRepositoryPort paymentReceiptRepository;
     private final DispensePrescriptionUseCase dispenseUseCase;
     private final LatePaymentCompensationService latePaymentCompensationService;
+    private final Clock clock;
 
-    /** Creates the payment application service from ports and the shared dispense use case. */
+    /**
+     * Creates the payment application service from ports and the shared dispense use case.
+     *
+     * @param prescriptionRepository prescription lookup port
+     * @param processedEventPort idempotent event marker port
+     * @param paymentReceiptRepository payment receipt claim port
+     * @param dispenseUseCase stock dispense port
+     * @param latePaymentCompensationService compensation workflow
+     * @param clock business clock used for deterministic receipt timestamps
+     */
     public PaymentApplicationService(
             PrescriptionRepositoryPort prescriptionRepository,
             ProcessedEventPort processedEventPort,
             PaymentReceiptRepositoryPort paymentReceiptRepository,
             DispensePrescriptionUseCase dispenseUseCase,
-            LatePaymentCompensationService latePaymentCompensationService) {
+            LatePaymentCompensationService latePaymentCompensationService,
+            Clock clock) {
         this.prescriptionRepository = prescriptionRepository;
         this.processedEventPort = processedEventPort;
         this.paymentReceiptRepository = paymentReceiptRepository;
         this.dispenseUseCase = dispenseUseCase;
         this.latePaymentCompensationService = latePaymentCompensationService;
+        this.clock = clock;
     }
 
     /**
@@ -93,7 +107,7 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
                     SYSTEM_ACTOR,
                     command.invoiceId(),
                     command.correlationId());
-            receipt.markDispensed();
+            receipt.markDispensed(Instant.now(clock));
             paymentReceiptRepository.save(receipt);
             processedEventPort.claimIfAbsent(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY);
         } catch (RuntimeException exception) {
@@ -125,7 +139,7 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
      * @param failureCode stable business failure code
      */
     private void completeCompensation(PaymentReceipt receipt, String failureCode) {
-        receipt.markCompensated(failureCode);
+        receipt.markCompensated(failureCode, Instant.now(clock));
         paymentReceiptRepository.save(receipt);
         processedEventPort.claimIfAbsent(receipt.getEventId(), PAYMENT_COMPLETED_ROUTING_KEY);
     }

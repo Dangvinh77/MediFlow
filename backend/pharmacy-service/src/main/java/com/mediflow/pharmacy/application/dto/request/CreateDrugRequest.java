@@ -17,6 +17,15 @@ import jakarta.validation.constraints.Size;
  * {@code drugId}/{@code createdAt}/{@code updatedAt} (server tự sinh).
  * Validation ở đây là "tuyến phòng thủ tại biên"; quy tắc thật vẫn chạy trong {@code Drug.create}
  * (tên/đơn vị bắt buộc, giá không âm, hạn dùng không ở quá khứ).
+ *
+ * @param drugName display name
+ * @param activeIngredient active ingredient snapshot
+ * @param unit dispensing unit
+ * @param price non-negative unit price
+ * @param stockQuantity initial on-hand quantity
+ * @param expiryDate expiry date
+ * @param manufacturer manufacturer name
+ * @param lowStockThreshold alert threshold
  */
 public record CreateDrugRequest(
         @NotBlank @Size(max = 150)

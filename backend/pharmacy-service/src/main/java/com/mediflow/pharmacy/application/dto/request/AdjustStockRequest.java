@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Size;
  * <p>Khác với {@code CreateDrugRequest}: {@code quantity} ở đây <b>âm được</b> — dương là nhập kho,
  * âm là điều chỉnh giảm (kiểm kê, sai lệch). Quy tắc dương/âm thật xử lý trong application service,
  * không phải ở DTO này.
+ *
+ * @param quantity stock delta; positive adds stock and negative subtracts stock
+ * @param reason human-readable adjustment reason
  */
 public record AdjustStockRequest(
         @NotNull
