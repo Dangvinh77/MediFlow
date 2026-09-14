@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -90,7 +91,7 @@ class PaymentApplicationServiceTest {
         verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
     }
 
-    /** Concurrent redelivery of one event is serialized and produces one dispense outcome. */
+    /** Concurrent redelivery of one event produces one dispense outcome via durable claims/locks. */
     @Test
     void onPaymentCompleted_sameEventConcurrent_dispensesOnce() throws Exception {
         UUID eventId = UUID.randomUUID();
@@ -230,6 +231,77 @@ class PaymentApplicationServiceTest {
         service.onPaymentCompleted(command);
 
         verify(latePaymentCompensationService).compensate(command, cancelled);
+    }
+
+    /** Payment đến sau EXPIRED phải bù trừ một lần và chuyển receipt sang terminal. */
+    @Test
+    void onPaymentCompleted_expiredPrescription_publishesCompensationOnce() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        Prescription expired = prescriptionFor(command);
+        expired.markExpired(Instant.now());
+        PaymentReceipt receipt = receipt(command);
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(expired));
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt));
+        doThrow(new IllegalStateException("PRESCRIPTION_NOT_ACTIVE")).when(dispenseUseCase)
+                .dispenseWithPaymentProof(
+                        prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+
+        service.onPaymentCompleted(command);
+
+        verify(latePaymentCompensationService).compensate(command, expired);
+        verify(paymentReceiptRepo).save(receipt);
+        verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
+        assertThat(receipt.isTerminal()).isTrue();
+    }
+
+    /** Receipt DISPENSED là terminal nên redelivery không được gọi lại dispense. */
+    @Test
+    void onPaymentCompleted_dispensedReceipt_doesNotDispenseAgain() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        PaymentReceipt receipt = receipt(command);
+        receipt.markDispensed();
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
+
+        service.onPaymentCompleted(command);
+
+        verifyNoInteractions(dispenseUseCase, latePaymentCompensationService);
+        verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
+    }
+
+    /** Infrastructure failure leaves RECEIVED so a redelivery can resume the workflow safely. */
+    @Test
+    void onPaymentCompleted_infrastructureFailure_thenRedeliveryResumes() {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        PaymentReceipt receipt = receipt(command);
+        DispenseDTO result = new DispenseDTO(
+                UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
+                Instant.now(), SYSTEM_USER, command.correlationId());
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
+        when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt))
+                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
+        when(dispenseUseCase.dispenseWithPaymentProof(
+                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId()))
+                .thenThrow(new IllegalStateException("temporary database outage"))
+                .thenReturn(result);
+
+        assertThatThrownBy(() -> service.onPaymentCompleted(command))
+                .isInstanceOf(IllegalStateException.class);
+        service.onPaymentCompleted(command);
+
+        verify(dispenseUseCase, times(2)).dispenseWithPaymentProof(
+                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+        verify(paymentReceiptRepo).save(receipt);
+        verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
     }
 
     private PaymentCompletedCommand command(UUID eventId, UUID prescriptionId) {

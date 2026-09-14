@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
 import com.mediflow.pharmacy.application.service.ExpirePrescriptionTransaction;
 import com.mediflow.pharmacy.application.service.ReleaseExpiredReservationsService;
 
@@ -54,10 +55,14 @@ public class ReservationReleaseConfig {
     @Bean
     public ReleaseExpiredReservationsService releaseExpiredReservationsService(
             StockReservationRepositoryPort reservationRepository,
+            ReservationExpiryLeaseRepositoryPort leaseRepository,
             ExpirePrescriptionTransaction expireTransaction,
             Clock clock,
-            @Value("${mediflow.pharmacy.reservation.batch-size:100}") int batchSize) {
+            @Value("${mediflow.pharmacy.reservation.batch-size:100}") int batchSize,
+            @Value("${mediflow.pharmacy.reservation.lease-owner:${HOSTNAME:pharmacy-local}}") String leaseOwner,
+            @Value("${mediflow.pharmacy.reservation.lease:PT5M}") Duration leaseDuration) {
         return new ReleaseExpiredReservationsService(
-                reservationRepository, expireTransaction, clock, batchSize);
+                reservationRepository, expireTransaction, clock, batchSize, leaseRepository,
+                leaseOwner, leaseDuration);
     }
 }

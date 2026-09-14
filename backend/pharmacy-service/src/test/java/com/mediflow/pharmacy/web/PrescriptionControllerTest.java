@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionLineDTO;
 import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
@@ -24,6 +25,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -195,7 +199,8 @@ class PrescriptionControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(put(BASE_PATH + "/{prescriptionId}/dispense", prescriptionId)
-                        .with(user(actorId.toString()).roles(role))
+                        .with(authentication(actor(actorId,
+                                "PHARMACIST".equals(role) ? actorId : null, role)))
                         .header("X-Correlation-ID", "manual-dispense-correlation"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -218,9 +223,26 @@ class PrescriptionControllerTest {
         verifyNoInteractions(dispensePrescriptionUseCase);
     }
 
+    /** PHARMACIST phải có staffId đã ký để ghi nhận người thực hiện xuất thuốc. */
+    @Test
+    void dispense_pharmacistWithoutStaffId_returns403() throws Exception {
+        mockMvc.perform(put(BASE_PATH + "/{prescriptionId}/dispense", UUID.randomUUID())
+                        .with(user(UUID.randomUUID().toString()).roles("PHARMACIST")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(dispensePrescriptionUseCase);
+    }
+
     private CreatePrescriptionRequest validRequest() {
         return requestWithLines(List.of(new PrescriptionLineRequest(
                 UUID.randomUUID(), 2, "Ngày 2 lần")));
+    }
+
+    private UsernamePasswordAuthenticationToken actor(UUID accountId, UUID staffId, String role) {
+        ActorIdentity identity = new ActorIdentity(accountId, staffId, role);
+        return new UsernamePasswordAuthenticationToken(
+                identity, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 
     private CreatePrescriptionRequest requestWithLines(List<PrescriptionLineRequest> lines) {

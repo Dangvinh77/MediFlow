@@ -46,6 +46,14 @@ public class Drug {
   public static Drug create(String drugName, String activeIngredient, String unit, BigDecimal price, int stockQuantity,
                             LocalDate expiryDate, String manufacturer, int lowStockThreshold
   ){
+      return create(drugName, activeIngredient, unit, price, stockQuantity, expiryDate,
+              manufacturer, lowStockThreshold, LocalDate.now());
+  }
+
+  /** Creates a drug using the supplied hospital business date for expiry validation. */
+  public static Drug create(String drugName, String activeIngredient, String unit, BigDecimal price, int stockQuantity,
+                            LocalDate expiryDate, String manufacturer, int lowStockThreshold,
+                            LocalDate businessDate) {
           if(drugName == null || drugName.isBlank()){
              throw new DrugRuleException("DRUG_NAME_REQUIRED", "Tên thuốc không được bỏ trống");
           }
@@ -58,7 +66,7 @@ public class Drug {
               throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá của thuốc không được âm");
           }
 
-          if(expiryDate == null || expiryDate.isBefore(LocalDate.now())){
+           if(expiryDate == null || businessDate == null || expiryDate.isBefore(businessDate)){
               throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
           }
 
@@ -73,7 +81,6 @@ public class Drug {
           return new Drug(null, drugName, activeIngredient, unit, price, stockQuantity, expiryDate, manufacturer, lowStockThreshold, null, null);
   }
   
-    /** Dựng lại từ dữ liệu đã lưu — không chạy lại quy tắc lúc tạo. */
     /** Restores a drug from persistence without re-running creation validation. */
     public static Drug restore(UUID drugId, String drugName, String activeIngredient, String unit, BigDecimal price,
                                int stockQuantity, LocalDate expiryDate, String manufacturer, int lowStockThreshold,
@@ -85,13 +92,21 @@ public class Drug {
     /** Updates catalogue information while preserving the current stock quantity. */
     public void updateInfo(String drugName, String activeIngredient, String unit, BigDecimal price,
                            LocalDate expiryDate, String manufacturer, int lowStockThreshold) {
+        updateInfo(drugName, activeIngredient, unit, price, expiryDate, manufacturer,
+                lowStockThreshold, LocalDate.now());
+    }
+
+    /** Updates catalogue information using the supplied hospital business date. */
+    public void updateInfo(String drugName, String activeIngredient, String unit, BigDecimal price,
+                           LocalDate expiryDate, String manufacturer, int lowStockThreshold,
+                           LocalDate businessDate) {
         if (drugName == null || drugName.isBlank())
             throw new DrugRuleException("DRUG_NAME_REQUIRED", "Tên thuốc không được để trống");
         if (unit == null || unit.isBlank())
             throw new DrugRuleException("DRUG_UNIT_REQUIRED", "Đơn vị tính không được để trống");
         if (price == null || price.compareTo(BigDecimal.ZERO) < 0)
             throw new DrugRuleException("DRUG_PRICE_NEGATIVE", "Giá thuốc không được âm");
-        if (expiryDate == null || expiryDate.isBefore(LocalDate.now()))
+        if (expiryDate == null || businessDate == null || expiryDate.isBefore(businessDate))
             throw new DrugRuleException("DRUG_EXPIRY_PAST", "Hạn sử dụng của thuốc không được ở quá khứ");
         if (lowStockThreshold < 0)
             throw new DrugRuleException("DRUG_QUANTITY_INVALID", "Ngưỡng cảnh báo tồn kho không được âm");

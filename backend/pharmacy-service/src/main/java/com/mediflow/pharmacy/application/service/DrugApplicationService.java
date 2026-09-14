@@ -22,7 +22,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -41,18 +40,7 @@ public class DrugApplicationService implements ManageDrugUseCase {
     private final Clock clock;
     private final StockAdjustmentRepositoryPort adjustmentRepository;
 
-    /** Creates the drug feature service with framework-free application ports. */
-    public DrugApplicationService(
-            DrugRepositoryPort drugRepository,
-            StockReservationRepositoryPort reservationRepository,
-            PharmacyEventPublisherPort eventPublisher,
-            DrugDtoMapper drugDtoMapper,
-            Clock clock) {
-        this(drugRepository, reservationRepository, eventPublisher, drugDtoMapper, clock, null);
-    }
-
     /** Creates the drug feature service with durable stock audit persistence. */
-    @Autowired
     public DrugApplicationService(
             DrugRepositoryPort drugRepository,
             StockReservationRepositoryPort reservationRepository,
@@ -80,7 +68,8 @@ public class DrugApplicationService implements ManageDrugUseCase {
                 request.stockQuantity() == null ? 0 : request.stockQuantity(),
                 request.expiryDate(),
                 request.manufacturer(),
-                request.lowStockThreshold() == null ? 10 : request.lowStockThreshold());
+                request.lowStockThreshold() == null ? 10 : request.lowStockThreshold(),
+                java.time.LocalDate.now(clock));
         return drugDtoMapper.toDto(drugRepository.save(drug));
     }
 
@@ -144,11 +133,9 @@ public class DrugApplicationService implements ManageDrugUseCase {
         int beforeStock = drug.getStockQuantity();
         drug.adjustStock(request.quantity());
         Drug saved = drugRepository.save(drug);
-        if (adjustmentRepository != null) {
-            adjustmentRepository.save(StockAdjustment.create(
-                    id, beforeStock, request.quantity(), saved.getStockQuantity(),
-                    request.reason(), actorId, correlationId, Instant.now(clock)));
-        }
+        adjustmentRepository.save(StockAdjustment.create(
+                id, beforeStock, request.quantity(), saved.getStockQuantity(),
+                request.reason(), actorId, correlationId, Instant.now(clock)));
         eventPublisher.publishStockAdjusted(new StockAdjustedEvent(
                 UUID.randomUUID(),
                 Instant.now(clock),

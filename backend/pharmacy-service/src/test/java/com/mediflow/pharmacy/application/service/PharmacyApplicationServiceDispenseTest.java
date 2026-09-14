@@ -3,6 +3,7 @@ package com.mediflow.pharmacy.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
+import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.pharmacy.domain.exception.PaymentProofRequiredException;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
@@ -35,6 +37,7 @@ import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
@@ -116,6 +119,32 @@ class DispenseApplicationServiceTest {
                 .isInstanceOf(PaymentProofRequiredException.class)
                 .hasMessageContaining("bằng chứng thanh toán");
         verify(paymentReceiptRepo).findByPrescriptionId(prescriptionId);
+    }
+
+    /** Manual failure must reuse invoice context from the durable payment proof. */
+    @Test
+    void manualDispense_failureUsesInvoiceFromPaymentProof() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID invoiceId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        PaymentReceipt receipt = PaymentReceipt.receive(
+                UUID.randomUUID(), invoiceId, prescriptionId, UUID.randomUUID(), UUID.randomUUID(),
+                new BigDecimal("100.00"), "CASH", Instant.now(), "payment-correlation", null);
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of(receipt));
+
+        DispenseTransactionService transaction = mock(DispenseTransactionService.class);
+        RecordDispenseFailureService failure = mock(RecordDispenseFailureService.class);
+        when(transaction.execute(prescriptionId, actorId, "manual-correlation"))
+                .thenThrow(new BusinessRuleException("DRUG_OUT_OF_STOCK", "Hết hàng"));
+        DispenseApplicationService service = new DispenseApplicationService(
+                transaction, failure, paymentReceiptRepo);
+
+        assertThatThrownBy(() -> service.dispense(
+                prescriptionId, actorId, null, "manual-correlation"))
+                .isInstanceOf(BusinessRuleException.class);
+
+        verify(failure).record(
+                eq(prescriptionId), eq(actorId), eq(invoiceId), eq("manual-correlation"), any());
     }
 
     /** Reservation hết TTL phải chặn cấp trước khi trừ tồn vật lý. */

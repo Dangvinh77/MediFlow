@@ -1,20 +1,23 @@
 package com.mediflow.pharmacy;
 
+import java.time.Clock;
+import java.time.ZoneId;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.context.annotation.Bean;
-
-import java.time.Clock;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
 public class PharmacyServiceApplication {
 
-    /** Cung cấp UTC clock dùng chung để các job nghiệp vụ có thể kiểm thử deterministically. */
+    /** Cung cấp business clock dùng chung cho múi giờ bệnh viện và có thể kiểm thử deterministically. */
     @Bean
-    public Clock pharmacyClock() {
-        return Clock.systemUTC();
+    public Clock pharmacyClock(
+            @Value("${mediflow.pharmacy.business-zone:Asia/Ho_Chi_Minh}") String businessZone) {
+        return Clock.system(ZoneId.of(businessZone));
     }
 
     public static void main(String[] args) {

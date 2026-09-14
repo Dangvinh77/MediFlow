@@ -1,14 +1,21 @@
 package com.mediflow.pharmacy.application.service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.TransientDataAccessException;
 
 import com.mediflow.pharmacy.application.port.in.ReleaseExpiredReservationsUseCase;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseClaim;
+import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
 
 /**
  * Tìm các prescription có giữ chỗ quá TTL và xử lý theo batch giới hạn.
@@ -19,34 +26,56 @@ import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort
  */
 public class ReleaseExpiredReservationsService implements ReleaseExpiredReservationsUseCase {
 
+    /** Stable key so every pharmacy replica shares one cursor/lease row. */
+    public static final String EXPIRY_JOB_NAME = "reservation-expiry";
+
     private static final Logger log = LoggerFactory.getLogger(ReleaseExpiredReservationsService.class);
 
     private final StockReservationRepositoryPort reservationRepository;
     private final ExpirePrescriptionTransaction expireTransaction;
     private final Clock clock;
     private final int batchSize;
+    private final ReservationExpiryLeaseRepositoryPort leaseRepository;
+    private final String leaseOwner;
+    private final Duration leaseDuration;
     private UUID cursor;
 
     /**
-     * Tạo batch service với đồng hồ và giới hạn có thể kiểm thử/cấu hình.
+     * Creates a scheduler service backed by a durable multi-instance cursor and lease.
      *
-     * @param reservationRepository port tìm reservation hết hạn
-     * @param expireTransaction transaction xử lý từng đơn
-     * @param clock đồng hồ nghiệp vụ
-     * @param batchSize số đơn tối đa mỗi lần chạy, phải lớn hơn 0
+     * @param reservationRepository port finding expired candidates
+     * @param expireTransaction transaction boundary for one aggregate
+     * @param clock business clock
+     * @param batchSize maximum candidates per run
+     * @param leaseRepository durable lease adapter
+     * @param leaseOwner unique instance identity
+     * @param leaseDuration maximum time another instance waits before reclaiming
      */
     public ReleaseExpiredReservationsService(
             StockReservationRepositoryPort reservationRepository,
             ExpirePrescriptionTransaction expireTransaction,
             Clock clock,
-            int batchSize) {
+            int batchSize,
+            ReservationExpiryLeaseRepositoryPort leaseRepository,
+            String leaseOwner,
+            Duration leaseDuration) {
         if (batchSize <= 0) {
             throw new IllegalArgumentException("Giới hạn batch phải lớn hơn 0");
+        }
+        if (clock == null || leaseOwner == null || leaseOwner.isBlank()
+                || leaseDuration == null || leaseDuration.isZero() || leaseDuration.isNegative()) {
+            throw new IllegalArgumentException("Cấu hình scheduler không hợp lệ");
         }
         this.reservationRepository = reservationRepository;
         this.expireTransaction = expireTransaction;
         this.clock = clock;
         this.batchSize = batchSize;
+        if (leaseRepository == null) {
+            throw new IllegalArgumentException("Durable scheduler lease repository is required");
+        }
+        this.leaseRepository = leaseRepository;
+        this.leaseOwner = leaseOwner;
+        this.leaseDuration = leaseDuration;
     }
 
     /**
@@ -57,28 +86,59 @@ public class ReleaseExpiredReservationsService implements ReleaseExpiredReservat
     @Override
     public synchronized int releaseExpiredReservations() {
         Instant now = Instant.now(clock);
-        int expiredReservations = 0;
-        java.util.List<UUID> candidates = reservationRepository
-                .findExpiredPrescriptionIdsAfter(now, cursor, batchSize);
-        if (candidates.isEmpty() && cursor != null) {
-            cursor = null;
-            candidates = reservationRepository
-                    .findExpiredPrescriptionIdsAfter(now, null, batchSize);
+        UUID runCursor = cursor;
+        ReservationExpiryLeaseClaim claim = leaseRepository
+                .tryAcquire(EXPIRY_JOB_NAME, leaseOwner, now, leaseDuration)
+                .orElse(null);
+        if (claim == null) {
+            return 0;
         }
-        if (!candidates.isEmpty()) {
-            cursor = candidates.get(candidates.size() - 1);
-        }
+        runCursor = claim.cursor();
+        UUID leaseToken = claim.leaseToken();
 
-        for (UUID prescriptionId : candidates) {
-            try {
-                expiredReservations += expireTransaction.expire(prescriptionId, now);
-            } catch (RuntimeException exception) {
-                // Một aggregate lỗi không được chặn các prescription còn lại trong batch.
-                log.warn("Không thể hết hạn reservation của prescription {}: {}",
-                        prescriptionId, exception.getMessage());
+        int expiredReservations = 0;
+        try {
+            java.util.List<UUID> candidates = reservationRepository
+                    .findExpiredPrescriptionIdsAfter(now, runCursor, batchSize);
+            if (candidates.isEmpty() && runCursor != null) {
+                runCursor = null;
+                candidates = reservationRepository
+                        .findExpiredPrescriptionIdsAfter(now, null, batchSize);
+            }
+            if (!candidates.isEmpty()) {
+                runCursor = candidates.get(candidates.size() - 1);
+            }
+
+            for (UUID prescriptionId : candidates) {
+                try {
+                    expiredReservations += expireTransaction.expire(prescriptionId, now);
+                } catch (RuntimeException exception) {
+                    if (isTransientInfrastructureFailure(exception)) {
+                        // Không được bỏ qua lỗi hạ tầng: giữ nguyên cursor để lần chạy sau retry.
+                        throw exception;
+                    }
+                    // Dữ liệu poison cô lập một aggregate nhưng không chặn các đơn còn lại.
+                    log.warn("Không thể hết hạn reservation của prescription {}: {}",
+                            prescriptionId, exception.getMessage());
+                }
+            }
+            if (runCursor != null) {
+                leaseRepository.advance(EXPIRY_JOB_NAME, leaseOwner, leaseToken, runCursor, now);
+            }
+            cursor = runCursor;
+            return expiredReservations;
+        } finally {
+            if (leaseToken != null) {
+                leaseRepository.release(EXPIRY_JOB_NAME, leaseOwner, leaseToken, Instant.now(clock));
             }
         }
+    }
 
-        return expiredReservations;
+    /** Returns whether an exception should be retried instead of being quarantined as poison data. */
+    private boolean isTransientInfrastructureFailure(RuntimeException exception) {
+        return exception instanceof TransientDataAccessException
+                || exception instanceof CannotAcquireLockException
+                || exception instanceof PessimisticLockingFailureException
+                || exception instanceof DataAccessResourceFailureException;
     }
 }

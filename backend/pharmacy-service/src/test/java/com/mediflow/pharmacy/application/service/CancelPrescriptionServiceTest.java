@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +51,8 @@ class CancelPrescriptionServiceTest {
     @BeforeEach
     void setUp() {
         service = new CancelPrescriptionService(
-                prescriptionRepository, dispenseSlipRepository, reservationRepository, eventPublisher);
+                prescriptionRepository, dispenseSlipRepository, reservationRepository, eventPublisher,
+                Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), java.time.ZoneOffset.UTC));
     }
 
     /** Bác sĩ không sở hữu đơn không được phép đọc tiếp hoặc giải phóng reservation. */
@@ -139,6 +141,31 @@ class CancelPrescriptionServiceTest {
 
         verify(dispenseSlipRepository, never()).findByPrescriptionForUpdate(any());
         verify(reservationRepository, never()).findByPrescriptionForUpdate(any());
+        verify(eventPublisher, never()).publishPrescriptionCancelled(any());
+    }
+
+    /** A mismatched reservation quantity is reported before any release or lifecycle transition. */
+    @Test
+    void cancel_reservationQuantityMismatch_rejectsWithoutRelease() {
+        UUID prescriptionId = UUID.randomUUID();
+        Prescription prescription = prescription(prescriptionId, UUID.randomUUID());
+        DispenseSlip slip = pendingSlip(prescriptionId);
+        StockReservation mismatched = StockReservation.restore(
+                UUID.randomUUID(), prescription.getLines().get(0).getDrugId(), prescriptionId, 99,
+                ReservationStatus.RESERVED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
+        when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepository.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
+        when(reservationRepository.findByPrescriptionForUpdate(prescriptionId))
+                .thenReturn(List.of(mismatched));
+
+        assertThatThrownBy(() -> service.cancel(new CancelPrescriptionCommand(
+                prescriptionId,
+                new ActorIdentity(UUID.randomUUID(), null, "ADMIN"),
+                "Mismatched reservation", "mismatch-correlation")))
+                .isInstanceOf(PrescriptionRuleException.class)
+                .hasMessageContaining("số lượng giữ chỗ");
+
+        assertThat(mismatched.getStatus()).isEqualTo(ReservationStatus.RESERVED);
         verify(eventPublisher, never()).publishPrescriptionCancelled(any());
     }
 

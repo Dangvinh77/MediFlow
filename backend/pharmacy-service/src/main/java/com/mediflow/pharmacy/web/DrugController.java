@@ -97,10 +97,12 @@ public class DrugController {
      @Valid @RequestBody AdjustStockRequest request,
      Authentication authentication,
      @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId){
-     ActorIdentity actor = parseActor(authentication);
-     DrugDTO updated  = manageDrugUseCase.adjustStock(
-             id, request, actor.auditActorId(), correlationId);
-     return ResponseEntity.ok(ApiResponse.ok(updated, correlationId));
+      ActorIdentity actor = parseActor(authentication);
+      String normalizedCorrelationId = correlationId == null || correlationId.isBlank()
+              ? UUID.randomUUID().toString() : correlationId.trim();
+      DrugDTO updated  = manageDrugUseCase.adjustStock(
+             id, request, operationalActorId(actor), normalizedCorrelationId);
+      return ResponseEntity.ok(ApiResponse.ok(updated, normalizedCorrelationId));
  }
 
  /**
@@ -110,7 +112,7 @@ public class DrugController {
   * @return actor UUID used in stock audit events
   * @throws AccessDeniedException when the JWT subject is absent or not a UUID
   */
- private ActorIdentity parseActor(Authentication authentication) {
+  private ActorIdentity parseActor(Authentication authentication) {
      if (authentication == null || authentication.getName() == null) {
          throw new AccessDeniedException("Không xác định được người dùng từ JWT subject");
      }
@@ -127,6 +129,16 @@ public class DrugController {
      } catch (IllegalArgumentException exception) {
          throw new AccessDeniedException("JWT subject không phải mã người dùng hợp lệ", exception);
      }
+  }
+
+  /** Resolves the signed identity allowed to own a stock-audit operation. */
+  private UUID operationalActorId(ActorIdentity actor) {
+      try {
+          return actor.auditActorId();
+      } catch (IllegalStateException exception) {
+          throw new AccessDeniedException(
+                  "JWT chưa cung cấp staffId đã xác thực cho thao tác nghiệp vụ", exception);
+      }
+  }
+
  }
- 
-}

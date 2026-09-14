@@ -41,11 +41,15 @@ public record ActorIdentity(UUID accountId, UUID staffId, String role) {
     }
 
     /**
-     * Returns an audit actor without pretending an account UUID is a staff UUID.
-     * Staff-backed operations use staffId; technical/admin operations retain accountId.
+     * Returns the identifier allowed to own an audit record.
+     * Staff-backed operations fail closed when the signed staff claim is missing;
+     * technical/admin operations retain accountId.
      */
     public UUID auditActorId() {
-        return staffId != null ? staffId : accountId;
+        if (staffId != null || isAdministrator() || isSystem()) {
+            return staffId != null ? staffId : accountId;
+        }
+        throw new IllegalStateException("STAFF_ID_REQUIRED");
     }
 
     /** Keeps Spring Security's {@code Authentication#getName()} compatible with JWT subject. */
