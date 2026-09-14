@@ -130,5 +130,6 @@ GET {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
 ### Xuất thuốc thủ công — 200, role ADMIN/PHARMACIST
+# Không truyền body/paid=true: pharmacy chỉ chấp nhận payment proof đã lưu bền vững.
 PUT {{host}}/api/v1/pharmacy/prescriptions/00000000-0000-0000-0000-000000000000/dispense
 Authorization: Bearer {{token}}

@@ -5,7 +5,7 @@ Drugs, prescriptions, dispensing and stock. **Saga participant** in prescribe �
 Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) · design doc `docs/eproject_general_plan/backend-spec/05-pharmacy.md`.
 
 - **Port:** 8085 · **Base path:** `/api/v1/pharmacy` · **DB:** `mediflow_pharmacy` (PostgreSQL)
-- **Owns tables:** `DRUG`, `PRESCRIPTION`, `PRESCRIPTION_LINE`, `DISPENSE_SLIP`, `PROCESSED_EVENT`, `STOCK_RESERVATION`
+- **Owns tables:** `DRUG`, `PRESCRIPTION`, `PRESCRIPTION_LINE`, `DISPENSE_SLIP`, `PROCESSED_EVENT`, `STOCK_RESERVATION`, `PAYMENT_RECEIPT`, `PHARMACY_EVENT_OUTBOX`
 - **Architecture:** clean architecture (hexagonal) per [`docs/ai/04-microservice-blueprint.md`](../../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
 ## Status
@@ -13,6 +13,9 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. Transactional
 transactional outbox is enabled for durable event delivery; real PostgreSQL/RabbitMQ integration gates remain before release.
+Outbox delivery now supports bounded exponential retry, per-row replay, retention cleanup and
+Micrometer pending/age metrics. Stock adjustments persist an immutable audit row in the same
+transaction as the drug mutation and `stock.adjusted` outbox event.
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 
@@ -43,7 +46,9 @@ Swagger UI: http://localhost:8085/swagger-ui.html
 
 Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
 
-Payment events are claimed atomically by `eventId`; duplicate deliveries are ignored. Listener
+Payment events are claimed atomically by `eventId`; duplicate deliveries are ignored. Manual
+dispensing never accepts a client-supplied `paid` flag and requires a durable `PAYMENT_RECEIPT`.
+Listener
 retries are bounded (default 3 attempts with exponential backoff) and poison messages are routed
 to `pharmacy.dlq`. Configure with `MEDIFLOW_PHARMACY_RABBIT_RETRY_*` environment variables.
 

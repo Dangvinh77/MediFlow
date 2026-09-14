@@ -7,6 +7,7 @@ import com.mediflow.pharmacy.application.mapper.DrugDtoMapper;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.StockAdjustmentRepositoryPort;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
@@ -37,13 +38,15 @@ class DrugApplicationServiceTest {
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final DrugDtoMapper drugDtoMapper = mock(DrugDtoMapper.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
+    private final StockAdjustmentRepositoryPort adjustmentRepo = mock(StockAdjustmentRepositoryPort.class);
 
     private final DrugApplicationService service = new DrugApplicationService(
             drugRepo,
             reservationRepo,
             eventPublisher,
             drugDtoMapper,
-            Clock.systemUTC());
+            Clock.systemUTC(),
+            adjustmentRepo);
 
     /** Điều chỉnh tồn kho phải đọc bằng khóa ghi trước khi thay đổi số lượng. */
     @Test
@@ -98,6 +101,7 @@ class DrugApplicationServiceTest {
         assertThat(captor.getValue().afterStock()).isEqualTo(7);
         assertThat(captor.getValue().delta()).isEqualTo(-3);
         assertThat(captor.getValue().reason()).isEqualTo("Kiểm kê cuối ca");
+        verify(adjustmentRepo).save(org.mockito.ArgumentMatchers.any());
     }
 
     /** Không được điều chỉnh tồn xuống thấp hơn tổng lượng reservation đang giữ. */
