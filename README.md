@@ -48,9 +48,10 @@ powershell -ExecutionPolicy Bypass -File scripts/bootstrap.ps1
 bash scripts/bootstrap.sh
 ```
 
-> **Git hooks — single-author policy.** The repo ships hooks under `scripts/git-hooks/`
-> (`prepare-commit-msg` strips `Co-Authored-By:` lines; `commit-msg` rejects any commit that still
-> carries one, so agents like Claude/Codex/Copilot never get recorded as co-authors). Git only runs
+> **Git hooks — four-contributor policy.** The repo ships hooks under `scripts/git-hooks/`.
+> `prepare-commit-msg` strips AI attribution trailers; `commit-msg` rejects co-authors and any
+> author identity outside [`scripts/allowed-contributors.json`](scripts/allowed-contributors.json).
+> Git only runs
 > them when `core.hooksPath` points there, and that setting is **local to each machine — it never
 > travels with `git clone`**. The bootstrap above configures it automatically. On an **existing**
 > clone, run once:
@@ -68,7 +69,7 @@ Then read **[`docs/ai/README.md`](docs/ai/README.md)** — that is the coding st
 | JDK 21 (LTS) | everyone | build/run services |
 | Maven 3.9+ (or wrapper) | everyone | multi-module build |
 | Git | everyone | |
-| Git hooks | everyone | single-author policy (strips `Co-Authored-By`); setup: `scripts/setup-hooks.bat` — bootstrap does it automatically |
+| Git hooks | everyone | only 4 allowed contributors, no co-author; setup: `scripts/setup-hooks.bat` — bootstrap does it automatically |
 | Docker | everyone (recommended) | `docker compose up -d` gives you PostgreSQL + RabbitMQ; also required for integration tests (Testcontainers) |
 | Node 20+ & pnpm | frontend work | Next.js client |
 | `codebase-memory-mcp` | **optional**, Claude Code and Codex users | graph index for faster code navigation; setup: `scripts/setup-codebase-memory.bat` |

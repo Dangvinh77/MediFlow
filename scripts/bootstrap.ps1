@@ -9,7 +9,7 @@ Write-Host "==> Hospital MSA toolkit bootstrap (Windows)" -ForegroundColor Cyan
 $hooksDir = Join-Path (Get-Location) "scripts/git-hooks"
 if (Test-Path $hooksDir) {
     git config core.hooksPath scripts/git-hooks
-    Write-Host "[ok] Git hooks installed from scripts/git-hooks (single-author policy enforced)" -ForegroundColor Green
+    Write-Host "[ok] Git hooks installed (4 contributors, no co-author)" -ForegroundColor Green
     if (Test-Cmd node) {
         node scripts/changelog.js --init 2>$null
         if ($?) { Write-Host "[ok] CHANGELOG.db initialized" -ForegroundColor Green }

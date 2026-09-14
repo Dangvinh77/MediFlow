@@ -30,7 +30,7 @@
   - [ ] Events published/consumed match `06` + the service doc.
   - [ ] `mvn verify` green locally.
   - [ ] Re-indexed codebase memory if structure changed (see README > Codebase Memory).
-- At least one human review. AI review (`/review-pr` command / `code-reviewer` agent) is encouraged but not a substitute.
+- Merge after all required automated checks pass. Human review is optional unless a task explicitly requests it.
 
 ## Keeping the framework in sync
 
@@ -48,13 +48,19 @@ mvn -q -DskipTests install
 
 ## Git hooks (single-author policy)
 
+- Mỗi commit có đúng một human author, và cặp `user.name` + `user.email` phải khớp một danh tính
+  trong `scripts/allowed-contributors.json`: `Harori`, `LQHuy0210`, `locgit-89`, hoặc
+  `TranHoangAnh94`. Không được ghép tên của người này với email của người khác.
+- AI agent và subagent không được đổi Git identity để mạo danh contributor, tự ghi mình là author,
+  hoặc thêm `Co-Authored-By`, `Claude-Session`, `Codex-Session` hay trailer tương tự để nhận attribution.
 - Hook scripts nằm trong repo tại `scripts/git-hooks/`, nhưng git **chỉ chạy** chúng khi config
   `core.hooksPath` trỏ tới đó — và setting này nằm trong `.git/config`, **local trên từng máy,
   không đi theo `git clone`**. Đây là lý do commit từ máy dev khác có thể "sót" dòng
   `Co-Authored-By: Claude` trong khi máy bạn thì không: Claude Code tự thêm trailer đó, và nếu
   máy đó chưa bật hook thì không gì chặn.
-- `prepare-commit-msg` xoá mọi dòng `Co-Authored-By:`; `commit-msg` **từ chối** (exit 1) commit
-  nào còn sót — agent (Claude, Codex, Copilot, ...) không bao giờ được ghi là đồng tác giả.
+- `prepare-commit-msg` xoá trailer attribution do AI chèn; `commit-msg` kiểm tra lại message và
+  author theo allowlist. Workflow `.github/workflows/commit-policy.yml` kiểm tra toàn bộ commit của
+  PR để bảo vệ repo ngay cả khi một máy chưa bật local hook.
 
 Bật hooks sau khi clone (1 lần):
 
