@@ -8,6 +8,7 @@ import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.infrastructure.persistence.entity.DepartmentEntity;
 import com.mediflow.organization.infrastructure.persistence.repository.DepartmentJpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -146,5 +147,13 @@ public class DepartmentRepositoryAdapter
                 department.getCreatedAt(),
                 department.getUpdatedAt()
         );
+    }
+
+    @Override
+    public List<Department> findAll() {
+        // TODO Auto-generated method stub
+        return jpaRepository.findAll().stream()
+            .map(this::toDomain)
+            .toList();
     }
 }

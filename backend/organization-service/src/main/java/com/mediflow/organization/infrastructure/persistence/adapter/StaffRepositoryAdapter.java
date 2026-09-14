@@ -8,6 +8,7 @@ import com.mediflow.organization.domain.model.StaffStatus;
 import com.mediflow.organization.infrastructure.persistence.entity.StaffEntity;
 import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -160,5 +161,21 @@ public class StaffRepositoryAdapter
 
                 staff.getCreatedAt(),
                 staff.getUpdatedAt());
+    }
+
+    @Override
+    public List<Staff> findByDepartmentId(UUID departmentId) {
+        
+        return jpaRepository.findByDepartmentId(departmentId).stream()
+            .map(this::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<Staff> findAll() {
+        
+        return jpaRepository.findAll().stream()
+            .map(this::toDomain)
+            .toList();
     }
 }
