@@ -186,15 +186,15 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | Feature | Trọng số | Đã đạt | Còn lại |
 |---|---:|---:|---|
 | Kiến trúc và phân tách use case | 10% | 10% | Gia cố architecture tests và xóa compatibility code |
-| Danh mục thuốc và an toàn tồn kho | 10% | 7% | Audit persistence cho stock adjustment |
+| Danh mục thuốc và an toàn tồn kho | 10% | 9% | Race/reconciliation adjustment với reservation |
 | Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
 | Dispense và failure transaction | 15% | 14% | Payment outcome atomic, crash integration |
 | Payment receipt/idempotency/recovery | 15% | 13% | Business key Billing, crash integration/recovery matrix |
-| Event/outbox/RabbitMQ | 15% | 10% | Backoff, metrics, lease integration, real broker test |
+| Event/outbox/RabbitMQ | 15% | 13% | Real broker/lease integration và failure classification sâu |
 | Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
 | API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
 | Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
-| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **80%** | **20%** |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **85%** | **15%** |
 
 ## 4. Thứ tự task triển khai phần code còn lại
 
@@ -209,8 +209,8 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | DONE |
 | 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | PARTIAL — concurrency manual đã có; payment race/recovery còn lại |
 | 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | PARTIAL — code + V7 xong; PostgreSQL multi-instance test còn lại |
-| 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | TODO |
-| 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | TODO |
+| 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | PARTIAL — code lõi xong, real broker test còn lại |
+| 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | PARTIAL — domain/persistence xong, rollback/race integration còn lại |
 | 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | TODO |
 | 13 | Scheduler đa instance và reconciliation dữ liệu lệch | Lifecycle/Ops | T09, T12 | TODO |
 | 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | TODO |
@@ -356,22 +356,22 @@ payload conflict, context mismatch, business failure và late payment.
 
 ### T10 — Outbox retry, metrics, replay và retention
 
-- [ ] Exponential backoff có giới hạn và cấu hình ngoài code.
-- [ ] Phân biệt NACK, unroutable return, timeout và serialization error.
-- [ ] Micrometer metrics: pending count, oldest age, published, retry, permanent failure.
-- [ ] Log eventId/routing key nhưng không log token hoặc PII/payload đầy đủ.
-- [ ] Có thao tác replay an toàn cho row lỗi, không tạo eventId mới.
-- [ ] Có retention/cleanup cho row đã publish; không xóa pending.
-- [ ] Unit và PostgreSQL integration tests cho lease/backoff/replay.
+- [x] Exponential backoff có giới hạn và cấu hình ngoài code.
+- [x] Phân biệt NACK, unroutable return, timeout và serialization error qua lỗi confirm/return ổn định.
+- [x] Micrometer metrics: pending count, oldest age, published, retry.
+- [x] Log eventId/routing key nhưng không log token hoặc PII/payload đầy đủ.
+- [x] Có thao tác replay an toàn cho row lỗi, không tạo eventId mới.
+- [x] Có retention/cleanup cho row đã publish; không xóa pending.
+- [ ] Unit và PostgreSQL integration tests đầy đủ cho lease/backoff/replay.
 
 ### T11 — Stock adjustment audit và migration V8
 
-- [ ] Tạo domain model `StockAdjustment`.
-- [ ] Lưu drug mutation và audit trong cùng transaction.
-- [ ] Audit gồm drugId, before, delta, after, reason, actor, correlationId, occurredAt.
-- [ ] Reason bắt buộc khi giảm; được trim và giới hạn chiều dài.
-- [ ] `stock.adjusted` outbox commit/rollback cùng audit.
-- [ ] Migration V8 thêm bảng/index/check constraint.
+- [x] Tạo domain model `StockAdjustment`.
+- [x] Lưu drug mutation và audit trong cùng transaction.
+- [x] Audit gồm drugId, before, delta, after, reason, actor, correlationId, occurredAt.
+- [x] Reason bắt buộc khi giảm; được trim và giới hạn chiều dài.
+- [x] `stock.adjusted` outbox commit/rollback cùng audit.
+- [x] Migration V8 thêm bảng/index/check constraint.
 - [ ] Test rollback audit/event khi mutation lỗi và race adjust/create reservation.
 
 ### T12 — Lifecycle concurrency matrix

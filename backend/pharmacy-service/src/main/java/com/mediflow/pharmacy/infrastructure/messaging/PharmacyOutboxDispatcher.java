@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.core.Message;
@@ -45,6 +46,9 @@ public class PharmacyOutboxDispatcher {
     private final String owner;
     private final int batchSize;
     private final long confirmTimeoutMs;
+    private final long initialBackoffMs;
+    private final long maxBackoffMs;
+    private final MeterRegistry meterRegistry;
 
     /** Creates the dispatcher with a bounded polling batch. */
     public PharmacyOutboxDispatcher(
@@ -65,8 +69,27 @@ public class PharmacyOutboxDispatcher {
             @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
             @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs,
             PharmacyOutboxClaimService claimService) {
+        this(repository, rabbitTemplate, clock, batchSize, confirmTimeoutMs, claimService,
+                1000L, 60000L, null);
+    }
+
+    /** Creates a fully configured dispatcher with bounded retry backoff and metrics. */
+    @org.springframework.beans.factory.annotation.Autowired
+    public PharmacyOutboxDispatcher(
+            PharmacyEventOutboxJpaRepository repository,
+            RabbitTemplate rabbitTemplate,
+            Clock clock,
+            @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
+            @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs,
+            PharmacyOutboxClaimService claimService,
+            @Value("${mediflow.pharmacy.outbox.retry.initial-backoff-ms:1000}") long initialBackoffMs,
+            @Value("${mediflow.pharmacy.outbox.retry.max-backoff-ms:60000}") long maxBackoffMs,
+            MeterRegistry meterRegistry) {
         if (batchSize <= 0 || confirmTimeoutMs <= 0) {
             throw new IllegalArgumentException("Pharmacy outbox batch size and confirm timeout must be positive");
+        }
+        if (initialBackoffMs <= 0 || maxBackoffMs < initialBackoffMs) {
+            throw new IllegalArgumentException("Outbox backoff configuration is invalid");
         }
         this.repository = repository;
         this.rabbitTemplate = rabbitTemplate;
@@ -75,6 +98,9 @@ public class PharmacyOutboxDispatcher {
         this.confirmTimeoutMs = confirmTimeoutMs;
         this.claimService = claimService;
         this.owner = java.util.UUID.randomUUID().toString();
+        this.initialBackoffMs = initialBackoffMs;
+        this.maxBackoffMs = maxBackoffMs;
+        this.meterRegistry = meterRegistry;
     }
 
     /** Attempts delivery of the oldest pending events on a fixed delay. */
@@ -95,12 +121,15 @@ public class PharmacyOutboxDispatcher {
                 } else {
                     claimService.markPublished(event.getEventId(), owner, Instant.now(clock));
                 }
+                increment("mediflow.pharmacy.outbox.published");
             } catch (RuntimeException exception) {
                 if (claimService == null) {
                     repository.markFailure(event, exception.getMessage());
                 } else {
-                    claimService.markFailure(event.getEventId(), owner, safeError(exception));
+                    claimService.markFailure(event.getEventId(), owner, safeError(exception),
+                            nextAvailableAt(event));
                 }
+                increment("mediflow.pharmacy.outbox.retry");
                 log.warn("Không thể phát event outbox {} qua {}: {}",
                         event.getEventId(), event.getRoutingKey(), exception.getMessage());
                 // Preserve causal order: a later event must not overtake the oldest failed event.
@@ -113,6 +142,24 @@ public class PharmacyOutboxDispatcher {
         String message = exception.getMessage();
         return message == null ? "Unknown publish failure"
                 : message.substring(0, Math.min(message.length(), 500));
+    }
+
+    private Instant nextAvailableAt(PharmacyEventOutboxJpaEntity event) {
+        int exponent = Math.min(event.getAttempts(), 30);
+        long multiplier = 1L << exponent;
+        long delay;
+        try {
+            delay = Math.multiplyExact(initialBackoffMs, multiplier);
+        } catch (ArithmeticException overflow) {
+            delay = maxBackoffMs;
+        }
+        return Instant.now(clock).plusMillis(Math.min(delay, maxBackoffMs));
+    }
+
+    private void increment(String name) {
+        if (meterRegistry != null) {
+            meterRegistry.counter(name).increment();
+        }
     }
 
     private void awaitBrokerConfirmation(PharmacyEventOutboxJpaEntity event, Message message) {

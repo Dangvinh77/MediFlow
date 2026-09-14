@@ -11,15 +11,18 @@ import com.mediflow.pharmacy.application.port.in.ManageDrugUseCase;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.out.StockAdjustmentRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.StockReservation;
+import com.mediflow.pharmacy.domain.model.StockAdjustment;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -36,6 +39,7 @@ public class DrugApplicationService implements ManageDrugUseCase {
     private final PharmacyEventPublisherPort eventPublisher;
     private final DrugDtoMapper drugDtoMapper;
     private final Clock clock;
+    private final StockAdjustmentRepositoryPort adjustmentRepository;
 
     /** Creates the drug feature service with framework-free application ports. */
     public DrugApplicationService(
@@ -44,11 +48,24 @@ public class DrugApplicationService implements ManageDrugUseCase {
             PharmacyEventPublisherPort eventPublisher,
             DrugDtoMapper drugDtoMapper,
             Clock clock) {
+        this(drugRepository, reservationRepository, eventPublisher, drugDtoMapper, clock, null);
+    }
+
+    /** Creates the drug feature service with durable stock audit persistence. */
+    @Autowired
+    public DrugApplicationService(
+            DrugRepositoryPort drugRepository,
+            StockReservationRepositoryPort reservationRepository,
+            PharmacyEventPublisherPort eventPublisher,
+            DrugDtoMapper drugDtoMapper,
+            Clock clock,
+            StockAdjustmentRepositoryPort adjustmentRepository) {
         this.drugRepository = drugRepository;
         this.reservationRepository = reservationRepository;
         this.eventPublisher = eventPublisher;
         this.drugDtoMapper = drugDtoMapper;
         this.clock = clock;
+        this.adjustmentRepository = adjustmentRepository;
     }
 
     /** Creates a drug after the domain validates price, stock, threshold and expiry. */
@@ -127,6 +144,11 @@ public class DrugApplicationService implements ManageDrugUseCase {
         int beforeStock = drug.getStockQuantity();
         drug.adjustStock(request.quantity());
         Drug saved = drugRepository.save(drug);
+        if (adjustmentRepository != null) {
+            adjustmentRepository.save(StockAdjustment.create(
+                    id, beforeStock, request.quantity(), saved.getStockQuantity(),
+                    request.reason(), actorId, correlationId, Instant.now(clock)));
+        }
         eventPublisher.publishStockAdjusted(new StockAdjustedEvent(
                 UUID.randomUUID(),
                 Instant.now(clock),

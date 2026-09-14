@@ -58,7 +58,19 @@ public class PharmacyOutboxClaimService {
 
     /** Records a failed attempt in a separate short transaction with an owner guard. */
     @Transactional
-    public boolean markFailure(java.util.UUID eventId, String owner, String error) {
-        return repository.markFailureIfOwned(eventId, owner, error) == 1;
+    public boolean markFailure(java.util.UUID eventId, String owner, String error, Instant availableAt) {
+        return repository.markFailureIfOwned(eventId, owner, error, availableAt) == 1;
+    }
+
+    /** Requeues a row for operator replay while retaining its immutable event payload. */
+    @Transactional
+    public boolean replay(java.util.UUID eventId) {
+        return repository.replay(eventId, Instant.now(clock)) == 1;
+    }
+
+    /** Removes published rows older than retention; pending rows are never deleted. */
+    @Transactional
+    public int deletePublishedBefore(Instant cutoff) {
+        return repository.deletePublishedBefore(cutoff);
     }
 }

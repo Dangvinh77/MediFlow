@@ -4,6 +4,7 @@ import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventO
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,6 +17,12 @@ public interface PharmacyEventOutboxJpaRepository
 
     /** Returns the oldest events that still need delivery. */
     List<PharmacyEventOutboxJpaEntity> findByPublishedAtIsNullOrderByCreatedAtAsc(Pageable pageable);
+
+    /** Counts pending rows for operational gauges. */
+    long countByPublishedAtIsNull();
+
+    /** Reads the oldest pending creation timestamp for age monitoring. */
+    Optional<PharmacyEventOutboxJpaEntity> findFirstByPublishedAtIsNullOrderByCreatedAtAsc();
 
     /** Selects claimable rows while preventing another replica from selecting the same rows. */
     @Query(value = """
@@ -50,11 +57,29 @@ public interface PharmacyEventOutboxJpaRepository
     @org.springframework.data.jpa.repository.Query("""
             update PharmacyEventOutboxJpaEntity e
                set e.attempts = e.attempts + 1, e.lastError = :error,
-                   e.lockedAt = null, e.lockedBy = null
+                   e.lockedAt = null, e.lockedBy = null, e.availableAt = :availableAt
              where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null
             """)
     int markFailureIfOwned(@Param("eventId") UUID eventId, @Param("owner") String owner,
-            @Param("error") String error);
+            @Param("error") String error, @Param("availableAt") Instant availableAt);
+
+    /** Makes a failed row available for operator replay without changing event id or payload. */
+    @Modifying
+    @org.springframework.data.jpa.repository.Query("""
+            update PharmacyEventOutboxJpaEntity e
+               set e.publishedAt = null, e.availableAt = :availableAt,
+                   e.lockedAt = null, e.lockedBy = null, e.lastError = null
+             where e.eventId = :eventId
+            """)
+    int replay(@Param("eventId") UUID eventId, @Param("availableAt") Instant availableAt);
+
+    /** Deletes only published rows older than the retention cutoff. */
+    @Modifying
+    @org.springframework.data.jpa.repository.Query("""
+            delete from PharmacyEventOutboxJpaEntity e
+             where e.publishedAt is not null and e.publishedAt < :cutoff
+            """)
+    int deletePublishedBefore(@Param("cutoff") Instant cutoff);
 
     /** Marks an event delivered and records the delivery timestamp. */
     default void markPublished(PharmacyEventOutboxJpaEntity event, Instant publishedAt) {

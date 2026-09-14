@@ -13,6 +13,9 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. Transactional
 transactional outbox is enabled for durable event delivery; real PostgreSQL/RabbitMQ integration gates remain before release.
+Outbox delivery now supports bounded exponential retry, per-row replay, retention cleanup and
+Micrometer pending/age metrics. Stock adjustments persist an immutable audit row in the same
+transaction as the drug mutation and `stock.adjusted` outbox event.
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 
