@@ -28,15 +28,16 @@ public interface PharmacyEventOutboxJpaRepository
     @Query(value = """
             SELECT * FROM PHARMACY_EVENT_OUTBOX
             WHERE published_at IS NULL
+              AND quarantined_at IS NULL
               AND available_at <= :now
-              AND (locked_at IS NULL OR locked_at < :now - (:leaseSeconds * interval '1 second'))
+              AND (locked_at IS NULL OR locked_at < :leaseCutoff)
             ORDER BY created_at
             LIMIT :batchSize
             FOR UPDATE SKIP LOCKED
             """, nativeQuery = true)
     List<PharmacyEventOutboxJpaEntity> findClaimable(
             @Param("now") Instant now,
-            @Param("leaseSeconds") long leaseSeconds,
+            @Param("leaseCutoff") Instant leaseCutoff,
             @Param("batchSize") int batchSize);
 
     /** Marks a row published only when this replica still owns its lease. */
@@ -54,21 +55,25 @@ public interface PharmacyEventOutboxJpaRepository
 
     /** Records a failed attempt only when this replica still owns its lease. */
     @Modifying
-    @org.springframework.data.jpa.repository.Query("""
-            update PharmacyEventOutboxJpaEntity e
-               set e.attempts = e.attempts + 1, e.lastError = :error,
-                   e.lockedAt = null, e.lockedBy = null, e.availableAt = :availableAt
-             where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null
-            """)
+    @org.springframework.data.jpa.repository.Query(value = """
+            UPDATE PHARMACY_EVENT_OUTBOX
+               SET attempts = attempts + 1, last_error = :error,
+                   locked_at = NULL, locked_by = NULL, available_at = :availableAt,
+                   quarantined_at = CASE WHEN attempts + 1 >= :maxAttempts
+                                         THEN CURRENT_TIMESTAMP ELSE NULL END
+             WHERE event_id = :eventId AND locked_by = :owner AND published_at IS NULL
+            """, nativeQuery = true)
     int markFailureIfOwned(@Param("eventId") UUID eventId, @Param("owner") String owner,
-            @Param("error") String error, @Param("availableAt") Instant availableAt);
+            @Param("error") String error, @Param("availableAt") Instant availableAt,
+            @Param("maxAttempts") int maxAttempts);
 
     /** Makes a failed row available for operator replay without changing event id or payload. */
     @Modifying
     @org.springframework.data.jpa.repository.Query("""
             update PharmacyEventOutboxJpaEntity e
                set e.publishedAt = null, e.availableAt = :availableAt,
-                   e.lockedAt = null, e.lockedBy = null, e.lastError = null
+                   e.lockedAt = null, e.lockedBy = null, e.lastError = null,
+                   e.quarantinedAt = null
              where e.eventId = :eventId
             """)
     int replay(@Param("eventId") UUID eventId, @Param("availableAt") Instant availableAt);

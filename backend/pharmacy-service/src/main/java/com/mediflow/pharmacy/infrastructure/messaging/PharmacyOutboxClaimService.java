@@ -41,7 +41,7 @@ public class PharmacyOutboxClaimService {
     public List<PharmacyEventOutboxJpaEntity> claim(int batchSize, String owner) {
         Instant now = Instant.now(clock);
         List<PharmacyEventOutboxJpaEntity> rows = repository.findClaimable(
-                now, leaseSeconds, batchSize);
+                now, now.minusSeconds(leaseSeconds), batchSize);
         rows.forEach(row -> {
             row.setLockedAt(now);
             row.setLockedBy(owner);
@@ -58,8 +58,13 @@ public class PharmacyOutboxClaimService {
 
     /** Records a failed attempt in a separate short transaction with an owner guard. */
     @Transactional
-    public boolean markFailure(java.util.UUID eventId, String owner, String error, Instant availableAt) {
-        return repository.markFailureIfOwned(eventId, owner, error, availableAt) == 1;
+    public boolean markFailure(
+            java.util.UUID eventId,
+            String owner,
+            String error,
+            Instant availableAt,
+            int maxAttempts) {
+        return repository.markFailureIfOwned(eventId, owner, error, availableAt, maxAttempts) == 1;
     }
 
     /** Requeues a row for operator replay while retaining its immutable event payload. */

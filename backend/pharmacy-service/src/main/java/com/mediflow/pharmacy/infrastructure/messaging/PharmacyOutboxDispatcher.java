@@ -1,7 +1,6 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
 import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
-import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -11,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
@@ -19,7 +17,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +36,6 @@ public class PharmacyOutboxDispatcher {
 
     private static final String EXCHANGE = "mediflow.events";
 
-    private final PharmacyEventOutboxJpaRepository repository;
     private final RabbitTemplate rabbitTemplate;
     private final Clock clock;
     private final PharmacyOutboxClaimService claimService;
@@ -48,35 +44,11 @@ public class PharmacyOutboxDispatcher {
     private final long confirmTimeoutMs;
     private final long initialBackoffMs;
     private final long maxBackoffMs;
+    private final int maxAttempts;
     private final MeterRegistry meterRegistry;
 
-    /** Creates the dispatcher with a bounded polling batch. */
-    public PharmacyOutboxDispatcher(
-            PharmacyEventOutboxJpaRepository repository,
-            RabbitTemplate rabbitTemplate,
-            Clock clock,
-            @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
-            @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs) {
-        this(repository, rabbitTemplate, clock, batchSize, confirmTimeoutMs, null);
-    }
-
-    /** Creates a lease-aware dispatcher; broker calls happen after the claim transaction ends. */
-    @Autowired
-    public PharmacyOutboxDispatcher(
-            PharmacyEventOutboxJpaRepository repository,
-            RabbitTemplate rabbitTemplate,
-            Clock clock,
-            @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
-            @Value("${mediflow.pharmacy.outbox.confirm-timeout-ms:5000}") long confirmTimeoutMs,
-            PharmacyOutboxClaimService claimService) {
-        this(repository, rabbitTemplate, clock, batchSize, confirmTimeoutMs, claimService,
-                1000L, 60000L, null);
-    }
-
     /** Creates a fully configured dispatcher with bounded retry backoff and metrics. */
-    @org.springframework.beans.factory.annotation.Autowired
     public PharmacyOutboxDispatcher(
-            PharmacyEventOutboxJpaRepository repository,
             RabbitTemplate rabbitTemplate,
             Clock clock,
             @Value("${mediflow.pharmacy.outbox.batch-size:100}") int batchSize,
@@ -84,14 +56,17 @@ public class PharmacyOutboxDispatcher {
             PharmacyOutboxClaimService claimService,
             @Value("${mediflow.pharmacy.outbox.retry.initial-backoff-ms:1000}") long initialBackoffMs,
             @Value("${mediflow.pharmacy.outbox.retry.max-backoff-ms:60000}") long maxBackoffMs,
+            @Value("${mediflow.pharmacy.outbox.retry.max-attempts:5}") int maxAttempts,
             MeterRegistry meterRegistry) {
         if (batchSize <= 0 || confirmTimeoutMs <= 0) {
             throw new IllegalArgumentException("Pharmacy outbox batch size and confirm timeout must be positive");
         }
-        if (initialBackoffMs <= 0 || maxBackoffMs < initialBackoffMs) {
+        if (initialBackoffMs <= 0 || maxBackoffMs < initialBackoffMs || maxAttempts <= 0) {
             throw new IllegalArgumentException("Outbox backoff configuration is invalid");
         }
-        this.repository = repository;
+        if (claimService == null) {
+            throw new IllegalArgumentException("Pharmacy outbox claim service is required");
+        }
         this.rabbitTemplate = rabbitTemplate;
         this.clock = clock;
         this.batchSize = batchSize;
@@ -100,15 +75,14 @@ public class PharmacyOutboxDispatcher {
         this.owner = java.util.UUID.randomUUID().toString();
         this.initialBackoffMs = initialBackoffMs;
         this.maxBackoffMs = maxBackoffMs;
+        this.maxAttempts = maxAttempts;
         this.meterRegistry = meterRegistry;
     }
 
     /** Attempts delivery of the oldest pending events on a fixed delay. */
     @Scheduled(fixedDelayString = "${mediflow.pharmacy.outbox.dispatch-delay-ms:1000}")
     public void dispatchPending() {
-        List<PharmacyEventOutboxJpaEntity> events = claimService == null
-                ? repository.findByPublishedAtIsNullOrderByCreatedAtAsc(PageRequest.of(0, batchSize))
-                : claimService.claim(batchSize, owner);
+        List<PharmacyEventOutboxJpaEntity> events = claimService.claim(batchSize, owner);
         for (PharmacyEventOutboxJpaEntity event : events) {
             try {
                 Message message = MessageBuilder.withBody(event.getPayload().getBytes(StandardCharsets.UTF_8))
@@ -116,26 +90,28 @@ public class PharmacyOutboxDispatcher {
                         .setMessageId(event.getEventId().toString())
                         .build();
                 awaitBrokerConfirmation(event, message);
-                if (claimService == null) {
-                    repository.markPublished(event, Instant.now(clock));
-                } else {
-                    claimService.markPublished(event.getEventId(), owner, Instant.now(clock));
+                if (claimService.markPublished(event.getEventId(), owner, Instant.now(clock))) {
+                    increment("mediflow.pharmacy.outbox.published");
                 }
-                increment("mediflow.pharmacy.outbox.published");
             } catch (RuntimeException exception) {
-                if (claimService == null) {
-                    repository.markFailure(event, exception.getMessage());
-                } else {
-                    claimService.markFailure(event.getEventId(), owner, safeError(exception),
-                            nextAvailableAt(event));
-                }
+                boolean quarantined = event.getAttempts() + 1 >= maxAttempts;
+                claimService.markFailure(event.getEventId(), owner, safeError(exception),
+                        nextAvailableAt(event), maxAttempts);
                 increment("mediflow.pharmacy.outbox.retry");
                 log.warn("Không thể phát event outbox {} qua {}: {}",
                         event.getEventId(), event.getRoutingKey(), exception.getMessage());
-                // Preserve causal order: a later event must not overtake the oldest failed event.
-                break;
+                // Non-critical notifications must not block the completion event of the saga.
+                // Critical events preserve order until they are quarantined after maxAttempts.
+                if (!quarantined && !isNonBlocking(event)) {
+                    break;
+                }
             }
         }
+    }
+
+    private boolean isNonBlocking(PharmacyEventOutboxJpaEntity event) {
+        return "stock.low".equals(event.getRoutingKey())
+                || "stock.adjusted".equals(event.getRoutingKey());
     }
 
     private String safeError(RuntimeException exception) {

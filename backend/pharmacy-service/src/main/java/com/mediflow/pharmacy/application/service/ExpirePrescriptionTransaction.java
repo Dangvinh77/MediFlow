@@ -1,5 +1,6 @@
 package com.mediflow.pharmacy.application.service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -75,6 +76,14 @@ public class ExpirePrescriptionTransaction {
                 || reservations.stream().anyMatch(reservation -> !reservation.isExpiredAt(now))) {
             return 0;
         }
+        for (PrescriptionLine line : prescription.getLines()) {
+            boolean quantityMatches = reservations.stream()
+                    .anyMatch(reservation -> reservation.getDrugId().equals(line.getDrugId())
+                            && reservation.getQuantity() == line.getQuantity());
+            if (!quantityMatches) {
+                return 0;
+            }
+        }
 
         for (StockReservation reservation : reservations) {
             reservation.expire(now);
@@ -87,7 +96,8 @@ public class ExpirePrescriptionTransaction {
         dispenseSlipRepository.save(slip);
 
         eventPublisher.publishPrescriptionExpired(new PrescriptionExpiredEvent(
-                UUID.randomUUID(),
+                UUID.nameUUIDFromBytes(("prescription.expired:" + prescriptionId)
+                        .getBytes(StandardCharsets.UTF_8)),
                 now,
                 "reservation-expiry:" + prescriptionId,
                 prescription.getPrescriptionId(),

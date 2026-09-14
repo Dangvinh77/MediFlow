@@ -47,9 +47,15 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:
+    business-zone: ${MEDIFLOW_PHARMACY_BUSINESS_ZONE:Asia/Ho_Chi_Minh}
     reservation:
       batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}
       ttl: ${MEDIFLOW_PHARMACY_RESERVATION_TTL:PT24H}
+      lease: ${MEDIFLOW_PHARMACY_RESERVATION_LEASE:PT5M}
+      lease-owner: ${MEDIFLOW_PHARMACY_RESERVATION_LEASE_OWNER:${HOSTNAME:pharmacy-local}-${random.uuid}}
+      release-cron: ${MEDIFLOW_PHARMACY_RESERVATION_RELEASE_CRON:0 0 * * * *}
+      reconciliation-batch-size: ${MEDIFLOW_PHARMACY_RECONCILIATION_BATCH_SIZE:100}
+      reconciliation-cron: ${MEDIFLOW_PHARMACY_RECONCILIATION_CRON:0 30 * * * *}
     rabbit:
       retry:
         max-attempts: ${MEDIFLOW_PHARMACY_RABBIT_RETRY_MAX_ATTEMPTS:3}
@@ -67,6 +73,7 @@ mediflow:
       retry:
         initial-backoff-ms: ${MEDIFLOW_PHARMACY_OUTBOX_RETRY_INITIAL_BACKOFF_MS:1000}
         max-backoff-ms: ${MEDIFLOW_PHARMACY_OUTBOX_RETRY_MAX_BACKOFF_MS:60000}
+        max-attempts: ${MEDIFLOW_PHARMACY_OUTBOX_RETRY_MAX_ATTEMPTS:5}
 
 management:
   endpoints:

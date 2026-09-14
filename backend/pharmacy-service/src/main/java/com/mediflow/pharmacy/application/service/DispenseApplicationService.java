@@ -6,6 +6,7 @@ import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PaymentProofRequiredException;
 import com.mediflow.pharmacy.domain.model.enums.PaymentReceiptStatus;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class DispenseApplicationService implements DispensePrescriptionUseCase {
         this.paymentReceiptRepository = paymentReceiptRepository;
     }
 
-    /** Dispenses manually without an invoice context. */
+    /** Dispenses manually after resolving the invoice from the durable payment proof. */
     @Override
     public DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy) {
         return dispense(prescriptionId, dispensedBy, null, null);
@@ -52,9 +53,14 @@ public class DispenseApplicationService implements DispensePrescriptionUseCase {
             UUID prescriptionId,
             UUID dispensedBy,
             UUID invoiceId,
-            String correlationId) {
-        requirePaymentProof(prescriptionId);
-        return execute(prescriptionId, dispensedBy, invoiceId, correlationId);
+        String correlationId) {
+        PaymentReceipt receipt = requirePaymentProof(prescriptionId);
+        if (invoiceId != null && !invoiceId.equals(receipt.getInvoiceId())) {
+            throw new PaymentProofRequiredException();
+        }
+        // The durable receipt is the source of truth for compensation context; never trust a
+        // caller-supplied invoice id that could point at another billing aggregate.
+        return execute(prescriptionId, dispensedBy, receipt.getInvoiceId(), correlationId);
     }
 
     /** Executes the shared stock transaction for a payment event already claimed by pharmacy. */
@@ -72,25 +78,27 @@ public class DispenseApplicationService implements DispensePrescriptionUseCase {
             UUID dispensedBy,
             UUID invoiceId,
             String correlationId) {
+        String normalizedCorrelationId = correlationId == null || correlationId.isBlank()
+                ? UUID.randomUUID().toString() : correlationId.trim();
         try {
-            return dispenseTransactionService.execute(prescriptionId, dispensedBy, correlationId);
+            return dispenseTransactionService.execute(
+                    prescriptionId, dispensedBy, normalizedCorrelationId);
         } catch (BusinessRuleException exception) {
             recordDispenseFailureService.record(
                     prescriptionId,
                     dispensedBy,
                     invoiceId,
-                    correlationId,
+                    normalizedCorrelationId,
                     exception.getCode() + ": " + exception.getMessage());
             throw exception;
         }
     }
 
-    private void requirePaymentProof(UUID prescriptionId) {
-        boolean paid = paymentReceiptRepository.findByPrescriptionId(prescriptionId).stream()
-                .anyMatch(receipt -> receipt.getStatus() == PaymentReceiptStatus.RECEIVED
-                        || receipt.getStatus() == PaymentReceiptStatus.DISPENSED);
-        if (!paid) {
-            throw new PaymentProofRequiredException();
-        }
+    private PaymentReceipt requirePaymentProof(UUID prescriptionId) {
+        return paymentReceiptRepository.findByPrescriptionId(prescriptionId).stream()
+                .filter(receipt -> receipt.getStatus() == PaymentReceiptStatus.RECEIVED
+                        || receipt.getStatus() == PaymentReceiptStatus.DISPENSED)
+                .findFirst()
+                .orElseThrow(PaymentProofRequiredException::new);
     }
 }

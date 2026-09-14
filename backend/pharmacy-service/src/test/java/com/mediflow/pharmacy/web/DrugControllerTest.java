@@ -6,6 +6,7 @@ import com.mediflow.common.api.PageResult;
 import com.mediflow.pharmacy.application.dto.request.AdjustStockRequest;
 import com.mediflow.pharmacy.application.dto.request.CreateDrugRequest;
 import com.mediflow.pharmacy.application.dto.response.DrugDTO;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.port.in.ManageDrugUseCase;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
@@ -19,6 +20,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -168,8 +172,9 @@ class DrugControllerTest {
         when(manageDrugUseCase.adjustStock(eq(drugId), eq(request), eq(actorId), nullable(String.class)))
                 .thenReturn(drugDto(drugId, 120));
 
-        mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
-                        .with(user(actorId.toString()).roles(role))
+                mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
+                        .with(authentication(actor(actorId,
+                                "PHARMACIST".equals(role) ? actorId : null, role)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -192,6 +197,22 @@ class DrugControllerTest {
         verifyNoInteractions(manageDrugUseCase);
     }
 
+    /** PHARMACIST phải có staffId đã ký để ghi audit điều chỉnh kho. */
+    @Test
+    void adjustStock_pharmacistWithoutStaffId_returns403() throws Exception {
+        UUID drugId = UUID.randomUUID();
+
+        mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
+                        .with(user(UUID.randomUUID().toString()).roles("PHARMACIST"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AdjustStockRequest(10, "Thiếu staff identity"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(manageDrugUseCase);
+    }
+
     @Test
     @WithMockUser(roles = "PHARMACIST")
     void adjustStock_wouldMakeStockNegative_returns422() throws Exception {
@@ -202,8 +223,8 @@ class DrugControllerTest {
                 .thenThrow(new DrugRuleException(
                         "DRUG_OUT_OF_STOCK", "Điều chỉnh làm tồn kho âm"));
 
-        mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
-                        .with(user(actorId.toString()).roles("PHARMACIST"))
+                mockMvc.perform(put(BASE_PATH + "/{id}/stock", drugId)
+                        .with(authentication(actor(actorId, actorId, "PHARMACIST")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())
@@ -221,6 +242,12 @@ class DrugControllerTest {
                 LocalDate.now().plusYears(1),
                 "Dược phẩm VN",
                 20);
+    }
+
+    private UsernamePasswordAuthenticationToken actor(UUID accountId, UUID staffId, String role) {
+        ActorIdentity identity = new ActorIdentity(accountId, staffId, role);
+        return new UsernamePasswordAuthenticationToken(
+                identity, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 
     private DrugDTO drugDto(UUID drugId, int stockQuantity) {

@@ -51,6 +51,9 @@ public class PharmacyEventOutboxJpaEntity {
     @Column(name = "locked_by", length = 100)
     private String lockedBy;
 
+    @Column(name = "quarantined_at")
+    private Instant quarantinedAt;
+
     /** Creates a new pending outbox row. */
     public PharmacyEventOutboxJpaEntity(UUID eventId, String routingKey, String payload) {
         this.eventId = eventId;

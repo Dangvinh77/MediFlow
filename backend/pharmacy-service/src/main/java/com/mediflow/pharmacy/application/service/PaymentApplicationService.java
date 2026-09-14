@@ -15,8 +15,6 @@ import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import org.springframework.stereotype.Service;
 
 /**
@@ -37,7 +35,6 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
     private final PaymentReceiptRepositoryPort paymentReceiptRepository;
     private final DispensePrescriptionUseCase dispenseUseCase;
     private final LatePaymentCompensationService latePaymentCompensationService;
-    private final ConcurrentHashMap<UUID, ReentrantLock> eventLocks = new ConcurrentHashMap<>();
 
     /** Creates the payment application service from ports and the shared dispense use case. */
     public PaymentApplicationService(
@@ -60,13 +57,9 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
      */
     @Override
     public void onPaymentCompleted(PaymentCompletedCommand command) {
-        ReentrantLock lock = eventLocks.computeIfAbsent(command.eventId(), ignored -> new ReentrantLock());
-        lock.lock();
-        try {
-            processPaymentCompleted(command);
-        } finally {
-            lock.unlock();
-        }
+        // Atomic payment-receipt claim and pessimistic dispense locks provide coordination both
+        // within one JVM and across replicas; no unbounded per-event lock map is needed.
+        processPaymentCompleted(command);
     }
 
     /** Executes the payment workflow while the per-event coordination lock is held. */

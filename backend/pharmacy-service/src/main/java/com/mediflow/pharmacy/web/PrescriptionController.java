@@ -145,9 +145,10 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
             Authentication authentication,
             @RequestHeader(value = JwtClaims.HEADER_CORRELATION_ID, required = false) String correlationId) {
         ActorIdentity actor = parseActor(authentication);
+        String normalizedCorrelationId = normalizeCorrelationId(correlationId);
         var result = dispensePrescriptionUseCase.dispense(
-                prescriptionId, actor.auditActorId(), correlationId);
-        return ResponseEntity.ok(ApiResponse.ok(result, correlationId));
+                prescriptionId, operationalActorId(actor), normalizedCorrelationId);
+        return ResponseEntity.ok(ApiResponse.ok(result, normalizedCorrelationId));
     }
 
     /**
@@ -177,5 +178,20 @@ public ResponseEntity<ApiResponse<PrescriptionDTO>> create(
                     "JWT subject không phải mã người dùng hợp lệ",
                     exception);
         }
+    }
+
+    /** Resolves the signed identity allowed to own a dispensing operation. */
+    private UUID operationalActorId(ActorIdentity actor) {
+        try {
+            return actor.auditActorId();
+        } catch (IllegalStateException exception) {
+            throw new AccessDeniedException(
+                    "JWT chưa cung cấp staffId đã xác thực cho thao tác nghiệp vụ", exception);
+        }
+    }
+
+    /** Generates a correlation id when a direct caller omitted the tracing header. */
+    private String normalizeCorrelationId(String value) {
+        return value == null || value.isBlank() ? UUID.randomUUID().toString() : value.trim();
     }
 }

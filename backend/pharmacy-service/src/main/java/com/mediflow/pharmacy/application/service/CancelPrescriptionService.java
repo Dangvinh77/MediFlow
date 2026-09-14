@@ -1,5 +1,6 @@
 package com.mediflow.pharmacy.application.service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +28,6 @@ import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
 
-import lombok.RequiredArgsConstructor;
 
 /**
  * Điều phối việc hủy đơn thuốc và giải phóng toàn bộ lượng tồn đang giữ.
@@ -37,13 +37,27 @@ import lombok.RequiredArgsConstructor;
  * chỉ được giải phóng một phần. Thao tác lặp lại trên đơn đã hủy là idempotent.</p>
  */
 @Service
-@RequiredArgsConstructor
 public class CancelPrescriptionService implements CancelPrescriptionUseCase {
 
     private final PrescriptionRepositoryPort prescriptionRepository;
     private final DispenseSlipRepositoryPort dispenseSlipRepository;
     private final StockReservationRepositoryPort reservationRepository;
     private final PharmacyEventPublisherPort eventPublisher;
+    private final Clock clock;
+
+    /** Creates the cancellation service with an injectable business clock. */
+    public CancelPrescriptionService(
+            PrescriptionRepositoryPort prescriptionRepository,
+            DispenseSlipRepositoryPort dispenseSlipRepository,
+            StockReservationRepositoryPort reservationRepository,
+            PharmacyEventPublisherPort eventPublisher,
+            Clock clock) {
+        this.prescriptionRepository = java.util.Objects.requireNonNull(prescriptionRepository);
+        this.dispenseSlipRepository = java.util.Objects.requireNonNull(dispenseSlipRepository);
+        this.reservationRepository = java.util.Objects.requireNonNull(reservationRepository);
+        this.eventPublisher = java.util.Objects.requireNonNull(eventPublisher);
+        this.clock = java.util.Objects.requireNonNull(clock);
+    }
 
     /**
      * Hủy một đơn đang hoạt động, kết thúc phiếu xuất và giải phóng các reservation.
@@ -93,7 +107,7 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
                 .findByPrescriptionForUpdate(command.prescriptionId());
         requireAllReserved(reservations, prescription);
 
-        Instant cancelledAt = Instant.now();
+        Instant cancelledAt = Instant.now(clock);
         UUID auditActorId = command.actor().auditActorId();
         ReservationReleaseReason releaseReason = command.actor().isAdministrator()
                 ? ReservationReleaseReason.ADMIN_OVERRIDE
@@ -193,6 +207,20 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
             throw new PrescriptionRuleException(
                     "PRESCRIPTION_RESERVATION_INCONSISTENT",
                     "Không thể hủy đơn vì tập giữ chỗ không khớp các dòng thuốc");
+        }
+        for (PrescriptionLine line : prescription.getLines()) {
+            StockReservation reservation = reservations.stream()
+                    .filter(candidate -> candidate.getDrugId().equals(line.getDrugId()))
+                    .findFirst()
+                    .orElseThrow(() -> new PrescriptionRuleException(
+                            "PRESCRIPTION_RESERVATION_INCONSISTENT",
+                            "Không thể hủy đơn vì thiếu giữ chỗ thuốc " + line.getDrugId()));
+            if (reservation.getQuantity() != line.getQuantity()) {
+                throw new PrescriptionRuleException(
+                        "PRESCRIPTION_RESERVATION_QUANTITY_MISMATCH",
+                        "Không thể hủy đơn vì số lượng giữ chỗ không khớp dòng thuốc "
+                                + line.getDrugId());
+            }
         }
     }
 }
