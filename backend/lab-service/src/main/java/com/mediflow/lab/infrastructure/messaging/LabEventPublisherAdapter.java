@@ -34,9 +34,9 @@ public class LabEventPublisherAdapter implements LabEventPublisherPort {
     }
 
     private void publishAfterCommit(String routingKey, Object payload) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            publishNow(routingKey, payload);
-            return;
+        if (!TransactionSynchronizationManager.isActualTransactionActive()
+                || !TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("Lab event publication requires an active transaction");
         }
 
         TransactionSynchronizationManager.registerSynchronization(
