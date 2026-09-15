@@ -4,6 +4,10 @@ import java.util.UUID;
 
 /** BR-X2: deduplication and the attachment must commit atomically; adapter must handle concurrent redelivery. */
 public interface ProcessedEventPort {
-    boolean alreadyProcessed(UUID eventId);
-    void markProcessed(UUID eventId, String routingKey);
+    /**
+     * Atomically claims an event for processing.
+     *
+     * @return {@code true} only when this call inserted the event marker
+     */
+    boolean tryClaim(UUID eventId, String eventType);
 }

@@ -25,10 +25,9 @@ public class ClinicalIntegrationService implements ReactToLabResultUseCase {
     @Override
     @Transactional
     public void onLabResultCreated(LabResultCreatedCommand command) {
-        if (processedEvents.alreadyProcessed(command.eventId())) {
+        if (!processedEvents.tryClaim(command.eventId(), LAB_RESULT_CREATED)) {
             return;
         }
         attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion());
-        processedEvents.markProcessed(command.eventId(), LAB_RESULT_CREATED);
     }
 }
