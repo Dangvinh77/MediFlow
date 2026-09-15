@@ -2,7 +2,14 @@
 
 **Module:** `backend/report-service/` · **Cổng chạy:** 8088 · **Base path:** `/api/v1/reports` · **Database:** `mediflow_report`
 
-**Nguồn chuẩn:** `docs/eproject_general_plan/report-service.html` và `docs/eproject_general_plan/backend-spec/08-report.md`.
+**Nguồn tham khảo ban đầu:** `docs/eproject_general_plan/report-service.html` và
+`docs/eproject_general_plan/backend-spec/08-report.md`. Các quyết định đã chốt cho implementation
+là [implementation plan](../../plans/2026-09-15-report-service-implementation-plan.md).
+
+> **V1 decision record (15/09/2026):** các tài liệu cũ của Report từng mô tả 4 bảng, check-then-mark
+> idempotency và subscribe `staff.department.changed`. Baseline đã chốt hiện tại nằm trong
+> [implementation plan](../../plans/2026-09-15-report-service-implementation-plan.md): V1 có 5 bảng,
+> atomic `claimIfAbsent`, payment contribution theo `invoiceId`, và chỉ subscribe 5 event nghiệp vụ.
 
 ## 1. Service này làm gì?
 
@@ -12,11 +19,14 @@ Report là một **read model**: nó không sở hữu dữ liệu giao dịch n
 2. **Báo cáo doanh thu theo tháng** — tổng doanh thu và số hóa đơn theo từng tháng.
 3. **Top thuốc** — thuốc nào được xuất nhiều nhất trong một khoảng thời gian.
 
-Vì là read model nên report chỉ **nghe** các event từ các service khác (`medicalrecord.created`, `lab.result.created`, `prescription.filled`, `payment.completed`, `payment.failed`, `staff.department.changed`) để tăng/giảm bộ đếm. Số liệu tổng hợp là **dữ liệu dẫn xuất**, không bao giờ là nguồn chuẩn — nếu lệch, cách sửa là phát lại event, không sửa tay con số.
+Vì là read model nên report chỉ **nghe** `medicalrecord.created`, `lab.result.created`,
+`prescription.filled`, `payment.completed` và `payment.failed` để dựng projection. Số liệu tổng hợp là
+**dữ liệu dẫn xuất**, không bao giờ là nguồn chuẩn — nếu lệch, cách sửa là phát lại event, không sửa tay.
 
 ## 2. Phạm vi (bounded context)
 
-**Sở hữu:** các bảng tổng hợp (`DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`) + sổ chống trùng `PROCESSED_EVENT`.
+**Sở hữu:** các bảng tổng hợp (`DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`),
+`PROCESSED_EVENT` và `PAYMENT_CONTRIBUTION` (sổ contribution thanh toán để đảo đúng kỳ gốc).
 
 **Không sở hữu:** dữ liệu giao dịch (hồ sơ bệnh án, xét nghiệm, đơn thuốc, hóa đơn…). Report chỉ giữ **UUID tham chiếu** (`departmentId`, `drugId`) — không nối thẳng DB của service khác (xem `docs/ai/08-persistence-naming.md`).
 
@@ -64,11 +74,20 @@ Ràng buộc DB: `ck_month` — `month BETWEEN 1 AND 12`. `total_revenue >= 0` l
 
 ### `DRUG_STATISTIC` — thống kê thuốc xuất
 
-`statistic_id` UUID PK · `drug_id` UUID (tham chiếu pharmacy) · `drug_name` VARCHAR(150) — **ảnh chụp tên thuốc** tại lúc thống kê · `report_date` DATE · `department_id` UUID · `dispensed_quantity` INT. Khóa tự nhiên `(drug_id, report_date, department_id)`.
+`statistic_id` UUID PK · `drug_id` UUID (tham chiếu pharmacy) · `drug_name` VARCHAR(150) — **ảnh chụp tên thuốc mới nhất từ event pharmacy** · `report_date` DATE · `department_id` UUID · `dispensed_quantity` INT. Khóa tự nhiên `(drug_id, report_date, department_id)`. Khi event cùng khóa tự nhiên đến với tên mới, phải refresh snapshot rồi mới tăng quantity.
 
 ### `PROCESSED_EVENT` — sổ ghi các event đã xử lý
 
 `event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin — thiếu nó, một lần gửi lại sẽ làm hỏng vĩnh viễn mọi bộ đếm (BR-R2).
+
+### `PAYMENT_CONTRIBUTION` — contribution theo invoice
+
+`invoice_id` UUID PK · `completed_event_id` UUID UNIQUE · `failed_event_id` UUID UNIQUE nullable ·
+`payment_date` DATE nullable · `department_id` UUID nullable · `amount` DECIMAL(15,2) nullable ·
+`status` (`PENDING_REVERSAL`, `APPLIED`, `REVERSED`) · timestamps. Bảng này cần thiết vì
+`payment.failed` hiện tại chỉ có `invoiceId`, không có amount/department; failure đến trước completed
+được lưu pending để khi completed đến thì net effect bằng zero. `NEW` chỉ là trạng thái transient
+trước lần lưu đầu tiên, không được persist.
 
 ## 5. Các cổng (ports) — phần quan trọng nhất
 
@@ -92,10 +111,9 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 |-------------|--------|--------------|
 | `onMedicalRecordCreated(eventId, reportDate, departmentId)` | `visit_count += 1` trên dòng ngày + dòng toàn viện | BR-R1 |
 | `onLabResultCreated(eventId, reportDate, departmentId)` | `lab_count += 1` | BR-R1 |
-| `onPrescriptionFilled(eventId, reportDate, departmentId, items)` | `prescription_count += 1`; mỗi mặt hàng tăng `DRUG_STATISTIC.dispensed_quantity` | BR-R1 |
-| `onPaymentCompleted(eventId, reportDate, departmentId, amount)` | `revenue += amount`; theo tháng `total_revenue += amount`, `invoice_count += 1` | BR-R1, BR-R3 |
-| `onPaymentFailed(eventId, reportDate, departmentId, amount)` | đảo ngược: `revenue -= amount`; theo tháng tương tự, `invoice_count -= 1` (**chặn không âm**) | BR-R3 |
-| `onStaffDepartmentChanged(eventId, staffId, oldDept, newDept)` | chỉ cập nhật ảnh chụp nhân sự; V1 không đổi bộ đếm nào | — |
+| `onPrescriptionFilled(eventId, occurredAt, departmentId, prescriptionId, items)` | `prescription_count += 1`; mỗi mặt hàng tăng `DRUG_STATISTIC.dispensed_quantity` | RPT-B01…B04 |
+| `onPaymentCompleted(eventId, occurredAt, invoiceId, departmentId, amount)` | apply contribution: daily/monthly revenue tăng, invoice count tăng | RPT-B05, RPT-B06 |
+| `onPaymentFailed(eventId, occurredAt, invoiceId)` | đảo contribution gốc theo invoice; không lấy amount/dept từ payload | RPT-B07, RPT-B08 |
 
 #### `ReadReportUseCase` — đọc báo cáo
 
@@ -107,7 +125,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 | `monthly(month, year, departmentId)` | báo cáo doanh thu theo tháng | BR-R5 |
 | `topMedicines(fromDate, toDate, departmentId, limit)` | top thuốc xuất nhiều nhất, tôn trọng khoảng ngày + `limit` (mặc định 10, tối đa 50) | BR-R7 |
 
-### 5.2 Cổng ra (out-ports) — 4 interface
+### 5.2 Cổng ra (out-ports) — 5 interface
 
 #### `DailyVisitReportRepositoryPort` — lưu và tìm báo cáo ngày
 
@@ -128,7 +146,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 |-------------|--------|
 | `findOrCreate(year, month, departmentId)` | tìm-hoặc-tạo dòng theo `(year, month, departmentId)` |
 | `save(MonthlyRevenueReport)` | lưu báo cáo |
-| `findByMonth(year, month)` | đọc toàn bộ dòng của một tháng (các khoa + toàn viện) |
+| `find(year, month, departmentId)` | đọc một dòng theo đúng scope tháng |
 
 #### `DrugStatisticRepositoryPort` — lưu và tìm thống kê thuốc
 
@@ -136,9 +154,9 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 | Phương thức | Làm gì | Quy tắc khớp |
 |-------------|--------|--------------|
-| `findOrCreate(drugId, drugName, reportDate, departmentId)` | tìm-hoặc-tạo dòng theo `(drugId, reportDate, departmentId)` | BR-R1 |
+| `findOrCreate(drugId, drugName, reportDate, departmentId)` | tìm-hoặc-tạo dòng theo `(drugId, reportDate, departmentId)`; dòng có sẵn phải được refresh `drugName` theo event mới nhất | BR-R1, RPT-B11 |
 | `save(DrugStatistic)` | lưu thống kê | |
-| `topDrugs(fromDate, toDate, departmentId, limit)` | lấy top thuốc theo khoảng ngày + `limit` | BR-R7 |
+| `topMedicines(fromDate, toDate, departmentId, limit)` | lấy top thuốc group theo drugId, latest name, deterministic order | RPT-Q05 |
 
 #### `ProcessedEventPort` — sổ chống xử lý trùng
 
@@ -146,32 +164,39 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 | Phương thức | Làm gì | Quy tắc khớp |
 |-------------|--------|--------------|
-| `alreadyProcessed(UUID eventId)` | kiểm tra event đã xử lý chưa | BR-R2 |
-| `markProcessed(UUID eventId, String routingKey)` | đánh dấu đã xử lý (cùng transaction với hiệu ứng) | BR-R2 |
+| `claimIfAbsent(UUID eventId, String routingKey)` | atomic insert; trả `true` cho consumer thắng claim | RPT-E01, RPT-E02 |
+
+#### `PaymentContributionRepositoryPort` — sổ contribution theo invoice
+
+| Phương thức | Làm gì |
+|-------------|--------|
+| `findOrCreateForUpdate(UUID invoiceId)` | lấy advisory transaction lock theo invoice rồi `SELECT`; nếu chưa có thì trả aggregate `NEW` transient (không ghi placeholder `NEW` xuống DB) |
+| `save(PaymentContribution contribution)` | lưu state `PENDING_REVERSAL/APPLIED/REVERSED` |
 
 ## 6. Luồng nghiệp vụ chính
 
-### 6.1 Nhận event — pattern 4 bước trong 1 transaction
+### 6.1 Nhận event — atomic claim và effect trong một transaction
 
-Mọi consumer theo **4 bước trong một transaction**:
+Consumer chỉ parse/validate rồi gọi in-port. Application service thực hiện trong **một transaction**:
 
-1. **Khử trùng lặp TRƯỚC TIÊN** — `alreadyProcessed(eventId)` rồi return (BR-R2).
-2. **Tìm-hoặc-tạo** dòng `(reportDate, departmentId)` — dựa vào unique index, không kiểm-rồi-chèn (BR-R8).
-3. **Cộng delta** theo routing key.
-4. **`markProcessed(...)` cùng transaction** với hiệu ứng.
+1. `claimIfAbsent(eventId, routingKey)` bằng `INSERT ... ON CONFLICT DO NOTHING`; mất claim thì return.
+2. Tìm-hoặc-tạo projection bằng unique key rồi `SELECT ... FOR UPDATE`; payment contribution dùng
+   advisory transaction lock theo `invoiceId` và chỉ tạo aggregate `NEW` transient khi thiếu row.
+3. Cộng hoặc đảo delta theo routing key.
+4. Commit claim và effect cùng nhau; lỗi làm rollback cả hai để RabbitMQ retry được.
 
 ### 6.2 Mỗi event cập nhật hai dòng — khoa + toàn viện
 
-Mỗi event cập nhật **hai dòng**: dòng của khoa (`department_id = X`) + dòng toàn viện (`department_id = NULL`). Chỉ làm một trong hai sẽ khiến tổng số liệu không khớp nhau.
+Mỗi event có khoa cập nhật dòng khoa (`department_id = X`) + dòng toàn viện (`department_id = NULL`).
+Nếu `department_id` null (payment completed hiện tại) thì chỉ cập nhật dòng toàn viện.
 
 | Event | Tác động |
 |-------|----------|
 | `medicalrecord.created` | `visit_count += 1` |
 | `lab.result.created` | `lab_count += 1` |
 | `prescription.filled` | `prescription_count += 1`; mỗi mặt hàng `DRUG_STATISTIC.dispensed_quantity += quantity` |
-| `payment.completed` | `revenue += totalAmount`; theo tháng `total_revenue += totalAmount`, `invoice_count += 1` |
-| `payment.failed` | `revenue -= totalAmount`; theo tháng tương tự, `invoice_count -= 1` |
-| `staff.department.changed` | chỉ cập nhật ảnh chụp nhân sự; V1 không đổi bộ đếm nào |
+| `payment.completed` | tạo/apply contribution; daily/monthly `revenue += amount`, `invoice_count += 1` |
+| `payment.failed` | đảo contribution theo invoice; trừ đúng ngày/khoa gốc và giảm invoice count |
 
 ### 6.3 `findOrCreate` an toàn concurrency
 
@@ -183,6 +208,10 @@ ON CONFLICT (report_date, department_id) DO NOTHING;
 ```
 
 rồi `SELECT ... FOR UPDATE`. Kiểu `findById` rồi `save` thông thường sẽ sinh lỗi trùng khóa khi tải cao.
+
+Payment contribution không dùng placeholder insert: adapter khóa `invoiceId` bằng
+`pg_advisory_xact_lock`, `SELECT` row hiện có hoặc trả aggregate `NEW` transient, rồi chỉ persist
+state bền vững sau khi event được áp dụng.
 
 > **Lỗi dễ mắc nhất ở report:** JPA đối chiếu `WHERE x = NULL` không khớp. Khi truy vấn dòng toàn viện phải viết `(r.departmentId = :departmentId OR (:departmentId IS NULL AND r.departmentId IS NULL))`.
 
@@ -211,48 +240,41 @@ rồi `SELECT ... FOR UPDATE`. Kiểu `findById` rồi `save` thông thường s
 | `lab.result.created` | `onLabResultCreated` → `lab_count += 1` |
 | `prescription.filled` | `onPrescriptionFilled` → `prescription_count += 1` + `DRUG_STATISTIC` |
 | `payment.completed` | `onPaymentCompleted` → tăng doanh thu ngày + tháng |
-| `payment.failed` | `onPaymentFailed` → đảo ngược doanh thu |
-| `staff.department.changed` | `onStaffDepartmentChanged` → cập nhật ảnh chụp nhân sự |
+| `payment.failed` | `onPaymentFailed` → đảo contribution theo invoice |
 
-Queue: `report.q` bind **6 routing key** trên. Consumer là **một class duy nhất** (`ReportEventConsumer`) — nhận `Message`, dispatch theo routing key. Mọi event đều mang đủ `eventId`, `occurredAt`, `correlationId` theo chuẩn `docs/ai/06-events-rabbitmq.md`.
+Queue: `report.q` bind **5 routing key** trên. Consumer là **một class duy nhất** (`ReportEventConsumer`) — nhận `Message`, dispatch theo routing key. Mọi event đều mang đủ `eventId`, `occurredAt`, `correlationId` theo chuẩn `docs/ai/06-events-rabbitmq.md`. `staff.department.changed` chưa bind V1 vì không có staffing report và payload producer thiếu envelope.
 
-## 9. Quy tắc nghiệp vụ (8 quy tắc)
+## 9. Quy tắc nghiệp vụ
 
-| ID | Quy tắc (diễn đạt đơn giản) |
-|----|------------------------------|
-| BR-R1 | Số liệu được tổng hợp theo ngày và theo khoa (kèm dòng toàn viện). |
-| BR-R2 | Gửi lại event không được đếm hai lần (khử trùng lặp trên `eventId`). |
-| BR-R3 | `payment.failed` phải đảo ngược doanh thu (delta âm). |
-| BR-R4 | Không bao giờ truy vấn service khác — không Feign, không external datasource. |
-| BR-R5 | Ngày/tháng không có dữ liệu trả về số 0, không phải 404. |
-| BR-R6 | Bỏ trống `departmentId` ⇒ trả dòng toàn viện. |
-| BR-R7 | Top thuốc tôn trọng khoảng ngày và `limit`. |
-| BR-R8 | Nhiều event đầu tiên cùng ngày chỉ tạo đúng một dòng (concurrency-safe). |
-
-Chi tiết ánh xạ quy tắc → tầng test → tên test: xem mục 8 và 10.5 của spec 08.
+Các rule V1 có mã `RPT-Bxx`, `RPT-Exx`, `RPT-Qxx`, `RPT-Oxx`; bảng đầy đủ, test mapping và quyết định
+loại bỏ điểm mâu thuẫn nằm trong [implementation plan](../../plans/2026-09-15-report-service-implementation-plan.md).
 
 ## 10. Mã lỗi
 
 | Mã lỗi | HTTP | Tình huống |
 |--------|------|------------|
-| (V1 không có mã lỗi nghiệp vụ) | — | ngày không dữ liệu → trả báo cáo số 0, không 404 |
+| `REPORT_DATE_RANGE_INVALID` | 422 | `fromDate > toDate` |
+| `VALIDATION_ERROR` | 400 | month/year/limit hoặc field query không hợp lệ |
 
-Report rất ít quy tắc ném lỗi: V1 **không có** endpoint trả 404. Thường không cần domain exception riêng — nếu sau này có endpoint trả 404 thì thêm `ReportNotFoundException` (kế thừa `ResourceNotFoundException` của `common`).
+V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều zero-fill.
 
 ## 11. Code hiện tại: đã có gì, còn thiếu gì
 
 ### Đã có (đối chiếu với cây thư mục thật)
 
 - `ArchitectureTest.java`: kiểm tra quy tắc kiến trúc (domain không dùng Spring/JPA, application không dùng Spring Data/AMQP/HTTP, không vòng lặp giữa các tầng) — đồng thời bắt luôn BR-R4 (không Feign/client).
+- `domain/model/`: `DailyVisitReport`, `MonthlyRevenueReport`, `DrugStatistic`,
+  `PaymentContribution`, immutable `TopMedicineSummary` và bộ domain tests của T01.
+- T02 contracts: 2 in-port, 5 out-port, immutable `DispensedItem`, 3 response DTO và
+  `ReportDtoMapper` (MapStruct).
+- T03 persistence mapping: Flyway `V1__init.sql` với 5 bảng, PostgreSQL null-safe unique indexes,
+  checks, 5 JPA entity và 4 persistence mapper.
 
 ### Còn thiếu (theo spec 08 — xem phần "Coding map" và "Definition of Done")
 
-- `db/migration/V1__init.sql`: 4 bảng (`DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`, `PROCESSED_EVENT`) + unique index `NULLS NOT DISTINCT` + `ck_month`.
-- `domain/model/`: `DailyVisitReport`, `MonthlyRevenueReport`, `DrugStatistic` (bộ đếm chịu delta âm).
-- 4 out-port + 2 in-port (`UpdateAggregateUseCase`, `ReadReportUseCase`).
 - `application/service/`: `AggregateUpdaterService`, `ReportApplicationService`.
-- DTO response (`DailyReportDTO`, `MonthlyReportDTO`, `TopMedicineDTO`) + mapper (MapStruct).
 - `web/`: `ReportController` 3 endpoint + `GlobalExceptionHandler` + `SecurityConfig` + `OpenApiConfig`.
-- `messaging/consumer/`: `ReportEventConsumer` (1 class, 4 bước trong 1 transaction).
-- `infrastructure/persistence/`: JPA entity + repository (`findOrCreate` ON CONFLICT, `SELECT FOR UPDATE`) + adapter.
-- Test đủ 5 tầng, phủ 8 quy tắc nghiệp vụ (danh sách test cụ thể ở spec 08 mục 10.5).
+- `messaging/consumer/`: `ReportEventConsumer` (1 class; application atomic claim + effect trong một transaction).
+- `infrastructure/persistence/`: Spring Data repository + adapter (`findOrCreate` ON CONFLICT,
+  `SELECT FOR UPDATE`); T03 mới chỉ hoàn tất entity/mapper.
+- Test đủ 5 tầng, phủ toàn bộ rule `RPT-*` trong implementation plan.
