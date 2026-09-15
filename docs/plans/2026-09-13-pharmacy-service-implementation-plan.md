@@ -26,7 +26,7 @@ Baseline kiểm chứng gần nhất:
 
 | Nội dung | Kết quả |
 |---|---|
-| Test Pharmacy Service | **181 total, 149 passed, 0 failures, 0 errors, 32 skipped** (Testcontainers cần Docker; integration gate chưa xác nhận) |
+| Test Pharmacy Service | **184 total, 149 passed, 0 failures, 0 errors, 35 skipped** (Testcontainers cần Docker; integration gate chưa xác nhận) |
 | PostgreSQL integration | Chưa chạy ở lượt này vì Docker daemon không khả dụng; baseline trước đó đã chạy Flyway V1–V5 thành công |
 | Javadocs | Thành công |
 | Maven verify | Thành công |
@@ -213,8 +213,8 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | DONE — domain/persistence, rollback và race integration đã pass |
 | 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | IN_PROGRESS — guards + concurrent tests đã viết; integration gate cần Docker |
 | 13 | Scheduler đa instance và reconciliation dữ liệu lệch | Lifecycle/Ops | T09, T12 | IN_PROGRESS — fencing token + dry-run matrix đã viết; PostgreSQL lease/reconciliation gate cần Docker |
-| 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | IN_PROGRESS — đã thêm Flyway compatibility test + runbook; cần chạy Docker để xác nhận |
-| 15 | Test RabbitMQ thật: confirm, return, outage, redelivery, DLQ | Messaging/Test | T10 | IN_PROGRESS — real broker ACK/mandatory-return tests added; Docker gate pending |
+| 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | IN_PROGRESS — fresh/V4/V5 Flyway compatibility tests + runbook; cần chạy Docker để xác nhận |
+| 15 | Test RabbitMQ thật: confirm, return, outage, redelivery, DLQ | Messaging/Test | T10 | IN_PROGRESS — ACK/return/redelivery/DLQ tests added; outage and Docker gate pending |
 | 16 | Contract/E2E với Gateway, Billing và Notification | Integration | T03–T15 | IN_PROGRESS — fixtures + HANDOFF added; E2E blocked by external services |
 | 17 | Audit cuối, tài liệu, cập nhật plan và release/PR gate | Release | T01–T16 | TODO |
 
@@ -248,7 +248,7 @@ Checklist:
 - [x] Controller/consumer chỉ phụ thuộc đúng in-port.
 - [x] Test hiện tại được chia theo service mới và giữ nguyên assertion.
 - [x] Thêm Javadocs cho mọi public API.
-- [x] 181 test hiện tại pass (0 failure, 0 error; 32 skipped do môi trường Docker).
+- [x] 184 test hiện tại pass (0 failure, 0 error; 35 skipped do môi trường Docker).
 
 **Bằng chứng hoàn thành:** `mvn -q -pl backend/pharmacy-service -am test` và Javadocs đã chạy thành công; `PharmacyApplicationService` đã được xóa, bốn application service mới nhận đúng in-port và các test đã chuyển sang service chuyên trách.
 
@@ -411,6 +411,7 @@ reports unknown/legacy statuses by prescription id and anomaly type.
 
 - [x] Có test fresh database chạy V1 → migration mới nhất (`PharmacyMigrationCompatibilityTest`).
 - [x] Có test database V4 có dữ liệu mẫu nâng lên migration mới nhất, không backfill payment proof.
+- [x] Có test database V5 giữ nguyên event outbox pending (event id/payload/attempts) khi nâng V6-V11.
 - [ ] `ddl-auto=validate` pass.
 - [ ] Unique/index/check/FK nội bộ đúng; không FK cross-service.
 - [ ] Dữ liệu cũ thiếu payment proof giữ trạng thái unknown, không backfill thành paid.
@@ -423,10 +424,11 @@ Dùng Testcontainers PostgreSQL + RabbitMQ:
 - [ ] Transaction rollback không để lại outbox.
 - [x] ACK mới mark published (`PharmacyRabbitIntegrationTest`).
 - [x] Mandatory return giữ pending và tăng attempt (`PharmacyRabbitIntegrationTest`).
-- [ ] NACK/timeout, outage, crash-redelivery và DLQ cần chạy với broker/container trong CI.
+- [ ] NACK/timeout và outage cần chạy với broker/container trong CI.
+- [x] Crash-redelivery (basic reject/requeue) và DLQ routing đã kiểm thử với RabbitMQ thật (`PharmacyRabbitIntegrationTest`).
 - [ ] Broker outage không làm rollback nghiệp vụ đã commit.
-- [ ] Crash sau send trước mark tạo redelivery nhưng consumer vẫn idempotent.
-- [ ] Poison payment message retry hữu hạn rồi vào DLQ.
+- [ ] Crash sau send trước mark tạo redelivery nhưng consumer vẫn idempotent ở E2E.
+- [ ] Poison payment message retry hữu hạn rồi vào DLQ ở consumer E2E.
 - [ ] Không test các hành vi này chỉ bằng mock `RabbitTemplate`.
 
 ### T16 — Contract và E2E

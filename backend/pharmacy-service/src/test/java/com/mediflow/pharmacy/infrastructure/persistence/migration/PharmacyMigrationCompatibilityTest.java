@@ -70,6 +70,40 @@ class PharmacyMigrationCompatibilityTest {
                 + prescriptionId + "'")).isEqualTo(1);
     }
 
+    /** A V5 outbox row keeps its event identity and payload while lease/quarantine columns are added. */
+    @Test
+    void v5DatabaseWithPendingOutboxRow_upgradesWithoutChangingDeliveryIntent() throws Exception {
+        flyway(MigrationVersion.fromVersion("5")).migrate();
+        UUID eventId = UUID.randomUUID();
+        String payload = "{\"eventId\":\"" + eventId + "\",\"kind\":\"legacy\"}";
+        insertV5OutboxRow(eventId, payload);
+
+        flyway().migrate();
+
+        assertThat(queryString("SELECT payload FROM PHARMACY_EVENT_OUTBOX WHERE event_id = '"
+                + eventId + "'"))
+                .isEqualTo(payload);
+        assertThat(queryInt("SELECT attempts FROM PHARMACY_EVENT_OUTBOX WHERE event_id = '"
+                + eventId + "'"))
+                .isZero();
+        assertThat(queryInt("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE event_id = '"
+                + eventId
+                + "' AND published_at IS NULL AND available_at IS NOT NULL"
+                + " AND quarantined_at IS NULL"))
+                .isEqualTo(1);
+    }
+
+    private void insertV5OutboxRow(UUID eventId, String payload) throws Exception {
+        try (Connection connection = connection();
+                Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    INSERT INTO PHARMACY_EVENT_OUTBOX
+                        (event_id, routing_key, payload, created_at, attempts)
+                    VALUES ('%s', 'prescription.created', '%s', now(), 0)
+                    """.formatted(eventId, payload.replace("'", "''")));
+        }
+    }
+
     private void insertLegacyRows(UUID drugId, UUID prescriptionId) throws Exception {
         try (Connection connection = connection();
                 Statement statement = connection.createStatement()) {
