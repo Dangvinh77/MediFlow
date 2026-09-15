@@ -1,7 +1,6 @@
 package com.mediflow.lab.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -55,13 +53,17 @@ class LabPersistenceAdapterTest {
     }
 
     @Test
-    void processedEvent_isInsertOnly() {
+    void processedEvent_firstClaim_returnsTrue() {
         UUID eventId = UUID.randomUUID();
-        processedEvents.markProcessed(eventId, "medical-record.created");
+        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isTrue();
+    }
 
-        assertThat(processedEvents.alreadyProcessed(eventId)).isTrue();
-        assertThatThrownBy(() -> processedEvents.markProcessed(eventId, "medical-record.created"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+    @Test
+    void processedEvent_duplicateClaim_returnsFalse() {
+        UUID eventId = UUID.randomUUID();
+        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isTrue();
+
+        assertThat(processedEvents.tryClaim(eventId, "medical-record.created")).isFalse();
     }
 
     @Test

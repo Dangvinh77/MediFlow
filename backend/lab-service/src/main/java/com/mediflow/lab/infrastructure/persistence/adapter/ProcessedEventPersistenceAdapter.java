@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class ProcessedEventPersistenceAdapter implements ProcessedEventPort {
     private final ProcessedEventJpaRepository repository;
 
-    @Override public boolean alreadyProcessed(UUID eventId) { return repository.existsById(eventId); }
-    @Override public void markProcessed(UUID eventId, String routingKey) { repository.insertEvent(eventId, routingKey); }
+    @Override public boolean tryClaim(UUID eventId, String eventType) {
+        return repository.insertIfAbsent(eventId, eventType) == 1;
+    }
 }

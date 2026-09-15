@@ -25,9 +25,8 @@ public class LabIntegrationService implements ReactToMedicalRecordUseCase {
     @Override
     @Transactional
     public void onMedicalRecordCreated(MedicalRecordCreatedCommand command) {
-        if (processedEvents.alreadyProcessed(command.eventId())) {
+        if (!processedEvents.tryClaim(command.eventId(), MEDICAL_RECORD_CREATED)) {
             return;
         }
-        processedEvents.markProcessed(command.eventId(), MEDICAL_RECORD_CREATED);
     }
 }
