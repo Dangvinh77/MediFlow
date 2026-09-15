@@ -7,6 +7,7 @@ import com.mediflow.clinical.application.dto.request.UpdateRecordRequest;
 import com.mediflow.clinical.application.dto.response.DiagnosisDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.in.ManageRecordUseCase;
+import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -36,7 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MedicalRecordController.class)
-@Import(MedicalRecordControllerTest.MethodSecurityConfiguration.class)
+@Import({MedicalRecordControllerTest.MethodSecurityConfiguration.class,
+        ThreadLocalCorrelationIdProvider.class})
 class MedicalRecordControllerTest {
 
     private static final String BASE_PATH = "/api/v1/records";

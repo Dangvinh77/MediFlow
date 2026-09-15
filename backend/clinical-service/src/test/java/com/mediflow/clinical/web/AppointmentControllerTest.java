@@ -5,6 +5,7 @@ import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.UpdateAppointmentRequest;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
+import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
@@ -38,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AppointmentController.class)
-@Import(AppointmentControllerTest.MethodSecurityConfiguration.class)
+@Import({AppointmentControllerTest.MethodSecurityConfiguration.class,
+        ThreadLocalCorrelationIdProvider.class})
 class AppointmentControllerTest {
 
     private static final String BASE_PATH = "/api/v1/appointments";

@@ -16,6 +16,7 @@ import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
@@ -34,15 +35,17 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
     private final StaffLookupPort staff;
     private final ClinicalEventPublisherPort publisher;
     private final ClinicalDtoMapper mapper;
+    private final CorrelationIdProvider correlationIds;
 
     public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
                                          StaffLookupPort staff, ClinicalEventPublisherPort publisher,
-                                         ClinicalDtoMapper mapper) {
+                                         ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds) {
         this.appointments = appointments;
         this.patients = patients;
         this.staff = staff;
         this.publisher = publisher;
         this.mapper = mapper;
+        this.correlationIds = correlationIds;
     }
 
     @Override
@@ -55,7 +58,8 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
         }
         Appointment saved = appointments.save(Appointment.create(request.patientId(), request.doctorId(),
                 request.departmentId(), request.appointmentDate(), request.appointmentTime(), request.reason()));
-        publisher.publishAppointmentCreated(AppointmentCreatedEvent.from(saved, correlationId()));
+        publisher.publishAppointmentCreated(
+                AppointmentCreatedEvent.from(saved, correlationIds.currentOrCreate().toString()));
         return mapper.toDto(saved);
     }
 
@@ -77,7 +81,8 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
         Appointment appointment = locked(id);
         appointment.changeStatus(status);
         Appointment saved = appointments.save(appointment);
-        publisher.publishAppointmentStatusChanged(AppointmentStatusChangedEvent.from(saved, null, correlationId()));
+        publisher.publishAppointmentStatusChanged(
+                AppointmentStatusChangedEvent.from(saved, null, correlationIds.currentOrCreate().toString()));
         return mapper.toDto(saved);
     }
 
@@ -123,7 +128,4 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
         return new DuplicatePendingAppointmentException("Patient already has a pending appointment on this date");
     }
 
-    private String correlationId() {
-        return UUID.randomUUID().toString();
-    }
 }

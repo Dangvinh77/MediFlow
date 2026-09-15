@@ -8,6 +8,7 @@ import com.mediflow.clinical.domain.exception.DuplicatePendingAppointmentExcepti
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.infrastructure.config.SecurityConfig;
+import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -29,7 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AppointmentController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class,
+        ThreadLocalCorrelationIdProvider.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class GlobalExceptionHandlerTest {

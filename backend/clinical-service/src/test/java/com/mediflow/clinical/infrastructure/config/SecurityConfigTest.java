@@ -1,6 +1,7 @@
 package com.mediflow.clinical.infrastructure.config;
 
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
+import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.clinical.web.AppointmentController;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
@@ -21,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AppointmentController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class SecurityConfigTest {

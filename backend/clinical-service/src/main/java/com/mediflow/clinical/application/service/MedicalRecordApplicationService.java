@@ -18,6 +18,7 @@ import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.in.ManageRecordUseCase;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -38,16 +39,19 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     private final StaffLookupPort staff;
     private final ClinicalEventPublisherPort publisher;
     private final ClinicalDtoMapper mapper;
+    private final CorrelationIdProvider correlationIds;
 
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
                                            PatientLookupPort patients, StaffLookupPort staff,
-                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper) {
+                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
+                                           CorrelationIdProvider correlationIds) {
         this.appointments = appointments;
         this.records = records;
         this.patients = patients;
         this.staff = staff;
         this.publisher = publisher;
         this.mapper = mapper;
+        this.correlationIds = correlationIds;
     }
 
     @Override
@@ -88,7 +92,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
             appointments.save(appointment);
         }
         MedicalRecord saved = records.save(record);
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = correlationIds.currentOrCreate().toString();
         publisher.publishMedicalRecordCreated(MedicalRecordCreatedEvent.from(saved, correlationId));
         if (markAppointmentArrived) {
             publisher.publishAppointmentStatusChanged(
@@ -126,7 +130,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
         record.addDiagnosis(diagnosis);
         records.save(record);
         publisher.publishDiagnosisAdded(
-                DiagnosisAddedEvent.from(recordId, diagnosis, UUID.randomUUID().toString()));
+                DiagnosisAddedEvent.from(recordId, diagnosis, correlationIds.currentOrCreate().toString()));
         return mapper.toDto(diagnosis);
     }
 
