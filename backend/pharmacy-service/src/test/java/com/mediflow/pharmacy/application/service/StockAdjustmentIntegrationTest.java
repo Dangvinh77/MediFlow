@@ -14,7 +14,7 @@ import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.in.ManageDrugUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DrugJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DrugJpaEntity;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DrugJpaEntityRepository;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DispenseSlipJpaRepository;

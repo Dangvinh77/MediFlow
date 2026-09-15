@@ -1,4 +1,4 @@
-package com.mediflow.pharmacy.infrastructure.persistence.jpaEntity;
+package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
 import java.time.Instant;
 import java.util.UUID;

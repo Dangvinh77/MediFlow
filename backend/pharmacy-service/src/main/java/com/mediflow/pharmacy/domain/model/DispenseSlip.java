@@ -119,17 +119,6 @@ public class DispenseSlip {
     }
 
     /**
-     * Legacy convenience overload retained for source compatibility.
-     *
-     * @param reason nguyên nhân thất bại
-     * @deprecated callers should provide the application clock timestamp explicitly
-     */
-    @Deprecated(forRemoval = false)
-    public void markFailed(String reason) {
-        markFailed(reason, Instant.now());
-    }
-
-    /**
      * Kết thúc phiếu vì đơn bị hủy chủ động.
      *
      * @param reason lý do hủy

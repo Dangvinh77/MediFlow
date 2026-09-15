@@ -13,7 +13,7 @@ import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.domain.model.Drug;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DrugJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DrugJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DrugJpaEntityRepository;
 
 import lombok.RequiredArgsConstructor;

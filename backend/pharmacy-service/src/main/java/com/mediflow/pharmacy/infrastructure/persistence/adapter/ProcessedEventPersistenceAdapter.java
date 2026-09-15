@@ -1,13 +1,11 @@
 package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.ProcessedEventJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.ProcessedEventJpaRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -42,18 +40,5 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventPort {
     @Transactional
     public boolean claimIfAbsent(UUID eventId, String routingKey) {
         return jpaRepo.insertIfAbsent(eventId, routingKey) == 1;
-    }
-
-    @Override
-    public void markProcessed(UUID eventId, String routingKey) {
-        jpaRepo.save(ProcessedEventJpaEntity.builder()
-                .eventId(eventId)
-                .routingKey(routingKey)
-                .build());
-    }
-
-    @SuppressWarnings("unused") // giữ chân khả năng đọc lại nếu sau này cần trace — xoá được
-    private Optional<ProcessedEventJpaEntity> find(UUID eventId) {
-        return jpaRepo.findById(eventId);
     }
 }

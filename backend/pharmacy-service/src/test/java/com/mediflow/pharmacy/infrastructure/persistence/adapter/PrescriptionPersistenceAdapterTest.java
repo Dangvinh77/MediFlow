@@ -4,7 +4,7 @@ import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.StockReservationJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockReservationJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.StockReservationJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

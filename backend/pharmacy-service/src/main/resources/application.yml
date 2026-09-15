@@ -64,8 +64,11 @@ mediflow:
         max-interval-ms: ${MEDIFLOW_PHARMACY_RABBIT_RETRY_MAX_INTERVAL_MS:10000}
     outbox:
       enabled: ${MEDIFLOW_PHARMACY_OUTBOX_ENABLED:true}
+      metrics-enabled: ${MEDIFLOW_PHARMACY_OUTBOX_METRICS_ENABLED:true}
+      maintenance-enabled: ${MEDIFLOW_PHARMACY_OUTBOX_MAINTENANCE_ENABLED:true}
       batch-size: ${MEDIFLOW_PHARMACY_OUTBOX_BATCH_SIZE:100}
       dispatch-delay-ms: ${MEDIFLOW_PHARMACY_OUTBOX_DISPATCH_DELAY_MS:1000}
+      dispatch-initial-delay-ms: ${MEDIFLOW_PHARMACY_OUTBOX_DISPATCH_INITIAL_DELAY_MS:1000}
       confirm-timeout-ms: ${MEDIFLOW_PHARMACY_OUTBOX_CONFIRM_TIMEOUT_MS:5000}
       lease-seconds: ${MEDIFLOW_PHARMACY_OUTBOX_LEASE_SECONDS:30}
       retention: ${MEDIFLOW_PHARMACY_OUTBOX_RETENTION:PT168H}
@@ -80,7 +83,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
 
 springdoc:
   swagger-ui:

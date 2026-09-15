@@ -357,7 +357,8 @@ class DispenseApplicationServiceTest {
     /** Dựng reservation ở trạng thái RESERVED cho đơn đang cấp. */
     private StockReservation reservation(UUID prescriptionId, UUID drugId, int quantity, Instant expiresAt) {
         return StockReservation.restore(UUID.randomUUID(), drugId, prescriptionId, quantity,
-                ReservationStatus.RESERVED, Instant.now(), expiresAt, Instant.now());
+                ReservationStatus.RESERVED, Instant.now(), expiresAt, Instant.now(),
+                null, null, null);
     }
 
     /** Tạo phiếu xuất đang chờ cho các test thất bại trước khi mutate aggregate. */

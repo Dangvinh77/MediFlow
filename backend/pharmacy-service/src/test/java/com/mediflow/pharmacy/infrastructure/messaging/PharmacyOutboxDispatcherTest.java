@@ -10,7 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Instant;
@@ -108,6 +108,21 @@ class PharmacyOutboxDispatcherTest {
         assertThat(availableAt.getValue()).isAfter(NOW);
     }
 
+    /** A broker confirm timeout records a retryable failure and never marks the event published. */
+    @Test
+    void dispatchPending_confirmTimeout_recordsFailure() {
+        PharmacyEventOutboxJpaEntity event = event("prescription.created");
+        when(claimService.claim(any(Integer.class), any(String.class))).thenReturn(List.of(event));
+        PharmacyOutboxDispatcher timeoutDispatcher = new PharmacyOutboxDispatcher(
+                rabbitTemplate, Clock.fixed(NOW, ZoneOffset.UTC), 100, 10,
+                claimService, 1000, 60000, 3, new SimpleMeterRegistry());
+
+        timeoutDispatcher.dispatchPending();
+
+        verify(claimService).markFailure(eq(event.getEventId()), any(String.class), any(), any(), eq(3));
+        verify(claimService, never()).markPublished(any(), any(), any());
+    }
+
     private void completePublishWith(boolean acknowledged, String reason) {
         doAnswer(invocation -> {
             CorrelationData correlation = invocation.getArgument(3);
@@ -118,6 +133,7 @@ class PharmacyOutboxDispatcherTest {
     }
 
     private PharmacyEventOutboxJpaEntity event(String routingKey) {
-        return new PharmacyEventOutboxJpaEntity(UUID.randomUUID(), routingKey, "{\"eventId\":\"test\"}");
+        return new PharmacyEventOutboxJpaEntity(
+                UUID.randomUUID(), routingKey, UUID.randomUUID(), "{\"eventId\":\"test\"}");
     }
 }

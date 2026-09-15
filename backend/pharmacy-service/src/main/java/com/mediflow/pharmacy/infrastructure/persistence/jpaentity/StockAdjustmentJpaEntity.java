@@ -1,4 +1,4 @@
-package com.mediflow.pharmacy.infrastructure.persistence.jpaEntity;
+package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

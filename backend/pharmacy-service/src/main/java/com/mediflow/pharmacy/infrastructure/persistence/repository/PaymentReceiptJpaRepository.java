@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PaymentReceiptJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PaymentReceiptJpaEntity;
 
 /** Spring Data repository cho bảng PAYMENT_RECEIPT. */
 public interface PaymentReceiptJpaRepository extends JpaRepository<PaymentReceiptJpaEntity, UUID> {

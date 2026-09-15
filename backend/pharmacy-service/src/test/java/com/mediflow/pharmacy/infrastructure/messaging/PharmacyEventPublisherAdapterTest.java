@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -42,6 +42,7 @@ class PharmacyEventPublisherAdapterTest {
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getEventId()).isEqualTo(event.eventId());
         assertThat(captor.getValue().getRoutingKey()).isEqualTo("prescription.created");
+        assertThat(captor.getValue().getAggregateId()).isEqualTo(event.prescriptionId());
         assertThat(captor.getValue().getPayload()).isEqualTo("{\"eventId\":\"test\"}");
     }
 

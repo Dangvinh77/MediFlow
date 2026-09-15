@@ -1,7 +1,8 @@
 package com.mediflow.pharmacy.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -11,6 +12,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +49,7 @@ import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DrugJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DrugJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DispenseSlipJpaRepository;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DrugJpaEntityRepository;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PrescriptionJpaRepository;
@@ -101,6 +104,7 @@ class PrescriptionLifecycleConcurrencyTest {
     void cancelVsDispense_singleWinner() throws Exception {
         DrugJpaEntity drug = saveDrug(3);
         PrescriptionDTO prescription = createPrescription(drug, 2);
+        clearInvocations(publisher);
         when(payments.findByPrescriptionId(prescription.prescriptionId()))
                 .thenReturn(List.of(payment(prescription.prescriptionId())));
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -120,6 +124,7 @@ class PrescriptionLifecycleConcurrencyTest {
         assertThat(drugs.findById(drug.getDrugId()).orElseThrow().getStockQuantity()).isGreaterThanOrEqualTo(1);
         assertThat(reservations.findByPrescriptionId(prescription.prescriptionId()))
                 .allSatisfy(row -> assertThat(row.getStatus()).isNotEqualTo(ReservationStatus.RESERVED));
+        assertSingleTerminalEvent();
     }
 
     /** Expiry and dispense serialize; expiry event/transition cannot be applied twice. */
@@ -127,6 +132,7 @@ class PrescriptionLifecycleConcurrencyTest {
     void expireVsDispense_singleWinner() throws Exception {
         DrugJpaEntity drug = saveDrug(3);
         PrescriptionDTO prescription = createPrescription(drug, 2);
+        clearInvocations(publisher);
         jdbc.update("UPDATE STOCK_RESERVATION SET expires_at = ? WHERE prescription_id = ?",
                 Timestamp.from(Instant.now().minusSeconds(30)), prescription.prescriptionId());
         when(payments.findByPrescriptionId(prescription.prescriptionId()))
@@ -138,12 +144,17 @@ class PrescriptionLifecycleConcurrencyTest {
                     race(() -> expire.releaseExpiredReservations(), barrier),
                     race(() -> dispense.dispense(prescription.prescriptionId(), UUID.randomUUID(), "expiry-race"), barrier)),
                     10, TimeUnit.SECONDS);
-            assertThat(results.stream().map(this::await).filter(this::successfulOutcome).count()).isEqualTo(1);
+            // Completion plus one durable terminal event is the logical-winner contract. The
+            // losing caller may legitimately return zero or a business exception after locking.
+            assertThat(results.stream().map(this::await).toList()).hasSize(2);
         } finally {
             executor.shutdownNow();
         }
         assertThat(prescriptions.findById(prescription.prescriptionId()).orElseThrow().getStatus())
                 .isIn(PrescriptionStatus.EXPIRED, PrescriptionStatus.FULFILLED, PrescriptionStatus.DISPENSE_FAILED);
+        assertThat(reservations.findByPrescriptionId(prescription.prescriptionId()))
+                .allSatisfy(row -> assertThat(row.getStatus()).isNotEqualTo(ReservationStatus.RESERVED));
+        assertSingleTerminalEvent();
     }
 
     /** Cancel and expiry share the same prescription lock and emit at most one terminal result. */
@@ -151,6 +162,7 @@ class PrescriptionLifecycleConcurrencyTest {
     void cancelVsExpire_singleWinner() throws Exception {
         DrugJpaEntity drug = saveDrug(3);
         PrescriptionDTO prescription = createPrescription(drug, 2);
+        clearInvocations(publisher);
         jdbc.update("UPDATE STOCK_RESERVATION SET expires_at = ? WHERE prescription_id = ?",
                 Timestamp.from(Instant.now().minusSeconds(30)), prescription.prescriptionId());
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -169,6 +181,7 @@ class PrescriptionLifecycleConcurrencyTest {
                 .isIn(PrescriptionStatus.CANCELLED, PrescriptionStatus.EXPIRED);
         assertThat(reservations.findByPrescriptionId(prescription.prescriptionId()))
                 .allSatisfy(row -> assertThat(row.getStatus()).isNotEqualTo(ReservationStatus.RESERVED));
+        assertSingleTerminalEvent();
     }
 
     /** Two prescriptions cannot reserve more than the same drug's available stock. */
@@ -214,8 +227,13 @@ class PrescriptionLifecycleConcurrencyTest {
     private Object await(Future<Object> future) {
         try {
             return future.get(5, TimeUnit.SECONDS);
-        } catch (Exception exception) {
-            return exception;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Concurrency worker was interrupted", exception);
+        } catch (java.util.concurrent.TimeoutException | CancellationException exception) {
+            throw new AssertionError("Concurrency worker did not complete", exception);
+        } catch (ExecutionException exception) {
+            throw new AssertionError("Concurrency worker failed", exception.getCause());
         }
     }
 
@@ -227,6 +245,19 @@ class PrescriptionLifecycleConcurrencyTest {
             return count > 0;
         }
         return outcome != null;
+    }
+
+    private void assertSingleTerminalEvent() {
+        java.util.Set<String> terminalMethods = java.util.Set.of(
+                "publishPrescriptionCancelled",
+                "publishPrescriptionExpired",
+                "publishPrescriptionFilled",
+                "publishPrescriptionDispenseFailed");
+        long terminalEventCount = mockingDetails(publisher).getInvocations().stream()
+                .map(invocation -> invocation.getMethod().getName())
+                .filter(terminalMethods::contains)
+                .count();
+        assertThat(terminalEventCount).isOne();
     }
 
     private DrugJpaEntity saveDrug(int stock) {

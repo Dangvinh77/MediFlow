@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PrescriptionJpaEntity;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PrescriptionLineJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PrescriptionJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PrescriptionLineJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PrescriptionJpaRepository;
 
 import lombok.RequiredArgsConstructor;

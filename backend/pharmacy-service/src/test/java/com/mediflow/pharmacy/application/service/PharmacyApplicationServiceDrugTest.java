@@ -114,7 +114,7 @@ class DrugApplicationServiceTest {
                 Instant.now(), Instant.now());
         StockReservation reservation = StockReservation.restore(
                 UUID.randomUUID(), drugId, UUID.randomUUID(), 8, ReservationStatus.RESERVED,
-                Instant.now(), Instant.now().plusSeconds(3600), null);
+                Instant.now(), Instant.now().plusSeconds(3600), null, null, null, null);
         when(drugRepo.findByIdForUpdate(drugId)).thenReturn(Optional.of(drug));
         when(reservationRepo.findReservedByDrug(drugId)).thenReturn(List.of(reservation));
 

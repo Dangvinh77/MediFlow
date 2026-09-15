@@ -154,16 +154,6 @@ public final class PaymentReceipt {
     }
 
     /**
-     * Legacy convenience overload retained for source compatibility.
-     *
-     * @deprecated callers should provide the application clock timestamp explicitly
-     */
-    @Deprecated(forRemoval = false)
-    public void markDispensed() {
-        markDispensed(Instant.now());
-    }
-
-    /**
      * Đánh dấu workflow thất bại và đã phát nhánh bù trừ. Gọi lặp lại với receipt đã COMPENSATED
      * là no-op; mọi attempt ghi đè terminal khác đều bị từ chối.
      *
@@ -186,17 +176,6 @@ public final class PaymentReceipt {
         status = PaymentReceiptStatus.COMPENSATED;
         failureCode = normalized.trim();
         updatedAt = timestamp;
-    }
-
-    /**
-     * Legacy convenience overload retained for source compatibility.
-     *
-     * @param code mã lỗi nghiệp vụ ổn định
-     * @deprecated callers should provide the application clock timestamp explicitly
-     */
-    @Deprecated(forRemoval = false)
-    public void markCompensated(String code) {
-        markCompensated(code, Instant.now());
     }
 
     /** @return true nếu receipt đã có outcome terminal */

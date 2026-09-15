@@ -47,7 +47,7 @@ class StockReservationTest {
     @Test
     void markFulfilled_reservedToFulfilled() {
         StockReservation r = StockReservation.create(DRUG, RX, 5, EXPIRY);
-        r.markFulfilled();
+        r.markFulfilled(Instant.now());
         assertThat(r.getStatus()).isEqualTo(ReservationStatus.FULFILLED);
         assertThat(r.isReserved()).isFalse();
     }
@@ -72,7 +72,7 @@ class StockReservationTest {
     @Test
     void transitionFromFulfilled_throws() {
         StockReservation r = StockReservation.create(DRUG, RX, 5, EXPIRY);
-        r.markFulfilled();
+        r.markFulfilled(Instant.now());
         assertThatThrownBy(() -> r.release(
                 ReservationReleaseReason.PRESCRIPTION_CANCELLED,
                 UUID.randomUUID(),
@@ -80,6 +80,7 @@ class StockReservationTest {
                 .hasMessageContaining("không còn ở trạng thái RESERVED");
         assertThatThrownBy(() -> r.expire(EXPIRY.plusSeconds(1)))
                 .isInstanceOf(StockReservationRuleException.class);
-        assertThatThrownBy(r::markFulfilled).isInstanceOf(StockReservationRuleException.class);
+        assertThatThrownBy(() -> r.markFulfilled(Instant.now()))
+                .isInstanceOf(StockReservationRuleException.class);
     }
 }

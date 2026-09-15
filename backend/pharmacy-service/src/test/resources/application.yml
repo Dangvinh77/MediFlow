@@ -1,0 +1,5 @@
+mediflow:
+  pharmacy:
+    outbox:
+      metrics-enabled: false
+      maintenance-enabled: false

@@ -99,6 +99,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**")
                         .permitAll()
+                        .requestMatchers("/actuator/metrics", "/actuator/metrics/**")
+                        .hasRole("ADMIN")
                         .anyRequest()
                         .authenticated())
                 .exceptionHandling(exceptions -> exceptions

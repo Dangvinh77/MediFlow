@@ -2,7 +2,7 @@ package com.mediflow.pharmacy.infrastructure.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.time.Instant;
 import java.util.UUID;
@@ -79,6 +79,7 @@ class PharmacyOutboxRepositoryIntegrationTest {
         assertThat(replayed.getPayload()).isEqualTo(event.getPayload());
         assertThat(replayed.getQuarantinedAt()).isNull();
         assertThat(replayed.getLastError()).isNull();
+        assertThat(replayed.getAttempts()).isZero();
         assertThat(replayed.getAvailableAt()).isEqualTo(NOW.plusSeconds(1));
     }
 
@@ -100,8 +101,81 @@ class PharmacyOutboxRepositoryIntegrationTest {
         assertThat(repository.findById(quarantined.getEventId())).isPresent();
     }
 
+    /** Retryable metrics queries exclude quarantined rows while retaining the oldest pending row. */
+    @Test
+    void retryableMetricsQueries_excludeQuarantinedRows() {
+        PharmacyEventOutboxJpaEntity pending = event("prescription.created");
+        pending.setCreatedAt(NOW.minusSeconds(20));
+        PharmacyEventOutboxJpaEntity quarantined = event("prescription.failed");
+        quarantined.setCreatedAt(NOW.minusSeconds(40));
+        quarantined.setQuarantinedAt(NOW.minusSeconds(10));
+        repository.saveAllAndFlush(java.util.List.of(pending, quarantined));
+
+        assertThat(repository.countByPublishedAtIsNullAndQuarantinedAtIsNull()).isOne();
+        assertThat(repository.findFirstByPublishedAtIsNullAndQuarantinedAtIsNullOrderByCreatedAtAsc())
+                .get().extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .isEqualTo(pending.getEventId());
+        assertThat(repository.countByPublishedAtIsNullAndQuarantinedAtIsNotNull()).isOne();
+        assertThat(repository
+                .findFirstByPublishedAtIsNullAndQuarantinedAtIsNotNullOrderByQuarantinedAtAsc())
+                .get().extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .isEqualTo(quarantined.getEventId());
+    }
+
+    /** A retrying critical event blocks only later events of the same aggregate. */
+    @Test
+    void findClaimable_retryBackoffPreservesAggregateOrder() {
+        UUID prescriptionId = UUID.randomUUID();
+        PharmacyEventOutboxJpaEntity created = event("prescription.created");
+        created.setAggregateId(prescriptionId);
+        created.setCreatedAt(NOW.minusSeconds(20));
+        created.setAvailableAt(NOW.plusSeconds(30));
+        PharmacyEventOutboxJpaEntity filled = event("prescription.filled");
+        filled.setAggregateId(prescriptionId);
+        filled.setCreatedAt(NOW.minusSeconds(10));
+        filled.setAvailableAt(NOW);
+        PharmacyEventOutboxJpaEntity independent = event("prescription.created");
+        independent.setCreatedAt(NOW.minusSeconds(5));
+        independent.setAvailableAt(NOW);
+        repository.saveAllAndFlush(java.util.List.of(created, filled, independent));
+
+        assertThat(repository.findClaimable(NOW, NOW.minusSeconds(30), 10))
+                .extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .containsExactly(independent.getEventId());
+    }
+
+    /** A quarantined predecessor blocks later critical events until an operator replays it. */
+    @Test
+    void findClaimable_quarantinedPredecessorPreservesAggregateOrder() {
+        UUID prescriptionId = UUID.randomUUID();
+        PharmacyEventOutboxJpaEntity created = event("prescription.created");
+        created.setAggregateId(prescriptionId);
+        created.setCreatedAt(NOW.minusSeconds(20));
+        created.setQuarantinedAt(NOW.minusSeconds(10));
+        PharmacyEventOutboxJpaEntity filled = event("prescription.filled");
+        filled.setAggregateId(prescriptionId);
+        filled.setCreatedAt(NOW.minusSeconds(5));
+        filled.setAvailableAt(NOW);
+        PharmacyEventOutboxJpaEntity independent = event("prescription.created");
+        independent.setAggregateId(UUID.randomUUID());
+        independent.setCreatedAt(NOW.minusSeconds(1));
+        independent.setAvailableAt(NOW);
+        repository.saveAllAndFlush(java.util.List.of(created, filled, independent));
+
+        assertThat(repository.findClaimable(NOW, NOW.minusSeconds(30), 10))
+                .extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .containsExactly(independent.getEventId());
+
+        assertThat(repository.replay(created.getEventId(), NOW)).isOne();
+        entityManager.clear();
+        assertThat(repository.findClaimable(NOW, NOW.minusSeconds(30), 10))
+                .extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .contains(created.getEventId())
+                .doesNotContain(filled.getEventId());
+    }
+
     private PharmacyEventOutboxJpaEntity event(String routingKey) {
         return new PharmacyEventOutboxJpaEntity(
-                UUID.randomUUID(), routingKey, "{\"eventId\":\"immutable\"}");
+                UUID.randomUUID(), routingKey, UUID.randomUUID(), "{\"eventId\":\"immutable\"}");
     }
 }

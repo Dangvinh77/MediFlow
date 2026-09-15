@@ -1,6 +1,6 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -80,7 +80,9 @@ public class PharmacyOutboxDispatcher {
     }
 
     /** Attempts delivery of the oldest pending events on a fixed delay. */
-    @Scheduled(fixedDelayString = "${mediflow.pharmacy.outbox.dispatch-delay-ms:1000}")
+    @Scheduled(
+            fixedDelayString = "${mediflow.pharmacy.outbox.dispatch-delay-ms:1000}",
+            initialDelayString = "${mediflow.pharmacy.outbox.dispatch-initial-delay-ms:1000}")
     public void dispatchPending() {
         List<PharmacyEventOutboxJpaEntity> events = claimService.claim(batchSize, owner);
         for (PharmacyEventOutboxJpaEntity event : events) {

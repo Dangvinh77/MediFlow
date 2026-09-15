@@ -20,7 +20,7 @@ import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DrugJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DrugJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DispenseSlipJpaRepository;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DrugJpaEntityRepository;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PrescriptionJpaRepository;

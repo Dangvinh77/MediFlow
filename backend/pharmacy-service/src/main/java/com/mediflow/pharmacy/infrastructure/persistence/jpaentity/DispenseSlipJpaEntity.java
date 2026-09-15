@@ -1,19 +1,32 @@
-package com.mediflow.pharmacy.infrastructure.persistence.jpaEntity;
+package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
-import com.mediflow.pharmacy.domain.model.enums.*;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
+import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import java.time.Instant;
 import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 /** JPA entity lưu bằng chứng trạng thái của quy trình xuất thuốc cho một prescription. */
 @Entity
 @Table(name = "DISPENSE_SLIP")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DispenseSlipJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

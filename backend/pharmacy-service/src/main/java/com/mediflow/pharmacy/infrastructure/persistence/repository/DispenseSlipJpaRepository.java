@@ -1,5 +1,5 @@
 package com.mediflow.pharmacy.infrastructure.persistence.repository;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DispenseSlipJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DispenseSlipJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;

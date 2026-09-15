@@ -10,7 +10,7 @@ import com.mediflow.pharmacy.application.event.StockAdjustedEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import org.springframework.stereotype.Component;
 import java.util.UUID;
@@ -61,46 +61,46 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     public void publishPrescriptionCancelled(
             PrescriptionCancelledEvent event) {
 
-        enqueue(PRESCRIPTION_CANCELLED, event.eventId(), event);
+        enqueue(PRESCRIPTION_CANCELLED, event.eventId(), event.prescriptionId(), event);
     }
 
     @Override
     public void publishPrescriptionCreated(
             PrescriptionCreatedEvent event) {
 
-        enqueue(PRESCRIPTION_CREATED, event.eventId(), event);
+        enqueue(PRESCRIPTION_CREATED, event.eventId(), event.prescriptionId(), event);
     }
 
     @Override
     public void publishPrescriptionFilled(
             PrescriptionFilledEvent event) {
 
-        enqueue(PRESCRIPTION_FILLED, event.eventId(), event);
+        enqueue(PRESCRIPTION_FILLED, event.eventId(), event.prescriptionId(), event);
     }
 
     @Override
     public void publishPrescriptionDispenseFailed(
             PrescriptionDispenseFailedEvent event) {
 
-        enqueue(PRESCRIPTION_DISPENSE_FAILED, event.eventId(), event);
+        enqueue(PRESCRIPTION_DISPENSE_FAILED, event.eventId(), event.prescriptionId(), event);
     }
 
     @Override
     public void publishPrescriptionExpired(
             PrescriptionExpiredEvent event) {
 
-        enqueue(PRESCRIPTION_EXPIRED, event.eventId(), event);
+        enqueue(PRESCRIPTION_EXPIRED, event.eventId(), event.prescriptionId(), event);
     }
 
     @Override
     public void publishStockLow(StockLowEvent event) {
-        enqueue(STOCK_LOW, event.eventId(), event);
+        enqueue(STOCK_LOW, event.eventId(), event.drugId(), event);
     }
 
     /** Records stock-adjustment audit for durable delivery. */
     @Override
     public void publishStockAdjusted(StockAdjustedEvent event) {
-        enqueue(STOCK_ADJUSTED, event.eventId(), event);
+        enqueue(STOCK_ADJUSTED, event.eventId(), event.drugId(), event);
     }
 
     /**
@@ -109,10 +109,12 @@ public class PharmacyEventPublisherAdapter implements PharmacyEventPublisherPort
     private void enqueue(
             String routingKey,
             UUID eventId,
+            UUID aggregateId,
             Object payload) {
         try {
             String json = objectMapper.writeValueAsString(payload);
-            outboxRepository.save(new PharmacyEventOutboxJpaEntity(eventId, routingKey, json));
+            outboxRepository.save(new PharmacyEventOutboxJpaEntity(
+                    eventId, routingKey, aggregateId, json));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Không thể serialize pharmacy event", exception);
         }

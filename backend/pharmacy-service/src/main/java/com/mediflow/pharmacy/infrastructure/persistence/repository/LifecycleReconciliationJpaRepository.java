@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PrescriptionJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PrescriptionJpaEntity;
 
 /** Read-only native queries for lifecycle/reservation reconciliation. */
 public interface LifecycleReconciliationJpaRepository

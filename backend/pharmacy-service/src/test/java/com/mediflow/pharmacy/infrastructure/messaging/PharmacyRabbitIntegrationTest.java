@@ -2,15 +2,20 @@ package com.mediflow.pharmacy.infrastructure.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.GetResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
@@ -25,7 +30,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.mediflow.pharmacy.infrastructure.config.RabbitConfig;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 
 /**
@@ -41,6 +46,7 @@ import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEvent
         "spring.rabbitmq.template.mandatory=true",
         "mediflow.pharmacy.outbox.enabled=true",
         "mediflow.pharmacy.outbox.dispatch-delay-ms=600000",
+        "mediflow.pharmacy.outbox.dispatch-initial-delay-ms=600000",
         "mediflow.pharmacy.reservation.release-cron=-",
         "mediflow.pharmacy.reservation.reconciliation-cron=-",
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes"
@@ -91,7 +97,8 @@ class PharmacyRabbitIntegrationTest {
 
         UUID eventId = UUID.randomUUID();
         PharmacyEventOutboxJpaEntity event = new PharmacyEventOutboxJpaEntity(
-                eventId, "prescription.created", "{\"eventId\":\"" + eventId + "\"}");
+                eventId, "prescription.created", UUID.randomUUID(),
+                "{\"eventId\":\"" + eventId + "\"}");
         event.setCreatedAt(Instant.now());
         event.setAvailableAt(Instant.now());
         outbox.saveAndFlush(event);
@@ -101,7 +108,7 @@ class PharmacyRabbitIntegrationTest {
         assertThat(outbox.findById(eventId).orElseThrow().getPublishedAt()).isNotNull();
         org.springframework.amqp.core.Message delivered = rabbitTemplate.receive(testQueue, 5000);
         assertThat(delivered).isNotNull();
-        assertThat(new String(delivered.getBody())).contains(eventId.toString());
+        assertThat(new String(delivered.getBody(), StandardCharsets.UTF_8)).contains(eventId.toString());
     }
 
     /** A consumer crash before acknowledgement causes RabbitMQ to redeliver the same message. */
@@ -109,24 +116,18 @@ class PharmacyRabbitIntegrationTest {
     void broker_redeliversUnacknowledgedMessage_withRedeliveryFlag() {
         String queue = registerQueue("pharmacy.redelivery." + UUID.randomUUID());
         rabbitAdmin.declareQueue(QueueBuilder.durable(queue).build());
-        String payload = "{\"eventId\":\"" + UUID.randomUUID() + "\"}";
-        rabbitTemplate.convertAndSend("", queue, payload);
+        String payload = "{\"eventId\":\"" + UUID.randomUUID() + "\",\"reason\":\"hết hạn\"}";
+        rabbitTemplate.send("", queue, MessageBuilder.withBody(payload.getBytes(StandardCharsets.UTF_8)).build());
 
-        com.rabbitmq.client.GetResponse first = rabbitTemplate.execute(channel ->
-                channel.basicGet(queue, false));
-        assertThat(first).isNotNull();
-        assertThat(first.getEnvelope().isRedeliver()).isFalse();
         rabbitTemplate.execute(channel -> {
+            GetResponse first = basicGetEventually(channel, queue, false);
+            assertThat(first).isNotNull();
+            assertThat(first.getEnvelope().isRedeliver()).isFalse();
             channel.basicReject(first.getEnvelope().getDeliveryTag(), true);
-            return null;
-        });
-
-        com.rabbitmq.client.GetResponse redelivered = rabbitTemplate.execute(channel ->
-                channel.basicGet(queue, false));
-        assertThat(redelivered).isNotNull();
-        assertThat(redelivered.getEnvelope().isRedeliver()).isTrue();
-        assertThat(new String(redelivered.getBody())).isEqualTo(payload);
-        rabbitTemplate.execute(channel -> {
+            GetResponse redelivered = basicGetEventually(channel, queue, false);
+            assertThat(redelivered).isNotNull();
+            assertThat(redelivered.getEnvelope().isRedeliver()).isTrue();
+            assertThat(new String(redelivered.getBody(), StandardCharsets.UTF_8)).isEqualTo(payload);
             channel.basicAck(redelivered.getEnvelope().getDeliveryTag(), false);
             return null;
         });
@@ -148,20 +149,20 @@ class PharmacyRabbitIntegrationTest {
                 .withArgument("x-dead-letter-routing-key", routingKey)
                 .build());
 
-        String payload = "{\"eventId\":\"" + UUID.randomUUID() + "\",\"poison\":true}";
-        rabbitTemplate.convertAndSend("", sourceQueue, payload);
-        com.rabbitmq.client.GetResponse failed = rabbitTemplate.execute(channel ->
-                channel.basicGet(sourceQueue, false));
-        assertThat(failed).isNotNull();
+        String payload = "{\"eventId\":\"" + UUID.randomUUID()
+                + "\",\"reason\":\"sai dữ liệu\",\"poison\":true}";
+        rabbitTemplate.send("", sourceQueue,
+                MessageBuilder.withBody(payload.getBytes(StandardCharsets.UTF_8)).build());
         rabbitTemplate.execute(channel -> {
+            GetResponse failed = basicGetEventually(channel, sourceQueue, false);
+            assertThat(failed).isNotNull();
             channel.basicReject(failed.getEnvelope().getDeliveryTag(), false);
             return null;
         });
 
-        com.rabbitmq.client.GetResponse deadLetter = rabbitTemplate.execute(channel ->
-                channel.basicGet(deadLetterQueue, true));
+        GetResponse deadLetter = basicGetEventually(deadLetterQueue, true);
         assertThat(deadLetter).isNotNull();
-        assertThat(new String(deadLetter.getBody())).isEqualTo(payload);
+        assertThat(new String(deadLetter.getBody(), StandardCharsets.UTF_8)).isEqualTo(payload);
     }
 
     private String registerQueue(String queue) {
@@ -169,12 +170,41 @@ class PharmacyRabbitIntegrationTest {
         return queue;
     }
 
+    /** Polls a real broker queue briefly to absorb publisher/consumer scheduling latency. */
+    private GetResponse basicGetEventually(String queue, boolean autoAck) {
+        return rabbitTemplate.execute(channel -> basicGetEventually(channel, queue, autoAck));
+    }
+
+    /** Polls a specific channel so delivery tags remain valid for ACK/reject operations. */
+    private GetResponse basicGetEventually(Channel channel, String queue, boolean autoAck) {
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (System.nanoTime() < deadline) {
+            GetResponse response;
+            try {
+                response = channel.basicGet(queue, autoAck);
+            } catch (java.io.IOException exception) {
+                throw new IllegalStateException("Unable to read test queue " + queue, exception);
+            }
+            if (response != null) {
+                return response;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Interrupted while polling test queue " + queue, exception);
+            }
+        }
+        return null;
+    }
+
     /** An unroutable mandatory publish is returned and remains pending for retry. */
     @Test
     void dispatcher_mandatoryReturn_keepsOutboxPending() {
         UUID eventId = UUID.randomUUID();
         PharmacyEventOutboxJpaEntity event = new PharmacyEventOutboxJpaEntity(
-                eventId, "prescription.integration.unroutable", "{\"eventId\":\"" + eventId + "\"}");
+                eventId, "prescription.integration.unroutable", UUID.randomUUID(),
+                "{\"eventId\":\"" + eventId + "\"}");
         event.setCreatedAt(Instant.now());
         event.setAvailableAt(Instant.now());
         outbox.saveAndFlush(event);
@@ -185,4 +215,5 @@ class PharmacyRabbitIntegrationTest {
         assertThat(stored.getPublishedAt()).isNull();
         assertThat(stored.getAttempts()).isGreaterThanOrEqualTo(1);
     }
+
 }

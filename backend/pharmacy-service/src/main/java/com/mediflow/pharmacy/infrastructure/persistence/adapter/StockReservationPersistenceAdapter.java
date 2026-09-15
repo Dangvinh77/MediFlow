@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.StockReservationJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockReservationJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.StockReservationJpaRepository;
 
 import lombok.RequiredArgsConstructor;

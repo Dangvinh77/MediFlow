@@ -29,8 +29,8 @@ class PaymentReceiptTest {
     void markDispensed_isIdempotentForSameTerminalState() {
         PaymentReceipt receipt = receipt();
 
-        receipt.markDispensed();
-        receipt.markDispensed();
+        receipt.markDispensed(OCCURRED_AT.plusSeconds(1));
+        receipt.markDispensed(OCCURRED_AT.plusSeconds(2));
 
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.DISPENSED);
         assertThat(receipt.getFailureCode()).isNull();
@@ -40,8 +40,8 @@ class PaymentReceiptTest {
     void markCompensated_isIdempotentForSameCode() {
         PaymentReceipt receipt = receipt();
 
-        receipt.markCompensated("STOCK_UNAVAILABLE");
-        receipt.markCompensated("STOCK_UNAVAILABLE");
+        receipt.markCompensated("STOCK_UNAVAILABLE", OCCURRED_AT.plusSeconds(1));
+        receipt.markCompensated("STOCK_UNAVAILABLE", OCCURRED_AT.plusSeconds(2));
 
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.COMPENSATED);
         assertThat(receipt.getFailureCode()).isEqualTo("STOCK_UNAVAILABLE");
@@ -50,14 +50,15 @@ class PaymentReceiptTest {
     @Test
     void terminalState_cannotBeOverwrittenOrReversed() {
         PaymentReceipt dispensed = receipt();
-        dispensed.markDispensed();
-        assertThatThrownBy(() -> dispensed.markCompensated("LATE_PAYMENT"))
+        dispensed.markDispensed(OCCURRED_AT.plusSeconds(1));
+        assertThatThrownBy(() -> dispensed.markCompensated(
+                "LATE_PAYMENT", OCCURRED_AT.plusSeconds(2)))
                 .isInstanceOf(PaymentReceiptRuleException.class)
                 .hasMessageContaining("DISPENSED");
 
         PaymentReceipt compensated = receipt();
-        compensated.markCompensated("STOCK_UNAVAILABLE");
-        assertThatThrownBy(compensated::markDispensed)
+        compensated.markCompensated("STOCK_UNAVAILABLE", OCCURRED_AT.plusSeconds(1));
+        assertThatThrownBy(() -> compensated.markDispensed(OCCURRED_AT.plusSeconds(2)))
                 .isInstanceOf(PaymentReceiptRuleException.class)
                 .hasMessageContaining("COMPENSATED");
     }

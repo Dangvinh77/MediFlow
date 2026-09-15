@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện Pharmacy Service theo Clean/Hexagonal Architecture
 
-> Cập nhật: **13/09/2026**
+> Cập nhật: **15/09/2026**
 > Module: `backend/pharmacy-service`
 > Nhánh triển khai: `Huy`
 > Phạm vi ghi code: `backend/pharmacy-service/**` và tài liệu/handoff được người dùng giao rõ ràng.
@@ -26,12 +26,12 @@ Baseline kiểm chứng gần nhất:
 
 | Nội dung | Kết quả |
 |---|---|
-| Test Pharmacy Service | **184 total, 149 passed, 0 failures, 0 errors, 35 skipped** (Testcontainers cần Docker; integration gate chưa xác nhận) |
-| PostgreSQL integration | Chưa chạy ở lượt này vì Docker daemon không khả dụng; baseline trước đó đã chạy Flyway V1–V5 thành công |
+| Test Pharmacy Service | **196 total, 196 passed, 0 failures, 0 errors, 0 skipped**; chạy với Docker/Testcontainers bật ngày 15/09/2026. |
+| PostgreSQL integration | Đã chạy thực tế với PostgreSQL 16 Testcontainer cho Flyway V1 → V12, lifecycle/concurrency, persistence, causal-order outbox và migration compatibility. |
 | Javadocs | Thành công |
 | Maven verify | Thành công |
 | Git diff check | Thành công |
-| Audit chất lượng đợt gần nhất | GO, không còn blocker trong phạm vi đã sửa |
+| Audit chất lượng đợt gần nhất | IN_PROGRESS — architecture, build, Javadocs và toàn bộ Docker integration gate xanh; broker outage/restart và cross-service E2E vẫn là release gate |
 
 ### 0.1 Nguồn chuẩn và thứ tự ưu tiên
 
@@ -164,20 +164,20 @@ Mọi dependency chỉ hướng vào trong:
 | BR-R2 | `available = onHand - tổng RESERVED`; điều chỉnh kho không được phá lượng đã giữ. | DONE |
 | BR-R3 | Tập reservation phải khớp chính xác drug và quantity của đơn trước dispense/cancel/expire. | DONE |
 | BR-R4 | Reservation chỉ chuyển trạng thái một lần; TTL dùng điều kiện `expiresAt <= now`. | DONE |
-| BR-L1 | `FULFILLED/CANCELLED/EXPIRED/DISPENSE_FAILED` là terminal; không ghi đè kết quả thắng race. | IN_PROGRESS — unit đã có, integration concurrency cần Docker |
-| BR-P1 | Cấp thuốc thủ công chỉ hợp lệ khi Pharmacy có payment proof bền, không tin cờ từ client. | TODO |
+| BR-L1 | `FULFILLED/CANCELLED/EXPIRED/DISPENSE_FAILED` là terminal; không ghi đè kết quả thắng race. | DONE — concurrency matrix PostgreSQL pass |
+| BR-P1 | Cấp thuốc thủ công chỉ hợp lệ khi Pharmacy có payment proof bền, không tin cờ từ client. | DONE |
 | BR-P2 | Payment event phải khớp prescription, patient và department trước mutation. | DONE |
 | BR-P3 | Chống trùng theo eventId và business key thanh toán đã thống nhất với Billing. | PARTIAL |
 | BR-P4 | Payment đến sau cancel/expire tạo compensation đúng một lần và giữ nguyên terminal state. | DONE theo eventId |
 | BR-P5 | Crash giữa receipt, dispense và terminal claim phải có thể resume an toàn. | TODO |
 | BR-E1 | Event intent phải commit/rollback cùng thay đổi nghiệp vụ. | DONE |
 | BR-E2 | Chỉ đánh dấu outbox published sau publisher ACK và không bị returned. | DONE |
-| BR-E3 | Nhiều instance dispatcher không gửi vượt thứ tự/giành cùng row ngoài semantics at-least-once. | TODO |
-| BR-E4 | Retry outbox có backoff, quan sát được và có thao tác replay an toàn. | TODO |
-| BR-A1 | Điều chỉnh kho phải lưu audit before/after/delta/reason/actor/correlation cùng transaction. | PARTIAL: event có, bảng audit chưa có |
+| BR-E3 | Nhiều instance dispatcher không gửi vượt thứ tự/giành cùng row ngoài semantics at-least-once. | DONE — lease/claim PostgreSQL pass |
+| BR-E4 | Retry outbox có backoff, quan sát được và có thao tác replay an toàn. | DONE — backoff/metrics/replay/retention pass |
+| BR-A1 | Điều chỉnh kho phải lưu audit before/after/delta/reason/actor/correlation cùng transaction. | DONE |
 | BR-S1 | Mọi endpoint có role; actor và correlation lấy từ context đã xác thực. | DONE ở endpoint hiện có |
 | BR-S2 | Account identity, staff identity và system actor không được đồng nhất bằng UUID giả. | TODO, cần contract Organization/Gateway |
-| BR-M1 | Migration mới chỉ được thêm; fresh DB và nâng từ V4/V5 có dữ liệu đều phải thành công. | PARTIAL |
+| BR-M1 | Migration mới chỉ được thêm; fresh DB và nâng từ V4/V5 có dữ liệu đều phải thành công. | DONE — PostgreSQL compatibility suite pass |
 
 ## 3. Bản đồ feature và tiến độ
 
@@ -186,15 +186,15 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | Feature | Trọng số | Đã đạt | Còn lại |
 |---|---:|---:|---|
 | Kiến trúc và phân tách use case | 10% | 10% | Gia cố architecture tests và xóa compatibility code |
-| Danh mục thuốc và an toàn tồn kho | 10% | 9% | Race/reconciliation adjustment với reservation |
+| Danh mục thuốc và an toàn tồn kho | 10% | 10% | — |
 | Kê đơn, snapshot giá và reservation | 15% | 13% | Race/reconciliation dữ liệu legacy |
 | Dispense và failure transaction | 15% | 14% | Payment outcome atomic, crash integration |
 | Payment receipt/idempotency/recovery | 15% | 13% | Business key Billing, crash integration/recovery matrix |
-| Event/outbox/RabbitMQ | 15% | 13% | Real broker/lease integration và failure classification sâu |
-| Cancel/expire/scheduler | 10% | 7% | Concurrency matrix, scheduler đa instance, reconciliation |
+| Event/outbox/RabbitMQ | 15% | 14% | Broker outage và failure classification sâu |
+| Cancel/expire/scheduler | 10% | 10% | — |
 | API, security và identity | 5% | 4% | Phân biệt account/staff/system actor |
-| Migration, E2E và release gate | 5% | 2% | Upgrade test, Rabbit integration, Gateway/Billing E2E |
-| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **85%** | **15%** |
+| Migration, E2E và release gate | 5% | 3% | Gateway/Billing E2E và release audit |
+| **Tổng ước tính theo gate nghiêm ngặt** | **100%** | **91%** | **9%** |
 
 ## 4. Thứ tự task triển khai phần code còn lại
 
@@ -208,15 +208,15 @@ Phần trăm dưới đây tính theo trọng số gate nghiệp vụ, không t�
 | 06 | Viết payment workflow có thể resume sau crash | Payment/Dispense | T01, T05 | IN_PROGRESS — còn crash integration |
 | 07 | Chặn endpoint dispense thủ công bằng payment proof | API/Payment | T03, T06 | DONE |
 | 08 | Kiểm thử idempotency và race của payment/manual dispense | Payment/Test | T06, T07 | PARTIAL — đã bổ sung recovery/terminal/race tests; business-key còn chờ Billing |
-| 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | DONE — code + V7 + PostgreSQL multi-instance/lease test |
-| 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | DONE — unit + PostgreSQL repository integration; RabbitMQ thật thuộc T15 |
+| 09 | Claim/lease outbox an toàn cho nhiều instance, migration V7 | Outbox | — | DONE — V7–V12, PostgreSQL multi-instance/lease/causal-order integration pass |
+| 10 | Backoff, metrics, replay và retention cho outbox | Outbox/Ops | T09 | DONE — retryable metrics loại quarantine; unit + PostgreSQL repository integration |
 | 11 | Lưu stock-adjustment audit, migration V8 | Inventory/Audit | T01 | DONE — domain/persistence, rollback và race integration đã pass |
-| 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | IN_PROGRESS — guards + concurrent tests đã viết; integration gate cần Docker |
-| 13 | Scheduler đa instance và reconciliation dữ liệu lệch | Lifecycle/Ops | T09, T12 | IN_PROGRESS — fencing token + dry-run matrix đã viết; PostgreSQL lease/reconciliation gate cần Docker |
-| 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | IN_PROGRESS — fresh/V4/V5 Flyway compatibility tests + runbook; cần chạy Docker để xác nhận |
-| 15 | Test RabbitMQ thật: confirm, return, outage, redelivery, DLQ | Messaging/Test | T10 | IN_PROGRESS — ACK/return/redelivery/DLQ tests added; outage and Docker gate pending |
+| 12 | Hoàn tất concurrency matrix cancel/expire/dispense/adjust | Lifecycle/Test | T01, T11 | DONE — PostgreSQL concurrency matrix chạy pass với barrier/timeout |
+| 13 | Scheduler đa instance và reconciliation dữ liệu lệch | Lifecycle/Ops | T09, T12 | DONE — PostgreSQL lease, fencing và reconciliation integration chạy pass |
+| 14 | Test migration fresh DB và upgrade V4/V5 có dữ liệu | Migration | T05, T09, T11 | DONE — fresh/V4/V5 + V12 aggregate ordering/backfill assertions pass trên PostgreSQL thật |
+| 15 | Test RabbitMQ thật: confirm, return, outage, redelivery, DLQ | Messaging/Test | T10 | IN_PROGRESS — ACK/return/redelivery/DLQ + publisher timeout pass; outage/restart gate pending |
 | 16 | Contract/E2E với Gateway, Billing và Notification | Integration | T03–T15 | IN_PROGRESS — fixtures + HANDOFF added; E2E blocked by external services |
-| 17 | Audit cuối, tài liệu, cập nhật plan và release/PR gate | Release | T01–T16 | TODO |
+| 17 | Audit cuối, tài liệu, cập nhật plan và release/PR gate | Release | T01–T16 | IN_PROGRESS — audit, build, Javadocs và Docker gate đã chạy; external release gates còn mở |
 
 Nếu T03 hoặc T04 bị chặn bởi contract bên ngoài, tiếp tục các task độc lập T09 → T11 → T12 → T14 → T15; không tạo field, claim hoặc endpoint giả để lách dependency.
 
@@ -248,7 +248,7 @@ Checklist:
 - [x] Controller/consumer chỉ phụ thuộc đúng in-port.
 - [x] Test hiện tại được chia theo service mới và giữ nguyên assertion.
 - [x] Thêm Javadocs cho mọi public API.
-- [x] 184 test hiện tại pass (0 failure, 0 error; 35 skipped do môi trường Docker).
+- [x] 187 test hiện tại pass (0 failure, 0 error, 0 skipped) với Docker/Testcontainers bật.
 
 **Bằng chứng hoàn thành:** `mvn -q -pl backend/pharmacy-service -am test` và Javadocs đã chạy thành công; `PharmacyApplicationService` đã được xóa, bốn application service mới nhận đúng in-port và các test đã chuyển sang service chuyên trách.
 
@@ -353,6 +353,9 @@ payload conflict, context mismatch, business failure và late payment.
 - [x] EventId và payload không thay đổi qua retry.
 - [x] Một instance không làm event của instance khác bị đánh dấu published (owner-guarded update).
 - [x] Migration V7 chỉ thêm mới và có index cho pending/available rows.
+- [x] Migration V12 bổ sung `aggregate_id`, backfill JSON an toàn cho event nhận diện được và index causal order.
+- [x] Causal query chặn retry, lease và quarantine predecessor của cùng aggregate; stock notification vẫn không chặn lifecycle event.
+- [x] `PharmacyOutboxRepositoryIntegrationTest`/`PharmacyOutboxLeaseIntegrationTest` chạy pass với PostgreSQL Testcontainer sau thay đổi V12 mới nhất.
 
 ### T10 — Outbox retry, metrics, replay và retention
 
@@ -411,17 +414,23 @@ reports unknown/legacy statuses by prescription id and anomaly type.
 
 - [x] Có test fresh database chạy V1 → migration mới nhất (`PharmacyMigrationCompatibilityTest`).
 - [x] Có test database V4 có dữ liệu mẫu nâng lên migration mới nhất, không backfill payment proof.
-- [x] Có test database V5 giữ nguyên event outbox pending (event id/payload/attempts) khi nâng V6-V11.
-- [ ] `ddl-auto=validate` pass.
-- [ ] Unique/index/check/FK nội bộ đúng; không FK cross-service.
-- [ ] Dữ liệu cũ thiếu payment proof giữ trạng thái unknown, không backfill thành paid.
+- [x] Có test database V5 giữ nguyên event outbox pending (event id/payload/attempts) khi nâng V6-V12.
+- [x] Migration V12 giữ nguyên event id/payload/attempts và bổ sung aggregate order metadata khi payload nhận diện được.
+- [x] Fresh-schema test kiểm tra các check constraint cốt lõi và primary key của outbox/payment receipt.
+- [x] `ddl-auto=validate` pass trong toàn bộ Spring Boot integration contexts.
+- [x] Unique/index/check/FK nội bộ đúng; không FK cross-service.
+- [x] Dữ liệu cũ thiếu payment proof giữ trạng thái chưa có proof, không backfill thành paid.
 - [x] Rollback/backup note và migration runbook đã cập nhật tại `backend/pharmacy-service/docs/migration-runbook.md`.
+
+**Bằng chứng chạy Docker (2026-09-15):** `PharmacyMigrationCompatibilityTest` chạy pass với
+PostgreSQL thật ở schema V12; xác nhận fresh database, nâng V4/V5, event legacy và aggregate ordering
+metadata trên schema mới nhất.
 
 ### T15 — RabbitMQ integration thật
 
 Dùng Testcontainers PostgreSQL + RabbitMQ:
 
-- [ ] Transaction rollback không để lại outbox.
+- [x] Transaction rollback không để lại outbox (`PrescriptionCreationTransactionTest`, `StockAdjustmentIntegrationTest`).
 - [x] ACK mới mark published (`PharmacyRabbitIntegrationTest`).
 - [x] Mandatory return giữ pending và tăng attempt (`PharmacyRabbitIntegrationTest`).
 - [ ] NACK/timeout và outage cần chạy với broker/container trong CI.
@@ -430,6 +439,11 @@ Dùng Testcontainers PostgreSQL + RabbitMQ:
 - [ ] Crash sau send trước mark tạo redelivery nhưng consumer vẫn idempotent ở E2E.
 - [ ] Poison payment message retry hữu hạn rồi vào DLQ ở consumer E2E.
 - [ ] Không test các hành vi này chỉ bằng mock `RabbitTemplate`.
+
+**Bằng chứng chạy Docker (2026-09-15):** `PharmacyRabbitIntegrationTest` chạy 4/4 pass;
+dispatcher ACK/mandatory-return và broker redelivery/DLQ đều được xác nhận trên RabbitMQ 3.13;
+`PharmacyOutboxDispatcherTest` chạy 5/5 pass, gồm NACK và publisher-confirm timeout; repository/metrics
+suite xác nhận quarantine không bị tính là retryable pending.
 
 ### T16 — Contract và E2E
 
@@ -442,14 +456,22 @@ Dùng Testcontainers PostgreSQL + RabbitMQ:
 
 ### T17 — Release gate
 
-- [ ] Cập nhật checkbox và bằng chứng trong file plan sau từng task.
-- [ ] Chạy toàn bộ test module, integration và migration.
-- [ ] Chạy Javadocs, verify, architecture test và `git diff --check`.
-- [ ] Audit theo `docs/ai/` và spec Pharmacy; báo Blocker/Should-fix/Nit.
+- [x] Cập nhật checkbox và bằng chứng trong file plan sau từng task.
+- [x] Chạy toàn bộ test module, integration và migration.
+- [x] Chạy Javadocs, verify, architecture test và `git diff --check`.
+- [x] Audit theo `docs/ai/` và spec Pharmacy: controller outbox đã đi qua application in-port; event outbox có aggregate causal order, quarantine metrics và replay ADMIN-only.
+- [x] Rerun đầy đủ Docker/Testcontainers cho code mới nhất: `mvn test` có 196 total, 196 pass, 0 skipped.
 - [ ] Không còn blocker hoặc skipped test quan trọng.
 - [ ] Human review trước merge.
 - [ ] Commit theo Conventional Commits, không stage file ngoài phạm vi.
 - [ ] Chỉ sau audit đạt mới push nhánh `Huy` và cập nhật/tạo pull request khi người dùng yêu cầu.
+
+**Audit độc lập 15/09/2026:** build/Javadocs/architecture, `git diff --check` và Docker gate là GO:
+196/196 test pass, gồm PostgreSQL/RabbitMQ Testcontainers và Flyway V12. Code quality fixes đã loại
+dependency web → infrastructure, compatibility overload không còn dùng, Javadocs được hoàn thiện ở
+domain/controller và outbox đã bảo toàn thứ tự aggregate qua retry/lease/quarantine. Release gate vẫn
+**NO-GO có điều kiện** vì broker outage/restart và cross-service E2E chưa có producer/consumer contract
+đủ để chạy. Không push hoặc tạo PR trong đợt này.
 
 ## 6. Quy trình bắt buộc cho từng task
 
