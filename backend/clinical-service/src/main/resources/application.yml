@@ -29,6 +29,16 @@ spring:
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
+      circuitbreaker:
+        enabled: true
+
 eureka:
   client:
     service-url:
@@ -37,14 +47,6 @@ eureka:
 # Resilient synchronous cross-service reads — see docs/ai/01-architecture.md.
 # This service REST-checks patients (patient-service) and staff (organization-service).
 # A downstream outage must degrade this service, not cascade through it.
-feign:
-  client:
-    config:
-      default:
-        connectTimeout: 2000
-        readTimeout: 3000
-  circuitbreaker:
-    enabled: true
 
 resilience4j:
   circuitbreaker:
