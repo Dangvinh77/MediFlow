@@ -13,7 +13,7 @@
 
     <artifactId>report-service</artifactId>
     <name>MediFlow Report Service</name>
-    <description>Aggregated read-model reports (DAILY_VISIT_REPORT, MONTHLY_REVENUE_REPORT, DRUG_STATISTIC).</description>
+    <description>Aggregated read-model reports and payment projections (DAILY_VISIT_REPORT, MONTHLY_REVENUE_REPORT, DRUG_STATISTIC, PAYMENT_CONTRIBUTION).</description>
 
     <dependencies>
         <!-- Web / JPA / Validation -->
