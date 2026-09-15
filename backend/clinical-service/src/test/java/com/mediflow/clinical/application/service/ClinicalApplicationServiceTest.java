@@ -142,6 +142,58 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void createRecord_arrivedAppointment_createsRecordWithoutChangingOrPublishingStatus() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.ARRIVED, null,
+                java.time.Instant.now(), java.time.Instant.now());
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.empty());
+        when(records.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), "Fever",
+                appointmentId, List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        recordService.create(request);
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.ARRIVED);
+        verify(records).save(any(MedicalRecord.class));
+        verify(appointments, never()).save(any());
+        verify(publisher).publishMedicalRecordCreated(any(MedicalRecordCreatedEvent.class));
+        verify(publisher, never()).publishAppointmentStatusChanged(any());
+    }
+
+    @Test
+    void createRecord_cancelledAppointment_rejectsWithoutRecordOrEvents() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.CANCELLED, null,
+                java.time.Instant.now(), java.time.Instant.now());
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.empty());
+
+        var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), "Fever",
+                appointmentId, List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        assertThatThrownBy(() -> recordService.create(request))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "RECORD_APPOINTMENT_INVALID_STATUS");
+        verify(appointments, never()).save(any());
+        verify(records, never()).save(any());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
     void createRecord_sameAppointmentTwice_rejectsDuplicateRecord() {
         UUID patient = UUID.randomUUID();
         UUID doctor = UUID.randomUUID();

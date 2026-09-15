@@ -25,6 +25,7 @@ import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.exception.MedicalRecordNotFoundException;
 import com.mediflow.clinical.domain.model.Appointment;
+import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 
@@ -70,17 +71,26 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
             }
         }
 
+        boolean markAppointmentArrived = false;
+        if (appointment != null) {
+            markAppointmentArrived = appointment.isPending();
+            if (!markAppointmentArrived && appointment.getStatus() != AppointmentStatus.ARRIVED) {
+                throw new InvalidClinicalDataException("RECORD_APPOINTMENT_INVALID_STATUS",
+                        "Appointment must be pending or arrived to create a medical record");
+            }
+        }
+
         List<Diagnosis> diagnoses = request.diagnoses().stream().map(mapper::toDomain).toList();
         MedicalRecord record = MedicalRecord.create(request.patientId(), request.doctorId(), request.departmentId(),
                 request.examinationDate(), request.symptoms(), request.appointmentId(), diagnoses);
-        if (appointment != null) {
+        if (markAppointmentArrived) {
             appointment.markArrived();
             appointments.save(appointment);
         }
         MedicalRecord saved = records.save(record);
         String correlationId = UUID.randomUUID().toString();
         publisher.publishMedicalRecordCreated(MedicalRecordCreatedEvent.from(saved, correlationId));
-        if (appointment != null) {
+        if (markAppointmentArrived) {
             publisher.publishAppointmentStatusChanged(
                     AppointmentStatusChangedEvent.from(appointment, saved.getRecordId(), correlationId));
         }
