@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public interface GetStaffUseCase {
     Staff getStaffById(UUID id);
+    boolean existsById(UUID id);
     List<Staff> getAllStaff();
     List<Staff> getStaffByDepartmentId(UUID departmentId);
 }

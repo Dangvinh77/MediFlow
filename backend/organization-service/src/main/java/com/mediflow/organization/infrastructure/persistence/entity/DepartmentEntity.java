@@ -8,14 +8,6 @@ import java.util.UUID;
 
 import com.mediflow.organization.domain.model.DepartmentType;
 
-/**
- * Persistence Entity đại diện cho bảng DEPARTMENT trong database.
- *
- * LƯU Ý:
- * - Đây KHÔNG phải Domain Model.
- * - Class này chỉ phục vụ JPA/Persistence.
- * - Không đặt business logic vào Entity này.
- */
 @Entity
 @Table(
         name = "department",
@@ -28,10 +20,7 @@ import com.mediflow.organization.domain.model.DepartmentType;
 )
 public class DepartmentEntity {
 
-    /**
-     * Primary Key.
-     */
-    @Id
+        @Id
     @Column(
             name = "department_id",
             nullable = false,
@@ -39,40 +28,21 @@ public class DepartmentEntity {
     )
     private UUID departmentId;
 
-    /**
-     * Tên Department.
-     */
-    @Column(
+        @Column(
             name = "department_name",
             nullable = false,
             length = 100
     )
     private String departmentName;
 
-    /**
-     * Viết tắt Department.
-     *
-     * Database có UNIQUE constraint.
-     */
-    @Column(
+        @Column(
             name = "abbreviation",
             nullable = false,
-            length = 20,
-            unique = true
+            length = 20
     )
     private String abbreviation;
 
-    /**
-     * Loại Department:
-     *
-     * CLINICAL
-     * PARACLINICAL
-     * ADMINISTRATIVE
-     *
-     * Lưu dưới dạng String trong DB,
-     * không lưu ordinal 0, 1, 2.
-     */
-    @Enumerated(EnumType.STRING)
+        @Enumerated(EnumType.STRING)
     @Column(
             name = "department_type",
             nullable = false,
@@ -80,64 +50,34 @@ public class DepartmentEntity {
     )
     private DepartmentType departmentType;
 
-    /**
-     * ID của Staff đang làm trưởng Department.
-     *
-     * Có thể null.
-     *
-     * Không tạo JPA relationship tới Staff vì Staff
-     * cũng thuộc cùng bounded context nhưng ta đang
-     * giữ Domain model đơn giản bằng UUID.
-     */
-    @Column(name = "department_head_id")
+        @Column(name = "department_head_id")
     private UUID departmentHeadId;
 
-    /**
-     * Địa điểm Department.
-     */
-    @Column(
+        @Column(
             name = "location",
             length = 255
     )
     private String location;
 
-    /**
-     * Trạng thái hoạt động của Department.
-     */
-    @Column(
+        @Column(
             name = "is_active",
             nullable = false
     )
     private boolean active;
 
-    /**
-     * Thời điểm tạo.
-     */
-    @Column(
+        @Column(
             name = "created_at",
             nullable = false
     )
     private Instant createdAt;
 
-    /**
-     * Thời điểm cập nhật gần nhất.
-     */
-    @Column(
-            name = "updated_at",
-            nullable = false
-    )
+        @Column(name = "updated_at")
     private Instant updatedAt;
 
-    /**
-     * Constructor rỗng bắt buộc cho JPA.
-     */
-    protected DepartmentEntity() {
+        protected DepartmentEntity() {
     }
 
-    /**
-     * Constructor đầy đủ dùng khi mapping Domain → Entity.
-     */
-    public DepartmentEntity(
+        public DepartmentEntity(
             UUID departmentId,
             String departmentName,
             String abbreviation,

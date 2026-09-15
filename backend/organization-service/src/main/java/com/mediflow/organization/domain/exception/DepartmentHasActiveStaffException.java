@@ -2,10 +2,7 @@ package com.mediflow.organization.domain.exception;
 
 import java.util.UUID;
 
-/**
- * Được throw khi cố gắng deactivate Department
- * nhưng Department vẫn còn Staff đang ACTIVE.
- */
+/** Thrown when a department still has active staff during deactivation. */
 public class DepartmentHasActiveStaffException
         extends DomainException {
 

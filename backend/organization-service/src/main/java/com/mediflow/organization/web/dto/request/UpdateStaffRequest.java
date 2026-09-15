@@ -7,16 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import java.util.UUID;
-
-public class CreateStaffRequest {
+public class UpdateStaffRequest {
 
     @NotBlank(message = "Full name must not be blank")
     @Size(max = 100, message = "Full name must not exceed 100 characters")
     private String fullName;
-
-    @NotNull(message = "Department ID must not be null")
-    private UUID departmentId;
 
     @NotNull(message = "Job title must not be null")
     private JobTitle jobTitle;
@@ -37,7 +32,7 @@ public class CreateStaffRequest {
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
 
-    public CreateStaffRequest() {
+    public UpdateStaffRequest() {
     }
 
     public String getFullName() {
@@ -46,14 +41,6 @@ public class CreateStaffRequest {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
-    }
-
-    public UUID getDepartmentId() {
-        return departmentId;
-    }
-
-    public void setDepartmentId(UUID departmentId) {
-        this.departmentId = departmentId;
     }
 
     public JobTitle getJobTitle() {

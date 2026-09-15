@@ -7,6 +7,8 @@ import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService.StaffDepartmentChangedEvent;
 import com.mediflow.organization.application.service.CreateDepartmentService.DepartmentCreatedEvent;
 import com.mediflow.organization.application.service.CreateStaffService.StaffCreatedEvent;
+import com.mediflow.organization.application.service.UpdateDepartmentService.DepartmentUpdatedEvent;
+import com.mediflow.organization.application.service.UpdateStaffService.StaffUpdatedEvent;
 
 @Component
 public class RabbitMqEventPublisher implements EventPublisher {
@@ -28,8 +30,7 @@ public class RabbitMqEventPublisher implements EventPublisher {
         rabbitTemplate.convertAndSend(
                 EXCHANGE,
                 routingKey,
-                event
-        );
+                event);
     }
 
     private String resolveRoutingKey(Object event) {
@@ -46,9 +47,15 @@ public class RabbitMqEventPublisher implements EventPublisher {
             return "staff.department.changed";
         }
 
+        if (event instanceof DepartmentUpdatedEvent) {
+            return "department.updated";
+        }
+        if (event instanceof StaffUpdatedEvent) {
+            return "staff.updated";
+        }
+
         throw new IllegalArgumentException(
                 "Unsupported event type: "
-                        + event.getClass().getName()
-        );
+                        + event.getClass().getName());
     }
 }

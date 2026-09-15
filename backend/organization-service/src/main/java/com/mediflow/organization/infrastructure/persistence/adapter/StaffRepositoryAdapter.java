@@ -13,23 +13,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adapter kết nối Application Port với Spring Data JPA.
  *
- * Nhiệm vụ:
  *
- * Application
  * ↓
- * StaffRepository
  * ↓
- * StaffRepositoryAdapter
  * ↓
- * StaffJpaRepository
  * ↓
  * PostgreSQL
  *
- * Đồng thời chịu trách nhiệm mapping:
  *
- * Domain ↔ Entity
  */
 @Component
 public class StaffRepositoryAdapter
@@ -37,25 +29,12 @@ public class StaffRepositoryAdapter
 
     private final StaffJpaRepository jpaRepository;
 
-    /**
-     * Constructor Injection.
-     */
-    public StaffRepositoryAdapter(
+        public StaffRepositoryAdapter(
             StaffJpaRepository jpaRepository) {
         this.jpaRepository = jpaRepository;
     }
 
-    /**
-     * Kiểm tra Department có Staff ACTIVE hay không.
-     *
-     * Application gọi:
-     *
-     * staffRepository
-     * .existsByDepartmentIdAndActiveTrue(departmentId);
-     *
-     * Adapter chuyển yêu cầu đó thành query JPA.
-     */
-    @Override
+        @Override
     public boolean existsByDepartmentIdAndActiveTrue(
             UUID departmentId) {
         return jpaRepository.existsByDepartmentIdAndStatus(
@@ -63,13 +42,7 @@ public class StaffRepositoryAdapter
                 StaffStatus.ACTIVE);
     }
 
-    /**
-     * Tìm Staff theo ID.
-     *
-     * JPA trả về StaffEntity.
-     * Adapter mapping Entity → Domain.
-     */
-    @Override
+        @Override
     public Optional<Staff> findById(
             UUID staffId) {
         return jpaRepository
@@ -78,23 +51,17 @@ public class StaffRepositoryAdapter
     }
 
     /**
-     * Lưu Staff.
      *
      * Flow:
      *
-     * Domain
      * ↓
-     * Entity
      * ↓
      * JPA
      * ↓
      * Database
      *
-     * Sau khi save:
      *
-     * Entity
      * ↓
-     * Domain
      */
     @Override
     public Staff save(
@@ -107,14 +74,7 @@ public class StaffRepositoryAdapter
         return toDomain(savedEntity);
     }
 
-    /**
-     * Mapping:
-     *
-     * StaffEntity → Staff
-     *
-     * Dùng khi đọc dữ liệu từ database.
-     */
-    private Staff toDomain(StaffEntity entity) {
+        private Staff toDomain(StaffEntity entity) {
 
         return Staff.reconstitute(
                 entity.getStaffId(),
@@ -126,22 +86,15 @@ public class StaffRepositoryAdapter
                 entity.getPhoneNumber(),
                 entity.getEmail(),
 
-                // DB: ACTIVE / INACTIVE
-                // Domain: true / false
+
+
                 entity.getStatus() == StaffStatus.ACTIVE,
 
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
     }
 
-    /**
-     * Mapping:
-     *
-     * Staff → StaffEntity
-     *
-     * Dùng trước khi ghi dữ liệu vào database.
-     */
-    private StaffEntity toEntity(Staff staff) {
+        private StaffEntity toEntity(Staff staff) {
 
         return new StaffEntity(
                 staff.getStaffId(),
@@ -153,8 +106,8 @@ public class StaffRepositoryAdapter
                 staff.getPhoneNumber(),
                 staff.getEmail(),
 
-                // Domain: true / false
-                // DB: ACTIVE / INACTIVE
+
+
                 staff.isActive()
                         ? StaffStatus.ACTIVE
                         : StaffStatus.INACTIVE,

@@ -2,17 +2,25 @@
 package com.mediflow.organization.domain.model;
 
 import com.mediflow.organization.domain.exception.DoctorLicenseRequiredException;
+import com.mediflow.organization.domain.exception.InvalidStaffDataException;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class Staff {
+
+    private static final Pattern PHONE_PATTERN =
+            Pattern.compile("\\d{10,15}");
+
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final UUID staffId;
 
     private String fullName;
 
-    // Chỉ lưu ID của Department
+
     private UUID departmentId;
 
     private JobTitle jobTitle;
@@ -25,7 +33,7 @@ public class Staff {
 
     private String email;
 
-    // Domain sử dụng boolean
+
     private boolean active;
 
     private final Instant createdAt;
@@ -63,8 +71,8 @@ public class Staff {
 
     // =========================================================
     // CREATE
-    // Tạo Staff mới.
-    // Staff mới mặc định ACTIVE.
+
+
     // =========================================================
 
     public static Staff create(
@@ -76,7 +84,13 @@ public class Staff {
             String phoneNumber,
             String email) {
 
-        validateLicense(jobTitle, licenseNumber);
+        validateData(
+                fullName,
+                departmentId,
+                jobTitle,
+                licenseNumber,
+                phoneNumber,
+                email);
 
         Instant now = Instant.now();
 
@@ -95,10 +109,10 @@ public class Staff {
     }
 
     // =========================================================
-    // RECONSTITUTE
-    // Dùng khi đọc Staff từ Database.
+
+
     //
-    // Không dùng create() vì Staff đã tồn tại trong DB.
+
     // =========================================================
 
     public static Staff reconstitute(
@@ -114,7 +128,13 @@ public class Staff {
             Instant createdAt,
             Instant updatedAt) {
 
-        validateLicense(jobTitle, licenseNumber);
+        validateData(
+                fullName,
+                departmentId,
+                jobTitle,
+                licenseNumber,
+                phoneNumber,
+                email);
 
         return new Staff(
                 staffId,
@@ -132,7 +152,7 @@ public class Staff {
 
     // =========================================================
     // UPDATE
-    // Cập nhật thông tin Staff.
+
     // =========================================================
 
     public void update(
@@ -143,7 +163,13 @@ public class Staff {
             String phoneNumber,
             String email) {
 
-        validateLicense(jobTitle, licenseNumber);
+        validateData(
+                fullName,
+                this.departmentId,
+                jobTitle,
+                licenseNumber,
+                phoneNumber,
+                email);
 
         this.fullName = fullName;
         this.jobTitle = jobTitle;
@@ -157,7 +183,7 @@ public class Staff {
 
     // =========================================================
     // CHANGE DEPARTMENT
-    // Chuyển Staff sang Department khác.
+
     // =========================================================
 
     public void changeDepartment(UUID newDepartmentId) {
@@ -177,8 +203,8 @@ public class Staff {
     }
 
     // =========================================================
-    // ACTIVATE
-    // Kích hoạt Staff.
+
+
     // =========================================================
 
     public void activate() {
@@ -188,8 +214,8 @@ public class Staff {
     }
 
     // =========================================================
-    // DEACTIVATE
-    // Vô hiệu hóa Staff.
+
+
     // =========================================================
 
     public void deactivate() {
@@ -199,9 +225,9 @@ public class Staff {
     }
 
     // =========================================================
-    // VALIDATE LICENSE
+
     //
-    // Doctor bắt buộc phải có license number.
+
     // =========================================================
 
     private static void validateLicense(
@@ -219,6 +245,44 @@ public class Staff {
 
             throw new DoctorLicenseRequiredException();
         }
+    }
+
+    private static void validateData(
+            String fullName,
+            UUID departmentId,
+            JobTitle jobTitle,
+            String licenseNumber,
+            String phoneNumber,
+            String email) {
+
+        if (fullName == null || fullName.isBlank()) {
+            throw new InvalidStaffDataException(
+                    "Staff full name must not be blank");
+        }
+
+        if (departmentId == null) {
+            throw new InvalidStaffDataException(
+                    "Staff department ID must not be null");
+        }
+
+        if (jobTitle == null) {
+            throw new InvalidStaffDataException(
+                    "Staff job title must not be null");
+        }
+
+        if (phoneNumber != null
+                && !PHONE_PATTERN.matcher(phoneNumber).matches()) {
+            throw new InvalidStaffDataException(
+                    "Phone number must contain 10 to 15 digits");
+        }
+
+        if (email != null
+                && !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new InvalidStaffDataException(
+                    "Email must be valid");
+        }
+
+        validateLicense(jobTitle, licenseNumber);
     }
 
     // =========================================================

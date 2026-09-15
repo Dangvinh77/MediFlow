@@ -1,14 +1,15 @@
 package com.mediflow.organization.application.port.in;
 
+import com.mediflow.organization.domain.model.JobTitle;
+import com.mediflow.organization.domain.model.Staff;
+
 import java.util.UUID;
 
-import com.mediflow.organization.domain.model.JobTitle;
+public interface UpdateStaffUseCase {
 
-public interface CreateStaffUseCase {
-
-        UUID execute(
+    Staff execute(
+            UUID staffId,
             String fullName,
-            UUID departmentId,
             JobTitle jobTitle,
             String specialization,
             String licenseNumber,
