@@ -23,11 +23,4 @@ public interface ProcessedEventPort {
      */
     boolean claimIfAbsent(UUID eventId, String routingKey);
 
-    /**
-     * Ghi dấu event theo cách tương thích với caller cũ.
-     *
-     * @deprecated use {@link #claimIfAbsent(UUID, String)} so concurrent consumers cannot both win
-     */
-    @Deprecated(forRemoval = false)
-    void markProcessed(UUID eventId, String routingKey);
 }

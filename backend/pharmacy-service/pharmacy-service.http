@@ -4,10 +4,48 @@
 # IntelliJ users can set `token` globally from auth.http. VS Code users may uncomment
 # the next line and use a local development token. Never commit a real token.
 # @token = replace-with-local-development-token
-@baseUrl = http://localhost:8085
+@host = http://localhost:8080
+
+### Search drugs
+GET {{host}}/api/v1/pharmacy/drugs?keyword=para&page=0&size=20
+Authorization: Bearer {{token}}
+X-Correlation-ID: pharmacy-drug-search-demo
+
+### Get drug detail
+GET {{host}}/api/v1/pharmacy/drugs/50000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+X-Correlation-ID: pharmacy-drug-detail-demo
+
+### Create drug
+POST {{host}}/api/v1/pharmacy/drugs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-ID: pharmacy-drug-create-demo
+
+{
+  "drugName": "Paracetamol 500mg",
+  "activeIngredient": "Paracetamol",
+  "unit": "viên",
+  "price": 1200.00,
+  "stockQuantity": 100,
+  "expiryDate": "2027-09-15",
+  "manufacturer": "MediFlow Pharma",
+  "lowStockThreshold": 20
+}
+
+### Adjust stock
+PUT {{host}}/api/v1/pharmacy/drugs/50000000-0000-0000-0000-000000000001/stock
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-ID: pharmacy-stock-adjust-demo
+
+{
+  "quantity": 25,
+  "reason": "Nhập kho định kỳ"
+}
 
 ### Create prescription
-POST {{baseUrl}}/api/v1/pharmacy/prescriptions
+POST {{host}}/api/v1/pharmacy/prescriptions
 Authorization: Bearer {{token}}
 Content-Type: application/json
 X-Correlation-Id: pharmacy-create-demo
@@ -28,7 +66,7 @@ X-Correlation-Id: pharmacy-create-demo
 }
 
 ### Cancel prescription and release reserved stock
-PUT {{baseUrl}}/api/v1/pharmacy/prescriptions/60000000-0000-0000-0000-000000000001/cancel
+PUT {{host}}/api/v1/pharmacy/prescriptions/60000000-0000-0000-0000-000000000001/cancel
 Authorization: Bearer {{token}}
 Content-Type: application/json
 X-Correlation-Id: pharmacy-cancel-demo
@@ -36,3 +74,18 @@ X-Correlation-Id: pharmacy-cancel-demo
 {
   "reason": "Bác sĩ thay đổi phác đồ điều trị"
 }
+
+### Get prescription detail
+GET {{host}}/api/v1/pharmacy/prescriptions/60000000-0000-0000-0000-000000000001
+Authorization: Bearer {{token}}
+X-Correlation-ID: pharmacy-prescription-detail-demo
+
+### Dispense a paid prescription
+PUT {{host}}/api/v1/pharmacy/prescriptions/60000000-0000-0000-0000-000000000001/dispense
+Authorization: Bearer {{token}}
+X-Correlation-ID: pharmacy-dispense-demo
+
+### Replay a quarantined outbox event — ADMIN only
+POST {{host}}/api/v1/pharmacy/admin/outbox/70000000-0000-0000-0000-000000000001/replay
+Authorization: Bearer {{token}}
+X-Correlation-ID: pharmacy-outbox-replay-demo

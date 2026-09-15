@@ -91,7 +91,6 @@ class PaymentApplicationServiceTest {
         verify(dispenseUseCase, times(1)).dispenseWithPaymentProof(
                 prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
         verify(processedEventPort, times(2)).claimIfAbsent(eventId, "payment.completed");
-        verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
     }
 
     /** Concurrent redelivery of one event produces one dispense outcome via durable claims/locks. */
@@ -147,7 +146,6 @@ class PaymentApplicationServiceTest {
                 .hasMessage("temporary database outage");
         verify(processedEventPort, org.mockito.Mockito.never())
                 .claimIfAbsent(eventId, "payment.completed");
-        verify(processedEventPort, org.mockito.Mockito.never()).markProcessed(eventId, "payment.completed");
     }
 
     /** Event thanh toán lệch patient/department bị từ chối trước claim và không đụng tồn kho. */
@@ -267,7 +265,7 @@ class PaymentApplicationServiceTest {
         UUID prescriptionId = UUID.randomUUID();
         PaymentCompletedCommand command = command(eventId, prescriptionId);
         PaymentReceipt receipt = receipt(command);
-        receipt.markDispensed();
+        receipt.markDispensed(Instant.now());
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
         when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));

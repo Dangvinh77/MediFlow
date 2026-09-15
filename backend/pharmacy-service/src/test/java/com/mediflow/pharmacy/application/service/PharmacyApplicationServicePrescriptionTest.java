@@ -20,6 +20,7 @@ import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -205,6 +206,9 @@ class PrescriptionApplicationServiceTest {
                 ReservationStatus.RESERVED,
                 Instant.now(),
                 Instant.now().plusSeconds(3600),
+                null,
+                null,
+                null,
                 null);
 
         when(drugRepo.findByIdForUpdate(firstDrugId)).thenReturn(Optional.of(firstDrug));
@@ -281,7 +285,12 @@ class PrescriptionApplicationServiceTest {
                             unsaved.getPrescribedDate(),
                             unsaved.getTotalAmount(),
                             unsaved.getLines(),
-                            Instant.now());
+                            PrescriptionStatus.ACTIVE,
+                            null,
+                            null,
+                            null,
+                            Instant.now(),
+                            null);
                 });
         when(dispenseSlipRepo.save(any(DispenseSlip.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

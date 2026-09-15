@@ -152,7 +152,8 @@ class CancelPrescriptionServiceTest {
         DispenseSlip slip = pendingSlip(prescriptionId);
         StockReservation mismatched = StockReservation.restore(
                 UUID.randomUUID(), prescription.getLines().get(0).getDrugId(), prescriptionId, 99,
-                ReservationStatus.RESERVED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
+                ReservationStatus.RESERVED, Instant.now(), Instant.now().plusSeconds(3600),
+                Instant.now(), null, null, null);
         when(prescriptionRepository.findByIdForUpdate(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepository.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(slip));
         when(reservationRepository.findByPrescriptionForUpdate(prescriptionId))
@@ -188,6 +189,7 @@ class CancelPrescriptionServiceTest {
     /** Dựng reservation RESERVED để xác minh release reason và actor audit. */
     private StockReservation reservation(UUID prescriptionId, UUID drugId) {
         return StockReservation.restore(UUID.randomUUID(), drugId, prescriptionId, 2,
-                ReservationStatus.RESERVED, Instant.now(), Instant.now().plusSeconds(3600), Instant.now());
+                ReservationStatus.RESERVED, Instant.now(), Instant.now().plusSeconds(3600),
+                Instant.now(), null, null, null);
     }
 }

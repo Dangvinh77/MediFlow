@@ -1,5 +1,6 @@
 package com.mediflow.pharmacy.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.dto.request.CreatePrescriptionRequest;
 import com.mediflow.pharmacy.application.dto.request.PrescriptionLineRequest;
@@ -159,6 +160,45 @@ class PrescriptionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error.code").value("PRESCRIPTION_DUPLICATE_DRUG"));
+    }
+
+    /** BR-D8: a client-supplied price is discarded before the create use case boundary. */
+    @Test
+    void create_clientSuppliedPrice_cannotCrossRequestBoundary() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID drugId = UUID.randomUUID();
+        when(useCase.create(any(CreatePrescriptionCommand.class)))
+                .thenReturn(prescriptionDto(prescriptionId));
+        java.util.Map<String, Object> body = java.util.Map.of(
+                "recordId", UUID.randomUUID(),
+                "patientId", UUID.randomUUID(),
+                "doctorId", UUID.randomUUID(),
+                "departmentId", UUID.randomUUID(),
+                "prescribedDate", LocalDate.now(),
+                "lines", List.of(java.util.Map.of(
+                        "drugId", drugId,
+                        "quantity", 2,
+                        "dosage", "Ngày 2 lần",
+                        "price", new BigDecimal("0.01"))));
+
+        mockMvc.perform(post(BASE_PATH)
+                        .with(user(UUID.randomUUID().toString()).roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated());
+
+        org.mockito.ArgumentCaptor<CreatePrescriptionCommand> command =
+                org.mockito.ArgumentCaptor.forClass(CreatePrescriptionCommand.class);
+        verify(useCase).create(command.capture());
+        assertThat(command.getValue().request().lines())
+                .singleElement()
+                .satisfies(line -> {
+                    assertThat(line.drugId()).isEqualTo(drugId);
+                    assertThat(line.quantity()).isEqualTo(2);
+                });
+        assertThat(java.util.Arrays.stream(PrescriptionLineRequest.class.getRecordComponents())
+                .map(java.lang.reflect.RecordComponent::getName))
+                .doesNotContain("price", "unitPrice");
     }
 
     /** Người dùng có role pharmacy được đọc chi tiết đơn qua API read-only. */

@@ -2,7 +2,7 @@ package com.mediflow.pharmacy.infrastructure.messaging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacyEventOutboxJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -115,10 +115,31 @@ class PharmacyOutboxLeaseIntegrationTest {
         assertThat(repository.findById(event.getEventId()).orElseThrow().getPublishedAt()).isNull();
     }
 
+    /** A leased critical predecessor prevents another replica from claiming its follower. */
+    @Test
+    void leasedPredecessor_blocksFollowerOnAnotherReplica() {
+        UUID aggregateId = UUID.randomUUID();
+        PharmacyEventOutboxJpaEntity predecessor = saveEvent(
+                "prescription.created", aggregateId, NOW.minusSeconds(1));
+        PharmacyEventOutboxJpaEntity follower = saveEvent(
+                "prescription.filled", aggregateId, NOW);
+
+        assertThat(claimService.claim(1, "replica-a"))
+                .extracting(PharmacyEventOutboxJpaEntity::getEventId)
+                .containsExactly(predecessor.getEventId());
+        assertThat(claimService.claim(1, "replica-b")).isEmpty();
+        assertThat(repository.findById(follower.getEventId()).orElseThrow().getLockedBy()).isNull();
+    }
+
     private PharmacyEventOutboxJpaEntity saveEvent(String routingKey) {
+        return saveEvent(routingKey, UUID.randomUUID(), NOW);
+    }
+
+    private PharmacyEventOutboxJpaEntity saveEvent(
+            String routingKey, UUID aggregateId, Instant createdAt) {
         PharmacyEventOutboxJpaEntity event = new PharmacyEventOutboxJpaEntity(
-                UUID.randomUUID(), routingKey, "{\"eventId\":\"immutable\"}");
-        event.setCreatedAt(NOW);
+                UUID.randomUUID(), routingKey, aggregateId, "{\"eventId\":\"immutable\"}");
+        event.setCreatedAt(createdAt);
         event.setAvailableAt(NOW);
         return repository.saveAndFlush(event);
     }

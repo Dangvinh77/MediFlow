@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimStatus;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PaymentReceiptJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PaymentReceiptJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PaymentReceiptJpaRepository;
 
 /** Kiểm tra adapter phân loại atomic claim và payload conflict. */

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DispenseSlipJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DispenseSlipJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DispenseSlipJpaRepository;
 
 import lombok.RequiredArgsConstructor;

@@ -120,27 +120,6 @@ public class StockReservation {
                 expiresAt, updatedAt, releaseReason, releasedAt, releasedBy);
     }
 
-    /**
-     * Dựng dữ liệu cũ chưa có audit release.
-     *
-     * @deprecated persistence mới phải dùng overload đầy đủ
-     */
-    @Deprecated(forRemoval = false)
-    public static StockReservation restore(
-            UUID reservationId,
-            UUID drugId,
-            UUID prescriptionId,
-            int quantity,
-            ReservationStatus status,
-            Instant createdAt,
-            Instant expiresAt,
-            Instant updatedAt) {
-
-        return restore(
-                reservationId, drugId, prescriptionId, quantity, status, createdAt,
-                expiresAt, updatedAt, null, null, null);
-    }
-
     /** Chuyển giữ chỗ đang hiệu lực sang trạng thái đã xuất thuốc. */
     public void markFulfilled(Instant now) {
         requireReserved();
@@ -151,16 +130,6 @@ public class StockReservation {
         }
         status = ReservationStatus.FULFILLED;
         updatedAt = now;
-    }
-
-    /**
-     * Legacy convenience overload retained for source compatibility.
-     *
-     * @deprecated callers should provide the application clock timestamp explicitly
-     */
-    @Deprecated(forRemoval = false)
-    public void markFulfilled() {
-        markFulfilled(Instant.now());
     }
 
     /**

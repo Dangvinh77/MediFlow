@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacySchedulerLeaseJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacySchedulerLeaseJpaEntity;
 
 /** Atomic PostgreSQL operations for scheduler cursor/lease ownership. */
 public interface PharmacySchedulerLeaseJpaRepository

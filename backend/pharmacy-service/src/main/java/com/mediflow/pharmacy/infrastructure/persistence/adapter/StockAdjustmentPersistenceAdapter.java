@@ -2,7 +2,7 @@ package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
 import com.mediflow.pharmacy.application.port.out.StockAdjustmentRepositoryPort;
 import com.mediflow.pharmacy.domain.model.StockAdjustment;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.StockAdjustmentJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockAdjustmentJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.StockAdjustmentJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

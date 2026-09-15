@@ -92,6 +92,7 @@ class ExpirePrescriptionTransactionTest {
 
     private StockReservation reservation(UUID id, UUID drugId, int quantity, Instant expiresAt) {
         return StockReservation.restore(UUID.randomUUID(), drugId, id, quantity,
-                ReservationStatus.RESERVED, Instant.now(), expiresAt, Instant.now());
+                ReservationStatus.RESERVED, Instant.now(), expiresAt, Instant.now(),
+                null, null, null);
     }
 }

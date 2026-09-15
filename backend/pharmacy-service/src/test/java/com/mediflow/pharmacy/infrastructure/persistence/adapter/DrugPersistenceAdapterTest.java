@@ -3,7 +3,7 @@ package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.pharmacy.domain.model.Drug;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.DrugJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DrugJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DrugJpaEntityRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +20,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -83,7 +84,7 @@ class DrugPersistenceAdapterTest {
         Drug created = adapter.save(newDrug("Paracetamol 500mg"));
         assertThat(created.getCreatedAt()).isNotNull();
 
-        created.adjustStock(10);
+        created.adjustStock(10, Instant.now());
         Drug updated = adapter.save(created);
 
         assertThat(updated.getCreatedAt()).isEqualTo(created.getCreatedAt());

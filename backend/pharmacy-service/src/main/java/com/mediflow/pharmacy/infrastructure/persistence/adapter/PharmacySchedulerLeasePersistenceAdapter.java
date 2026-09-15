@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseClaim;
 import com.mediflow.pharmacy.application.port.out.ReservationExpiryLeaseRepositoryPort;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PharmacySchedulerLeaseJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacySchedulerLeaseJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacySchedulerLeaseJpaRepository;
 
 import lombok.RequiredArgsConstructor;

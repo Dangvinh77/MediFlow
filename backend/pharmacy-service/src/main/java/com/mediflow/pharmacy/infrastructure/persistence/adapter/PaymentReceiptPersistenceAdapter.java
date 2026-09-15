@@ -11,7 +11,7 @@ import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimResult;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimStatus;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.PaymentReceiptJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PaymentReceiptJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PaymentReceiptJpaRepository;
 
 import lombok.RequiredArgsConstructor;

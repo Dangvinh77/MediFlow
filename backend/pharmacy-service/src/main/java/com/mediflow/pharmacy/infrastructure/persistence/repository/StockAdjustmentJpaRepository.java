@@ -1,6 +1,6 @@
 package com.mediflow.pharmacy.infrastructure.persistence.repository;
 
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.StockAdjustmentJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockAdjustmentJpaEntity;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 

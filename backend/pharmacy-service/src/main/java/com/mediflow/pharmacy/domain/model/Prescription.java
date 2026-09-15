@@ -145,28 +145,6 @@ public class Prescription {
     }
 
     /**
-     * Dựng dữ liệu cũ chưa có trạng thái vòng đời dưới dạng đơn đang hoạt động.
-     *
-     * @deprecated chỉ giữ để tương thích caller cũ; persistence phải dùng overload đầy đủ
-     */
-    @Deprecated(forRemoval = false)
-    public static Prescription restore(
-            UUID prescriptionId,
-            UUID recordId,
-            UUID patientId,
-            UUID doctorId,
-            UUID departmentId,
-            LocalDate prescribedDate,
-            BigDecimal totalAmount,
-            List<PrescriptionLine> lines,
-            Instant createdAt) {
-
-        return restore(
-                prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
-                totalAmount, lines, PrescriptionStatus.ACTIVE, null, null, null, createdAt, null);
-    }
-
-    /**
      * Tính lại tổng tiền từ các dòng hiện có.
      *
      * @return tổng tiền với hai chữ số thập phân

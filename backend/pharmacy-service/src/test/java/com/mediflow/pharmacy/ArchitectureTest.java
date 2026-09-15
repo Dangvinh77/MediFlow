@@ -60,7 +60,7 @@ public class ArchitectureTest {
     static final ArchRule application_contracts_are_framework_free = noClasses()
             .that().resideInAnyPackage("..application.port.in..", "..application.dto..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                    "..infrastructure.persistence.jpaEntity..",
+                    "..infrastructure.persistence.jpaentity..",
                     "..infrastructure.persistence.entity..",
                     "org.springframework.data..",
                     "jakarta.persistence..")

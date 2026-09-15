@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
-import com.mediflow.pharmacy.infrastructure.persistence.jpaEntity.StockReservationJpaEntity;
+import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockReservationJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

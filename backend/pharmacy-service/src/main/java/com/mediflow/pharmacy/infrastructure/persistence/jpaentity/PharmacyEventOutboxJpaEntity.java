@@ -1,4 +1,4 @@
-package com.mediflow.pharmacy.infrastructure.persistence.jpaEntity;
+package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,6 +25,9 @@ public class PharmacyEventOutboxJpaEntity {
 
     @Column(name = "routing_key", nullable = false, length = 100)
     private String routingKey;
+
+    @Column(name = "aggregate_id")
+    private UUID aggregateId;
 
     @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
     private String payload;
@@ -54,10 +57,22 @@ public class PharmacyEventOutboxJpaEntity {
     @Column(name = "quarantined_at")
     private Instant quarantinedAt;
 
-    /** Creates a new pending outbox row. */
-    public PharmacyEventOutboxJpaEntity(UUID eventId, String routingKey, String payload) {
+    /**
+     * Creates a new pending outbox row tied to the aggregate whose causal order it must preserve.
+     *
+     * @param eventId immutable event identity
+     * @param routingKey RabbitMQ routing key
+     * @param aggregateId prescription or drug identity used for ordered delivery
+     * @param payload serialized event envelope
+     */
+    public PharmacyEventOutboxJpaEntity(
+            UUID eventId,
+            String routingKey,
+            UUID aggregateId,
+            String payload) {
         this.eventId = eventId;
         this.routingKey = routingKey;
+        this.aggregateId = aggregateId;
         this.payload = payload;
         this.availableAt = Instant.now();
     }

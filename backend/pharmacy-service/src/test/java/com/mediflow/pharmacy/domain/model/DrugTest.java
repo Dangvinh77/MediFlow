@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
@@ -95,7 +96,7 @@ class DrugTest {
     void adjustStock_negativeQuantity_decrementsWithoutGoingBelowZero() {
         Drug drug = create(10);
 
-        drug.adjustStock(-4);
+        drug.adjustStock(-4, Instant.now());
 
         assertThat(drug.getStockQuantity()).isEqualTo(6);
     }
@@ -104,7 +105,7 @@ class DrugTest {
     void adjustStock_belowZero_throws() {
         Drug drug = create(3);
 
-        assertThatThrownBy(() -> drug.adjustStock(-4))
+        assertThatThrownBy(() -> drug.adjustStock(-4, Instant.now()))
                 .isInstanceOf(DrugRuleException.class)
                 .hasMessageContaining("tồn kho âm");
     }
@@ -117,9 +118,20 @@ class DrugTest {
                 new BigDecimal("1200.00"), Integer.MAX_VALUE, LocalDate.now().plusDays(30),
                 "MediFlow", 2, null, null);
 
-        assertThatThrownBy(() -> drug.adjustStock(1))
+        assertThatThrownBy(() -> drug.adjustStock(1, Instant.now()))
                 .isInstanceOf(DrugRuleException.class)
                 .hasMessageContaining("vượt giới hạn");
+    }
+
+    /** BR-D1: dispensing cannot make physical stock negative, even if reservations drift. */
+    @Test
+    void dispense_insufficientPhysicalStock_throwsOutOfStockWithoutMutation() {
+        Drug drug = create(1);
+
+        assertThatThrownBy(() -> drug.dispenseStock(2, LocalDate.now()))
+                .isInstanceOf(DrugRuleException.class)
+                .hasMessageContaining("Không đủ hàng tồn kho");
+        assertThat(drug.getStockQuantity()).isOne();
     }
 
     private Drug create(int stockQuantity) {

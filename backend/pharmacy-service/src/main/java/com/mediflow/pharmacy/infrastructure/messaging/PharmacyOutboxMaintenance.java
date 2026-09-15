@@ -1,8 +1,10 @@
 package com.mediflow.pharmacy.infrastructure.messaging;
 
+import com.mediflow.pharmacy.application.port.in.ReplayPharmacyOutboxUseCase;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -10,8 +12,10 @@ import org.springframework.stereotype.Component;
 
 /** Operational maintenance for replay and retention of durable pharmacy outbox rows. */
 @Component
-@ConditionalOnProperty(name = "mediflow.pharmacy.outbox.enabled", havingValue = "true", matchIfMissing = true)
-public class PharmacyOutboxMaintenance {
+@ConditionalOnProperty(name = {
+        "mediflow.pharmacy.outbox.enabled",
+        "mediflow.pharmacy.outbox.maintenance-enabled" }, havingValue = "true", matchIfMissing = true)
+public class PharmacyOutboxMaintenance implements ReplayPharmacyOutboxUseCase {
 
     private final PharmacyOutboxClaimService claimService;
     private final Clock clock;
@@ -37,7 +41,8 @@ public class PharmacyOutboxMaintenance {
     }
 
     /** Replays a failed event using its original event id and payload. */
-    public boolean replay(java.util.UUID eventId) {
+    @Override
+    public boolean replay(UUID eventId) {
         return claimService.replay(eventId);
     }
 }
