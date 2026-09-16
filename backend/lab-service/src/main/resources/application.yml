@@ -43,10 +43,19 @@ mediflow:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 
 management:
+  info:
+    env:
+      enabled: true
   endpoints:
     web:
       exposure:
         include: health,info
+
+info:
+  app:
+    name: MediFlow Lab Service
+    description: Chỉ định xét nghiệm và kết quả xét nghiệm.
+    version: v1
 
 springdoc:
   swagger-ui:
