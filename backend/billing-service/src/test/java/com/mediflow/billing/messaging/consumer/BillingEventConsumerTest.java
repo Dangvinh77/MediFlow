@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Kiểm tra {@link BillingEventConsumer} định tuyến đúng 6 routing key sang đúng in-port
+ * Kiểm tra {@link BillingEventConsumer} định tuyến đúng các routing key sang đúng in-port
  * (không cần RabbitMQ thật — chỉ dựng {@link Message} thủ công như container thật sẽ đưa vào).
  */
 class BillingEventConsumerTest {

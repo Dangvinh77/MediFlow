@@ -76,6 +76,13 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         }
 
         Invoice invoice = found.get();
+        // A cancellation/expiry event may win the race with the late dispense failure event.
+        // REFUNDED is terminal: absorb the compensation event instead of attempting
+        // REFUNDED -> REFUNDED, which would send a valid redelivery to the DLQ.
+        if (invoice.getSagaStatus() == SagaStatus.REFUNDED) {
+            processedEvent.markProcessed(e.eventId(), RK_DISPENSE_FAILED);
+            return;
+        }
         invoice.refund();   // isPaid = false, transitionSaga(REFUNDED)
 
         List<Fee> fees = feeRepo.findByInvoice(invoice.getInvoiceId());
@@ -94,9 +101,8 @@ public class SagaCompensationService implements SagaCompensationUseCase {
      * Nhánh <b>thành công</b> (BR-B11): xuất thuốc xong → chuyển saga của hóa đơn sang
      * {@code COMPLETED}. Không publish event nào.
      *
-     * <p>Ghi chú: §7 nói đặt thêm {@code dispenseId}, nhưng payload {@code prescription.filled}
-     * hiện chưa mang trường đó — bỏ qua việc gán, xử lý khi ráp saga ở Phần 5/5
-     * ({@code THELOC-INTEGRATION-FOLLOWUP.md}).
+     * <p>Contract hiện tại của Pharmacy chưa mang {@code dispenseId}; Billing giữ cột này là
+     * {@code null} và tuyệt đối không tự suy diễn một UUID từ {@code prescriptionId}.
      */
     @Override
     @Transactional

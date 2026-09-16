@@ -12,7 +12,7 @@
 > - Notification list reads now require JWT-derived callerPatientId/isStaff, like getById.
 >
 > Runtime adapters, outbox and per-department revenue breakdown are now implemented.
-> `dispenseId` enrichment and real broker E2E remain open, so this still does not claim a fully
+> Real broker E2E remains open, so this still does not claim a fully
 > production-verified distributed saga.
 
 # Theo dõi hợp đồng sự kiện sau khi tích hợp theloc
@@ -127,9 +127,8 @@ service khác đổi:
 
 ### `prescription.filled` — `dispenseId`
 - Payload pharmacy hiện không mang `dispenseId`. `SagaCompensationService.onPrescriptionFilled`
-  chuyển saga sang `COMPLETED` (BR-B11) nhưng **chưa gán `dispenseId`**.
-- [ ] CÒN MỞ (Phần 5/5): thống nhất với pharmacy bổ sung `dispenseId` vào
-  `prescription.filled`, hoặc billing bỏ hẳn việc gán.
+  chuyển saga sang `COMPLETED` (BR-B11); Billing giữ `Invoice.dispenseId = null` theo contract v1.
+- [x] Đã chốt: `dispenseId` không thuộc payload hiện tại; không tự sinh hoặc suy diễn mã phiếu xuất.
 
 ### Kiểm tra
 `mvn -pl backend/billing-service,backend/notification-service -am test` →
@@ -169,7 +168,7 @@ sai khác có chủ ý, ghi lại ở đây.
 - Mục 2 (`labType`): phần persistence của bảng chiếu **đã xong**. CÒN MỞ: consumer
   `lab.request.created` gọi `LabTestTypeProjectionAdapter.record(...)` + đăng ký routing key —
   Phần 5/5.
-- Mục 1 (`recordId`) và `dispenseId`: không đổi, vẫn chờ chốt cross-team ở Phần 5/5.
+- Mục 1 (`recordId`) không đổi; `dispenseId` đã chốt ngoài contract v1 và để null.
 
 ### Kiểm tra
 `mvn -pl backend/billing-service,backend/notification-service -am test` (không có Docker local):

@@ -12,10 +12,8 @@ import java.util.UUID;
  *
  * <p>Khai lại cùng tên/field với record pharmacy publish (06-billing.md §12.1).
  *
- * <p><b>Ghi chú phối hợp (Phần 3/5):</b> §7 nói billing "đặt {@code dispenseId}" khi hoàn tất
- * saga, nhưng payload pharmacy hiện <i>không</i> mang {@code dispenseId}. Cần thống nhất với
- * người phụ trách pharmacy: hoặc bổ sung {@code dispenseId} vào event, hoặc billing bỏ qua
- * việc gán {@code dispenseId}. Tạm khai theo đúng payload thật đang có.
+ * <p>Contract v1 của Pharmacy không mang {@code dispenseId}. Billing vì vậy giữ
+ * {@code Invoice.dispenseId} là {@code null} và không tự suy diễn một mã phiếu xuất.
  *
  * @param eventId        khóa chống xử lý trùng
  * @param occurredAt     thời điểm xuất thuốc xong
