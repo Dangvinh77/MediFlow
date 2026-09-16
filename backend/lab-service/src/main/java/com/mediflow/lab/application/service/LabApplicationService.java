@@ -17,6 +17,7 @@ import com.mediflow.lab.application.event.LabResultCreatedEvent;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.in.ReactToClinicalUseCase;
+import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
@@ -30,12 +31,14 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final LabTestRepositoryPort tests;
     private final LabEventPublisherPort publisher;
     private final LabTestDtoMapper mapper;
+    private final CorrelationIdProvider correlationIds;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
-                                 LabTestDtoMapper mapper) {
+                                 LabTestDtoMapper mapper, CorrelationIdProvider correlationIds) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
+        this.correlationIds = correlationIds;
     }
 
     @Override
@@ -73,7 +76,8 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                 .toList();
         test.recordResults(results, request.conclusion(), request.performedDate());
         LabTest saved = tests.save(test);
-        publisher.publishResultCreated(LabResultCreatedEvent.from(saved, correlationId()));
+        publisher.publishResultCreated(
+                LabResultCreatedEvent.from(saved, correlationIds.currentOrCreate().toString()));
         return mapper.toDto(saved);
     }
 
@@ -105,15 +109,12 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private LabTest saveNew(UUID recordId, UUID patientId, UUID departmentId,
                             String labType, LocalDate requestedDate) {
         LabTest saved = tests.save(LabTest.create(recordId, patientId, departmentId, labType, requestedDate));
-        publisher.publishRequestCreated(LabRequestCreatedEvent.from(saved, correlationId()));
+        publisher.publishRequestCreated(
+                LabRequestCreatedEvent.from(saved, correlationIds.currentOrCreate().toString()));
         return saved;
     }
 
     private LabTest locked(UUID id) {
         return tests.findByIdForUpdate(id).orElseThrow(() -> new LabTestNotFoundException(id));
-    }
-
-    private String correlationId() {
-        return UUID.randomUUID().toString();
     }
 }

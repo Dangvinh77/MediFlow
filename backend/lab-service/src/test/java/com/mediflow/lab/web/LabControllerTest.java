@@ -8,6 +8,7 @@ import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.request.LabResultItem;
 import com.mediflow.lab.application.dto.response.LabTestDTO;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
+import com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.lab.domain.model.LabTestStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import(LabControllerTest.MethodSecurityConfiguration.class)
+@Import({LabControllerTest.MethodSecurityConfiguration.class,
+        ThreadLocalCorrelationIdProvider.class})
 class LabControllerTest {
 
     private static final String BASE_PATH = "/api/v1/lab";

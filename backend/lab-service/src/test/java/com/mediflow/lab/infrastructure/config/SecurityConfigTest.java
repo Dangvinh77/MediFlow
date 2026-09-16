@@ -3,6 +3,7 @@ package com.mediflow.lab.infrastructure.config;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
+import com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.lab.web.LabController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class SecurityConfigTest {

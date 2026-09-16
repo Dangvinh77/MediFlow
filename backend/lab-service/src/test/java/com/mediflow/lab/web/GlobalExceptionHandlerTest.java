@@ -5,6 +5,7 @@ import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
 import com.mediflow.lab.domain.model.LabTestStatus;
 import com.mediflow.lab.infrastructure.config.SecurityConfig;
+import com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class,
+        ThreadLocalCorrelationIdProvider.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class GlobalExceptionHandlerTest {
