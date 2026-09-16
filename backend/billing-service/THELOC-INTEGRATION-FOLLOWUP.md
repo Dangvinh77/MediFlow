@@ -11,8 +11,9 @@
 >   invoices, which Pharmacy filters before constructing its dispensing command.
 > - Notification list reads now require JWT-derived callerPatientId/isStaff, like getById.
 >
-> Runtime adapters/outbox, dispenseId enrichment and per-department revenue breakdown remain
-> later milestones; this integration does not claim a production-ready distributed saga.
+> Runtime adapters, outbox and per-department revenue breakdown are now implemented.
+> `dispenseId` enrichment and real broker E2E remain open, so this still does not claim a fully
+> production-verified distributed saga.
 
 # Theo dõi hợp đồng sự kiện sau khi tích hợp theloc
 

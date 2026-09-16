@@ -2,8 +2,6 @@ package com.mediflow.billing.messaging.consumer;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -13,20 +11,22 @@ import com.mediflow.billing.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.billing.application.event.LabResultCreatedEvent;
 import com.mediflow.billing.application.event.MedicalRecordCreatedEvent;
 import com.mediflow.billing.application.event.PrescriptionCreatedEvent;
+import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
 import com.mediflow.billing.application.port.in.AccrueFeeUseCase;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
 import com.mediflow.billing.infrastructure.config.RabbitConfig;
 
 /**
- * Driving adapter nhận toàn bộ 6 routing key mà billing subscribe, trên <b>một</b> queue
+ * Driving adapter nhận toàn bộ 8 routing key mà billing subscribe, trên <b>một</b> queue
  * {@value RabbitConfig#QUEUE} (backend-spec/06-billing.md §12.4).
  *
  * <p><b>Vì sao một class, không phải 6 {@code @RabbitListener} riêng như §12.1 liệt kê:</b> nhiều
  * listener cùng khai báo trên một queue vật lý sẽ cạnh tranh nhau kiểu round-robin — mỗi message
  * chỉ tới đúng MỘT trong số các listener đó theo RabbitMQ, không phải "listener nào hiểu payload
- * thì nhận". Với 6 loại payload khác nhau trên cùng một queue, cách an toàn duy nhất là một
+ * thì nhận". Với 8 loại payload khác nhau trên cùng một queue, cách an toàn duy nhất là một
  * consumer đọc {@link Message} thô, tự đọc routing key rồi định tuyến — cùng tinh thần với
  * {@code NotificationEventConsumer} mà backend-spec/07-notification.md §12 yêu cầu ("một class
  * consumer với switch"). Đây là sai khác có chủ ý so với §12.1, ghi lại tại đây thay vì
@@ -39,8 +39,6 @@ import com.mediflow.billing.infrastructure.config.RabbitConfig;
  */
 @Component
 public class BillingEventConsumer {
-
-    private static final Logger log = LoggerFactory.getLogger(BillingEventConsumer.class);
 
     private final AccrueFeeUseCase accrueFeeUseCase;
     private final SagaCompensationUseCase sagaCompensationUseCase;
@@ -70,7 +68,12 @@ public class BillingEventConsumer {
                     sagaCompensationUseCase.onPrescriptionFilled(read(body, PrescriptionFilledEvent.class));
             case RabbitConfig.RK_PRESCRIPTION_DISPENSE_FAILED ->
                     sagaCompensationUseCase.onDispenseFailed(read(body, PrescriptionDispenseFailedEvent.class));
-            default -> log.warn("Bỏ qua routing key không xác định trên {}: {}", RabbitConfig.QUEUE, routingKey);
+            case RabbitConfig.RK_PRESCRIPTION_CANCELLED ->
+                    sagaCompensationUseCase.onPrescriptionCancelled(read(body, PrescriptionCancelledEvent.class));
+            case RabbitConfig.RK_PRESCRIPTION_EXPIRED ->
+                    sagaCompensationUseCase.onPrescriptionExpired(read(body, PrescriptionExpiredEvent.class));
+            default -> throw new IllegalArgumentException(
+                    "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
         }
     }
 

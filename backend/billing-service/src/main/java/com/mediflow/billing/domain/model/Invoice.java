@@ -88,6 +88,10 @@ public class Invoice {
         if (isAlreadyPaid()) {
             throw new BillingRuleException("BILLING_ALREADY_PAID", "Hóa đơn này đã được thanh toán");
         }
+        if (prescriptionId != null && sagaStatus != SagaStatus.AWAITING_PAYMENT) {
+            throw new BillingRuleException("BILLING_INVOICE_NOT_PAYABLE",
+                    "Hóa đơn đơn thuốc không còn ở trạng thái chờ thanh toán");
+        }
         this.isPaid = true;
         this.paymentMethod = method;
         this.paidAt = timestamp;
@@ -120,6 +124,18 @@ public class Invoice {
     public void refund() {
         this.isPaid = false;
         transitionSaga(SagaStatus.REFUNDED);
+    }
+
+    /**
+     * Đóng invoice của đơn thuốc bị hủy/hết hạn trước khi trả tiền. Khoản phí vẫn gắn với invoice
+     * terminal để không bị một hóa đơn thường thu lại về sau.
+     */
+    public void cancelBeforePayment() {
+        if (isPaid || sagaStatus != SagaStatus.AWAITING_PAYMENT) {
+            throw new BillingRuleException("BILLING_INVALID_SAGA_TRANSITION",
+                    "Chỉ có thể đóng invoice đơn thuốc chưa thanh toán");
+        }
+        this.sagaStatus = SagaStatus.REFUNDED;
     }
 
     /** Gán phiếu xuất thuốc khi saga hoàn tất thành công (BR-B11). */

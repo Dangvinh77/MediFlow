@@ -28,6 +28,10 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
 
 eureka:
   client:
@@ -38,6 +42,28 @@ eureka:
 mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+  billing:
+    rabbit:
+      retry:
+        max-attempts: ${MEDIFLOW_BILLING_RABBIT_RETRY_MAX_ATTEMPTS:3}
+        initial-interval-ms: ${MEDIFLOW_BILLING_RABBIT_RETRY_INITIAL_INTERVAL_MS:1000}
+        max-interval-ms: ${MEDIFLOW_BILLING_RABBIT_RETRY_MAX_INTERVAL_MS:10000}
+    outbox:
+      enabled: ${MEDIFLOW_BILLING_OUTBOX_ENABLED:true}
+      metrics-enabled: ${MEDIFLOW_BILLING_OUTBOX_METRICS_ENABLED:true}
+      maintenance-enabled: ${MEDIFLOW_BILLING_OUTBOX_MAINTENANCE_ENABLED:true}
+      batch-size: ${MEDIFLOW_BILLING_OUTBOX_BATCH_SIZE:100}
+      dispatch-delay-ms: ${MEDIFLOW_BILLING_OUTBOX_DISPATCH_DELAY_MS:1000}
+      dispatch-initial-delay-ms: ${MEDIFLOW_BILLING_OUTBOX_DISPATCH_INITIAL_DELAY_MS:1000}
+      confirm-timeout-ms: ${MEDIFLOW_BILLING_OUTBOX_CONFIRM_TIMEOUT_MS:5000}
+      lease-seconds: ${MEDIFLOW_BILLING_OUTBOX_LEASE_SECONDS:30}
+      retention: ${MEDIFLOW_BILLING_OUTBOX_RETENTION:PT168H}
+      retention-sweep-ms: ${MEDIFLOW_BILLING_OUTBOX_RETENTION_SWEEP_MS:3600000}
+      metrics-refresh-ms: ${MEDIFLOW_BILLING_OUTBOX_METRICS_REFRESH_MS:30000}
+      retry:
+        initial-backoff-ms: ${MEDIFLOW_BILLING_OUTBOX_RETRY_INITIAL_BACKOFF_MS:1000}
+        max-backoff-ms: ${MEDIFLOW_BILLING_OUTBOX_RETRY_MAX_BACKOFF_MS:60000}
+        max-attempts: ${MEDIFLOW_BILLING_OUTBOX_RETRY_MAX_ATTEMPTS:5}
 
 # Bảng giá phí sinh tự động từ event (PriceListPort). Mặc định đã có trong PriceListProperties;
 # đặt exam-fee-by-department / lab-fee-by-type để override theo khoa / loại xét nghiệm.
@@ -52,7 +78,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
 
 springdoc:
   swagger-ui:
