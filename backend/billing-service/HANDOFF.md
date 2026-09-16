@@ -207,8 +207,11 @@ chính sách; không silently mark processed.
 ### B-01 — Chốt contract và fixture
 
 - Dùng record DTO riêng tại `application/event`, không phụ thuộc package Pharmacy.
-- Thêm fixture JSON cho bốn event của Pharmacy và một fixture `payment.completed` mà Pharmacy đọc.
-- Assert field bắt buộc, nullability, enum chữ hoa, `BigDecimal`, timezone và correlation propagation.
+- [x] Thêm fixture JSON phía Billing cho các event Pharmacy consume: `prescription.created`,
+  `prescription.filled`, `prescription.dispense.failed`, `prescription.cancelled` và
+  `prescription.expired`.
+- [x] Thêm fixture `payment.completed` phía Billing để đối chiếu payload mà Pharmacy consume.
+- [x] Assert envelope, field bắt buộc, `BigDecimal`, timezone và correlation propagation ở boundary.
 - `dispenseId` đã chốt bỏ hẳn (2026-09-16, xem mục 3.3) — nếu quyết định này đổi lại sau này,
   cập nhật đồng thời spec, fixture, DTO và test hai service.
 
@@ -272,7 +275,7 @@ Không coi unit test mock `RabbitTemplate` là bằng chứng E2E.
 
 ## 7. Checklist bàn giao trước khi mở PR
 
-- [ ] Các DTO/event và fixture khớp đúng bảng contract ở mục 3.
+- [x] Các DTO/event và fixture khớp đúng bảng contract ở mục 3; `dispenseId` đã được bỏ hoàn toàn.
 - [ ] Không có import `pharmacy-service`, JPA Pharmacy hoặc URL database Pharmacy trong Billing.
 - [ ] Mọi public class/method mới có Javadocs và `@param`/`@return` phù hợp.
 - [x] `@Transactional` bao trùm side effect + processed marker; publish qua outbox.

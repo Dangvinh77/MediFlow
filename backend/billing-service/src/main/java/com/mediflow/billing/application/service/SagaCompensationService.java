@@ -76,6 +76,13 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         }
 
         Invoice invoice = found.get();
+        // A cancellation/expiry event may win the race with the late dispense failure event.
+        // REFUNDED is terminal: absorb the compensation event instead of attempting
+        // REFUNDED -> REFUNDED, which would send a valid redelivery to the DLQ.
+        if (invoice.getSagaStatus() == SagaStatus.REFUNDED) {
+            processedEvent.markProcessed(e.eventId(), RK_DISPENSE_FAILED);
+            return;
+        }
         invoice.refund();   // isPaid = false, transitionSaga(REFUNDED)
 
         List<Fee> fees = feeRepo.findByInvoice(invoice.getInvoiceId());

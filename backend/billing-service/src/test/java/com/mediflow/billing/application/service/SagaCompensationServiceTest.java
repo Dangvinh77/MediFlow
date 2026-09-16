@@ -111,6 +111,28 @@ class SagaCompensationServiceTest {
         verify(processedEvent).markProcessed(any(), any());
     }
 
+    @Test
+    void onDispenseFailed_alreadyRefunded_isIdempotent() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
+                new BigDecimal("300000.00"), false, null, prescriptionId,
+                SagaStatus.REFUNDED, null, Instant.now(), null);
+        when(processedEvent.alreadyProcessed(eventId)).thenReturn(false);
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+
+        service.onDispenseFailed(new PrescriptionDispenseFailedEvent(
+                eventId, Instant.now(), "late-payment-correlation", prescriptionId,
+                null, null, "PAYMENT_AFTER_TERMINAL_STATE", List.of()));
+
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        assertThat(invoice.isAlreadyPaid()).isFalse();
+        verify(processedEvent).markProcessed(eventId, "prescription.dispense.failed");
+        verify(feeRepo, never()).findByInvoice(any());
+        verify(invoiceRepo, never()).save(any());
+        verify(publisher, never()).publishPaymentFailed(any());
+    }
+
     // ---- BR-B11 : xuất thuốc thành công thì kết thúc saga ----
     @Test
     void onPrescriptionFilled_setsCompleted() {
