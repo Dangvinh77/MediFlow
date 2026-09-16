@@ -62,10 +62,19 @@ mediflow:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 
 management:
+  info:
+    env:
+      enabled: true
   endpoints:
     web:
       exposure:
         include: health,info
+
+info:
+  app:
+    name: MediFlow Clinical Service
+    description: Lịch hẹn, hồ sơ bệnh án và chẩn đoán.
+    version: v1
 
 springdoc:
   swagger-ui:
