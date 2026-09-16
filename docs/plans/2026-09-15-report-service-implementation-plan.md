@@ -478,8 +478,8 @@ Không tạo foreign key sang service khác. Mọi `departmentId`, `drugId`, `in
 | T01 | Domain models và state machine | T00 | DONE |
 | T02 | In-port, out-port, DTO và mapper contracts | T01 | DONE |
 | T03 | Flyway V1 và JPA entity mapping | T01 | DONE |
-| T04 | Atomic claim + concurrency-safe persistence adapters | T02, T03 | TODO |
-| T05 | Daily/lab/prescription aggregate use cases | T04 | TODO |
+| T04 | Atomic claim + concurrency-safe persistence adapters | T02, T03 | IN_PROGRESS |
+| T05 | Daily/lab/prescription aggregate use cases | T04 | DONE |
 | T06 | Payment contribution và compensation use cases | T04 | TODO |
 | T07 | Read-report queries và top medicine | T04 | TODO |
 | T08 | Rabbit topology, payloads, consumer, retry và DLQ | T05, T06 | TODO |
@@ -634,6 +634,12 @@ native upsert are required. Do not implement application services.”
 **Lệnh giao AI:** “Implement T04 only. Focus on database atomicity and null-safe keys; do not put
 business metric decisions in adapters.”
 
+**Tiến độ hiện tại:** đã implement 5 Spring Data repository và 5 persistence adapter. Các native
+upsert, `SELECT ... FOR UPDATE`, null-safe predicate, top query inclusive/latest-name và advisory lock
+payment đã có. Unit/application suite xanh (**54 test pass** trong lần chạy mới nhất); integration concurrency trên PostgreSQL 16 chưa thể chạy
+trên máy hiện tại vì Testcontainers Docker API client 1.32 thấp hơn server tối thiểu 1.40, nên T04
+giữ `IN_PROGRESS` cho đến khi gate môi trường được mở.
+
 ### T05 — Daily/lab/prescription aggregate use cases
 
 **Mục tiêu:** xử lý ba event hoạt động theo rules B01–B04.
@@ -655,6 +661,12 @@ prescription does not change revenue.
 **Gate:** mọi rule B01–B05 và E01–E03 liên quan có test application.
 
 **Lệnh giao AI:** “Implement T05 only with mocked out-ports. Keep consumer and JPA out of the test.”
+
+**Bằng chứng hoàn thành:** `AggregateUpdaterService` xử lý medical/lab/prescription trong một
+transaction; validate trước claim, cập nhật hospital → department, group duplicate drug item và
+sort `drugId` trước khi lock/save. Bộ test application có 9 test xanh cho row scope, redelivery,
+invalid payload, grouping/order, timezone và payment regression; không có tương tác persistence khi
+payload invalid.
 
 ### T06 — Payment contribution và compensation use cases
 
