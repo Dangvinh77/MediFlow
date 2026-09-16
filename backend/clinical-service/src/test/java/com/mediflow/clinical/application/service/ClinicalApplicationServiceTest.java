@@ -24,6 +24,9 @@ import org.mockito.InOrder;
 import com.mediflow.clinical.application.dto.request.AddDiagnosisRequest;
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.CreateRecordRequest;
+import com.mediflow.clinical.application.dto.response.AppointmentDTO;
+import com.mediflow.clinical.application.dto.response.DiagnosisDTO;
+import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.event.AppointmentCreatedEvent;
 import com.mediflow.clinical.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.clinical.application.event.DiagnosisAddedEvent;
@@ -77,15 +80,23 @@ class ClinicalApplicationServiceTest {
         when(patients.exists(patient)).thenReturn(true);
         when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
         when(appointments.existsPendingSameDay(patient, date)).thenReturn(false);
-        when(appointments.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        UUID persistedAppointmentId = UUID.randomUUID();
+        Appointment persisted = Appointment.restore(persistedAppointmentId, patient, doctor, department, date,
+                LocalTime.of(9, 0), AppointmentStatus.PENDING, null, java.time.Instant.now(), null);
+        when(appointments.save(any())).thenReturn(persisted);
+        AppointmentDTO dto = mock(AppointmentDTO.class);
+        when(mapper.toDto(persisted)).thenReturn(dto);
 
-        appointmentService.create(new CreateAppointmentRequest(
-                patient, doctor, department, date, LocalTime.of(9, 0), null));
+        assertThat(appointmentService.create(new CreateAppointmentRequest(
+                patient, doctor, department, date, LocalTime.of(9, 0), null)))
+                .isSameAs(dto);
 
         ArgumentCaptor<AppointmentCreatedEvent> event =
                 ArgumentCaptor.forClass(AppointmentCreatedEvent.class);
         verify(publisher).publishAppointmentCreated(event.capture());
+        assertThat(event.getValue().appointmentId()).isEqualTo(persistedAppointmentId);
         assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
+        verify(mapper).toDto(persisted);
     }
 
     @Test
@@ -141,19 +152,28 @@ class ClinicalApplicationServiceTest {
         UUID patient = UUID.randomUUID();
         UUID doctor = UUID.randomUUID();
         UUID department = UUID.randomUUID();
-        Appointment appointment = Appointment.create(patient, doctor, department,
-                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.PENDING, null,
+                java.time.Instant.now(), null);
         when(patients.exists(patient)).thenReturn(true);
         when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
         when(records.findByAppointmentId(appointment.getAppointmentId())).thenReturn(Optional.empty());
         when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
         when(appointments.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(records.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        UUID persistedRecordId = UUID.randomUUID();
+        Diagnosis persistedDiagnosis = Diagnosis.restore(UUID.randomUUID(), "Influenza", null, "J10");
+        MedicalRecord persisted = MedicalRecord.restore(persistedRecordId, patient, doctor, department,
+                LocalDate.now(), "Fever", appointment.getAppointmentId(), List.of(persistedDiagnosis),
+                java.time.Instant.now(), null);
+        when(records.save(any())).thenReturn(persisted);
+        MedicalRecordDTO dto = mock(MedicalRecordDTO.class);
+        when(mapper.toDto(persisted)).thenReturn(dto);
 
         var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), "Fever",
                 appointment.getAppointmentId(), List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
 
-        recordService.create(request);
+        assertThat(recordService.create(request)).isSameAs(dto);
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.ARRIVED);
         ArgumentCaptor<MedicalRecord> saved = ArgumentCaptor.forClass(MedicalRecord.class);
@@ -164,8 +184,10 @@ class ClinicalApplicationServiceTest {
                 ArgumentCaptor.forClass(AppointmentStatusChangedEvent.class);
         verify(publisher).publishMedicalRecordCreated(recordEvent.capture());
         verify(publisher).publishAppointmentStatusChanged(statusEvent.capture());
-        assertThat(statusEvent.getValue().recordId()).isEqualTo(saved.getValue().getRecordId());
+        assertThat(recordEvent.getValue().recordId()).isEqualTo(persistedRecordId);
+        assertThat(statusEvent.getValue().recordId()).isEqualTo(persistedRecordId);
         assertThat(statusEvent.getValue().correlationId()).isEqualTo(recordEvent.getValue().correlationId());
+        verify(mapper).toDto(persisted);
     }
 
     @Test
@@ -275,8 +297,9 @@ class ClinicalApplicationServiceTest {
         UUID requestedPatient = UUID.randomUUID();
         UUID doctor = UUID.randomUUID();
         UUID department = UUID.randomUUID();
-        Appointment appointment = Appointment.create(UUID.randomUUID(), doctor, department,
-                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        Appointment appointment = Appointment.restore(UUID.randomUUID(), UUID.randomUUID(), doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.PENDING, null,
+                java.time.Instant.now(), null);
         when(patients.exists(requestedPatient)).thenReturn(true);
         when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
         when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
@@ -296,14 +319,22 @@ class ClinicalApplicationServiceTest {
                 LocalDate.now(), null, null, List.of(Diagnosis.create("Initial", null, null)),
                 java.time.Instant.now(), null);
         when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
-        when(records.save(record)).thenReturn(record);
+        Diagnosis persistedDiagnosis = Diagnosis.restore(UUID.randomUUID(), "Hypertension", null, "I10");
+        MedicalRecord persisted = MedicalRecord.restore(recordId, record.getPatientId(), record.getDoctorId(),
+                record.getDepartmentId(), record.getExaminationDate(), record.getSymptoms(), record.getAppointmentId(),
+                List.of(record.getDiagnoses().getFirst(), persistedDiagnosis), record.getCreatedAt(), record.getUpdatedAt());
+        when(records.save(record)).thenReturn(persisted);
+        DiagnosisDTO dto = mock(DiagnosisDTO.class);
+        when(mapper.toDto(persistedDiagnosis)).thenReturn(dto);
 
-        recordService.addDiagnosis(recordId, new AddDiagnosisRequest("Hypertension", null, "I10"));
+        assertThat(recordService.addDiagnosis(recordId, new AddDiagnosisRequest("Hypertension", null, "I10")))
+                .isSameAs(dto);
 
         assertThat(record.getDiagnoses()).hasSize(2);
         ArgumentCaptor<DiagnosisAddedEvent> event = ArgumentCaptor.forClass(DiagnosisAddedEvent.class);
         verify(publisher).publishDiagnosisAdded(event.capture());
         assertThat(event.getValue().recordId()).isEqualTo(recordId);
         assertThat(event.getValue().diagnosisCode()).isEqualTo("I10");
+        verify(mapper).toDto(persistedDiagnosis);
     }
 }

@@ -18,16 +18,21 @@ public final class Diagnosis {
     private final String icdCode;
 
     public static Diagnosis create(String name, String description, String icdCode) {
-        return restore(UUID.randomUUID(), name, description, icdCode);
+        validate(name, icdCode);
+        return new Diagnosis(null, name, description, icdCode);
     }
 
     public static Diagnosis restore(UUID id, String name, String description, String icdCode) {
+        validate(name, icdCode);
+        return new Diagnosis(Objects.requireNonNull(id), name, description, icdCode);
+    }
+
+    private static void validate(String name, String icdCode) {
         if (name == null || name.isBlank()) {
             throw new InvalidClinicalDataException("DIAGNOSIS_NAME_REQUIRED", "Diagnosis name is required");
         }
         if (icdCode != null && !ICD.matcher(icdCode).matches()) {
             throw new InvalidClinicalDataException("DIAGNOSIS_ICD_INVALID", "Invalid ICD code");
         }
-        return new Diagnosis(Objects.requireNonNull(id), name, description, icdCode);
     }
 }

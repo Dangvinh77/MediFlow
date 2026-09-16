@@ -25,10 +25,10 @@ class AppointmentTest {
     }
 
     @ParameterizedTest @CsvSource({"07:00", "17:00"})
-    void create_openingAndClosingTime_accepts(LocalTime time) {
+    void create_openingAndClosingTime_acceptsWithIdentityPendingForPersistence(LocalTime time) {
         Appointment appointment = create(TODAY, time);
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.PENDING);
-        assertThat(appointment.getAppointmentId()).isNotNull();
+        assertThat(appointment.getAppointmentId()).isNull();
         assertThat(appointment.getCreatedAt()).isEqualTo(CLOCK.instant());
     }
 

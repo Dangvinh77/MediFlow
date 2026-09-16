@@ -60,6 +60,49 @@ class ClinicalPersistenceAdapterTest {
     @Autowired PlatformTransactionManager transactionManager;
 
     @Test
+    void save_newAggregates_returnsDatabaseGeneratedIds() {
+        Appointment appointment = appointments.save(Appointment.create(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), LocalDate.now().plusDays(1), LocalTime.of(9, 0), "Checkup"));
+        MedicalRecord record = records.save(MedicalRecord.create(appointment.getPatientId(),
+                appointment.getDoctorId(), appointment.getDepartmentId(), LocalDate.now(), "Fever",
+                appointment.getAppointmentId(), List.of(Diagnosis.create("Influenza", null, "J10"))));
+
+        assertThat(appointment.getAppointmentId()).isNotNull();
+        assertThat(record.getRecordId()).isNotNull();
+        assertThat(record.getDiagnoses()).singleElement()
+                .extracting(Diagnosis::getDiagnosisId)
+                .isNotNull();
+    }
+
+    @Test
+    void save_existingAggregates_preservesIdsAndGeneratesNewDiagnosisId() {
+        Appointment appointment = appointments.save(Appointment.create(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), LocalDate.now().plusDays(1), LocalTime.of(9, 0), "Checkup"));
+        UUID appointmentId = appointment.getAppointmentId();
+        appointment.update(appointment.getAppointmentDate().plusDays(1), appointment.getAppointmentTime(), "Moved");
+        Appointment updatedAppointment = appointments.save(appointment);
+
+        MedicalRecord record = records.save(MedicalRecord.create(appointment.getPatientId(),
+                appointment.getDoctorId(), appointment.getDepartmentId(), LocalDate.now(), "Fever",
+                appointmentId, List.of(Diagnosis.create("Influenza", null, "J10"))));
+        UUID recordId = record.getRecordId();
+        UUID existingDiagnosisId = record.getDiagnoses().getFirst().getDiagnosisId();
+        record.addDiagnosis(Diagnosis.create("Hypertension", null, "I10"));
+
+        MedicalRecord updatedRecord = records.save(record);
+
+        assertThat(updatedAppointment.getAppointmentId()).isEqualTo(appointmentId);
+        assertThat(appointments.findById(appointmentId)).get()
+                .extracting(Appointment::getReason).isEqualTo("Moved");
+        assertThat(updatedRecord.getRecordId()).isEqualTo(recordId);
+        assertThat(updatedRecord.getDiagnoses()).hasSize(2);
+        assertThat(updatedRecord.getDiagnoses()).extracting(Diagnosis::getDiagnosisId)
+                .contains(existingDiagnosisId)
+                .doesNotHaveDuplicates();
+        assertThat(updatedRecord.getDiagnoses().getLast().getDiagnosisId()).isNotNull();
+    }
+
+    @Test
     void recordRoundTrip_preservesDiagnosesAndAppointmentReference() {
         Appointment appointment = appointments.save(Appointment.create(UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), LocalDate.now().plusDays(1), LocalTime.of(9, 0), "Checkup"));
