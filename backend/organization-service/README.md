@@ -118,7 +118,9 @@ SYSTEM
 
 ## Status
 
-**Skeleton only.** Module, dependencies, configuration and the mandated package layout are in place — no business code yet. Build it against the _Definition of Done_ in the blueprint and the rules in the service documentation.
+The module currently provides department and staff creation, lookup, department transfer,
+active filtering, pagination and staff-existence checks. Department/staff update use cases and
+account management are planned but are not implemented yet.
 
 ## Run locally
 
@@ -127,7 +129,8 @@ SYSTEM
 3. RabbitMQ runs on `localhost:5672`.
 
 ```bash
-mvn -pl backend/organization-service -am spring-boot:run
+mvn -pl backend/organization-service -am install -DskipTests
+mvn -pl backend/organization-service spring-boot:run
 ```
 
 Swagger UI:
@@ -138,19 +141,14 @@ Swagger UI:
 
 | Method | Path                                                | Roles                         |
 | ------ | --------------------------------------------------- | ----------------------------- |
-| GET    | `/api/v1/org/departments`                           | ADMIN, MANAGER, DOCTOR, NURSE |
+| GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/departments/{id}`                      | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/departments`                           | ADMIN                         |
-| PUT    | `/api/v1/org/departments/{id}`                      | ADMIN                         |
 | GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/staff/{id}`                            | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/staff`                                 | ADMIN                         |
-| PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
-| POST   | `/api/v1/org/accounts`                              | ADMIN                         |
-| PUT    | `/api/v1/org/accounts/{id}/status`                  | ADMIN                         |
-| POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
 
 ### Department transfer
 
@@ -160,7 +158,7 @@ Request:
 
 ```json
 {
-  "departmentId": "..."
+  "newDepartmentId": "..."
 }
 ```
 

@@ -1,14 +1,6 @@
 package com.mediflow.organization.domain.exception;
 
-/**
- * Được throw khi Staff không đủ điều kiện trở thành trưởng khoa.
- *
- * Ví dụ:
- *
- * - Staff không active.
- * - Staff không thuộc Department.
- * - Staff không phải Doctor.
- */
+/** Thrown when a staff member cannot become a department head. */
 public class InvalidDepartmentHeadException
         extends DomainException {
 
