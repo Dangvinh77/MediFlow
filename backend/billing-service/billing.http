@@ -65,3 +65,9 @@ Content-Type: application/json
 ### Doanh thu theo khoa + khoảng ngày (role ADMIN/MANAGER)
 GET {{host}}/api/v1/billing/revenue?departmentId=00000000-0000-0000-0000-000000000000&fromDate=2026-08-01&toDate=2026-08-14
 Authorization: Bearer {{token}}
+
+# ============ VẬN HÀNH OUTBOX (ADMIN) ============
+
+### Phát lại một event đã quarantine, giữ nguyên eventId và payload
+POST {{host}}/api/v1/billing/admin/outbox/00000000-0000-0000-0000-000000000000/replay
+Authorization: Bearer {{token}}

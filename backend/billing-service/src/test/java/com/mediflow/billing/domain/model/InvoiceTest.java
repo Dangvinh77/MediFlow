@@ -109,14 +109,38 @@ class InvoiceTest {
     @Test
     void refund_reversesPaymentAndEndsSagaAtRefunded() {
         Invoice invoice = sagaInvoice();
-        invoice.transitionSaga(SagaStatus.PAID);
         invoice.pay(PaymentMethod.CASH, Instant.now());
+        invoice.transitionSaga(SagaStatus.PAID);
         invoice.transitionSaga(SagaStatus.AWAITING_DISPENSE);
 
         invoice.refund();
 
         assertThat(invoice.isAlreadyPaid()).isFalse();
         assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+    }
+
+    @Test
+    void cancelBeforePayment_closesInvoiceAndRejectsLaterPayment() {
+        Invoice invoice = sagaInvoice();
+
+        invoice.cancelBeforePayment();
+
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        assertThatThrownBy(() -> invoice.pay(PaymentMethod.CASH, Instant.now()))
+                .isInstanceOf(BillingRuleException.class)
+                .extracting("code")
+                .isEqualTo("BILLING_INVOICE_NOT_PAYABLE");
+    }
+
+    @Test
+    void cancelBeforePayment_paidInvoice_throwsInvalidTransition() {
+        Invoice invoice = sagaInvoice();
+        invoice.pay(PaymentMethod.CASH, Instant.now());
+        invoice.transitionSaga(SagaStatus.PAID);
+        invoice.transitionSaga(SagaStatus.AWAITING_DISPENSE);
+
+        assertThatThrownBy(invoice::cancelBeforePayment)
+                .isInstanceOf(BillingRuleException.class);
     }
 
     // BR-B11 — xuất thuốc thành công thì gán phiếu xuất
