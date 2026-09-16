@@ -12,10 +12,10 @@ import java.util.UUID;
  *
  * <p>Khai lại cùng tên/field với record pharmacy publish (06-billing.md §12.1).
  *
- * <p><b>Ghi chú phối hợp (Phần 3/5):</b> §7 nói billing "đặt {@code dispenseId}" khi hoàn tất
- * saga, nhưng payload pharmacy hiện <i>không</i> mang {@code dispenseId}. Cần thống nhất với
- * người phụ trách pharmacy: hoặc bổ sung {@code dispenseId} vào event, hoặc billing bỏ qua
- * việc gán {@code dispenseId}. Tạm khai theo đúng payload thật đang có.
+ * <p><b>Quyết định cross-team (2026-09-16):</b> §7 nói billing "đặt {@code dispenseId}" khi hoàn
+ * tất saga, nhưng payload pharmacy không mang {@code dispenseId}. Đã chốt với pharmacy: billing
+ * bỏ hẳn việc gán {@code dispenseId} (không đợi bổ sung field) — khai record đúng payload thật
+ * đang có, không suy diễn thêm trường.
  *
  * @param eventId        khóa chống xử lý trùng
  * @param occurredAt     thời điểm xuất thuốc xong

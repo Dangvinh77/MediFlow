@@ -12,7 +12,8 @@
 > - Notification list reads now require JWT-derived callerPatientId/isStaff, like getById.
 >
 > Runtime adapters, outbox and per-department revenue breakdown are now implemented.
-> `dispenseId` enrichment and real broker E2E remain open, so this still does not claim a fully
+> `dispenseId` was dropped by cross-team decision (2026-09-16, see "prescription.filled —
+> dispenseId" below); real broker E2E remains open, so this still does not claim a fully
 > production-verified distributed saga.
 
 # Theo dõi hợp đồng sự kiện sau khi tích hợp theloc
@@ -126,10 +127,12 @@ service khác đổi:
   khi ráp.
 
 ### `prescription.filled` — `dispenseId`
-- Payload pharmacy hiện không mang `dispenseId`. `SagaCompensationService.onPrescriptionFilled`
-  chuyển saga sang `COMPLETED` (BR-B11) nhưng **chưa gán `dispenseId`**.
-- [ ] CÒN MỞ (Phần 5/5): thống nhất với pharmacy bổ sung `dispenseId` vào
-  `prescription.filled`, hoặc billing bỏ hẳn việc gán.
+- Payload pharmacy không mang `dispenseId`. `SagaCompensationService.onPrescriptionFilled`
+  chuyển saga sang `COMPLETED` (BR-B11) và không gán `dispenseId`.
+- [x] ĐÃ CHỐT (2026-09-16, với Huy/pharmacy): billing bỏ hẳn việc gán `dispenseId`,
+  không đợi pharmacy bổ sung field. Đã xoá `Invoice.dispenseId`/`assignDispense()`,
+  cột `INVOICE.dispense_id` (migration `V3__drop_invoice_dispense_id.sql`), và trường
+  tương ứng trong `InvoiceDTO`/`InvoiceJpaEntity`.
 
 ### Kiểm tra
 `mvn -pl backend/billing-service,backend/notification-service -am test` →
@@ -169,7 +172,8 @@ sai khác có chủ ý, ghi lại ở đây.
 - Mục 2 (`labType`): phần persistence của bảng chiếu **đã xong**. CÒN MỞ: consumer
   `lab.request.created` gọi `LabTestTypeProjectionAdapter.record(...)` + đăng ký routing key —
   Phần 5/5.
-- Mục 1 (`recordId`) và `dispenseId`: không đổi, vẫn chờ chốt cross-team ở Phần 5/5.
+- Mục 1 (`recordId`): không đổi, vẫn chờ chốt cross-team. `dispenseId`: đã chốt
+  2026-09-16, xem mục "prescription.filled — dispenseId" ở trên.
 
 ### Kiểm tra
 `mvn -pl backend/billing-service,backend/notification-service -am test` (không có Docker local):

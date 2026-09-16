@@ -26,7 +26,7 @@ class InvoiceDtoMapperTest {
         UUID invoiceId = UUID.randomUUID();
         UUID patientId = UUID.randomUUID();
         Invoice invoice = Invoice.restore(invoiceId, patientId, LocalDate.of(2026, 9, 2),
-                new BigDecimal("300000.00"), true, PaymentMethod.TRANSFER, null,
+                new BigDecimal("300000.00"), true, PaymentMethod.TRANSFER,
                 UUID.randomUUID(), SagaStatus.AWAITING_DISPENSE,
                 Instant.parse("2026-09-02T09:30:00Z"),
                 Instant.parse("2026-09-02T09:00:00Z"), null);
@@ -48,7 +48,7 @@ class InvoiceDtoMapperTest {
     @Test
     void toDto_normalInvoiceUnpaid_isPaidFalseAndSagaNone() {
         Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(),
-                LocalDate.now(), new BigDecimal("50000.00"), false, null, null, null,
+                LocalDate.now(), new BigDecimal("50000.00"), false, null, null,
                 SagaStatus.NONE, null, Instant.now(), null);
 
         InvoiceDTO dto = mapper.toDto(invoice, List.of());

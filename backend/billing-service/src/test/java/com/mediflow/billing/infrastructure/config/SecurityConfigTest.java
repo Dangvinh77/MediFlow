@@ -54,7 +54,7 @@ class SecurityConfigTest {
     void getById_withAllowedRole_returns200() throws Exception {
         UUID id = UUID.randomUUID();
         when(manageInvoiceUseCase.getById(id)).thenReturn(new InvoiceDTO(
-                id, UUID.randomUUID(), null, null, false, null, null, null, SagaStatus.NONE, null, java.util.List.of()));
+                id, UUID.randomUUID(), null, null, false, null, null, SagaStatus.NONE, null, java.util.List.of()));
 
         mockMvc.perform(get("/api/v1/billing/invoices/{id}", id))
                 .andExpect(status().isOk())

@@ -56,7 +56,7 @@ class BillingApplicationServiceTest {
     /** Mô phỏng persistence adapter: trả về hóa đơn đã có id (dùng restore để giữ nguyên các trường). */
     private static Invoice withId(Invoice in) {
         return Invoice.restore(UUID.randomUUID(), in.getPatientId(), in.getCreatedDate(), in.getTotalAmount(),
-                in.isAlreadyPaid(), in.getPaymentMethod(), in.getDispenseId(), in.getPrescriptionId(),
+                in.isAlreadyPaid(), in.getPaymentMethod(), in.getPrescriptionId(),
                 in.getSagaStatus(), in.getPaidAt(), java.time.Instant.now(), null);
     }
 
@@ -98,7 +98,7 @@ class BillingApplicationServiceTest {
     void pay_marksAllRelatedFeesPaid() {
         UUID invoiceId = UUID.randomUUID();
         Invoice invoice = Invoice.restore(invoiceId, UUID.randomUUID(), LocalDate.now(),
-                new BigDecimal("200000.00"), false, null, null, null, SagaStatus.NONE, null,
+                new BigDecimal("200000.00"), false, null, null, SagaStatus.NONE, null,
                 java.time.Instant.now(), null);
         List<Fee> fees = List.of(unpaidFee(UUID.randomUUID(), "120000.00"), unpaidFee(UUID.randomUUID(), "80000.00"));
         when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(invoice));
@@ -118,7 +118,7 @@ class BillingApplicationServiceTest {
     void pay_sagaInvoice_advancesToAwaitingDispenseAndPublishes() {
         UUID invoiceId = UUID.randomUUID();
         Invoice sagaInvoice = Invoice.restore(invoiceId, UUID.randomUUID(), LocalDate.now(),
-                new BigDecimal("300000.00"), false, null, null, UUID.randomUUID(),
+                new BigDecimal("300000.00"), false, null, UUID.randomUUID(),
                 SagaStatus.AWAITING_PAYMENT, null, java.time.Instant.now(), null);
         when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(sagaInvoice));
         when(feeRepo.findByInvoice(invoiceId)).thenReturn(List.of());
