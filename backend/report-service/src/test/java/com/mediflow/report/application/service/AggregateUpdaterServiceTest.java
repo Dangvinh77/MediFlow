@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,7 @@ import com.mediflow.report.domain.model.DailyVisitReport;
 import com.mediflow.report.domain.model.DrugStatistic;
 import com.mediflow.report.domain.model.MonthlyRevenueReport;
 import com.mediflow.report.domain.model.PaymentContribution;
+import com.mediflow.report.domain.model.PaymentContributionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class AggregateUpdaterServiceTest {
@@ -210,5 +212,71 @@ class AggregateUpdaterServiceTest {
         assertThat(contribution.getStatus()).isEqualTo(com.mediflow.report.domain.model.PaymentContributionStatus.PENDING_REVERSAL);
         verify(paymentContributions).save(contribution);
         verifyNoInteractions(dailyReports, monthlyReports);
+    }
+
+    @Test
+    void paymentCompleted_sameEventRedelivery_appliesOnlyOnce() {
+        PaymentContribution contribution = PaymentContribution.initialize(INVOICE_ID);
+        DailyVisitReport daily = DailyVisitReport.initialize(DATE, null);
+        MonthlyRevenueReport monthly = MonthlyRevenueReport.initialize(9, 2026, null);
+        when(processedEvents.claimIfAbsent(EVENT_ID, "payment.completed")).thenReturn(true, false);
+        when(paymentContributions.findOrCreateForUpdate(INVOICE_ID)).thenReturn(contribution);
+        when(dailyReports.findOrCreate(DATE, null)).thenReturn(daily);
+        when(monthlyReports.findOrCreate(2026, 9, null)).thenReturn(monthly);
+
+        service.onPaymentCompleted(EVENT_ID, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                null, new BigDecimal("100.00"));
+        service.onPaymentCompleted(EVENT_ID, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                null, new BigDecimal("100.00"));
+
+        assertThat(daily.getRevenue()).isEqualByComparingTo("100.00");
+        assertThat(monthly.getTotalRevenue()).isEqualByComparingTo("100.00");
+        assertThat(monthly.getInvoiceCount()).isEqualTo(1);
+        verify(paymentContributions, times(1)).findOrCreateForUpdate(INVOICE_ID);
+        verify(dailyReports, times(1)).findOrCreate(DATE, null);
+        verify(monthlyReports, times(1)).findOrCreate(2026, 9, null);
+    }
+
+    @Test
+    void paymentCompleted_differentEventsSameInvoice_appliesOnlyOnce() {
+        UUID secondEventId = UUID.randomUUID();
+        PaymentContribution contribution = PaymentContribution.initialize(INVOICE_ID);
+        DailyVisitReport daily = DailyVisitReport.initialize(DATE, null);
+        MonthlyRevenueReport monthly = MonthlyRevenueReport.initialize(9, 2026, null);
+        when(processedEvents.claimIfAbsent(any(), eq("payment.completed"))).thenReturn(true);
+        when(paymentContributions.findOrCreateForUpdate(INVOICE_ID)).thenReturn(contribution);
+        when(dailyReports.findOrCreate(DATE, null)).thenReturn(daily);
+        when(monthlyReports.findOrCreate(2026, 9, null)).thenReturn(monthly);
+
+        service.onPaymentCompleted(EVENT_ID, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                null, new BigDecimal("100.00"));
+        service.onPaymentCompleted(secondEventId, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                null, new BigDecimal("100.00"));
+
+        assertThat(contribution.getStatus()).isEqualTo(PaymentContributionStatus.APPLIED);
+        assertThat(daily.getRevenue()).isEqualByComparingTo("100.00");
+        assertThat(monthly.getTotalRevenue()).isEqualByComparingTo("100.00");
+        assertThat(monthly.getInvoiceCount()).isEqualTo(1);
+        verify(paymentContributions, times(2)).findOrCreateForUpdate(INVOICE_ID);
+        verify(dailyReports, times(1)).findOrCreate(DATE, null);
+    }
+
+    @Test
+    void paymentCompleted_nullDepartment_updatesHospitalOnly() {
+        PaymentContribution contribution = PaymentContribution.initialize(INVOICE_ID);
+        DailyVisitReport hospitalDaily = DailyVisitReport.initialize(DATE, null);
+        MonthlyRevenueReport hospitalMonthly = MonthlyRevenueReport.initialize(9, 2026, null);
+        when(processedEvents.claimIfAbsent(EVENT_ID, "payment.completed")).thenReturn(true);
+        when(paymentContributions.findOrCreateForUpdate(INVOICE_ID)).thenReturn(contribution);
+        when(dailyReports.findOrCreate(DATE, null)).thenReturn(hospitalDaily);
+        when(monthlyReports.findOrCreate(2026, 9, null)).thenReturn(hospitalMonthly);
+
+        service.onPaymentCompleted(EVENT_ID, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                null, new BigDecimal("75.50"));
+
+        assertThat(hospitalDaily.getRevenue()).isEqualByComparingTo("75.50");
+        assertThat(hospitalMonthly.getTotalRevenue()).isEqualByComparingTo("75.50");
+        verify(dailyReports, never()).findOrCreate(eq(DATE), eq(DEPARTMENT_ID));
+        verify(monthlyReports, never()).findOrCreate(eq(2026), eq(9), eq(DEPARTMENT_ID));
     }
 }
