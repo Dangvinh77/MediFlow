@@ -110,28 +110,41 @@ class ReportApplicationServiceTest {
     }
 
     @Test
-    void topMedicine_validatesRangeAndClampsLimit() {
+    void topMedicine_validatesRangeAndAcceptsMaximumLimit() {
         LocalDate from = LocalDate.of(2026, 9, 1);
         LocalDate to = LocalDate.of(2026, 9, 30);
         UUID drugId = UUID.randomUUID();
         when(drugStatistics.topMedicines(from, to, null, 50))
                 .thenReturn(List.of(new TopMedicineSummary(drugId, "A", 4)));
 
-        List<TopMedicineDTO> result = service.topMedicines(from, to, null, 99);
+        List<TopMedicineDTO> result = service.topMedicines(from, to, null, 50);
 
         assertThat(result).extracting(TopMedicineDTO::drugId).containsExactly(drugId);
         verify(drugStatistics).topMedicines(from, to, null, 50);
     }
 
     @Test
-    void topMedicine_zeroLimitUsesDefault() {
+    void topMedicine_zeroLimitIsRejected() {
         LocalDate from = LocalDate.of(2026, 9, 1);
         LocalDate to = LocalDate.of(2026, 9, 30);
-        when(drugStatistics.topMedicines(from, to, DEPARTMENT_ID, 10)).thenReturn(List.of());
 
-        assertThat(service.topMedicines(from, to, DEPARTMENT_ID, 0)).isEmpty();
+        assertThatThrownBy(() -> service.topMedicines(from, to, DEPARTMENT_ID, 0))
+                .isInstanceOfSatisfying(com.mediflow.report.domain.exception.ReportRuleException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo("REPORT_LIMIT_INVALID"));
 
-        verify(drugStatistics).topMedicines(from, to, DEPARTMENT_ID, 10);
+        verifyNoInteractions(drugStatistics);
+    }
+
+    @Test
+    void topMedicine_limitAboveMaximumIsRejected() {
+        LocalDate from = LocalDate.of(2026, 9, 1);
+        LocalDate to = LocalDate.of(2026, 9, 30);
+
+        assertThatThrownBy(() -> service.topMedicines(from, to, DEPARTMENT_ID, 51))
+                .isInstanceOfSatisfying(com.mediflow.report.domain.exception.ReportRuleException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo("REPORT_LIMIT_INVALID"));
+
+        verifyNoInteractions(drugStatistics);
     }
 
     @Test
@@ -142,6 +155,15 @@ class ReportApplicationServiceTest {
         assertThatThrownBy(() -> service.topMedicines(from, to, null, 10))
                 .isInstanceOfSatisfying(ReportDateRangeException.class,
                         ex -> assertThat(ex.getCode()).isEqualTo("REPORT_DATE_RANGE_INVALID"));
+
+        verifyNoInteractions(drugStatistics);
+    }
+
+    @Test
+    void topMedicine_missingDateIsValidationErrorBeforeRepository() {
+        assertThatThrownBy(() -> service.topMedicines(null, LocalDate.of(2026, 9, 30), null, 10))
+                .isInstanceOfSatisfying(com.mediflow.report.domain.exception.ReportRuleException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo("REPORT_DATE_REQUIRED"));
 
         verifyNoInteractions(drugStatistics);
     }

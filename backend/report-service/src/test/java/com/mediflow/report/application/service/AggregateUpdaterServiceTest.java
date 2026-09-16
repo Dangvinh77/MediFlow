@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +42,7 @@ import com.mediflow.report.domain.model.PaymentContributionStatus;
 class AggregateUpdaterServiceTest {
 
     private static final UUID EVENT_ID = UUID.randomUUID();
+    private static final UUID COMPLETED_EVENT_ID = UUID.randomUUID();
     private static final UUID DEPARTMENT_ID = UUID.randomUUID();
     private static final UUID PRESCRIPTION_ID = UUID.randomUUID();
     private static final UUID INVOICE_ID = UUID.randomUUID();
@@ -59,7 +61,7 @@ class AggregateUpdaterServiceTest {
     @BeforeEach
     void setUp() {
         service = new AggregateUpdaterService(processedEvents, dailyReports, drugStatistics,
-                monthlyReports, paymentContributions);
+                monthlyReports, paymentContributions, ZoneId.of("Asia/Bangkok"));
     }
 
     @Test
@@ -202,16 +204,41 @@ class AggregateUpdaterServiceTest {
     }
 
     @Test
-    void paymentFailedBeforeCompleted_persistsPendingWithoutProjectionEffect() {
+    void paymentFailedBeforeCompleted_completesAsReversedWithoutProjectionEffect() {
         PaymentContribution contribution = PaymentContribution.initialize(INVOICE_ID);
         when(processedEvents.claimIfAbsent(EVENT_ID, "payment.failed")).thenReturn(true);
+        when(processedEvents.claimIfAbsent(COMPLETED_EVENT_ID, "payment.completed")).thenReturn(true);
         when(paymentContributions.findOrCreateForUpdate(INVOICE_ID)).thenReturn(contribution);
 
         service.onPaymentFailed(EVENT_ID, Instant.now(), INVOICE_ID);
+        service.onPaymentCompleted(COMPLETED_EVENT_ID, Instant.parse("2026-09-15T01:00:00Z"), INVOICE_ID,
+                DEPARTMENT_ID, new BigDecimal("100.00"));
 
-        assertThat(contribution.getStatus()).isEqualTo(com.mediflow.report.domain.model.PaymentContributionStatus.PENDING_REVERSAL);
-        verify(paymentContributions).save(contribution);
+        assertThat(contribution.getStatus()).isEqualTo(PaymentContributionStatus.REVERSED);
+        verify(paymentContributions, times(2)).save(contribution);
         verifyNoInteractions(dailyReports, monthlyReports);
+    }
+
+    @Test
+    void occurredAt_usesConfiguredReportZoneAtDayBoundary() {
+        AggregateUpdaterService utcService = new AggregateUpdaterService(processedEvents, dailyReports,
+                drugStatistics, monthlyReports, paymentContributions, ZoneId.of("UTC"));
+        LocalDate utcDate = LocalDate.of(2026, 9, 14);
+        DailyVisitReport hospital = DailyVisitReport.initialize(utcDate, null);
+        DailyVisitReport department = DailyVisitReport.initialize(utcDate, DEPARTMENT_ID);
+        when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(true);
+        when(dailyReports.findOrCreate(utcDate, null)).thenReturn(hospital);
+        when(dailyReports.findOrCreate(utcDate, DEPARTMENT_ID)).thenReturn(department);
+        when(drugStatistics.findOrCreate(DRUG_A, "A", utcDate, null))
+                .thenReturn(DrugStatistic.initialize(DRUG_A, "A", utcDate, null));
+        when(drugStatistics.findOrCreate(DRUG_A, "A", utcDate, DEPARTMENT_ID))
+                .thenReturn(DrugStatistic.initialize(DRUG_A, "A", utcDate, DEPARTMENT_ID));
+
+        utcService.onPrescriptionFilled(EVENT_ID, Instant.parse("2026-09-14T23:30:00Z"),
+                DEPARTMENT_ID, PRESCRIPTION_ID, List.of(new DispensedItem(DRUG_A, "A", 1)));
+
+        verify(dailyReports).findOrCreate(utcDate, null);
+        verify(dailyReports).findOrCreate(utcDate, DEPARTMENT_ID);
     }
 
     @Test

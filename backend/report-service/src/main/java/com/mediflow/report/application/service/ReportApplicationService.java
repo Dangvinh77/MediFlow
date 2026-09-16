@@ -75,9 +75,9 @@ public class ReportApplicationService implements ReadReportUseCase {
     public List<TopMedicineDTO> topMedicines(LocalDate fromDate, LocalDate toDate,
                                              UUID departmentId, int limit) {
         validateRange(fromDate, toDate);
-        int effectiveLimit = normalizeLimit(limit);
+        validateLimit(limit);
         return mapper.toTopMedicineDtoList(
-                drugStatistics.topMedicines(fromDate, toDate, departmentId, effectiveLimit));
+                drugStatistics.topMedicines(fromDate, toDate, departmentId, limit));
     }
 
     private static List<LocalDate> calendarDates(LocalDate firstDay, LocalDate lastDay) {
@@ -88,9 +88,13 @@ public class ReportApplicationService implements ReadReportUseCase {
     }
 
     private static void validateRange(LocalDate fromDate, LocalDate toDate) {
-        if (fromDate == null || toDate == null || fromDate.isAfter(toDate)) {
+        if (fromDate == null || toDate == null) {
+            throw new ReportRuleException("REPORT_DATE_REQUIRED",
+                    "Khoảng ngày báo cáo phải có đủ hai đầu mút");
+        }
+        if (fromDate.isAfter(toDate)) {
             throw new ReportDateRangeException(
-                    "Khoảng ngày báo cáo phải có đủ hai đầu mút và fromDate không được sau toDate");
+                    "fromDate không được sau toDate");
         }
     }
 
@@ -104,10 +108,10 @@ public class ReportApplicationService implements ReadReportUseCase {
         }
     }
 
-    private static int normalizeLimit(int limit) {
-        if (limit <= 0) {
-            return DEFAULT_TOP_LIMIT;
+    private static void validateLimit(int limit) {
+        if (limit < 1 || limit > MAX_TOP_LIMIT) {
+            throw new ReportRuleException("REPORT_LIMIT_INVALID",
+                    "Giới hạn top thuốc phải trong khoảng từ 1 đến " + MAX_TOP_LIMIT);
         }
-        return Math.min(limit, MAX_TOP_LIMIT);
     }
 }
