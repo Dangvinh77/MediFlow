@@ -101,8 +101,9 @@ public class SagaCompensationService implements SagaCompensationUseCase {
      * Nhánh <b>thành công</b> (BR-B11): xuất thuốc xong → chuyển saga của hóa đơn sang
      * {@code COMPLETED}. Không publish event nào.
      *
-     * <p>Contract hiện tại của Pharmacy chưa mang {@code dispenseId}; Billing giữ cột này là
-     * {@code null} và tuyệt đối không tự suy diễn một UUID từ {@code prescriptionId}.
+     * <p>Ghi chú: §7 nói đặt thêm {@code dispenseId}, nhưng payload {@code prescription.filled}
+     * không mang trường đó — đã chốt với pharmacy (2026-09-16) bỏ hẳn việc gán
+     * {@code dispenseId}, xem {@code THELOC-INTEGRATION-FOLLOWUP.md}.
      */
     @Override
     @Transactional

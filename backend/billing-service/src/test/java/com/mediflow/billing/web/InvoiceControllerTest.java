@@ -150,7 +150,7 @@ class InvoiceControllerTest {
         FeeDTO fee = new FeeDTO(UUID.randomUUID(), FeeType.EXAM, UUID.randomUUID(), LocalDate.now(),
                 BigDecimal.valueOf(150000), false);
         return new InvoiceDTO(invoiceId, UUID.randomUUID(), LocalDate.now(), BigDecimal.valueOf(150000),
-                false, null, null, null, SagaStatus.NONE, null, List.of(fee));
+                false, null, null, SagaStatus.NONE, null, List.of(fee));
     }
 
     @TestConfiguration

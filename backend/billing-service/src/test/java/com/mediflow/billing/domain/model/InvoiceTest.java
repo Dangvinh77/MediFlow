@@ -143,17 +143,6 @@ class InvoiceTest {
                 .isInstanceOf(BillingRuleException.class);
     }
 
-    // BR-B11 — xuất thuốc thành công thì gán phiếu xuất
-    @Test
-    void assignDispense_setsDispenseId() {
-        Invoice invoice = sagaInvoice();
-        UUID dispenseId = UUID.randomUUID();
-
-        invoice.assignDispense(dispenseId);
-
-        assertThat(invoice.getDispenseId()).isEqualTo(dispenseId);
-    }
-
     private Fee fee(BigDecimal amount) {
         return Fee.create(UUID.randomUUID(), null, UUID.randomUUID(), null,
                 FeeType.EXAM, LocalDate.now(), amount);

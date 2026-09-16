@@ -152,7 +152,7 @@ response đồng bộ từ Pharmacy.
 Pharmacy phát sau khi transaction dispense thành công và phiếu chuyển `DISPENSED`.
 
 Payload hiện hành gồm `eventId`, `occurredAt`, `correlationId`, `prescriptionId`, `patientId`,
-`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **chưa có `dispenseId`**.
+`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **không có `dispenseId`**.
 
 Billing xử lý:
 
@@ -161,9 +161,10 @@ Billing xử lý:
 3. chỉ cho phép `AWAITING_DISPENSE → COMPLETED`;
 4. lưu và đánh dấu processed.
 
-Billing chốt contract v1 không có `dispenseId`; Billing để `Invoice.dispenseId = null` và không tự
-suy diễn mã phiếu xuất từ `prescriptionId` hay một UUID mới. Nếu sau này bổ sung field, đó là một
-thay đổi version contract và phải cập nhật producer, consumer, fixture, test và tài liệu đồng thời.
+**Đã chốt (2026-09-16):** Billing bỏ hẳn khái niệm `dispenseId` — không có cột, không có trường
+DTO, không gán từ `prescriptionId` hay UUID mới. Nếu sau này Pharmacy bổ sung `dispenseId` vào
+contract `prescription.filled`, đây là thay đổi contract mới, cần mở lại theo mục 8 (cập nhật
+producer/consumer/fixture/test/tài liệu trong cùng một chuỗi thay đổi), không chỉ thêm field ngầm.
 
 ### 3.4 `prescription.dispense.failed` — Pharmacy → Billing
 
@@ -211,8 +212,8 @@ chính sách; không silently mark processed.
   `prescription.expired`.
 - [x] Thêm fixture `payment.completed` phía Billing để đối chiếu payload mà Pharmacy consume.
 - [x] Assert envelope, field bắt buộc, `BigDecimal`, timezone và correlation propagation ở boundary.
-- [x] Contract v1 đã chốt không có `dispenseId`; Billing giữ `Invoice.dispenseId = null`.
-  Nếu sau này thêm field, phải cập nhật producer/consumer, fixture, DTO, test và version contract đồng thời.
+- `dispenseId` đã chốt bỏ hẳn (2026-09-16, xem mục 3.3) — nếu quyết định này đổi lại sau này,
+  cập nhật đồng thời spec, fixture, DTO và test hai service.
 
 ### B-02 — Hoàn thiện consumer và topology
 
@@ -274,7 +275,7 @@ Không coi unit test mock `RabbitTemplate` là bằng chứng E2E.
 
 ## 7. Checklist bàn giao trước khi mở PR
 
-- [x] Các DTO/event và fixture khớp đúng bảng contract ở mục 3; `dispenseId` được chốt là ngoài contract v1.
+- [x] Các DTO/event và fixture khớp đúng bảng contract ở mục 3; `dispenseId` đã được bỏ hoàn toàn.
 - [ ] Không có import `pharmacy-service`, JPA Pharmacy hoặc URL database Pharmacy trong Billing.
 - [ ] Mọi public class/method mới có Javadocs và `@param`/`@return` phù hợp.
 - [x] `@Transactional` bao trùm side effect + processed marker; publish qua outbox.

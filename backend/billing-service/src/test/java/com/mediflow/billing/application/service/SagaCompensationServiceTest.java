@@ -47,7 +47,7 @@ class SagaCompensationServiceTest {
     private static Invoice paidAwaitingDispense(UUID prescriptionId) {
         return Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
                 new BigDecimal("300000.00"), true, com.mediflow.billing.domain.model.PaymentMethod.CASH,
-                null, prescriptionId, SagaStatus.AWAITING_DISPENSE, Instant.now(), Instant.now(), null);
+                prescriptionId, SagaStatus.AWAITING_DISPENSE, Instant.now(), Instant.now(), null);
     }
 
     private static Fee paidFee() {
@@ -116,7 +116,7 @@ class SagaCompensationServiceTest {
         UUID prescriptionId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
         Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
-                new BigDecimal("300000.00"), false, null, null, prescriptionId,
+                new BigDecimal("300000.00"), false, null, prescriptionId,
                 SagaStatus.REFUNDED, null, Instant.now(), null);
         when(processedEvent.alreadyProcessed(eventId)).thenReturn(false);
         when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
@@ -169,7 +169,7 @@ class SagaCompensationServiceTest {
     void onPrescriptionCancelled_unpaidInvoice_closesWithoutPaymentFailure() {
         UUID prescriptionId = UUID.randomUUID();
         Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
-                new BigDecimal("300000.00"), false, null, null, prescriptionId,
+                new BigDecimal("300000.00"), false, null, prescriptionId,
                 SagaStatus.AWAITING_PAYMENT, null, Instant.now(), null);
         UUID eventId = UUID.randomUUID();
         when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));

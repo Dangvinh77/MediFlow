@@ -93,7 +93,7 @@ public class InvoicePersistenceAdapter implements InvoiceRepositoryPort {
     private Invoice toDomain(InvoiceJpaEntity e) {
         return Invoice.restore(
                 e.getInvoiceId(), e.getPatientId(), e.getCreatedDate(), e.getTotalAmount(), e.isPaid(),
-                e.getPaymentMethod(), e.getDispenseId(), e.getPrescriptionId(), e.getSagaStatus(),
+                e.getPaymentMethod(), e.getPrescriptionId(), e.getSagaStatus(),
                 e.getPaidAt(), e.getCreatedAt(), e.getUpdatedAt());
     }
 
@@ -105,7 +105,6 @@ public class InvoicePersistenceAdapter implements InvoiceRepositoryPort {
                 .totalAmount(i.getTotalAmount())
                 .isPaid(i.isPaid())
                 .paymentMethod(i.getPaymentMethod())
-                .dispenseId(i.getDispenseId())
                 .prescriptionId(i.getPrescriptionId())
                 .sagaStatus(i.getSagaStatus())
                 .paidAt(i.getPaidAt())
