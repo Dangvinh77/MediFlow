@@ -28,6 +28,9 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false
 
 eureka:
   client:
