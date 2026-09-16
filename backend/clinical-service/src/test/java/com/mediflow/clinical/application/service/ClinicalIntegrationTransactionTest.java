@@ -30,7 +30,8 @@ import com.mediflow.clinical.infrastructure.persistence.adapter.ExternalResultPe
 /** PostgreSQL transaction coverage for claim rollback followed by redelivery retry. */
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
-        "spring.rabbitmq.listener.simple.auto-startup=false"
+        "spring.rabbitmq.listener.simple.auto-startup=false",
+        "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes"
 })
 @Testcontainers(disabledWithoutDocker = true)
 class ClinicalIntegrationTransactionTest {
