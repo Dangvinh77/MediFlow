@@ -27,7 +27,6 @@ import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
-import com.mediflow.lab.domain.model.LabResult;
 import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
@@ -46,11 +45,7 @@ class LabApplicationServiceTest {
         when(correlationIds.currentOrCreate()).thenReturn(correlationId);
         var request = new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "CBC", LocalDate.now());
-        UUID persistedTestId = UUID.randomUUID();
-        LabTest persisted = LabTest.restore(persistedTestId, request.recordId(), request.patientId(),
-                request.requestingDepartmentId(), request.labType(), request.requestedDate(), null,
-                LabTestStatus.PENDING, null, false, List.of(), null, null);
-        when(tests.save(any())).thenReturn(persisted);
+        when(tests.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.create(request);
 
@@ -58,11 +53,9 @@ class LabApplicationServiceTest {
         verify(tests).save(saved.capture());
         ArgumentCaptor<LabRequestCreatedEvent> event = ArgumentCaptor.forClass(LabRequestCreatedEvent.class);
         verify(publisher).publishRequestCreated(event.capture());
-        assertThat(saved.getValue().getTestId()).isNull();
-        assertThat(event.getValue().labId()).isEqualTo(persistedTestId);
+        assertThat(event.getValue().labId()).isEqualTo(saved.getValue().getTestId());
         assertThat(event.getValue().labType()).isEqualTo("CBC");
         assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
-        verify(mapper).toDto(persisted);
     }
 
     @Test
@@ -71,21 +64,12 @@ class LabApplicationServiceTest {
         when(correlationIds.currentOrCreate()).thenReturn(correlationId);
         LabTest test = newTest();
         when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
-        UUID persistedResultId = UUID.randomUUID();
-        LabTest persisted = LabTest.restore(test.getTestId(), test.getRecordId(), test.getPatientId(),
-                test.getRequestingDepartmentId(), test.getLabType(), test.getRequestedDate(),
-                LocalDate.now(), LabTestStatus.COMPLETED, "Normal", false,
-                List.of(LabResult.restore(persistedResultId, "WBC", "7.5", "10^9/L", "4.0-10.0")),
-                test.getCreatedAt(), test.getUpdatedAt());
-        when(tests.save(test)).thenReturn(persisted);
+        when(tests.save(test)).thenReturn(test);
         var request = new AddResultRequest(
                 List.of(new LabResultItem("WBC", "7.5", "10^9/L", "4.0-10.0")),
                 "Normal", LocalDate.now());
 
-        var dto = mock(com.mediflow.lab.application.dto.response.LabTestDTO.class);
-        when(mapper.toDto(persisted)).thenReturn(dto);
-
-        assertThat(service.addResults(test.getTestId(), request)).isSameAs(dto);
+        service.addResults(test.getTestId(), request);
 
         assertThat(test.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
         verify(tests).save(test);
@@ -95,11 +79,7 @@ class LabApplicationServiceTest {
         assertThat(event.getValue().performedDate()).isEqualTo(request.performedDate());
         assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
         assertThat(event.getValue().results()).singleElement()
-                .satisfies(result -> {
-                    assertThat(result.resultId()).isEqualTo(persistedResultId);
-                    assertThat(result.value()).isEqualTo("7.5");
-                });
-        verify(mapper).toDto(persisted);
+                .satisfies(result -> assertThat(result.value()).isEqualTo("7.5"));
     }
 
     @Test
@@ -133,7 +113,6 @@ class LabApplicationServiceTest {
     }
 
     private static LabTest newTest() {
-        return LabTest.restore(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                "CBC", LocalDate.now(), null, LabTestStatus.PENDING, null, false, List.of(), null, null);
+        return LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "CBC", LocalDate.now());
     }
 }

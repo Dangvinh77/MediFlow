@@ -13,8 +13,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -28,8 +26,7 @@ import lombok.Setter;
 @Table(name = "lab_test")
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class LabTestJpaEntity {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "test_id", nullable = false) private UUID testId;
+    @Id @Column(name = "test_id", nullable = false) private UUID testId;
     @Column(name = "record_id", nullable = false) private UUID recordId;
     @Column(name = "patient_id", nullable = false) private UUID patientId;
     @Column(name = "requesting_department_id", nullable = false) private UUID requestingDepartmentId;

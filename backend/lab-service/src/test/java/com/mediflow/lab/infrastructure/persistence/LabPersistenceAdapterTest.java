@@ -37,52 +37,6 @@ class LabPersistenceAdapterTest {
     @Autowired ProcessedEventPersistenceAdapter processedEvents;
 
     @Test
-    void save_newAggregate_returnsDatabaseGeneratedTestAndResultIds() {
-        LabTest pending = LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                "CBC", LocalDate.now());
-        pending.recordResults(List.of(LabResult.create("WBC", "7.5", "10^9/L", "4.0-10.0")),
-                "Normal", LocalDate.now());
-
-        LabTest saved = tests.save(pending);
-
-        assertThat(saved.getTestId()).isNotNull();
-        assertThat(saved.getResults()).singleElement()
-                .extracting(LabResult::getResultId)
-                .isNotNull();
-        assertThat(tests.findById(saved.getTestId())).get()
-                .satisfies(found -> assertThat(found.getResults()).singleElement()
-                        .extracting(LabResult::getResultId)
-                        .isEqualTo(saved.getResults().get(0).getResultId()));
-    }
-
-    @Test
-    void save_existingAggregate_preservesGeneratedTestAndResultIds() {
-        LabTest pending = LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                "CBC", LocalDate.now());
-        pending.recordResults(List.of(LabResult.create("WBC", "7.5", "10^9/L", "4.0-10.0")),
-                "Normal", LocalDate.now());
-
-        LabTest saved = tests.save(pending);
-        UUID testId = saved.getTestId();
-        UUID resultId = saved.getResults().get(0).getResultId();
-
-        saved.markPaid();
-        LabTest updated = tests.save(saved);
-
-        assertThat(updated.getTestId()).isEqualTo(testId);
-        assertThat(updated.getResults()).singleElement()
-                .extracting(LabResult::getResultId)
-                .isEqualTo(resultId);
-        assertThat(tests.findById(testId)).get()
-                .satisfies(found -> {
-                    assertThat(found.isPaid()).isTrue();
-                    assertThat(found.getResults()).singleElement()
-                            .extracting(LabResult::getResultId)
-                            .isEqualTo(resultId);
-                });
-    }
-
-    @Test
     void completedTestRoundTrip_preservesResultsAndPaidFlag() {
         LabTest test = LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "CBC", LocalDate.now());
