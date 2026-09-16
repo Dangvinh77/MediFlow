@@ -1,10 +1,14 @@
 package com.mediflow.lab.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.common.security.JwtClaims;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
 import com.mediflow.lab.domain.model.LabTestStatus;
 import com.mediflow.lab.infrastructure.config.SecurityConfig;
+import com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
+import com.mediflow.lab.infrastructure.web.CorrelationIdFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,9 +18,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,7 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LabController.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@Import({GlobalExceptionHandler.class, SecurityConfig.class,
+        ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class GlobalExceptionHandlerTest {
@@ -35,6 +43,9 @@ class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
     private ManageLabTestUseCase manageLabTestUseCase;
@@ -49,7 +60,8 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get(BASE_PATH + "/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("LAB_NOT_FOUND"));
+                .andExpect(jsonPath("$.error.code").value("LAB_NOT_FOUND"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -66,7 +78,8 @@ class GlobalExceptionHandlerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"IN_PROGRESS\"}"))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error.code").value("LAB_INVALID_TRANSITION"));
+                .andExpect(jsonPath("$.error.code").value("LAB_INVALID_TRANSITION"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -77,7 +90,8 @@ class GlobalExceptionHandlerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details").isArray());
+                .andExpect(jsonPath("$.error.details").isArray())
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -85,6 +99,34 @@ class GlobalExceptionHandlerTest {
     void malformedStatus_returns400Envelope() throws Exception {
         mockMvc.perform(get(BASE_PATH).param("status", "UNKNOWN"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void unexpectedFailure_returns500Envelope() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(manageLabTestUseCase.getById(id))
+                .thenThrow(new IllegalStateException("unexpected"));
+
+        mockMvc.perform(get(BASE_PATH + "/{id}", id))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INTERNAL_ERROR"))
+                .andExpect(jsonPath("$.error.message").value("Đã xảy ra lỗi hệ thống"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
+    }
+
+    private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {
+        String header = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        String body = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId")
+                .asText(null);
+
+        assertThat(header).isNotNull();
+        assertThat(body).isNotNull();
+        assertThatCode(() -> UUID.fromString(body)).doesNotThrowAnyException();
+        assertThat(UUID.fromString(body)).isEqualTo(UUID.fromString(header));
     }
 }

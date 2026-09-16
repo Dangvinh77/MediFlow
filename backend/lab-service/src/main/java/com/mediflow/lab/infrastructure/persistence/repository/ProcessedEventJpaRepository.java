@@ -10,8 +10,13 @@ import org.springframework.data.repository.query.Param;
 import com.mediflow.lab.infrastructure.persistence.jpaEntity.ProcessedEventJpaEntity;
 
 public interface ProcessedEventJpaRepository extends JpaRepository<ProcessedEventJpaEntity, UUID> {
+
     @Modifying
-    @Query(value = "INSERT INTO processed_event(event_id, routing_key) VALUES (:eventId, :routingKey)",
-            nativeQuery = true)
-    void insertEvent(@Param("eventId") UUID eventId, @Param("routingKey") String routingKey);
+    @Query(value = """
+            INSERT INTO processed_event(event_id, routing_key)
+            VALUES (:eventId, :eventType)
+            ON CONFLICT (event_id) DO NOTHING
+            """, nativeQuery = true)
+    int insertIfAbsent(@Param("eventId") UUID eventId,
+                       @Param("eventType") String eventType);
 }

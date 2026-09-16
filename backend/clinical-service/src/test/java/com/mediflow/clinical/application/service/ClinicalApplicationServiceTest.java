@@ -24,12 +24,14 @@ import org.mockito.InOrder;
 import com.mediflow.clinical.application.dto.request.AddDiagnosisRequest;
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.CreateRecordRequest;
+import com.mediflow.clinical.application.event.AppointmentCreatedEvent;
 import com.mediflow.clinical.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.clinical.application.event.DiagnosisAddedEvent;
 import com.mediflow.clinical.application.event.MedicalRecordCreatedEvent;
 import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -47,18 +49,43 @@ class ClinicalApplicationServiceTest {
     private final PatientLookupPort patients = mock(PatientLookupPort.class);
     private final StaffLookupPort staff = mock(StaffLookupPort.class);
     private final ClinicalEventPublisherPort publisher = mock(ClinicalEventPublisherPort.class);
+    private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
     private final ClinicalDtoMapper mapper = mock(ClinicalDtoMapper.class);
     private final AppointmentApplicationService appointmentService =
-            new AppointmentApplicationService(appointments, patients, staff, publisher, mapper);
+            new AppointmentApplicationService(appointments, patients, staff, publisher, mapper, correlationIds);
     private final MedicalRecordApplicationService recordService =
-            new MedicalRecordApplicationService(appointments, records, patients, staff, publisher, mapper);
+            new MedicalRecordApplicationService(appointments, records, patients, staff, publisher, mapper,
+                    correlationIds);
 
     @BeforeEach
     void mapDiagnosisRequests() {
+        when(correlationIds.currentOrCreate()).thenReturn(UUID.randomUUID());
         when(mapper.toDomain(any(AddDiagnosisRequest.class))).thenAnswer(invocation -> {
             AddDiagnosisRequest request = invocation.getArgument(0);
             return Diagnosis.create(request.diagnosisName(), request.description(), request.icdCode());
         });
+    }
+
+    @Test
+    void createAppointment_usesCorrelationIdFromProviderForEvent() {
+        UUID correlationId = UUID.randomUUID();
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        LocalDate date = LocalDate.now().plusDays(1);
+        when(correlationIds.currentOrCreate()).thenReturn(correlationId);
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.existsPendingSameDay(patient, date)).thenReturn(false);
+        when(appointments.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        appointmentService.create(new CreateAppointmentRequest(
+                patient, doctor, department, date, LocalTime.of(9, 0), null));
+
+        ArgumentCaptor<AppointmentCreatedEvent> event =
+                ArgumentCaptor.forClass(AppointmentCreatedEvent.class);
+        verify(publisher).publishAppointmentCreated(event.capture());
+        assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
     }
 
     @Test
@@ -139,6 +166,79 @@ class ClinicalApplicationServiceTest {
         verify(publisher).publishAppointmentStatusChanged(statusEvent.capture());
         assertThat(statusEvent.getValue().recordId()).isEqualTo(saved.getValue().getRecordId());
         assertThat(statusEvent.getValue().correlationId()).isEqualTo(recordEvent.getValue().correlationId());
+    }
+
+    @Test
+    void createRecord_usesOneProviderCorrelationIdForBothEvents() {
+        UUID correlationId = UUID.randomUUID();
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        when(correlationIds.currentOrCreate()).thenReturn(correlationId);
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(records.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        recordService.create(new CreateRecordRequest(
+                patient, doctor, department, LocalDate.now(), "Fever", null,
+                List.of(new AddDiagnosisRequest("Influenza", null, "J10"))));
+
+        ArgumentCaptor<MedicalRecordCreatedEvent> recordEvent =
+                ArgumentCaptor.forClass(MedicalRecordCreatedEvent.class);
+        verify(publisher).publishMedicalRecordCreated(recordEvent.capture());
+        assertThat(recordEvent.getValue().correlationId()).isEqualTo(correlationId.toString());
+    }
+
+    @Test
+    void createRecord_arrivedAppointment_createsRecordWithoutChangingOrPublishingStatus() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.ARRIVED, null,
+                java.time.Instant.now(), java.time.Instant.now());
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.empty());
+        when(records.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), "Fever",
+                appointmentId, List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        recordService.create(request);
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.ARRIVED);
+        verify(records).save(any(MedicalRecord.class));
+        verify(appointments, never()).save(any());
+        verify(publisher).publishMedicalRecordCreated(any(MedicalRecordCreatedEvent.class));
+        verify(publisher, never()).publishAppointmentStatusChanged(any());
+    }
+
+    @Test
+    void createRecord_cancelledAppointment_rejectsWithoutRecordOrEvents() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        UUID department = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.restore(appointmentId, patient, doctor, department,
+                LocalDate.now().plusDays(1), LocalTime.NOON, AppointmentStatus.CANCELLED, null,
+                java.time.Instant.now(), java.time.Instant.now());
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.of(department));
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(records.findByAppointmentId(appointmentId)).thenReturn(Optional.empty());
+
+        var request = new CreateRecordRequest(patient, doctor, department, LocalDate.now(), "Fever",
+                appointmentId, List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        assertThatThrownBy(() -> recordService.create(request))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "RECORD_APPOINTMENT_INVALID_STATUS");
+        verify(appointments, never()).save(any());
+        verify(records, never()).save(any());
+        verifyNoInteractions(publisher);
     }
 
     @Test

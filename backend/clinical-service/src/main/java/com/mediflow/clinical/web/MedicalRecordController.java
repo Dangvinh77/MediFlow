@@ -6,6 +6,7 @@ import com.mediflow.clinical.application.dto.request.UpdateRecordRequest;
 import com.mediflow.clinical.application.dto.response.DiagnosisDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.in.ManageRecordUseCase;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +33,15 @@ public class MedicalRecordController {
     private static final String BASE_PATH = "/api/v1/records";
 
     private final ManageRecordUseCase manageRecordUseCase;
+    private final CorrelationIdProvider correlationIds;
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     public ResponseEntity<ApiResponse<MedicalRecordDTO>> getById(
             @PathVariable UUID id) {
 
-        return ResponseEntity.ok(ApiResponse.ok(manageRecordUseCase.getById(id)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageRecordUseCase.getById(id), correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/patient/{patientId}")
@@ -47,7 +50,7 @@ public class MedicalRecordController {
             @PathVariable UUID patientId) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageRecordUseCase.byPatient(patientId)));
+                manageRecordUseCase.byPatient(patientId), correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping
@@ -57,7 +60,7 @@ public class MedicalRecordController {
 
         MedicalRecordDTO created = manageRecordUseCase.create(request);
         return ResponseEntity.created(URI.create(BASE_PATH + "/" + created.recordId()))
-                .body(ApiResponse.ok(created));
+                .body(ApiResponse.ok(created, correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}")
@@ -66,7 +69,8 @@ public class MedicalRecordController {
             @PathVariable UUID id,
             @Valid @RequestBody UpdateRecordRequest request) {
 
-        return ResponseEntity.ok(ApiResponse.ok(manageRecordUseCase.update(id, request)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageRecordUseCase.update(id, request), correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping("/{id}/diagnoses")
@@ -78,6 +82,7 @@ public class MedicalRecordController {
         DiagnosisDTO created = manageRecordUseCase.addDiagnosis(id, request);
         URI location = URI.create(
                 BASE_PATH + "/" + id + "/diagnoses/" + created.diagnosisId());
-        return ResponseEntity.created(location).body(ApiResponse.ok(created));
+        return ResponseEntity.created(location)
+                .body(ApiResponse.ok(created, correlationIds.currentOrCreate().toString()));
     }
 }

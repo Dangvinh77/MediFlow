@@ -18,6 +18,7 @@ import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.in.ManageRecordUseCase;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -25,6 +26,7 @@ import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.exception.MedicalRecordNotFoundException;
 import com.mediflow.clinical.domain.model.Appointment;
+import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import com.mediflow.clinical.domain.model.MedicalRecord;
 
@@ -37,16 +39,19 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
     private final StaffLookupPort staff;
     private final ClinicalEventPublisherPort publisher;
     private final ClinicalDtoMapper mapper;
+    private final CorrelationIdProvider correlationIds;
 
     public MedicalRecordApplicationService(AppointmentRepositoryPort appointments, MedicalRecordRepositoryPort records,
                                            PatientLookupPort patients, StaffLookupPort staff,
-                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper) {
+                                           ClinicalEventPublisherPort publisher, ClinicalDtoMapper mapper,
+                                           CorrelationIdProvider correlationIds) {
         this.appointments = appointments;
         this.records = records;
         this.patients = patients;
         this.staff = staff;
         this.publisher = publisher;
         this.mapper = mapper;
+        this.correlationIds = correlationIds;
     }
 
     @Override
@@ -70,17 +75,26 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
             }
         }
 
+        boolean markAppointmentArrived = false;
+        if (appointment != null) {
+            markAppointmentArrived = appointment.isPending();
+            if (!markAppointmentArrived && appointment.getStatus() != AppointmentStatus.ARRIVED) {
+                throw new InvalidClinicalDataException("RECORD_APPOINTMENT_INVALID_STATUS",
+                        "Appointment must be pending or arrived to create a medical record");
+            }
+        }
+
         List<Diagnosis> diagnoses = request.diagnoses().stream().map(mapper::toDomain).toList();
         MedicalRecord record = MedicalRecord.create(request.patientId(), request.doctorId(), request.departmentId(),
                 request.examinationDate(), request.symptoms(), request.appointmentId(), diagnoses);
-        if (appointment != null) {
+        if (markAppointmentArrived) {
             appointment.markArrived();
             appointments.save(appointment);
         }
         MedicalRecord saved = records.save(record);
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = correlationIds.currentOrCreate().toString();
         publisher.publishMedicalRecordCreated(MedicalRecordCreatedEvent.from(saved, correlationId));
-        if (appointment != null) {
+        if (markAppointmentArrived) {
             publisher.publishAppointmentStatusChanged(
                     AppointmentStatusChangedEvent.from(appointment, saved.getRecordId(), correlationId));
         }
@@ -116,7 +130,7 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
         record.addDiagnosis(diagnosis);
         records.save(record);
         publisher.publishDiagnosisAdded(
-                DiagnosisAddedEvent.from(recordId, diagnosis, UUID.randomUUID().toString()));
+                DiagnosisAddedEvent.from(recordId, diagnosis, correlationIds.currentOrCreate().toString()));
         return mapper.toDto(diagnosis);
     }
 

@@ -5,7 +5,10 @@ import java.util.UUID;
 /** Idempotency boundary for event consumers; the adapter must share the transaction with effects. */
 public interface ProcessedEventPort {
 
-    boolean alreadyProcessed(UUID eventId);
-
-    void markProcessed(UUID eventId, String routingKey);
+    /**
+     * Atomically claims an event for processing.
+     *
+     * @return {@code true} only when this call inserted the event marker
+     */
+    boolean tryClaim(UUID eventId, String eventType);
 }

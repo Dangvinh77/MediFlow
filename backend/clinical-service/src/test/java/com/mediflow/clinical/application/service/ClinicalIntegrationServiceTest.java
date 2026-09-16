@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -24,22 +26,22 @@ class ClinicalIntegrationServiceTest {
             new ClinicalIntegrationService(attachments, processedEvents);
 
     @Test
-    void onLabResultCreated_newEvent_attachesThenMarksProcessed() {
+    void onLabResultCreated_claimedEvent_attachesOnce() {
         LabResultCreatedCommand command = command();
+        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(true);
 
         service.onLabResultCreated(command);
 
-        InOrder order = inOrder(attachments, processedEvents);
-        order.verify(processedEvents).alreadyProcessed(command.eventId());
-        order.verify(attachments).attachLabResult(
+        InOrder order = inOrder(processedEvents, attachments);
+        order.verify(processedEvents).tryClaim(command.eventId(), "lab.result.created");
+        order.verify(attachments, times(1)).attachLabResult(
                 command.recordId(), command.labId(), command.conclusion());
-        order.verify(processedEvents).markProcessed(command.eventId(), "lab.result.created");
     }
 
     @Test
-    void onLabResultCreated_repeatedEvent_hasNoAdditionalEffect() {
+    void onLabResultCreated_unclaimedEvent_doesNotAttach() {
         LabResultCreatedCommand command = command();
-        when(processedEvents.alreadyProcessed(command.eventId())).thenReturn(true);
+        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(false);
 
         service.onLabResultCreated(command);
 
@@ -47,16 +49,16 @@ class ClinicalIntegrationServiceTest {
     }
 
     @Test
-    void onLabResultCreated_attachmentFails_doesNotMarkProcessed() {
+    void onLabResultCreated_attachmentFails_propagatesAfterClaim() {
         LabResultCreatedCommand command = command();
+        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(true);
         doThrow(new IllegalStateException("database unavailable"))
                 .when(attachments).attachLabResult(
                         command.recordId(), command.labId(), command.conclusion());
 
         assertThatThrownBy(() -> service.onLabResultCreated(command))
                 .isInstanceOf(IllegalStateException.class);
-        org.mockito.Mockito.verify(processedEvents, org.mockito.Mockito.never())
-                .markProcessed(command.eventId(), "lab.result.created");
+        verify(processedEvents).tryClaim(command.eventId(), "lab.result.created");
     }
 
     private LabResultCreatedCommand command() {

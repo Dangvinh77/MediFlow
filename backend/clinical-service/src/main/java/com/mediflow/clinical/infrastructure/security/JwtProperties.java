@@ -14,6 +14,10 @@ public record JwtProperties(String secret) {
         if (secret == null || secret.isBlank()) {
             throw new IllegalArgumentException("mediflow.jwt.secret không được để trống");
         }
+        if (secret.startsWith("${")) {
+            throw new IllegalArgumentException(
+                    "mediflow.jwt.secret phải được cung cấp qua MEDIFLOW_JWT_SECRET");
+        }
         if (secret.getBytes(StandardCharsets.UTF_8).length < MINIMUM_HS256_KEY_BYTES) {
             throw new IllegalArgumentException(
                     "mediflow.jwt.secret phải có ít nhất 32 byte để dùng với HS256");

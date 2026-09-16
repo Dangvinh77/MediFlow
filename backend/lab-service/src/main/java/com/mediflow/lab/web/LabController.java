@@ -8,6 +8,7 @@ import com.mediflow.lab.application.dto.request.ChangeStatusRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.response.LabTestDTO;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
+import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.domain.model.LabTestStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class LabController {
     private static final String BASE_PATH = "/api/v1/lab";
 
     private final ManageLabTestUseCase manageLabTestUseCase;
+    private final CorrelationIdProvider correlationIds;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'LAB_TECH')")
@@ -48,13 +50,15 @@ public class LabController {
                 departmentId,
                 status,
                 PageQuery.of(page, size));
-        return ResponseEntity.ok(ApiResponse.ok(result));
+        return ResponseEntity.ok(ApiResponse.ok(
+                result, correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
     public ResponseEntity<ApiResponse<LabTestDTO>> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.ok(manageLabTestUseCase.getById(id)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageLabTestUseCase.getById(id), correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/patient/{patientId}")
@@ -62,7 +66,8 @@ public class LabController {
     public ResponseEntity<ApiResponse<List<LabTestDTO>>> getByPatient(
             @PathVariable UUID patientId) {
 
-        return ResponseEntity.ok(ApiResponse.ok(manageLabTestUseCase.byPatient(patientId)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageLabTestUseCase.byPatient(patientId), correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping
@@ -72,7 +77,7 @@ public class LabController {
 
         LabTestDTO created = manageLabTestUseCase.create(request);
         return ResponseEntity.created(URI.create(BASE_PATH + "/" + created.testId()))
-                .body(ApiResponse.ok(created));
+                .body(ApiResponse.ok(created, correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}/results")
@@ -82,7 +87,7 @@ public class LabController {
             @Valid @RequestBody AddResultRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageLabTestUseCase.addResults(id, request)));
+                manageLabTestUseCase.addResults(id, request), correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}/status")
@@ -92,6 +97,7 @@ public class LabController {
             @Valid @RequestBody ChangeStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageLabTestUseCase.changeStatus(id, request.status())));
+                manageLabTestUseCase.changeStatus(id, request.status()),
+                correlationIds.currentOrCreate().toString()));
     }
 }

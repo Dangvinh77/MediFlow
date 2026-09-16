@@ -1,13 +1,12 @@
 package com.mediflow.lab.infrastructure.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.infrastructure.security.JwtAuthFilter;
 import com.mediflow.lab.infrastructure.security.JwtProperties;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
-import com.mediflow.common.security.JwtClaims;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -48,7 +47,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthFilter jwtAuthFilter,
-            ObjectMapper objectMapper) throws Exception {
+            ObjectMapper objectMapper,
+            CorrelationIdProvider correlationIds) throws Exception {
 
         return http
                 .csrf(csrf -> csrf.disable())
@@ -70,17 +70,17 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
                                 writeError(
-                                        request,
                                         response,
                                         objectMapper,
+                                        correlationIds,
                                         HttpServletResponse.SC_UNAUTHORIZED,
                                         "UNAUTHORIZED",
                                         "Token không hợp lệ hoặc bị thiếu"))
                         .accessDeniedHandler((request, response, exception) ->
                                 writeError(
-                                        request,
                                         response,
                                         objectMapper,
+                                        correlationIds,
                                         HttpServletResponse.SC_FORBIDDEN,
                                         "FORBIDDEN",
                                         "Bạn không có quyền thực hiện thao tác này")))
@@ -89,16 +89,16 @@ public class SecurityConfig {
     }
 
     private void writeError(
-            HttpServletRequest request,
             HttpServletResponse response,
             ObjectMapper objectMapper,
+            CorrelationIdProvider correlationIds,
             int status,
             String code,
             String message) throws IOException {
 
         ApiResponse<Void> body = ApiResponse.fail(
                 ApiError.of(code, message),
-                request.getHeader(JwtClaims.HEADER_CORRELATION_ID));
+                correlationIds.currentOrCreate().toString());
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
