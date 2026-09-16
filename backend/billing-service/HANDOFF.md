@@ -152,7 +152,7 @@ response đồng bộ từ Pharmacy.
 Pharmacy phát sau khi transaction dispense thành công và phiếu chuyển `DISPENSED`.
 
 Payload hiện hành gồm `eventId`, `occurredAt`, `correlationId`, `prescriptionId`, `patientId`,
-`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **chưa có `dispenseId`**.
+`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **không có `dispenseId`**.
 
 Billing xử lý:
 
@@ -161,11 +161,10 @@ Billing xử lý:
 3. chỉ cho phép `AWAITING_DISPENSE → COMPLETED`;
 4. lưu và đánh dấu processed.
 
-Không tự gán `dispenseId` từ `prescriptionId` hoặc một UUID mới. Hai team phải chọn một trong hai
-phương án trước khi làm E2E:
-
-- Pharmacy bổ sung `dispenseId` vào contract `prescription.filled`, cập nhật fixture và consumer;
-- hoặc Billing xác nhận `dispenseId` không thuộc phiên bản contract hiện tại và để null.
+**Đã chốt (2026-09-16):** Billing bỏ hẳn khái niệm `dispenseId` — không có cột, không có trường
+DTO, không gán từ `prescriptionId` hay UUID mới. Nếu sau này Pharmacy bổ sung `dispenseId` vào
+contract `prescription.filled`, đây là thay đổi contract mới, cần mở lại theo mục 8 (cập nhật
+producer/consumer/fixture/test/tài liệu trong cùng một chuỗi thay đổi), không chỉ thêm field ngầm.
 
 ### 3.4 `prescription.dispense.failed` — Pharmacy → Billing
 
@@ -210,7 +209,8 @@ chính sách; không silently mark processed.
 - Dùng record DTO riêng tại `application/event`, không phụ thuộc package Pharmacy.
 - Thêm fixture JSON cho bốn event của Pharmacy và một fixture `payment.completed` mà Pharmacy đọc.
 - Assert field bắt buộc, nullability, enum chữ hoa, `BigDecimal`, timezone và correlation propagation.
-- Khi quyết định `dispenseId`, cập nhật đồng thời spec, fixture, DTO và test hai service.
+- `dispenseId` đã chốt bỏ hẳn (2026-09-16, xem mục 3.3) — nếu quyết định này đổi lại sau này,
+  cập nhật đồng thời spec, fixture, DTO và test hai service.
 
 ### B-02 — Hoàn thiện consumer và topology
 

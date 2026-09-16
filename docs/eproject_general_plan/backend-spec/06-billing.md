@@ -160,7 +160,7 @@ Invariants: `amount >= 0` (`BILLING_AMOUNT_NEGATIVE`); `feeType` và `department
 
 ### `Invoice` (hóa đơn — aggregate root)
 
-`invoiceId`, `patientId`, `createdDate`, `totalAmount`, `isPaid`, `paymentMethod`, `dispenseId`,
+`invoiceId`, `patientId`, `createdDate`, `totalAmount`, `isPaid`, `paymentMethod`,
 `prescriptionId`, `sagaStatus`, `paidAt`.
 
 ```java
@@ -270,8 +270,9 @@ public interface SagaCompensationUseCase {
 
 ### `onPrescriptionFilled(e)` — saga thành công
 
-khử trùng lặp → nạp hóa đơn theo `prescriptionId` → `transitionSaga(COMPLETED)` → đặt `dispenseId` → lưu.
-Không publish event nào.
+khử trùng lặp → nạp hóa đơn theo `prescriptionId` → `transitionSaga(COMPLETED)` → lưu.
+Không publish event nào. (Chốt cross-team 2026-09-16: payload `prescription.filled` không mang
+`dispenseId` nên billing không gán/lưu trường này — xem `THELOC-INTEGRATION-FOLLOWUP.md`.)
 
 ### Sinh viện phí từ ba event còn lại
 
@@ -301,7 +302,7 @@ public record CreateInvoiceRequest(@NotNull UUID patientId, @NotNull @PastOrPres
 public record PayInvoiceRequest(@NotNull PaymentMethod paymentMethod) {}
 
 public record InvoiceDTO(UUID invoiceId, UUID patientId, LocalDate createdDate, BigDecimal totalAmount,
-                         boolean isPaid, PaymentMethod paymentMethod, UUID dispenseId, UUID prescriptionId,
+                         boolean isPaid, PaymentMethod paymentMethod, UUID prescriptionId,
                          SagaStatus sagaStatus, Instant paidAt, List<FeeDTO> fees) {}
 
 public record FeeDTO(UUID feeId, FeeType feeType, UUID departmentId, LocalDate incurredDate,

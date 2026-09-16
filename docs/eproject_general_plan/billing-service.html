@@ -231,7 +231,7 @@ public interface SagaCompensationUseCase {
 public record PayInvoiceRequest(@NotNull PaymentMethod paymentMethod) {}</div>
         <h3>Response — <code>application/dto/response/</code></h3>
         <div class="code">public record InvoiceDTO(UUID invoiceId, UUID patientId, LocalDate createdDate, BigDecimal totalAmount,
-                     boolean isPaid, PaymentMethod paymentMethod, UUID dispenseId, UUID prescriptionId,
+                     boolean isPaid, PaymentMethod paymentMethod, UUID prescriptionId,
                      SagaStatus sagaStatus, Instant paidAt, List&lt;FeeDTO&gt; fees) {}
 
 public record FeeDTO(UUID feeId, FeeType feeType, UUID departmentId, LocalDate incurredDate,
@@ -278,7 +278,7 @@ public record RevenueByDeptDTO(UUID departmentId, BigDecimal totalRevenue, long 
         <div class="note">Tiền được <strong>đảo trong sổ sách</strong>, không phải hoàn qua cổng thanh toán (hệ thống không có cổng nào).</div>
 
         <h3><code>onPrescriptionFilled(e)</code> — saga thành công</h3>
-        <p>Khử trùng lặp → nạp hóa đơn theo prescriptionId → <code>transitionSaga(COMPLETED)</code> → đặt <code>dispenseId</code> → lưu. Không publish event nào.</p>
+        <p>Khử trùng lặp → nạp hóa đơn theo prescriptionId → <code>transitionSaga(COMPLETED)</code> → lưu. Không publish event nào. (Chốt cross-team 2026-09-16: payload <code>prescription.filled</code> không mang <code>dispenseId</code> nên billing không gán/lưu trường này.)</p>
 
         <h3>Sinh viện phí từ 3 event còn lại</h3>
         <table>

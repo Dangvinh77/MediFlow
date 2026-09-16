@@ -95,8 +95,8 @@ public class SagaCompensationService implements SagaCompensationUseCase {
      * {@code COMPLETED}. Không publish event nào.
      *
      * <p>Ghi chú: §7 nói đặt thêm {@code dispenseId}, nhưng payload {@code prescription.filled}
-     * hiện chưa mang trường đó — bỏ qua việc gán, xử lý khi ráp saga ở Phần 5/5
-     * ({@code THELOC-INTEGRATION-FOLLOWUP.md}).
+     * không mang trường đó — đã chốt với pharmacy (2026-09-16) bỏ hẳn việc gán
+     * {@code dispenseId}, xem {@code THELOC-INTEGRATION-FOLLOWUP.md}.
      */
     @Override
     @Transactional

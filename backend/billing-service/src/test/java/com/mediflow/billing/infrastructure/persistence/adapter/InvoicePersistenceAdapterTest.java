@@ -53,7 +53,7 @@ class InvoicePersistenceAdapterTest {
 
     private static Invoice paidInvoice(UUID patientId, UUID prescriptionId, String total, Instant paidAt) {
         return Invoice.restore(null, patientId, LocalDate.of(2026, 9, 8), new BigDecimal(total), true,
-                PaymentMethod.CASH, null, prescriptionId, SagaStatus.NONE, paidAt, null, null);
+                PaymentMethod.CASH, prescriptionId, SagaStatus.NONE, paidAt, null, null);
     }
 
     private static Instant day(int dayOfMonth) {
@@ -71,7 +71,7 @@ class InvoicePersistenceAdapterTest {
     @Test
     void save_thenFindById_roundTripsSagaFields() {
         Invoice saved = adapter.save(Invoice.restore(null, UUID.randomUUID(), LocalDate.of(2026, 9, 8),
-                new BigDecimal("300000.00"), false, null, null, UUID.randomUUID(),
+                new BigDecimal("300000.00"), false, null, UUID.randomUUID(),
                 SagaStatus.AWAITING_PAYMENT, null, null, null));
 
         Invoice reloaded = adapter.findById(saved.getInvoiceId()).orElseThrow();
@@ -171,7 +171,7 @@ class InvoicePersistenceAdapterTest {
 
         // Hóa đơn chưa thanh toán → không vào doanh thu dù có phí khoa A
         UUID unpaidInvoice = adapter.save(Invoice.restore(null, patient, LocalDate.of(2026, 9, 8),
-                new BigDecimal("100000.00"), false, null, null, null, SagaStatus.NONE, null, null, null))
+                new BigDecimal("100000.00"), false, null, null, SagaStatus.NONE, null, null, null))
                 .getInvoiceId();
         Fee unpaidFee = Fee.create(patient, UUID.randomUUID(), deptA, UUID.randomUUID(),
                 FeeType.SERVICE, LocalDate.of(2026, 9, 8), new BigDecimal("777.00"));

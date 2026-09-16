@@ -20,7 +20,6 @@ import com.mediflow.billing.domain.model.SagaStatus;
  * @param totalAmount    tổng tiền (server tính, BR-B2)
  * @param isPaid         đã thanh toán chưa
  * @param paymentMethod  hình thức thanh toán (null khi chưa trả)
- * @param dispenseId     phiếu xuất thuốc gắn kèm khi saga hoàn tất (null nếu không có)
  * @param prescriptionId đơn thuốc mở saga (null với hóa đơn thường)
  * @param sagaStatus     bước saga hiện tại ({@code NONE} với hóa đơn thường)
  * @param paidAt         thời điểm thanh toán (null khi chưa trả)
@@ -33,7 +32,6 @@ public record InvoiceDTO(
         BigDecimal totalAmount,
         boolean isPaid,
         PaymentMethod paymentMethod,
-        UUID dispenseId,
         UUID prescriptionId,
         SagaStatus sagaStatus,
         Instant paidAt,
