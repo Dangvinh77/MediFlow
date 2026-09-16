@@ -480,8 +480,8 @@ Không tạo foreign key sang service khác. Mọi `departmentId`, `drugId`, `in
 | T03 | Flyway V1 và JPA entity mapping | T01 | DONE |
 | T04 | Atomic claim + concurrency-safe persistence adapters | T02, T03 | IN_PROGRESS |
 | T05 | Daily/lab/prescription aggregate use cases | T04 | DONE |
-| T06 | Payment contribution và compensation use cases | T04 | TODO |
-| T07 | Read-report queries và top medicine | T04 | TODO |
+| T06 | Payment contribution và compensation use cases | T04 | IN_PROGRESS |
+| T07 | Read-report queries và top medicine | T04 | DONE |
 | T08 | Rabbit topology, payloads, consumer, retry và DLQ | T05, T06 | TODO |
 | T09 | REST API, security, errors, OpenAPI và `.http` | T07 | TODO |
 | T10 | Cross-layer integration/concurrency/recovery tests | T08, T09 | TODO |
@@ -636,7 +636,7 @@ business metric decisions in adapters.”
 
 **Tiến độ hiện tại:** đã implement 5 Spring Data repository và 5 persistence adapter. Các native
 upsert, `SELECT ... FOR UPDATE`, null-safe predicate, top query inclusive/latest-name và advisory lock
-payment đã có. Unit/application suite xanh (**54 test pass** trong lần chạy mới nhất); integration concurrency trên PostgreSQL 16 chưa thể chạy
+payment đã có. Unit/application suite xanh (**65 test pass, 3 skip** trong lần chạy mới nhất); integration concurrency trên PostgreSQL 16 chưa thể chạy
 trên máy hiện tại vì Testcontainers Docker API client 1.32 thấp hơn server tối thiểu 1.40, nên T04
 giữ `IN_PROGRESS` cho đến khi gate môi trường được mở.
 
@@ -664,7 +664,7 @@ prescription does not change revenue.
 
 **Bằng chứng hoàn thành:** `AggregateUpdaterService` xử lý medical/lab/prescription trong một
 transaction; validate trước claim, cập nhật hospital → department, group duplicate drug item và
-sort `drugId` trước khi lock/save. Bộ test application có 9 test xanh cho row scope, redelivery,
+sort `drugId` trước khi lock/save. Bộ test application có 12 test xanh cho row scope, redelivery,
 invalid payload, grouping/order, timezone và payment regression; không có tương tác persistence khi
 payload invalid.
 
@@ -694,6 +694,14 @@ completed/failed race, final values nonnegative.
 **Lệnh giao AI:** “Implement T06 only. PaymentContribution is the source for reversal; never infer
 amount or department from payment.failed and never call Billing.”
 
+**Tiến độ hiện tại:** nhánh payment trong `AggregateUpdaterService` đã hoàn tất validate timezone,
+atomic claim, khóa contribution theo invoice, state transition `APPLY/REVERSE/NONE`, idempotency theo
+eventId và invoiceId, xử lý failure đến trước completed, cập nhật hospital trước department và đảo đúng
+ngày/khoa/số tiền gốc. `AggregateUpdaterServiceTest` hiện có 6 kịch bản payment (redelivery cùng event,
+completed khác event cùng invoice, null department, completed/failed cùng kỳ và out-of-order). Gate race
+hai luồng trên PostgreSQL chưa chạy được do Docker client cục bộ API 1.32 thấp hơn server tối thiểu 1.40,
+nên T06 giữ `IN_PROGRESS` dù unit/application tests xanh.
+
 ### T07 — Read-report application và queries
 
 **Mục tiêu:** ba use case đọc có output ổn định và không lộ persistence.
@@ -716,6 +724,13 @@ tie ordering delegated đúng, invalid date range.
 
 **Lệnh giao AI:** “Implement T07 only. Monthly dailyDetails must contain every calendar day and use
 one range query.”
+
+**Bằng chứng hoàn thành:** đã thêm `ReportApplicationService` với daily zero DTO, monthly aggregate
+zero fallback + full calendar (kể cả tháng nhuận), một `findRange` để merge detail, top inclusive range
+và limit mặc định 10/clamp tối đa 50; `ReportDateRangeException` dùng code
+`REPORT_DATE_RANGE_INVALID`. `ReportApplicationServiceTest` có 8 test cho no-data/null scope, leap year,
+partial month, zero-fill, limit và invalid range. Toàn module hiện phát hiện 68 test, 65 pass và 3 skip
+(các test PostgreSQL/Testcontainers do Docker API chưa tương thích).
 
 ### T08 — Rabbit topology, payloads, consumer, retry và DLQ
 
@@ -961,8 +976,9 @@ Milestone:
 
 ## 12. Task bắt đầu tiếp theo
 
-T00–T03 đã hoàn thành. Task tiếp theo là **T04**. Không bắt đầu adapter code khi baseline trong `report.md`
-và plan chưa được review khi có thay đổi:
+T00–T05 và T07 đã hoàn thành phần code/unit; T04 và T06 còn chờ gate PostgreSQL concurrency do môi
+trường Docker chưa tương thích. Task production tiếp theo là **T08** (messaging), đồng thời chạy lại
+T04/T06 gate khi Docker client được nâng lên API tối thiểu 1.40:
 
 - 4 bảng thay vì 5;
 - check/mark idempotency thay vì atomic claim;

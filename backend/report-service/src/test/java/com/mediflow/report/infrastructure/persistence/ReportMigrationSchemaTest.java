@@ -29,4 +29,18 @@ class ReportMigrationSchemaTest {
                 .contains("nulls not distinct")
                 .contains("ck_payment_state_data");
     }
+
+    @Test
+    void v2_requiresPendingContributionToBeUnscoped() throws IOException {
+        String sql;
+        try (InputStream stream = getClass().getResourceAsStream(
+                "/db/migration/V2__enforce_pending_payment_scope.sql")) {
+            assertThat(stream).as("Flyway V2 migration resource").isNotNull();
+            sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toLowerCase();
+        }
+
+        assertThat(sql).contains("drop constraint ck_payment_state_data")
+                .contains("status = 'pending_reversal'")
+                .contains("department_id is null");
+    }
 }

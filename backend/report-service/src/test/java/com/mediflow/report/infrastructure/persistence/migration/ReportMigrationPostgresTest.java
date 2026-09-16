@@ -61,7 +61,7 @@ class ReportMigrationPostgresTest {
     }
 
     @Test
-    void constraints_rejectInvalidMonthAndNegativeRevenue() throws Exception {
+    void constraints_rejectInvalidMonthNegativeRevenueAndInvalidPaymentState() throws Exception {
         flyway().migrate();
 
         assertConstraintViolation(() -> execute("INSERT INTO monthly_revenue_report "
@@ -93,6 +93,10 @@ class ReportMigrationPostgresTest {
                 + "', DATE '2026-09-01', -1)"), "23514");
         assertConstraintViolation(() -> execute("INSERT INTO payment_contribution(invoice_id, status) "
                 + "VALUES ('" + UUID.randomUUID() + "', 'BOGUS')"), "23514");
+        assertConstraintViolation(() -> execute("INSERT INTO payment_contribution "
+                + "(invoice_id, status, failed_event_id, department_id) VALUES ('"
+                + UUID.randomUUID() + "', 'PENDING_REVERSAL', '" + UUID.randomUUID() + "', '"
+                + UUID.randomUUID() + "')"), "23514");
     }
 
     private void execute(String sql) throws SQLException {

@@ -36,12 +36,12 @@ public interface DrugStatisticJpaRepository extends JpaRepository<DrugStatisticJ
         Long getTotalQuantity();
     }
 
-    @Query(value = "SELECT drug_id AS drugId, "
-            + "(array_agg(drug_name ORDER BY report_date DESC, statistic_id DESC))[1] AS drugName, "
-            + "SUM(dispensed_quantity)::bigint AS totalQuantity "
+    @Query(value = "SELECT drug_id AS \"drugId\", "
+            + "(array_agg(drug_name ORDER BY report_date DESC, statistic_id DESC))[1] AS \"drugName\", "
+            + "SUM(dispensed_quantity)::bigint AS \"totalQuantity\" "
             + "FROM DRUG_STATISTIC WHERE report_date BETWEEN :fromDate AND :toDate "
             + "AND (department_id = :departmentId OR (:departmentId IS NULL AND department_id IS NULL)) "
-            + "GROUP BY drug_id ORDER BY totalQuantity DESC, drug_id ASC LIMIT :limit", nativeQuery = true)
+            + "GROUP BY drug_id ORDER BY \"totalQuantity\" DESC, drug_id ASC LIMIT :limit", nativeQuery = true)
     List<TopMedicineProjection> topMedicines(@Param("fromDate") LocalDate fromDate,
                                              @Param("toDate") LocalDate toDate,
                                              @Param("departmentId") UUID departmentId,

@@ -30,7 +30,7 @@ import com.mediflow.report.domain.model.PaymentContributionStatus;
 
 import lombok.RequiredArgsConstructor;
 
-/** Application orchestration for medical, laboratory and prescription projections. */
+/** Application orchestration for operational and payment report projections. */
 @Service
 @RequiredArgsConstructor
 public class AggregateUpdaterService implements UpdateAggregateUseCase {
@@ -38,13 +38,12 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     private static final String MEDICAL_RECORD_CREATED = "medicalrecord.created";
     private static final String LAB_RESULT_CREATED = "lab.result.created";
     private static final String PRESCRIPTION_FILLED = "prescription.filled";
-    private static final ZoneId REPORT_ZONE = ZoneId.of("Asia/Bangkok");
-
     private final ProcessedEventPort processedEventPort;
     private final DailyVisitReportRepositoryPort dailyReports;
     private final DrugStatisticRepositoryPort drugStatistics;
     private final MonthlyRevenueReportRepositoryPort monthlyReports;
     private final PaymentContributionRepositoryPort paymentContributions;
+    private final ZoneId reportZone;
 
     @Override
     @Transactional
@@ -190,8 +189,8 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
         }
     }
 
-    private static LocalDate validatePrescriptionEvent(UUID eventId, Instant occurredAt, UUID departmentId,
-                                                       UUID prescriptionId, List<DispensedItem> items) {
+    private LocalDate validatePrescriptionEvent(UUID eventId, Instant occurredAt, UUID departmentId,
+                                                UUID prescriptionId, List<DispensedItem> items) {
         if (eventId == null) {
             throw new ReportRuleException("REPORT_EVENT_ID_REQUIRED", "Mã event là bắt buộc");
         }
@@ -210,11 +209,11 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
             throw new ReportRuleException("REPORT_DRUG_ITEMS_REQUIRED",
                     "Đơn thuốc phải có ít nhất một mặt hàng hợp lệ");
         }
-        return occurredAt.atZone(REPORT_ZONE).toLocalDate();
+        return occurredAt.atZone(reportZone).toLocalDate();
     }
 
-    private static LocalDate validatePaymentCompleted(UUID eventId, Instant occurredAt, UUID invoiceId,
-                                                      BigDecimal amount) {
+    private LocalDate validatePaymentCompleted(UUID eventId, Instant occurredAt, UUID invoiceId,
+                                              BigDecimal amount) {
         if (eventId == null) {
             throw new ReportRuleException("REPORT_EVENT_ID_REQUIRED", "Mã event là bắt buộc");
         }
@@ -233,7 +232,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
             throw new ReportRuleException("REPORT_AMOUNT_SCALE_INVALID",
                     "Số tiền thanh toán chỉ được có tối đa 2 chữ số thập phân");
         }
-        return occurredAt.atZone(REPORT_ZONE).toLocalDate();
+        return occurredAt.atZone(reportZone).toLocalDate();
     }
 
     private static void validatePaymentFailure(UUID eventId, Instant occurredAt, UUID invoiceId) {
