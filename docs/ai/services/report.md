@@ -276,13 +276,38 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
   bằng một range query, top medicine inclusive + giới hạn deterministic; `ReportDateRangeException`
   trả code `REPORT_DATE_RANGE_INVALID`.
 
-### Còn thiếu (theo spec 08 — xem phần "Coding map" và "Definition of Done")
+### T10–T11: integration gate và release audit
 
-- PostgreSQL concurrency/race gate cho T04/T06 và cross-layer integration/recovery tests ở T10 vẫn cần
-  hoàn tất; máy hiện tại chưa chạy được Testcontainers vì Docker API client 1.32 thấp hơn server tối
-  thiểu 1.40.
-- `web/`: `ReportController` 3 endpoint + `GlobalExceptionHandler` + `SecurityConfig` + `OpenApiConfig`.
-- `messaging/consumer/`: `ReportEventConsumer` (1 class; application atomic claim + effect trong một transaction).
-- `infrastructure/persistence/`: Spring Data repository + adapter (`findOrCreate` ON CONFLICT,
-  `SELECT FOR UPDATE`); T03 mới chỉ hoàn tất entity/mapper.
-- Test đủ 5 tầng, phủ toàn bộ rule `RPT-*` trong implementation plan.
+- `ReportCrossLayerIntegrationTest` chạy qua Spring context thật với PostgreSQL 16 + RabbitMQ 3.13,
+  bao phủ daily/hospital/khoa/top thuốc, payment duplicate/cùng invoice khác event, compensation
+  hai thứ tự, concurrent first events, API envelope, malformed/DLQ và rollback khi payment conflict.
+- Test bất đồng bộ dùng Awaitility với timeout hữu hạn; mỗi test tự cleanup projection và queue. Không
+  dùng sleep mù, không mock phần behavior mà scenario cần chứng minh.
+- T11 đã hoàn tất audit: test/verify/Javadocs/dependency analyze xanh, ArchitectureTest xanh và
+  static search không phát hiện Feign/client, external datasource hoặc forbidden imports.
+- Runtime gate T04/T06/T10 đã chạy thật với Docker Desktop, PostgreSQL 16 và RabbitMQ 3.13:
+  persistence/concurrency 16/16 pass, cross-layer 8/8 pass; toàn bộ module **121/121 pass, 0 skip**.
+  Report pin Testcontainers 1.20.6 trong POM để tương thích Docker API hiện tại; máy có cấu hình
+  Testcontainers cũ dùng thêm `-Dapi.version=1.40`.
+
+### Đã hoàn tất bổ sung (T08–T10)
+
+- `infrastructure/config/RabbitConfig`: durable exchange/queue/DLQ, đúng 5 binding V1, bounded retry và reject không requeue.
+- `messaging/consumer/ReportEventConsumer`: một consumer dispatch theo routing key, fixture contract cho 5 event,
+  additive-field compatibility và validation trước in-port; không suy diễn contribution từ `payment.failed`.
+- `web/`: ba GET endpoint, `GlobalExceptionHandler`, stateless JWT/RBAC (`ADMIN`, `MANAGER`) và OpenAPI metadata;
+  `report.http` là live contract.
+- T08/T09/T10 và review hardening đã bổ sung regression coverage; module hiện **121 test, 121 pass,
+  0 skip, 0 failure/error** khi chạy với Docker Desktop (16 persistence/concurrency + 8 cross-layer
+  Testcontainers; phần còn lại là unit/web/config/security).
+
+### Review hardening (16/09/2026)
+
+- Consumer bắt buộc canonical source id (`recordId` cho medical record, `labId` cho lab result) và
+  ghi log metadata không chứa full payload; retry recoverer chỉ ghi routing/message/correlation metadata.
+- Validation của query trả `VALIDATION_ERROR` kèm `error.details[field,message]`; ngày tương lai vẫn là
+  query hợp lệ và Swagger/actuator info mặc định yêu cầu xác thực (Swagger chỉ mở bằng explicit local opt-in).
+- PostgreSQL tests bao phủ null-scope natural keys, monthly/drug find-or-create, completed/failed race
+  lặp 10 vòng, top query inclusive/scope/tie-break/latest-name và future-date zero-fill.
+- Report-service filter đã sẵn sàng từ chối JWT có `type` khác `access`; gateway vẫn phải phát hành
+  claim `type` theo [JWT handoff](../../HANDOFF-report-jwt-token-type.md) để đóng hoàn toàn lỗ hổng refresh-token.

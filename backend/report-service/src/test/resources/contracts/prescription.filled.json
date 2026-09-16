@@ -1,0 +1,13 @@
+{
+  "eventId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "occurredAt": "2026-09-16T03:00:00Z",
+  "correlationId": "cid-prescription-1",
+  "prescriptionId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "patientId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "departmentId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+  "totalAmount": 125000.00,
+  "dispensedItems": [
+    {"drugId": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "drugName": "Paracetamol", "quantity": 2},
+    {"drugId": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", "drugName": "Paracetamol", "quantity": 3}
+  ]
+}

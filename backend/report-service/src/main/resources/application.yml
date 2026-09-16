@@ -28,6 +28,9 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    listener:
+      simple:
+        auto-startup: ${MEDIFLOW_REPORT_RABBIT_AUTO_STARTUP:true}
 
 eureka:
   client:
@@ -38,8 +41,16 @@ eureka:
 mediflow:
   report:
     zone-id: ${MEDIFLOW_REPORT_ZONE_ID:Asia/Bangkok}
+    rabbit:
+      retry:
+        max-attempts: ${MEDIFLOW_REPORT_RABBIT_RETRY_MAX_ATTEMPTS:3}
+        initial-interval-ms: ${MEDIFLOW_REPORT_RABBIT_RETRY_INITIAL_INTERVAL_MS:1000}
+        max-interval-ms: ${MEDIFLOW_REPORT_RABBIT_RETRY_MAX_INTERVAL_MS:10000}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
+  security:
+    # Swagger is an explicit local/development opt-in; production remains default-deny.
+    swagger-permit: ${MEDIFLOW_REPORT_SWAGGER_PERMIT:false}
 
 management:
   endpoints:

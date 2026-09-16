@@ -15,6 +15,11 @@
     <name>MediFlow Report Service</name>
     <description>Aggregated read-model reports and payment projections (DAILY_VISIT_REPORT, MONTHLY_REVENUE_REPORT, DRUG_STATISTIC, PAYMENT_CONTRIBUTION).</description>
 
+    <!-- Spring Boot 3.3.5 manages 1.19.8 (Docker API 1.32); 1.20.6 supports current Docker Desktop. -->
+    <properties>
+        <testcontainers.version>1.20.6</testcontainers.version>
+    </properties>
+
     <dependencies>
         <!-- Web / JPA / Validation -->
         <dependency>
