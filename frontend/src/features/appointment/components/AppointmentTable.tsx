@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
 import { appointmentApi, type AppointmentSearchParams } from "../api";
 import type { AppointmentDTO } from "../types";

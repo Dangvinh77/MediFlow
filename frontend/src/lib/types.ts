@@ -1,5 +1,4 @@
-// Shared envelope types plus the legacy Patient demo contract. Feature DTOs live
-// under features/<context> and preserve each service's exact wire field names.
+// Shared transport types only. Feature DTOs live under features/<context>.
 
 /** Standard response envelope returned by every MediFlow service. */
 export interface ApiResponse<T> {
@@ -23,29 +22,4 @@ export interface PageResult<T> {
   totalPages: number;
   number: number;
   size: number;
-}
-
-/** Compatibility alias for the existing Patient demo. */
-export type Page<T> = PageResult<T>;
-
-export type GioiTinh = "M" | "F";
-
-export interface PatientDTO {
-  maBenhNhan: string;
-  hoTen: string;
-  ngaySinh: string; // ISO date
-  gioiTinh: GioiTinh;
-  soCmnd: string;
-  diaChi?: string;
-  soDienThoai?: string;
-  email?: string;
-  bhytSo?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  role: string;
 }

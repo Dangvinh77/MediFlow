@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
 import { labApi, type LabSearchParams } from "../api";
 import type { LabTestDTO, LabTestStatus } from "../types";

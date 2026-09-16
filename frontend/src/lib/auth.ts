@@ -1,49 +1,49 @@
-// Minimal client-side auth: talks to the gateway's /api/v1/auth endpoints and stores
-// the JWT in localStorage. NOTE: localStorage is convenient for a starter but is
+// Minimal client-side auth. NOTE: localStorage is convenient for a starter but is
 // vulnerable to XSS — for production prefer httpOnly cookies. See docs/ai/12-frontend.md.
 
-import type { LoginResponse } from "./types";
+import { api, ApiRequestError } from "./api";
+import type { Role } from "./roles";
+import {
+  clearSession,
+  getRole as readRole,
+  getToken as readToken,
+  storeSession,
+} from "./session";
 
-const ACCESS_TOKEN_KEY = "mediflow.accessToken";
-const REFRESH_TOKEN_KEY = "mediflow.refreshToken";
-const ROLE_KEY = "mediflow.role";
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  role: Role;
 }
 
-export function getRole(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ROLE_KEY);
+export function getToken(): string | null {
+  return readToken();
+}
+
+export function getRole(): Role | null {
+  return readRole();
 }
 
 export function isAuthenticated(): boolean {
   return getToken() !== null;
 }
 
-function store(res: LoginResponse) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, res.accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, res.refreshToken);
-  localStorage.setItem(ROLE_KEY, res.role);
-}
-
 export async function login(username: string, password: string): Promise<LoginResponse> {
-  const res = await fetch("/api/v1/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) {
-    throw new Error("Đăng nhập thất bại — sai tài khoản hoặc mật khẩu.");
+  try {
+    const response = await api.postRaw<LoginResponse>("/v1/auth/login", {
+      username,
+      password,
+    });
+    storeSession(response);
+    return response;
+  } catch (cause: unknown) {
+    if (cause instanceof ApiRequestError && cause.status === 401) {
+      throw new Error("Đăng nhập thất bại — sai tài khoản hoặc mật khẩu.");
+    }
+    throw cause;
   }
-  const data = (await res.json()) as LoginResponse;
-  store(data);
-  return data;
 }
 
 export function logout() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
+  clearSession();
 }

@@ -46,10 +46,8 @@ src/
 Team decisions, recorded so nobody re-litigates them: **Tailwind utilities only** (no component
 library) and **direct `fetch` via `api.ts`** (no TanStack Query / SWR).
 
-> ⚠️ **Migration pending.** The current code is a demo written before this layout: `app/patients/`
-> sits outside the `(dashboard)` group and every DTO is crammed into `lib/types.ts`. Move it into
-> `features/patient/` as the first worked example. Until then, do **not** add a `page.tsx` under
-> `app/(dashboard)/patients/` — two pages resolving to `/patients` is a build error.
+The patient, appointment, medical-record, and lab screens are the first worked examples of this
+layout. New contexts should follow the same route → feature component → feature API flow.
 
 ## Scripts
 
