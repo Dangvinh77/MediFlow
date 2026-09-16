@@ -21,14 +21,11 @@ class MedicalRecordTest {
     @Test void create_diagnoses_copiesAndProtectsList() {
         List<Diagnosis> input = new ArrayList<>(List.of(diagnosis()));
         MedicalRecord record = create(input);
-        assertThat(record.getRecordId()).isNull();
         input.clear();
         assertThat(record.getDiagnoses()).hasSize(1);
-        assertThat(record.getDiagnoses().getFirst().getDiagnosisId()).isNull();
         assertThatThrownBy(() -> record.getDiagnoses().clear()).isInstanceOf(UnsupportedOperationException.class);
         record.addDiagnosis(Diagnosis.create("Fever", null, "R50"));
         assertThat(record.getDiagnoses()).hasSize(2);
-        assertThat(record.getDiagnoses().getLast().getDiagnosisId()).isNull();
     }
 
     @Test void addDiagnosis_null_rejectsWithoutMutation() {

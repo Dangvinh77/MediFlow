@@ -128,12 +128,10 @@ public class MedicalRecordApplicationService implements ManageRecordUseCase {
         MedicalRecord record = locked(recordId);
         Diagnosis diagnosis = mapper.toDomain(request);
         record.addDiagnosis(diagnosis);
-        MedicalRecord saved = records.save(record);
-        Diagnosis persistedDiagnosis = saved.getDiagnoses().get(saved.getDiagnoses().size() - 1);
+        records.save(record);
         publisher.publishDiagnosisAdded(
-                DiagnosisAddedEvent.from(saved.getRecordId(), persistedDiagnosis,
-                        correlationIds.currentOrCreate().toString()));
-        return mapper.toDto(persistedDiagnosis);
+                DiagnosisAddedEvent.from(recordId, diagnosis, correlationIds.currentOrCreate().toString()));
+        return mapper.toDto(diagnosis);
     }
 
     private MedicalRecord locked(UUID id) {

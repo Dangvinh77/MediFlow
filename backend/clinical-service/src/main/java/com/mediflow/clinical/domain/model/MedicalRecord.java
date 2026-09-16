@@ -28,21 +28,13 @@ public final class MedicalRecord {
 
     public static MedicalRecord create(UUID patientId, UUID doctorId, UUID departmentId, LocalDate date,
                                        String symptoms, UUID appointmentId, List<Diagnosis> diagnoses) {
-        validate(patientId, doctorId, departmentId, date, diagnoses);
-        return new MedicalRecord(null, patientId, doctorId, departmentId, date, symptoms, appointmentId,
-                new ArrayList<>(diagnoses), Instant.now(), null);
+        return restore(UUID.randomUUID(), patientId, doctorId, departmentId, date, symptoms, appointmentId,
+                diagnoses, Instant.now(), null);
     }
 
     public static MedicalRecord restore(UUID id, UUID patientId, UUID doctorId, UUID departmentId,
                                         LocalDate date, String symptoms, UUID appointmentId,
                                         List<Diagnosis> diagnoses, Instant createdAt, Instant updatedAt) {
-        validate(patientId, doctorId, departmentId, date, diagnoses);
-        return new MedicalRecord(Objects.requireNonNull(id), patientId, doctorId, departmentId, date,
-                symptoms, appointmentId, new ArrayList<>(diagnoses), Objects.requireNonNull(createdAt), updatedAt);
-    }
-
-    private static void validate(UUID patientId, UUID doctorId, UUID departmentId, LocalDate date,
-                                 List<Diagnosis> diagnoses) {
         if (patientId == null || doctorId == null || departmentId == null) {
             throw new InvalidClinicalDataException("RECORD_REF_REQUIRED", "Patient, doctor and department are required");
         }
@@ -53,6 +45,8 @@ public final class MedicalRecord {
         if (diagnoses == null || diagnoses.isEmpty() || diagnoses.stream().anyMatch(Objects::isNull)) {
             throw new InvalidClinicalDataException("RECORD_NO_DIAGNOSIS", "At least one non-null diagnosis is required");
         }
+        return new MedicalRecord(Objects.requireNonNull(id), patientId, doctorId, departmentId, date,
+                symptoms, appointmentId, new ArrayList<>(diagnoses), Objects.requireNonNull(createdAt), updatedAt);
     }
 
     public void addDiagnosis(Diagnosis diagnosis) {

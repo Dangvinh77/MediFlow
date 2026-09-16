@@ -41,7 +41,7 @@ public final class Appointment {
         Objects.requireNonNull(clock, "clock");
         validateReferences(patientId, doctorId, departmentId);
         validateSchedule(date, time, clock);
-        return new Appointment(null, patientId, doctorId, departmentId, date, time,
+        return new Appointment(UUID.randomUUID(), patientId, doctorId, departmentId, date, time,
                 AppointmentStatus.PENDING, reason, clock.instant(), null, clock);
     }
 
