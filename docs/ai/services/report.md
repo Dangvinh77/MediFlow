@@ -269,10 +269,14 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
   `ReportDtoMapper` (MapStruct).
 - T03 persistence mapping: Flyway `V1__init.sql` với 5 bảng, PostgreSQL null-safe unique indexes,
   checks, 5 JPA entity và 4 persistence mapper.
+- T04/T05: native persistence repositories/adapters (atomic claim, upsert + row lock, advisory lock)
+  và `AggregateUpdaterService` cho medical/lab/prescription; application tests đã bao phủ validation,
+  scope, grouping và thứ tự lock.
 
 ### Còn thiếu (theo spec 08 — xem phần "Coding map" và "Definition of Done")
 
-- `application/service/`: `AggregateUpdaterService`, `ReportApplicationService`.
+- `application/service/`: `ReportApplicationService` cho read queries; payment integration tests và
+  PostgreSQL concurrency gate vẫn cần hoàn tất ở T06/T07/T10.
 - `web/`: `ReportController` 3 endpoint + `GlobalExceptionHandler` + `SecurityConfig` + `OpenApiConfig`.
 - `messaging/consumer/`: `ReportEventConsumer` (1 class; application atomic claim + effect trong một transaction).
 - `infrastructure/persistence/`: Spring Data repository + adapter (`findOrCreate` ON CONFLICT,
