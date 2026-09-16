@@ -44,7 +44,7 @@ public final class LabTest {
         this.updatedAt = updatedAt;
     }
 
-    /** Creates a pending test request with an identity and creation timestamps. */
+    /** Creates a pending test request with persistence-owned identity and creation timestamps. */
     public static LabTest create(UUID recordId, UUID patientId, UUID requestingDepartmentId,
                                  String labType, LocalDate requestedDate) {
         require(recordId, "LAB_RECORD_REQUIRED", "Hồ sơ xét nghiệm là bắt buộc");
@@ -55,7 +55,7 @@ public final class LabTest {
         }
         require(requestedDate, "LAB_REQUEST_DATE_REQUIRED", "Ngày yêu cầu xét nghiệm là bắt buộc");
         Instant now = Instant.now();
-        return new LabTest(UUID.randomUUID(), recordId, patientId, requestingDepartmentId, labType,
+        return new LabTest(null, recordId, patientId, requestingDepartmentId, labType,
                 requestedDate, null, LabTestStatus.PENDING, null, false, List.of(), now, now);
     }
 

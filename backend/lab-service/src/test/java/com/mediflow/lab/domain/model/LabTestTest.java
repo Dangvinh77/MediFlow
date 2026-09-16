@@ -45,13 +45,14 @@ class LabTestTest {
     }
 
     @Test
-    void create_assignsIdentityAndCreationTimestamps() {
+    void create_leavesAggregateAndResultIdsPendingForPersistence() {
         LabTest test = pending();
+        LabResult result = result("normal");
 
-        assertThat(test.getTestId()).isNotNull();
+        assertThat(test.getTestId()).isNull();
         assertThat(test.getCreatedAt()).isNotNull();
         assertThat(test.getUpdatedAt()).isEqualTo(test.getCreatedAt());
-        assertThat(result("normal").getResultId()).isNotNull();
+        assertThat(result.getResultId()).isNull();
     }
 
     @Test

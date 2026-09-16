@@ -29,7 +29,7 @@ public final class LabResult {
         if (value == null || value.isBlank()) {
             throw new LabRuleException("LAB_VALUE_REQUIRED", "Giá trị xét nghiệm không được để trống");
         }
-        return new LabResult(UUID.randomUUID(), indicator, value, unit, referenceRange);
+        return new LabResult(null, indicator, value, unit, referenceRange);
     }
 
     /** Rehydrates a result already persisted without re-running creation rules. */
