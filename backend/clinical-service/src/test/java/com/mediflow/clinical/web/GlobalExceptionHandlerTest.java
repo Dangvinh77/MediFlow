@@ -1,5 +1,6 @@
 package com.mediflow.clinical.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
@@ -9,6 +10,8 @@ import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.infrastructure.config.SecurityConfig;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
+import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
+import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,9 +21,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AppointmentController.class)
 @Import({GlobalExceptionHandler.class, SecurityConfig.class,
-        ThreadLocalCorrelationIdProvider.class})
+        ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
 class GlobalExceptionHandlerTest {
@@ -40,6 +45,9 @@ class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
     private ManageAppointmentUseCase manageAppointmentUseCase;
@@ -83,12 +91,17 @@ class GlobalExceptionHandlerTest {
                         "APPOINTMENT_INVALID_TRANSITION",
                         "Chuyển trạng thái không hợp lệ"));
 
-        mockMvc.perform(put(BASE_PATH + "/{id}/status", id)
+        MvcResult result = mockMvc.perform(put(BASE_PATH + "/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"ARRIVED\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error.code")
-                        .value("APPOINTMENT_INVALID_TRANSITION"));
+                        .value("APPOINTMENT_INVALID_TRANSITION"))
+                .andDo(this::assertCorrelationIdMatchesHeader)
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID))
+                .isNotNull();
     }
 
     @Test
@@ -106,12 +119,18 @@ class GlobalExceptionHandlerTest {
     @Test
     @WithMockUser(roles = "NURSE")
     void invalidBody_returns400WithFieldDetails() throws Exception {
-        mockMvc.perform(post(BASE_PATH)
+        MvcResult result = mockMvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header(JwtClaims.HEADER_CORRELATION_ID, "malformed-correlation-id")
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-                .andExpect(jsonPath("$.error.details").isArray());
+                .andExpect(jsonPath("$.error.details").isArray())
+                .andDo(this::assertCorrelationIdMatchesHeader)
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID))
+                .isNotEqualTo("malformed-correlation-id");
     }
 
     @Test
@@ -120,6 +139,30 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get(BASE_PATH).param("appointmentDate", "not-a-date"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void unexpectedFailure_returns500EnvelopeWithCorrelationId() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(manageAppointmentUseCase.getById(id))
+                .thenThrow(new RuntimeException("boom"));
+
+        mockMvc.perform(get(BASE_PATH + "/{id}", id))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error.code").value("INTERNAL_ERROR"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
+    }
+
+    private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {
+        String header = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        String body = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId")
+                .asText(null);
+
+        assertThat(header).isNotNull();
+        assertThat(body).isNotNull();
+        assertThat(UUID.fromString(body)).isEqualTo(UUID.fromString(header));
     }
 
     private String validCreateBody() {

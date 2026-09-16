@@ -8,6 +8,8 @@ import com.mediflow.clinical.application.dto.response.DiagnosisDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.in.ManageRecordUseCase;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
+import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
+import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,12 +20,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(MedicalRecordController.class)
 @Import({MedicalRecordControllerTest.MethodSecurityConfiguration.class,
-        ThreadLocalCorrelationIdProvider.class})
+        ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 class MedicalRecordControllerTest {
 
     private static final String BASE_PATH = "/api/v1/records";
@@ -58,11 +62,16 @@ class MedicalRecordControllerTest {
         UUID recordId = UUID.randomUUID();
         when(manageRecordUseCase.getById(recordId)).thenReturn(record(recordId));
 
-        mockMvc.perform(get(BASE_PATH + "/{id}", recordId))
+        MvcResult result = mockMvc.perform(get(BASE_PATH + "/{id}", recordId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.recordId").value(recordId.toString()))
-                .andExpect(jsonPath("$.data.diagnoses.length()").value(1));
+                .andExpect(jsonPath("$.data.diagnoses.length()").value(1))
+                .andDo(this::assertCorrelationIdMatchesHeader)
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID))
+                .isNotNull();
     }
 
     @Test
@@ -197,6 +206,17 @@ class MedicalRecordControllerTest {
                         "J00")),
                 now,
                 now);
+    }
+
+    private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {
+        String header = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        String body = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId")
+                .asText(null);
+
+        assertThat(header).isNotNull();
+        assertThat(body).isNotNull();
+        assertThat(UUID.fromString(body)).isEqualTo(UUID.fromString(header));
     }
 
     @TestConfiguration

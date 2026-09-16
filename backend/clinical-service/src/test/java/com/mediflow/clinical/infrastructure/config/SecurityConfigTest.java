@@ -1,10 +1,13 @@
 package com.mediflow.clinical.infrastructure.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
+import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
 import com.mediflow.clinical.web.AppointmentController;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
+import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -13,11 +16,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -27,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AppointmentController.class)
 @Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class,
+        CorrelationIdFilter.class,
         SecurityConfigTest.ActuatorEndpointProbe.class})
 @TestPropertySource(properties =
         "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes")
@@ -35,15 +42,20 @@ class SecurityConfigTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockBean
     private ManageAppointmentUseCase manageAppointmentUseCase;
 
     @Test
     void search_withoutAuthentication_returns401Envelope() throws Exception {
-        mockMvc.perform(get("/api/v1/appointments"))
+        mockMvc.perform(get("/api/v1/appointments")
+                        .header(JwtClaims.HEADER_CORRELATION_ID, "malformed-correlation-id"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -52,7 +64,8 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/v1/appointments"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -65,7 +78,8 @@ class SecurityConfigTest {
 
         mockMvc.perform(get("/api/v1/appointments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.success").value(true))
+                .andDo(this::assertCorrelationIdMatchesHeader);
     }
 
     @Test
@@ -116,5 +130,16 @@ class SecurityConfigTest {
         Map<String, String> env() {
             return Map.of("status", "SENSITIVE");
         }
+    }
+
+    private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {
+        String header = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        String body = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId")
+                .asText(null);
+
+        assertThat(header).isNotNull();
+        assertThat(body).isNotNull();
+        assertThat(UUID.fromString(body)).isEqualTo(UUID.fromString(header));
     }
 }

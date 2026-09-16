@@ -5,6 +5,7 @@ import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.UpdateAppointmentRequest;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
@@ -36,6 +37,7 @@ public class AppointmentController {
     private static final String BASE_PATH = "/api/v1/appointments";
 
     private final ManageAppointmentUseCase manageAppointmentUseCase;
+    private final CorrelationIdProvider correlationIds;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
@@ -50,7 +52,7 @@ public class AppointmentController {
                 departmentId,
                 appointmentDate,
                 PageQuery.of(page, size));
-        return ResponseEntity.ok(ApiResponse.ok(result));
+        return ResponseEntity.ok(ApiResponse.ok(result, correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/{id}")
@@ -58,7 +60,8 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<AppointmentDTO>> getById(
             @PathVariable UUID id) {
 
-        return ResponseEntity.ok(ApiResponse.ok(manageAppointmentUseCase.getById(id)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageAppointmentUseCase.getById(id), correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/patient/{patientId}")
@@ -67,7 +70,7 @@ public class AppointmentController {
             @PathVariable UUID patientId) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageAppointmentUseCase.byPatient(patientId)));
+                manageAppointmentUseCase.byPatient(patientId), correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping
@@ -77,7 +80,7 @@ public class AppointmentController {
 
         AppointmentDTO created = manageAppointmentUseCase.create(request);
         return ResponseEntity.created(URI.create(BASE_PATH + "/" + created.appointmentId()))
-                .body(ApiResponse.ok(created));
+                .body(ApiResponse.ok(created, correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}")
@@ -87,7 +90,7 @@ public class AppointmentController {
             @Valid @RequestBody UpdateAppointmentRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageAppointmentUseCase.update(id, request)));
+                manageAppointmentUseCase.update(id, request), correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}/status")
@@ -97,6 +100,7 @@ public class AppointmentController {
             @Valid @RequestBody ChangeStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                manageAppointmentUseCase.changeStatus(id, request.status())));
+                manageAppointmentUseCase.changeStatus(id, request.status()),
+                correlationIds.currentOrCreate().toString()));
     }
 }
