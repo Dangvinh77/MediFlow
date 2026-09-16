@@ -12,42 +12,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Adapter triển khai DepartmentRepository của Application.
- *
- * Nhiệm vụ:
- * - Nhận yêu cầu từ Application.
- * - Gọi Spring Data JPA.
- * - Mapping Entity ↔ Domain.
- *
- * Application không biết class này tồn tại.
- * Application chỉ biết DepartmentRepository.
- */
 @Component
 public class DepartmentRepositoryAdapter
         implements DepartmentRepository {
 
     private final DepartmentJpaRepository jpaRepository;
 
-    /**
-     * Constructor Injection.
-     */
-    public DepartmentRepositoryAdapter(
+        public DepartmentRepositoryAdapter(
             DepartmentJpaRepository jpaRepository
     ) {
         this.jpaRepository = jpaRepository;
     }
 
-    /**
-     * Kiểm tra abbreviation đã tồn tại chưa.
-     *
-     * Application gọi:
-     *
-     * departmentRepository.existsByAbbreviation(...)
-     *
-     * và thực tế method này sẽ được chạy.
-     */
-    @Override
+        @Override
     public boolean existsByAbbreviation(
             String abbreviation
     ) {
@@ -56,13 +33,7 @@ public class DepartmentRepositoryAdapter
         );
     }
 
-    /**
-     * Tìm Department theo ID.
-     *
-     * JPA trả về DepartmentEntity.
-     * Adapter chuyển Entity → Domain.
-     */
-    @Override
+        @Override
     public Optional<Department> findById(
             UUID departmentId
     ) {
@@ -72,23 +43,17 @@ public class DepartmentRepositoryAdapter
     }
 
     /**
-     * Lưu Department.
      *
      * Flow:
      *
-     * Domain
      *   ↓
-     * Entity
      *   ↓
      * JPA
      *   ↓
      * Database
      *
-     * Sau khi save xong:
      *
-     * Entity
      *   ↓
-     * Domain
      */
     @Override
     public Department save(
@@ -103,14 +68,7 @@ public class DepartmentRepositoryAdapter
         return toDomain(savedEntity);
     }
 
-    /**
-     * Mapping:
-     *
-     * DepartmentEntity → Department
-     *
-     * Đây là boundary giữa Persistence và Domain.
-     */
-    private Department toDomain(
+        private Department toDomain(
             DepartmentEntity entity
     ) {
 
@@ -127,12 +85,7 @@ public class DepartmentRepositoryAdapter
         );
     }
 
-    /**
-     * Mapping:
-     *
-     * Department → DepartmentEntity
-     */
-    private DepartmentEntity toEntity(
+        private DepartmentEntity toEntity(
             Department department
     ) {
 

@@ -8,118 +8,56 @@ import com.mediflow.organization.domain.model.StaffStatus;
 
 import jakarta.persistence.*;
 
-/**
- * Persistence Entity đại diện cho bảng STAFF.
- *
- * LƯU Ý:
- * - Đây không phải Domain Model.
- * - Class này chỉ phục vụ JPA/Persistence.
- * - Không đặt business logic vào Entity.
- * - departmentId chỉ lưu UUID, không tạo @ManyToOne với Department.
- */
 @Entity
 @Table(name = "staff")
 public class StaffEntity {
 
-    /**
-     * Primary Key.
-     */
-    @Id
+        @Id
     @Column(name = "staff_id", nullable = false, updatable = false)
     private UUID staffId;
 
-    /**
-     * Họ và tên nhân viên.
-     */
-    @Column(name = "full_name", nullable = false, length = 100)
+        @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    /**
-     * Department mà Staff đang thuộc về.
-     *
-     * Chỉ lưu UUID.
-     */
-    @Column(name = "department_id", nullable = false)
+        @Column(name = "department_id", nullable = false)
     private UUID departmentId;
 
     /**
-     * Chức danh:
      *
      * DOCTOR
      * NURSE
-     * TECHNICIAN
-     * PHARMACIST
-     * CASHIER
      * MANAGER
-     * ADMINISTRATIVE
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "job_title", nullable = false, length = 30)
+    @Column(name = "job_title", nullable = false, length = 20)
     private JobTitle jobTitle;
 
-    /**
-     * Chuyên môn của Staff.
-     *
-     * Có thể null.
-     */
-    @Column(name = "specialization", length = 100)
+        @Column(name = "specialization", length = 100)
     private String specialization;
 
-    /**
-     * Số giấy phép hành nghề.
-     *
-     * Có thể null đối với các chức danh không yêu cầu.
-     *
-     * Rule DOCTOR bắt buộc licenseNumber
-     * được xử lý ở Domain.
-     */
-    @Column(name = "license_number", length = 50)
+        @Column(name = "license_number", length = 50)
     private String licenseNumber;
 
-    /**
-     * Số điện thoại.
-     */
-    @Column(name = "phone_number", nullable = false, length = 15)
+        @Column(name = "phone_number", length = 15)
     private String phoneNumber;
 
-    /**
-     * Email.
-     */
-    @Column(name = "email", nullable = false, length = 100)
+        @Column(name = "email", length = 100)
     private String email;
 
-    /**
-     * Trạng thái Staff.
-     *
-     * ACTIVE
-     * INACTIVE
-     */
-    @Enumerated(EnumType.STRING)
+        @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private StaffStatus status;
 
-    /**
-     * Thời điểm tạo Staff.
-     */
-    @Column(name = "created_at", nullable = false)
+        @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    /**
-     * Thời điểm cập nhật gần nhất.
-     */
-    @Column(name = "updated_at", nullable = false)
+        @Column(name = "updated_at")
     private Instant updatedAt;
 
-    /**
-     * Constructor rỗng bắt buộc cho JPA.
-     */
-    protected StaffEntity() {
+        protected StaffEntity() {
     }
 
-    /**
-     * Constructor dùng khi mapping Domain → Entity.
-     */
-    public StaffEntity(
+        public StaffEntity(
             UUID staffId,
             String fullName,
             UUID departmentId,

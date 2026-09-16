@@ -8,15 +8,6 @@ import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 
-/**
- * Application Service thực thi CreateDepartmentUseCase.
- *
- * Nhiệm vụ:
- * - Điều phối các bước của use case.
- * - Gọi repository khi cần dữ liệu bên ngoài Domain.
- * - Gọi Domain để thay đổi business state.
- * - Publish event.
- */
 public class CreateDepartmentService
                 implements CreateDepartmentUseCase {
 
@@ -38,10 +29,7 @@ public class CreateDepartmentService
                         String location) {
 
                 /*
-                 * Rule uniqueness cần database.
                  *
-                 * Domain không thể tự biết abbreviation
-                 * đã tồn tại trong hệ thống hay chưa.
                  */
                 if (departmentRepository.existsByAbbreviation(abbreviation)) {
                         throw new IllegalArgumentException(
@@ -50,10 +38,7 @@ public class CreateDepartmentService
                 }
 
                 /*
-                 * Gọi Domain Factory.
                  *
-                 * Các invariant nội tại của Department
-                 * được kiểm tra trong Domain.
                  */
                 Department department = Department.create(
                                 UUID.randomUUID(),
@@ -63,12 +48,10 @@ public class CreateDepartmentService
                                 location);
 
                 /*
-                 * Persist.
                  */
                 departmentRepository.save(department);
 
                 /*
-                 * Publish department.created.
                  */
                 eventPublisher.publish(
                                 new DepartmentCreatedEvent(
@@ -79,10 +62,7 @@ public class CreateDepartmentService
                 return department.getDepartmentId();
         }
 
-        /**
-         * Event được publish sau khi Department được tạo.
-         */
-        public record DepartmentCreatedEvent(
+                public record DepartmentCreatedEvent(
                         UUID departmentId,
                         String departmentName,
                         String departmentType) {

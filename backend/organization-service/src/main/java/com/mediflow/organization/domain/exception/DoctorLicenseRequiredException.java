@@ -1,9 +1,6 @@
 package com.mediflow.organization.domain.exception;
 
-/**
- * Được throw khi Staff có JobTitle = DOCTOR
- * nhưng không có license number.
- */
+/** Thrown when a doctor does not have a license number. */
 public class DoctorLicenseRequiredException
         extends DomainException {
 

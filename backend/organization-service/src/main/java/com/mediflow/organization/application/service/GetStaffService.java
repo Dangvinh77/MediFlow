@@ -4,13 +4,11 @@ import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.Staff;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
-@Service
 @Transactional(readOnly = true)
 public class GetStaffService implements GetStaffUseCase {
 
@@ -24,6 +22,11 @@ public class GetStaffService implements GetStaffUseCase {
     public Staff getStaffById(UUID id) {
         return staffRepository.findById(id)
                 .orElseThrow(() -> new StaffNotFoundException(id));
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return staffRepository.findById(id).isPresent();
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.mediflow.organization.application.port.in.GetDepartmentUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.model.Department;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;

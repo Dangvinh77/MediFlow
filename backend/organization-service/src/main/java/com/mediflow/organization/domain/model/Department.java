@@ -1,114 +1,38 @@
 package com.mediflow.organization.domain.model;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
 import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
+import com.mediflow.organization.domain.exception.InvalidDepartmentException;
 
-/**
- * Domain model đại diện cho một khoa/phòng trong bệnh viện.
- *
- * Department chịu trách nhiệm quản lý các thông tin thuộc về
- * cơ cấu tổ chức:
- *
- * - Khoa có ID gì?
- * - Tên khoa là gì?
- * - Mã viết tắt là gì?
- * - Loại khoa là gì?
- * - Ai là trưởng khoa?
- * - Khoa nằm ở đâu?
- * - Khoa còn hoạt động không?
- *
- * Department KHÔNG chịu trách nhiệm:
- *
- * - Bệnh nhân
- * - Lịch hẹn
- * - Hồ sơ bệnh án
- * - Xét nghiệm
- * - Đơn thuốc
- * - Thanh toán
- *
- * Đây là nguyên tắc Bounded Context:
- * Organization Service chỉ quản lý "ai" và "ở đâu".
- */
 public class Department {
 
-    /**
-     * ID duy nhất của khoa.
-     *
-     * Đây là primary identity của Department.
-     */
-    private final UUID departmentId;
+        private final UUID departmentId;
+
+        private String departmentName;
 
     /**
-     * Tên đầy đủ của khoa.
      *
-     * Ví dụ:
-     * "Khoa Nội tổng hợp"
-     */
-    private String departmentName;
-
-    /**
-     * Mã viết tắt của khoa.
-     *
-     * Ví dụ:
-     * "NOI"
-     * "NGOAI"
      * "XN"
      */
     private String abbreviation;
 
-    /**
-     * Phân loại khoa:
-     * CLINICAL / PARACLINICAL / ADMINISTRATIVE.
-     */
-    private DepartmentType departmentType;
+        private DepartmentType departmentType;
 
-    /**
-     * ID của Staff đang giữ chức trưởng khoa.
-     *
-     * Chỉ lưu UUID thay vì giữ trực tiếp object Staff.
-     *
-     * Lý do:
-     * Department và Staff là hai domain object độc lập.
-     * Domain không cần tạo object graph Department -> Staff -> Department.
-     */
-    private UUID departmentHeadId;
+        private UUID departmentHeadId;
 
-    /**
-     * Vị trí vật lý của khoa.
-     *
-     * Ví dụ:
-     * "Tầng 3 - Tòa A"
-     */
-    private String location;
+        private String location;
 
-    /**
-     * Cho biết khoa còn hoạt động hay không.
-     *
-     * true = đang hoạt động
-     * false = đã ngừng hoạt động
-     */
-    private boolean active;
+        private boolean active;
 
-    /**
-     * Thời điểm tạo Department.
-     */
-    private final Instant createdAt;
+        private final Instant createdAt;
 
-    /**
-     * Thời điểm cập nhật Department gần nhất.
-     */
-    private Instant updatedAt;
+        private Instant updatedAt;
 
-    /**
-     * Constructor dùng để khôi phục Department từ persistence.
-     *
-     * Infrastructure/persistence có thể sử dụng constructor này
-     * để chuyển dữ liệu database thành domain object.
-     */
-    private Department(
+        private Department(
             UUID departmentId,
             String departmentName,
             String abbreviation,
@@ -129,18 +53,18 @@ public class Department {
         this.updatedAt = updatedAt;
     }
 
-    /**
-     * Factory method dùng để tạo một Department mới.
-     *
-     * Dùng factory giúp code phía Application dễ đọc hơn
-     * thay vì phải truyền active, createdAt, updatedAt thủ công.
-     */
-    public static Department create(
+        public static Department create(
             UUID departmentId,
             String departmentName,
             String abbreviation,
             DepartmentType departmentType,
             String location) {
+        validateData(
+                departmentId,
+                departmentName,
+                abbreviation,
+                departmentType);
+
         Instant now = Instant.now();
 
         return new Department(
@@ -155,15 +79,7 @@ public class Department {
                 now);
     }
 
-    /**
-     * Reconstruct Department từ persistence data.
-     *
-     * Method này phục vụ Infrastructure khi load
-     * aggregate từ database.
-     *
-     * Không phải business operation.
-     */
-    public static Department reconstitute(
+        public static Department reconstitute(
             UUID departmentId,
             String departmentName,
             String abbreviation,
@@ -173,6 +89,12 @@ public class Department {
             boolean active,
             Instant createdAt,
             Instant updatedAt) {
+        validateData(
+                departmentId,
+                departmentName,
+                abbreviation,
+                departmentType);
+
         return new Department(
                 departmentId,
                 departmentName,
@@ -187,21 +109,17 @@ public class Department {
 
     
 
-    /**
-     * Cập nhật thông tin cơ bản của khoa.
-     *
-     * Method này KHÔNG cho phép thay đổi:
-     * - departmentId
-     * - departmentHeadId
-     * - active
-     *
-     * Vì đây là những state có business rule riêng.
-     */
-    public void update(
+        public void update(
             String departmentName,
             String abbreviation,
             DepartmentType departmentType,
             String location) {
+        validateData(
+                this.departmentId,
+                departmentName,
+                abbreviation,
+                departmentType);
+
         this.departmentName = departmentName;
         this.abbreviation = abbreviation;
         this.departmentType = departmentType;
@@ -210,22 +128,7 @@ public class Department {
         touch();
     }
 
-    /**
-     * Thay đổi trưởng khoa.
-     *
-     * Business rule:
-     *
-     * - Staff phải tồn tại.
-     * - Staff phải thuộc chính Department này.
-     * - Staff phải đang ACTIVE.
-     * - Staff phải có chức danh phù hợp.
-     *
-     * Việc kiểm tra Staff tồn tại/thuộc khoa sẽ được Application layer
-     * lấy từ StaffRepository trước khi gọi method này.
-     *
-     * Domain không được tự gọi repository.
-     */
-    public void changeHead(Staff staff) {
+        public void changeHead(Staff staff) {
 
         if (staff == null) {
             throw new InvalidDepartmentHeadException(
@@ -233,7 +136,6 @@ public class Department {
         }
 
         /*
-         * Trưởng khoa phải là nhân viên đang hoạt động.
          */
         if (!staff.isActive()) {
             throw new InvalidDepartmentHeadException(
@@ -241,7 +143,6 @@ public class Department {
         }
 
         /*
-         * Trưởng khoa phải thuộc chính khoa này.
          */
         if (!departmentId.equals(staff.getDepartmentId())) {
             throw new InvalidDepartmentHeadException(
@@ -249,11 +150,7 @@ public class Department {
         }
 
         /*
-         * Trong design hiện tại:
-         * trưởng khoa được giả định là DOCTOR.
          *
-         * Nếu sau này nghiệp vụ cho phép Nurse/Manager làm trưởng khoa,
-         * chỉ cần thay đổi rule này.
          */
         if (staff.getJobTitle() != JobTitle.DOCTOR) {
             throw new InvalidDepartmentHeadException(
@@ -265,30 +162,13 @@ public class Department {
         touch();
     }
 
-    /**
-     * Xóa trưởng khoa hiện tại.
-     *
-     * Không xóa Staff.
-     * Chỉ xóa liên kết departmentHeadId.
-     */
-    public void removeHead() {
+        public void removeHead() {
         this.departmentHeadId = null;
 
         touch();
     }
 
-    /**
-     * Vô hiệu hóa khoa.
-     *
-     * Business rule:
-     *
-     * Không được ngừng hoạt động khoa nếu vẫn còn
-     * nhân viên ACTIVE đang làm việc tại khoa.
-     *
-     * Domain không tự query StaffRepository.
-     * Application layer phải kiểm tra trước và truyền kết quả vào.
-     */
-    public void deactivate(boolean hasActiveStaff) {
+        public void deactivate(boolean hasActiveStaff) {
 
         if (hasActiveStaff) {
             throw new DepartmentHasActiveStaffException(
@@ -300,20 +180,51 @@ public class Department {
         touch();
     }
 
-    /**
-     * Kích hoạt lại khoa.
-     */
-    public void activate() {
+        public void activate() {
         this.active = true;
 
         touch();
     }
 
-    /**
-     * Cập nhật updatedAt mỗi khi Department thay đổi state.
-     */
-    private void touch() {
+        private void touch() {
         this.updatedAt = Instant.now();
+    }
+
+    private static void validateData(
+            UUID departmentId,
+            String departmentName,
+            String abbreviation,
+            DepartmentType departmentType) {
+
+        if (departmentId == null) {
+            throw new InvalidDepartmentException(
+                    "Department ID must not be null");
+        }
+
+        if (departmentName == null || departmentName.isBlank()) {
+            throw new InvalidDepartmentException(
+                    "Department name must not be blank");
+        }
+
+        if (abbreviation == null || abbreviation.isBlank()) {
+            throw new InvalidDepartmentException(
+                    "Department abbreviation must not be blank");
+        }
+
+        if (abbreviation.length() > 20) {
+            throw new InvalidDepartmentException(
+                    "Department abbreviation must not exceed 20 characters");
+        }
+
+        if (!abbreviation.equals(abbreviation.toUpperCase(Locale.ROOT))) {
+            throw new InvalidDepartmentException(
+                    "Department abbreviation must be uppercase");
+        }
+
+        if (departmentType == null) {
+            throw new InvalidDepartmentException(
+                    "Department type must not be null");
+        }
     }
 
     public UUID getDepartmentId() {
