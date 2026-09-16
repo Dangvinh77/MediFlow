@@ -1,0 +1,8 @@
+{
+  "eventId": "17171717-1717-1717-1717-171717171717",
+  "occurredAt": "2026-09-16T05:00:00Z",
+  "correlationId": "cid-payment-failed-1",
+  "invoiceId": "18181818-1818-1818-1818-181818181818",
+  "patientId": "19191919-1919-1919-1919-191919191919",
+  "reason": "Dispense failed"
+}

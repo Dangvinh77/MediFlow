@@ -51,8 +51,8 @@ class ReportApplicationServiceTest {
     }
 
     @Test
-    void daily_noData_returnsZeroForRequestedScope() {
-        LocalDate date = LocalDate.of(2026, 9, 15);
+    void daily_futureDate_noData_returnsZeroForRequestedScope() {
+        LocalDate date = LocalDate.of(2026, 9, 17);
         when(dailyReports.find(date, null)).thenReturn(Optional.empty());
 
         DailyReportDTO result = service.daily(date, null);

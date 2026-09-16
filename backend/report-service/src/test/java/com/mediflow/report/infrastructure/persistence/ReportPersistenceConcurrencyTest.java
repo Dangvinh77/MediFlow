@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -54,6 +55,12 @@ class ReportPersistenceConcurrencyTest {
 
     @Autowired
     private DailyVisitReportPersistenceAdapter dailyReports;
+
+    @Autowired
+    private MonthlyRevenueReportPersistenceAdapter monthlyReports;
+
+    @Autowired
+    private DrugStatisticPersistenceAdapter drugStatistics;
 
     @Autowired
     private AggregateUpdaterService updater;
@@ -110,6 +117,80 @@ class ReportPersistenceConcurrencyTest {
     }
 
     @Test
+    void findOrCreateConcurrent_hospitalScopeCreatesSingleRow() throws Exception {
+        LocalDate reportDate = LocalDate.of(2026, 9, 18);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<?> first = submitDailyFindOrCreate(executor, ready, start, reportDate, null);
+            Future<?> second = submitDailyFindOrCreate(executor, ready, start, reportDate, null);
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            first.get(5, TimeUnit.SECONDS);
+            second.get(5, TimeUnit.SECONDS);
+
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM daily_visit_report WHERE report_date = ? AND department_id IS NULL",
+                    Integer.class, reportDate)).isOne();
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void findOrCreateConcurrent_monthlyNaturalKeyCreatesSingleRow() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<?> first = submitMonthlyFindOrCreate(executor, ready, start, 9, 2026, null);
+            Future<?> second = submitMonthlyFindOrCreate(executor, ready, start, 9, 2026, null);
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            first.get(5, TimeUnit.SECONDS);
+            second.get(5, TimeUnit.SECONDS);
+
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM monthly_revenue_report "
+                            + "WHERE year = 2026 AND month = 9 AND department_id IS NULL",
+                    Integer.class)).isOne();
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void findOrCreateConcurrent_drugHospitalScopeCreatesSingleRow() throws Exception {
+        UUID drugId = UUID.randomUUID();
+        LocalDate reportDate = LocalDate.of(2026, 9, 19);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<?> first = submitDrugFindOrCreate(executor, ready, start, drugId, reportDate);
+            Future<?> second = submitDrugFindOrCreate(executor, ready, start, drugId, reportDate);
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            first.get(5, TimeUnit.SECONDS);
+            second.get(5, TimeUnit.SECONDS);
+
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM drug_statistic WHERE drug_id = ? AND report_date = ? "
+                            + "AND department_id IS NULL",
+                    Integer.class, drugId, reportDate)).isOne();
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
     void paymentCompletedConcurrent_sameInvoiceAppliesRevenueOnce() throws Exception {
         UUID invoiceId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
@@ -144,6 +225,41 @@ class ReportPersistenceConcurrencyTest {
         }
     }
 
+    @RepeatedTest(10)
+    void paymentCompletedFailedRace_alwaysEndsReversedWithoutRevenue() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        UUID completedEventId = UUID.randomUUID();
+        UUID failedEventId = UUID.randomUUID();
+        Instant occurredAt = Instant.parse("2026-09-20T10:00:00Z");
+        LocalDate reportDate = occurredAt.atZone(ZoneId.of("Asia/Bangkok")).toLocalDate();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            Future<?> completed = submitPayment(executor, ready, start, completedEventId, occurredAt,
+                    invoiceId, departmentId);
+            Future<?> failed = submitPaymentFailed(executor, ready, start, failedEventId, occurredAt,
+                    invoiceId);
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            completed.get(5, TimeUnit.SECONDS);
+            failed.get(5, TimeUnit.SECONDS);
+
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT status FROM payment_contribution WHERE invoice_id = ?", String.class,
+                    invoiceId)).isEqualTo("REVERSED");
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT COALESCE((SELECT revenue FROM daily_visit_report "
+                            + "WHERE report_date = ? AND department_id IS NULL), 0)",
+                    BigDecimal.class, reportDate)).isEqualByComparingTo("0.00");
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
     private Future<Boolean> submitClaim(ExecutorService executor, CountDownLatch ready,
                                         CountDownLatch start, UUID eventId) {
         return executor.submit(() -> {
@@ -163,6 +279,26 @@ class ReportPersistenceConcurrencyTest {
         });
     }
 
+    private Future<?> submitMonthlyFindOrCreate(ExecutorService executor, CountDownLatch ready,
+                                                CountDownLatch start, int month, int year,
+                                                UUID departmentId) {
+        return executor.submit(() -> {
+            ready.countDown();
+            await(start);
+            monthlyReports.findOrCreate(year, month, departmentId);
+        });
+    }
+
+    private Future<?> submitDrugFindOrCreate(ExecutorService executor, CountDownLatch ready,
+                                             CountDownLatch start, UUID drugId,
+                                             LocalDate reportDate) {
+        return executor.submit(() -> {
+            ready.countDown();
+            await(start);
+            drugStatistics.findOrCreate(drugId, "Concurrent drug", reportDate, null);
+        });
+    }
+
     private Future<?> submitPayment(ExecutorService executor, CountDownLatch ready,
                                     CountDownLatch start, UUID eventId, Instant occurredAt,
                                     UUID invoiceId, UUID departmentId) {
@@ -171,6 +307,16 @@ class ReportPersistenceConcurrencyTest {
             await(start);
             updater.onPaymentCompleted(eventId, occurredAt, invoiceId, departmentId,
                     new BigDecimal("100.00"));
+        });
+    }
+
+    private Future<?> submitPaymentFailed(ExecutorService executor, CountDownLatch ready,
+                                          CountDownLatch start, UUID eventId, Instant occurredAt,
+                                          UUID invoiceId) {
+        return executor.submit(() -> {
+            ready.countDown();
+            await(start);
+            updater.onPaymentFailed(eventId, occurredAt, invoiceId);
         });
     }
 
