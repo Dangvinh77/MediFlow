@@ -8,6 +8,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.mediflow.clinical.infrastructure.correlation.CorrelationIdRequestAttribute;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.common.security.JwtClaims;
 
@@ -34,6 +35,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         UUID correlationId = resolve(request.getHeader(JwtClaims.HEADER_CORRELATION_ID));
+        CorrelationIdRequestAttribute.bind(request, correlationId);
         correlationIds.bind(correlationId);
         response.setHeader(JwtClaims.HEADER_CORRELATION_ID, correlationId.toString());
         try {
