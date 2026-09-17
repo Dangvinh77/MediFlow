@@ -49,6 +49,17 @@ library) and **direct `fetch` via `api.ts`** (no TanStack Query / SWR).
 The patient, appointment, medical-record, and lab screens are the first worked examples of this
 layout. New contexts should follow the same route → feature component → feature API flow.
 
+## Theme
+
+The app supports **Light**, **Dark**, and **System** preferences through
+`src/components/theme/ThemeProvider.tsx`. The selected preference is stored under
+`mediflow.theme`, and the root layout applies it before first paint to avoid a color flash.
+
+Use the semantic Tailwind colors declared in `src/app/globals.css` (`background`, `surface`,
+`surface-muted`, `foreground`, `muted-foreground`, `border`, `primary`, `danger`, `warning`,
+`success`, and `info`) instead of hard-coded palette colors in feature components. Shared status
+labels should use `src/components/ui/StatusBadge.tsx`.
+
 ## Scripts
 
 ```bash

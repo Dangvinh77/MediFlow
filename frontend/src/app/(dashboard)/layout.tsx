@@ -30,11 +30,11 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   }
 
   if (!authorized) {
-    return <main className="mx-auto max-w-6xl px-6 py-10 text-zinc-500">Đang kiểm tra đăng nhập…</main>;
+    return <main className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Đang kiểm tra đăng nhập…</main>;
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="min-h-screen bg-background text-foreground">
       <DashboardHeader role={role} onLogout={onLogout} />
       {children}
     </div>

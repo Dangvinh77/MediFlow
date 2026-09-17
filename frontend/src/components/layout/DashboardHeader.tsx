@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Role } from "@/lib/roles";
 
 const navigation = [
@@ -17,7 +18,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ role, onLogout }: DashboardHeaderProps) {
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <header className="border-b border-border bg-surface">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="text-lg font-bold">
           MediFlow
@@ -30,11 +31,12 @@ export function DashboardHeader({ role, onLogout }: DashboardHeaderProps) {
           ))}
         </nav>
         <div className="flex items-center gap-3 text-sm">
-          {role && <span className="text-zinc-500">{role}</span>}
+          {role && <span className="text-muted-foreground">{role}</span>}
+          <ThemeToggle />
           <button
             type="button"
             onClick={onLogout}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 dark:border-zinc-700"
+            className="rounded-lg border border-border px-3 py-1.5"
           >
             Đăng xuất
           </button>
