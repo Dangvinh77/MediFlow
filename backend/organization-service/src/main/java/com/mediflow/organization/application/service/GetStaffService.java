@@ -1,5 +1,6 @@
 package com.mediflow.organization.application.service;
 
+import com.mediflow.organization.application.dto.response.StaffLookupDTO;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
@@ -25,8 +26,12 @@ public class GetStaffService implements GetStaffUseCase {
     }
 
     @Override
-    public boolean existsById(UUID id) {
-        return staffRepository.findById(id).isPresent();
+    public StaffLookupDTO lookup(UUID id) {
+        return staffRepository.findById(id)
+                .map(staff -> staff.isEligibleDoctor()
+                        ? StaffLookupDTO.eligible(staff.getDepartmentId())
+                        : StaffLookupDTO.ineligible())
+                .orElseGet(StaffLookupDTO::missing);
     }
 
     @Override

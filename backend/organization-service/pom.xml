@@ -13,7 +13,7 @@
 
     <artifactId>organization-service</artifactId>
     <name>MediFlow Organization Service</name>
-    <description>Departments, staff &amp; accounts (KHOA, NHAN_VIEN, TAI_KHOAN). Owns the department dimension the whole system references.</description>
+    <description>Departments, staff, and accounts. Owns the department dimension referenced across the system.</description>
 
     <dependencies>
         <!-- Web / JPA / Validation -->
@@ -29,7 +29,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-        <!-- Also supplies BCryptPasswordEncoder for TAI_KHOAN.mat_khau_hash -->
+        <!-- Also supplies BCryptPasswordEncoder for account password hashes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>

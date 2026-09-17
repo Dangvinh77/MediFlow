@@ -7,8 +7,9 @@
 ###   GET      /api/v1/org/staff/{id}
 ###   GET      /api/v1/org/staff/{id}/exists
 ###   PUT      /api/v1/org/staff/{id}/department
+###   POST     /api/v1/org/accounts
 ###
-### Pending use cases: department/staff update and account management.
+### Pending use case: credential verification.
 ### Start order: Eureka (8761) -> gateway (8080) -> organization-service (8089).
 ### Set a valid JWT before calling protected endpoints.
 
@@ -91,6 +92,42 @@ Content-Type: application/json
   "newDepartmentId": "00000000-0000-0000-0000-000000000000"
 }
 
-### Check whether a staff member exists
+### Internal lookup: staff existence and doctor eligibility (SYSTEM token only)
 GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/exists
 Authorization: Bearer {{token}}
+
+### Expected 200 envelope
+### data.exists=false, data.eligibleDoctor=false, data.departmentId=null when missing
+### data.exists=true, data.eligibleDoctor=false, data.departmentId=null when not an eligible doctor
+### data.exists=true, data.eligibleDoctor=true, data.departmentId=<authoritative department> for an active doctor
+
+### Create an account (ADMIN only)
+POST {{host}}/api/v1/org/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "alex.morgan",
+  "password": "StrongPass123",
+  "staffId": "00000000-0000-0000-0000-000000000000",
+  "role": "DOCTOR"
+}
+
+### Deactivate an account (ADMIN only)
+PUT {{host}}/api/v1/org/accounts/00000000-0000-0000-0000-000000000000/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### Verify credentials (SYSTEM; called by the gateway)
+POST {{host}}/api/v1/org/accounts/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "alex.morgan",
+  "password": "StrongPass123"
+}

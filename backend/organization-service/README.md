@@ -118,9 +118,9 @@ SYSTEM
 
 ## Status
 
-The module currently provides department and staff creation, lookup, department transfer,
-active filtering, pagination and staff-existence checks. Department/staff update use cases and
-account management are planned but are not implemented yet.
+The module currently provides department and staff creation, lookup, update, department transfer,
+active filtering, pagination, staff-existence checks, and account creation with BCrypt password
+hashing, account status management, and credential verification for the gateway.
 
 ## Run locally
 
@@ -144,11 +144,14 @@ Swagger UI:
 | GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/departments/{id}`                      | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/departments`                           | ADMIN                         |
+| PUT    | `/api/v1/org/departments/{id}`                      | ADMIN                         |
 | GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/staff/{id}`                            | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/staff`                                 | ADMIN                         |
+| PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
+| POST   | `/api/v1/org/accounts`                              | ADMIN                         |
 
 ### Department transfer
 
@@ -301,6 +304,27 @@ The gateway must **never** read `ACCOUNT` directly.
 **`GET /api/v1/org/staff/{id}/exists`**
 
 `APPOINTMENT` and `MEDICAL_RECORD` use this endpoint to validate `staff_id`.
+
+The endpoint is an internal `SYSTEM`-authenticated lookup and returns the common envelope:
+
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "eligibleDoctor": true,
+    "departmentId": "..."
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
+}
+```
+
+`eligibleDoctor` is true only when the staff member is active and has job title `DOCTOR`.
+`departmentId` is populated only for an eligible doctor. Missing and ineligible staff are
+confirmed negative results with HTTP 200; transport failures and invalid upstream responses
+remain error responses.
 
 The lookup must be resilient with:
 

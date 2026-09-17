@@ -9,17 +9,30 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.organization.domain.exception.DepartmentInactiveException;
+import com.mediflow.organization.domain.exception.AccountNotFoundException;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException;
 import com.mediflow.organization.domain.exception.DoctorLicenseRequiredException;
 import com.mediflow.organization.domain.exception.InvalidAccountException;
+import com.mediflow.organization.domain.exception.InvalidCredentialsException;
 import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
 import com.mediflow.organization.domain.exception.StaffAlreadyInDepartmentException;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResource(
+            DuplicateResourceException exception) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                exception.getCode(),
+                exception.getMessage());
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
@@ -91,6 +104,26 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.NOT_FOUND,
                 "Department not found",
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
+            InvalidCredentialsException exception) {
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "AUTH_INVALID_CREDENTIALS",
+                exception.getMessage());
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountNotFound(
+            AccountNotFoundException exception) {
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                "Account not found",
                 exception.getMessage());
     }
 
