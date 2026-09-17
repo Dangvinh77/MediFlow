@@ -2,6 +2,7 @@ package com.mediflow.clinical.messaging.consumer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
 import com.mediflow.clinical.application.port.in.ReactToLabResultUseCase;
@@ -35,5 +38,26 @@ class LabResultCreatedConsumerTest {
 
         verify(useCase).onLabResultCreated(
                 new LabResultCreatedCommand(eventId, recordId, labId, "Normal"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"eventId", "recordId", "labId"})
+    void consume_missingRequiredIdentifier_rejectsBeforeUseCase(String missingField) {
+        UUID eventId = UUID.randomUUID();
+        UUID recordId = UUID.randomUUID();
+        UUID labId = UUID.randomUUID();
+        LabResultCreatedPayload payload = new LabResultCreatedPayload(
+                "eventId".equals(missingField) ? null : eventId,
+                Instant.now(), "correlation-test",
+                "labId".equals(missingField) ? null : labId,
+                UUID.randomUUID(),
+                "recordId".equals(missingField) ? null : recordId,
+                UUID.randomUUID(), "HEMATOLOGY", LocalDate.now(), List.of(), "Normal");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> consumer.consume(payload))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(missingField);
+
+        verifyNoInteractions(useCase);
     }
 }
