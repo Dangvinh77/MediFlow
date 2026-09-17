@@ -46,10 +46,19 @@ src/
 Team decisions, recorded so nobody re-litigates them: **Tailwind utilities only** (no component
 library) and **direct `fetch` via `api.ts`** (no TanStack Query / SWR).
 
-> ⚠️ **Migration pending.** The current code is a demo written before this layout: `app/patients/`
-> sits outside the `(dashboard)` group and every DTO is crammed into `lib/types.ts`. Move it into
-> `features/patient/` as the first worked example. Until then, do **not** add a `page.tsx` under
-> `app/(dashboard)/patients/` — two pages resolving to `/patients` is a build error.
+The patient, appointment, medical-record, and lab screens are the first worked examples of this
+layout. New contexts should follow the same route → feature component → feature API flow.
+
+## Theme
+
+The app supports **Light**, **Dark**, and **System** preferences through
+`src/components/theme/ThemeProvider.tsx`. The selected preference is stored under
+`mediflow.theme`, and the root layout applies it before first paint to avoid a color flash.
+
+Use the semantic Tailwind colors declared in `src/app/globals.css` (`background`, `surface`,
+`surface-muted`, `foreground`, `muted-foreground`, `border`, `primary`, `danger`, `warning`,
+`success`, and `info`) instead of hard-coded palette colors in feature components. Shared status
+labels should use `src/components/ui/StatusBadge.tsx`.
 
 ## Scripts
 

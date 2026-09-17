@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pagination } from "@/components/Pagination";
+import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
 import { labApi, type LabSearchParams } from "../api";
 import type { LabTestDTO, LabTestStatus } from "../types";
@@ -80,13 +80,13 @@ export function LabTable() {
           onChange={(event) => setDepartmentId(event.target.value)}
           placeholder="UUID khoa"
           aria-label="UUID khoa"
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground"
         />
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as LabTestStatus | "")}
           aria-label="Trạng thái xét nghiệm"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-foreground"
         >
           <option value="">Mọi trạng thái</option>
           {LAB_STATUSES.map((value) => (
@@ -98,7 +98,7 @@ export function LabTable() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
         >
           Lọc
         </button>
@@ -106,23 +106,23 @@ export function LabTable() {
           type="button"
           onClick={onReset}
           disabled={loading}
-          className="rounded-lg border border-zinc-300 px-4 py-2 font-medium disabled:opacity-50 dark:border-zinc-700"
+          className="rounded-lg border border-border bg-surface px-4 py-2 font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-50"
         >
           Tất cả
         </button>
       </form>
 
-      {loading && <p className="mt-4 text-zinc-500">Đang tải xét nghiệm…</p>}
-      {error && <p className="mt-4 text-red-600">{error}</p>}
+      {loading && <p className="mt-4 text-muted-foreground">Đang tải xét nghiệm…</p>}
+      {error && <p className="mt-4 text-danger">{error}</p>}
       {!loading && !error && tests.length === 0 && (
-        <p className="mt-4 text-zinc-500">Chưa có yêu cầu xét nghiệm phù hợp.</p>
+        <p className="mt-4 text-muted-foreground">Chưa có yêu cầu xét nghiệm phù hợp.</p>
       )}
 
       {!error && tests.length > 0 && (
         <>
-          <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-4xl text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950">
+              <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th className="px-4 py-3">Ngày yêu cầu</th>
                   <th className="px-4 py-3">Loại</th>
@@ -137,7 +137,7 @@ export function LabTable() {
                 {tests.map((test) => (
                   <tr
                     key={test.testId}
-                    className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
+                    className="border-b border-border last:border-0"
                   >
                     <td className="px-4 py-3">{test.requestedDate}</td>
                     <td className="px-4 py-3 font-medium">{test.labType}</td>

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai Report Service — domain → architecture → rules → tasks → AI implementation
 
-> Cập nhật: **15/09/2026**
+> Cập nhật: **16/09/2026**
 > Module: `backend/report-service`
 > Owner production code: Huy (`LQHuy0210`)
 > Trạng thái: **PLAN / business baseline V1 đã chốt**
@@ -56,18 +56,21 @@ T00 chỉ duy trì hai file deliverable: plan này và tài liệu kỹ thuật/
 
 ### 0.2 Hiện trạng module đã kiểm tra
 
-`backend/report-service` đang ở trạng thái nền T01–T03:
+`backend/report-service` đã đi qua T01–T11 phần code/audit; các gate hạ tầng còn lại được ghi ở T10:
 
 - đã có `pom.xml`, `application.yml`, `ReportServiceApplication.java`, `README.md`, `report.http`;
 - đã có `ArchitectureTest.java` kiểm dependency direction và cấm Feign/client;
 - đã có domain model/state machine, application port/DTO contract, Flyway V1, JPA entity và persistence mapper;
-- chưa có application service, persistence adapter hoàn chỉnh, consumer hoặc controller;
-- `README.md` hiện chỉ liệt kê 4 event và chưa phải tài liệu baseline; tài liệu canonical là `report.md` và plan này;
-- `report.http` là DEMO, chưa đối chiếu controller thật.
+- đã có application service, persistence adapter, consumer RabbitMQ và controller REST theo blueprint;
+- `README.md` và `report.http` đã đối chiếu baseline 5 event/3 endpoint; tài liệu canonical là `report.md` và plan này;
+- T04/T06 concurrency và T10 cross-layer integration đã chạy thật bằng PostgreSQL 16 và RabbitMQ 3.13 Testcontainers.
 
 Baseline ngày 15/09/2026: `mvn -q -pl backend/report-service -am test` chạy thành công với **6/6
-ArchitectureTest pass**. Lệnh changelog summary của máy hiện thiếu `sqlite3`; đã dùng danh sách 5
-commit gần nhất thay thế và việc này không ảnh hưởng thiết kế Report.
+ArchitectureTest pass**. Checkpoint runtime ngày 16/09/2026: **121 test, 121 pass, 0 skip, 0
+failure/error** với Docker Desktop và `-Dapi.version=1.40`; gồm 16 persistence/concurrency test và
+8 cross-layer test. Javadocs, verify và dependency analyze cũng thành công. Lệnh changelog summary
+của máy hiện thiếu `sqlite3`; đã dùng danh sách 5 commit gần nhất thay thế và việc này không ảnh
+hưởng thiết kế Report.
 
 ### 0.3 Phạm vi V1
 
@@ -478,14 +481,14 @@ Không tạo foreign key sang service khác. Mọi `departmentId`, `drugId`, `in
 | T01 | Domain models và state machine | T00 | DONE |
 | T02 | In-port, out-port, DTO và mapper contracts | T01 | DONE |
 | T03 | Flyway V1 và JPA entity mapping | T01 | DONE |
-| T04 | Atomic claim + concurrency-safe persistence adapters | T02, T03 | TODO |
-| T05 | Daily/lab/prescription aggregate use cases | T04 | TODO |
-| T06 | Payment contribution và compensation use cases | T04 | TODO |
-| T07 | Read-report queries và top medicine | T04 | TODO |
-| T08 | Rabbit topology, payloads, consumer, retry và DLQ | T05, T06 | TODO |
-| T09 | REST API, security, errors, OpenAPI và `.http` | T07 | TODO |
-| T10 | Cross-layer integration/concurrency/recovery tests | T08, T09 | TODO |
-| T11 | Documentation, quality gates và release audit | T10 | TODO |
+| T04 | Atomic claim + concurrency-safe persistence adapters | T02, T03 | DONE |
+| T05 | Daily/lab/prescription aggregate use cases | T04 | DONE |
+| T06 | Payment contribution và compensation use cases | T04 | DONE |
+| T07 | Read-report queries và top medicine | T04 | DONE |
+| T08 | Rabbit topology, payloads, consumer, retry và DLQ | T05, T06 | DONE |
+| T09 | REST API, security, errors, OpenAPI và `.http` | T07 | DONE |
+| T10 | Cross-layer integration/concurrency/recovery tests | T08, T09 | DONE |
+| T11 | Documentation, quality gates và release audit | T10 | DONE |
 
 ## 6. Task cards để AI implement từng task
 
@@ -634,6 +637,11 @@ native upsert are required. Do not implement application services.”
 **Lệnh giao AI:** “Implement T04 only. Focus on database atomicity and null-safe keys; do not put
 business metric decisions in adapters.”
 
+**Bằng chứng hoàn thành:** đã implement 5 Spring Data repository và 5 persistence adapter. Các native
+upsert, `SELECT ... FOR UPDATE`, null-safe predicate, top query inclusive/latest-name và advisory lock
+payment đã có. Persistence gate chạy thật trên PostgreSQL 16: 6/6 test pass (migration 2, JPA
+validation 1, concurrency 3), không skip/failure; two-thread claim và natural-key race đều xanh.
+
 ### T05 — Daily/lab/prescription aggregate use cases
 
 **Mục tiêu:** xử lý ba event hoạt động theo rules B01–B04.
@@ -655,6 +663,12 @@ prescription does not change revenue.
 **Gate:** mọi rule B01–B05 và E01–E03 liên quan có test application.
 
 **Lệnh giao AI:** “Implement T05 only with mocked out-ports. Keep consumer and JPA out of the test.”
+
+**Bằng chứng hoàn thành:** `AggregateUpdaterService` xử lý medical/lab/prescription trong một
+transaction; validate trước claim, cập nhật hospital → department, group duplicate drug item và
+sort `drugId` trước khi lock/save. Bộ test application có 12 test xanh cho row scope, redelivery,
+invalid payload, grouping/order, timezone và payment regression; không có tương tác persistence khi
+payload invalid.
 
 ### T06 — Payment contribution và compensation use cases
 
@@ -682,6 +696,14 @@ completed/failed race, final values nonnegative.
 **Lệnh giao AI:** “Implement T06 only. PaymentContribution is the source for reversal; never infer
 amount or department from payment.failed and never call Billing.”
 
+**Bằng chứng hoàn thành:** nhánh payment trong `AggregateUpdaterService` đã hoàn tất validate timezone,
+atomic claim, khóa contribution theo invoice, state transition `APPLY/REVERSE/NONE`, idempotency theo
+eventId và invoiceId, xử lý failure đến trước completed, cập nhật hospital trước department và đảo đúng
+ngày/khoa/số tiền gốc. `AggregateUpdaterServiceTest` hiện có 6 kịch bản payment (redelivery cùng event,
+completed khác event cùng invoice, null department, completed/failed cùng kỳ và out-of-order). Gate race
+hai luồng trên PostgreSQL đã chạy xanh trong bộ persistence/cross-layer Testcontainers; không có lost
+update và giá trị cuối không âm.
+
 ### T07 — Read-report application và queries
 
 **Mục tiêu:** ba use case đọc có output ổn định và không lộ persistence.
@@ -705,6 +727,13 @@ tie ordering delegated đúng, invalid date range.
 **Lệnh giao AI:** “Implement T07 only. Monthly dailyDetails must contain every calendar day and use
 one range query.”
 
+**Bằng chứng hoàn thành:** đã thêm `ReportApplicationService` với daily zero DTO, monthly aggregate
+zero fallback + full calendar (kể cả tháng nhuận), một `findRange` để merge detail, top inclusive range
+và limit mặc định 10/clamp tối đa 50; `ReportDateRangeException` dùng code
+`REPORT_DATE_RANGE_INVALID`. `ReportApplicationServiceTest` có 8 test cho no-data/null scope, leap year,
+partial month, zero-fill, limit và invalid range. Tại checkpoint T07, toàn module phát hiện 68 test, 65 pass và 3 skip
+(các test PostgreSQL/Testcontainers do Docker API chưa tương thích).
+
 ### T08 — Rabbit topology, payloads, consumer, retry và DLQ
 
 **Mục tiêu:** nối 5 event thật vào in-port mà không đặt business logic ở adapter.
@@ -727,6 +756,12 @@ exact binding set, retry rồi DLQ.
 
 **Gate:** consumer test verify không tương tác repository/adapter trực tiếp.
 
+**Bằng chứng hoàn thành:** `RabbitConfig` khai báo durable topic exchange, `report.q`, `report.dlq`
+và đúng 5 binding V1 (không bind `staff.department.changed`). `ReportEventConsumer` deserialize
+đúng contract fixtures của Clinical, Lab, Pharmacy và Billing, bỏ qua field additive, validate
+envelope/payload trước khi gọi đúng một in-port method, không log payload; retry hữu hạn reject sang
+DLQ. `ReportEventConsumerTest` (8 test) và `RabbitConfigTest` (2 test) xanh.
+
 **Lệnh giao AI:** “Implement T08 only. Create and use the contract fixtures in the test scope, and keep
 all aggregation/idempotency inside UpdateAggregateUseCase.”
 
@@ -748,7 +783,8 @@ all aggregation/idempotency inside UpdateAggregateUseCase.”
 
 1. Controller mỏng, `@Validated`, `@PreAuthorize` trên từng endpoint.
 2. Validate month/year/limit ở edge; range business rule ở application.
-3. Security stateless, JWT verify, default deny; health/info/OpenAPI permit theo chuẩn.
+3. Security stateless, JWT verify, default deny; health public, còn Swagger/OpenAPI chỉ mở bằng
+   cấu hình opt-in ở local/development.
 4. Handler trả validation 400, date-range 422, unexpected 500 không lộ stack trace.
 5. OpenAPI mô tả null department = hospital và no-data zero semantics.
 6. Chuyển `report.http` từ DEMO sang live contract, không chứa token thật.
@@ -757,6 +793,15 @@ all aggregation/idempotency inside UpdateAggregateUseCase.”
 department; default limit.
 
 **Gate:** endpoint chưa có request trong `report.http` được coi là chưa hoàn thành.
+
+**Bằng chứng hoàn thành:** đã thêm ba GET endpoint với `@PreAuthorize` ADMIN/MANAGER, optional
+`departmentId`, default limit 10 và correlation envelope. JWT stateless được xác minh lại ở service;
+health public, Swagger/OpenAPI mặc định deny và chỉ permit khi bật explicit local opt-in.
+`GlobalExceptionHandler` map validation 400,
+`REPORT_DATE_RANGE_INVALID`/business rule 422, 401/403 envelope và unexpected 500 không lộ stack
+trace. `OpenApiConfig` mô tả zero-fill/hospital scope; `report.http` đã chuyển từ DEMO sang live.
+`ReportControllerTest` có 10 test xanh cho 200/400/422/401/403, role matrix, envelope và default
+limit.
 
 **Lệnh giao AI:** “Implement T09 only. Mock ReadReportUseCase in web slice; do not start a database
 for controller tests.”
@@ -781,6 +826,13 @@ for controller tests.”
 10. restart consumer/database transaction rollback → message xử lý lại an toàn.
 
 **Gate:** test không dùng sleep mù; dùng Awaitility/eventual assertion với timeout ngắn, cleanup độc lập.
+
+**Bằng chứng hoàn thành:** `ReportCrossLayerIntegrationTest` đã chạy qua Spring context thật với
+PostgreSQL 16 và RabbitMQ 3.13 Testcontainers khi Docker khả dụng. Bộ test bao phủ event vận hành
+(hospital/khoa/top thuốc), payment duplicate và cùng invoice khác eventId, compensation hai thứ tự,
+concurrent first events, API envelope, malformed/DLQ và transaction rollback khi payment conflict.
+Mọi assertion bất đồng bộ dùng Awaitility; mỗi test tự dọn projection và queue. Kết quả runtime: **8/8
+pass, 0 skip**; tổng module **121/121 pass**.
 
 **Lệnh giao AI:** “Implement T10 only. Use real PostgreSQL and RabbitMQ; do not mock the behavior that
 the scenario is intended to prove.”
@@ -810,6 +862,14 @@ mvn -q -pl backend/report-service -am -DskipTests javadoc:javadoc
 
 **Lệnh giao AI:** “Implement T11 only. Do not add features; audit and document the service against
 the Definition of Done and report exact verification evidence.”
+
+**Bằng chứng hoàn thành:** `report.md`, README và `report.http` đã đồng nhất với code T08–T10.
+Đã chạy thành công `mvn -q -pl backend/report-service -am -Dapi.version=1.40 test` và `verify` với
+Docker Desktop (**121/121 pass, 0 skip, 0 failure/error**), cùng `mvn -q -pl backend/report-service
+-am -DskipTests javadoc:javadoc` và `mvn -q -pl backend/report-service -am dependency:analyze`.
+ArchitectureTest vẫn xanh; static search không phát hiện Feign/client, external datasource,
+forbidden imports hay publisher ngoài bounded context. Không có thay đổi production ngoài
+`backend/report-service/**`.
 
 ## 7. Quy trình AI bắt buộc cho mỗi task
 
@@ -933,30 +993,29 @@ Milestone:
 
 ## 11. Definition of Done toàn Report Service
 
-- [ ] T00–T11 đều `DONE`, có bằng chứng test.
-- [ ] 5 bảng đúng schema và migration chạy trên PostgreSQL 16 sạch.
-- [ ] 5 inbound event có fixture, dispatch test và integration test.
-- [ ] Atomic event claim và natural-key concurrency được chứng minh bằng test hai luồng.
-- [ ] Payment completed/failed đúng cả duplicate và out-of-order.
-- [ ] Ba endpoint đúng DTO/envelope/RBAC/no-data semantics.
-- [ ] Monthly full-calendar và top medicine deterministic.
-- [ ] Retry/DLQ không tạo poison loop; rollback không làm mất event.
-- [ ] Domain/application không vi phạm forbidden imports.
-- [ ] Không Feign, client, external datasource, publisher hoặc manual mutation endpoint.
-- [ ] `report.md`, `report.http` và plan thống nhất code thật; spec/HTML nền không bị sửa ngoài task được giao.
-- [ ] Module test, verify và Javadocs xanh.
-- [ ] Không có thay đổi production ngoài `backend/report-service/**`.
+- [x] T00–T11 đều `DONE`, có bằng chứng test.
+- [x] 5 bảng đúng schema và migration chạy trên PostgreSQL 16 sạch.
+- [x] 5 inbound event có fixture, dispatch test và integration test.
+- [x] Atomic event claim và natural-key concurrency được chứng minh bằng test hai luồng.
+- [x] Payment completed/failed đúng cả duplicate và out-of-order.
+- [x] Ba endpoint đúng DTO/envelope/RBAC/no-data semantics.
+- [x] Monthly full-calendar và top medicine deterministic.
+- [x] Retry/DLQ không tạo poison loop; rollback không làm mất event.
+- [x] Domain/application không vi phạm forbidden imports.
+- [x] Không Feign, client, external datasource, publisher hoặc manual mutation endpoint.
+- [x] `report.md`, `report.http` và plan thống nhất code thật; spec/HTML nền không bị sửa ngoài task được giao.
+- [x] Module test, verify và Javadocs xanh.
+- [x] Không có thay đổi production ngoài `backend/report-service/**`.
 
-## 12. Task bắt đầu tiếp theo
+## 12. Trạng thái sau T11
 
-T00–T03 đã hoàn thành. Task tiếp theo là **T04**. Không bắt đầu adapter code khi baseline trong `report.md`
-và plan chưa được review khi có thay đổi:
+T00–T11 và review hardening trong report-service đã hoàn tất. Runtime gate đã chạy xanh bằng Docker
+Desktop, PostgreSQL 16 và RabbitMQ 3.13; số liệu test hiện tại được ghi theo kết quả Maven mới nhất.
+Report pin Testcontainers 1.20.6 trong POM (thay mặc định 1.19.8 dùng Docker API 1.32); khi máy có
+cấu hình Testcontainers cũ, dùng `-Dapi.version=1.40` như lệnh verify đã ghi ở trên.
 
-- 4 bảng thay vì 5;
-- check/mark idempotency thay vì atomic claim;
-- `payment.failed` có amount/department dù payload thật không có;
-- 6 binding gồm `staff.department.changed`;
-- unique thường cho hospital drug statistic.
+Phần còn phụ thuộc ngoài ownership là phân biệt JWT access/refresh: report đã fail-closed cho claim
+`type` khác `access`, còn Gateway/Common phải phát hành và chia sẻ claim này theo
+[HANDOFF-report-jwt-token-type](../HANDOFF-report-jwt-token-type.md).
 
-Sau khi T03 xanh, thực hiện tuần tự T04 → T11; không gộp nhiều task thành một prompt lớn. T04 phải
-dùng advisory transaction lock cho payment contribution theo §2.4; không tạo placeholder `NEW` trong DB.
+Baseline V1 được giữ nguyên: 5 bảng, atomic claim, 5 binding và `payment.failed` chỉ mang `invoiceId`.

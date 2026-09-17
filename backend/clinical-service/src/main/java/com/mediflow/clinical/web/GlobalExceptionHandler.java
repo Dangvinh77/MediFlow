@@ -1,6 +1,7 @@
 package com.mediflow.clinical.web;
 
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
+import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
 import com.mediflow.common.api.ApiResponse.ErrorDetail;
@@ -9,6 +10,7 @@ import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -25,10 +27,13 @@ import java.util.List;
 
 /** Maps web and domain failures to the common MediFlow response envelope. */
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     private static final Logger log =
             LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final CorrelationIdProvider correlationIds;
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> notFound(
@@ -84,7 +89,8 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR",
                 "Dữ liệu không hợp lệ",
                 details);
-        return ResponseEntity.badRequest().body(ApiResponse.fail(error));
+        return ResponseEntity.badRequest().body(ApiResponse.fail(
+                error, correlationIds.currentOrCreate().toString()));
     }
 
     @ExceptionHandler({
@@ -128,6 +134,7 @@ public class GlobalExceptionHandler {
             String message) {
 
         return ResponseEntity.status(status)
-                .body(ApiResponse.fail(ApiError.of(code, message)));
+                .body(ApiResponse.fail(
+                        ApiError.of(code, message), correlationIds.currentOrCreate().toString()));
     }
 }

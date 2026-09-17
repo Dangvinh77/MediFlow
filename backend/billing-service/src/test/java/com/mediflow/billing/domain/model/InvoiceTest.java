@@ -109,8 +109,8 @@ class InvoiceTest {
     @Test
     void refund_reversesPaymentAndEndsSagaAtRefunded() {
         Invoice invoice = sagaInvoice();
-        invoice.transitionSaga(SagaStatus.PAID);
         invoice.pay(PaymentMethod.CASH, Instant.now());
+        invoice.transitionSaga(SagaStatus.PAID);
         invoice.transitionSaga(SagaStatus.AWAITING_DISPENSE);
 
         invoice.refund();
@@ -119,15 +119,28 @@ class InvoiceTest {
         assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
     }
 
-    // BR-B11 — xuất thuốc thành công thì gán phiếu xuất
     @Test
-    void assignDispense_setsDispenseId() {
+    void cancelBeforePayment_closesInvoiceAndRejectsLaterPayment() {
         Invoice invoice = sagaInvoice();
-        UUID dispenseId = UUID.randomUUID();
 
-        invoice.assignDispense(dispenseId);
+        invoice.cancelBeforePayment();
 
-        assertThat(invoice.getDispenseId()).isEqualTo(dispenseId);
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        assertThatThrownBy(() -> invoice.pay(PaymentMethod.CASH, Instant.now()))
+                .isInstanceOf(BillingRuleException.class)
+                .extracting("code")
+                .isEqualTo("BILLING_INVOICE_NOT_PAYABLE");
+    }
+
+    @Test
+    void cancelBeforePayment_paidInvoice_throwsInvalidTransition() {
+        Invoice invoice = sagaInvoice();
+        invoice.pay(PaymentMethod.CASH, Instant.now());
+        invoice.transitionSaga(SagaStatus.PAID);
+        invoice.transitionSaga(SagaStatus.AWAITING_DISPENSE);
+
+        assertThatThrownBy(invoice::cancelBeforePayment)
+                .isInstanceOf(BillingRuleException.class);
     }
 
     private Fee fee(BigDecimal amount) {

@@ -25,7 +25,6 @@ public class Invoice {
     private final BigDecimal totalAmount;
     private boolean isPaid;
     private PaymentMethod paymentMethod;
-    private UUID dispenseId;
     private final UUID prescriptionId;
     private SagaStatus sagaStatus;
     private Instant paidAt;
@@ -33,7 +32,7 @@ public class Invoice {
     private Instant updatedAt;
 
     private Invoice(UUID invoiceId, UUID patientId, LocalDate createdDate, BigDecimal totalAmount,
-                     boolean isPaid, PaymentMethod paymentMethod, UUID dispenseId, UUID prescriptionId,
+                     boolean isPaid, PaymentMethod paymentMethod, UUID prescriptionId,
                      SagaStatus sagaStatus, Instant paidAt, Instant createdAt, Instant updatedAt) {
         this.invoiceId = invoiceId;
         this.patientId = patientId;
@@ -41,7 +40,6 @@ public class Invoice {
         this.totalAmount = totalAmount;
         this.isPaid = isPaid;
         this.paymentMethod = paymentMethod;
-        this.dispenseId = dispenseId;
         this.prescriptionId = prescriptionId;
         this.sagaStatus = sagaStatus;
         this.paidAt = paidAt;
@@ -56,7 +54,7 @@ public class Invoice {
                     "Bệnh nhân không có khoản phí nào chưa thanh toán");
         }
         BigDecimal total = sumAmounts(unpaidFees);
-        return new Invoice(null, patientId, createdDate, total, false, null, null, null,
+        return new Invoice(null, patientId, createdDate, total, false, null, null,
                 SagaStatus.NONE, null, null, null);
     }
 
@@ -70,23 +68,27 @@ public class Invoice {
                     "Không có khoản phí nào để lập hóa đơn từ đơn thuốc");
         }
         BigDecimal total = sumAmounts(fees);
-        return new Invoice(null, patientId, LocalDate.now(), total, false, null, null, prescriptionId,
+        return new Invoice(null, patientId, LocalDate.now(), total, false, null, prescriptionId,
                 SagaStatus.AWAITING_PAYMENT, null, null, null);
     }
 
     /** Dựng lại từ dữ liệu đã lưu — không chạy lại quy tắc lúc tạo. */
     public static Invoice restore(UUID invoiceId, UUID patientId, LocalDate createdDate, BigDecimal totalAmount,
-                                   boolean isPaid, PaymentMethod paymentMethod, UUID dispenseId,
+                                   boolean isPaid, PaymentMethod paymentMethod,
                                    UUID prescriptionId, SagaStatus sagaStatus, Instant paidAt,
                                    Instant createdAt, Instant updatedAt) {
         return new Invoice(invoiceId, patientId, createdDate, totalAmount, isPaid, paymentMethod,
-                dispenseId, prescriptionId, sagaStatus, paidAt, createdAt, updatedAt);
+                prescriptionId, sagaStatus, paidAt, createdAt, updatedAt);
     }
 
     /** Thanh toán hóa đơn — ném {@code BILLING_ALREADY_PAID} nếu đã trả trước đó (BR-B1). */
     public void pay(PaymentMethod method, Instant timestamp) {
         if (isAlreadyPaid()) {
             throw new BillingRuleException("BILLING_ALREADY_PAID", "Hóa đơn này đã được thanh toán");
+        }
+        if (prescriptionId != null && sagaStatus != SagaStatus.AWAITING_PAYMENT) {
+            throw new BillingRuleException("BILLING_INVOICE_NOT_PAYABLE",
+                    "Hóa đơn đơn thuốc không còn ở trạng thái chờ thanh toán");
         }
         this.isPaid = true;
         this.paymentMethod = method;
@@ -122,9 +124,16 @@ public class Invoice {
         transitionSaga(SagaStatus.REFUNDED);
     }
 
-    /** Gán phiếu xuất thuốc khi saga hoàn tất thành công (BR-B11). */
-    public void assignDispense(UUID dispenseId) {
-        this.dispenseId = dispenseId;
+    /**
+     * Đóng invoice của đơn thuốc bị hủy/hết hạn trước khi trả tiền. Khoản phí vẫn gắn với invoice
+     * terminal để không bị một hóa đơn thường thu lại về sau.
+     */
+    public void cancelBeforePayment() {
+        if (isPaid || sagaStatus != SagaStatus.AWAITING_PAYMENT) {
+            throw new BillingRuleException("BILLING_INVALID_SAGA_TRANSITION",
+                    "Chỉ có thể đóng invoice đơn thuốc chưa thanh toán");
+        }
+        this.sagaStatus = SagaStatus.REFUNDED;
     }
 
     private static BigDecimal sumAmounts(List<Fee> fees) {

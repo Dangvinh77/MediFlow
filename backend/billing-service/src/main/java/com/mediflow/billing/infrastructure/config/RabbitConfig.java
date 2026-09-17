@@ -7,15 +7,19 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Topology RabbitMQ của billing-service (backend-spec/06-billing.md §12.4,
- * docs/ai/06-events-rabbitmq.md). Một queue {@value #QUEUE} nhận 6 routing key billing subscribe;
+ * docs/ai/06-events-rabbitmq.md). Một queue {@value #QUEUE} nhận 8 routing key billing subscribe;
  * 3 routing key billing publish ({@code invoice.created}, {@code payment.completed},
  * {@code payment.failed}) không cần binding vào đây.
  */
@@ -34,6 +38,8 @@ public class RabbitConfig {
     public static final String RK_PRESCRIPTION_CREATED = "prescription.created";
     public static final String RK_PRESCRIPTION_FILLED = "prescription.filled";
     public static final String RK_PRESCRIPTION_DISPENSE_FAILED = "prescription.dispense.failed";
+    public static final String RK_PRESCRIPTION_CANCELLED = "prescription.cancelled";
+    public static final String RK_PRESCRIPTION_EXPIRED = "prescription.expired";
     public static final String RK_MEDICAL_RECORD_CREATED = "medicalrecord.created";
     public static final String RK_LAB_RESULT_CREATED = "lab.result.created";
     public static final String RK_APPOINTMENT_STATUS_CHANGED = "appointment.status.changed";
@@ -42,6 +48,8 @@ public class RabbitConfig {
             RK_PRESCRIPTION_CREATED,
             RK_PRESCRIPTION_FILLED,
             RK_PRESCRIPTION_DISPENSE_FAILED,
+            RK_PRESCRIPTION_CANCELLED,
+            RK_PRESCRIPTION_EXPIRED,
             RK_MEDICAL_RECORD_CREATED,
             RK_LAB_RESULT_CREATED,
             RK_APPOINTMENT_STATUS_CHANGED
@@ -76,7 +84,7 @@ public class RabbitConfig {
     }
 
     /**
-     * Bind {@value #QUEUE} vào cả 6 routing key. Trả về {@link Declarables} (không phải mảng
+     * Bind {@value #QUEUE} vào cả 8 routing key. Trả về {@link Declarables} (không phải mảng
      * {@code Binding[]} thô) vì {@code RabbitAdmin} chỉ tự khai báo các bean kiểu {@code Declarable}
      * — nó tìm theo {@code getBeansOfType(Declarable.class)} nên không "mở" được một mảng.
      */
@@ -103,6 +111,31 @@ public class RabbitConfig {
     public RabbitTemplate rabbitTemplate(ConnectionFactory cf, MessageConverter converter) {
         RabbitTemplate template = new RabbitTemplate(cf);
         template.setMessageConverter(converter);
+        template.setMandatory(true);
         return template;
+    }
+
+    /** Retry hữu hạn; sau lần cuối message bị reject để RabbitMQ chuyển vào billing.dlq. */
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            MessageConverter converter,
+            @Value("${mediflow.billing.rabbit.retry.max-attempts:3}") int maxAttempts,
+            @Value("${mediflow.billing.rabbit.retry.initial-interval-ms:1000}") long initialIntervalMs,
+            @Value("${mediflow.billing.rabbit.retry.max-interval-ms:10000}") long maxIntervalMs,
+            @Value("${spring.rabbitmq.listener.simple.auto-startup:true}") boolean autoStartup) {
+        if (maxAttempts < 1 || initialIntervalMs <= 0 || maxIntervalMs < initialIntervalMs) {
+            throw new IllegalArgumentException("Billing Rabbit retry configuration is invalid");
+        }
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(converter);
+        factory.setAutoStartup(autoStartup);
+        factory.setAdviceChain(RetryInterceptorBuilder.stateless()
+                .maxAttempts(maxAttempts)
+                .backOffOptions(initialIntervalMs, 2.0, maxIntervalMs)
+                .recoverer(new RejectAndDontRequeueRecoverer())
+                .build());
+        return factory;
     }
 }

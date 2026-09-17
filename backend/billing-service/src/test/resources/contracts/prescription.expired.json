@@ -1,0 +1,8 @@
+{
+  "eventId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "occurredAt": "2026-09-14T10:05:00Z",
+  "correlationId": "fixture-prescription-001",
+  "prescriptionId": "55555555-5555-5555-5555-555555555555",
+  "patientId": "33333333-3333-3333-3333-333333333333",
+  "expiredReservations": 1
+}

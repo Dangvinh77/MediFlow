@@ -9,8 +9,6 @@ import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.common.api.ApiResponse;
 
-import feign.FeignException;
-
 @Component
 public class StaffLookupAdapter implements StaffLookupPort {
 
@@ -35,11 +33,13 @@ public class StaffLookupAdapter implements StaffLookupPort {
                 throw new UpstreamUnavailableException("organization-service returned an invalid response");
             }
             return Optional.of(staff.departmentId());
-        } catch (FeignException.NotFound exception) {
-            return Optional.empty();
         } catch (UpstreamUnavailableException exception) {
             throw exception;
         } catch (RuntimeException exception) {
+            if (UpstreamExceptionClassifier.classify(exception)
+                    == UpstreamExceptionClassifier.Classification.NOT_FOUND) {
+                return Optional.empty();
+            }
             throw new UpstreamUnavailableException("organization-service is unavailable", exception);
         }
     }

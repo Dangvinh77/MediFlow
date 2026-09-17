@@ -2,6 +2,8 @@ package com.mediflow.billing.application.port.in;
 
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
+import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
+import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 
 /**
  * In-port cho hai nhánh kết thúc của saga kê đơn → hóa đơn → thanh toán → xuất thuốc
@@ -23,4 +25,10 @@ public interface SagaCompensationUseCase {
      * (BR-B11). Không publish event nào.
      */
     void onPrescriptionFilled(PrescriptionFilledEvent e);
+
+    /** Đóng hoặc bù trừ invoice khi pharmacy hủy đơn thuốc. */
+    void onPrescriptionCancelled(PrescriptionCancelledEvent e);
+
+    /** Đóng hoặc bù trừ invoice khi giữ chỗ thuốc hết hạn. */
+    void onPrescriptionExpired(PrescriptionExpiredEvent e);
 }

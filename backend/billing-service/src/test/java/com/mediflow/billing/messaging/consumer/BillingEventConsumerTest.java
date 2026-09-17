@@ -13,7 +13,9 @@ import com.mediflow.billing.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.billing.application.event.LabResultCreatedEvent;
 import com.mediflow.billing.application.event.MedicalRecordCreatedEvent;
 import com.mediflow.billing.application.event.PrescriptionCreatedEvent;
+import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
 import com.mediflow.billing.application.port.in.AccrueFeeUseCase;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
@@ -24,9 +26,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Kiểm tra {@link BillingEventConsumer} định tuyến đúng 6 routing key sang đúng in-port
+ * Kiểm tra {@link BillingEventConsumer} định tuyến đúng các routing key sang đúng in-port
  * (không cần RabbitMQ thật — chỉ dựng {@link Message} thủ công như container thật sẽ đưa vào).
  */
 class BillingEventConsumerTest {
@@ -106,11 +109,33 @@ class BillingEventConsumerTest {
     }
 
     @Test
-    void unknownRoutingKey_isIgnoredWithoutCallingAnyUseCase() throws Exception {
+    void prescriptionCancelled_routesToSagaCompensationUseCase() throws Exception {
+        PrescriptionCancelledEvent event = new PrescriptionCancelledEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), "Doctor cancelled");
+
+        consumer.onMessage(messageFor(RabbitConfig.RK_PRESCRIPTION_CANCELLED, event));
+
+        verify(sagaCompensationUseCase).onPrescriptionCancelled(eq(event));
+    }
+
+    @Test
+    void prescriptionExpired_routesToSagaCompensationUseCase() throws Exception {
+        PrescriptionExpiredEvent event = new PrescriptionExpiredEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(), 2);
+
+        consumer.onMessage(messageFor(RabbitConfig.RK_PRESCRIPTION_EXPIRED, event));
+
+        verify(sagaCompensationUseCase).onPrescriptionExpired(eq(event));
+    }
+
+    @Test
+    void unknownRoutingKey_isRejectedForRetryAndDeadLetter() {
         Message message = new Message("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8),
                 propertiesFor("some.other.event"));
 
-        consumer.onMessage(message);
+        assertThatThrownBy(() -> consumer.onMessage(message))
+                .isInstanceOf(IllegalArgumentException.class);
 
         verifyNoInteractions(accrueFeeUseCase, sagaCompensationUseCase);
     }

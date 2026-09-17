@@ -18,7 +18,24 @@ public class MedicalRecordCreatedConsumer {
 
     @RabbitListener(queues = "${mediflow.lab.rabbit.queue:lab.q}")
     public void consume(MedicalRecordCreatedPayload payload) {
+        validate(payload);
         useCase.onMedicalRecordCreated(new MedicalRecordCreatedCommand(
                 payload.eventId(), payload.recordId(), payload.patientId(), payload.departmentId()));
+    }
+
+    private static void validate(MedicalRecordCreatedPayload payload) {
+        if (payload == null) {
+            throw new IllegalArgumentException("medicalrecord.created payload is required");
+        }
+        require(payload.eventId(), "eventId");
+        require(payload.recordId(), "recordId");
+        require(payload.patientId(), "patientId");
+        require(payload.departmentId(), "departmentId");
+    }
+
+    private static void require(Object value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException("medicalrecord.created " + fieldName + " is required");
+        }
     }
 }

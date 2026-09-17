@@ -3,83 +3,79 @@ package com.mediflow.billing.infrastructure.messaging;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.mediflow.billing.application.event.InvoiceCreatedEvent;
 import com.mediflow.billing.application.event.PaymentCompletedEvent;
 import com.mediflow.billing.application.event.PaymentFailedEvent;
 import com.mediflow.billing.domain.model.PaymentMethod;
-import com.mediflow.billing.infrastructure.config.RabbitConfig;
+import com.mediflow.billing.infrastructure.persistence.jpaEntity.BillingEventOutboxJpaEntity;
+import com.mediflow.billing.infrastructure.persistence.repository.BillingEventOutboxJpaRepository;
 
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import org.mockito.ArgumentCaptor;
 
 /**
- * Xác nhận {@link BillingEventPublisherAdapter} gửi sau commit khi có transaction, và gửi ngay khi
- * không có transaction đang chạy (test/gọi trực tiếp) — quy tắc quan trọng nhất của Phần 5/5 cho
- * saga billing/pharmacy (docs/ai/06-events-rabbitmq.md).
+ * Xác nhận publisher ghi payload bền vững vào outbox thay vì gửi RabbitMQ trực tiếp.
  */
 class BillingEventPublisherAdapterTest {
 
-    private final RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
-    private final BillingEventPublisherAdapter adapter = new BillingEventPublisherAdapter(rabbitTemplate);
-
-    @AfterEach
-    void clearSynchronization() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
+    private final BillingEventOutboxJpaRepository outboxRepository =
+            mock(BillingEventOutboxJpaRepository.class);
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final BillingEventPublisherAdapter adapter =
+            new BillingEventPublisherAdapter(outboxRepository, objectMapper);
 
     @Test
-    void publishInvoiceCreated_withoutActiveTransaction_sendsImmediately() {
+    void publishInvoiceCreated_writesOutboxWithStableIdentity() {
         InvoiceCreatedEvent event = new InvoiceCreatedEvent(
                 UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), java.math.BigDecimal.TEN, java.util.List.of());
 
         adapter.publishInvoiceCreated(event);
 
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.RK_INVOICE_CREATED), eq(event));
+        BillingEventOutboxJpaEntity row = capturedRow();
+        assertThat(row.getEventId()).isEqualTo(event.eventId());
+        assertThat(row.getAggregateId()).isEqualTo(event.invoiceId());
+        assertThat(row.getRoutingKey()).isEqualTo("invoice.created");
+        assertThat(row.getPayload()).contains(event.invoiceId().toString());
     }
 
     @Test
-    void publishPaymentCompleted_withActiveTransaction_deferredUntilAfterCommit() {
-        TransactionSynchronizationManager.initSynchronization();
-        try {
-            PaymentCompletedEvent event = new PaymentCompletedEvent(
-                    UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
-                    UUID.randomUUID(), UUID.randomUUID(), java.math.BigDecimal.TEN, PaymentMethod.CASH);
+    void publishPaymentCompleted_writesExactWirePayload() throws Exception {
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), java.math.BigDecimal.TEN, PaymentMethod.CASH);
 
-            adapter.publishPaymentCompleted(event);
+        adapter.publishPaymentCompleted(event);
 
-            // Chưa gửi trong lúc transaction còn mở — publish trước commit có thể kích hoạt
-            // pharmacy xuất thuốc cho một khoản thanh toán sau đó bị rollback.
-            verify(rabbitTemplate, never()).convertAndSend(
-                    eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.RK_PAYMENT_COMPLETED), eq(event));
-
-            for (var synchronization : TransactionSynchronizationManager.getSynchronizations()) {
-                synchronization.afterCommit();
-            }
-
-            verify(rabbitTemplate).convertAndSend(
-                    eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.RK_PAYMENT_COMPLETED), eq(event));
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
+        BillingEventOutboxJpaEntity row = capturedRow();
+        assertThat(row.getRoutingKey()).isEqualTo("payment.completed");
+        assertThat(objectMapper.readTree(row.getPayload()).get("prescriptionId").asText())
+                .isEqualTo(event.prescriptionId().toString());
+        assertThat(objectMapper.readTree(row.getPayload()).get("paymentMethod").asText())
+                .isEqualTo("CASH");
     }
 
     @Test
-    void publishPaymentFailed_withoutActiveTransaction_sendsImmediately() {
+    void publishPaymentFailed_writesCompensationToOutbox() {
         PaymentFailedEvent event = new PaymentFailedEvent(
                 UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(), "Hết thuốc");
 
         adapter.publishPaymentFailed(event);
 
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.RK_PAYMENT_FAILED), eq(event));
+        assertThat(capturedRow().getRoutingKey()).isEqualTo("payment.failed");
+    }
+
+    private BillingEventOutboxJpaEntity capturedRow() {
+        ArgumentCaptor<BillingEventOutboxJpaEntity> captor =
+                ArgumentCaptor.forClass(BillingEventOutboxJpaEntity.class);
+        verify(outboxRepository).save(captor.capture());
+        return captor.getValue();
     }
 }

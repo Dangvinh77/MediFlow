@@ -1,7 +1,7 @@
 # HANDOFF — Billing ↔ Pharmacy: luồng kê đơn → thanh toán → xuất thuốc
 
 **Người nhận:** người phụ trách `billing-service`  
-**Ngày cập nhật:** 2026-09-15  
+**Ngày cập nhật:** 2026-09-16
 **Phạm vi:** hợp đồng nghiệp vụ và kế hoạch follow-up code giữa `billing-service` và
 `pharmacy-service`. Tài liệu này không thay thế các backend-spec; nó ghi lại cách ráp hai bounded
 context mà không truy cập database của nhau.
@@ -25,8 +25,8 @@ Quy tắc không được phá vỡ:
 3. Consumer phải idempotent theo `eventId`; bảng `PROCESSED_EVENT` phải được ghi trong cùng
    transaction với side effect. Nếu transaction rollback hoặc lỗi hạ tầng, phải ném exception để
    RabbitMQ retry/DLQ, không đánh dấu đã xử lý trước.
-4. Publish sau commit. Billing hiện defer qua `afterCommit`; khi hoàn thiện production reliability
-   cần chuyển sang transactional outbox (xem mục 8).
+4. Publish bền vững qua transactional outbox. Billing ghi event cùng transaction nghiệp vụ;
+   dispatcher chỉ gửi row đã commit và chờ publisher confirm.
 5. Không tự suy diễn `invoiceId`, `dispenseId`, giá thuốc hoặc trạng thái thanh toán từ payload
    thiếu dữ liệu. Payload sai/thiếu field là lỗi contract, cần retry hoặc DLQ có lý do rõ ràng.
 6. `payment.failed` chỉ là **đảo sổ sách** trong Billing; hệ thống hiện chưa tích hợp payment
@@ -42,7 +42,7 @@ Quy tắc không được phá vỡ:
 | Xử lý payment/dispense | Không sở hữu tồn kho | `application/service/PaymentApplicationService` → `DispenseApplicationService` |
 | Thành công/thất bại | `application/service/SagaCompensationService` | `DispenseTransactionService` + `RecordDispenseFailureService` |
 | Dedupe | `ProcessedEventPort`/`PROCESSED_EVENT` | `ProcessedEventPort` + payment receipt claim |
-| Giao event bền vững | Hiện `afterCommit` trực tiếp; cần outbox ở follow-up B-03 | Đã có transactional outbox + claim/lease/backoff |
+| Giao event bền vững | Transactional outbox + claim/lease/backoff/quarantine | Transactional outbox + claim/lease/backoff |
 
 Khi thay đổi một contract, sửa record/consumer/test ở Billing và fixture phía Pharmacy trong cùng
 chuỗi thay đổi. Không copy class Java giữa hai module.
@@ -152,7 +152,7 @@ response đồng bộ từ Pharmacy.
 Pharmacy phát sau khi transaction dispense thành công và phiếu chuyển `DISPENSED`.
 
 Payload hiện hành gồm `eventId`, `occurredAt`, `correlationId`, `prescriptionId`, `patientId`,
-`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **chưa có `dispenseId`**.
+`departmentId`, `totalAmount`, `dispensedItems[]`. Payload **không có `dispenseId`**.
 
 Billing xử lý:
 
@@ -161,11 +161,10 @@ Billing xử lý:
 3. chỉ cho phép `AWAITING_DISPENSE → COMPLETED`;
 4. lưu và đánh dấu processed.
 
-Không tự gán `dispenseId` từ `prescriptionId` hoặc một UUID mới. Hai team phải chọn một trong hai
-phương án trước khi làm E2E:
-
-- Pharmacy bổ sung `dispenseId` vào contract `prescription.filled`, cập nhật fixture và consumer;
-- hoặc Billing xác nhận `dispenseId` không thuộc phiên bản contract hiện tại và để null.
+**Đã chốt (2026-09-16):** Billing bỏ hẳn khái niệm `dispenseId` — không có cột, không có trường
+DTO, không gán từ `prescriptionId` hay UUID mới. Nếu sau này Pharmacy bổ sung `dispenseId` vào
+contract `prescription.filled`, đây là thay đổi contract mới, cần mở lại theo mục 8 (cập nhật
+producer/consumer/fixture/test/tài liệu trong cùng một chuỗi thay đổi), không chỉ thêm field ngầm.
 
 ### 3.4 `prescription.dispense.failed` — Pharmacy → Billing
 
@@ -193,8 +192,10 @@ lần hai. `reason` phải giữ mã ổn định, không đưa thông tin nhạ
 |---|---|---|---|
 | `NONE` | invoice thường | `NONE` | không xuất thuốc |
 | `AWAITING_PAYMENT` | `PUT /invoices/{id}/pay` thành công | `AWAITING_DISPENSE` (qua `PAID`) | nhận `payment.completed` |
+| `AWAITING_PAYMENT` | `prescription.cancelled` / `prescription.expired` | `REFUNDED` | đơn kết thúc, không còn được thanh toán |
 | `AWAITING_DISPENSE` | `prescription.filled` | `COMPLETED` | phiếu đã `DISPENSED` |
 | `AWAITING_DISPENSE` | `prescription.dispense.failed` | `REFUNDED` | phiếu đã ghi thất bại |
+| `AWAITING_DISPENSE` | `prescription.cancelled` / `prescription.expired` | `REFUNDED` | Billing đảo sổ và phát `payment.failed` |
 | `COMPLETED` | event filled lặp | giữ nguyên | không dispense lại |
 | `REFUNDED` | event failed lặp | giữ nguyên | không bù trừ lần hai |
 
@@ -206,28 +207,31 @@ chính sách; không silently mark processed.
 ### B-01 — Chốt contract và fixture
 
 - Dùng record DTO riêng tại `application/event`, không phụ thuộc package Pharmacy.
-- Thêm fixture JSON cho bốn event của Pharmacy và một fixture `payment.completed` mà Pharmacy đọc.
-- Assert field bắt buộc, nullability, enum chữ hoa, `BigDecimal`, timezone và correlation propagation.
-- Khi quyết định `dispenseId`, cập nhật đồng thời spec, fixture, DTO và test hai service.
+- [x] Thêm fixture JSON phía Billing cho các event Pharmacy consume: `prescription.created`,
+  `prescription.filled`, `prescription.dispense.failed`, `prescription.cancelled` và
+  `prescription.expired`.
+- [x] Thêm fixture `payment.completed` phía Billing để đối chiếu payload mà Pharmacy consume.
+- [x] Assert envelope, field bắt buộc, `BigDecimal`, timezone và correlation propagation ở boundary.
+- `dispenseId` đã chốt bỏ hẳn (2026-09-16, xem mục 3.3) — nếu quyết định này đổi lại sau này,
+  cập nhật đồng thời spec, fixture, DTO và test hai service.
 
 ### B-02 — Hoàn thiện consumer và topology
 
 - `BillingEventConsumer` định tuyến theo routing key trên một queue `billing.q`.
-- Giữ binding sáu key: `prescription.created`, `prescription.filled`,
-  `prescription.dispense.failed`, `medicalrecord.created`, `lab.result.created`,
-  `appointment.status.changed`.
+- Giữ binding tám key: `prescription.created`, `prescription.filled`,
+  `prescription.dispense.failed`, `prescription.cancelled`, `prescription.expired`,
+  `medicalrecord.created`, `lab.result.created`, `appointment.status.changed`.
 - Deserialize lỗi hoặc application exception phải được ném ra; không nuốt exception.
 - Xác nhận `billing.q` có DLX `mediflow.events.dlx` và `billing.dlq` có binding đúng routing key.
 
 ### B-03 — Đảm bảo payment publish đáng tin cậy
 
-`BillingEventPublisherAdapter` hiện gửi trực tiếp ở `afterCommit`, nên process chết sau commit có
-thể làm mất `payment.completed`. Follow-up production nên:
+Đã hoàn thành trong Billing:
 
-1. thêm bảng `BILLING_EVENT_OUTBOX` (migration mới, không sửa migration đã chạy);
-2. ghi outbox trong transaction thanh toán/compensation;
-3. dispatcher claim/lease, publisher confirm, retry backoff, quarantine/DLQ và metrics;
-4. giữ nguyên `eventId` khi retry; Pharmacy dedupe nên nhận cùng một event id.
+1. bảng `BILLING_EVENT_OUTBOX` nằm trong migration `V2`;
+2. publisher chỉ ghi outbox trong transaction thanh toán/compensation;
+3. dispatcher có claim/lease, publisher confirm, retry backoff, quarantine và metrics;
+4. retry giữ nguyên `eventId`; API ADMIN chỉ replay event đã quarantine.
 
 Không chuyển việc publish vào trong transaction trước commit và không rollback nghiệp vụ chỉ vì
 RabbitMQ tạm thời không khả dụng.
@@ -271,10 +275,10 @@ Không coi unit test mock `RabbitTemplate` là bằng chứng E2E.
 
 ## 7. Checklist bàn giao trước khi mở PR
 
-- [ ] Các DTO/event và fixture khớp đúng bảng contract ở mục 3.
+- [x] Các DTO/event và fixture khớp đúng bảng contract ở mục 3; `dispenseId` đã được bỏ hoàn toàn.
 - [ ] Không có import `pharmacy-service`, JPA Pharmacy hoặc URL database Pharmacy trong Billing.
 - [ ] Mọi public class/method mới có Javadocs và `@param`/`@return` phù hợp.
-- [ ] `@Transactional` bao trùm side effect + processed marker; publish chỉ sau commit/outbox.
+- [x] `@Transactional` bao trùm side effect + processed marker; publish qua outbox.
 - [ ] Lock invoice và unique/index DB đã có test concurrency.
 - [ ] Có test deserialize payload thiếu/null/enum sai và DLQ path.
 - [ ] Có Testcontainers test cho cả PostgreSQL và RabbitMQ; skipped vì thiếu Docker = chưa đạt gate.

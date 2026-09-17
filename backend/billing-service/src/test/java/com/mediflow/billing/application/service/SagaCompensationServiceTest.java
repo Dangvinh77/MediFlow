@@ -19,7 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.mediflow.billing.application.event.PaymentFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
 import com.mediflow.billing.application.port.out.BillingEventPublisherPort;
 import com.mediflow.billing.application.port.out.FeeRepositoryPort;
@@ -45,7 +47,7 @@ class SagaCompensationServiceTest {
     private static Invoice paidAwaitingDispense(UUID prescriptionId) {
         return Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
                 new BigDecimal("300000.00"), true, com.mediflow.billing.domain.model.PaymentMethod.CASH,
-                null, prescriptionId, SagaStatus.AWAITING_DISPENSE, Instant.now(), Instant.now(), null);
+                prescriptionId, SagaStatus.AWAITING_DISPENSE, Instant.now(), Instant.now(), null);
     }
 
     private static Fee paidFee() {
@@ -109,6 +111,28 @@ class SagaCompensationServiceTest {
         verify(processedEvent).markProcessed(any(), any());
     }
 
+    @Test
+    void onDispenseFailed_alreadyRefunded_isIdempotent() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
+                new BigDecimal("300000.00"), false, null, prescriptionId,
+                SagaStatus.REFUNDED, null, Instant.now(), null);
+        when(processedEvent.alreadyProcessed(eventId)).thenReturn(false);
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+
+        service.onDispenseFailed(new PrescriptionDispenseFailedEvent(
+                eventId, Instant.now(), "late-payment-correlation", prescriptionId,
+                null, null, "PAYMENT_AFTER_TERMINAL_STATE", List.of()));
+
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        assertThat(invoice.isAlreadyPaid()).isFalse();
+        verify(processedEvent).markProcessed(eventId, "prescription.dispense.failed");
+        verify(feeRepo, never()).findByInvoice(any());
+        verify(invoiceRepo, never()).save(any());
+        verify(publisher, never()).publishPaymentFailed(any());
+    }
+
     // ---- BR-B11 : xuất thuốc thành công thì kết thúc saga ----
     @Test
     void onPrescriptionFilled_setsCompleted() {
@@ -139,5 +163,44 @@ class SagaCompensationServiceTest {
 
         verify(invoiceRepo, never()).findByPrescription(any());
         verify(invoiceRepo, never()).save(any());
+    }
+
+    @Test
+    void onPrescriptionCancelled_unpaidInvoice_closesWithoutPaymentFailure() {
+        UUID prescriptionId = UUID.randomUUID();
+        Invoice invoice = Invoice.restore(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(),
+                new BigDecimal("300000.00"), false, null, prescriptionId,
+                SagaStatus.AWAITING_PAYMENT, null, Instant.now(), null);
+        UUID eventId = UUID.randomUUID();
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+
+        service.onPrescriptionCancelled(new PrescriptionCancelledEvent(
+                eventId, Instant.now(), "corr", prescriptionId, invoice.getPatientId(),
+                UUID.randomUUID(), "Doctor cancelled"));
+
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        verify(invoiceRepo).save(invoice);
+        verify(publisher, never()).publishPaymentFailed(any());
+        verify(processedEvent).markProcessed(eventId, "prescription.cancelled");
+    }
+
+    @Test
+    void onPrescriptionExpired_paymentWonRace_compensatesPayment() {
+        UUID prescriptionId = UUID.randomUUID();
+        Invoice invoice = paidAwaitingDispense(prescriptionId);
+        Fee fee = paidFee();
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+        when(feeRepo.findByInvoice(invoice.getInvoiceId())).thenReturn(List.of(fee));
+
+        service.onPrescriptionExpired(new PrescriptionExpiredEvent(
+                UUID.randomUUID(), Instant.now(), "corr", prescriptionId,
+                invoice.getPatientId(), 1));
+
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.REFUNDED);
+        assertThat(invoice.isAlreadyPaid()).isFalse();
+        assertThat(fee.isPaid()).isFalse();
+        ArgumentCaptor<PaymentFailedEvent> event = ArgumentCaptor.forClass(PaymentFailedEvent.class);
+        verify(publisher).publishPaymentFailed(event.capture());
+        assertThat(event.getValue().reason()).isEqualTo("PRESCRIPTION_EXPIRED");
     }
 }

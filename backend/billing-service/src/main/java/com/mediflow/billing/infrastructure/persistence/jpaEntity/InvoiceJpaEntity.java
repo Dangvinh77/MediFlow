@@ -64,9 +64,6 @@ public class InvoiceJpaEntity {
     @Column(name = "payment_method", length = 20)
     private PaymentMethod paymentMethod;
 
-    @Column(name = "dispense_id")
-    private UUID dispenseId;
-
     @Column(name = "prescription_id")
     private UUID prescriptionId;
 

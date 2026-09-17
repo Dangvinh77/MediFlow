@@ -23,6 +23,7 @@ import com.mediflow.lab.application.dto.request.LabResultItem;
 import com.mediflow.lab.application.event.LabRequestCreatedEvent;
 import com.mediflow.lab.application.event.LabResultCreatedEvent;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
+import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
@@ -34,10 +35,14 @@ class LabApplicationServiceTest {
     private final LabTestRepositoryPort tests = mock(LabTestRepositoryPort.class);
     private final LabEventPublisherPort publisher = mock(LabEventPublisherPort.class);
     private final LabTestDtoMapper mapper = mock(LabTestDtoMapper.class);
-    private final LabApplicationService service = new LabApplicationService(tests, publisher, mapper);
+    private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
+    private final LabApplicationService service =
+            new LabApplicationService(tests, publisher, mapper, correlationIds);
 
     @Test
     void create_persistsAndPublishesRequestEvent() {
+        UUID correlationId = UUID.randomUUID();
+        when(correlationIds.currentOrCreate()).thenReturn(correlationId);
         var request = new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "CBC", LocalDate.now());
         when(tests.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -50,10 +55,13 @@ class LabApplicationServiceTest {
         verify(publisher).publishRequestCreated(event.capture());
         assertThat(event.getValue().labId()).isEqualTo(saved.getValue().getTestId());
         assertThat(event.getValue().labType()).isEqualTo("CBC");
+        assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
     }
 
     @Test
     void addResults_locksAggregateCompletesAndPublishesFullResult() {
+        UUID correlationId = UUID.randomUUID();
+        when(correlationIds.currentOrCreate()).thenReturn(correlationId);
         LabTest test = newTest();
         when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
         when(tests.save(test)).thenReturn(test);
@@ -69,6 +77,7 @@ class LabApplicationServiceTest {
         verify(publisher).publishResultCreated(event.capture());
         assertThat(event.getValue().labType()).isEqualTo(test.getLabType());
         assertThat(event.getValue().performedDate()).isEqualTo(request.performedDate());
+        assertThat(event.getValue().correlationId()).isEqualTo(correlationId.toString());
         assertThat(event.getValue().results()).singleElement()
                 .satisfies(result -> assertThat(result.value()).isEqualTo("7.5"));
     }
@@ -88,7 +97,7 @@ class LabApplicationServiceTest {
     void autoCreateFromRecord_blankLabType_doesNothing() {
         service.autoCreateFromRecord(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "  ");
 
-        verifyNoInteractions(tests, publisher, mapper);
+        verifyNoInteractions(tests, publisher, mapper, correlationIds);
     }
 
     @Test

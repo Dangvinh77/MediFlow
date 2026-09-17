@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.billing.application.event.PaymentFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
 import com.mediflow.billing.application.port.out.BillingEventPublisherPort;
@@ -35,6 +37,8 @@ public class SagaCompensationService implements SagaCompensationUseCase {
 
     private static final String RK_DISPENSE_FAILED = "prescription.dispense.failed";
     private static final String RK_PRESCRIPTION_FILLED = "prescription.filled";
+    private static final String RK_PRESCRIPTION_CANCELLED = "prescription.cancelled";
+    private static final String RK_PRESCRIPTION_EXPIRED = "prescription.expired";
 
     private final ProcessedEventPort processedEvent;
     private final InvoiceRepositoryPort invoiceRepo;
@@ -72,6 +76,13 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         }
 
         Invoice invoice = found.get();
+        // A cancellation/expiry event may win the race with the late dispense failure event.
+        // REFUNDED is terminal: absorb the compensation event instead of attempting
+        // REFUNDED -> REFUNDED, which would send a valid redelivery to the DLQ.
+        if (invoice.getSagaStatus() == SagaStatus.REFUNDED) {
+            processedEvent.markProcessed(e.eventId(), RK_DISPENSE_FAILED);
+            return;
+        }
         invoice.refund();   // isPaid = false, transitionSaga(REFUNDED)
 
         List<Fee> fees = feeRepo.findByInvoice(invoice.getInvoiceId());
@@ -91,8 +102,8 @@ public class SagaCompensationService implements SagaCompensationUseCase {
      * {@code COMPLETED}. Không publish event nào.
      *
      * <p>Ghi chú: §7 nói đặt thêm {@code dispenseId}, nhưng payload {@code prescription.filled}
-     * hiện chưa mang trường đó — bỏ qua việc gán, xử lý khi ráp saga ở Phần 5/5
-     * ({@code THELOC-INTEGRATION-FOLLOWUP.md}).
+     * không mang trường đó — đã chốt với pharmacy (2026-09-16) bỏ hẳn việc gán
+     * {@code dispenseId}, xem {@code THELOC-INTEGRATION-FOLLOWUP.md}.
      */
     @Override
     @Transactional
@@ -113,5 +124,63 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         invoiceRepo.save(invoice);
 
         processedEvent.markProcessed(e.eventId(), RK_PRESCRIPTION_FILLED);
+    }
+
+    @Override
+    @Transactional
+    public void onPrescriptionCancelled(PrescriptionCancelledEvent e) {
+        closeForPharmacyTermination(e.eventId(), e.prescriptionId(), e.correlationId(),
+                e.reason(), RK_PRESCRIPTION_CANCELLED);
+    }
+
+    @Override
+    @Transactional
+    public void onPrescriptionExpired(PrescriptionExpiredEvent e) {
+        closeForPharmacyTermination(e.eventId(), e.prescriptionId(), e.correlationId(),
+                "PRESCRIPTION_EXPIRED", RK_PRESCRIPTION_EXPIRED);
+    }
+
+    /** Closes an unpaid invoice, or compensates it when payment won the race with termination. */
+    private void closeForPharmacyTermination(UUID eventId, UUID prescriptionId,
+                                               String correlationId, String reason,
+                                               String routingKey) {
+        if (processedEvent.alreadyProcessed(eventId)) {
+            return;
+        }
+        Optional<Invoice> found = invoiceRepo.findByPrescriptionForUpdate(prescriptionId);
+        if (found.isEmpty()) {
+            log.warn("Bỏ qua kết thúc saga: không có hóa đơn cho prescriptionId={} (event {})",
+                    prescriptionId, eventId);
+            processedEvent.markProcessed(eventId, routingKey);
+            return;
+        }
+
+        Invoice invoice = found.get();
+        if (invoice.getSagaStatus() == SagaStatus.REFUNDED) {
+            processedEvent.markProcessed(eventId, routingKey);
+            return;
+        }
+        if (invoice.getSagaStatus() == SagaStatus.AWAITING_PAYMENT) {
+            invoice.cancelBeforePayment();
+            invoiceRepo.save(invoice);
+        } else if (invoice.getSagaStatus() == SagaStatus.AWAITING_DISPENSE) {
+            List<Fee> fees = feeRepo.findByInvoice(invoice.getInvoiceId());
+            fees.forEach(Fee::refund);
+            feeRepo.saveAll(fees);
+            invoice.refund();
+            invoiceRepo.save(invoice);
+            eventPublisher.publishPaymentFailed(new PaymentFailedEvent(
+                    UUID.randomUUID(), Instant.now(), correlationId,
+                    invoice.getInvoiceId(), invoice.getPatientId(), normalizeReason(reason)));
+        } else {
+            throw new com.mediflow.billing.domain.exception.BillingRuleException(
+                    "BILLING_INVALID_SAGA_TRANSITION",
+                    "Không thể kết thúc invoice ở trạng thái " + invoice.getSagaStatus());
+        }
+        processedEvent.markProcessed(eventId, routingKey);
+    }
+
+    private static String normalizeReason(String reason) {
+        return reason == null || reason.isBlank() ? "PRESCRIPTION_TERMINATED" : reason.trim();
     }
 }

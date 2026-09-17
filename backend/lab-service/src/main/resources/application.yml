@@ -28,6 +28,9 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false
 
 eureka:
   client:
@@ -37,13 +40,22 @@ eureka:
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
   jwt:
-    secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+    secret: ${MEDIFLOW_JWT_SECRET}
 
 management:
+  info:
+    env:
+      enabled: true
   endpoints:
     web:
       exposure:
         include: health,info
+
+info:
+  app:
+    name: MediFlow Lab Service
+    description: Chỉ định xét nghiệm và kết quả xét nghiệm.
+    version: v1
 
 springdoc:
   swagger-ui:

@@ -5,7 +5,10 @@ import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.UpdateAppointmentRequest;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
+import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
+import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
+import com.mediflow.common.security.JwtClaims;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,6 +29,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -38,7 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AppointmentController.class)
-@Import(AppointmentControllerTest.MethodSecurityConfiguration.class)
+@Import({AppointmentControllerTest.MethodSecurityConfiguration.class,
+        ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
 class AppointmentControllerTest {
 
     private static final String BASE_PATH = "/api/v1/appointments";
@@ -59,12 +65,18 @@ class AppointmentControllerTest {
         when(manageAppointmentUseCase.getById(appointmentId))
                 .thenReturn(appointment(appointmentId));
 
-        mockMvc.perform(get(BASE_PATH + "/{id}", appointmentId))
+        MvcResult result = mockMvc.perform(get(BASE_PATH + "/{id}", appointmentId)
+                        .header(JwtClaims.HEADER_CORRELATION_ID, "malformed-correlation-id"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.appointmentId")
                         .value(appointmentId.toString()))
-                .andExpect(jsonPath("$.data.appointmentTime").value("08:30"));
+                .andExpect(jsonPath("$.data.appointmentTime").value("08:30"))
+                .andDo(this::assertCorrelationIdMatchesHeader)
+                .andReturn();
+
+        assertThat(result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID))
+                .isNotEqualTo("malformed-correlation-id");
     }
 
     @Test
@@ -190,6 +202,17 @@ class AppointmentControllerTest {
                 "Khám tổng quát",
                 now,
                 now);
+    }
+
+    private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {
+        String header = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        String body = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId")
+                .asText(null);
+
+        assertThat(header).isNotNull();
+        assertThat(body).isNotNull();
+        assertThat(UUID.fromString(body)).isEqualTo(UUID.fromString(header));
     }
 
     @TestConfiguration

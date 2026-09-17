@@ -1,9 +1,4 @@
-### MediFlow — Report service (qua gateway :8080) — DEMO / TEMPLATE
-###
-### ⚠️ Trạng thái: report-service chưa có web layer (chưa có controller). Các request
-### bên dưới là DEMO soạn theo spec chuẩn:
-###   docs/eproject_general_plan/backend-spec/08-report.md
-### Khi controller được dựng, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+### MediFlow — Report service (qua gateway :8080) — live contract
 ###
 ### Quy ước nhánh C: report dùng tên field tiếng Anh (reportDate, departmentId, totalRevenue, ...).
 ###
