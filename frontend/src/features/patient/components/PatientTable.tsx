@@ -61,17 +61,17 @@ export function PatientTable() {
 
   return (
     <section className="mt-6">
-      {loading && <p className="text-zinc-500">Đang tải bệnh nhân…</p>}
-      {error && <p className="text-red-600">{error}</p>}
+      {loading && <p className="text-muted-foreground">Đang tải bệnh nhân…</p>}
+      {error && <p className="text-danger">{error}</p>}
       {!loading && !error && patients.length === 0 && (
-        <p className="text-zinc-500">Chưa có bệnh nhân nào.</p>
+        <p className="text-muted-foreground">Chưa có bệnh nhân nào.</p>
       )}
 
       {!error && patients.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-3xl text-left text-sm">
-              <thead className="border-b border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950">
+              <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th className="px-4 py-3">Họ tên</th>
                   <th className="px-4 py-3">Ngày sinh</th>
@@ -84,7 +84,7 @@ export function PatientTable() {
                 {patients.map((patient) => (
                   <tr
                     key={patient.maBenhNhan}
-                    className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
+                    className="border-b border-border last:border-0"
                   >
                     <td className="px-4 py-3">{patient.hoTen}</td>
                     <td className="px-4 py-3">{patient.ngaySinh}</td>
