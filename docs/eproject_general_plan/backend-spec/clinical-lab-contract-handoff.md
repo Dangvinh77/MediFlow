@@ -42,6 +42,14 @@ Organization documents `GET /api/v1/org/staff/{id}/exists` for `SYSTEM`, with `{
 | Billing arrival consumer | `recordId` is absent for standalone arrival. | Defer record-based fee creation and enforce source-reference uniqueness across arrival/record events. |
 | Billing → Report | Current `PaymentFailedEvent` lacks `departmentId`/`totalAmount` required for reversal in report spec. | Agree a reversal payload with billing/report owners. Outside the clinical/lab implementation scope. |
 
+The owner-facing handoffs are now colocated with the producer modules and made mandatory from each
+service's `AGENTS.md`:
+
+- `backend/organization-service/HANDOFF-CLINICAL-STAFF-LOOKUP.md`
+- `backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md`
+- `backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md`
+- `backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md`
+
 ## Remaining service work
 
 - Clinical: application transactions, patient/doctor checks, pending-per-day uniqueness (including updates/concurrency), one record per appointment, database/Flyway, endpoint roles and 503 mapping. `findByAppointmentId` and `existsPendingSameDayExcludingId` ports prepare these checks; the ports do not enforce them.
@@ -70,3 +78,12 @@ records**, without adding cross-service production dependencies:
 Broader verification passed for billing, notification, pharmacy, organization and report; seven
 pharmacy container tests were skipped because Docker was unavailable. Including patient in
 `verify` fails at Boot repackage: the unchanged baseline patient module has no main class.
+
+### Docker verification update (2026-09-17)
+
+Docker Engine 29 compatibility is pinned for Clinical and Lab tests through
+`src/test/resources/docker-java.properties`. The combined suite completed **262 tests with zero
+failures, errors, or skips**, including PostgreSQL Testcontainers. A Compose runtime smoke test also
+confirmed Clinical and Lab health, Eureka registration, Flyway versions Clinical v3 / Lab v1,
+RabbitMQ consumers, and the two active bindings `lab.result.created -> clinical.q` and
+`medicalrecord.created -> lab.q`.
