@@ -118,9 +118,9 @@ SYSTEM
 
 ## Status
 
-The module currently provides department and staff creation, lookup, department transfer,
-active filtering, pagination and staff-existence checks. Department/staff update use cases and
-account management are planned but are not implemented yet.
+The module currently provides department and staff creation, lookup, update, department transfer,
+active filtering, pagination, staff-existence checks, and account creation with BCrypt password
+hashing, account status management, and credential verification for the gateway.
 
 ## Run locally
 
@@ -144,11 +144,14 @@ Swagger UI:
 | GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/departments/{id}`                      | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/departments`                           | ADMIN                         |
+| PUT    | `/api/v1/org/departments/{id}`                      | ADMIN                         |
 | GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, MANAGER, DOCTOR, NURSE |
 | GET    | `/api/v1/org/staff/{id}`                            | ADMIN, MANAGER, DOCTOR, NURSE |
 | POST   | `/api/v1/org/staff`                                 | ADMIN                         |
+| PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
+| POST   | `/api/v1/org/accounts`                              | ADMIN                         |
 
 ### Department transfer
 

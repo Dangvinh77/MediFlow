@@ -60,7 +60,7 @@ public class Account {
             Instant lastLoginAt,
             Instant createdAt,
             Instant updatedAt) {
-        validate(role, staffId);
+        validate(username, passwordHash, role, staffId);
 
         this.accountId = accountId;
         this.username = username;
@@ -93,9 +93,24 @@ public class Account {
                 now);
     }
 
-        private void validate(
+    private void validate(
+            String username,
+            String passwordHash,
             Role role,
             UUID staffId) {
+        if (username == null
+                || username.length() < 3
+                || username.length() > 50
+                || !username.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new InvalidAccountException(
+                    "Username must contain 3 to 50 letters, digits, dots, underscores, or hyphens");
+        }
+
+        if (passwordHash == null || passwordHash.isBlank()) {
+            throw new InvalidAccountException(
+                    "Password hash cannot be blank");
+        }
+
         if (role == null) {
             throw new InvalidAccountException(
                     "Account role cannot be null");
