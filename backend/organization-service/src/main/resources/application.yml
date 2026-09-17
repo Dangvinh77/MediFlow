@@ -34,10 +34,10 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
-# Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
+# Shared HS256 secret — MUST match the gateway. Provide via env in every environment.
 mediflow:
   jwt:
-    secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+    secret: ${MEDIFLOW_JWT_SECRET}
 
 management:
   endpoints:

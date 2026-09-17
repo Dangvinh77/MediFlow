@@ -305,6 +305,27 @@ The gateway must **never** read `ACCOUNT` directly.
 
 `APPOINTMENT` and `MEDICAL_RECORD` use this endpoint to validate `staff_id`.
 
+The endpoint is an internal `SYSTEM`-authenticated lookup and returns the common envelope:
+
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "eligibleDoctor": true,
+    "departmentId": "..."
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
+}
+```
+
+`eligibleDoctor` is true only when the staff member is active and has job title `DOCTOR`.
+`departmentId` is populated only for an eligible doctor. Missing and ineligible staff are
+confirmed negative results with HTTP 200; transport failures and invalid upstream responses
+remain error responses.
+
 The lookup must be resilient with:
 
 - Timeout

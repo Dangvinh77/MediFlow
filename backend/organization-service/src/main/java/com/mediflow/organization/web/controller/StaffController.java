@@ -9,9 +9,12 @@ import com.mediflow.organization.web.dto.request.ChangeStaffDepartmentRequest;
 import com.mediflow.organization.web.dto.request.CreateStaffRequest;
 import com.mediflow.organization.web.dto.response.CreateStaffResponse;
 import com.mediflow.organization.web.dto.response.StaffResponse;
-import com.mediflow.organization.web.dto.response.StaffExistsResponse;
 import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
+import com.mediflow.organization.application.dto.response.StaffLookupDTO;
+import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.web.dto.request.UpdateStaffRequest;
+import com.mediflow.common.api.ApiResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,16 +32,19 @@ public class StaffController {
         private final ChangeStaffDepartmentUseCase changeStaffDepartmentUseCase;
         private final GetStaffUseCase getStaffUseCase;
         private final UpdateStaffUseCase updateStaffUseCase;
+        private final CorrelationIdProvider correlationIds;
 
         public StaffController(
                         CreateStaffUseCase createStaffUseCase,
                         ChangeStaffDepartmentUseCase changeStaffDepartmentUseCase,
                         GetStaffUseCase getStaffUseCase,
-                        UpdateStaffUseCase updateStaffUseCase) {
+                        UpdateStaffUseCase updateStaffUseCase,
+                        CorrelationIdProvider correlationIds) {
                 this.createStaffUseCase = createStaffUseCase;
                 this.changeStaffDepartmentUseCase = changeStaffDepartmentUseCase;
                 this.getStaffUseCase = getStaffUseCase;
                 this.updateStaffUseCase = updateStaffUseCase;
+                this.correlationIds = correlationIds;
         }
 
         @PostMapping
@@ -123,13 +129,12 @@ public class StaffController {
         }
 
         @GetMapping("/{id}/exists")
-        public ResponseEntity<StaffExistsResponse> staffExists(@PathVariable UUID id) {
-                if (!getStaffUseCase.existsById(id)) {
-                        return ResponseEntity.ok(new StaffExistsResponse(false, null));
-                }
-
-                Staff staff = getStaffUseCase.getStaffById(id);
-                return ResponseEntity.ok(new StaffExistsResponse(true, staff.getDepartmentId()));
+        @PreAuthorize("hasRole('SYSTEM')")
+        public ResponseEntity<ApiResponse<StaffLookupDTO>> staffExists(@PathVariable UUID id) {
+                StaffLookupDTO result = getStaffUseCase.lookup(id);
+                return ResponseEntity.ok(ApiResponse.ok(
+                        result,
+                        correlationIds.currentOrCreate().toString()));
         }
 
 }

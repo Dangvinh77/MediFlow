@@ -92,9 +92,14 @@ Content-Type: application/json
   "newDepartmentId": "00000000-0000-0000-0000-000000000000"
 }
 
-### Check whether a staff member exists
+### Internal lookup: staff existence and doctor eligibility (SYSTEM token only)
 GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/exists
 Authorization: Bearer {{token}}
+
+### Expected 200 envelope
+### data.exists=false, data.eligibleDoctor=false, data.departmentId=null when missing
+### data.exists=true, data.eligibleDoctor=false, data.departmentId=null when not an eligible doctor
+### data.exists=true, data.eligibleDoctor=true, data.departmentId=<authoritative department> for an active doctor
 
 ### Create an account (ADMIN only)
 POST {{host}}/api/v1/org/accounts

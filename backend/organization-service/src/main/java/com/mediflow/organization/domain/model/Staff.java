@@ -325,6 +325,11 @@ public class Staff {
         return active;
     }
 
+    /** A staff member may be assigned as a doctor only while active and licensed. */
+    public boolean isEligibleDoctor() {
+        return active && jobTitle == JobTitle.DOCTOR;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
