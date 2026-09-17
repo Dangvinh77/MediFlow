@@ -18,7 +18,23 @@ public class LabResultCreatedConsumer {
 
     @RabbitListener(queues = "${mediflow.clinical.rabbit.queue:clinical.q}")
     public void consume(LabResultCreatedPayload payload) {
+        validate(payload);
         useCase.onLabResultCreated(new LabResultCreatedCommand(
                 payload.eventId(), payload.recordId(), payload.labId(), payload.conclusion()));
+    }
+
+    private static void validate(LabResultCreatedPayload payload) {
+        if (payload == null) {
+            throw new IllegalArgumentException("lab.result.created payload is required");
+        }
+        require(payload.eventId(), "eventId");
+        require(payload.recordId(), "recordId");
+        require(payload.labId(), "labId");
+    }
+
+    private static void require(Object value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException("lab.result.created " + fieldName + " is required");
+        }
     }
 }
