@@ -1,73 +1,191 @@
-// Thin fetch wrapper around the gateway. All calls go to /api/* which Next proxies
-// to the gateway (see next.config.ts). Attaches the JWT and unwraps ApiResponse.
+import "client-only";
 
 import { getToken } from "./session";
-import type { ApiResponse } from "./types";
+import type {
+  ApiError,
+  ApiResponse,
+} from "./types";
+
+// The single browser HTTP boundary. Feature paths start at `/v1`; this wrapper
+// prepends same-origin `/api` so Next can proxy every request through the gateway.
 
 export class ApiRequestError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly code?: string,
+    public readonly details: ApiError["details"] = [],
+    public readonly correlationId: string | null = null,
   ) {
     super(message);
     this.name = "ApiRequestError";
   }
 }
 
-interface ErrorBody {
-  error?: string | { code?: string; message?: string };
+interface LegacyErrorBody {
+  error?:
+    | string
+    | {
+        code?: string;
+        message?: string;
+        details?: ApiError["details"];
+      };
   message?: string;
+  correlationId?: string | null;
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+function isApiResponse(
+  value: unknown,
+): value is ApiResponse<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "success" in value
+  );
+}
+
+async function requestJson<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   const token = getToken();
+
   const headers = new Headers(init?.headers);
-  headers.set("Content-Type", "application/json");
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`/api${path}`, { ...init, headers });
+  if (init?.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
 
-  // 204 No Content
-  if (res.status === 204) return undefined as T;
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
 
-  const body = (await res.json().catch(() => null)) as T | ErrorBody | null;
+  const response = await fetch(`/api${path}`, {
+    ...init,
+    headers,
+  });
 
-  if (!res.ok) {
-    const errorBody = body as ErrorBody | null;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const body: unknown = await response
+    .json()
+    .catch(() => null);
+
+  if (!response.ok) {
+    if (isApiResponse(body) && body.error) {
+      throw new ApiRequestError(
+        body.error.message,
+        response.status,
+        body.error.code,
+        body.error.details ?? [],
+        body.correlationId,
+      );
+    }
+
+    const legacy = body as LegacyErrorBody | null;
+
     const nestedError =
-      typeof errorBody?.error === "object" ? errorBody.error : undefined;
+      typeof legacy?.error === "object"
+        ? legacy.error
+        : undefined;
+
     const code =
-      typeof errorBody?.error === "string" ? errorBody.error : nestedError?.code;
-    const message =
-      nestedError?.message ?? errorBody?.message ?? `Request failed (${res.status})`;
-    throw new ApiRequestError(message, res.status, code);
+      typeof legacy?.error === "string"
+        ? legacy.error
+        : nestedError?.code;
+
+    throw new ApiRequestError(
+      nestedError?.message ??
+        legacy?.message ??
+        `Request failed (${response.status})`,
+      response.status,
+      code,
+      nestedError?.details ?? [],
+      legacy?.correlationId ?? null,
+    );
   }
 
   if (body === null) {
-    throw new ApiRequestError("Gateway returned an empty response", res.status);
+    throw new ApiRequestError(
+      "Gateway returned an empty response",
+      response.status,
+    );
   }
 
   return body as T;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const body = await requestJson<ApiResponse<T>>(path, init);
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const body = await requestJson<ApiResponse<T>>(
+    path,
+    init,
+  );
 
   if (!body.success) {
-    const message = body.error?.message ?? "Request failed";
-    throw new ApiRequestError(message, 200, body.error?.code);
+    throw new ApiRequestError(
+      body.error?.message ?? "Request failed",
+      200,
+      body.error?.code,
+      body.error?.details ?? [],
+      body.correlationId,
+    );
   }
+
   return body.data as T;
 }
 
+function mutationInit(
+  method: "POST" | "PUT",
+  data?: unknown,
+): RequestInit {
+  // Some state-transition endpoints use POST/PUT without a JSON request body.
+  if (data === undefined) {
+    return { method };
+  }
+
+  return {
+    method,
+    body: JSON.stringify(data),
+  };
+}
+
 export const api = {
-  get: <T>(path: string) => request<T>(path, { method: "GET" }),
-  post: <T>(path: string, data: unknown) =>
-    request<T>(path, { method: "POST", body: JSON.stringify(data) }),
-  postRaw: <T>(path: string, data: unknown) =>
-    requestJson<T>(path, { method: "POST", body: JSON.stringify(data) }),
-  put: <T>(path: string, data: unknown) =>
-    request<T>(path, { method: "PUT", body: JSON.stringify(data) }),
-  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  get: <T>(path: string) =>
+    request<T>(path, {
+      method: "GET",
+    }),
+
+  post: <T>(
+    path: string,
+    data?: unknown,
+  ) => request<T>(
+    path,
+    mutationInit("POST", data),
+  ),
+
+  postRaw: <T>(
+    path: string,
+    data?: unknown,
+  ) => requestJson<T>(
+    path,
+    mutationInit("POST", data),
+  ),
+
+  put: <T>(
+    path: string,
+    data?: unknown,
+  ) => request<T>(
+    path,
+    mutationInit("PUT", data),
+  ),
+
+  del: <T>(path: string) =>
+    request<T>(path, {
+      method: "DELETE",
+    }),
 };
