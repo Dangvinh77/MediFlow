@@ -25,4 +25,3 @@ the authority because it owns the invoice-to-fee relationship at payment time.
 - Publisher/outbox contract tests cover zero, one, and multiple lab tests.
 - Existing Pharmacy and other consumers tolerate the additive field.
 - Notify the Lab owner when merged so it can add the idempotent `payment.completed` consumer.
-

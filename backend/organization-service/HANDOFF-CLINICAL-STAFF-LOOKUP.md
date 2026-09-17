@@ -32,4 +32,3 @@ from a confirmed negative lookup.
 - A service-authenticated Clinical request is authorized without using a human user's credentials.
 - Contract tests cover missing staff, non-doctor staff, eligible doctor, and additive JSON fields.
 - Notify the Clinical owner when the contract is merged so its Feign projection can be enabled.
-

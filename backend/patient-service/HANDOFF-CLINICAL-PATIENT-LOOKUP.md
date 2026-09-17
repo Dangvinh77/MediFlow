@@ -26,4 +26,3 @@ but timeout/5xx/circuit-open must never be represented as absence.
 - Clinical can authenticate without forwarding a human user's authorization decision.
 - Contract tests cover existing, missing, unavailable, malformed, and additive-field responses.
 - Notify the Clinical owner when the contract is merged so its Feign adapter can be finalized.
-

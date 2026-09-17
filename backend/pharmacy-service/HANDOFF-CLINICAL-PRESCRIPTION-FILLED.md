@@ -24,4 +24,3 @@ and `prescriptionId`. The value must come from the persisted prescription being 
 - Producer tests prove `recordId` is preserved through outbox serialization and dispatch.
 - Existing consumers tolerate the additive field.
 - Notify the Clinical owner when merged so it can add an idempotent consumer and attachment.
-
