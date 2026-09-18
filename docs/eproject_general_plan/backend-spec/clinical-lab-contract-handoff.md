@@ -31,7 +31,11 @@ Event records live in `application/event`, matching current billing/pharmacy. Th
 
 `PatientLookupPort.exists(patientId)` returns false only for confirmed absence. `StaffLookupPort.departmentOf(staffId)` returns an empty result only for confirmed missing/ineligible staff. Transport timeout, circuit-open, 5xx and invalid envelopes throw `UpstreamUnavailableException` (`UPSTREAM_UNAVAILABLE`), which the future web handler must map to HTTP 503, not 422/404.
 
-Organization documents `GET /api/v1/org/staff/{id}/exists` for `SYSTEM`, with `{exists, departmentId}` inside `ApiResponse.data`; its controller is not implemented yet and the demo's `maKhoa` is stale. Patient documents `GET /api/v1/patients/{id}/exists` inside the same envelope. Before wiring either adapter, validate the live provider contract and service authentication. Existence plus department does not itself prove doctor eligibility: BR-A4 requires the organization provider/adapter to supply or verify that fact. No Feign adapter or network call is added here.
+Organization now implements `GET /api/v1/org/staff/{id}/exists` for `SYSTEM`, with
+`{exists, eligibleDoctor, departmentId}` inside `ApiResponse.data`. Clinical projects those three
+states, sends a short-lived `SYSTEM` JWT signed with the shared `MEDIFLOW_JWT_SECRET`, and preserves
+transport/contract failures as `UpstreamUnavailableException`. Patient lookup remains blocked until
+Patient provides an authoritative read/exists contract and service authentication.
 
 ## Producer prerequisites still unresolved
 

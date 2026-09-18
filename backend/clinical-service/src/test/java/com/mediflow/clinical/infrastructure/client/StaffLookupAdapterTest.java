@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.common.api.ApiResponse;
 
@@ -25,6 +26,8 @@ import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableExcept
 
 class StaffLookupAdapterTest {
 
+    private static final ObjectMapper JSON = new ObjectMapper();
+
     private final OrganizationFeignClient client = mock(OrganizationFeignClient.class);
     private final StaffLookupAdapter adapter = new StaffLookupAdapter(client);
 
@@ -32,14 +35,25 @@ class StaffLookupAdapterTest {
     void departmentOf_existingStaff_returnsDepartment() {
         UUID staffId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
-        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(true, departmentId)));
+        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(true, true, departmentId)));
         assertThat(adapter.departmentOf(staffId)).contains(departmentId);
     }
 
     @Test
     void departmentOf_confirmedMissingStaff_returnsEmpty() {
         UUID staffId = UUID.randomUUID();
-        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(false, null)));
+        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(false, false, null)));
+        assertThat(adapter.departmentOf(staffId)).isEmpty();
+    }
+
+    @Test
+    void departmentOf_existingIneligibleStaff_returnsEmpty() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        StaffExistsResponse response = JSON.readValue("""
+                {"exists":true,"eligibleDoctor":false,"departmentId":null}
+                """, StaffExistsResponse.class);
+        when(client.exists(staffId)).thenReturn(ApiResponse.ok(response));
+
         assertThat(adapter.departmentOf(staffId)).isEmpty();
     }
 
@@ -70,7 +84,7 @@ class StaffLookupAdapterTest {
     @Test
     void departmentOf_existingStaffWithoutDepartment_throwsTypedUnavailable() {
         UUID staffId = UUID.randomUUID();
-        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(true, null)));
+        when(client.exists(staffId)).thenReturn(ApiResponse.ok(new StaffExistsResponse(true, true, null)));
         assertThatThrownBy(() -> adapter.departmentOf(staffId))
                 .isInstanceOf(UpstreamUnavailableException.class)
                 .hasMessageContaining("invalid response");

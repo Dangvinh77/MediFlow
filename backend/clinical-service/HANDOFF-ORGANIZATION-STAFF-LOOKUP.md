@@ -7,7 +7,7 @@
 - **Consumer:** `clinical-service` — Vinh (`Dangvinh77` / `Harori`)
 - **Endpoint:** `GET /api/v1/org/staff/{id}/exists`
 - **Purpose:** validate that a doctor exists, is active, and belongs to the authoritative department
-- **Organization implementation:** PR1, pending commit/deployment
+- **Organization implementation:** merged in `2acaaa6`; deployment must share `MEDIFLOW_JWT_SECRET`
 
 ## Wire contract
 
@@ -128,10 +128,16 @@ platform side.
 
 ## Acceptance checklist
 
-- [ ] Feign DTO contains `eligibleDoctor`.
-- [ ] Missing, ineligible, and eligible states are distinct in Clinical.
-- [ ] Upstream failures are not converted to `Optional.empty()`.
-- [ ] Clinical sends a JWT with `role=SYSTEM` and does not forward a human token.
-- [ ] `X-Correlation-Id` is propagated.
-- [ ] Contract, adapter, security, and appointment tests pass.
-- [ ] Clinical owner confirms the projection is enabled after Organization PR1 is merged.
+- [x] Feign DTO contains `eligibleDoctor`.
+- [x] Missing, ineligible, and eligible states are distinct in Clinical.
+- [x] Upstream failures are not converted to `Optional.empty()`.
+- [x] Clinical sends a JWT with `role=SYSTEM` and does not forward a human token.
+- [x] `X-Correlation-Id` is propagated.
+- [x] Contract, adapter, security, and appointment tests pass.
+- [x] Clinical owner confirms the projection is enabled after Organization PR1 is merged.
+
+## Clinical implementation status (2026-09-18)
+
+The Clinical projection, adapter mapping, short-lived `SYSTEM` service JWT, correlation propagation,
+and acceptance tests are implemented. Organization and Clinical must use the same externally supplied
+`MEDIFLOW_JWT_SECRET` when deployed.
