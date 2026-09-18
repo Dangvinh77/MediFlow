@@ -50,7 +50,8 @@ class BillingEventPublisherAdapterTest {
     void publishPaymentCompleted_writesExactWirePayload() throws Exception {
         PaymentCompletedEvent event = new PaymentCompletedEvent(
                 UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), UUID.randomUUID(), java.math.BigDecimal.TEN, PaymentMethod.CASH);
+                UUID.randomUUID(), UUID.randomUUID(), java.math.BigDecimal.TEN, PaymentMethod.CASH,
+                java.util.List.of());
 
         adapter.publishPaymentCompleted(event);
 
@@ -60,6 +61,48 @@ class BillingEventPublisherAdapterTest {
                 .isEqualTo(event.prescriptionId().toString());
         assertThat(objectMapper.readTree(row.getPayload()).get("paymentMethod").asText())
                 .isEqualTo("CASH");
+    }
+
+    @Test
+    void publishPaymentCompleted_writesEmptyLabTestIdsForNonLabInvoice() throws Exception {
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), java.math.BigDecimal.TEN, PaymentMethod.CASH,
+                java.util.List.of());
+
+        adapter.publishPaymentCompleted(event);
+
+        assertThat(capturedRow().getPayload()).contains("\"labTestIds\":[]");
+    }
+
+    @Test
+    void publishPaymentCompleted_writesSingleLabTestId() throws Exception {
+        UUID labTestId = UUID.randomUUID();
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), null, java.math.BigDecimal.TEN, PaymentMethod.CASH,
+                java.util.List.of(labTestId));
+
+        adapter.publishPaymentCompleted(event);
+
+        var labTestIds = objectMapper.readTree(capturedRow().getPayload()).get("labTestIds");
+        assertThat(labTestIds).hasSize(1);
+        assertThat(labTestIds.get(0).asText()).isEqualTo(labTestId.toString());
+    }
+
+    @Test
+    void publishPaymentCompleted_writesMultipleDeduplicatedLabTestIds() throws Exception {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), null, java.math.BigDecimal.TEN, PaymentMethod.CASH,
+                java.util.List.of(first, second));
+
+        adapter.publishPaymentCompleted(event);
+
+        var labTestIds = objectMapper.readTree(capturedRow().getPayload()).get("labTestIds");
+        assertThat(labTestIds).hasSize(2);
     }
 
     @Test

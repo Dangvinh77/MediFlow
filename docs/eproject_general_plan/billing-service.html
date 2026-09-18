@@ -313,11 +313,12 @@ public record InvoiceCreatedEvent(
     public record Item(UUID feeId, FeeType type, BigDecimal amount) {}
 }
 
-// payment.completed — bắt buộc mang prescriptionId để pharmacy biết xuất đơn nào
+// payment.completed — bắt buộc mang prescriptionId để pharmacy biết xuất đơn nào; labTestIds (sourceRefId
+// của các Fee LAB, khử trùng lặp, rỗng nếu không có phí LAB) để lab đánh dấu xét nghiệm đã thanh toán
 public record PaymentCompletedEvent(
     UUID eventId, Instant occurredAt, String correlationId,
     UUID invoiceId, UUID patientId, UUID departmentId, UUID prescriptionId,
-    BigDecimal totalAmount, PaymentMethod paymentMethod) {}
+    BigDecimal totalAmount, PaymentMethod paymentMethod, List&lt;UUID&gt; labTestIds) {}
 
 // payment.failed — bù trừ + notification
 public record PaymentFailedEvent(

@@ -53,6 +53,11 @@ class BillingApplicationServiceTest {
                 FeeType.SERVICE, LocalDate.now(), new BigDecimal(amount));
     }
 
+    private static Fee labFee(UUID departmentId, UUID labId, String amount) {
+        return Fee.create(UUID.randomUUID(), UUID.randomUUID(), departmentId, labId,
+                FeeType.LAB, LocalDate.now(), new BigDecimal(amount));
+    }
+
     /** Mô phỏng persistence adapter: trả về hóa đơn đã có id (dùng restore để giữ nguyên các trường). */
     private static Invoice withId(Invoice in) {
         return Invoice.restore(UUID.randomUUID(), in.getPatientId(), in.getCreatedDate(), in.getTotalAmount(),
@@ -134,6 +139,56 @@ class BillingApplicationServiceTest {
         verify(publisher).publishPaymentCompleted(payment.capture());
         assertThat(payment.getValue().correlationId()).isEqualTo(invoiceId.toString());
         assertThat(payment.getValue().prescriptionId()).isEqualTo(sagaInvoice.getPrescriptionId());
+        assertThat(payment.getValue().labTestIds()).isEmpty();
+    }
+
+    // ---- payment.completed carries labTestIds for Lab (HANDOFF-LAB-PAYMENT-COMPLETED.md) ----
+    @Test
+    void pay_invoiceWithOneLabFee_publishesSingleLabTestId() {
+        UUID invoiceId = UUID.randomUUID();
+        UUID labId = UUID.randomUUID();
+        Invoice invoice = Invoice.restore(invoiceId, UUID.randomUUID(), LocalDate.now(),
+                new BigDecimal("80000.00"), false, null, null, SagaStatus.NONE, null,
+                java.time.Instant.now(), null);
+        List<Fee> fees = List.of(labFee(UUID.randomUUID(), labId, "80000.00"));
+        when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(invoice));
+        when(feeRepo.findByInvoice(invoiceId)).thenReturn(fees);
+        when(invoiceRepo.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
+        when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+
+        service.pay(invoiceId, new PayInvoiceRequest(PaymentMethod.CASH));
+
+        ArgumentCaptor<com.mediflow.billing.application.event.PaymentCompletedEvent> payment =
+                ArgumentCaptor.forClass(com.mediflow.billing.application.event.PaymentCompletedEvent.class);
+        verify(publisher).publishPaymentCompleted(payment.capture());
+        assertThat(payment.getValue().labTestIds()).containsExactly(labId);
+    }
+
+    @Test
+    void pay_invoiceWithMultipleLabFees_publishesDeduplicatedLabTestIds() {
+        UUID invoiceId = UUID.randomUUID();
+        UUID dept = UUID.randomUUID();
+        UUID labA = UUID.randomUUID();
+        UUID labB = UUID.randomUUID();
+        Invoice invoice = Invoice.restore(invoiceId, UUID.randomUUID(), LocalDate.now(),
+                new BigDecimal("240000.00"), false, null, null, SagaStatus.NONE, null,
+                java.time.Instant.now(), null);
+        // hai khoản LAB cùng sourceRefId=labA (vd. dữ liệu cũ trước khi có unique index) không được
+        // nhân đôi trong labTestIds — publisher phải khử trùng lặp trước khi phát event
+        List<Fee> fees = List.of(labFee(dept, labA, "80000.00"), labFee(dept, labA, "80000.00"),
+                labFee(dept, labB, "80000.00"), unpaidFee(dept, "80000.00"));
+        when(invoiceRepo.findByIdForUpdate(invoiceId)).thenReturn(Optional.of(invoice));
+        when(feeRepo.findByInvoice(invoiceId)).thenReturn(fees);
+        when(invoiceRepo.save(any(Invoice.class))).thenAnswer(i -> i.getArgument(0));
+        when(feeRepo.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+
+        service.pay(invoiceId, new PayInvoiceRequest(PaymentMethod.CASH));
+
+        ArgumentCaptor<com.mediflow.billing.application.event.PaymentCompletedEvent> payment =
+                ArgumentCaptor.forClass(com.mediflow.billing.application.event.PaymentCompletedEvent.class);
+        verify(publisher).publishPaymentCompleted(payment.capture());
+        assertThat(payment.getValue().labTestIds()).containsExactlyInAnyOrder(labA, labB)
+                .doesNotHaveDuplicates();
     }
 
     // ---- BR-B10 : doanh thu gom theo khoa + khoảng ngày ----

@@ -2,6 +2,7 @@ package com.mediflow.billing.application.event;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.mediflow.billing.domain.model.PaymentMethod;
@@ -21,6 +22,10 @@ import com.mediflow.billing.domain.model.PaymentMethod;
  * @param prescriptionId đơn thuốc cần xuất — pharmacy dựa vào đây
  * @param totalAmount    tổng tiền đã thanh toán
  * @param paymentMethod  hình thức thanh toán (billing sở hữu enum này)
+ * @param labTestIds     {@code sourceRefId} (= {@code labId}) của mọi khoản phí LAB nằm trong hóa
+ *                       đơn này, khử trùng lặp — đây là "test ID" thật để Lab đánh dấu đã thanh
+ *                       toán (HANDOFF-LAB-PAYMENT-COMPLETED.md); hóa đơn không có phí LAB thì
+ *                       rỗng. Không được suy diễn test ID từ invoiceId/prescriptionId/recordId.
  */
 public record PaymentCompletedEvent(
         UUID eventId,
@@ -31,5 +36,6 @@ public record PaymentCompletedEvent(
         UUID departmentId,
         UUID prescriptionId,
         BigDecimal totalAmount,
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+        List<UUID> labTestIds
 ) {}

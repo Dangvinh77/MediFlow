@@ -3,7 +3,9 @@ package com.mediflow.billing.application.service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import com.mediflow.billing.application.port.out.FeeRepositoryPort;
 import com.mediflow.billing.application.port.out.InvoiceRepositoryPort;
 import com.mediflow.billing.domain.exception.InvoiceNotFoundException;
 import com.mediflow.billing.domain.model.Fee;
+import com.mediflow.billing.domain.model.FeeType;
 import com.mediflow.billing.domain.model.Invoice;
 import com.mediflow.billing.domain.model.SagaStatus;
 import com.mediflow.common.api.PageQuery;
@@ -166,11 +169,24 @@ public class BillingApplicationService implements ManageInvoiceUseCase, QueryRev
         eventPublisher.publishPaymentCompleted(new PaymentCompletedEvent(
                 UUID.randomUUID(), Instant.now(), invoice.getInvoiceId().toString(),
                 invoice.getInvoiceId(), invoice.getPatientId(), primaryDepartment(fees),
-                invoice.getPrescriptionId(), invoice.getTotalAmount(), invoice.getPaymentMethod()));
+                invoice.getPrescriptionId(), invoice.getTotalAmount(), invoice.getPaymentMethod(),
+                labTestIds(fees)));
     }
 
     /** Khoa đại diện cho hóa đơn = khoa của khoản phí đầu tiên (report gom nhóm theo khoa). */
     private static UUID primaryDepartment(List<Fee> fees) {
         return fees.isEmpty() ? null : fees.get(0).getDepartmentId();
+    }
+
+    /**
+     * {@code sourceRefId} (= {@code labId}) của mọi khoản phí LAB trong hóa đơn vừa trả, khử trùng
+     * lặp và sắp thứ tự ổn định — đây là test ID thật để Lab đánh dấu đã thanh toán
+     * (HANDOFF-LAB-PAYMENT-COMPLETED.md). Hóa đơn không có phí LAB thì trả về danh sách rỗng.
+     */
+    private static List<UUID> labTestIds(List<Fee> fees) {
+        return List.copyOf(fees.stream()
+                .filter(fee -> fee.getFeeType() == FeeType.LAB)
+                .map(Fee::getSourceRefId)
+                .collect(Collectors.toCollection(TreeSet::new)));
     }
 }
