@@ -78,6 +78,11 @@ The repeatable [wire check](../../../scripts/contract-checks/check-clinical-lab.
 clinical arrival, clinical record and lab result events into the **actual compiled billing receive
 records**, without adding cross-service production dependencies:
 
+> Current follow-up (2026-09-18): Billing added `labTestIds` to `PaymentCompletedEvent`, but the
+> shared Java fixture still invokes the old constructor. See
+> `backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md`; the script must be aligned before this
+> check returns green again.
+
 ```powershell
 ./scripts/contract-checks/check-clinical-lab.ps1
 ```
