@@ -321,11 +321,16 @@ public record RevenueByDeptDTO(UUID departmentId, BigDecimal totalRevenue, long 
 | Routing key | Payload |
 |-------------|---------|
 | `invoice.created` | `{envelope, invoiceId, patientId, departmentId, totalAmount, items[]}` |
-| `payment.completed` | `{envelope, invoiceId, patientId, departmentId, prescriptionId, totalAmount, paymentMethod}` |
+| `payment.completed` | `{envelope, invoiceId, patientId, departmentId, prescriptionId, totalAmount, paymentMethod, labTestIds[]}` |
 | `payment.failed` | `{envelope, invoiceId, patientId, reason}` |
 
 `payment.completed` mang theo `prescriptionId` để pharmacy biết phải xuất đơn thuốc nào. Thiếu trường này
 thì pharmacy phải đoán — đừng bỏ nó.
+
+`labTestIds` mang `sourceRefId` (= `labId`) của mọi khoản phí `LAB` nằm trong hóa đơn vừa trả, khử
+trùng lặp; hóa đơn không có phí LAB thì rỗng. Đây là "test ID" thật để Lab đánh dấu xét nghiệm đã
+thanh toán — không được suy diễn từ `invoiceId`/`prescriptionId`/`recordId`
+(../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md).
 
 **Subscribe** — queue `billing.q`
 
@@ -463,10 +468,11 @@ public record InvoiceCreatedEvent(
 }
 
 // PaymentCompletedEvent — routing key "payment.completed", mang prescriptionId để pharmacy biết xuất đơn nào
+// và labTestIds (sourceRefId của các Fee LAB, khử trùng lặp) để lab đánh dấu xét nghiệm đã thanh toán
 public record PaymentCompletedEvent(
     UUID eventId, Instant occurredAt, String correlationId,
     UUID invoiceId, UUID patientId, UUID departmentId, UUID prescriptionId,
-    BigDecimal totalAmount, PaymentMethod paymentMethod) {}
+    BigDecimal totalAmount, PaymentMethod paymentMethod, List<UUID> labTestIds) {}
 
 // PaymentFailedEvent — routing key "payment.failed", bù trừ + notification
 public record PaymentFailedEvent(

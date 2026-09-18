@@ -1,0 +1,15 @@
+{
+  "eventId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "occurredAt": "2026-09-14T10:00:00Z",
+  "correlationId": "fixture-payment-003",
+  "invoiceId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  "patientId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  "departmentId": "44444444-4444-4444-4444-444444444444",
+  "prescriptionId": null,
+  "totalAmount": 160000.00,
+  "paymentMethod": "INSURANCE",
+  "labTestIds": [
+    "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+  ]
+}

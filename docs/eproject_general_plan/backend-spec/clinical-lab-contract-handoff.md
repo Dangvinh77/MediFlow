@@ -41,7 +41,7 @@ Patient provides an authoritative read/exists contract and service authenticatio
 
 | Owner | Gap | Required follow-up before enabling the consumer |
 |---|---|---|
-| Billing → Lab | Current `PaymentCompletedEvent` has `prescriptionId` but no lab IDs. | Producer must identify all lab tests covered by the invoice, e.g. an agreed `labTestIds` list. Never pass invoice ID, record ID or prescription ID as test ID. |
+| Billing → Lab | **Resolved on the producer side (2026-09-18).** `PaymentCompletedEvent` now carries `labTestIds: List<UUID>` — `Fee.sourceRefId` (= `labId`) for every LAB fee on the paid invoice, deduplicated; empty for non-lab invoices. See `backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md`. | Lab still needs to add the idempotent `payment.completed` consumer; never substitute invoice/record/prescription ID for a test ID. |
 | Pharmacy → Clinical | Current `PrescriptionFilledEvent` has no `recordId`, although its prescription owns that ID. | Add producer-sourced record correlation and corresponding consumer contract tests before enabling attachment. Do not infer from patient/department. |
 | Billing arrival consumer | `recordId` is absent for standalone arrival. | Defer record-based fee creation and enforce source-reference uniqueness across arrival/record events. |
 | Billing → Report | Current `PaymentFailedEvent` lacks `departmentId`/`totalAmount` required for reversal in report spec. | Agree a reversal payload with billing/report owners. Outside the clinical/lab implementation scope. |

@@ -2,6 +2,14 @@
 
 > **Mandatory for coding agents:** read this file before changing invoice fee aggregation,
 > `PaymentCompletedEvent`, or `payment.completed` contract fixtures in `billing-service`.
+>
+> **Status (2026-09-18): Billing side done, Lab consumer still open.** `PaymentCompletedEvent` now
+> carries `labTestIds: List<UUID>` (`Fee.sourceRefId` for every `LAB` fee on the paid invoice,
+> deduplicated). See `BillingApplicationService.publishPaymentCompleted`/`labTestIds`, the wire
+> shape in `src/test/resources/contracts/payment.completed*.json`, and coverage for zero/one/many
+> lab tests in `BillingApplicationServiceTest`, `BillingEventPublisherAdapterTest` and
+> `BillingEventContractFixtureTest`. Remaining work is entirely on Lab: add the idempotent
+> `payment.completed` consumer described below.
 
 - **Producer / owner:** Billing — locgit-89
 - **Consumer:** Lab — Dangvinh77 / Harori
