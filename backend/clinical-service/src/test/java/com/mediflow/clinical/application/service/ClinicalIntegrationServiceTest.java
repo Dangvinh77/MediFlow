@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
+import com.mediflow.clinical.application.dto.command.PrescriptionFilledCommand;
 import com.mediflow.clinical.application.port.in.AttachExternalResultUseCase;
 import com.mediflow.clinical.application.port.out.ProcessedEventPort;
 
@@ -59,6 +60,30 @@ class ClinicalIntegrationServiceTest {
         assertThatThrownBy(() -> service.onLabResultCreated(command))
                 .isInstanceOf(IllegalStateException.class);
         verify(processedEvents).tryClaim(command.eventId(), "lab.result.created");
+    }
+
+    @Test
+    void onPrescriptionFilled_claimedEvent_attachesPrescriptionOnce() {
+        PrescriptionFilledCommand command = new PrescriptionFilledCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        when(processedEvents.tryClaim(command.eventId(), "prescription.filled")).thenReturn(true);
+
+        service.onPrescriptionFilled(command);
+
+        InOrder order = inOrder(processedEvents, attachments);
+        order.verify(processedEvents).tryClaim(command.eventId(), "prescription.filled");
+        order.verify(attachments).attachPrescription(command.recordId(), command.prescriptionId());
+    }
+
+    @Test
+    void onPrescriptionFilled_duplicateEvent_doesNotAttach() {
+        PrescriptionFilledCommand command = new PrescriptionFilledCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        when(processedEvents.tryClaim(command.eventId(), "prescription.filled")).thenReturn(false);
+
+        service.onPrescriptionFilled(command);
+
+        verifyNoInteractions(attachments);
     }
 
     private LabResultCreatedCommand command() {

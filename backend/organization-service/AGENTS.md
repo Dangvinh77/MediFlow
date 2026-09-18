@@ -10,4 +10,6 @@ Root `AGENTS.md` rules continue to apply.
 - Subagents inherit this boundary and cannot bypass it.
 - **Required handoff:** before changing staff lookup or service authentication, read
   [`HANDOFF-CLINICAL-STAFF-LOOKUP.md`](HANDOFF-CLINICAL-STAFF-LOOKUP.md).
+- **Required handoff:** before changing account verification used by Gateway, read
+  [`../gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md`](../gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md).
 - **Verify:** `mvn -q -pl backend/organization-service -am test`

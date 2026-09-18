@@ -38,6 +38,28 @@ class BillingEventContractFixtureTest {
         assertThat(event.departmentId()).isNotNull();
         assertThat(event.totalAmount()).isEqualByComparingTo("125000.00");
         assertThat(event.paymentMethod()).isEqualTo(PaymentMethod.CASH);
+        assertThat(event.labTestIds()).singleElement()
+                .isEqualTo(java.util.UUID.fromString("66666666-6666-6666-6666-666666666666"));
+    }
+
+    /** HANDOFF-LAB-PAYMENT-COMPLETED.md — Lab must read labTestIds, never invoice/prescription/record IDs. */
+    @Test
+    void paymentCompleted_ordinaryInvoiceCarriesEmptyLabTestIds() throws Exception {
+        PaymentCompletedEvent event = read("payment.completed-no-lab-fees.json", PaymentCompletedEvent.class);
+
+        assertEnvelope(event.eventId(), event.occurredAt(), event.correlationId());
+        assertThat(event.prescriptionId()).isNull();
+        assertThat(event.labTestIds()).isEmpty();
+    }
+
+    @Test
+    void paymentCompleted_invoiceWithMultipleLabFeesCarriesEachLabTestId() throws Exception {
+        PaymentCompletedEvent event = read("payment.completed-multiple-lab-fees.json", PaymentCompletedEvent.class);
+
+        assertEnvelope(event.eventId(), event.occurredAt(), event.correlationId());
+        assertThat(event.labTestIds()).hasSize(2).containsExactlyInAnyOrder(
+                java.util.UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                java.util.UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"));
     }
 
     @Test
