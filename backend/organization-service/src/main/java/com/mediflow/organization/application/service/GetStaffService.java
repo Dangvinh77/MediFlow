@@ -1,13 +1,15 @@
 package com.mediflow.organization.application.service;
 
 import com.mediflow.organization.application.dto.response.StaffLookupDTO;
+import com.mediflow.common.api.PageQuery;
+import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.Staff;
+import com.mediflow.organization.domain.model.JobTitle;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Transactional(readOnly = true)
@@ -35,12 +37,10 @@ public class GetStaffService implements GetStaffUseCase {
     }
 
     @Override
-    public List<Staff> getAllStaff() {
-        return staffRepository.findAll();
-    }
-
-    @Override
-    public List<Staff> getStaffByDepartmentId(UUID departmentId) {
-        return staffRepository.findByDepartmentId(departmentId);
+    public PageResult<Staff> search(
+            UUID departmentId,
+            JobTitle jobTitle,
+            PageQuery pageQuery) {
+        return staffRepository.search(departmentId, jobTitle, pageQuery);
     }
 }

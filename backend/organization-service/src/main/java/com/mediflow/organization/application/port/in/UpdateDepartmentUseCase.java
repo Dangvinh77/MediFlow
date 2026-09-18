@@ -11,6 +11,8 @@ public interface UpdateDepartmentUseCase {
             UUID departmentId,
             String departmentName,
             DepartmentType departmentType,
-            String location
+            String location,
+            UUID departmentHeadId,
+            Boolean active
     );
 }

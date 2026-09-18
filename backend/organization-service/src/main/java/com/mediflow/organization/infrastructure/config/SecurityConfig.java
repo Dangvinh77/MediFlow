@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
+import com.mediflow.common.security.JwtClaims;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.infrastructure.security.JwtAuthFilter;
 import com.mediflow.organization.infrastructure.security.JwtProperties;
@@ -106,12 +107,13 @@ public class SecurityConfig {
             String code,
             String message) throws IOException {
 
+        String correlationId = correlationIds.currentOrCreate().toString();
         ApiResponse<Void> body = ApiResponse.fail(
-                ApiError.of(code, message),
-                correlationIds.currentOrCreate().toString());
+                ApiError.of(code, message), correlationId);
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setHeader(JwtClaims.HEADER_CORRELATION_ID, correlationId);
         objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

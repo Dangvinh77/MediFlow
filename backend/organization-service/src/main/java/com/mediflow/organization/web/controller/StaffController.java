@@ -7,9 +7,10 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 import com.mediflow.organization.web.dto.request.ChangeStaffDepartmentRequest;
 import com.mediflow.organization.web.dto.request.CreateStaffRequest;
-import com.mediflow.organization.web.dto.response.CreateStaffResponse;
 import com.mediflow.organization.web.dto.response.StaffResponse;
 import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
+import com.mediflow.common.api.PageQuery;
+import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.dto.response.StaffLookupDTO;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.web.dto.request.UpdateStaffRequest;
@@ -21,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -48,10 +48,11 @@ public class StaffController {
         }
 
         @PostMapping
-        public ResponseEntity<CreateStaffResponse> createStaff(
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<StaffResponse>> createStaff(
                         @Valid @RequestBody CreateStaffRequest request) {
 
-                UUID staffId = createStaffUseCase.execute(
+                Staff staff = createStaffUseCase.execute(
                                 request.getFullName(),
                                 request.getDepartmentId(),
                                 request.getJobTitle(),
@@ -60,54 +61,47 @@ public class StaffController {
                                 request.getPhoneNumber(),
                                 request.getEmail());
 
-                CreateStaffResponse response = new CreateStaffResponse(staffId);
-
                 return ResponseEntity
-                                .created(URI.create("/api/v1/org/staff/" + staffId))
-                                .body(response);
+                                .created(URI.create("/api/v1/org/staff/" + staff.getStaffId()))
+                                .body(ApiResponse.ok(
+                                                StaffResponse.from(staff),
+                                                correlationIds.currentOrCreate().toString()));
         }
 
         @PutMapping("/{staffId}/department")
-        public ResponseEntity<Void> changeDepartment(
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<StaffResponse>> changeDepartment(
                         @PathVariable UUID staffId,
                         @Valid @RequestBody ChangeStaffDepartmentRequest request) {
 
-                changeStaffDepartmentUseCase.execute(
+                Staff staff = changeStaffDepartmentUseCase.execute(
                                 staffId,
                                 request.getNewDepartmentId());
 
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.ok(ApiResponse.ok(
+                                StaffResponse.from(staff),
+                                correlationIds.currentOrCreate().toString()));
         }
 
         @GetMapping
-        public ResponseEntity<List<StaffResponse>> getAllStaff(
+        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        public ResponseEntity<ApiResponse<PageResult<StaffResponse>>> getAllStaff(
                         @RequestParam(name = "departmentId", required = false) UUID departmentId,
                         @RequestParam(name = "jobTitle", required = false) JobTitle jobTitle,
                         @RequestParam(name = "page", defaultValue = "0") int page,
                         @RequestParam(name = "size", defaultValue = "20") int size) {
-                if (page < 0 || size <= 0) {
-                        throw new IllegalArgumentException("page must be >= 0 and size must be > 0");
-                }
+                PageResult<StaffResponse> response = getStaffUseCase
+                                .search(departmentId, jobTitle, PageQuery.of(page, size))
+                                .map(StaffResponse::from);
 
-                List<Staff> staffList = (departmentId != null)
-                                ? getStaffUseCase.getStaffByDepartmentId(departmentId)
-                                : getStaffUseCase.getAllStaff();
-
-                List<Staff> filteredStaff = staffList.stream()
-                                .filter(staff -> jobTitle == null || staff.getJobTitle() == jobTitle)
-                                .skip((long) page * size)
-                                .limit(size)
-                                .toList();
-
-                List<StaffResponse> response = filteredStaff.stream()
-                                .map(StaffResponse::from)
-                                .toList();
-
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(ApiResponse.ok(
+                                response,
+                                correlationIds.currentOrCreate().toString()));
         }
 
         @PutMapping("/{staffId}")
-        public ResponseEntity<StaffResponse> updateStaff(
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<ApiResponse<StaffResponse>> updateStaff(
                         @PathVariable UUID staffId,
                         @Valid @RequestBody UpdateStaffRequest request) {
                 Staff staff = updateStaffUseCase.execute(
@@ -119,13 +113,18 @@ public class StaffController {
                                 request.getPhoneNumber(),
                                 request.getEmail());
 
-                return ResponseEntity.ok(StaffResponse.from(staff));
+                return ResponseEntity.ok(ApiResponse.ok(
+                                StaffResponse.from(staff),
+                                correlationIds.currentOrCreate().toString()));
         }
 
         @GetMapping("/{id}")
-        public ResponseEntity<StaffResponse> getStaffById(@PathVariable UUID id) {
+        @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
+        public ResponseEntity<ApiResponse<StaffResponse>> getStaffById(@PathVariable UUID id) {
                 Staff staff = getStaffUseCase.getStaffById(id);
-                return ResponseEntity.ok(StaffResponse.from(staff));
+                return ResponseEntity.ok(ApiResponse.ok(
+                                StaffResponse.from(staff),
+                                correlationIds.currentOrCreate().toString()));
         }
 
         @GetMapping("/{id}/exists")

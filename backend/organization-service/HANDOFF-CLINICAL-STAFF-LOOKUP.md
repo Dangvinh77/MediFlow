@@ -7,13 +7,14 @@
 - **Consumer:** Clinical — Dangvinh77 / Harori
 - **Blocked Clinical work:** reliable patient appointment and medical-record validation
 
-## Current gap
+## Contract status
 
-`GET /api/v1/org/staff/{id}/exists` currently returns a bare
-`StaffExistsResponse`. Clinical follows the shared API convention and expects
-`ApiResponse<StaffExistsResponse>`. The response also proves only staff existence and a department;
-it does not prove that the staff member is eligible to act as a doctor. Organization security must
-also accept an agreed service credential for this call.
+`GET /api/v1/org/staff/{id}/exists` returns the shared
+`ApiResponse<StaffLookupDTO>` envelope. The response distinguishes staff existence, doctor
+eligibility, and the authoritative department. Organization accepts a signed service JWT carrying
+the `SYSTEM` role for this call; human caller credentials are not accepted.
+
+The remaining consumer work is on Clinical: project the envelope and propagate the service JWT.
 
 ## Required contract
 
@@ -35,6 +36,7 @@ from a confirmed negative lookup.
 
 ## Organization implementation status
 
-The Organization-side contract is implemented in PR1. Clinical must still update its Feign
-projection and service credential interceptor before deployment. The service credential must be
-a JWT carrying the `SYSTEM` role; human caller Bearer tokens are not accepted for this lookup.
+The Organization-side contract is implemented in PR1 and normalized under the PR3 API envelope.
+Clinical must still update its Feign projection and service credential interceptor before
+deployment. The service credential must be a JWT carrying the `SYSTEM` role; human caller Bearer
+tokens are not accepted for this lookup.

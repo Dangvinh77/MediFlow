@@ -16,6 +16,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Validates the JWT once at the edge and propagates identity downstream as headers.
@@ -54,11 +55,22 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         try {
             Claims claims = jwt.parse(auth.substring(7));
             String correlationId = claims.get(JwtClaims.CORRELATION_ID, String.class);
-            ServerHttpRequest mutated = exchange.getRequest().mutate()
+            if (correlationId == null || correlationId.isBlank()) {
+                correlationId = UUID.randomUUID().toString();
+            }
+            var requestBuilder = exchange.getRequest().mutate()
                     .header("X-User-Id", claims.getSubject())
                     .header("X-User-Role", claims.get(JwtClaims.ROLE, String.class))
-                    .header(JwtClaims.HEADER_CORRELATION_ID, correlationId)
-                    .build();
+                    .header(JwtClaims.HEADER_CORRELATION_ID, correlationId);
+            String departmentId = claims.get(
+                    JwtTokenService.DEPARTMENT_ID_CLAIM,
+                    String.class);
+            if (departmentId != null && !departmentId.isBlank()) {
+                requestBuilder.header("X-Department-Id", departmentId);
+            } else {
+                requestBuilder.headers(headers -> headers.remove("X-Department-Id"));
+            }
+            ServerHttpRequest mutated = requestBuilder.build();
             return chain.filter(exchange.mutate().request(mutated).build());
         } catch (Exception e) {
             log.debug("Rejected request to {} — invalid token: {}", path, e.getMessage());

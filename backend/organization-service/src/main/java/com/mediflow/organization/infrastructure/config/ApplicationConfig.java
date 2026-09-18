@@ -11,6 +11,7 @@ import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.AccountRepository;
+import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService;
@@ -64,11 +65,13 @@ public class ApplicationConfig {
         @Bean
         public CreateDepartmentUseCase createDepartmentUseCase(
                         DepartmentRepository departmentRepository,
-                        EventPublisher eventPublisher) {
+                        EventPublisher eventPublisher,
+                        CorrelationIdProvider correlationIds) {
 
                 return new CreateDepartmentService(
                                 departmentRepository,
-                                eventPublisher);
+                                eventPublisher,
+                                correlationIds);
         }
 
         @Bean
@@ -91,41 +94,43 @@ public class ApplicationConfig {
         public CreateStaffUseCase createStaffUseCase(
                         StaffRepository staffRepository,
                         DepartmentRepository departmentRepository,
-                        EventPublisher eventPublisher) {
+                        EventPublisher eventPublisher,
+                        CorrelationIdProvider correlationIds) {
 
                 return new CreateStaffService(
                                 staffRepository,
                                 departmentRepository,
-                                eventPublisher);
+                                eventPublisher,
+                                correlationIds);
         }
 
         @Bean
         public ChangeStaffDepartmentUseCase changeStaffDepartmentUseCase(
                         StaffRepository staffRepository,
                         DepartmentRepository departmentRepository,
-                        EventPublisher eventPublisher) {
+                        EventPublisher eventPublisher,
+                        CorrelationIdProvider correlationIds) {
 
                 return new ChangeStaffDepartmentService(
                                 staffRepository,
                                 departmentRepository,
-                                eventPublisher);
+                                eventPublisher,
+                                correlationIds);
         }
 
         @Bean
         public UpdateDepartmentUseCase updateDepartmentUseCase(
                         DepartmentRepository departmentRepository,
-                        EventPublisher eventPublisher) {
+                        StaffRepository staffRepository) {
                 return new UpdateDepartmentService(
                                 departmentRepository,
-                                eventPublisher);
+                                staffRepository);
         }
 
         @Bean
         public UpdateStaffUseCase updateStaffUseCase(
-                        StaffRepository staffRepository,
-                        EventPublisher eventPublisher) {
+                        StaffRepository staffRepository) {
                 return new UpdateStaffService(
-                                staffRepository,
-                                eventPublisher);
+                                staffRepository);
         }
 }

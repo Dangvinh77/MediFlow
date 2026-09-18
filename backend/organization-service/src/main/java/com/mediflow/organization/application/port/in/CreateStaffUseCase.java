@@ -3,10 +3,11 @@ package com.mediflow.organization.application.port.in;
 import java.util.UUID;
 
 import com.mediflow.organization.domain.model.JobTitle;
+import com.mediflow.organization.domain.model.Staff;
 
 public interface CreateStaffUseCase {
 
-        UUID execute(
+        Staff execute(
             String fullName,
             UUID departmentId,
             JobTitle jobTitle,

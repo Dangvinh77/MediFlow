@@ -24,6 +24,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.mediflow.common.security.JwtClaims;
+import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.dto.response.StaffLookupDTO;
 import com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
@@ -137,6 +138,28 @@ class StaffControllerContractTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void staffList_clinicalRole_isAllowed() throws Exception {
+        when(getStaffUseCase.search(
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(PageResult.empty(new com.mediflow.common.api.PageQuery(0, 20)));
+
+        mockMvc.perform(get(BASE_PATH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void staffList_patientRole_isForbidden() throws Exception {
+        mockMvc.perform(get(BASE_PATH))
+                .andExpect(status().isForbidden());
     }
 
     private String systemToken() {

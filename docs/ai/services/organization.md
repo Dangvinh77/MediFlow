@@ -124,6 +124,9 @@ They do not need to have identical names.
 
 ## Endpoints
 
+Every endpoint returns the shared `ApiResponse<T>` envelope. The staff list uses database-backed
+`PageQuery`/`PageResult` pagination (`page` is zero-based; `size` is capped at 100).
+
 | Method | Path                                                | Roles                                             |
 | ------ | --------------------------------------------------- | ------------------------------------------------- |
 | GET    | `/api/v1/org/departments`                           | ADMIN, MANAGER, DOCTOR, NURSE                     |
@@ -183,14 +186,23 @@ Successful response:
 
 ```json
 {
-  "accountId": "...",
-  "staffId": "...",
-  "departmentId": "...",
-  "role": "DOCTOR"
+  "success": true,
+  "data": {
+    "accountId": "...",
+    "staffId": "...",
+    "departmentId": "...",
+    "role": "DOCTOR"
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
 }
 ```
 
 `/accounts/verify` turns the gateway's stub login into real authentication: the gateway posts credentials, this service verifies the BCrypt password hash and account status, then returns the authenticated identity information. The gateway mints the JWT.
+
+Invalid credentials are returned internally as HTTP `422` with error code
+`AUTH_INVALID_CREDENTIALS`; the Gateway maps that result to public HTTP `401`.
 
 **The gateway never reads the `ACCOUNT` table directly.** Direct cross-service database access is prohibited.
 
@@ -204,6 +216,9 @@ Payload:
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "departmentId": "...",
   "departmentName": "...",
   "departmentType": "CLINICAL"
@@ -216,6 +231,9 @@ Payload:
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "staffId": "...",
   "fullName": "...",
   "departmentId": "...",
@@ -229,6 +247,9 @@ Payload:
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "staffId": "...",
   "oldDepartmentId": "...",
   "newDepartmentId": "..."
@@ -259,15 +280,19 @@ This service owns reference data and drives other contexts rather than reacting 
 
 7. Staff transfers must update the existing `STAFF` record and publish `staff.department.changed`. The staff record must never be deleted and recreated for a transfer.
 
-8. Accounts with `role = PATIENT` must have a null `staff_id`, because patients are not staff members.
+8. Transferring staff to the current department is a no-op: it does not write or publish an event.
 
-9. Deactivating an account (`is_active = false`) must prevent future logins.
+9. Accounts with `role = PATIENT` must have a null `staff_id`, because patients are not staff members.
 
-10. Existing JWTs do not need to be revoked by this service; they expire naturally according to the gateway's JWT configuration.
+10. Accounts with a staff role must have a `staff_id`; `SYSTEM` accounts may omit it.
 
-11. The `role` enum must remain exactly synchronized with `backend/common/security/Roles.java`.
+11. Deactivating an account (`is_active = false`) must prevent future logins.
 
-12. No other service may directly access the Organization Service database.
+12. Existing JWTs do not need to be revoked by this service; they expire naturally according to the gateway's JWT configuration.
+
+13. The `role` enum must remain exactly synchronized with `backend/common/security/Roles.java`.
+
+14. No other service may directly access the Organization Service database.
 
 ## Why This Service Makes the Departmental Dimension Real
 

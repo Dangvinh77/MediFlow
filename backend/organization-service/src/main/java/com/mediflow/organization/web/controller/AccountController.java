@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
+import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.web.dto.request.CreateAccountRequest;
 import com.mediflow.organization.web.dto.request.UpdateAccountStatusRequest;
 import com.mediflow.organization.web.dto.request.VerifyCredentialsRequest;
 import com.mediflow.organization.web.dto.response.AccountResponse;
 import com.mediflow.organization.web.dto.response.VerifiedAccountResponse;
+import com.mediflow.common.api.ApiResponse;
 
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -31,19 +33,22 @@ public class AccountController {
     private final CreateAccountUseCase createAccountUseCase;
     private final UpdateAccountStatusUseCase updateAccountStatusUseCase;
     private final VerifyCredentialsUseCase verifyCredentialsUseCase;
+    private final CorrelationIdProvider correlationIds;
 
     public AccountController(
             CreateAccountUseCase createAccountUseCase,
             UpdateAccountStatusUseCase updateAccountStatusUseCase,
-            VerifyCredentialsUseCase verifyCredentialsUseCase) {
+            VerifyCredentialsUseCase verifyCredentialsUseCase,
+            CorrelationIdProvider correlationIds) {
         this.createAccountUseCase = createAccountUseCase;
         this.updateAccountStatusUseCase = updateAccountStatusUseCase;
         this.verifyCredentialsUseCase = verifyCredentialsUseCase;
+        this.correlationIds = correlationIds;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AccountResponse> createAccount(
+    public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
             @Valid @RequestBody CreateAccountRequest request) {
 
         Account account = createAccountUseCase.execute(
@@ -54,12 +59,14 @@ public class AccountController {
 
         return ResponseEntity
                 .created(URI.create("/api/v1/org/accounts/" + account.getAccountId()))
-                .body(AccountResponse.from(account));
+                .body(ApiResponse.ok(
+                        AccountResponse.from(account),
+                        correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{accountId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AccountResponse> updateStatus(
+    public ResponseEntity<ApiResponse<AccountResponse>> updateStatus(
             @PathVariable UUID accountId,
             @Valid @RequestBody UpdateAccountStatusRequest request) {
 
@@ -67,12 +74,14 @@ public class AccountController {
                 accountId,
                 request.isActive());
 
-        return ResponseEntity.ok(AccountResponse.from(account));
+        return ResponseEntity.ok(ApiResponse.ok(
+                AccountResponse.from(account),
+                correlationIds.currentOrCreate().toString()));
     }
 
     @PostMapping("/verify")
     @PreAuthorize("hasRole('SYSTEM')")
-    public ResponseEntity<VerifiedAccountResponse> verifyCredentials(
+    public ResponseEntity<ApiResponse<VerifiedAccountResponse>> verifyCredentials(
             @Valid @RequestBody VerifyCredentialsRequest request) {
 
         VerifyCredentialsUseCase.VerifiedAccount account =
@@ -80,6 +89,8 @@ public class AccountController {
                         request.username(),
                         request.password());
 
-        return ResponseEntity.ok(VerifiedAccountResponse.from(account));
+        return ResponseEntity.ok(ApiResponse.ok(
+                VerifiedAccountResponse.from(account),
+                correlationIds.currentOrCreate().toString()));
     }
 }

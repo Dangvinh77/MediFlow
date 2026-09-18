@@ -104,7 +104,6 @@ public class DepartmentRepositoryAdapter
 
     @Override
     public List<Department> findAll() {
-        // TODO Auto-generated method stub
         return jpaRepository.findAll().stream()
             .map(this::toDomain)
             .toList();

@@ -10,14 +10,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record JwtProperties(
         String secret,
         long accessTokenMinutes,
-        long refreshTokenMinutes
+        long refreshTokenMinutes,
+        long serviceTokenMinutes
 ) {
     public JwtProperties {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException(
+                    "mediflow.jwt.secret must be provided through MEDIFLOW_JWT_SECRET");
+        }
         if (accessTokenMinutes <= 0) {
             accessTokenMinutes = 30;
         }
         if (refreshTokenMinutes <= 0) {
             refreshTokenMinutes = 60 * 24;
+        }
+        if (serviceTokenMinutes <= 0) {
+            serviceTokenMinutes = 1;
         }
     }
 }
