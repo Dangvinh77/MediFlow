@@ -202,6 +202,13 @@ public record CreateKhoaRequest(
     @NotNull LoaiKhoa loaiKhoa,
     @Size(max = 255) String diaDiem) {}
 
+public record UpdateKhoaRequest(
+    @NotBlank @Size(max = 100) String tenKhoa,
+    @NotNull LoaiKhoa loaiKhoa,
+    @Size(max = 255) String diaDiem,
+    UUID truongKhoa,
+    Boolean hoatDong) {}
+
 public record CreateNhanVienRequest(
     @NotBlank @Size(max = 100) String hoTen,
     @NotNull UUID maKhoa,
@@ -230,7 +237,7 @@ public record NhanVienDTO(UUID maNhanVien, String hoTen, UUID maKhoa, ChucDanh c
                           String chuyenKhoa, String soChungChi, String soDienThoai, String email,
                           TrangThaiNhanVien trangThai, Instant createdAt, Instant updatedAt) {}
 
-public record StaffExistsDTO(boolean exists, UUID maKhoa) {}
+public record StaffExistsDTO(boolean exists, boolean eligibleDoctor, UUID maKhoa) {}
 
 /** Không bao giờ lộ matKhauHash. */
 public record TaiKhoanDTO(UUID maTaiKhoan, String tenDangNhap, UUID maNhanVien,
@@ -262,7 +269,7 @@ public record VerifiedAccountDTO(UUID maTaiKhoan, UUID maNhanVien, UUID maKhoa, 
 4. `khoa.datTruongKhoa(...)`, lưu
 
 **`ngungHoatDong` (qua update với `hoatDong=false`)**
-1. `khoaRepo.countActiveStaff(id) > 0` → `KHOA_HAS_ACTIVE_STAFF`
+1. `staffRepo.existsByDepartmentIdAndActiveTrue(id)` → `KHOA_HAS_ACTIVE_STAFF`
 2. ngược lại thì ngừng hoạt động
 
 **`verify(VerifyCredentialsRequest)`**
@@ -278,6 +285,9 @@ public record VerifiedAccountDTO(UUID maTaiKhoan, UUID maNhanVien, UUID maKhoa, 
 
 ## 8. Endpoint
 
+Mọi response HTTP được bọc trong `ApiResponse<T>`; các kiểu dưới đây là payload nằm trong trường
+`data`. Lỗi dùng `ApiResponse.fail(...)` và kèm `correlationId`.
+
 | Method | Path | Body | Trả về | Role |
 |--------|------|------|--------|------|
 | GET | `/api/v1/org/departments?chiHoatDong` | — | `List<KhoaDTO>` | ADMIN, MANAGER, DOCTOR, NURSE |
@@ -289,14 +299,15 @@ public record VerifiedAccountDTO(UUID maTaiKhoan, UUID maNhanVien, UUID maKhoa, 
 | POST | `/api/v1/org/staff` | `CreateNhanVienRequest` | 201 `NhanVienDTO` | ADMIN |
 | PUT | `/api/v1/org/staff/{id}` | `UpdateNhanVienRequest` | `NhanVienDTO` | ADMIN |
 | PUT | `/api/v1/org/staff/{id}/department` | `ChangeDepartmentRequest` | `NhanVienDTO` | ADMIN |
-| GET | `/api/v1/org/staff/{id}/exists` | — | `StaffExistsDTO` | ADMIN, DOCTOR, NURSE, SYSTEM |
+| GET | `/api/v1/org/staff/{id}/exists` | — | `StaffExistsDTO` | SYSTEM |
 | POST | `/api/v1/org/accounts` | `CreateTaiKhoanRequest` | 201 `TaiKhoanDTO` | ADMIN |
 | PUT | `/api/v1/org/accounts/{id}/status` | `{kichHoat}` | `TaiKhoanDTO` | ADMIN |
 | POST | `/api/v1/org/accounts/verify` | `VerifyCredentialsRequest` | `VerifiedAccountDTO` | SYSTEM |
 
 ## 9. Event
 
-**Publish** (`infrastructure/messaging/payload/`), đều kèm envelope chuẩn:
+**Publish** (event records in `application/event/`, RabbitMQ adapter in
+`infrastructure/messaging/`), đều kèm envelope chuẩn:
 
 | Routing key | Payload |
 |-------------|---------|

@@ -56,12 +56,13 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
-# JWT — secret MUST come from env in real environments. This dev default is only for local run.
+# JWT — the same externally supplied secret must be configured for Gateway and Organization.
 mediflow:
   jwt:
-    secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+    secret: ${MEDIFLOW_JWT_SECRET}
     access-token-minutes: 30
     refresh-token-minutes: 1440
+    service-token-minutes: 1
 
 management:
   endpoints:

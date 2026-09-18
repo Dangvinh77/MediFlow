@@ -1,8 +1,11 @@
 package com.mediflow.organization.application.service;
 
+import java.time.Instant;
 import java.util.UUID;
 
+import com.mediflow.organization.application.event.StaffCreatedEvent;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
+import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
@@ -11,25 +14,38 @@ import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class CreateStaffService implements CreateStaffUseCase {
 
     private final StaffRepository staffRepository;
     private final DepartmentRepository departmentRepository;
     private final EventPublisher eventPublisher;
+    private final CorrelationIdProvider correlationIds;
 
     public CreateStaffService(
             StaffRepository staffRepository,
             DepartmentRepository departmentRepository,
-            EventPublisher eventPublisher) {
+            EventPublisher eventPublisher,
+            CorrelationIdProvider correlationIds) {
 
         this.staffRepository = staffRepository;
         this.departmentRepository = departmentRepository;
         this.eventPublisher = eventPublisher;
+        this.correlationIds = correlationIds;
+    }
+
+    /** Compatibility constructor for direct application-layer tests. */
+    public CreateStaffService(
+            StaffRepository staffRepository,
+            DepartmentRepository departmentRepository,
+            EventPublisher eventPublisher) {
+        this(staffRepository, departmentRepository, eventPublisher, UUID::randomUUID);
     }
 
     @Override
-    public UUID execute(
+    public Staff execute(
             String fullName,
             UUID departmentId,
             JobTitle jobTitle,
@@ -57,24 +73,21 @@ public class CreateStaffService implements CreateStaffUseCase {
                 email
         );
 
-        staffRepository.save(staff);
+        Staff savedStaff = staffRepository.save(staff);
 
-        eventPublisher.publish(
+        eventPublisher.publishStaffCreated(
                 new StaffCreatedEvent(
-                        staff.getStaffId(),
-                        staff.getFullName(),
-                        staff.getDepartmentId(),
-                        staff.getJobTitle().name()
+                        UUID.randomUUID(),
+                        Instant.now(),
+                        correlationIds.currentOrCreate().toString(),
+                        savedStaff.getStaffId(),
+                        savedStaff.getFullName(),
+                        savedStaff.getDepartmentId(),
+                        savedStaff.getJobTitle().name()
                 )
         );
 
-        return staff.getStaffId();
+        return savedStaff;
     }
 
-    public record StaffCreatedEvent(
-            UUID staffId,
-            String fullName,
-            UUID departmentId,
-            String jobTitle
-    ) {}
 }

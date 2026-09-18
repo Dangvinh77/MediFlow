@@ -1,0 +1,22 @@
+### MediFlow Gateway authentication
+### The Gateway delegates credential verification to organization-service.
+
+@host = http://localhost:8080
+
+### Login (public)
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+X-Correlation-Id: 00000000-0000-0000-0000-000000000010
+
+{
+  "username": "alex.morgan",
+  "password": "StrongPass123"
+}
+
+### Refresh (public)
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "paste-refresh-token-here"
+}

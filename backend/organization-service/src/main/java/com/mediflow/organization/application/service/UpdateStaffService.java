@@ -1,25 +1,20 @@
 package com.mediflow.organization.application.service;
 
 import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
-import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Transactional
 public class UpdateStaffService implements UpdateStaffUseCase {
 
     private final StaffRepository staffRepository;
-    private final EventPublisher eventPublisher;
-
-    public UpdateStaffService(
-            StaffRepository staffRepository,
-            EventPublisher eventPublisher
-    ) {
+    public UpdateStaffService(StaffRepository staffRepository) {
         this.staffRepository = staffRepository;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -46,23 +41,6 @@ public class UpdateStaffService implements UpdateStaffUseCase {
 
         Staff updatedStaff = staffRepository.save(staff);
 
-        eventPublisher.publish(
-                new StaffUpdatedEvent(
-                        updatedStaff.getStaffId(),
-                        updatedStaff.getFullName(),
-                        updatedStaff.getDepartmentId(),
-                        updatedStaff.getJobTitle().name()
-                )
-        );
-
         return updatedStaff;
-    }
-
-    public record StaffUpdatedEvent(
-            UUID staffId,
-            String fullName,
-            UUID departmentId,
-            String jobTitle
-    ) {
     }
 }

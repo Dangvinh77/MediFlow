@@ -1,14 +1,18 @@
 package com.mediflow.organization.infrastructure.persistence.adapter;
 
 import org.springframework.stereotype.Component;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.common.api.PageQuery;
+import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.domain.model.Staff;
 import com.mediflow.organization.domain.model.StaffStatus;
+import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.infrastructure.persistence.entity.StaffEntity;
 import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -117,18 +121,27 @@ public class StaffRepositoryAdapter
     }
 
     @Override
-    public List<Staff> findByDepartmentId(UUID departmentId) {
-        
-        return jpaRepository.findByDepartmentId(departmentId).stream()
-            .map(this::toDomain)
-            .toList();
-    }
+    public PageResult<Staff> search(
+            UUID departmentId,
+            JobTitle jobTitle,
+            PageQuery pageQuery) {
+        PageRequest pageable = PageRequest.of(pageQuery.page(), pageQuery.size());
+        Page<StaffEntity> page;
+        if (departmentId != null && jobTitle != null) {
+            page = jpaRepository.findByDepartmentIdAndJobTitle(
+                    departmentId, jobTitle, pageable);
+        } else if (departmentId != null) {
+            page = jpaRepository.findByDepartmentId(departmentId, pageable);
+        } else if (jobTitle != null) {
+            page = jpaRepository.findByJobTitle(jobTitle, pageable);
+        } else {
+            page = jpaRepository.findAll(pageable);
+        }
 
-    @Override
-    public List<Staff> findAll() {
-        
-        return jpaRepository.findAll().stream()
-            .map(this::toDomain)
-            .toList();
+        return PageResult.of(
+                page.getContent().stream().map(this::toDomain).toList(),
+                page.getTotalElements(),
+                page.getNumber(),
+                page.getSize());
     }
 }

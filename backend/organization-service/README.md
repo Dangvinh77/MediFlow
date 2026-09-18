@@ -122,6 +122,10 @@ The module currently provides department and staff creation, lookup, update, dep
 active filtering, pagination, staff-existence checks, and account creation with BCrypt password
 hashing, account status management, and credential verification for the gateway.
 
+All HTTP responses use the shared `ApiResponse` envelope. Successful payloads are under `data`;
+errors are under `error` and include a stable machine-readable code plus the request
+`correlationId` (also returned in `X-Correlation-Id`).
+
 ## Run locally
 
 1. `CREATE DATABASE mediflow_organization;` (or `docker compose up -d`, which creates it).
@@ -152,6 +156,14 @@ Swagger UI:
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                         |
+| POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
+
+The staff list uses database pagination. `page` is zero-based and `size` is capped at 100. Its
+`data` payload is a `PageResult` containing `content`, `totalElements`, `totalPages`, `number`,
+and `size`.
+
+Create department/staff endpoints return the complete created DTO in `data` (not only an ID).
+Department transfer returns the updated `StaffResponse` with HTTP 200.
 
 ### Department transfer
 
@@ -166,6 +178,20 @@ Request:
 ```
 
 The operation updates the existing staff member's `department_id` and publishes `staff.department.changed`. It never deletes and recreates the staff member.
+
+### Department update
+
+`PUT /api/v1/org/departments/{id}` updates the department name, type, location, optional
+department head, and optional active flag. The department abbreviation is immutable after
+creation. Omitting `departmentHeadId` or `active` preserves the current value. A department can
+only be deactivated when it has no active staff; otherwise the service returns `422
+DEPARTMENT_HAS_ACTIVE_STAFF`.
+
+### Staff profile update
+
+`PUT /api/v1/org/staff/{id}` updates the staff profile (name, job title, specialization,
+license, phone, and email). It does not move the staff member between departments; use the
+department transfer endpoint for that operation. A doctor must always have a license number.
 
 ### Account status
 
@@ -196,14 +222,23 @@ Successful response:
 
 ```json
 {
-  "accountId": "...",
-  "staffId": "...",
-  "departmentId": "...",
-  "role": "DOCTOR"
+  "success": true,
+  "data": {
+    "accountId": "...",
+    "staffId": "...",
+    "departmentId": "...",
+    "role": "DOCTOR"
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
 }
 ```
 
 The gateway posts credentials to this endpoint. The Organization Service verifies the account and BCrypt password hash, then returns the authenticated identity. The gateway uses the result to mint the JWT.
+
+Invalid username, password, or inactive account returns HTTP `422` with the stable
+`AUTH_INVALID_CREDENTIALS` code. The Gateway maps that internal result to public HTTP `401`.
 
 **The gateway must never read the `ACCOUNT` table directly.** That would violate the service boundary through cross-service database access.
 
@@ -219,6 +254,9 @@ The gateway posts credentials to this endpoint. The Organization Service verifie
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "departmentId": "...",
   "departmentName": "...",
   "departmentType": "CLINICAL"
@@ -229,6 +267,9 @@ The gateway posts credentials to this endpoint. The Organization Service verifie
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "staffId": "...",
   "fullName": "...",
   "departmentId": "...",
@@ -240,6 +281,9 @@ The gateway posts credentials to this endpoint. The Organization Service verifie
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "staffId": "...",
   "oldDepartmentId": "...",
   "newDepartmentId": "..."
@@ -259,11 +303,13 @@ None. This is reference data; it drives other contexts rather than reacting to t
 5. `department_head_id`, if set, must reference a `STAFF` member of the same department.
 6. A department with active staff cannot be deactivated.
 7. Staff transfer updates the existing `STAFF` record and publishes `staff.department.changed`; it never deletes and recreates the staff member.
-8. `role = PATIENT` accounts must have `staff_id = null`, because patients are not staff.
-9. Deactivating an account (`is_active = false`) prevents future logins.
-10. Existing JWTs expire naturally according to the gateway's JWT configuration.
-11. `Role` must remain synchronized with `backend/common/security/Roles.java`.
-12. No other service may directly access the Organization Service database.
+8. Transferring staff to its current department is a no-op: no database write and no event.
+9. `role = PATIENT` accounts must have `staff_id = null`, because patients are not staff.
+10. `role = SYSTEM` accounts may have no `staff_id`; other staff roles require one.
+11. Deactivating an account (`is_active = false`) prevents future logins.
+12. Existing JWTs expire naturally according to the gateway's JWT configuration.
+13. `Role` must remain synchronized with `backend/common/security/Roles.java`.
+14. No other service may directly access the Organization Service database.
 
 ## Two integration points to get right
 
@@ -589,19 +635,19 @@ The service is complete when:
 - [ ] All Java domain classes and fields use English names.
 - [ ] All enum values match the definitions in this README.
 - [ ] `Role` matches `backend/common/security/Roles.java`.
-- [ ] CRUD endpoints for departments are implemented.
-- [ ] Staff lookup, creation, update, and department transfer are implemented.
-- [ ] Staff existence lookup is implemented.
-- [ ] Account creation and status management are implemented.
-- [ ] Account verification uses BCrypt.
-- [ ] Plaintext passwords are never stored or logged.
-- [ ] Patient accounts have no `staff_id`.
-- [ ] Department and staff domain events are published.
-- [ ] No events are consumed by this service.
-- [ ] Cross-service references use bare UUIDs.
-- [ ] No cross-service database access exists.
+- [x] Department create, list, get, and update endpoints are implemented.
+- [x] Staff lookup, creation, update, and department transfer are implemented.
+- [x] Staff existence lookup is implemented.
+- [x] Account creation and status management are implemented.
+- [x] Account verification uses BCrypt.
+- [x] Plaintext passwords are never stored or logged.
+- [x] Patient accounts have no `staff_id`.
+- [x] Department and staff domain events are published.
+- [x] No events are consumed by this service.
+- [x] Cross-service references use bare UUIDs.
+- [x] No cross-service database access exists.
 - [ ] Staff existence validation supports timeout, circuit breaker, and fallback.
-- [ ] Gateway authentication uses `/api/v1/org/accounts/verify`.
-- [ ] Unit tests pass.
-- [ ] Integration tests with Testcontainers pass.
-- [ ] Swagger/OpenAPI documentation is available.
+- [x] Gateway authentication uses `/api/v1/org/accounts/verify`.
+- [x] Unit tests pass.
+- [x] Testcontainers integration test is included (requires Docker to execute; skipped when Docker is unavailable).
+- [x] Swagger/OpenAPI documentation is available through Springdoc at `/swagger-ui.html`.

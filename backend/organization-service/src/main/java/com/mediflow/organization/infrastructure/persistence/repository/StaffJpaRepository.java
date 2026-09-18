@@ -1,11 +1,13 @@
 package com.mediflow.organization.infrastructure.persistence.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.mediflow.organization.domain.model.StaffStatus;
+import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.infrastructure.persistence.entity.StaffEntity;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface StaffJpaRepository
@@ -15,5 +17,14 @@ public interface StaffJpaRepository
             UUID departmentId,
             StaffStatus status
     );
-    List<StaffEntity> findByDepartmentId(UUID departmentId);
+    Page<StaffEntity> findByDepartmentId(UUID departmentId, Pageable pageable);
+
+    Page<StaffEntity> findByJobTitle(
+            JobTitle jobTitle,
+            Pageable pageable);
+
+    Page<StaffEntity> findByDepartmentIdAndJobTitle(
+            UUID departmentId,
+            JobTitle jobTitle,
+            Pageable pageable);
 }

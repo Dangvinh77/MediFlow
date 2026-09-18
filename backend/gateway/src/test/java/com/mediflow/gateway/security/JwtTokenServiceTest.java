@@ -5,6 +5,7 @@ import com.mediflow.common.security.Roles;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +20,8 @@ class JwtTokenServiceTest {
                     new JwtProperties(
                             TEST_SECRET,
                             30,
-                            1440));
+                            1440,
+                            1));
 
     @Test
     void issueAccessToken_usesUserUuidAsSubject() {
@@ -65,5 +67,23 @@ class JwtTokenServiceTest {
                 JwtClaims.ROLE,
                 String.class))
                 .isEqualTo(Roles.ADMIN);
+    }
+
+    @Test
+    void issueServiceToken_usesGatewaySubjectAndSystemRole() {
+        String token = tokenService.issueServiceToken(
+                "gateway",
+                Roles.SYSTEM,
+                "00000000-0000-0000-0000-000000000010");
+
+        Claims claims = tokenService.parse(token);
+
+        assertThat(claims.getSubject()).isEqualTo("gateway");
+        assertThat(claims.get(JwtClaims.ROLE, String.class))
+                .isEqualTo(Roles.SYSTEM);
+        assertThat(claims.get(JwtClaims.CORRELATION_ID, String.class))
+                .isEqualTo("00000000-0000-0000-0000-000000000010");
+        assertThat(claims.getExpiration())
+                .isBeforeOrEqualTo(Date.from(claims.getIssuedAt().toInstant().plusSeconds(61)));
     }
 }

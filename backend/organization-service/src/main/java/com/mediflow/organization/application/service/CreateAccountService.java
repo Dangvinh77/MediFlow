@@ -9,7 +9,9 @@ import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.domain.exception.InvalidAccountException;
 import com.mediflow.organization.domain.model.Account;
 import com.mediflow.organization.domain.model.Role;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class CreateAccountService implements CreateAccountUseCase {
 
     private static final int MIN_PASSWORD_LENGTH = 8;

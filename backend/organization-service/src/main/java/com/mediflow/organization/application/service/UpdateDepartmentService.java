@@ -2,24 +2,28 @@ package com.mediflow.organization.application.service;
 
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
-import com.mediflow.organization.application.port.out.EventPublisher;
+import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
+import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
+import com.mediflow.organization.domain.model.Staff;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Transactional
 public class UpdateDepartmentService implements UpdateDepartmentUseCase {
 
     private final DepartmentRepository departmentRepository;
-    private final EventPublisher eventPublisher;
+    private final StaffRepository staffRepository;
 
     public UpdateDepartmentService(
             DepartmentRepository departmentRepository,
-            EventPublisher eventPublisher
+            StaffRepository staffRepository
     ) {
         this.departmentRepository = departmentRepository;
-        this.eventPublisher = eventPublisher;
+        this.staffRepository = staffRepository;
     }
 
     @Override
@@ -27,7 +31,9 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
             UUID departmentId,
             String departmentName,
             DepartmentType departmentType,
-            String location
+            String location,
+            UUID departmentHeadId,
+            Boolean active
     ) {
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new DepartmentNotFoundException(departmentId));
@@ -39,24 +45,21 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
                 location
         );
 
-        Department updatedDepartment =
-                departmentRepository.save(department);
+        if (departmentHeadId != null) {
+            Staff head = staffRepository.findById(departmentHeadId)
+                    .orElseThrow(() -> new StaffNotFoundException(departmentHeadId));
+            department.changeHead(head);
+        }
 
-        eventPublisher.publish(
-                new DepartmentUpdatedEvent(
-                        updatedDepartment.getDepartmentId(),
-                        updatedDepartment.getDepartmentName(),
-                        updatedDepartment.getDepartmentType().name()
-                )
-        );
+        if (active != null && active != department.isActive()) {
+            if (active) {
+                department.activate();
+            } else {
+                department.deactivate(
+                        staffRepository.existsByDepartmentIdAndActiveTrue(departmentId));
+            }
+        }
 
-        return updatedDepartment;
-    }
-
-    public record DepartmentUpdatedEvent(
-            UUID departmentId,
-            String departmentName,
-            String departmentType
-    ) {
+        return departmentRepository.save(department);
     }
 }

@@ -3,13 +3,17 @@
 ### Implemented endpoints:
 ###   GET/POST /api/v1/org/departments
 ###   GET      /api/v1/org/departments/{id}
+###   PUT      /api/v1/org/departments/{id}
 ###   GET/POST /api/v1/org/staff
 ###   GET      /api/v1/org/staff/{id}
+###   PUT      /api/v1/org/staff/{id}
 ###   GET      /api/v1/org/staff/{id}/exists
 ###   PUT      /api/v1/org/staff/{id}/department
 ###   POST     /api/v1/org/accounts
+###   PUT      /api/v1/org/accounts/{id}/status
+###   POST     /api/v1/org/accounts/verify
 ###
-### Pending use case: credential verification.
+### Credential verification is implemented and called by the Gateway.
 ### Start order: Eureka (8761) -> gateway (8080) -> organization-service (8089).
 ### Set a valid JWT before calling protected endpoints.
 
@@ -48,6 +52,19 @@ Content-Type: application/json
   "location": "Building A, Floor 2"
 }
 
+### Update department head / active state (ADMIN only)
+PUT {{host}}/api/v1/org/departments/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentName": "Outpatient Department",
+  "departmentType": "CLINICAL",
+  "location": "Building A, Floor 1",
+  "departmentHeadId": "00000000-0000-0000-0000-000000000000",
+  "active": true
+}
+
 ### List staff with optional department, job title and pagination filters
 GET {{host}}/api/v1/org/staff?departmentId=00000000-0000-0000-0000-000000000000&jobTitle=DOCTOR&page=0&size=20
 Authorization: Bearer {{token}}
@@ -66,6 +83,20 @@ Content-Type: application/json
   "departmentId": "00000000-0000-0000-0000-000000000000",
   "jobTitle": "DOCTOR",
   "specialization": "Internal Medicine",
+  "licenseNumber": "MED123456",
+  "phoneNumber": "0901234567",
+  "email": "alex.morgan@mediflow.example"
+}
+
+### Update staff profile (ADMIN only; department changes use the endpoint below)
+PUT {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Alex Morgan",
+  "jobTitle": "DOCTOR",
+  "specialization": "Cardiology",
   "licenseNumber": "MED123456",
   "phoneNumber": "0901234567",
   "email": "alex.morgan@mediflow.example"
@@ -126,6 +157,9 @@ Content-Type: application/json
 POST {{host}}/api/v1/org/accounts/verify
 Authorization: Bearer {{token}}
 Content-Type: application/json
+
+### Invalid credentials are returned internally as 422 AUTH_INVALID_CREDENTIALS;
+### the Gateway maps that result to public HTTP 401.
 
 {
   "username": "alex.morgan",

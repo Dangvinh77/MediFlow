@@ -6,7 +6,9 @@ import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.out.AccountRepository;
 import com.mediflow.organization.domain.exception.AccountNotFoundException;
 import com.mediflow.organization.domain.model.Account;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class UpdateAccountStatusService implements UpdateAccountStatusUseCase {
 
     private final AccountRepository accountRepository;

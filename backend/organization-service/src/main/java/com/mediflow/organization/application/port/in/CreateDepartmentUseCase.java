@@ -1,12 +1,11 @@
 package com.mediflow.organization.application.port.in;
 
-import java.util.UUID;
-
+import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 
 public interface CreateDepartmentUseCase {
 
-        UUID execute(
+        Department execute(
             String departmentName,
             String abbreviation,
             DepartmentType departmentType,

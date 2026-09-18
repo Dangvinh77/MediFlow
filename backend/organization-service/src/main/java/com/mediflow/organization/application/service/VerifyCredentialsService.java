@@ -8,7 +8,9 @@ import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.InvalidCredentialsException;
 import com.mediflow.organization.domain.model.Account;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class VerifyCredentialsService implements VerifyCredentialsUseCase {
 
     private static final String INVALID_CREDENTIALS_MESSAGE =

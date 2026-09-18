@@ -6,7 +6,9 @@
 - **Producer:** `organization-service` — Hoàng Anh (`TranHoangAnh94`)
 - **Consumer:** `gateway` — Hoàng Anh (`TranHoangAnh94`)
 - **Implemented producer endpoint:** `POST /api/v1/org/accounts/verify`
-- **Current blocker:** Gateway still authenticates against hard-coded `DEMO_USERS`
+- **Gateway implementation:** PR2 replaces the hard-coded `DEMO_USERS` flow with a reactive
+  Organization call; PR3 keeps that integration and consumes the standardized `ApiResponse`
+  envelope. Deployment still requires `MEDIFLOW_JWT_SECRET` in both services.
 
 ## Available wire contract
 
@@ -23,16 +25,23 @@ The successful response is:
 
 ```json
 {
-  "accountId": "00000000-0000-0000-0000-000000000001",
-  "staffId": "00000000-0000-0000-0000-000000000002",
-  "departmentId": "00000000-0000-0000-0000-000000000003",
-  "role": "ADMIN"
+  "success": true,
+  "data": {
+    "accountId": "00000000-0000-0000-0000-000000000001",
+    "staffId": "00000000-0000-0000-0000-000000000002",
+    "departmentId": "00000000-0000-0000-0000-000000000003",
+    "role": "ADMIN"
+  },
+  "error": null,
+  "timestamp": "2026-09-18T00:00:00Z",
+  "correlationId": "00000000-0000-0000-0000-000000000010"
 }
 ```
 
 Organization accepts only a signed JWT carrying `role=SYSTEM`. Both services must use the same
 externally supplied `MEDIFLOW_JWT_SECRET`. Invalid username, password, or inactive account must be
-reported as invalid credentials without revealing which value failed.
+reported as invalid credentials without revealing which value failed. Organization returns the
+internal `422 AUTH_INVALID_CREDENTIALS` contract; Gateway maps it to public HTTP `401`.
 
 ## Required Gateway work
 
@@ -56,3 +65,16 @@ reported as invalid credentials without revealing which value failed.
 - Service JWT signature, role, subject, expiry, and correlation propagation have contract tests.
 - No password, JWT, or signing secret is logged.
 - `auth.http` and Organization's HTTP collection match the live contract.
+
+## Gateway implementation status (PR2 + PR3)
+
+- Gateway calls Organization through a load-balanced `WebClient`.
+- The internal request uses a short-lived JWT with `sub=gateway` and `role=SYSTEM`.
+- Human login credentials are sent only in the verification request body; the caller's bearer token
+  is never forwarded to Organization.
+- Organization's confirmed invalid credentials return internal `422 AUTH_INVALID_CREDENTIALS`; the
+  Gateway maps that result to public `401 AUTH_INVALID_CREDENTIALS`.
+- Organization/network failures return `503 AUTH_UPSTREAM_UNAVAILABLE`.
+- Access and refresh tokens are minted from the Organization account identity, including
+  `departmentId` when present.
+- `X-Correlation-Id` is preserved or generated and propagated to Organization.
