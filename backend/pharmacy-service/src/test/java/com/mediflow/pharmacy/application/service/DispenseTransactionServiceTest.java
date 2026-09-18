@@ -111,6 +111,8 @@ class DispenseTransactionServiceTest {
         verify(eventPublisher).publishPrescriptionFilled(filledCaptor.capture());
         assertThat(stockCaptor.getValue().correlationId()).isEqualTo("dispense-correlation");
         assertThat(filledCaptor.getValue().correlationId()).isEqualTo("dispense-correlation");
+        assertThat(filledCaptor.getValue().prescriptionId()).isEqualTo(prescriptionId);
+        assertThat(filledCaptor.getValue().recordId()).isEqualTo(prescription.getRecordId());
     }
 
     /** A missing locked reservation fails before stock mutation or event publication. */

@@ -53,6 +53,10 @@ class PharmacyEventContractFixtureTest {
         PrescriptionFilledEvent event = read("prescription.filled.json", PrescriptionFilledEvent.class);
 
         assertEnvelope(event.eventId(), event.occurredAt(), event.correlationId());
+        assertThat(event.prescriptionId()).isEqualTo(
+                java.util.UUID.fromString("55555555-5555-5555-5555-555555555555"));
+        assertThat(event.recordId()).isEqualTo(
+                java.util.UUID.fromString("66666666-6666-6666-6666-666666666666"));
         assertThat(event.dispensedItems()).singleElement()
                 .extracting(PrescriptionFilledEvent.DispensedItem::quantity)
                 .isEqualTo(10);

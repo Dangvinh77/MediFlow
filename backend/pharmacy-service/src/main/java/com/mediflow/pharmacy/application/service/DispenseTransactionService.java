@@ -175,7 +175,7 @@ public class DispenseTransactionService {
                 .toList();
         eventPublisher.publishPrescriptionFilled(new PrescriptionFilledEvent(
                 UUID.randomUUID(), Instant.now(clock), correlationId,
-                slip.getPrescriptionId(), prescription.getPatientId(),
+                slip.getPrescriptionId(), prescription.getRecordId(), prescription.getPatientId(),
                 prescription.getDepartmentId(), prescription.getTotalAmount(), items));
     }
 }

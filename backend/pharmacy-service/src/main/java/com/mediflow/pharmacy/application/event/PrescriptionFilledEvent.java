@@ -16,6 +16,7 @@ import java.util.UUID;
  * @param occurredAt event timestamp
  * @param correlationId saga correlation identifier
  * @param prescriptionId prescription identifier
+ * @param recordId medical record identifier sourced from the persisted prescription
  * @param patientId patient identifier
  * @param departmentId department identifier
  * @param totalAmount prescription total
@@ -26,6 +27,7 @@ public record PrescriptionFilledEvent(
         Instant occurredAt,
         String correlationId,
         UUID prescriptionId,
+        UUID recordId,
         UUID patientId,
         UUID departmentId,
         BigDecimal totalAmount,

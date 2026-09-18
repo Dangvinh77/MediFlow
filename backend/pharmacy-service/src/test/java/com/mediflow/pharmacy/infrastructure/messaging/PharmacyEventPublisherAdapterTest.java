@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
+import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PharmacyEventOutboxJpaRepository;
 import java.math.BigDecimal;
@@ -57,6 +58,37 @@ class PharmacyEventPublisherAdapterTest {
                 .hasMessageContaining("serialize");
 
         verify(repository, never()).save(any());
+    }
+
+    /** The filled payload keeps the producer-owned record correlation in the durable outbox. */
+    @Test
+    void publishPrescriptionFilled_serializesRecordIdInOutboxPayload() throws Exception {
+        ObjectMapper realObjectMapper = new ObjectMapper().findAndRegisterModules();
+        PharmacyEventPublisherAdapter realAdapter =
+                new PharmacyEventPublisherAdapter(repository, realObjectMapper);
+        UUID recordId = UUID.fromString("66666666-6666-6666-6666-666666666666");
+        PrescriptionFilledEvent event = new PrescriptionFilledEvent(
+                UUID.randomUUID(),
+                Instant.parse("2026-09-13T09:00:00Z"),
+                "correlation-filled",
+                UUID.randomUUID(),
+                recordId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new BigDecimal("2000.00"),
+                List.of(new PrescriptionFilledEvent.DispensedItem(
+                        UUID.randomUUID(), "Paracetamol", 2)));
+
+        realAdapter.publishPrescriptionFilled(event);
+
+        ArgumentCaptor<PharmacyEventOutboxJpaEntity> captor =
+                ArgumentCaptor.forClass(PharmacyEventOutboxJpaEntity.class);
+        verify(repository).save(captor.capture());
+        PharmacyEventOutboxJpaEntity outbox = captor.getValue();
+        assertThat(outbox.getRoutingKey()).isEqualTo("prescription.filled");
+        assertThat(outbox.getAggregateId()).isEqualTo(event.prescriptionId());
+        assertThat(realObjectMapper.readTree(outbox.getPayload()).get("recordId").asText())
+                .isEqualTo(recordId.toString());
     }
 
     private PrescriptionCreatedEvent event() {
