@@ -37,12 +37,13 @@ states, sends a short-lived `SYSTEM` JWT signed with the shared `MEDIFLOW_JWT_SE
 transport/contract failures as `UpstreamUnavailableException`. Patient lookup remains blocked until
 Patient provides an authoritative read/exists contract and service authentication.
 
-## Producer prerequisites still unresolved
+## Cross-service contract status
 
 | Owner | Gap | Required follow-up before enabling the consumer |
 |---|---|---|
-| Billing → Lab | **Resolved on the producer side (2026-09-18).** `PaymentCompletedEvent` now carries `labTestIds: List<UUID>` — `Fee.sourceRefId` (= `labId`) for every LAB fee on the paid invoice, deduplicated; empty for non-lab invoices. See `backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md`. | Lab still needs to add the idempotent `payment.completed` consumer; never substitute invoice/record/prescription ID for a test ID. |
-| Pharmacy → Clinical | Current `PrescriptionFilledEvent` has no `recordId`, although its prescription owns that ID. | Add producer-sourced record correlation and corresponding consumer contract tests before enabling attachment. Do not infer from patient/department. |
+| Billing → Lab | **Resolved (2026-09-18).** Billing publishes deduplicated `labTestIds`; Lab consumes the explicit list and marks each aggregate paid in the same transaction as its `eventId` claim. | Keep `labTestIds` additive and explicit; never substitute invoice/record/prescription ID for a test ID. |
+| Pharmacy → Clinical | **Resolved (2026-09-18).** Pharmacy publishes the persisted prescription's `recordId`; Clinical consumes it and attaches the prescription idempotently. | Preserve `recordId` in publisher/outbox fixtures and never infer it from patient or department. |
+| Patient → Clinical | Patient still has no Java read/existence endpoint. | Implement the contract in `backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md`; Clinical must keep treating transport failure as 503, not absence. |
 | Billing arrival consumer | `recordId` is absent for standalone arrival. | Defer record-based fee creation and enforce source-reference uniqueness across arrival/record events. |
 | Billing → Report | Current `PaymentFailedEvent` lacks `departmentId`/`totalAmount` required for reversal in report spec. | Agree a reversal payload with billing/report owners. Outside the clinical/lab implementation scope. |
 
@@ -56,14 +57,16 @@ service's `AGENTS.md`:
 
 ## Remaining service work
 
-- Clinical: application transactions, patient/doctor checks, pending-per-day uniqueness (including updates/concurrency), one record per appointment, database/Flyway, endpoint roles and 503 mapping. `findByAppointmentId` and `existsPendingSameDayExcludingId` ports prepare these checks; the ports do not enforce them.
-- Clinical attachments: separate storage (`ATTACHED_RESULT`), never append external results into symptoms. Event deduplication and attachment must share a transaction and survive concurrent redelivery.
-- Lab: application orchestration, adapters/migrations/endpoints, after-commit publishing and transactional consumer deduplication. Completing through `recordResults` owns result/date validation; status updates cannot bypass those invariants.
-- Both: real provider/consumer JSON tests, broker/database integration tests, authentication and resilience tests after adapters exist. Foundation test success is not proof that distributed communication is already operational.
+- Clinical: wait for Patient's authoritative lookup endpoint before claiming live appointment/record E2E. The Organization, Lab and Pharmacy integrations are implemented.
+- Lab: payment and medical-record consumers, application orchestration, persistence, endpoints and publisher paths are implemented. A clinical lab order must still be explicit; `medicalrecord.created` alone remains a deliberate no-op.
+- Both: run broker-level E2E with all producer services when Patient is implemented and the full compose stack is available. Module tests already exercise PostgreSQL migrations/persistence through Testcontainers.
 
 ## Validation
 
-Clinical tests cover BR-A1/A3/A5 and BR-R1, diagnosis validation, immutable collections, DTO constraints, mapper identity and JSON envelopes/correlation. Lab tests cover BR-L1/L2/L3/L5/L7, textual values and DTO/event mapping. Orchestration, concurrency, publishing and consumer rules are deferred with their corresponding implementations.
+Clinical tests cover application/domain rules, persistence constraints, resilient remote lookups,
+publishing, queue routing and idempotent Lab/Pharmacy consumers. Lab tests cover application/domain
+rules, persistence, publishing, queue routing and idempotent Billing/Clinical consumers. On
+2026-09-18 the combined Clinical/Lab suite passed 278 tests, including PostgreSQL Testcontainers.
 
 Run from repository root:
 
@@ -74,6 +77,11 @@ mvn -pl backend/clinical-service,backend/lab-service -am verify
 The repeatable [wire check](../../../scripts/contract-checks/check-clinical-lab.ps1) also serializes
 clinical arrival, clinical record and lab result events into the **actual compiled billing receive
 records**, without adding cross-service production dependencies:
+
+> Current follow-up (2026-09-18): Billing added `labTestIds` to `PaymentCompletedEvent`, but the
+> shared Java fixture still invokes the old constructor. See
+> `backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md`; the script must be aligned before this
+> check returns green again.
 
 ```powershell
 ./scripts/contract-checks/check-clinical-lab.ps1

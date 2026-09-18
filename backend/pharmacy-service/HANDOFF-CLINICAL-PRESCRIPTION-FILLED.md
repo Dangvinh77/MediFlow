@@ -2,12 +2,17 @@
 
 > **Mandatory for coding agents:** read this file before changing `PrescriptionFilledEvent`, the
 > dispense flow, or `prescription.filled` contract fixtures in `pharmacy-service`.
+>
+> **Status (2026-09-18): complete on both sides.** Pharmacy publishes the persisted prescription's
+> `recordId`; Clinical consumes the event through its single queue dispatcher, claims `eventId`
+> transactionally, and stores an idempotent `PRESCRIPTION` attachment keyed by
+> `(recordId, prescriptionId)`.
 
 - **Producer / owner:** Pharmacy — LQHuy0210
 - **Consumer:** Clinical — Dangvinh77 / Harori
 - **Blocked Clinical work:** attach a dispensed prescription to its medical record
 
-## Current gap
+## Historical gap
 
 Pharmacy stores the prescription's authoritative `recordId`, but `PrescriptionFilledEvent` publishes
 only `prescriptionId`, patient, department, amount, and item data. Clinical cannot safely infer the

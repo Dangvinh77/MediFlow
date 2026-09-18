@@ -67,6 +67,15 @@ class RabbitConfigTest {
     }
 
     @Test
+    void paymentCompletedBinding_targetsLabQueueAndCanonicalRoute() {
+        Binding binding = config.paymentCompletedBinding(config.labQueue(), config.eventsExchange());
+
+        assertThat(binding.getDestination()).isEqualTo(RabbitConfig.LAB_QUEUE);
+        assertThat(binding.getExchange()).isEqualTo(RabbitConfig.EVENTS_EXCHANGE);
+        assertThat(binding.getRoutingKey()).isEqualTo(RabbitConfig.PAYMENT_COMPLETED);
+    }
+
+    @Test
     void labDeadLetterBinding_targetsDlqAndCanonicalRoute() {
         Binding binding = config.labDeadLetterBinding(config.labDeadLetterQueue(), config.deadLetterExchange());
 

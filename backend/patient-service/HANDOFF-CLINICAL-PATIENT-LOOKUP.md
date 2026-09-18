@@ -2,6 +2,10 @@
 
 > **Mandatory for coding agents:** read this file before adding or changing patient read/existence
 > APIs or service-to-service security in `patient-service`.
+>
+> **Status (2026-09-18): still open.** The module still has no Java patient domain/controller
+> implementation. Clinical's resilient Feign adapter is ready, but live appointment and record
+> creation remain blocked until this producer contract exists.
 
 - **Producer / owner:** Patient — TranHoangAnh94
 - **Consumer:** Clinical — Dangvinh77 / Harori

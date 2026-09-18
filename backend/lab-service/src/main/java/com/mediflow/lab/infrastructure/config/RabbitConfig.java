@@ -19,6 +19,7 @@ public class RabbitConfig {
     public static final String LAB_QUEUE = "lab.q";
     public static final String LAB_DEAD_LETTER_QUEUE = "lab.dlq";
     public static final String MEDICAL_RECORD_CREATED = "medicalrecord.created";
+    public static final String PAYMENT_COMPLETED = "payment.completed";
     public static final String LAB_DEAD_LETTER_KEY = "lab.dead-letter";
 
     @Bean
@@ -49,6 +50,13 @@ public class RabbitConfig {
             @Qualifier("labQueue") Queue labQueue,
             @Qualifier("eventsExchange") TopicExchange eventsExchange) {
         return BindingBuilder.bind(labQueue).to(eventsExchange).with(MEDICAL_RECORD_CREATED);
+    }
+
+    @Bean
+    public Binding paymentCompletedBinding(
+            @Qualifier("labQueue") Queue labQueue,
+            @Qualifier("eventsExchange") TopicExchange eventsExchange) {
+        return BindingBuilder.bind(labQueue).to(eventsExchange).with(PAYMENT_COMPLETED);
     }
 
     @Bean

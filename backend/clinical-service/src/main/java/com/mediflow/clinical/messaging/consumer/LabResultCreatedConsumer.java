@@ -1,6 +1,5 @@
 package com.mediflow.clinical.messaging.consumer;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
@@ -16,7 +15,6 @@ public class LabResultCreatedConsumer {
         this.useCase = useCase;
     }
 
-    @RabbitListener(queues = "${mediflow.clinical.rabbit.queue:clinical.q}")
     public void consume(LabResultCreatedPayload payload) {
         validate(payload);
         useCase.onLabResultCreated(new LabResultCreatedCommand(

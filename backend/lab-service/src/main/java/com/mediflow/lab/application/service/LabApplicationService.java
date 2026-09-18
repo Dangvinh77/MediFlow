@@ -17,6 +17,7 @@ import com.mediflow.lab.application.event.LabResultCreatedEvent;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.in.ReactToClinicalUseCase;
+import com.mediflow.lab.application.port.in.UpdateLabPaymentUseCase;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
@@ -26,7 +27,8 @@ import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
 @Service
-public class LabApplicationService implements ManageLabTestUseCase, ReactToClinicalUseCase {
+public class LabApplicationService implements ManageLabTestUseCase, ReactToClinicalUseCase,
+        UpdateLabPaymentUseCase {
 
     private final LabTestRepositoryPort tests;
     private final LabEventPublisherPort publisher;

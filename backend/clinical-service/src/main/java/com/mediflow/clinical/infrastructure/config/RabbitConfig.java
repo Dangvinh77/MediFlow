@@ -19,6 +19,7 @@ public class RabbitConfig {
     public static final String CLINICAL_QUEUE = "clinical.q";
     public static final String CLINICAL_DEAD_LETTER_QUEUE = "clinical.dlq";
     public static final String LAB_RESULT_CREATED = "lab.result.created";
+    public static final String PRESCRIPTION_FILLED = "prescription.filled";
     public static final String CLINICAL_DEAD_LETTER_KEY = "clinical.dead-letter";
 
     @Bean
@@ -49,6 +50,13 @@ public class RabbitConfig {
             @Qualifier("clinicalQueue") Queue clinicalQueue,
             @Qualifier("eventsExchange") TopicExchange eventsExchange) {
         return BindingBuilder.bind(clinicalQueue).to(eventsExchange).with(LAB_RESULT_CREATED);
+    }
+
+    @Bean
+    public Binding prescriptionFilledBinding(
+            @Qualifier("clinicalQueue") Queue clinicalQueue,
+            @Qualifier("eventsExchange") TopicExchange eventsExchange) {
+        return BindingBuilder.bind(clinicalQueue).to(eventsExchange).with(PRESCRIPTION_FILLED);
     }
 
     @Bean
