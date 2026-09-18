@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PharmacyEventOutboxJpaEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -47,6 +48,28 @@ class PharmacyOutboxDispatcherTest {
 
         verify(claimService).markPublished(eq(event.getEventId()), any(String.class), eq(NOW));
         verify(claimService, never()).markFailure(any(), any(), any(), any(), any(Integer.class));
+    }
+
+    /** Dispatch sends the immutable outbox payload, including the producer-owned recordId. */
+    @Test
+    void dispatchPending_filledPayloadPreservesRecordId() {
+        String payload = "{\"prescriptionId\":\"55555555-5555-5555-5555-555555555555\","
+                + "\"recordId\":\"66666666-6666-6666-6666-666666666666\"}";
+        PharmacyEventOutboxJpaEntity event = new PharmacyEventOutboxJpaEntity(
+                UUID.randomUUID(), "prescription.filled", UUID.randomUUID(), payload);
+        when(claimService.claim(any(Integer.class), any(String.class))).thenReturn(List.of(event));
+        when(claimService.markPublished(eq(event.getEventId()), any(String.class), eq(NOW)))
+                .thenReturn(true);
+        completePublishWith(true, null);
+
+        dispatcher.dispatchPending();
+
+        ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+        verify(rabbitTemplate).send(
+                eq("mediflow.events"), eq("prescription.filled"), messageCaptor.capture(),
+                any(CorrelationData.class));
+        assertThat(new String(messageCaptor.getValue().getBody(), StandardCharsets.UTF_8))
+                .isEqualTo(payload);
     }
 
     /** A broker NACK keeps a critical row pending and stops later events from overtaking it. */

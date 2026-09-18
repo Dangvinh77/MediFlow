@@ -10,6 +10,7 @@ public record PrescriptionFilledPayload(
         Instant occurredAt,
         String correlationId,
         UUID prescriptionId,
+        UUID recordId,
         UUID departmentId,
         List<DispensedItemPayload> dispensedItems
 ) {
