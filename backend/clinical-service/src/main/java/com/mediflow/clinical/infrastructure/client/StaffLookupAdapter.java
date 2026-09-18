@@ -26,7 +26,7 @@ public class StaffLookupAdapter implements StaffLookupPort {
                 throw new UpstreamUnavailableException("organization-service returned an invalid response");
             }
             StaffExistsResponse staff = response.data();
-            if (!staff.exists()) {
+            if (!staff.exists() || !staff.eligibleDoctor()) {
                 return Optional.empty();
             }
             if (staff.departmentId() == null) {

@@ -124,6 +124,23 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void createAppointment_ineligibleDoctor_throwsDoctorNotFoundRemote() {
+        UUID patient = UUID.randomUUID();
+        UUID doctor = UUID.randomUUID();
+        when(patients.exists(patient)).thenReturn(true);
+        when(staff.departmentOf(doctor)).thenReturn(Optional.empty());
+
+        var request = new CreateAppointmentRequest(patient, doctor, UUID.randomUUID(),
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+
+        assertThatThrownBy(() -> appointmentService.create(request))
+                .isInstanceOf(InvalidClinicalDataException.class)
+                .hasFieldOrPropertyWithValue("code", "DOCTOR_NOT_FOUND_REMOTE");
+        verify(appointments, never()).save(any());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
     void createAppointment_unknownPatient_stopsBeforeStaffAndPersistence() {
         UUID patient = UUID.randomUUID();
         when(patients.exists(patient)).thenReturn(false);
