@@ -11,10 +11,9 @@
 > `BillingEventContractFixtureTest`. Lab consumes the explicit list through its single queue
 > dispatcher, claims `eventId` transactionally, and marks each referenced aggregate paid.
 >
-> **Billing/shared-test follow-up:** `scripts/contract-checks/ClinicalLabWireCheck.java` still calls
-> the pre-change nine-argument `PaymentCompletedEvent` constructor. Update that fixture to pass an
-> explicit `labTestIds` list; until then `check-clinical-lab.ps1` fails at compilation before its
-> JSON assertions. This is outside the Clinical/Lab production ownership boundary.
+> **Shared wire verification (2026-09-18): aligned.**
+> `scripts/contract-checks/ClinicalLabWireCheck.java` passes an explicit `labTestIds` list and
+> verifies the serialized Billing payload against Lab's actual receive projection.
 
 - **Producer / owner:** Billing — locgit-89
 - **Consumer:** Lab — Dangvinh77 / Harori
