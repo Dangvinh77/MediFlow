@@ -11,7 +11,7 @@ interface NavigationItem {
   roles: readonly Role[];
 }
 
-const navigation = [
+const navigation: readonly NavigationItem[] = [
   { href: "/organization", label: "Tổ chức", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
   { href: "/patients", label: "Bệnh nhân", roles: ["ADMIN", "DOCTOR", "NURSE"] },
   { href: "/appointments", label: "Lịch hẹn", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
@@ -21,7 +21,7 @@ const navigation = [
   { href: "/billing", label: "Viện phí", roles: ["ADMIN", "CASHIER"] },
   { href: "/notifications", label: "Thông báo", roles: ["ADMIN", "NURSE", "PATIENT"] },
   { href: "/reports", label: "Báo cáo", roles: ["ADMIN", "MANAGER"] },
-] satisfies readonly NavigationItem[];
+];
 
 interface DashboardHeaderProps {
   role: Role | null;
