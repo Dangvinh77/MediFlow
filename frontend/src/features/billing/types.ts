@@ -15,7 +15,7 @@ export interface FeeDTO {
   feeType: FeeType;
   departmentId: string;
   incurredDate: string;
-  amount: string;
+  amount: number;
   isPaid: boolean;
 }
 
@@ -23,7 +23,7 @@ export interface InvoiceDTO {
   invoiceId: string;
   patientId: string;
   createdDate: string;
-  totalAmount: string;
+  totalAmount: number;
   isPaid: boolean;
   paymentMethod: PaymentMethod | null;
   prescriptionId: string | null;

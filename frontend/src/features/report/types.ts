@@ -4,5 +4,5 @@ export interface DailyReportDTO {
   visitCount: number;
   labCount: number;
   prescriptionCount: number;
-  revenue: string;
+  revenue: number;
 }

@@ -175,7 +175,7 @@ This work only retains/adds the Pharmacy entry in shared dashboard navigation. I
 
 ### Billing
 
-The page asks for a patient UUID and returns that patient's invoices with pagination. Rows show created date, invoice ID, exact decimal `totalAmount`, paid state, payment method, and saga status. The backend DTO carries no currency code, so the base page does not invent one. Fee details and payment actions remain future work.
+The page asks for a patient UUID and returns that patient's invoices with pagination. Rows show created date, invoice ID, `totalAmount`, paid state, payment method, and saga status. The backend DTO carries no currency code, so the base page does not invent one. Fee details and payment actions remain future work.
 
 ```ts
 type PaymentMethod = "CASH" | "TRANSFER" | "INSURANCE";
@@ -186,7 +186,7 @@ interface InvoiceDTO {
   invoiceId: string;
   patientId: string;
   createdDate: string;
-  totalAmount: string;
+  totalAmount: number;
   isPaid: boolean;
   paymentMethod: PaymentMethod | null;
   prescriptionId: string | null;
@@ -196,7 +196,9 @@ interface InvoiceDTO {
 }
 ```
 
-JSON `BigDecimal` values are modeled as `string` to avoid arithmetic or precision loss in this read-only page.
+The current Spring/Jackson contract serializes unannotated `BigDecimal` values as JSON numbers, so
+the TypeScript contract models these values as `number`. The page treats them as display-only values
+and does not perform financial arithmetic in JavaScript.
 
 ### Notification
 
@@ -223,7 +225,7 @@ interface NotificationDTO {
 
 ### Report
 
-The base page displays a daily operational report using a required date and optional department UUID. It shows visit, lab, prescription counts and the exact decimal revenue. Empty/zero is a valid report and is rendered as zero metrics, not an empty state.
+The base page displays a daily operational report using a required date and optional department UUID. It shows visit, lab, prescription counts and revenue. Empty/zero is a valid report and is rendered as zero metrics, not an empty state.
 
 ```ts
 interface DailyReportDTO {
@@ -232,7 +234,7 @@ interface DailyReportDTO {
   visitCount: number;
   labCount: number;
   prescriptionCount: number;
-  revenue: string;
+  revenue: number;
 }
 ```
 

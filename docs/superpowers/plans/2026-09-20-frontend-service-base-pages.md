@@ -104,7 +104,7 @@ Loading uses `MediFlowLoader` inside `role="status"`/`aria-busy="true"`; error u
 
 - [ ] **Step 3: Add display and validation helpers**
 
-`formatLocalDate("2026-09-20")` returns `20/09/2026` without constructing a timezone-shifted date. `formatInstant` uses `Intl.DateTimeFormat("vi-VN")`. `formatDecimal` accepts the JSON decimal string and uses `Intl.NumberFormat("vi-VN", { maximumFractionDigits: 20 })`; it must not add a currency. `isUuid` validates the canonical 8-4-4-4-12 shape case-insensitively.
+`formatLocalDate("2026-09-20")` returns `20/09/2026` without constructing a timezone-shifted date. `formatInstant` uses `Intl.DateTimeFormat("vi-VN")`. `formatDecimal` accepts the JSON numeric value from the current Spring/Jackson contract and uses `Intl.NumberFormat("vi-VN", { maximumFractionDigits: 20 })`; it must not add a currency. `isUuid` validates the canonical 8-4-4-4-12 shape case-insensitively.
 
 - [ ] **Step 4: Replace the header's fixed navigation with the role matrix**
 
@@ -322,7 +322,7 @@ refactor(frontend): standardize lab base page
 
 - [ ] **Step 1: Mirror Billing response fields and enums**
 
-Define `FeeDTO`, `InvoiceDTO`, `FeeType`, `PaymentMethod`, and `SagaStatus` exactly from the Java records. Model `BigDecimal` JSON fields as `string`; use `isPaid` exactly as named in the DTO contract. Nullable payment/prescription/paid timestamp fields use `| null`.
+Define `FeeDTO`, `InvoiceDTO`, `FeeType`, `PaymentMethod`, and `SagaStatus` exactly from the Java records. Model the current unannotated `BigDecimal` JSON fields as `number`; use `isPaid` exactly as named in the DTO contract. Nullable payment/prescription/paid timestamp fields use `| null`.
 
 - [ ] **Step 2: Implement only the patient invoice query**
 
@@ -412,7 +412,7 @@ feat(frontend): add notification lookup page
 
 - [ ] **Step 1: Mirror the daily DTO**
 
-Define `DailyReportDTO` with `reportDate`, nullable `departmentId`, numeric visit/lab/prescription counts, and string revenue.
+Define `DailyReportDTO` with `reportDate`, nullable `departmentId`, numeric visit/lab/prescription counts, and numeric revenue.
 
 - [ ] **Step 2: Implement the exact daily query**
 

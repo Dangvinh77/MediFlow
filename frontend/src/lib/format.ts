@@ -16,10 +16,10 @@ export function formatInstant(value: string | null | undefined): string {
   }).format(date);
 }
 
-export function formatDecimal(value: string | null | undefined): string {
+export function formatDecimal(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === "") return "—";
   const number = Number(value);
-  if (!Number.isFinite(number)) return value;
+  if (!Number.isFinite(number)) return typeof value === "string" ? value : "—";
   return new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 20,
   }).format(number);

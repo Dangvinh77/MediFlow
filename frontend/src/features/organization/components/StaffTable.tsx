@@ -48,8 +48,10 @@ export function StaffTable() {
   const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [lastRequest, setLastRequest] = useState(0);
 
   const loadStaff = useCallback(async (page: number) => {
+    setLastRequest(page);
     setLoading(true);
     setError(null);
 
@@ -73,9 +75,10 @@ export function StaffTable() {
 
   useEffect(() => {
     let disposed = false;
+    const initialPage = 0;
 
     organizationApi
-      .staff(0, STAFF_PAGE_SIZE)
+      .staff(initialPage, STAFF_PAGE_SIZE)
       .then((result) => {
         if (disposed) return;
 
@@ -123,7 +126,7 @@ export function StaffTable() {
           kind="error"
           message={error.message}
           correlationId={error.correlationId}
-          onRetry={() => void loadStaff(pageNumber)}
+          onRetry={() => void loadStaff(lastRequest)}
         />
       ) : null}
 

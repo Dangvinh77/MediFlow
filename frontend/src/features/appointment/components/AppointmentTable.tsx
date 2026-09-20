@@ -16,6 +16,11 @@ interface RequestError {
   correlationId: string | null;
 }
 
+interface AppointmentRequest {
+  page: number;
+  filters: AppointmentSearchParams;
+}
+
 const statusPresentation: Record<AppointmentStatus, { label: string; tone: StatusTone }> = {
   PENDING: { label: "Chờ tiếp nhận", tone: "warning" },
   ARRIVED: { label: "Đã đến", tone: "info" },
@@ -44,8 +49,13 @@ export function AppointmentTable() {
   const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [lastRequest, setLastRequest] = useState<AppointmentRequest>({
+    page: 0,
+    filters: {},
+  });
 
   const loadAppointments = useCallback(async (page: number, filters: AppointmentSearchParams) => {
+    setLastRequest({ page, filters });
     setLoading(true);
     setError(null);
     try {
@@ -67,8 +77,9 @@ export function AppointmentTable() {
 
   useEffect(() => {
     let active = true;
+    const initialRequest: AppointmentRequest = { page: 0, filters: {} };
 
-    appointmentApi.search()
+    appointmentApi.search({ ...initialRequest.filters, page: initialRequest.page })
       .then((result) => {
         if (!active) return;
         setAppointments(result.content);
@@ -147,7 +158,7 @@ export function AppointmentTable() {
       {validationError ? <p id="appointment-department-error" role="alert" className="mt-2 text-sm text-danger">{validationError}</p> : null}
 
       {loading && appointments.length === 0 ? <AsyncState kind="loading" message="Đang tải lịch hẹn…" /> : null}
-      {!loading && error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadAppointments(pageNumber, activeFilters)} /> : null}
+      {!loading && error ? <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={() => void loadAppointments(lastRequest.page, lastRequest.filters)} /> : null}
       {!loading && !error && appointments.length === 0 ? <AsyncState kind="empty" message="Chưa có lịch hẹn phù hợp." /> : null}
 
       {!error && appointments.length > 0 ? (
