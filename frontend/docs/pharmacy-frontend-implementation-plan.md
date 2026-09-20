@@ -69,7 +69,8 @@ Nếu controller chưa có endpoint thì frontend không được gọi endpoint
 - Không dùng TanStack Query/SWR, không dùng component library.
 - Shared UI hiện có `PageShell`, `DashboardHeader`, `Pagination` và route loading chung.
 - `PH-FE-00` đã có contract/client boundary và `PH-FE-01` đã có route shell/navigation.
-- Các route nghiệp vụ vẫn đang hiển thị placeholder; chưa có catalog, detail hoặc mutation form.
+- `PH-FE-02` đến `PH-FE-07` đã có read flow, drug form và prescription create/lookup/detail; mutation
+  prescription terminal actions vẫn để ở `PH-FE-08`/`PH-FE-09`.
 
 ### 3.2 Hạn chế kiến trúc hiện tại
 
@@ -593,7 +594,9 @@ Trạng thái tại lần kiểm tra 2026-09-20:
 | PH-FE-03 | Đã implement, cần chạy lại quality gate khi release | `DrugDetail.tsx`, `drugs/[drugId]/page.tsx` | Giữ detail snapshot ổn định khi mutation |
 | PH-FE-04 | Đã implement, cần chạy lại quality gate khi release | `CreateDrugForm.tsx`, `drugFormValidation.ts`, `drugs/new/page.tsx` | Giữ request không chứa server-owned fields |
 | PH-FE-05 | Đã implement; staff E2E còn blocker signed `staffId` | `AdjustStockForm.tsx`, `DrugDetail.tsx` | Xác nhận ADMIN path; không giả staffId cho PHARMACIST |
-| PH-FE-06 → PH-FE-10 | Chưa làm | route còn placeholder, thư mục component chưa có implementation | Làm theo dependency bên dưới |
+| PH-FE-06 | Đã implement; DOCTOR E2E còn blocker signed `staffId` | `CreatePrescriptionForm.tsx`, `PrescriptionLinesEditor.tsx`, `prescriptionFormValidation.ts`, `prescriptions/new/page.tsx` | Xác nhận ADMIN path; không tự sinh UUID hoặc giả staffId |
+| PH-FE-07 | Đã implement; mutation deferred | `PrescriptionLookup.tsx`, `PrescriptionDetail.tsx`, lookup/detail routes | Nối `refresh()` với PH-FE-08/09 mà không tạo list endpoint |
+| PH-FE-08 → PH-FE-10 | Chưa làm | cancel/dispense/admin routes còn placeholder | Làm theo dependency bên dưới |
 | PH-FE-11 | Chưa làm | chưa có `test` script/Vitest config | Thêm test theo từng feature đã hoàn thành |
 | PH-FE-12 | Chưa làm | chưa có release gate hoàn chỉnh | Chạy cuối mỗi milestone |
 
@@ -904,11 +907,12 @@ form framework.
 
 ### PH-FE-06 — Create prescription và line editor
 
-**Trạng thái:** chưa làm.
+**Trạng thái:** đã implement trong workspace; DOCTOR E2E còn blocker signed `staffId`.
 
 **Dependency:** PH-FE-00, PH-FE-02, identity blocker được ghi nhận.
 
-**Files:** `CreatePrescriptionForm.tsx`, `PrescriptionLinesEditor.tsx`, `prescriptions/new/page.tsx`.
+**Files:** `CreatePrescriptionForm.tsx`, `PrescriptionLinesEditor.tsx`, `prescriptionFormValidation.ts`,
+`prescriptions/new/page.tsx`.
 
 **Implement:**
 
@@ -950,11 +954,12 @@ form framework.
 **Không làm trong task này:** tạo patient/record/doctor/department lookup, tự sinh UUID, lưu draft lâu
 dài hoặc gọi trực tiếp feature/service khác.
 
-**Acceptance:** payload không chứa giá; ADMIN E2E qua; DOCTOR E2E blocked cho tới khi signed `staffId` có thật.
+**Acceptance:** payload không chứa giá; ADMIN path dùng đúng response `prescriptionId`; DOCTOR E2E blocked cho tới
+khi signed `staffId` có thật.
 
 ### PH-FE-07 — Prescription lookup và detail
 
-**Trạng thái:** chưa làm; độc lập với create prescription sau PH-FE-01.
+**Trạng thái:** đã implement trong workspace; cancel/dispense mutation deferred sang PH-FE-08/09.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -995,7 +1000,8 @@ dài hoặc gọi trực tiếp feature/service khác.
 
 **Không làm trong task này:** list/search prescription, lookup tên cross-service, mutation cancel/dispense.
 
-**Acceptance:** deep-link hoạt động; không có request list prescription; money chỉ format, không tính lại làm truth.
+**Acceptance:** deep-link hoạt động; invalid UUID không mount fetch; không có request list prescription; money chỉ
+format, không tính lại làm truth; missing dispense được hiển thị riêng.
 
 ### PH-FE-08 — Cancel prescription
 
@@ -1353,7 +1359,7 @@ the existing gateway identity handoff and verify with ADMIN where valid.
 
 PH-FE-00, 01, 02, 03, 07 (lookup/detail only).
 
-**Tiến độ hiện tại:** 4/5 task đã implement (`PH-FE-00` đến `PH-FE-03`); còn `PH-FE-07`.
+**Tiến độ hiện tại:** 5/5 task đã implement (`PH-FE-00` đến `PH-FE-03`, `PH-FE-07`).
 
 Kết quả: ADMIN/DOCTOR/PHARMACIST đọc catalog và prescription id đã biết.
 
@@ -1370,7 +1376,7 @@ Kết quả: ADMIN hoàn chỉnh; PHARMACIST UI có thể implement nhưng E2E p
 
 PH-FE-06, 08, 09.
 
-**Tiến độ hiện tại:** 0/3 task.
+**Tiến độ hiện tại:** 1/3 task (`PH-FE-06`); PH-FE-08/09 còn lại.
 
 Kết quả: ADMIN có thể tạo/hủy/xuất theo contract; DOCTOR/PHARMACIST phụ thuộc staffId và payment proof.
 
