@@ -34,6 +34,11 @@ interface RequestError {
   correlationId: string | null;
 }
 
+interface LabRequest {
+  page: number;
+  filters: LabSearchParams;
+}
+
 function getRequestError(cause: unknown): RequestError {
   if (cause instanceof ApiRequestError) {
     return {
@@ -60,8 +65,13 @@ export function LabTable() {
   const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [lastRequest, setLastRequest] = useState<LabRequest>({
+    page: 0,
+    filters: {},
+  });
 
   const loadTests = useCallback(async (page: number, filters: LabSearchParams) => {
+    setLastRequest({ page, filters });
     setLoading(true);
     setError(null);
 
@@ -188,7 +198,7 @@ export function LabTable() {
           kind="error"
           message={error.message}
           correlationId={error.correlationId}
-          onRetry={() => void loadTests(pageNumber, activeFilters)}
+          onRetry={() => void loadTests(lastRequest.page, lastRequest.filters)}
         />
       ) : null}
 
