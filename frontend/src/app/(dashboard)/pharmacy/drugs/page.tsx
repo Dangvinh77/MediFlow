@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageShell } from "@/components/layout/PageShell";
+import {
+  CatalogFallback,
+  DrugCatalog,
+} from "@/features/pharmacy/components/drug/DrugCatalog";
 
 export const metadata: Metadata = {
   title: "Kho thuốc | MediFlow",
@@ -8,14 +13,8 @@ export const metadata: Metadata = {
 /**
  * Route trang danh mục thuốc.
  *
- * PH-FE-01 chỉ tạo khung trang và metadata.
- * Không đưa logic tìm kiếm, phân trang hoặc gọi API vào page.
- *
- * TODO(PH-FE-02):
- * - Thay nội dung tạm bằng DrugCatalog.
- * - Bọc DrugCatalog bằng Suspense khi component dùng useSearchParams.
- * - Để DrugCatalog quản lý API/loading/error/empty.
- * - Để DrugTable tập trung render dữ liệu.
+ * Page chỉ ghép khung route với Client Component dưới Suspense.
+ * Toàn bộ query/API/loading/error nằm trong feature component.
  */
 export default function DrugCatalogPage() {
   return (
@@ -23,14 +22,9 @@ export default function DrugCatalogPage() {
       title="Kho thuốc"
       description="Tra cứu danh mục thuốc, tồn kho và hạn sử dụng."
     >
-      {/*
-        Đây là nội dung tạm của route shell,
-        không phải thông báo danh mục thuốc đang rỗng.
-      */}
-      <p className="mt-6 text-sm text-muted-foreground">
-        Danh mục thuốc, tìm kiếm và phân trang sẽ được triển khai
-        ở PH-FE-02.
-      </p>
+      <Suspense fallback={<CatalogFallback />}>
+        <DrugCatalog />
+      </Suspense>
     </PageShell>
   );
 }

@@ -2,9 +2,11 @@
 
 > Kế hoạch triển khai frontend cho bounded context `pharmacy`.
 >
-> **Nguồn chuẩn là code backend hiện tại**, không phải thiết kế dự kiến. Kế hoạch này được đối chiếu
-> tại repository HEAD `808ffe6900f7eb1a07c9bfd8a2b1cfade7779b44`; commit gần nhất chạm
-> `backend/pharmacy-service` là `1bd7fabb18b825fb04204f3ba832364fae48621d`.
+> **Nguồn chuẩn là code backend hiện tại**, không phải thiết kế dự kiến. Kế hoạch này được kiểm tra
+> lại ngày 2026-09-20 tại repository HEAD `978ceaa28bb2bf6da4899af2f0eba15ace308cff`;
+> commit gần nhất chạm `backend/pharmacy-service` là
+> `8cea770c70e7bc9b078a8e7c6ef5d43e0a0d170b`, còn commit gần nhất triển khai frontend Pharmacy là
+> `eed19bbf481820ce17fc35824a05a151b039f40f`.
 
 ## 1. Mục tiêu và giới hạn
 
@@ -66,7 +68,8 @@ Nếu controller chưa có endpoint thì frontend không được gọi endpoint
 - Feature không import feature khác; composition chỉ xảy ra trong `app/`.
 - Không dùng TanStack Query/SWR, không dùng component library.
 - Shared UI hiện có `PageShell`, `DashboardHeader`, `Pagination` và route loading chung.
-- `src/features/pharmacy/` mới chỉ là placeholder.
+- `PH-FE-00` đã có contract/client boundary và `PH-FE-01` đã có route shell/navigation.
+- Các route nghiệp vụ vẫn đang hiển thị placeholder; chưa có catalog, detail hoặc mutation form.
 
 ### 3.2 Hạn chế kiến trúc hiện tại
 
@@ -358,7 +361,8 @@ export interface OutboxReplayResult {
 
 ### 5.1 JWT chưa có `staffId`
 
-Code pharmacy đọc claim tùy chọn `staffId`, nhưng gateway hiện chỉ phát `sub`, `role`, `cid`.
+Code pharmacy đọc claim tùy chọn `staffId`, nhưng gateway hiện chỉ phát `sub`, `role`, `cid` và
+`departmentId`; gateway chưa ký `staffId` vào access/refresh token.
 Các thao tác staff-owned fail closed:
 
 - DOCTOR tạo đơn;
@@ -577,7 +581,46 @@ Action còn phải thỏa state:
 
 ## 10. Task breakdown cho AI implementation
 
+### 10.0 Cách đọc và giao task
+
+Trạng thái tại lần kiểm tra 2026-09-20:
+
+| Task | Trạng thái | Bằng chứng chính | Việc tiếp theo |
+|---|---|---|---|
+| PH-FE-00 | Đã implement, cần chạy lại quality gate khi release | `types.ts`, `api.ts`, `permissions.ts`, `presentation.ts`, `utils.ts`, `lib/api.ts` | Giữ contract đồng bộ khi backend đổi |
+| PH-FE-01 | Đã implement, cần chạy lại quality gate khi release | pharmacy routes, layout/loading/error, `PharmacyNav`, dashboard link | Giữ page mỏng khi thay placeholder |
+| PH-FE-02 | Đã implement, cần chạy lại quality gate khi release | `DrugCatalog.tsx`, `DrugTable.tsx`, `utils.ts`, `drugs/page.tsx` | Giữ query/filter đồng bộ contract |
+| PH-FE-03 | Đã implement, cần chạy lại quality gate khi release | `DrugDetail.tsx`, `drugs/[drugId]/page.tsx` | Giữ detail snapshot ổn định khi mutation |
+| PH-FE-04 | Đã implement, cần chạy lại quality gate khi release | `CreateDrugForm.tsx`, `drugFormValidation.ts`, `drugs/new/page.tsx` | Giữ request không chứa server-owned fields |
+| PH-FE-05 | Đã implement; staff E2E còn blocker signed `staffId` | `AdjustStockForm.tsx`, `DrugDetail.tsx` | Xác nhận ADMIN path; không giả staffId cho PHARMACIST |
+| PH-FE-06 → PH-FE-10 | Chưa làm | route còn placeholder, thư mục component chưa có implementation | Làm theo dependency bên dưới |
+| PH-FE-11 | Chưa làm | chưa có `test` script/Vitest config | Thêm test theo từng feature đã hoàn thành |
+| PH-FE-12 | Chưa làm | chưa có release gate hoàn chỉnh | Chạy cuối mỗi milestone |
+
+Mỗi task chính được chia thành các **work package** có hậu tố `A`, `B`, `C`... để một agent có thể
+nhận phạm vi nhỏ mà không phải tự suy đoán. Một work package chỉ được xem là xong khi:
+
+1. code production và test thuộc đúng file ownership đã nêu;
+2. loading/error/empty/success hoặc idle/submitting/success/error đã được xử lý đầy đủ;
+3. không còn placeholder/TODO của work package đó;
+4. task-specific checks và `pnpm typecheck` chạy xanh;
+5. diff không thêm raw `fetch`, cross-feature import hay endpoint ngoài contract;
+6. agent ghi lại blocker thật thay vì mock/fake contract để làm E2E xanh.
+
+Quy ước giao việc:
+
+- Một agent chỉ nhận một task chính hoặc một nhóm work package không đụng cùng file với agent khác.
+- Nếu hai task cùng sửa một page/detail component, task dependency phải merge trước; agent sau rebase
+  hoặc merge theo trạng thái mới, không copy lại phiên bản cũ.
+- Shared UI chỉ được tạo khi có ít nhất hai consumer thật trong phạm vi hiện tại; nếu chỉ một feature
+  dùng, giữ component trong `features/pharmacy/components/`.
+- Mỗi task mutation phải giữ form khi lỗi, chống double-submit và refetch snapshot chính thức sau
+  thành công; không tự sửa local state thành trạng thái terminal trước response backend.
+- Các lệnh `pnpm lint` và `pnpm build` có thể chạy ở cuối task chính; `PH-FE-12` bắt buộc chạy toàn bộ.
+
 ### PH-FE-00 — Khóa contract và client boundary
+
+**Trạng thái:** đã implement ở commit `817a50a`; không mở rộng contract khi làm task sau.
 
 **Dependency:** không.
 
@@ -600,6 +643,32 @@ Action còn phải thỏa state:
 5. Thêm permission predicate và mapping label/status exhaustively bằng `satisfies Record<...>`.
 6. Thêm formatter VND/date và UUID validator thuần.
 
+**Work packages:**
+
+- **PH-FE-00A — Contract snapshot:** lập bảng 9 endpoint gồm method, path, request, response, role và
+  error code từ controller/web tests; ghi rõ endpoint nào không có body.
+- **PH-FE-00B — Wire types:** mirror enum/DTO/request vào `types.ts`; nullable response dùng
+  `T | null`, optional chỉ dùng cho field request thực sự tùy chọn.
+- **PH-FE-00C — Shared HTTP boundary:** cập nhật `lib/api.ts` để body optional, không gửi
+  `Content-Type` khi không có body, giữ `ApiRequestError` gồm status/code/details/correlationId.
+- **PH-FE-00D — Pharmacy facade:** implement đúng 9 hàm trong `api.ts`; query catalog luôn gửi page,
+  size và chỉ gửi keyword đã trim khi không rỗng.
+- **PH-FE-00E — Pure policy/helpers:** implement capability matrix, state predicate, status mapping,
+  UUID/date/VND formatter và field-error mapper mà không import React.
+- **PH-FE-00F — Boundary audit:** scan `fetch(`, `/api/v1/pharmacy`, service port `8085` và import
+  `@/features/`; kết quả phải chỉ còn các vị trí hợp lệ theo blueprint.
+
+**Test/verification chi tiết:**
+
+- `searchDrugs({})` tạo `page=0&size=20` và không tạo `keyword=`.
+- `dispensePrescription` và `replayOutbox` không có body/JSON content type.
+- Mọi `PrescriptionStatus` và `DispenseStatus` đều có label/tone tại compile time.
+- Permission matrix kiểm tra đủ ADMIN/DOCTOR/PHARMACIST và ít nhất một role không có quyền.
+- `pnpm typecheck`; `pnpm lint`; `pnpm build` ở lần merge/release.
+
+**Không làm trong task này:** component, route UI, backend endpoint, auth-cookie migration hoặc
+cross-service lookup.
+
 **Acceptance:**
 
 - chỉ `src/lib/api.ts` có `fetch(`;
@@ -608,6 +677,8 @@ Action còn phải thỏa state:
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` xanh.
 
 ### PH-FE-01 — Pharmacy route shell và navigation
+
+**Trạng thái:** đã implement ở commit `eed19bb`; các page cố ý còn placeholder cho task sau.
 
 **Dependency:** PH-FE-00.
 
@@ -622,13 +693,38 @@ Action còn phải thỏa state:
 4. `error.tsx` là Client Component có nút `reset()`.
 5. `loading.tsx` dùng loader/skeleton đã có.
 
+**Work packages:**
+
+- **PH-FE-01A — Route tree:** tạo đủ route trong mục 7, metadata tĩnh và redirect server-side từ
+  `/pharmacy` tới `/pharmacy/drugs`.
+- **PH-FE-01B — Segment states:** tạo `loading.tsx` cho route transition và `error.tsx` chỉ cho
+  unexpected render error, có `reset()` và nội dung dễ hiểu.
+- **PH-FE-01C — Role-aware navigation:** `PharmacyNav` đọc role ở client, lọc mục bằng
+  `permissions.ts`, đánh dấu active route và không xem việc ẩn link là authorization.
+- **PH-FE-01D — Dashboard entry:** thêm link Pharmacy vào dashboard header mà không phá các route
+  hiện có; kiểm tra keyboard focus và `aria-current`.
+- **PH-FE-01E — Thin-page audit:** mọi page chỉ export metadata, đọc params nếu cần và compose
+  feature component; không import `pharmacyApi` hoặc `lib/api` trực tiếp.
+
+**Test/verification chi tiết:**
+
+- `/pharmacy` redirect đúng một lần; các URL con render được khi refresh trực tiếp.
+- ADMIN thấy 4 mục; DOCTOR thấy Kho thuốc/Kê đơn/Tra đơn; PHARMACIST thấy Kho thuốc/Tra đơn.
+- Role không thuộc Pharmacy thấy thông báo không có quyền sử dụng phân hệ.
+- `error.tsx` gọi được `reset()`; navigation có accessible name và trạng thái active.
+
+**Không làm trong task này:** fetch dữ liệu, form nghiệp vụ, route protection phía server hoặc API
+list prescription/outbox.
+
 **Acceptance:** URL route đúng, shared dashboard layout giữ nguyên, không fetch trong route file.
 
 ### PH-FE-02 — Drug catalog read flow
 
+**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
+
 **Dependency:** PH-FE-00, PH-FE-01.
 
-**Files:** `DrugCatalog.tsx`, `DrugTable.tsx`, `drugs/page.tsx`.
+**Files:** `DrugCatalog.tsx`, `DrugTable.tsx`, `drugs/page.tsx`, `features/pharmacy/utils.ts`.
 
 **Implement:**
 
@@ -641,9 +737,50 @@ Action còn phải thỏa state:
 7. Link detail với `prefetch={false}` khi render bảng nhiều dòng.
 8. Pagination giữ keyword và size trong URL.
 
+**Work packages:**
+
+- **PH-FE-02A — URL parser:** tạo pure helper đọc `keyword`, `page`, `size`; page âm/NaN về `0`,
+  size ngoài tập cho phép về `20`, keyword trim; không ghi state filter trùng trong component.
+- **PH-FE-02B — Catalog controller:** `DrugCatalog` đọc `useSearchParams`, quản lý
+  loading/error/data, hủy hoặc bỏ qua response cũ khi query đổi nhanh và gọi duy nhất
+  `pharmacyApi.searchDrugs`.
+- **PH-FE-02C — Search controls:** form search có label, submit hoặc debounce 250–400 ms; đổi keyword
+  hoặc size reset page về `0`; dùng `router.replace` và giữ các query pharmacy hợp lệ.
+- **PH-FE-02D — Drug table:** `DrugTable` chỉ render `DrugDTO[]`; format VND/date bằng helper; nullable
+  field dùng `—`; link detail tắt prefetch; table có caption/screen-reader label.
+- **PH-FE-02E — Stock/expiry presentation:** badge tồn thấp theo `stockQuantity <= lowStockThreshold`;
+  badge hết hạn theo LocalDate; nếu thêm “sắp hết hạn”, khai báo rõ cửa sổ ngày và test boundary.
+- **PH-FE-02F — Pagination:** dùng shared `Pagination`, URL giữ keyword/size, disable khi loading và
+  clamp page nếu backend trả page vượt phạm vi sau khi dữ liệu thay đổi.
+- **PH-FE-02G — Page composition:** thay placeholder bằng `<Suspense>` + `DrugCatalog`; fallback route
+  khác với loading của browser fetch để tránh màn hình trắng.
+
+**State matrix bắt buộc:**
+
+| State | UI |
+|---|---|
+| Initial/loading | skeleton hoặc `MediFlowLoader`, giữ controls ổn định |
+| Success có dữ liệu | table + tổng số bản ghi + pagination |
+| Success rỗng | thông báo không tìm thấy; không render header table rỗng |
+| Expected API error | banner có retry; giữ URL filter |
+| 401 | xử lý theo auth policy chung/chuyển login |
+| 403 | thông báo không có quyền, không giả thành empty |
+
+**Test/verification chi tiết:**
+
+- Unit URL parser/query builder: default, keyword rỗng, Unicode, page âm, size sai.
+- Component: loading → data, empty, retry sau error, stale response không ghi đè query mới.
+- Browser/manual: reload/back/forward giữ đúng keyword/page/size.
+- Scan route page: không có API call trực tiếp; `useSearchParams` nằm dưới Suspense.
+
+**Không làm trong task này:** create/adjust stock, detail fetch, autocomplete prescription hoặc
+client-side cache library.
+
 **Acceptance:** reload/back/forward giữ filter; request đúng page 0-based; empty không render table rỗng.
 
 ### PH-FE-03 — Drug detail
+
+**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
 
 **Dependency:** PH-FE-02.
 
@@ -657,13 +794,38 @@ Action còn phải thỏa state:
 4. Render timestamps, price, stock, threshold, expiry và nullable fields.
 5. Hiện action create/adjust theo permissions.
 
+**Work packages:**
+
+- **PH-FE-03A — Route guard:** server page `await params`, validate UUID bằng helper; invalid UUID
+  render trạng thái mã không hợp lệ và tuyệt đối không mount client fetch component.
+- **PH-FE-03B — Detail fetch:** `DrugDetail` fetch một lần theo `drugId`, refetch khi id đổi hoặc sau
+  mutation callback; tránh setState sau unmount.
+- **PH-FE-03C — Detail presentation:** nhóm thông tin nhận diện, giá/tồn/ngưỡng, hạn dùng/nhà sản xuất
+  và audit timestamps; nullable field dùng `—`; badge dùng cùng rule catalog.
+- **PH-FE-03D — Action slots:** render link tạo thuốc và vùng điều chỉnh tồn theo capability; task này
+  chỉ chuẩn bị slot/callback, form điều chỉnh thuộc PH-FE-05.
+- **PH-FE-03E — Error states:** phân biệt invalid UUID, `DRUG_NOT_FOUND`, 403 và lỗi retryable; 404
+  không đẩy lên route error boundary.
+
+**Test/verification chi tiết:**
+
+- Invalid UUID không gọi `pharmacyApi.getDrug`.
+- 404 hiển thị mã thuốc đã yêu cầu và link quay lại catalog.
+- Nullable ingredient/manufacturer, ngày hết hạn và tồn thấp render đúng.
+- Deep link refresh trực tiếp hoạt động; role không có mutation capability không thấy action.
+
+**Không làm trong task này:** sửa metadata thuốc, invent delete/update endpoint hoặc điều chỉnh stock
+trước PH-FE-05.
+
 **Acceptance:** invalid UUID không gọi API; direct deep-link hoạt động; không dùng `notFound()` trong client.
 
 ### PH-FE-04 — Create drug
 
+**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
+
 **Dependency:** PH-FE-00, PH-FE-01.
 
-**Files:** `CreateDrugForm.tsx`, `drugs/new/page.tsx`, shared field primitives nếu cần.
+**Files:** `CreateDrugForm.tsx`, `drugFormValidation.ts`, `drugs/new/page.tsx`.
 
 **Implement:**
 
@@ -674,13 +836,38 @@ Action còn phải thỏa state:
 5. Map `VALIDATION_ERROR.details` vào field.
 6. Thành công điều hướng `/pharmacy/drugs/{drugId}`.
 
+**Work packages:**
+
+- **PH-FE-04A — Form model:** định nghĩa state string cho input text/number/date; hàm normalize tạo
+  `CreateDrugRequest`, trim text, đổi optional rỗng thành `undefined`/`null` đúng contract.
+- **PH-FE-04B — Client validation:** kiểm tra required/max length, số không âm, precision price,
+  expiryDate >= local today và threshold optional; lỗi gắn `aria-describedby` vào input.
+- **PH-FE-04C — Submit flow:** clear lỗi cũ, validate, disable submit, gọi `createDrug`, map backend
+  field errors, focus field lỗi đầu tiên và không reset form khi request thất bại.
+- **PH-FE-04D — Success/navigation:** dùng `drugId` từ response để điều hướng detail; không tự dựng id
+  hoặc dùng giá trị form làm snapshot chính thức.
+- **PH-FE-04E — Permission UX:** chỉ ADMIN/PHARMACIST thấy entry/action; truy cập URL trực tiếp vẫn
+  phải xử lý backend 403 rõ ràng.
+
+**Test/verification chi tiết:**
+
+- Serializer không gửi `createdAt`, `updatedAt`, `drugId`; threshold rỗng không biến thành `0`.
+- Price `0` hợp lệ; price âm/quá 2 decimal/quá giới hạn bị chặn.
+- Double-submit chỉ tạo một request; backend validation giữ toàn bộ giá trị đã nhập.
+- Success điều hướng đúng UUID từ response.
+
+**Không làm trong task này:** upload/import thuốc, bulk create, chỉnh sửa thuốc hiện có hoặc shared
+form framework.
+
 **Acceptance:** không gửi server-owned fields; double submit bị chặn; role không phù hợp không thấy form action.
 
 ### PH-FE-05 — Stock adjustment
 
+**Trạng thái:** đã implement trong workspace; staff E2E vẫn bị block nếu token PHARMACIST thiếu signed `staffId`.
+
 **Dependency:** PH-FE-03.
 
-**Files:** `AdjustStockForm.tsx`, có thể `ConfirmDialog.tsx`.
+**Files:** `AdjustStockForm.tsx`, `DrugDetail.tsx`, có thể `ConfirmDialog.tsx`.
 
 **Implement:**
 
@@ -691,9 +878,33 @@ Action còn phải thỏa state:
 5. Sau success dùng `DrugDTO` response để thay snapshot/refetch.
 6. `DRUG_OUT_OF_STOCK`/`STOCK_BELOW_RESERVED` giữ form và giải thích conflict.
 
+**Work packages:**
+
+- **PH-FE-05A — Form/validation:** quantity là integer khác `0`; reason trim, bắt buộc khi quantity
+  âm và giữ optional khi dương; không cho NaN/decimal lọt vào request.
+- **PH-FE-05B — Confirmation:** hiển thị drug id/tên, stock hiện tại, delta có dấu và preview kết quả;
+  cảnh báo preview có thể stale do reservation/concurrency.
+- **PH-FE-05C — Mutation:** chống double-submit, gọi `adjustStock`, không cập nhật optimistic;
+  callback đưa `DrugDTO` response vào detail rồi refetch nếu cần xác nhận audit snapshot.
+- **PH-FE-05D — Conflict handling:** `DRUG_OUT_OF_STOCK` và `STOCK_BELOW_RESERVED` giữ quantity/reason,
+  hiển thị message backend + correlation id, đồng thời refetch drug để cập nhật tồn hiện tại.
+- **PH-FE-05E — Permission/identity:** ADMIN path phải test được; PHARMACIST UI đúng capability nhưng
+  E2E ghi blocked cho tới khi token có signed `staffId`.
+
+**Test/verification chi tiết:**
+
+- Matrix quantity: âm, dương, `0`, decimal, rỗng; reason âm rỗng/whitespace/hợp lệ.
+- Confirmation không gọi API; cancel dialog giữ nguyên snapshot.
+- Success hiển thị stock từ response, không dùng phép cộng preview làm truth.
+- Conflict refetch và chỉ gửi một request mỗi lần confirm.
+
+**Không làm trong task này:** dispense prescription, lịch sử điều chỉnh tồn hoặc bypass reservation.
+
 **Acceptance:** không optimistic commit; PHARMACIST E2E ghi blocked nếu JWT thiếu staffId; ADMIN E2E phải qua.
 
 ### PH-FE-06 — Create prescription và line editor
+
+**Trạng thái:** chưa làm.
 
 **Dependency:** PH-FE-00, PH-FE-02, identity blocker được ghi nhận.
 
@@ -710,9 +921,40 @@ Action còn phải thỏa state:
 7. Xử lý `INSUFFICIENT_AVAILABLE_STOCK` và `PRESCRIPTION_DUPLICATE_DRUG` tại line editor.
 8. Thành công điều hướng detail id trả về.
 
+**Work packages:**
+
+- **PH-FE-06A — Prescription form model:** state cho 4 UUID, prescribedDate và danh sách line có
+  client-only row key riêng; row key không được đi vào request.
+- **PH-FE-06B — Context validation:** validate UUID/rỗng cho record/patient/doctor/department,
+  prescribedDate không ở tương lai; label nói rõ hiện chỉ hiển thị/nhập UUID vì chưa có lookup contract.
+- **PH-FE-06C — Drug picker:** tái sử dụng `searchDrugs` qua một component nằm trong feature Pharmacy;
+  không import catalog component có URL ownership nếu điều đó gây coupling; hỗ trợ loading/error/empty.
+- **PH-FE-06D — Line editor:** add/remove, tối thiểu một dòng, quantity integer >= 1, dosage <= 255,
+  không cho duplicate drugId; disable thuốc đã chọn ở dòng khác nếu dùng select.
+- **PH-FE-06E — Estimate presentation:** lấy tên/giá hiện tại chỉ để hiển thị “Tạm tính”; serializer
+  chỉ nhận `drugId`, `quantity`, `dosage` và không chứa bất kỳ money field nào.
+- **PH-FE-06F — Submit/error mapping:** xử lý field error cấp form và line; map duplicate/insufficient
+  stock về dòng khi backend cung cấp đủ context, nếu không dùng banner và giữ toàn bộ form.
+- **PH-FE-06G — Success:** điều hướng theo `PrescriptionDTO.prescriptionId`; detail sau đó fetch snapshot
+  server chính thức, không truyền object form qua global state.
+- **PH-FE-06H — Identity gate:** ADMIN E2E là đường kiểm chứng chính; DOCTOR UI được phép render nhưng
+  không đánh dấu E2E pass nếu JWT chưa có signed `staffId` khớp `doctorId`.
+
+**Test/verification chi tiết:**
+
+- Pure serializer snapshot chứng minh không có `price`, `unitPrice`, `lineTotal`, `totalAmount`, row key.
+- Add/remove line giữ tối thiểu một dòng; duplicate và quantity invalid bị focus đúng vị trí.
+- Drug search failure không làm mất các line đã nhập.
+- `INSUFFICIENT_AVAILABLE_STOCK` giữ form; success dùng id response để điều hướng.
+
+**Không làm trong task này:** tạo patient/record/doctor/department lookup, tự sinh UUID, lưu draft lâu
+dài hoặc gọi trực tiếp feature/service khác.
+
 **Acceptance:** payload không chứa giá; ADMIN E2E qua; DOCTOR E2E blocked cho tới khi signed `staffId` có thật.
 
 ### PH-FE-07 — Prescription lookup và detail
+
+**Trạng thái:** chưa làm; độc lập với create prescription sau PH-FE-01.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -727,9 +969,37 @@ Action còn phải thỏa state:
 5. 404 và missing dispense có trạng thái riêng.
 6. Action cancel/dispense dựa trên role + state, nhưng vẫn xử lý race từ backend.
 
+**Work packages:**
+
+- **PH-FE-07A — Known-id lookup:** form một UUID, trim/validate, submit bằng router tới dynamic route;
+  không gọi API tại trang lookup và không hiển thị list giả.
+- **PH-FE-07B — Dynamic route guard:** server page `await params`, invalid UUID không mount detail fetch;
+  metadata giữ tĩnh hoặc dùng id đã validate, không fetch ở server do localStorage token.
+- **PH-FE-07C — Detail fetch/state:** fetch `getPrescription`, có loading/retry/not-found/forbidden và
+  callback `refresh()` dùng chung cho cancel/dispense sau này.
+- **PH-FE-07D — Header/lifecycle:** hiển thị prescription id, `status` và `dispenseStatus` bằng hai
+  badge riêng; không suy một state từ state còn lại.
+- **PH-FE-07E — Context/audit:** render record/patient/doctor/department UUID với label/copy action,
+  prescribed/created/updated date và cancellation audit khi nullable fields có giá trị.
+- **PH-FE-07F — Line table/amount:** render snapshot drug name/id, quantity, unit price, dosage,
+  lineTotal và backend totalAmount; chỉ format, không recompute làm source of truth.
+- **PH-FE-07G — Action boundary:** expose cancel/dispense slots theo capability + mutable state;
+  dialog implementation thuộc PH-FE-08/09 và phải gọi `refresh()` sau success/conflict.
+
+**Test/verification chi tiết:**
+
+- Lookup invalid UUID không điều hướng; valid UUID tạo đúng URL.
+- Detail invalid UUID/404/403/retryable error là bốn state khác nhau.
+- Hai lifecycle badge render đúng mọi enum; cancellation audit ẩn khi null.
+- Không có request tới `/prescriptions` dạng list; amount hiển thị từ response.
+
+**Không làm trong task này:** list/search prescription, lookup tên cross-service, mutation cancel/dispense.
+
 **Acceptance:** deep-link hoạt động; không có request list prescription; money chỉ format, không tính lại làm truth.
 
 ### PH-FE-08 — Cancel prescription
+
+**Trạng thái:** chưa làm.
 
 **Dependency:** PH-FE-07, identity blocker được ghi nhận.
 
@@ -744,9 +1014,33 @@ Action còn phải thỏa state:
 5. Nếu response idempotent có `releasedReservations=0`, hiển thị “đơn đã được hủy trước đó”.
 6. Lifecycle conflict refetch trước khi cho retry.
 
+**Work packages:**
+
+- **PH-FE-08A — Visibility/state gate:** chỉ render trigger khi capability cancel và pair state là
+  ACTIVE/PENDING; component vẫn xử lý 403/422 vì state có thể đổi sau render.
+- **PH-FE-08B — Dialog/form:** reason 1–500 sau trim, hiển thị prescriptionId và cảnh báo release
+  reservation; focus trap/escape/return focus nếu dùng modal shared.
+- **PH-FE-08C — Submit:** disable confirm, gọi `cancelPrescription`, không optimistic; giữ reason khi
+  lỗi validation/forbidden và đọc correlation id từ `ApiRequestError`.
+- **PH-FE-08D — Success/idempotency:** hiển thị released count; count `0` dùng thông điệp idempotent;
+  đóng hoặc chuyển dialog sang success state rồi gọi detail refresh.
+- **PH-FE-08E — Race recovery:** với lifecycle/reservation conflict, refetch trước; nếu action không
+  còn hợp lệ thì ẩn trigger và giải thích trạng thái mới.
+
+**Test/verification chi tiết:**
+
+- Matrix role × ACTIVE/PENDING xác định đúng visibility.
+- Reason boundary: empty, whitespace, 1, 500, 501 ký tự.
+- Double confirm chỉ gửi một PUT; success luôn refetch.
+- `releasedReservations=0`, forbidden và lifecycle conflict có message riêng.
+
+**Không làm trong task này:** undo cancel, cancel hàng loạt hoặc giả `staffId` từ account id.
+
 **Acceptance:** không optimistic status; ADMIN E2E qua; DOCTOR E2E blocked đến signed `staffId`.
 
 ### PH-FE-09 — Dispense prescription
+
+**Trạng thái:** chưa làm.
 
 **Dependency:** PH-FE-07, identity blocker được ghi nhận.
 
@@ -762,10 +1056,36 @@ Action còn phải thỏa state:
 6. Success refetch prescription và linked drug snapshots khi có trong UI.
 7. Failure terminal hiển thị `failureReason` từ detail/response khi backend cung cấp.
 
+**Work packages:**
+
+- **PH-FE-09A — Visibility/state gate:** chỉ ADMIN/PHARMACIST với ACTIVE/PENDING thấy trigger; backend
+  vẫn quyết định payment proof và terminal race.
+- **PH-FE-09B — Confirmation:** hiển thị prescriptionId, tổng tiền, số dòng và cảnh báo “Billing phải
+  xác nhận thanh toán”; không có paid checkbox, invoice input hoặc override field.
+- **PH-FE-09C — Bodyless mutation:** gọi `dispensePrescription(id)` đúng một lần, PUT không body;
+  disable close/confirm phù hợp khi request đang chạy.
+- **PH-FE-09D — Payment-proof handling:** `PAYMENT_PROOF_REQUIRED` giữ detail PENDING, giữ dialog/message,
+  đặt cooldown UI hoặc yêu cầu kiểm tra Billing; không tự retry loop.
+- **PH-FE-09E — Terminal/success refresh:** success hiển thị `DispenseDTO`, refetch prescription; nếu
+  detail đang giữ drug snapshot thì refetch chúng bằng API Pharmacy, không tính stock client-side.
+- **PH-FE-09F — Failure:** hiển thị `failureReason` khi response/detail có; lifecycle/reservation error
+  trigger refresh để UI phản ánh trạng thái terminal mới.
+
+**Test/verification chi tiết:**
+
+- Request không có body/`paid`/`invoiceId`; double click chỉ một PUT.
+- Matrix role/state đúng; PHARMACIST E2E vẫn blocked nếu thiếu signed `staffId`.
+- `PAYMENT_PROOF_REQUIRED` không đổi local status và không tự retry.
+- Success/refusal đều refetch; idempotent DISPENSED response không trừ stock phía UI.
+
+**Không làm trong task này:** tạo payment, sửa invoice, manual payment override hoặc optimistic stock.
+
 **Acceptance:** double click chỉ gửi một request; ADMIN E2E qua khi payment proof fixture tồn tại; PHARMACIST
 E2E blocked đến signed `staffId`.
 
 ### PH-FE-10 — Admin outbox replay
+
+**Trạng thái:** chưa làm.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -780,9 +1100,33 @@ E2E blocked đến signed `staffId`.
 5. 404 giữ form để sửa id.
 6. Không tạo bảng/danh sách/quarantine filters.
 
+**Work packages:**
+
+- **PH-FE-10A — Route capability state:** ADMIN thấy tool; non-admin thấy forbidden UX rõ ràng khi
+  vào URL trực tiếp, đồng thời backend 403 vẫn được xử lý.
+- **PH-FE-10B — Input/form:** một event UUID duy nhất, trim/validate, giữ nguyên sau lỗi; mô tả rõ
+  người vận hành phải lấy id từ nguồn quan sát bên ngoài.
+- **PH-FE-10C — Confirmation:** hiển thị chính xác eventId và hậu quả replay; không hứa event sẽ xử lý
+  nghiệp vụ thành công, chỉ yêu cầu đưa lại hàng đợi phát.
+- **PH-FE-10D — Bodyless mutation:** POST không body, chống double-submit; success hiển thị eventId và
+  `replayed` trong vùng `aria-live`.
+- **PH-FE-10E — Error handling:** `OUTBOX_EVENT_NOT_FOUND` giữ input; 403, validation, internal error
+  và correlation id có presentation riêng.
+
+**Test/verification chi tiết:**
+
+- Invalid UUID không gọi API; valid UUID gửi đúng path và không body.
+- ADMIN success render đúng `replayed`; 404 giữ input và focus hợp lý.
+- Non-admin không có nav/action; direct route không giả thành 404.
+- Scan không có endpoint list/quarantine hoặc bảng event.
+
+**Không làm trong task này:** list/search outbox, replay hàng loạt, sửa payload hoặc xóa outbox row.
+
 **Acceptance:** non-admin không thấy nav/action; backend 403 vẫn được xử lý nếu truy cập URL trực tiếp.
 
 ### PH-FE-11 — Test infrastructure và contract tests
+
+**Trạng thái:** chưa làm; `package.json` hiện chưa có script `test`.
 
 **Dependency:** PH-FE-00 trước unit tests; các feature task trước component/E2E tương ứng.
 
@@ -813,7 +1157,51 @@ khi team đồng ý chạy browser trong CI.
 
 Async Server Component chủ yếu được kiểm tra E2E; Client Component và pure helper kiểm tra bằng Vitest.
 
+**Work packages:**
+
+- **PH-FE-11A — Tooling decision:** xác nhận team cho phép thêm Vitest, Testing Library, jsdom và
+  Playwright (nếu có browser CI). Ghi dependency/script chính xác vào PR; không tự thêm framework
+  thứ hai nếu repo đã chuẩn hóa công cụ khác trước khi task bắt đầu.
+- **PH-FE-11B — Unit harness:** tạo config/setup tối thiểu, alias `@/*`, cleanup DOM, deterministic
+  timezone/clock và helpers tạo `ApiRequestError`/DTO fixture.
+- **PH-FE-11C — Pure contract tests:** query builder, UUID/date/money helper, permission matrix,
+  status exhaustiveness, create-prescription serializer và stock/cancel validation.
+- **PH-FE-11D — Component tests:** mock `pharmacyApi` tại module boundary; kiểm tra state matrix của
+  catalog/detail/form/dialog, keyboard/focus và duplicate-submit.
+- **PH-FE-11E — Route/browser tests:** ưu tiên ADMIN flows; seed/fixture phải dùng API công khai hoặc
+  test setup được duyệt, không chạm DB service khác; staff flows gắn explicit skip reason nếu blocker.
+- **PH-FE-11F — Contract drift guard:** fixture JSON tối thiểu cho Drug/Prescription/Dispense/error
+  envelope; parse theo TypeScript assumptions và đối chiếu thủ công với Java records/web tests.
+
+**Test organization đề xuất:**
+
+```text
+frontend/src/features/pharmacy/
+├── __tests__/
+│   ├── api.test.ts
+│   ├── permissions.test.ts
+│   ├── presentation.test.ts
+│   └── utils.test.ts
+└── components/**/__tests__/*.test.tsx
+
+frontend/tests/e2e/pharmacy/*.spec.ts       # chỉ khi Playwright được duyệt
+```
+
+**Coverage/quality rules:**
+
+- Không đặt mục tiêu phần trăm hình thức trước khi có baseline; mọi rule/branch quan trọng trong
+  task breakdown phải có một test quan sát được.
+- Test không assert Tailwind class dài; assert role/name/text/state/side effect.
+- Không mock `fetch` trong component tests; component mock facade, riêng `api.ts` test shared wrapper
+  hoặc request contract ở boundary phù hợp.
+- Không snapshot toàn trang; dùng assertion tập trung vào contract và trạng thái.
+
+**Definition of Done riêng:** `pnpm test` chạy non-watch và exit code 0; test không phụ thuộc thứ tự,
+timezone máy hoặc network thật; skip phải có issue/blocker cụ thể.
+
 ### PH-FE-12 — Quality gate và tài liệu vận hành
+
+**Trạng thái:** chưa làm; chạy cuối mỗi milestone và bắt buộc trước release.
 
 **Dependency:** tất cả task được chọn cho release.
 
@@ -837,6 +1225,29 @@ Ngoài ra:
 - chạy request backend tương ứng trong `pharmacy-service.http` để xác nhận contract trước E2E;
 - ghi rõ blocker staffId trong PR, không đánh dấu staff workflow là pass khi chưa có signed claim.
 
+**Work packages:**
+
+- **PH-FE-12A — Static gate:** chạy typecheck/lint/test/build từ clean install; lưu command và kết quả
+  trong PR, không chỉ ghi “đã test”.
+- **PH-FE-12B — Architecture scan:** xác nhận raw fetch chỉ ở `lib/api.ts`, không hard-code `8085`,
+  không cross-feature import, không invent endpoint, không thêm component/data library ngoài duyệt.
+- **PH-FE-12C — Contract smoke:** chạy 9 request contract phù hợp role/fixture; với mutation destructive
+  dùng dữ liệu test cô lập, ghi id đã tạo và trạng thái cuối.
+- **PH-FE-12D — Role matrix:** kiểm tra ADMIN/DOCTOR/PHARMACIST cho nav/action và backend 403; phân biệt
+  UI-hidden với server-enforced; ghi rõ staff path pass hay blocked.
+- **PH-FE-12E — Accessibility/responsive:** keyboard-only, focus sau validation/dialog, aria-live,
+  contrast/status text, table overflow ở mobile và zoom 200%.
+- **PH-FE-12F — Failure/recovery:** tắt gateway/pharmacy hoặc dùng lỗi fixture để kiểm tra retry,
+  correlation id, form preservation và route error boundary.
+- **PH-FE-12G — Documentation:** cập nhật frontend README/runbook, env `GATEWAY_URL`, route/role matrix,
+  known blockers và test data requirements; xóa TODO của các task đã hoàn thành.
+- **PH-FE-12H — Release evidence:** ghi commit SHA backend/frontend đã verify, browser/Node/pnpm version,
+  command output tóm tắt và danh sách deferred item có owner.
+
+**Definition of Done riêng:** bốn lệnh quality gate xanh; không còn placeholder thuộc milestone;
+ADMIN happy path và expected-error path đã kiểm tra; mọi blocker còn lại được mô tả bằng contract/owner,
+không bằng câu chung chung “chưa test”.
+
 ## 11. Dependency graph và cách chia việc
 
 ```text
@@ -844,9 +1255,11 @@ PH-FE-00
    └── PH-FE-01
        ├── PH-FE-02 ── PH-FE-03 ── PH-FE-05
        ├── PH-FE-04
-       ├── PH-FE-06 ── PH-FE-07 ── PH-FE-08
-       │                         └── PH-FE-09
+       ├── PH-FE-07 ── PH-FE-08
+       │           └── PH-FE-09
        └── PH-FE-10
+
+PH-FE-02 ── PH-FE-06
 
 PH-FE-11 chạy tăng dần cùng từng nhánh
 PH-FE-12 chạy cuối mỗi milestone/release
@@ -854,12 +1267,44 @@ PH-FE-12 chạy cuối mỗi milestone/release
 
 Có thể triển khai song song sau PH-FE-01:
 
-- nhánh Drug: PH-FE-02/03/04/05;
-- nhánh Prescription: PH-FE-06/07/08/09;
+- nhánh Drug read: PH-FE-02 → PH-FE-03 → PH-FE-05;
+- nhánh Drug create: PH-FE-04 độc lập sau PH-FE-01;
+- nhánh Prescription read: PH-FE-07 → PH-FE-08/09;
+- nhánh Prescription create: PH-FE-06 bắt đầu sau khi contract/component tìm thuốc của PH-FE-02 ổn định;
 - nhánh Admin: PH-FE-10;
 - nhánh Test: PH-FE-11.
 
-Nếu nhiều AI cùng làm, mỗi AI phải được giao ownership file rõ ràng và không sửa/revert file của nhánh khác.
+### 11.1 File ownership khi triển khai song song
+
+| Nhánh/task | File sở hữu chính | File có nguy cơ conflict | Quy tắc merge |
+|---|---|---|---|
+| PH-FE-02 | `DrugCatalog.tsx`, `DrugTable.tsx`, `drugs/page.tsx` | `Pagination.tsx` nếu cần sửa shared API | Không sửa detail/create form |
+| PH-FE-03 | `DrugDetail.tsx`, `drugs/[drugId]/page.tsx` | `DrugDetail.tsx` sẽ được PH-FE-05 mở rộng | Merge PH-FE-03 trước PH-FE-05 |
+| PH-FE-04 | `CreateDrugForm.tsx`, `drugs/new/page.tsx` | field primitives shared | Chỉ extract shared UI khi có consumer thứ hai |
+| PH-FE-05 | `AdjustStockForm.tsx`, phần action trong `DrugDetail.tsx` | `DrugDetail.tsx` | Bắt đầu trên phiên bản PH-FE-03 đã merge |
+| PH-FE-06 | `CreatePrescriptionForm.tsx`, `PrescriptionLinesEditor.tsx`, `prescriptions/new/page.tsx` | drug-search primitive từ PH-FE-02 | Không import component URL-owned nếu chỉ cần picker |
+| PH-FE-07 | `PrescriptionLookup.tsx`, `PrescriptionDetail.tsx`, hai route lookup/detail | `PrescriptionDetail.tsx` | Merge trước PH-FE-08/09 |
+| PH-FE-08 | `CancelPrescriptionDialog.tsx`, cancel slot trong `PrescriptionDetail.tsx` | `PrescriptionDetail.tsx` | Nếu song song PH-FE-09, thống nhất slot interface trước |
+| PH-FE-09 | `DispensePrescriptionDialog.tsx`, dispense slot trong `PrescriptionDetail.tsx` | `PrescriptionDetail.tsx` | Không ghi đè cancel integration |
+| PH-FE-10 | `OutboxReplayForm.tsx`, outbox page | không | Có thể merge độc lập |
+| PH-FE-11 | test/config tương ứng feature đã merge | `package.json`, lockfile, test setup | Một owner duy nhất cho tooling/lockfile |
+
+### 11.2 Trình tự PR khuyến nghị
+
+```text
+PR-A  PH-FE-02                       Drug catalog
+PR-B  PH-FE-03 + PH-FE-05            Drug detail và stock adjustment
+PR-C  PH-FE-04                       Create drug
+PR-D  PH-FE-07                       Prescription lookup/detail
+PR-E  PH-FE-06                       Create prescription
+PR-F  PH-FE-08 + PH-FE-09            Prescription terminal actions
+PR-G  PH-FE-10                       Admin outbox replay
+PR-H  PH-FE-11 + PH-FE-12            Test hardening và release gate
+```
+
+PR có thể nhỏ hơn theo hậu tố work package, nhưng không merge một PR để lại route production ở trạng
+thái nửa form/nửa placeholder. Nếu nhiều AI cùng làm, mỗi AI phải được giao ownership rõ ràng, không
+sửa/revert file của nhánh khác và phải báo file shared trước khi chạm vào.
 
 ## 12. Protocol bắt buộc cho AI implement
 
@@ -879,18 +1324,27 @@ Mỗi task AI phải thực hiện theo thứ tự:
 Prompt mẫu để giao cho AI:
 
 ```text
-Implement task <PH-FE-ID> from
+Implement task <PH-FE-ID> or work packages <PH-FE-ID-A...> from
 frontend/docs/pharmacy-frontend-implementation-plan.md.
 
 Backend source of truth is the current code under backend/pharmacy-service, especially the
 controllers, DTO records, enums, application services, and web tests named by the plan. Do not
-invent endpoints or fields from design docs. Own only the files listed by the task. Preserve other
-working-tree changes. Follow frontend/AGENTS.md: gateway only, all HTTP through src/lib/api.ts,
-no cross-feature imports, no data-fetching/component library.
+invent endpoints or fields from design docs.
 
-Before coding, report the exact live endpoint contract used. After coding, run the task acceptance
-checks plus pnpm typecheck, pnpm lint, and pnpm build. If staffId is required, do not fake it; mark
-the staff E2E path blocked by the existing gateway identity handoff and verify with ADMIN where valid.
+Before editing, report:
+1. exact live endpoint contract used (method/path/request/response/role/error codes);
+2. work packages being implemented and files owned;
+3. existing working-tree changes that must be preserved;
+4. dependencies/blockers and what evidence will prove completion.
+
+Own only the files listed by the task. Preserve other working-tree changes. Follow
+frontend/AGENTS.md: gateway only, all HTTP through src/lib/api.ts, no cross-feature imports, no
+data-fetching/component library. Implement every state and test listed by the selected work packages.
+
+After coding, report changed files, completed work packages, state/error matrix covered, deferred
+items and exact verification commands/results. Run task acceptance checks plus pnpm typecheck,
+pnpm lint, and pnpm build. If staffId is required, do not fake it; mark the staff E2E path blocked by
+the existing gateway identity handoff and verify with ADMIN where valid.
 ```
 
 ## 13. Milestone đề xuất
@@ -899,11 +1353,16 @@ the staff E2E path blocked by the existing gateway identity handoff and verify w
 
 PH-FE-00, 01, 02, 03, 07 (lookup/detail only).
 
+**Tiến độ hiện tại:** 4/5 task đã implement (`PH-FE-00` đến `PH-FE-03`); còn `PH-FE-07`.
+
 Kết quả: ADMIN/DOCTOR/PHARMACIST đọc catalog và prescription id đã biết.
 
 ### Milestone B — Inventory operations
 
 PH-FE-04, 05.
+
+**Tiến độ hiện tại:** 2/2 task đã implement (`PH-FE-04`, `PH-FE-05`); staff E2E điều chỉnh kho còn phụ thuộc
+signed `staffId` trong JWT.
 
 Kết quả: ADMIN hoàn chỉnh; PHARMACIST UI có thể implement nhưng E2E phụ thuộc staffId claim.
 
@@ -911,11 +1370,15 @@ Kết quả: ADMIN hoàn chỉnh; PHARMACIST UI có thể implement nhưng E2E p
 
 PH-FE-06, 08, 09.
 
+**Tiến độ hiện tại:** 0/3 task.
+
 Kết quả: ADMIN có thể tạo/hủy/xuất theo contract; DOCTOR/PHARMACIST phụ thuộc staffId và payment proof.
 
 ### Milestone D — Admin recovery và hardening
 
 PH-FE-10, 11, 12.
+
+**Tiến độ hiện tại:** 0/3 task.
 
 Kết quả: outbox replay known-id, coverage, accessibility và production build.
 
