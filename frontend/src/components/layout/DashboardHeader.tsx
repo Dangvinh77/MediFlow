@@ -1,117 +1,89 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Role } from "@/lib/roles";
 
-/**
- * Các mục điều hướng đang có của dashboard.
- *
- * Giữ nguyên danh sách này trong PH-FE-01.
- * Link Dược được render riêng bên dưới vì có điều kiện hiển thị theo role.
- */
-const navigation = [
-  { href: "/patients", label: "Bệnh nhân" },
-  { href: "/appointments", label: "Lịch hẹn" },
-  { href: "/records", label: "Hồ sơ" },
-  { href: "/lab", label: "Xét nghiệm" },
+interface NavigationItem {
+  href: string;
+  label: string;
+  roles: readonly Role[];
+}
+
+const navigation: readonly NavigationItem[] = [
+  { href: "/organization", label: "Tổ chức", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
+  { href: "/patients", label: "Bệnh nhân", roles: ["ADMIN", "DOCTOR", "NURSE"] },
+  { href: "/appointments", label: "Lịch hẹn", roles: ["ADMIN", "MANAGER", "DOCTOR", "NURSE"] },
+  { href: "/records", label: "Hồ sơ", roles: ["ADMIN", "DOCTOR", "NURSE"] },
+  { href: "/lab", label: "Xét nghiệm", roles: ["ADMIN", "MANAGER", "LAB_TECH"] },
+  { href: "/pharmacy", label: "Dược", roles: ["ADMIN", "DOCTOR", "PHARMACIST"] },
+  { href: "/billing", label: "Viện phí", roles: ["ADMIN", "CASHIER"] },
+  { href: "/notifications", label: "Thông báo", roles: ["ADMIN", "NURSE", "PATIENT"] },
+  { href: "/reports", label: "Báo cáo", roles: ["ADMIN", "MANAGER"] },
 ];
 
 interface DashboardHeaderProps {
-  // Role được dashboard layout truyền xuống.
-  // Header không tự đọc hoặc quản lý session.
   role: Role | null;
-
-  // Việc xóa session và chuyển về login do component cha xử lý.
   onLogout: () => void;
 }
 
-/**
- * Header dùng chung của dashboard.
- *
- * Trách nhiệm:
- * - Hiển thị các đường dẫn cấp ứng dụng.
- * - Hiển thị role hiện tại.
- * - Giữ công tắc theme và nút đăng xuất.
- *
- * Không import component/API của Pharmacy vào shared header.
- * Menu con và capability chi tiết của Pharmacy do PharmacyNav quản lý.
- */
-export function DashboardHeader({
-  role,
-  onLogout,
-}: DashboardHeaderProps) {
-  /**
-   * Chỉ quyết định có hiển thị link vào phân hệ Dược hay không.
-   *
-   * Đây không phải kiểm tra quyền gọi API.
-   * Những action bên trong Pharmacy vẫn cần permission UX riêng
-   * và backend vẫn là nơi thực thi authorization.
-   */
-  const showPharmacy =
-    role === "ADMIN" ||
-    role === "DOCTOR" ||
-    role === "PHARMACIST";
+export function DashboardHeader({ role, onLogout }: DashboardHeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const visibleNavigation = role
+    ? navigation.filter((item) => item.roles.includes(role))
+    : [];
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+  }
 
   return (
     <header className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-        {/* Liên kết thương hiệu đưa người dùng về trang gốc. */}
-        <Link href="/" className="text-lg font-bold">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
+        <Link href="/" className="mr-auto text-lg font-bold">
           MediFlow
         </Link>
 
-        <nav
-          aria-label="Điều hướng chính"
-          className="flex flex-wrap items-center gap-4 text-sm"
+        <button
+          type="button"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="dashboard-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          className="inline-flex min-h-12 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:hidden"
         >
-          {/* Giữ nguyên các mục điều hướng hiện có. */}
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="hover:text-blue-600"
-            >
-              {item.label}
-            </Link>
-          ))}
+          <span aria-hidden="true">☰</span>
+          <span className="sr-only">Mở điều hướng</span>
+        </button>
 
-          {/*
-            Link đi vào route /pharmacy.
-            Route đó sẽ redirect sang /pharmacy/drugs.
-          */}
-          {showPharmacy && (
-            <Link
-              href="/pharmacy"
-              className="hover:text-primary"
-            >
-              Dược
-            </Link>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-3 text-sm">
-          {role && (
-            <span className="text-muted-foreground">
-              {role}
-            </span>
-          )}
-
-          {/* Tái sử dụng hệ thống theme đang có của ứng dụng. */}
+        <div className="flex min-h-12 items-center gap-2 text-sm sm:min-h-10 sm:gap-3">
+          {role ? <span className="text-muted-foreground">{role}</span> : null}
           <ThemeToggle />
-
-          {/*
-            Header chỉ gọi callback.
-            Không tự xóa token hoặc thực hiện điều hướng tại đây.
-          */}
           <button
             type="button"
             onClick={onLogout}
-            className="rounded-lg border border-border px-3 py-1.5"
+            className="min-h-12 rounded-lg border border-border px-3 py-1.5 text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
           >
             Đăng xuất
           </button>
         </div>
+
+        <nav
+          id="dashboard-navigation"
+          aria-label="Điều hướng chính"
+          className={`${mobileMenuOpen ? "flex" : "hidden"} order-last w-full flex-col gap-1 text-sm lg:order-none lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:gap-1`}
+        >
+          {visibleNavigation.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={closeMobileMenu}
+              className="inline-flex min-h-12 items-center rounded-lg px-3 py-2 transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </header>
   );
