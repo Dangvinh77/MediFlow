@@ -136,6 +136,7 @@ services:
     ports:
       - "8089:8089"
     environment:
+      SERVER_PORT: 8089
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_organization
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -160,6 +161,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      SERVER_PORT: 8081
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_patient
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -184,6 +186,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+      SERVER_PORT: 8082
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_clinical
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -208,6 +211,7 @@ services:
     ports:
       - "8084:8084"
     environment:
+      SERVER_PORT: 8084
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_lab
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -232,6 +236,7 @@ services:
     ports:
       - "8085:8085"
     environment:
+      SERVER_PORT: 8085
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -256,6 +261,7 @@ services:
     ports:
       - "8086:8086"
     environment:
+      SERVER_PORT: 8086
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_billing
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -280,6 +286,7 @@ services:
     ports:
       - "8087:8087"
     environment:
+      SERVER_PORT: 8087
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_notification
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -304,6 +311,7 @@ services:
     ports:
       - "8088:8088"
     environment:
+      SERVER_PORT: 8088
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_report
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -325,6 +333,8 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
+      args:
+        GATEWAY_URL: http://gateway:8080
     container_name: mediflow-frontend
     ports:
       - "3000:3000"
