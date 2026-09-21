@@ -34,6 +34,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Next.js evaluates rewrites while building the standalone server. The gateway
+# origin therefore has to be present in this stage, not only in the runtime image.
+ARG GATEWAY_URL=http://localhost:8080
+ENV GATEWAY_URL=$GATEWAY_URL
+
 # Build Next.js (standalone output)
 RUN pnpm build
 
@@ -66,6 +71,6 @@ USER mediflow
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -qO- http://localhost:3000/ || exit 1
+    CMD wget -qO- http://0.0.0.0:3000/ || exit 1
 
 CMD ["node", "server.js"]

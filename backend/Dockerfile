@@ -73,6 +73,6 @@ LABEL com.mediflow.project="MediFlow"
 
 # Health check: Spring Boot Actuator
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+    CMD wget -qO- "http://0.0.0.0:${SERVER_PORT:-8080}/actuator/health" || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
