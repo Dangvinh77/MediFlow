@@ -4,6 +4,7 @@ Web client for MediFlow — **Next.js 16 (App Router) + TypeScript + Tailwind v4
 Conventions and the full guide: [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md). Ownership
 and shared-scope rules: [`docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md).
 Current route state and next task IDs: [`docs/frontend-workboard.md`](docs/frontend-workboard.md).
+Detailed scope and handoffs per service: [`docs/services/`](docs/services/README.md).
 
 ## Run
 

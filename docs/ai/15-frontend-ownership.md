@@ -78,4 +78,6 @@ Use the smallest model that can safely complete the bounded task and leave deter
   repository for every task.
 
 The current route and next-task state is maintained in
-[`frontend/docs/frontend-workboard.md`](../../frontend/docs/frontend-workboard.md).
+[`frontend/docs/frontend-workboard.md`](../../frontend/docs/frontend-workboard.md). Detailed
+effective scope, queues, and handoffs for each context are indexed in
+[`frontend/docs/services/`](../../frontend/docs/services/README.md).

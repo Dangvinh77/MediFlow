@@ -8,7 +8,9 @@ Frontend ownership and shared integration scope are canonical in
 [`../docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md). For a frontend task,
 read `12-frontend.md`, then `15-frontend-ownership.md`, then the dated
 [`docs/frontend-workboard.md`](docs/frontend-workboard.md), and finally the live owner backend
-contract. The workboard is the current route-state pointer; do not copy its matrix here.
+contract. Before editing a feature or route, read its detailed guide in
+[`docs/services/`](docs/services/README.md). The workboard is the current route-state pointer; do
+not copy its matrix here.
 
 ## What this is
 
