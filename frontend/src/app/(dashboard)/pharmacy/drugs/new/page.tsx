@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { CreateDrugForm } from "@/features/pharmacy/components/drug/CreateDrugForm";
 
@@ -17,7 +18,9 @@ export default function CreateDrugPage() {
       title="Tạo thuốc"
       description="Bổ sung thuốc mới vào danh mục."
     >
-      <CreateDrugForm />
+      <RoleGate allowed={["ADMIN", "PHARMACIST"]}>
+        <CreateDrugForm />
+      </RoleGate>
     </PageShell>
   );
 }

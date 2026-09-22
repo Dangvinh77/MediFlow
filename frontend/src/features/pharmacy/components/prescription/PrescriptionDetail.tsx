@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
@@ -17,8 +23,14 @@ import {
   dispenseStatusPresentation,
   prescriptionStatusPresentation,
 } from "../../presentation";
-import type { PrescriptionDTO } from "../../types";
+import type {
+  CancelPrescriptionResult,
+  DispenseDTO,
+  PrescriptionDTO,
+} from "../../types";
 import { formatDate, formatDateTime, formatVnd } from "../../utils";
+import { CancelPrescriptionDialog } from "./CancelPrescriptionDialog";
+import { DispensePrescriptionDialog } from "./DispensePrescriptionDialog";
 
 interface PrescriptionDetailProps {
   prescriptionId: string;
@@ -30,6 +42,13 @@ type DetailRequestState =
   | { key: string; status: "not-found" }
   | { key: string; status: "dispense-not-found" }
   | { key: string; status: "error"; message: string };
+
+type ActiveAction = "cancel" | "dispense" | null;
+
+interface ActionFeedback {
+  tone: "success" | "warning" | "danger";
+  message: string;
+}
 
 function subscribeToRoleChanges(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -106,6 +125,8 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   const capabilities = getPharmacyCapabilities(role);
   const [requestState, setRequestState] = useState<DetailRequestState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
+  const [activeAction, setActiveAction] = useState<ActiveAction>(null);
+  const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const requestSequence = useRef(0);
   const requestKey = `${prescriptionId}\u0000${retryToken}`;
   const canRead = capabilities.canReadPrescription;
@@ -116,7 +137,58 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   const notFound = requestState.key === requestKey && requestState.status === "not-found";
   const dispenseNotFound = requestState.key === requestKey && requestState.status === "dispense-not-found";
   const error = requestState.key === requestKey && requestState.status === "error" ? requestState.message : null;
-  const refresh = () => setRetryToken((value) => value + 1);
+  const refresh = useCallback(() => {
+    setRetryToken((value) => value + 1);
+  }, []);
+
+  const closeAction = useCallback(() => {
+    setActiveAction(null);
+  }, []);
+
+  const handleActionConflict = useCallback((message: string) => {
+    setActiveAction(null);
+    setActionFeedback({ tone: "warning", message });
+    setRetryToken((value) => value + 1);
+  }, []);
+
+  const handleCancelSuccess = useCallback((result: CancelPrescriptionResult) => {
+    setActiveAction(null);
+    setActionFeedback({
+      tone: result.releasedReservations === 0 ? "warning" : "success",
+      message:
+        result.releasedReservations === 0
+          ? "Đơn thuốc đã được hủy trước đó; không còn reservation nào cần giải phóng."
+          : `Đã hủy đơn thuốc và giải phóng ${result.releasedReservations} reservation tồn kho.`,
+    });
+    setRetryToken((value) => value + 1);
+  }, []);
+
+  const handleDispenseSuccess = useCallback((result: DispenseDTO) => {
+    setActiveAction(null);
+    if (result.status === "FAILED" || result.failureReason) {
+      setActionFeedback({
+        tone: "danger",
+        message: `Xuất thuốc thất bại${result.failureReason ? `: ${result.failureReason}` : "."}`,
+      });
+    } else if (result.status === "DISPENSED") {
+      setActionFeedback({
+        tone: "success",
+        message: "Đã xuất thuốc thành công; chi tiết đơn và tồn kho đang được làm mới từ máy chủ.",
+      });
+    } else {
+      setActionFeedback({
+        tone: "warning",
+        message: `Backend trả về trạng thái phiếu xuất ${result.status}; đang làm mới chi tiết đơn.`,
+      });
+    }
+    setRetryToken((value) => value + 1);
+  }, []);
+
+  const handleDispenseFailure = useCallback((message: string) => {
+    setActiveAction(null);
+    setActionFeedback({ tone: "danger", message });
+    setRetryToken((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     if (!canRead) return undefined;
@@ -207,14 +279,72 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
         </div>
       </div>
 
+      {actionFeedback && (
+        <p
+          role={actionFeedback.tone === "danger" ? "alert" : "status"}
+          aria-live="polite"
+          className={`rounded-lg border p-4 text-sm ${
+            actionFeedback.tone === "success"
+              ? "border-success/40 bg-success/10 text-success"
+              : actionFeedback.tone === "warning"
+                ? "border-warning/40 bg-warning/10 text-warning"
+                : "border-danger/40 bg-danger/10 text-danger"
+          }`}
+        >
+          {actionFeedback.message}
+        </p>
+      )}
+
       {(showCancelSlot || showDispenseSlot) && (
         <section className="rounded-xl border border-border bg-surface p-5">
           <h3 className="font-semibold">Thao tác đơn thuốc</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Các nút đã được giữ chỗ theo quyền và trạng thái; luồng mutation sẽ được nối ở PH-FE-08/09.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Hủy đơn sẽ giải phóng reservation. Xuất thuốc chỉ được thực hiện khi Billing đã xác nhận
+            thanh toán; backend vẫn là lớp quyết định cuối cùng.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            {showCancelSlot && <button type="button" disabled className="rounded-lg border border-border px-4 py-2 text-sm font-medium opacity-50">Hủy đơn (sắp có)</button>}
-            {showDispenseSlot && <button type="button" disabled className="rounded-lg border border-border px-4 py-2 text-sm font-medium opacity-50">Xuất thuốc (sắp có)</button>}
+            {showCancelSlot && (
+              <button
+                type="button"
+                onClick={() => setActiveAction("cancel")}
+                disabled={activeAction !== null}
+                className="rounded-lg border border-danger/40 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Hủy đơn
+              </button>
+            )}
+            {showDispenseSlot && (
+              <button
+                type="button"
+                onClick={() => setActiveAction("dispense")}
+                disabled={activeAction !== null}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Xuất thuốc
+              </button>
+            )}
           </div>
+
+          {activeAction === "cancel" && showCancelSlot && (
+            <CancelPrescriptionDialog
+              prescriptionId={prescription.prescriptionId}
+              onClose={closeAction}
+              onSuccess={handleCancelSuccess}
+              onConflict={handleActionConflict}
+            />
+          )}
+
+          {activeAction === "dispense" && showDispenseSlot && (
+            <DispensePrescriptionDialog
+              prescriptionId={prescription.prescriptionId}
+              totalAmount={prescription.totalAmount}
+              lineCount={prescription.lines.length}
+              onClose={closeAction}
+              onSuccess={handleDispenseSuccess}
+              onConflict={handleActionConflict}
+              onFailure={handleDispenseFailure}
+            />
+          )}
         </section>
       )}
 

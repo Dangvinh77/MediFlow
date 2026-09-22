@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { PrescriptionDetail } from "@/features/pharmacy/components/prescription/PrescriptionDetail";
 import { isUuid } from "@/features/pharmacy/utils";
@@ -27,7 +28,11 @@ export default async function PrescriptionDetailPage({
           <h2 className="text-lg font-semibold">Mã đơn không hợp lệ</h2>
           <p className="mt-2 break-all">Giá trị <code>{id}</code> không phải UUID nên chưa gọi API.</p>
         </section>
-      ) : <PrescriptionDetail prescriptionId={id} />}
+      ) : (
+        <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
+          <PrescriptionDetail prescriptionId={id} />
+        </RoleGate>
+      )}
     </PageShell>
   );
 }

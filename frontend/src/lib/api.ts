@@ -1,6 +1,6 @@
 import "client-only";
 
-import { getToken } from "./session";
+import { clearSession, getToken } from "./session";
 import type {
   ApiError,
   ApiResponse,
@@ -74,6 +74,13 @@ async function requestJson<T>(
     .catch(() => null);
 
   if (!response.ok) {
+    // A rejected bearer token must not remain in localStorage. Otherwise the
+    // dashboard can immediately render again with the same invalid session
+    // after redirecting to the login page.
+    if (response.status === 401) {
+      clearSession();
+    }
+
     if (isApiResponse(body) && body.error) {
       throw new ApiRequestError(
         body.error.message,

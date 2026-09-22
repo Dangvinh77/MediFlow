@@ -2,10 +2,9 @@
 
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
-import { getRole } from "@/lib/auth";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 
-const subscribeToRole = () => () => undefined;
 const getServerRole = (): Role | null => null;
 
 export interface RoleGateProps {
@@ -14,7 +13,11 @@ export interface RoleGateProps {
 }
 
 export function RoleGate({ allowed, children }: RoleGateProps) {
-  const role = useSyncExternalStore(subscribeToRole, getRole, getServerRole);
+  const role = useSyncExternalStore(
+    subscribeToAuthChanges,
+    getRole,
+    getServerRole,
+  );
 
   if (role === null || !allowed.includes(role)) {
     return (

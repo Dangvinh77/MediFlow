@@ -2,13 +2,15 @@
 // vulnerable to XSS — for production prefer httpOnly cookies. See docs/ai/12-frontend.md.
 
 import { api, ApiRequestError } from "./api";
-import type { Role } from "./roles";
+import { isRole, type Role } from "./roles";
 import {
   clearSession,
   getRole as readRole,
   getToken as readToken,
   storeSession,
 } from "./session";
+
+export { subscribeToAuthChanges } from "./session";
 
 export interface LoginResponse {
   accessToken: string;
@@ -25,7 +27,22 @@ export function getRole(): Role | null {
 }
 
 export function isAuthenticated(): boolean {
-  return getToken() !== null;
+  const token = getToken();
+  return token !== null && token.trim().length > 0;
+}
+
+function isLoginResponse(value: unknown): value is LoginResponse {
+  if (typeof value !== "object" || value === null) return false;
+
+  const response = value as Record<string, unknown>;
+  return (
+    typeof response.accessToken === "string" &&
+    response.accessToken.trim().length > 0 &&
+    typeof response.refreshToken === "string" &&
+    response.refreshToken.trim().length > 0 &&
+    typeof response.role === "string" &&
+    isRole(response.role)
+  );
 }
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
@@ -34,6 +51,11 @@ export async function login(username: string, password: string): Promise<LoginRe
       username,
       password,
     });
+
+    if (!isLoginResponse(response)) {
+      throw new Error("Phản hồi đăng nhập không hợp lệ.");
+    }
+
     storeSession(response);
     return response;
   } catch (cause: unknown) {

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
-import { getRole } from "@/lib/session";
 import {
   getPharmacyCapabilities,
   type PharmacyCapabilities,
@@ -50,26 +50,6 @@ const navigation: readonly PharmacyNavItem[] = [
     capability: "canReplayOutbox",
   },
 ];
-
-/**
- * Yêu cầu React đọc lại role khi:
- * - Trình duyệt nhận sự kiện storage.
- * - Cửa sổ/tab nhận lại focus.
- *
- * Hàm trả về dùng để gỡ listener khi component không còn sử dụng.
- *
- * Lưu ý: đoạn này không bổ sung cơ chế phát sự kiện session
- * trong cùng tab. Luồng login/logout hiện tại vẫn giữ nguyên.
- */
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
 
 /**
  * Server không đọc được role đang lưu trong localStorage.
@@ -121,7 +101,7 @@ export function PharmacyNav() {
   // getRole là snapshot phía trình duyệt;
   // getServerRole là snapshot dùng ở phía server.
   const role = useSyncExternalStore(
-    subscribeToRoleChanges,
+    subscribeToAuthChanges,
     getRole,
     getServerRole,
   );

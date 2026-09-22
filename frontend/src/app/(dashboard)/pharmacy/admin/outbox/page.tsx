@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
@@ -23,14 +24,16 @@ export default function OutboxReplayPage() {
       title="Outbox Pharmacy"
       description="Công cụ dành cho ADMIN để replay event theo mã đã biết."
     >
-      {/*
-        Người truy cập URL trực tiếp có thể thấy khung tĩnh này.
-        Không xem việc render được khung trang là có quyền replay.
-      */}
-      <p className="mt-6 text-sm text-muted-foreground">
-        Biểu mẫu replay sẽ được triển khai ở PH-FE-10.
-        Không có bảng danh sách outbox trong phạm vi hiện tại.
-      </p>
+      <RoleGate allowed={["ADMIN"]}>
+        {/*
+          Người truy cập URL trực tiếp vẫn phải qua backend authorization.
+          PH-FE-10 sẽ thay nội dung tĩnh bằng form replay known eventId.
+        */}
+        <p className="mt-6 text-sm text-muted-foreground">
+          Biểu mẫu replay sẽ được triển khai ở PH-FE-10.
+          Không có bảng danh sách outbox trong phạm vi hiện tại.
+        </p>
+      </RoleGate>
     </PageShell>
   );
 }
