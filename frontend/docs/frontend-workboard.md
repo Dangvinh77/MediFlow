@@ -1,8 +1,9 @@
 # Frontend Workboard
 
 > Current frontend routing and ownership view, checked 2026-09-22 against baseline
-> `origin/master` at `5da7f87`. Refresh the date and commit when route or contract state changes.
+> `origin/master` at `256d25f`. Refresh the date and commit when route or contract state changes.
 > Ownership rules live in [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
+> Per-service scope, queue, and handoffs live in [`services/`](services/README.md).
 
 ## Status vocabulary
 
