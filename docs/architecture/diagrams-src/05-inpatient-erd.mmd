@@ -1,0 +1,67 @@
+erDiagram
+  ADMISSION ||--o{ BED_ASSIGNMENT : has
+  BED ||--o{ BED_ASSIGNMENT : allocated_by
+  ADMISSION ||--o{ TREATMENT_ENTRY : records
+  ADMISSION ||--o{ CLINICAL_ORDER_REF : requests
+  ADMISSION ||--o| DISCHARGE_SUMMARY : ends_with
+  ADMISSION ||--o{ ADMISSION_STATUS_HISTORY : audits
+
+  ADMISSION {
+    UUID admission_id PK
+    UUID patient_id
+    UUID source_record_id
+    UUID attending_doctor_id
+    UUID department_id
+    string admission_type
+    string status
+    boolean emergency
+    datetime admitted_at
+  }
+  BED {
+    UUID bed_id PK
+    UUID department_id
+    string ward_code
+    string room_code
+    string bed_code
+    string status
+  }
+  BED_ASSIGNMENT {
+    UUID assignment_id PK
+    UUID admission_id FK
+    UUID bed_id FK
+    datetime assigned_at
+    datetime released_at
+  }
+  TREATMENT_ENTRY {
+    UUID entry_id PK
+    UUID admission_id FK
+    UUID author_staff_id
+    string entry_type
+    text content
+    datetime recorded_at
+  }
+  CLINICAL_ORDER_REF {
+    UUID order_ref_id PK
+    UUID admission_id FK
+    string order_type
+    UUID external_order_id
+    string status
+  }
+  DISCHARGE_SUMMARY {
+    UUID discharge_id PK
+    UUID admission_id FK
+    UUID approved_by
+    string diagnosis_summary
+    string treatment_summary
+    string follow_up_plan
+    datetime medically_approved_at
+    datetime closed_at
+  }
+  ADMISSION_STATUS_HISTORY {
+    UUID history_id PK
+    UUID admission_id FK
+    string from_status
+    string to_status
+    UUID actor_id
+    datetime changed_at
+  }

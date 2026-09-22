@@ -1,0 +1,80 @@
+erDiagram
+  BILLING_ACCOUNT ||--o{ CHARGE : contains
+  BILLING_ACCOUNT ||--o{ PAYMENT_REQUEST : requests
+  BILLING_ACCOUNT ||--o{ PAYMENT_TRANSACTION : receives
+  BILLING_ACCOUNT ||--o| SETTLEMENT : closes_with
+  PAYMENT_REQUEST ||--o{ PAYMENT_REQUEST_LINE : details
+  CHARGE ||--o| PAYMENT_REQUEST_LINE : billed_as
+  PAYMENT_TRANSACTION ||--o{ PAYMENT_ALLOCATION : allocates
+  CHARGE ||--o{ PAYMENT_ALLOCATION : covers
+  SETTLEMENT ||--o{ SETTLEMENT_LINE : summarizes
+  CHARGE ||--o| SETTLEMENT_LINE : settled_as
+
+  BILLING_ACCOUNT {
+    UUID account_id PK
+    UUID patient_id
+    string care_episode_type
+    UUID care_episode_id
+    string status
+    decimal charge_total
+    decimal paid_total
+    decimal insurance_total
+  }
+  CHARGE {
+    UUID charge_id PK
+    UUID account_id FK
+    string charge_type
+    UUID source_ref_id
+    UUID department_id
+    decimal amount
+    string status
+    datetime incurred_at
+  }
+  PAYMENT_REQUEST {
+    UUID request_id PK
+    UUID account_id FK
+    string purpose
+    decimal requested_amount
+    string status
+    datetime expires_at
+  }
+  PAYMENT_REQUEST_LINE {
+    UUID line_id PK
+    UUID request_id FK
+    UUID charge_id FK
+    decimal amount
+  }
+  PAYMENT_TRANSACTION {
+    UUID transaction_id PK
+    UUID account_id FK
+    string transaction_type
+    string payment_method
+    decimal amount
+    string status
+    string external_reference
+    datetime completed_at
+  }
+  PAYMENT_ALLOCATION {
+    UUID allocation_id PK
+    UUID transaction_id FK
+    UUID charge_id FK
+    decimal amount
+  }
+  SETTLEMENT {
+    UUID settlement_id PK
+    UUID account_id FK
+    decimal gross_amount
+    decimal insurance_amount
+    decimal paid_amount
+    decimal balance_amount
+    string result
+    string status
+  }
+  SETTLEMENT_LINE {
+    UUID line_id PK
+    UUID settlement_id FK
+    UUID charge_id FK
+    decimal charge_amount
+    decimal insurance_amount
+    decimal patient_amount
+  }

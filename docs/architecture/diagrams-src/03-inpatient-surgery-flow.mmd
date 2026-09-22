@@ -1,0 +1,40 @@
+sequenceDiagram
+  autonumber
+  actor BN as Bệnh nhân
+  participant C as Clinical
+  participant I as Inpatient
+  participant B as Billing
+  participant S as Surgery
+  participant L as Lab
+  participant P as Pharmacy
+
+  C-->>I: admission.requested
+  I->>I: Xác minh chuyên môn + giữ giường
+  I-->>B: admission.deposit.requested
+  BN->>B: Nộp tạm ứng
+  B-->>I: financial.clearance.granted (ADMISSION_DEPOSIT)
+  I->>I: ADMITTED
+  I->>L: Chỉ định xét nghiệm nội trú
+  I->>P: Y lệnh thuốc nội trú
+  L-->>B: lab.charge.incurred
+  P-->>B: medication.charge.incurred
+  I-->>S: surgery.requested
+  S->>S: Tiền phẫu + cam kết + gây mê + lịch/ê-kíp
+  S-->>B: surgery.estimate.created
+  opt Cần tạm ứng bổ sung
+    B-->>I: deposit.topup.required
+    BN->>B: Nộp thêm
+    B-->>S: financial.clearance.granted (SURGERY)
+  end
+  S->>S: READY → IN_PROGRESS → COMPLETED
+  S-->>I: surgery.completed
+  I->>I: Điều trị hậu phẫu
+  I-->>B: discharge.medically.approved
+  B->>B: Chốt chi phí và lập quyết toán
+  alt Còn phải thu
+    BN->>B: Thanh toán phần thiếu
+  else Phải hoàn
+    B->>BN: Hoàn phần dư
+  end
+  B-->>I: settlement.completed
+  I->>I: CLOSED
