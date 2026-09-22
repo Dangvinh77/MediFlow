@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { PrescriptionLookup } from "@/features/pharmacy/components/prescription/PrescriptionLookup";
 
@@ -12,7 +13,9 @@ export default function PrescriptionLookupPage() {
       title="Tra đơn thuốc"
       description="Mở chi tiết đơn thuốc bằng mã UUID đã biết."
     >
-      <PrescriptionLookup />
+      <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
+        <PrescriptionLookup />
+      </RoleGate>
     </PageShell>
   );
 }

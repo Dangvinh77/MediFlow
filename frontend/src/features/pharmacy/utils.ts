@@ -1,7 +1,5 @@
 import type { ApiError } from "@/lib/types";
-
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuid as validateUuid } from "@/lib/validation";
 
 const vndFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -99,8 +97,9 @@ export function getDrugExpiryState(
   return "VALID";
 }
 
+/** Shared UUID contract used by all bounded-context lookup pages. */
 export function isUuid(value: string): boolean {
-  return uuidPattern.test(value.trim());
+  return validateUuid(value.trim());
 }
 
 export function formatVnd(value: number): string {

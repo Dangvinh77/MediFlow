@@ -3,10 +3,11 @@
 > Kế hoạch triển khai frontend cho bounded context `pharmacy`.
 >
 > **Nguồn chuẩn là code backend hiện tại**, không phải thiết kế dự kiến. Kế hoạch này được kiểm tra
-> lại ngày 2026-09-20 tại repository HEAD `978ceaa28bb2bf6da4899af2f0eba15ace308cff`;
+> lại ngày 2026-09-21 trên repository HEAD `dc79f8928cccb8d5b763415cbed2194446f23fd4`
+> cùng các thay đổi chưa commit trong workspace;
 > commit gần nhất chạm `backend/pharmacy-service` là
 > `8cea770c70e7bc9b078a8e7c6ef5d43e0a0d170b`, còn commit gần nhất triển khai frontend Pharmacy là
-> `eed19bbf481820ce17fc35824a05a151b039f40f`.
+> `8958fc169fde136d9d72f4feb52b7814a523e06b`.
 
 ## 1. Mục tiêu và giới hạn
 
@@ -67,10 +68,15 @@ Nếu controller chưa có endpoint thì frontend không được gọi endpoint
 - Mọi HTTP phải đi qua `src/lib/api.ts`.
 - Feature không import feature khác; composition chỉ xảy ra trong `app/`.
 - Không dùng TanStack Query/SWR, không dùng component library.
-- Shared UI hiện có `PageShell`, `DashboardHeader`, `Pagination` và route loading chung.
+- Shared UI hiện có `PageShell`, `DashboardHeader`, `Pagination`, `RoleGate`, `AsyncState`,
+  `lib/format.ts`, `lib/validation.ts` và route loading chung từ master service-base foundation.
 - `PH-FE-00` đã có contract/client boundary và `PH-FE-01` đã có route shell/navigation.
 - `PH-FE-02` đến `PH-FE-07` đã có read flow, drug form và prescription create/lookup/detail; mutation
   prescription terminal actions vẫn để ở `PH-FE-08`/`PH-FE-09`.
+- Các Pharmacy page hiện compose shared `RoleGate` ở route boundary; feature component vẫn giữ
+  capability/error checks riêng để xử lý backend 401/403 và race state.
+- Shared auth hiện phát sự kiện khi session đổi trong cùng tab, lắng nghe thay đổi giữa các tab,
+  chặn `/login` hiển thị lại khi phiên còn hợp lệ và xóa session khi API trả `401`.
 
 ### 3.2 Hạn chế kiến trúc hiện tại
 
@@ -86,9 +92,9 @@ Migration sang httpOnly cookie là một kiến trúc riêng, không được tr
 đó được duyệt, pharmacy có thể chuyển read flow sang Server Components và dùng Route Handler/Server
 Action có kiểm tra quyền ở server.
 
-### 3.3 Thay đổi nền tảng cần thiết trước pharmacy
+### 3.3 Nền tảng dùng chung đã triển khai cho pharmacy
 
-`src/lib/api.ts` cần hỗ trợ mutation không có body vì hai endpoint thật không nhận body:
+`src/lib/api.ts` đã hỗ trợ mutation không có body vì hai endpoint thật không nhận body:
 
 - `PUT /prescriptions/{id}/dispense`
 - `POST /admin/outbox/{eventId}/replay`
@@ -102,10 +108,11 @@ put<T>(path: string, data?: unknown): Promise<T>
 del<T>(path: string): Promise<T>
 ```
 
-Chỉ set `Content-Type: application/json` và chỉ tạo `body` khi `data !== undefined`.
+Wrapper hiện chỉ set `Content-Type: application/json` và chỉ tạo `body` khi `data !== undefined`.
+Khi nhận `401`, wrapper xóa session để dashboard/login guard không tiếp tục dùng token đã hết hạn.
 
-Nên thêm `import "client-only"` vào module session/auth/API client để Next.js báo lỗi build nếu một
-Server Component vô tình import client data layer.
+`src/lib/api.ts` đã có `import "client-only"` để Next.js báo lỗi build nếu một Server Component vô
+tình import HTTP client. Việc migration token sang httpOnly cookie vẫn là roadmap riêng.
 
 ## 4. Contract backend đang chạy
 
@@ -462,7 +469,10 @@ Mỗi mutation phải:
 
 ### 6.6 Auth và authorization
 
-- Dashboard client guard hiện tại tiếp tục bảo vệ UX.
+- Dashboard client guard và `RoleGate` cùng subscribe vào session store dùng chung.
+- Login thành công cập nhật auth snapshot ngay trong tab hiện tại; truy cập lại `/login` khi còn phiên
+  sẽ chuyển về dashboard thay vì render thêm form đăng nhập.
+- API `401` xóa session trước khi các feature chuyển về `/login`, tránh vòng lặp token không hợp lệ.
 - `permissions.ts` chỉ quyết định route/action visibility.
 - Backend vẫn là authority cuối cùng.
 - Không thêm Next middleware auth trong phase localStorage.
@@ -584,21 +594,26 @@ Action còn phải thỏa state:
 
 ### 10.0 Cách đọc và giao task
 
-Trạng thái tại lần kiểm tra 2026-09-20:
+Trạng thái tại lần kiểm tra 2026-09-21 (HEAD + workspace hiện tại):
 
-| Task | Trạng thái | Bằng chứng chính | Việc tiếp theo |
-|---|---|---|---|
-| PH-FE-00 | Đã implement, cần chạy lại quality gate khi release | `types.ts`, `api.ts`, `permissions.ts`, `presentation.ts`, `utils.ts`, `lib/api.ts` | Giữ contract đồng bộ khi backend đổi |
-| PH-FE-01 | Đã implement, cần chạy lại quality gate khi release | pharmacy routes, layout/loading/error, `PharmacyNav`, dashboard link | Giữ page mỏng khi thay placeholder |
-| PH-FE-02 | Đã implement, cần chạy lại quality gate khi release | `DrugCatalog.tsx`, `DrugTable.tsx`, `utils.ts`, `drugs/page.tsx` | Giữ query/filter đồng bộ contract |
-| PH-FE-03 | Đã implement, cần chạy lại quality gate khi release | `DrugDetail.tsx`, `drugs/[drugId]/page.tsx` | Giữ detail snapshot ổn định khi mutation |
-| PH-FE-04 | Đã implement, cần chạy lại quality gate khi release | `CreateDrugForm.tsx`, `drugFormValidation.ts`, `drugs/new/page.tsx` | Giữ request không chứa server-owned fields |
-| PH-FE-05 | Đã implement; staff E2E còn blocker signed `staffId` | `AdjustStockForm.tsx`, `DrugDetail.tsx` | Xác nhận ADMIN path; không giả staffId cho PHARMACIST |
-| PH-FE-06 | Đã implement; DOCTOR E2E còn blocker signed `staffId` | `CreatePrescriptionForm.tsx`, `PrescriptionLinesEditor.tsx`, `prescriptionFormValidation.ts`, `prescriptions/new/page.tsx` | Xác nhận ADMIN path; không tự sinh UUID hoặc giả staffId |
-| PH-FE-07 | Đã implement; mutation deferred | `PrescriptionLookup.tsx`, `PrescriptionDetail.tsx`, lookup/detail routes | Nối `refresh()` với PH-FE-08/09 mà không tạo list endpoint |
-| PH-FE-08 → PH-FE-10 | Chưa làm | cancel/dispense/admin routes còn placeholder | Làm theo dependency bên dưới |
-| PH-FE-11 | Chưa làm | chưa có `test` script/Vitest config | Thêm test theo từng feature đã hoàn thành |
-| PH-FE-12 | Chưa làm | chưa có release gate hoàn chỉnh | Chạy cuối mỗi milestone |
+| Task | Tiến độ work package | Trạng thái theo code | Bằng chứng/việc tiếp theo |
+|---|---:|---|---|
+| PH-FE-00 | 6/6 | Code production hoàn thành | Contract/facade/policy/helper đã có; thêm test contract ở PH-FE-11 |
+| PH-FE-01 | 5/5 | Code production hoàn thành | Route shell, navigation, shared `RoleGate` và auth subscription đã có; outbox placeholder thuộc PH-FE-10 |
+| PH-FE-02 | 7/7 | Code production hoàn thành | Catalog URL state, stale-response guard, table và pagination đã có; còn test tự động |
+| PH-FE-03 | 5/5 | Code production hoàn thành | UUID route guard, detail states và mutation slot đã có; còn test tự động |
+| PH-FE-04 | 5/5 | Code production hoàn thành | Create form/validation/error mapping/navigation đã có; còn test tự động |
+| PH-FE-05 | 5/5 | Code production hoàn thành, E2E chưa đóng | Stock confirmation/non-optimistic refresh đã có; ADMIN E2E cần chạy, PHARMACIST còn blocker signed `staffId` |
+| PH-FE-06 | 8/8 | Code production hoàn thành, E2E chưa đóng | Create prescription/line editor/serializer đã có; ADMIN E2E cần chạy, DOCTOR còn blocker signed `staffId` |
+| PH-FE-07 | 7/7 | Read flow hoàn thành | Lookup/detail/refresh boundary đã có; action slot đã được nối với PH-FE-08/09 |
+| PH-FE-08 | 5/5 | Code production hoàn thành, test/E2E chưa đóng | `CancelPrescriptionDialog.tsx` đã có reason validation, release count, idempotency và race refresh |
+| PH-FE-09 | 6/6 | Code production hoàn thành, test/E2E chưa đóng | `DispensePrescriptionDialog.tsx` đã có bodyless PUT, payment-proof gate, terminal failure và refresh |
+| PH-FE-10 | 0/5 | Chưa triển khai | Route outbox vẫn là placeholder; chưa có `OutboxReplayForm.tsx` |
+| PH-FE-11 | 0/6 | Chưa triển khai | Chưa có `test` script, Vitest config hoặc test Pharmacy |
+| PH-FE-12 | 0/8 đóng | Đang kiểm tra từng phần | `typecheck`, `lint`, `build` xanh; còn `test`, smoke, E2E, accessibility, docs và release evidence |
+
+Tổng quan: 10/13 task đã có code production; 59/78 work package đã có implementation. Con số này
+không thay thế Definition of Done vì test/E2E và release evidence vẫn thuộc PH-FE-11/12.
 
 Mỗi task chính được chia thành các **work package** có hậu tố `A`, `B`, `C`... để một agent có thể
 nhận phạm vi nhỏ mà không phải tự suy đoán. Một work package chỉ được xem là xong khi:
@@ -623,7 +638,8 @@ Quy ước giao việc:
 
 ### PH-FE-00 — Khóa contract và client boundary
 
-**Trạng thái:** đã implement ở commit `817a50a`; không mở rộng contract khi làm task sau.
+**Trạng thái:** 6/6 work package đã có code production (khởi đầu ở commit `817a50a`); hiện dùng shared
+UUID validator của master. Test contract tự động được theo dõi ở PH-FE-11.
 
 **Dependency:** không.
 
@@ -635,7 +651,8 @@ Quy ước giao việc:
 - `src/features/pharmacy/presentation.ts`
 - `src/features/pharmacy/utils.ts`
 - `src/lib/api.ts`
-- `src/lib/session.ts`/`src/lib/auth.ts` chỉ nếu thêm `client-only`.
+- `src/lib/validation.ts` (shared dependency; Pharmacy không sở hữu contract này)
+- `src/lib/session.ts`/`src/lib/auth.ts` là shared auth dependency; không thêm Pharmacy contract vào đây.
 
 **Implement:**
 
@@ -644,7 +661,8 @@ Quy ước giao việc:
 3. Sửa HTTP wrapper để mutation body optional.
 4. Query builder chỉ gửi `keyword` khi có giá trị, page 0-based, size mặc định 20.
 5. Thêm permission predicate và mapping label/status exhaustively bằng `satisfies Record<...>`.
-6. Thêm formatter VND/date và UUID validator thuần.
+6. Thêm formatter VND/date; UUID validation của Pharmacy delegate sang `src/lib/validation.ts` dùng chung
+   với các bounded context khác.
 
 **Work packages:**
 
@@ -681,12 +699,18 @@ cross-service lookup.
 
 ### PH-FE-01 — Pharmacy route shell và navigation
 
-**Trạng thái:** đã implement ở commit `eed19bb`; các page cố ý còn placeholder cho task sau.
+**Trạng thái:** 5/5 work package đã có code production (khởi đầu ở commit `eed19bb`); sau master
+service-base foundation, các route Pharmacy compose shared `RoleGate` theo role matrix. Auth guard
+hiện phản ứng đúng với login/logout cùng tab. Placeholder còn lại chỉ thuộc PH-FE-10.
 
 **Dependency:** PH-FE-00.
 
-**Files:** `app/(dashboard)/pharmacy/**/page.tsx`, pharmacy `layout/loading/error`, `PharmacyNav` và
-`DashboardHeader` để thêm link Pharmacy.
+**Files:** `app/(dashboard)/pharmacy/**/page.tsx`, pharmacy `layout/loading/error`, `PharmacyNav`,
+shared `RoleGate` và `DashboardHeader` để thêm link Pharmacy.
+
+**Shared foundation đang liên quan:** `app/(dashboard)/layout.tsx`, `app/login/page.tsx`,
+`lib/auth.ts`, `lib/session.ts`, `lib/api.ts`. Đây là auth/session dùng chung, không phải API contract
+riêng của Pharmacy.
 
 **Implement:**
 
@@ -695,6 +719,8 @@ cross-service lookup.
 3. Page là Server Component, chỉ compose feature components.
 4. `error.tsx` là Client Component có nút `reset()`.
 5. `loading.tsx` dùng loader/skeleton đã có.
+6. Các page dùng `RoleGate` ở boundary với đúng role matrix trước khi mount feature component;
+   feature-level capability checks vẫn được giữ như defense-in-depth.
 
 **Work packages:**
 
@@ -707,13 +733,15 @@ cross-service lookup.
 - **PH-FE-01D — Dashboard entry:** thêm link Pharmacy vào dashboard header mà không phá các route
   hiện có; kiểm tra keyboard focus và `aria-current`.
 - **PH-FE-01E — Thin-page audit:** mọi page chỉ export metadata, đọc params nếu cần và compose
-  feature component; không import `pharmacyApi` hoặc `lib/api` trực tiếp.
+  `RoleGate`/feature component; không import `pharmacyApi` hoặc `lib/api` trực tiếp.
 
 **Test/verification chi tiết:**
 
 - `/pharmacy` redirect đúng một lần; các URL con render được khi refresh trực tiếp.
 - ADMIN thấy 4 mục; DOCTOR thấy Kho thuốc/Kê đơn/Tra đơn; PHARMACIST thấy Kho thuốc/Tra đơn.
 - Role không thuộc Pharmacy thấy thông báo không có quyền sử dụng phân hệ.
+- Truy cập trực tiếp route Pharmacy với role không được phép không mount child component và không tạo
+  request tránh được; backend vẫn là authorization cuối cùng.
 - `error.tsx` gọi được `reset()`; navigation có accessible name và trạng thái active.
 
 **Không làm trong task này:** fetch dữ liệu, form nghiệp vụ, route protection phía server hoặc API
@@ -723,7 +751,7 @@ list prescription/outbox.
 
 ### PH-FE-02 — Drug catalog read flow
 
-**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
+**Trạng thái:** 7/7 work package đã có code production; test parser/component/browser còn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -783,7 +811,7 @@ client-side cache library.
 
 ### PH-FE-03 — Drug detail
 
-**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
+**Trạng thái:** 5/5 work package đã có code production; test detail states/deep-link còn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-02.
 
@@ -824,7 +852,7 @@ trước PH-FE-05.
 
 ### PH-FE-04 — Create drug
 
-**Trạng thái:** đã implement trong workspace; cần chạy lại quality gate khi release.
+**Trạng thái:** 5/5 work package đã có code production; test form boundary và E2E còn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -866,7 +894,8 @@ form framework.
 
 ### PH-FE-05 — Stock adjustment
 
-**Trạng thái:** đã implement trong workspace; staff E2E vẫn bị block nếu token PHARMACIST thiếu signed `staffId`.
+**Trạng thái:** 5/5 work package đã có code production. ADMIN E2E chưa có release evidence;
+PHARMACIST E2E vẫn bị block nếu token thiếu signed `staffId`.
 
 **Dependency:** PH-FE-03.
 
@@ -907,7 +936,8 @@ form framework.
 
 ### PH-FE-06 — Create prescription và line editor
 
-**Trạng thái:** đã implement trong workspace; DOCTOR E2E còn blocker signed `staffId`.
+**Trạng thái:** 8/8 work package đã có code production. ADMIN E2E chưa có release evidence;
+DOCTOR E2E còn blocker signed `staffId`.
 
 **Dependency:** PH-FE-00, PH-FE-02, identity blocker được ghi nhận.
 
@@ -959,7 +989,8 @@ khi signed `staffId` có thật.
 
 ### PH-FE-07 — Prescription lookup và detail
 
-**Trạng thái:** đã implement trong workspace; cancel/dispense mutation deferred sang PH-FE-08/09.
+**Trạng thái:** 7/7 work package của read flow đã có code production; action slot hiện đã được nối với
+PH-FE-08/09. Test detail và race recovery vẫn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -1005,7 +1036,8 @@ format, không tính lại làm truth; missing dispense được hiển thị ri
 
 ### PH-FE-08 — Cancel prescription
 
-**Trạng thái:** chưa làm.
+**Trạng thái:** 5/5 work package đã có code production trong `CancelPrescriptionDialog.tsx` và
+`PrescriptionDetail.tsx`; test matrix/E2E vẫn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-07, identity blocker được ghi nhận.
 
@@ -1046,7 +1078,8 @@ format, không tính lại làm truth; missing dispense được hiển thị ri
 
 ### PH-FE-09 — Dispense prescription
 
-**Trạng thái:** chưa làm.
+**Trạng thái:** 6/6 work package đã có code production trong `DispensePrescriptionDialog.tsx` và
+`PrescriptionDetail.tsx`; test payment-proof/terminal failure/E2E vẫn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-07, identity blocker được ghi nhận.
 
@@ -1091,7 +1124,7 @@ E2E blocked đến signed `staffId`.
 
 ### PH-FE-10 — Admin outbox replay
 
-**Trạng thái:** chưa làm.
+**Trạng thái:** 0/5 work package; route hiện vẫn là placeholder và chưa gọi API replay.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -1132,7 +1165,8 @@ E2E blocked đến signed `staffId`.
 
 ### PH-FE-11 — Test infrastructure và contract tests
 
-**Trạng thái:** chưa làm; `package.json` hiện chưa có script `test`.
+**Trạng thái:** 0/6 work package; `package.json` hiện chưa có script `test` và repo chưa có test
+Pharmacy tự động.
 
 **Dependency:** PH-FE-00 trước unit tests; các feature task trước component/E2E tương ứng.
 
@@ -1207,7 +1241,9 @@ timezone máy hoặc network thật; skip phải có issue/blocker cụ thể.
 
 ### PH-FE-12 — Quality gate và tài liệu vận hành
 
-**Trạng thái:** chưa làm; chạy cuối mỗi milestone và bắt buộc trước release.
+**Trạng thái:** chưa work package nào đủ điều kiện đóng (0/8). `pnpm typecheck`, `pnpm lint`,
+`pnpm build` đã xanh tại lần kiểm tra 2026-09-21 và architecture scan hiện không phát hiện raw fetch
+ngoài `lib/api.ts`; chưa có `pnpm test`/contract smoke/E2E/accessibility/release evidence.
 
 **Dependency:** tất cả task được chọn cho release.
 
@@ -1359,50 +1395,53 @@ the existing gateway identity handoff and verify with ADMIN where valid.
 
 PH-FE-00, 01, 02, 03, 07 (lookup/detail only).
 
-**Tiến độ hiện tại:** 5/5 task đã implement (`PH-FE-00` đến `PH-FE-03`, `PH-FE-07`).
+**Tiến độ hiện tại:** 5/5 task đã có code production (`PH-FE-00` đến `PH-FE-03`, `PH-FE-07`);
+test tự động và browser evidence chưa đóng.
 
-Kết quả: ADMIN/DOCTOR/PHARMACIST đọc catalog và prescription id đã biết.
+Kết quả mục tiêu: ADMIN/DOCTOR/PHARMACIST đọc catalog và prescription id đã biết.
 
 ### Milestone B — Inventory operations
 
 PH-FE-04, 05.
 
-**Tiến độ hiện tại:** 2/2 task đã implement (`PH-FE-04`, `PH-FE-05`); staff E2E điều chỉnh kho còn phụ thuộc
-signed `staffId` trong JWT.
+**Tiến độ hiện tại:** 2/2 task đã có code production (`PH-FE-04`, `PH-FE-05`); ADMIN E2E chưa có
+release evidence, staff E2E điều chỉnh kho còn phụ thuộc signed `staffId` trong JWT.
 
-Kết quả: ADMIN hoàn chỉnh; PHARMACIST UI có thể implement nhưng E2E phụ thuộc staffId claim.
+Kết quả mục tiêu: ADMIN hoàn chỉnh; PHARMACIST UI có thể implement nhưng E2E phụ thuộc staffId claim.
 
 ### Milestone C — Prescription workflow
 
 PH-FE-06, 08, 09.
 
-**Tiến độ hiện tại:** 1/3 task (`PH-FE-06`); PH-FE-08/09 còn lại.
+**Tiến độ hiện tại:** 3/3 task đã có code production (`PH-FE-06`, `PH-FE-08`, `PH-FE-09`); test/E2E
+và payment fixture chưa có release evidence.
 
-Kết quả: ADMIN có thể tạo/hủy/xuất theo contract; DOCTOR/PHARMACIST phụ thuộc staffId và payment proof.
+Kết quả mục tiêu: ADMIN có thể tạo/hủy/xuất theo contract; DOCTOR/PHARMACIST phụ thuộc staffId và payment proof.
 
 ### Milestone D — Admin recovery và hardening
 
 PH-FE-10, 11, 12.
 
-**Tiến độ hiện tại:** 0/3 task.
+**Tiến độ hiện tại:** 0/3 task đóng. PH-FE-10/11 chưa bắt đầu; PH-FE-12 mới có static checks một phần.
 
-Kết quả: outbox replay known-id, coverage, accessibility và production build.
+Kết quả mục tiêu: outbox replay known-id, coverage, accessibility và production build.
 
 ## 14. Definition of Done
 
-- [ ] Chỉ dùng 9 endpoint có thật trong controller hiện tại.
-- [ ] DTO TypeScript mirror đúng record/enum backend.
-- [ ] Không có price trong create prescription request.
-- [ ] Không có payment flag/invoice id trong manual dispense request.
-- [ ] Search/pagination nằm trong URL và hoạt động với back/forward/reload.
-- [ ] Pages là Server Components; client boundary chỉ ở interactive/data components.
-- [ ] `useSearchParams` nằm dưới Suspense.
-- [ ] Expected API errors có UI state; unexpected render errors có `error.tsx`.
-- [ ] Không optimistic mutation cho stock/prescription/dispense/outbox.
-- [ ] Role visibility đúng controller và backend vẫn xử lý 403.
-- [ ] Không invent prescription/outbox list API.
-- [ ] Không dùng account id thay staff id.
-- [ ] Typecheck, lint, tests và production build xanh.
+- [x] Chỉ dùng 9 endpoint có thật trong controller hiện tại.
+- [x] DTO TypeScript mirror đúng record/enum backend hiện tại.
+- [x] Không có price trong create prescription request.
+- [x] Không có payment flag/invoice id trong manual dispense request.
+- [x] Search/pagination nằm trong URL và hỗ trợ back/forward/reload theo implementation.
+- [x] Pages là Server Components; client boundary chỉ ở interactive/data components.
+- [x] `useSearchParams` nằm dưới Suspense.
+- [ ] Expected API errors có UI state cho toàn bộ scope; read/create/stock/cancel/dispense đã có,
+  PH-FE-10 chưa triển khai.
+- [x] Mutation hiện có không optimistic; cancel/dispense cũng refetch snapshot chính thức sau kết quả.
+- [x] Role visibility hiện tại đúng controller và backend vẫn xử lý 403.
+- [x] Không invent prescription/outbox list API.
+- [x] Không dùng account id thay staff id; staff E2E được ghi blocker thay vì fake claim.
+- [ ] Typecheck, lint và production build đã xanh; `pnpm test` chưa tồn tại nên quality gate chưa đủ.
 - [ ] ADMIN E2E cho mutation xanh; staff E2E chỉ xanh sau khi signed `staffId` contract được merge.
 
 ## 15. Tài liệu Next.js dùng để ra quyết định

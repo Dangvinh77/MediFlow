@@ -3,16 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { getRole, isAuthenticated, logout } from "@/lib/auth";
+import {
+  getRole,
+  isAuthenticated,
+  logout,
+  subscribeToAuthChanges,
+} from "@/lib/auth";
 
-const subscribeToAuth = () => () => undefined;
 const getAuthSnapshot = (): boolean | null => isAuthenticated();
 const getServerAuthSnapshot = (): boolean | null => null;
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
   const authorized = useSyncExternalStore(
-    subscribeToAuth,
+    subscribeToAuthChanges,
     getAuthSnapshot,
     getServerAuthSnapshot,
   );

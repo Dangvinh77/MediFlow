@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { DrugDetail } from "@/features/pharmacy/components/drug/DrugDetail";
 import { isUuid } from "@/features/pharmacy/utils";
@@ -45,7 +46,9 @@ export default async function DrugDetailPage({
       title="Chi tiết thuốc"
       description="Thông tin thuốc và các thao tác tồn kho."
     >
-      <DrugDetail drugId={id} />
+      <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
+        <DrugDetail drugId={id} />
+      </RoleGate>
     </PageShell>
   );
 }

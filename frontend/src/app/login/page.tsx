@@ -1,16 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { login } from "@/lib/auth";
+import {
+  isAuthenticated,
+  login,
+  subscribeToAuthChanges,
+} from "@/lib/auth";
+
+const getAuthSnapshot = (): boolean => isAuthenticated();
+const getServerAuthSnapshot = (): boolean | null => null;
 
 export default function LoginPage() {
   const router = useRouter();
+  const authenticated = useSyncExternalStore(
+    subscribeToAuthChanges,
+    getAuthSnapshot,
+    getServerAuthSnapshot,
+  );
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authenticated) {
+      router.replace("/patients");
+    }
+  }, [authenticated, router]);
+
+  if (authenticated !== false) {
+    return (
+      <main className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 text-muted-foreground">
+        Đang kiểm tra phiên đăng nhập…
+      </main>
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

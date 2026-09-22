@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import {
   CatalogFallback,
@@ -22,9 +23,11 @@ export default function DrugCatalogPage() {
       title="Kho thuốc"
       description="Tra cứu danh mục thuốc, tồn kho và hạn sử dụng."
     >
-      <Suspense fallback={<CatalogFallback />}>
-        <DrugCatalog />
-      </Suspense>
+      <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
+        <Suspense fallback={<CatalogFallback />}>
+          <DrugCatalog />
+        </Suspense>
+      </RoleGate>
     </PageShell>
   );
 }
