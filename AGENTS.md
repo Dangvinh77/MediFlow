@@ -43,6 +43,9 @@ Authoritative business design: `docs/eproject_general_plan/*.html`. Coding stand
 | Hoàng Anh (`TranHoangAnh94`) | `organization-service`, `patient-service`, `gateway` |
 | Lộc (`locgit-89`) | `billing-service`, `notification-service` |
 
+Frontend ownership mirrors these bounded contexts. The exact feature and route paths are canonical
+in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
+
 - Production changes are limited to the active developer's owned modules unless the user explicitly
   grants a task-scoped override naming another module or shared path.
 - Other services may be inspected read-only to verify API and event contracts. If a required
@@ -72,7 +75,9 @@ are building. Those specs give the *what*; `docs/ai/` still governs the *how*.
 
 **Frontend (`frontend/` — `.ts`, `.tsx`, `.css`):**
 1. [`docs/ai/12-frontend.md`](docs/ai/12-frontend.md) — the frontend blueprint, authoritative.
-2. [`docs/ai/05-api-conventions.md`](docs/ai/05-api-conventions.md) — the contracts your TS types mirror.
+2. [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md) — canonical frontend ownership and shared-scope matrix.
+3. [`frontend/docs/frontend-workboard.md`](frontend/docs/frontend-workboard.md) — dated route state and next task IDs.
+4. [`docs/ai/05-api-conventions.md`](docs/ai/05-api-conventions.md) — the contracts your TS types mirror.
 
 **Flutter mobile (`mobile/` — `.dart`, `pubspec.yaml`):**
 1. [`docs/ai/README.md`](docs/ai/README.md) — the golden rules.

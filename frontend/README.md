@@ -1,7 +1,9 @@
 # MediFlow Frontend
 
 Web client for MediFlow — **Next.js 16 (App Router) + TypeScript + Tailwind v4**, package manager **pnpm**.
-Conventions and the full guide: [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md).
+Conventions and the full guide: [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md). Ownership
+and shared-scope rules: [`docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md).
+Current route state and next task IDs: [`docs/frontend-workboard.md`](docs/frontend-workboard.md).
 
 ## Run
 
@@ -17,7 +19,8 @@ Demo login: `admin / admin123` (stub auth on the gateway).
 
 ## Structure — feature-based
 
-Mandatory layout, full rationale in [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md):
+Mandatory layout and rationale are in [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md); the
+ownership matrix and current workboard are linked above:
 
 ```
 src/
