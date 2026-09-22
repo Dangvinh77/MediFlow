@@ -31,13 +31,13 @@ backend.
 
 | Task ID | Owner | Scope | Current state | Next action |
 |---|---|---|---|---|
-| `FE-VINH-01` | Vinh | appointments | Base read route and feature present | `VERIFY-CONTRACT`: audit the live appointment DTO, roles, pagination, and error envelope before deeper UI. |
+| `FE-VINH-01` | Vinh | appointments | List and role-gated detail route present | `IMPLEMENT`: select one appointment create/update/status vertical slice after its live request contract is checked. |
 | `FE-VINH-02` | Vinh | records | Base read route and feature present | `VERIFY-CONTRACT`: audit the live medical-record contract before adding mutations or detail flows. |
 | `FE-VINH-03` | Vinh | lab | Base read route and feature present | `VERIFY-CONTRACT`: audit the live lab request/result contract before adding mutations or detail flows. |
 | `FE-HUY-01` | Huy | pharmacy | Deeper workflows present | `VERIFY-CONTRACT`: recheck the current pharmacy controller/DTO/test contract before extending the workflow; use `HANDOFF` for missing producer behavior. |
 | `FE-HUY-02` | Huy | reports | Base read route and feature present | `VERIFY-CONTRACT`: audit the report DTO, filters, roles, and empty/error behavior before adding drill-downs. |
 | `FE-HOANGANH-01` | Hoàng Anh | organization | Base read route and feature present | `VERIFY-CONTRACT`: audit the live organization contract before adding staff/department mutations or cross-context composition. |
-| `FE-HOANGANH-02` | Hoàng Anh | patients | Spec-backed base read route; the current Patient service has only its application bootstrap and configuration | `BLOCKED`: implement the live Patient controller/DTO contract, then align frontend types before adding write flows. |
+| `FE-HOANGANH-02` | Hoàng Anh | patients | Spec-backed base read route; the current Patient service has only its application bootstrap and configuration | `BLOCKED`: implement the live Patient controller/DTO contract, then align frontend types before adding write flows. This also resolves [`HANDOFF-patient-login-landing.md`](../../docs/HANDOFF-patient-login-landing.md). |
 | `FE-HOANGANH-03` | Hoàng Anh | Gateway identity liaison | Shared login/session integration present | `VERIFY-CONTRACT`; create `HANDOFF` when a Gateway identity claim or endpoint must change. Shared auth/session files require explicit shared task scope. |
 | `FE-LOC-01` | Lộc | billing | Base read route and feature present | `VERIFY-CONTRACT`: audit the live billing lookup contract before adding payment or invoice actions. |
 | `FE-LOC-02` | Lộc | notifications | Base read route and feature present | `VERIFY-CONTRACT`: audit the live notification lookup contract before adding read-state or delivery controls. |
