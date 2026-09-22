@@ -3,6 +3,10 @@
 > The frontend counterpart of `04`. Where `04` governs the Java services, this governs
 > [`frontend/`](../../frontend/). The layout below is **not negotiable** — it is what lets eight
 > people work in parallel without colliding.
+>
+> Ownership, shared integration scope, task routing, and current route state live in
+> [`15-frontend-ownership.md`](15-frontend-ownership.md) and the
+> [frontend workboard](../../frontend/docs/frontend-workboard.md).
 
 ## Stack
 
@@ -211,11 +215,9 @@ pnpm lint
 
 Full-stack order: `docker compose up -d` → `eureka-server` → `gateway` → the service(s) you need → `pnpm dev`.
 
-## Current state (be honest about it)
+## Current state and ownership pointer
 
-The code in `frontend/src/` today is a **demo predating this blueprint**: three routes (`/`,
-`/login`, `/patients`), all DTOs crammed into `lib/types.ts`, no `features/` directory. It does not
-follow the tree above.
-
-The folders exist (each with a `.gitkeep`) and this document is the target. Migrate the patient demo
-into `features/patient/` as the first worked example, then build the rest against it.
+The route and feature state changes as implementation lands. Use the dated
+[frontend workboard](../../frontend/docs/frontend-workboard.md) for the verified current route
+inventory and next task IDs. Use [`15-frontend-ownership.md`](15-frontend-ownership.md) for the
+canonical owner matrix, shared integration scope, and `IMPLEMENT`/`HANDOFF`/`VERIFY-CONTRACT` rules.

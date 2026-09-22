@@ -7,6 +7,7 @@
 ## How to use
 
 - **Humans:** read `00` → `10` in order once, then keep `04-microservice-blueprint.md` open while coding.
+- **Frontend work:** read `12-frontend.md`, then the canonical ownership rules in `15-frontend-ownership.md` and the current [frontend workboard](../../frontend/docs/frontend-workboard.md).
 - **AI assistants:** these files are loaded as context. Follow them exactly. When a rule and the design docs (`docs/eproject_general_plan/*.html`) disagree, the design docs win for *what* to build; these files win for *how* to build it.
 
 ## Index
@@ -28,6 +29,7 @@
 | 12 | [12-frontend.md](12-frontend.md) | Next.js frontend — structure, gateway/auth wiring, conventions |
 | 13 | [13-codebase-tools.md](13-codebase-tools.md) | Optional AI tools: codebase-memory-mcp + Understand-Anything |
 | 14 | [14-flutter.md](14-flutter.md) | Flutter mobile — Clean Architecture, feature structure, API contract |
+| 15 | [15-frontend-ownership.md](15-frontend-ownership.md) | Frontend ownership matrix, shared scope, work routing, and quota-aware model use |
 | — | [services/](services/) | Per-service bounded context, data model, endpoints, events |
 
 ## Golden rules (the 30-second version)
