@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1005.8235 1410" width="1005.8235" height="1410" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<g class="block" data-type="opt" data-label="Cần tạm ứng bổ sung">
+  <rect x="30" y="688" width="670.6365" height="140" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="688" width="147.67000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="697" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">opt [Cần tạm ứng bổ sung]</text>
+</g>
+<g class="block" data-type="alt" data-label="Còn phải thu">
+  <rect x="30" y="1126" width="528.4675" height="124" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="1126" width="101.47000000000001" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="1135" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">alt [Còn phải thu]</text>
+  <line x1="30" y1="1202" x2="558.4675" y2="1202" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+  <text x="38" y="1216" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">[Phải hoàn]</text>
+</g>
+<line class="lifeline" data-actor="BN" x1="88.4675" y1="70" x2="88.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="C" x1="228.4675" y1="70" x2="228.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="I" x1="368.4675" y1="70" x2="368.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="B" x1="508.4675" y1="70" x2="508.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="S" x1="648.4675" y1="70" x2="648.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="L" x1="788.4675" y1="70" x2="788.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="P" x1="928.4675" y1="70" x2="928.4675" y2="1380" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="C" data-to="I" data-label="admission.requested" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="228.4675" y1="90" x2="368.4675" y2="90" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="298.4675" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">admission.requested</text>
+</g>
+<g class="message" data-from="I" data-to="I" data-label="Xác minh chuyên môn + giữ giường" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="368.4675,130 398.4675,130 398.4675,150 368.4675,150" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="406.4675" y="140" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Xác minh chuyên môn + giữ giường</text>
+</g>
+<g class="message" data-from="I" data-to="B" data-label="admission.deposit.requested" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="368.4675" y1="200" x2="508.4675" y2="200" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="438.4675" y="190" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">admission.deposit.requested</text>
+</g>
+<g class="message" data-from="BN" data-to="B" data-label="Nộp tạm ứng" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="88.4675" y1="240" x2="508.4675" y2="240" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="298.4675" y="230" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Nộp tạm ứng</text>
+</g>
+<g class="message" data-from="B" data-to="I" data-label="financial.clearance.granted (ADMISSION_DEPOSIT)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="508.4675" y1="280" x2="368.4675" y2="280" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="438.4675" y="270" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">financial.clearance.granted (ADMISSION_DEPOSIT)</text>
+</g>
+<g class="message" data-from="I" data-to="I" data-label="ADMITTED" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="368.4675,320 398.4675,320 398.4675,340 368.4675,340" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="406.4675" y="330" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">ADMITTED</text>
+</g>
+<g class="message" data-from="I" data-to="L" data-label="Chỉ định xét nghiệm nội trú" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="368.4675" y1="390" x2="788.4675" y2="390" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="578.4675" y="380" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chỉ định xét nghiệm nội trú</text>
+</g>
+<g class="message" data-from="I" data-to="P" data-label="Y lệnh thuốc nội trú" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="368.4675" y1="430" x2="928.4675" y2="430" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="648.4675" y="420" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Y lệnh thuốc nội trú</text>
+</g>
+<g class="message" data-from="L" data-to="B" data-label="lab.charge.incurred" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="788.4675" y1="470" x2="508.4675" y2="470" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="648.4675" y="460" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">lab.charge.incurred</text>
+</g>
+<g class="message" data-from="P" data-to="B" data-label="medication.charge.incurred" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="928.4675" y1="510" x2="508.4675" y2="510" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="718.4675" y="500" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">medication.charge.incurred</text>
+</g>
+<g class="message" data-from="I" data-to="S" data-label="surgery.requested" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="368.4675" y1="550" x2="648.4675" y2="550" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="508.4675" y="540" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">surgery.requested</text>
+</g>
+<g class="message" data-from="S" data-to="S" data-label="Tiền phẫu + cam kết + gây mê + lịch/ê-kíp" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="648.4675,590 678.4675,590 678.4675,610 648.4675,610" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="686.4675" y="600" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Tiền phẫu + cam kết + gây mê + lịch/ê-kíp</text>
+</g>
+<g class="message" data-from="S" data-to="B" data-label="surgery.estimate.created" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="648.4675" y1="660" x2="508.4675" y2="660" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="578.4675" y="650" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">surgery.estimate.created</text>
+</g>
+<g class="message" data-from="B" data-to="I" data-label="deposit.topup.required" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="508.4675" y1="728" x2="368.4675" y2="728" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="438.4675" y="718" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">deposit.topup.required</text>
+</g>
+<g class="message" data-from="BN" data-to="B" data-label="Nộp thêm" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="88.4675" y1="768" x2="508.4675" y2="768" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="298.4675" y="758" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Nộp thêm</text>
+</g>
+<g class="message" data-from="B" data-to="S" data-label="financial.clearance.granted (SURGERY)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="508.4675" y1="808" x2="648.4675" y2="808" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="578.4675" y="798" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">financial.clearance.granted (SURGERY)</text>
+</g>
+<g class="message" data-from="S" data-to="S" data-label="READY → IN_PROGRESS → COMPLETED" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="648.4675,848 678.4675,848 678.4675,868 648.4675,868" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="686.4675" y="858" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">READY → IN_PROGRESS → COMPLETED</text>
+</g>
+<g class="message" data-from="S" data-to="I" data-label="surgery.completed" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="648.4675" y1="918" x2="368.4675" y2="918" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="508.4675" y="908" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">surgery.completed</text>
+</g>
+<g class="message" data-from="I" data-to="I" data-label="Điều trị hậu phẫu" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="368.4675,958 398.4675,958 398.4675,978 368.4675,978" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="406.4675" y="968" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Điều trị hậu phẫu</text>
+</g>
+<g class="message" data-from="I" data-to="B" data-label="discharge.medically.approved" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="368.4675" y1="1028" x2="508.4675" y2="1028" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="438.4675" y="1018" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">discharge.medically.approved</text>
+</g>
+<g class="message" data-from="B" data-to="B" data-label="Chốt chi phí và lập quyết toán" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="508.4675,1068 538.4675,1068 538.4675,1088 508.4675,1088" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="546.4675" y="1078" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chốt chi phí và lập quyết toán</text>
+</g>
+<g class="message" data-from="BN" data-to="B" data-label="Thanh toán phần thiếu" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="88.4675" y1="1166" x2="508.4675" y2="1166" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="298.4675" y="1156" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Thanh toán phần thiếu</text>
+</g>
+<g class="message" data-from="B" data-to="BN" data-label="Hoàn phần dư" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="508.4675" y1="1230" x2="88.4675" y2="1230" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="298.4675" y="1220" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Hoàn phần dư</text>
+</g>
+<g class="message" data-from="B" data-to="I" data-label="settlement.completed" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="508.4675" y1="1270" x2="368.4675" y2="1270" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="438.4675" y="1260" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">settlement.completed</text>
+</g>
+<g class="message" data-from="I" data-to="I" data-label="CLOSED" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="368.4675,1310 398.4675,1310 398.4675,1330 368.4675,1330" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="406.4675" y="1320" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">CLOSED</text>
+</g>
+<g class="actor" data-id="BN" data-label="Bệnh nhân" data-type="actor">
+  <g transform="translate(70.4675,32) scale(1.5)">
+    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+  </g>
+  <text x="88.4675" y="84" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Bệnh nhân</text>
+</g>
+<g class="actor" data-id="C" data-label="Clinical" data-type="participant">
+  <rect x="188.4675" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="228.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Clinical</text>
+</g>
+<g class="actor" data-id="I" data-label="Inpatient" data-type="participant">
+  <rect x="327.0395" y="30" width="82.856" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="368.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Inpatient</text>
+</g>
+<g class="actor" data-id="B" data-label="Billing" data-type="participant">
+  <rect x="468.4675" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="508.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Billing</text>
+</g>
+<g class="actor" data-id="S" data-label="Surgery" data-type="participant">
+  <rect x="606.2985" y="30" width="84.338" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="648.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Surgery</text>
+</g>
+<g class="actor" data-id="L" data-label="Lab" data-type="participant">
+  <rect x="748.4675" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="788.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Lab</text>
+</g>
+<g class="actor" data-id="P" data-label="Pharmacy" data-type="participant">
+  <rect x="881.1115" y="30" width="94.71199999999999" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="928.4675" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Pharmacy</text>
+</g>
+</svg>

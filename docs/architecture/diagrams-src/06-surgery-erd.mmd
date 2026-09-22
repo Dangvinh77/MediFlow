@@ -1,0 +1,67 @@
+erDiagram
+  SURGERY_CASE ||--o{ SURGERY_TEAM_MEMBER : staffed_by
+  SURGERY_CASE ||--o{ PREOP_CHECK_ITEM : checks
+  SURGERY_CASE ||--o{ SURGERY_CONSENT : consents
+  SURGERY_CASE ||--o{ SURGERY_SCHEDULE : schedules
+  SURGERY_CASE ||--o| SURGERY_RESULT : produces
+  SURGERY_CASE ||--o{ SURGERY_STATUS_HISTORY : audits
+
+  SURGERY_CASE {
+    UUID surgery_case_id PK
+    UUID patient_id
+    UUID record_id
+    UUID admission_id
+    UUID requesting_doctor_id
+    UUID department_id
+    string procedure_code
+    string priority
+    string status
+    boolean emergency
+  }
+  SURGERY_TEAM_MEMBER {
+    UUID member_id PK
+    UUID surgery_case_id FK
+    UUID staff_id
+    string team_role
+  }
+  PREOP_CHECK_ITEM {
+    UUID item_id PK
+    UUID surgery_case_id FK
+    string check_code
+    string status
+    UUID verified_by
+    datetime verified_at
+  }
+  SURGERY_CONSENT {
+    UUID consent_id PK
+    UUID surgery_case_id FK
+    string consent_type
+    string signer_name
+    string status
+    datetime signed_at
+  }
+  SURGERY_SCHEDULE {
+    UUID schedule_id PK
+    UUID surgery_case_id FK
+    string operating_room
+    datetime planned_start
+    datetime planned_end
+    string status
+  }
+  SURGERY_RESULT {
+    UUID result_id PK
+    UUID surgery_case_id FK
+    string outcome
+    text operative_note
+    text complications
+    datetime started_at
+    datetime completed_at
+  }
+  SURGERY_STATUS_HISTORY {
+    UUID history_id PK
+    UUID surgery_case_id FK
+    string from_status
+    string to_status
+    UUID actor_id
+    datetime changed_at
+  }

@@ -1,0 +1,236 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 755.838 1225" width="755.838" height="1225" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="ADMISSION" data-entity2="BED_ASSIGNMENT" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="has" points="233,266.6666666666667 243,266.6666666666667 243,1054 483.238,1054" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="BED" data-entity2="BED_ASSIGNMENT" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="allocated_by" points="233,1102 483.238,1102" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="ADMISSION" data-entity2="TREATMENT_ENTRY" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="records" points="233,228 253,228 253,853 483.238,853" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="ADMISSION" data-entity2="CLINICAL_ORDER_REF" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="requests" points="233,112 483.238,112" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="ADMISSION" data-entity2="DISCHARGE_SUMMARY" data-cardinality1="one" data-cardinality2="zero-one" data-identifying="true" data-label="ends_with" points="233,150.66666666666669 273,150.66666666666669 273,359 483.238,359" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="ADMISSION" data-entity2="ADMISSION_STATUS_HISTORY" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="audits" points="233,189.33333333333334 263,189.33333333333334 263,617 483.238,617" fill="none" stroke="var(--_line)" stroke-width="1" />
+<g class="entity" data-id="ADMISSION" data-label="ADMISSION">
+  <rect x="40" y="73.33333333333333" width="193" height="232" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="73.33333333333333" width="193" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="136.5" y="90.33333333333333" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">ADMISSION</text>
+  <line x1="40" y1="107.33333333333333" x2="233" y2="107.33333333333333" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="46" y="111.33333333333333" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="57.155" y="118.33333333333333" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="76.31" y="118.33333333333333" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="118.33333333333333" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <text x="48" y="140.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="140.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">patient_id</tspan></text>
+  <text x="48" y="162.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="162.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">source_record_id</tspan></text>
+  <text x="48" y="184.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="184.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">attending_doctor_id</tspan></text>
+  <text x="48" y="206.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="206.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">department_id</tspan></text>
+  <text x="48" y="228.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="228.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_type</tspan></text>
+  <text x="48" y="250.33333333333331" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="250.33333333333331" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+  <text x="48" y="272.3333333333333" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">boolean</tspan></text>
+  <text x="225" y="272.3333333333333" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">emergency</tspan></text>
+  <text x="48" y="294.3333333333333" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="225" y="294.3333333333333" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admitted_at</tspan></text>
+</g>
+<g class="entity" data-id="BED_ASSIGNMENT" data-label="BED_ASSIGNMENT">
+  <rect x="483.238" y="1006" width="179.79999999999998" height="144" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="483.238" y="1006" width="179.79999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="573.138" y="1023" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">BED_ASSIGNMENT</text>
+  <line x1="483.238" y1="1040" x2="663.038" y2="1040" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="489.238" y="1044" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="1051" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="519.548" y="1051" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="1051" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">assignment_id</tspan></text>
+  <rect x="489.238" y="1066" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="1073" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="1073" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="1073" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <rect x="489.238" y="1088" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="1095" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="1095" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="1095" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">bed_id</tspan></text>
+  <text x="491.238" y="1117" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="655.038" y="1117" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">assigned_at</tspan></text>
+  <text x="491.238" y="1139" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="655.038" y="1139" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">released_at</tspan></text>
+</g>
+<g class="entity" data-id="BED" data-label="BED">
+  <rect x="79.60000000000002" y="1019" width="153.39999999999998" height="166" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="79.60000000000002" y="1019" width="153.39999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="156.3" y="1036" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">BED</text>
+  <line x1="79.60000000000002" y1="1053" x2="233" y2="1053" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="85.60000000000002" y="1057" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="96.75500000000002" y="1064" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="115.91000000000003" y="1064" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="1064" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">bed_id</tspan></text>
+  <text x="87.60000000000002" y="1086" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="225" y="1086" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">department_id</tspan></text>
+  <text x="87.60000000000002" y="1108" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="1108" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">ward_code</tspan></text>
+  <text x="87.60000000000002" y="1130" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="1130" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">room_code</tspan></text>
+  <text x="87.60000000000002" y="1152" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="1152" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">bed_code</tspan></text>
+  <text x="87.60000000000002" y="1174" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="225" y="1174" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+</g>
+<g class="entity" data-id="TREATMENT_ENTRY" data-label="TREATMENT_ENTRY">
+  <rect x="483.238" y="770" width="173.2" height="166" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="483.238" y="770" width="173.2" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="569.838" y="787" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">TREATMENT_ENTRY</text>
+  <line x1="483.238" y1="804" x2="656.438" y2="804" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="489.238" y="808" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="815" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="519.548" y="815" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="648.438" y="815" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">entry_id</tspan></text>
+  <rect x="489.238" y="830" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="837" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="837" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="648.438" y="837" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <text x="491.238" y="859" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="648.438" y="859" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">author_staff_id</tspan></text>
+  <text x="491.238" y="881" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="648.438" y="881" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">entry_type</tspan></text>
+  <text x="491.238" y="903" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">text</tspan></text>
+  <text x="648.438" y="903" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">content</tspan></text>
+  <text x="491.238" y="925" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="648.438" y="925" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">recorded_at</tspan></text>
+</g>
+<g class="entity" data-id="CLINICAL_ORDER_REF" data-label="CLINICAL_ORDER_REF">
+  <rect x="483.238" y="40" width="179.79999999999998" height="144" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="483.238" y="40" width="179.79999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="573.138" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">CLINICAL_ORDER_REF</text>
+  <line x1="483.238" y1="74" x2="663.038" y2="74" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="489.238" y="78" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="85" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="519.548" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">order_ref_id</tspan></text>
+  <rect x="489.238" y="100" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="107" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <text x="491.238" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="655.038" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">order_type</tspan></text>
+  <text x="491.238" y="151" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="655.038" y="151" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">external_order_id</tspan></text>
+  <text x="491.238" y="173" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="655.038" y="173" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">status</tspan></text>
+</g>
+<g class="entity" data-id="DISCHARGE_SUMMARY" data-label="DISCHARGE_SUMMARY">
+  <rect x="483.238" y="254" width="232.6" height="210" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="483.238" y="254" width="232.6" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="599.538" y="271" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">DISCHARGE_SUMMARY</text>
+  <line x1="483.238" y1="288" x2="715.838" y2="288" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="489.238" y="292" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="299" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="519.548" y="299" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="707.838" y="299" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">discharge_id</tspan></text>
+  <rect x="489.238" y="314" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="321" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="321" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="707.838" y="321" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <text x="491.238" y="343" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="707.838" y="343" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">approved_by</tspan></text>
+  <text x="491.238" y="365" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="707.838" y="365" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">diagnosis_summary</tspan></text>
+  <text x="491.238" y="387" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="707.838" y="387" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">treatment_summary</tspan></text>
+  <text x="491.238" y="409" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="707.838" y="409" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">follow_up_plan</tspan></text>
+  <text x="491.238" y="431" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="707.838" y="431" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">medically_approved_at</tspan></text>
+  <text x="491.238" y="453" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="707.838" y="453" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">closed_at</tspan></text>
+</g>
+<g class="entity" data-id="ADMISSION_STATUS_HISTORY" data-label="ADMISSION_STATUS_HISTORY">
+  <rect x="483.238" y="534" width="224.83299999999988" height="166" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="483.238" y="534" width="224.83299999999988" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="595.6545" y="551" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">ADMISSION_STATUS_HISTORY</text>
+  <line x1="483.238" y1="568" x2="708.0709999999999" y2="568" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <rect x="489.238" y="572" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="579" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">PK</text>
+  <text x="519.548" y="579" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="700.0709999999999" y="579" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">history_id</tspan></text>
+  <rect x="489.238" y="594" width="22.31" height="14" rx="2" ry="2" fill="var(--_key-badge)" />
+  <text x="500.393" y="601" text-anchor="middle" dy="0.35em" font-size="9" font-weight="600" fill="var(--_text-sec)">FK</text>
+  <text x="519.548" y="601" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="700.0709999999999" y="601" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">admission_id</tspan></text>
+  <text x="491.238" y="623" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="700.0709999999999" y="623" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">from_status</tspan></text>
+  <text x="491.238" y="645" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="700.0709999999999" y="645" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">to_status</tspan></text>
+  <text x="491.238" y="667" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">UUID</tspan></text>
+  <text x="700.0709999999999" y="667" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">actor_id</tspan></text>
+  <text x="491.238" y="689" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">datetime</tspan></text>
+  <text x="700.0709999999999" y="689" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">changed_at</tspan></text>
+</g>
+<line x1="237" y1="260.6666666666667" x2="237" y2="272.6666666666667" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="260.6666666666667" x2="241" y2="272.6666666666667" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1061" x2="467.238" y2="1054" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1054" x2="467.238" y2="1054" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1047" x2="467.238" y2="1054" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="463.238" cy="1054" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="237" y1="1096" x2="237" y2="1108" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="1096" x2="241" y2="1108" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1109" x2="467.238" y2="1102" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1102" x2="467.238" y2="1102" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="1095" x2="467.238" y2="1102" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="463.238" cy="1102" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="237" y1="222" x2="237" y2="234" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="222" x2="241" y2="234" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="860" x2="467.238" y2="853" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="853" x2="467.238" y2="853" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="846" x2="467.238" y2="853" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="463.238" cy="853" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="237" y1="106" x2="237" y2="118" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="106" x2="241" y2="118" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="119" x2="467.238" y2="112" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="112" x2="467.238" y2="112" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="105" x2="467.238" y2="112" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="463.238" cy="112" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="237" y1="144.66666666666669" x2="237" y2="156.66666666666669" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="144.66666666666669" x2="241" y2="156.66666666666669" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="365" x2="479.238" y2="353" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="475.238" y1="365" x2="475.238" y2="353" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="471.238" cy="359" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="237" y1="183.33333333333334" x2="237" y2="195.33333333333334" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="241" y1="183.33333333333334" x2="241" y2="195.33333333333334" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="624" x2="467.238" y2="617" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="617" x2="467.238" y2="617" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="479.238" y1="610" x2="467.238" y2="617" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="463.238" cy="617" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<rect x="229.265" y="765.3023333333334" width="27.47" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="243" y="775.4523333333334" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">has</text>
+<rect x="323" y="1091.85" width="70.238" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="358.119" y="1102" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">allocated_by</text>
+<rect x="228.573" y="635.469" width="48.854" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="253" y="645.619" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">records</text>
+<rect x="331.91" y="101.85" width="52.418000000000006" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="358.119" y="112" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">requests</text>
+<rect x="244.415" y="329.80233333333337" width="57.17" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="273" y="339.95233333333334" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">ends_with</text>
+<rect x="243.919" y="488.1356666666667" width="38.162" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="263" y="498.28566666666666" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">audits</text>
+</svg>

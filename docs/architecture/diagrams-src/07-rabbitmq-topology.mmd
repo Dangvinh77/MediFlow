@@ -1,0 +1,34 @@
+flowchart LR
+  C[Clinical]
+  L[Lab]
+  P[Pharmacy]
+  I[Inpatient]
+  S[Surgery]
+  B[Billing]
+  N[Notification]
+  R[Report]
+  X[(mediflow.events)]
+  DLX[(mediflow.events.dlx)]
+
+  C -->|"appointment.arrived\nmedicalrecord.completed\nadmission.recommended"| X
+  L -->|"lab.request.created\nlab.result.created"| X
+  P -->|"prescription.created\nprescription.filled\ndispense.failed"| X
+  I -->|"admission.requested\nadmission.started\ndischarge.medically.approved\nadmission.closed"| X
+  S -->|"surgery.requested\nsurgery.ready\nsurgery.completed\nsurgery.cancelled"| X
+  B -->|"invoice.created\npayment.completed\nfinancial.clearance.granted\npayment.refunded\nsettlement.completed"| X
+
+  X -->|clinical.q| C
+  X -->|lab.q| L
+  X -->|pharmacy.q| P
+  X -->|inpatient.q| I
+  X -->|surgery.q| S
+  X -->|billing.q| B
+  X -->|notification.q| N
+  X -->|report.q| R
+
+  C -. reject/retry exhausted .-> DLX
+  L -. reject/retry exhausted .-> DLX
+  P -. reject/retry exhausted .-> DLX
+  I -. reject/retry exhausted .-> DLX
+  S -. reject/retry exhausted .-> DLX
+  B -. reject/retry exhausted .-> DLX

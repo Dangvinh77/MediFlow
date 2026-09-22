@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1878.9237916666666 1062.8000000000002" width="1878.9237916666666" height="1062.8000000000002" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="Clients" data-label="Kênh sử dụng">
+  <rect x="885.1124492424242" y="40" width="288.1" height="96.9" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="885.1124492424242" y="40" width="288.1" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="897.1124492424242" y="54" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Kênh sử dụng</text>
+</g>
+<g class="subgraph" data-id="Existing" data-label="Bounded context hiện có">
+  <rect x="40" y="560.8000000000001" width="1482.9507500000002" height="267.90000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="560.8000000000001" width="1482.9507500000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="52" y="574.8000000000001" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Bounded context hiện có</text>
+</g>
+<g class="subgraph" data-id="New" data-label="Bounded context bổ sung">
+  <rect x="1238.107125" y="290.70000000000005" width="585.241" height="137.8" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="1238.107125" y="290.70000000000005" width="585.241" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1250.107125" y="304.70000000000005" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Bounded context bổ sung</text>
+</g>
+<polyline class="edge" data-from="Web" data-to="Gateway" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1102.1514492424242,120.9 1102.1514492424242,151.9 1032.1264492424243,151.9 1032.1264492424243,182.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Mobile" data-to="Gateway" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="962.1014492424242,120.9 962.1014492424242,151.9 1032.1264492424243,151.9 1032.1264492424243,182.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Org" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 1409.6527500000002,285.70000000000005 1409.6527500000002,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Patient" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 1202.9127500000002,285.70000000000005 1202.9127500000002,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Clinical" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 1129.5705,285.70000000000005 1129.5705,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Lab" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 162.93099999999998,285.70000000000005 162.93099999999998,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Pharmacy" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 377.4515,285.70000000000005 377.4515,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Billing" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 589.008,285.70000000000005 589.008,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Notification" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 769.8129999999999,285.70000000000005 769.8129999999999,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Report" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 929.1290000000001,285.70000000000005 929.1290000000001,604.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Inpatient" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 1383.638625,285.70000000000005 1383.638625,334.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gateway" data-to="Surgery" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1032.1264492424243,236.70000000000002 1032.1264492424243,285.70000000000005 1672.259125,285.70000000000005 1672.259125,334.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Clinical" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="1082.58875,658.6 1082.58875,670.6000000000001 1076.96,670.6000000000001 1076.9599999999998,874.7000000000002 1025.904625,874.7000000000002 1025.904625,919.0000000000001 820.7212916666665,919.0000000000001 820.7212916666665,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Lab" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="162.93099999999998,658.6 162.9309999999998,898.7000000000002 274.1294999999998,898.7000000000002 274.1294999999998,943.0000000000001 746.3690694444442,943.0000000000001 746.3690694444442,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pharmacy" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="377.4515,658.6 377.4514999999999,886.7000000000002 432.30974999999967,886.7000000000002 432.30974999999967,931.0000000000001 761.2395138888887,931.0000000000001 761.2395138888887,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Billing" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="589.008,658.6 589.0079999999998,919.0000000000001 776.1099583333332,919.0000000000001 776.1099583333332,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inpatient" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="1448.404375,388.50000000000006 1448.404375,400.50000000000006 1637.2294583333332,400.50000000000006 1637.2294583333335,498.50000000000006 1677.1637916666668,498.50000000000006 1677.1637916666668,931.0000000000001 835.5917361111112,931.0000000000001 835.5917361111112,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Surgery" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish/consume" points="1717.2887916666666,388.50000000000006 1717.2887916666668,886.7000000000002 1779.0037916666668,886.7000000000002 1779.0037916666668,943.0000000000001 850.4621805555556,943.0000000000001 850.4621805555556,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Notification" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume" points="769.8129999999999,658.6 769.8129999999996,862.7000000000002 721.0804999999998,862.7000000000002 721.0804999999998,907.0000000000001 790.9804027777776,907.0000000000001 790.9804027777776,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Report" data-to="Bus" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume" points="929.1290000000001,658.6 929.1289999999998,862.7000000000002 878.0736249999999,862.7000000000002 878.0736249999999,907.0000000000001 805.850847222222,907.0000000000001 805.850847222222,955.0000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inpatient" data-to="Patient" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="REST xác minh" points="1318.872875,388.50000000000006 1318.872875,474.50000000000006 1176.6771250000002,474.50000000000006 1176.6771250000002,518.8000000000001 1261.3945,518.8000000000001 1261.3944999999999,730.9000000000001 1245.63375,730.9000000000001 1245.63375,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inpatient" data-to="Org" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="REST xác minh" points="1383.638625,388.50000000000006 1383.638625,462.50000000000006 1411.27505,462.50000000000006 1411.27505,542.8000000000001 1429.11235,542.8000000000001 1429.1123499999999,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Surgery" data-to="Org" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="REST xác minh" points="1627.2294583333332,388.50000000000006 1627.2294583333335,498.50000000000006 1596.124125,498.50000000000006 1596.124125,542.8000000000001 1468.03155,542.8000000000001 1468.03155,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Clinical" data-to="Patient" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="REST xác minh" points="1129.5705,658.6000000000001 1129.5705,730.9000000000001 1160.1917500000002,730.9000000000001 1160.1917500000002,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Clinical" data-to="Org" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="REST xác minh" points="1176.55225,658.6000000000001 1176.55225,670.6000000000001 1345.51855,670.6000000000001 1345.51855,730.9000000000001 1351.2739500000002,730.9000000000001 1351.2739500000002,758.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Clinical" data-to="Bus" data-label="publish/consume">
+  <rect x="976.9046250000005" y="881.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1025.8246250000004" y="896.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Lab" data-to="Bus" data-label="publish/consume">
+  <rect x="225.1295" y="905.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="274.0495" y="920.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Pharmacy" data-to="Bus" data-label="publish/consume">
+  <rect x="383.3097499999999" y="893.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="432.2297499999999" y="908.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Billing" data-to="Bus" data-label="publish/consume">
+  <rect x="540.008" y="881.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="588.928" y="896.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Inpatient" data-to="Bus" data-label="publish/consume">
+  <rect x="1628.1637916666668" y="893.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1677.083791666667" y="908.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Surgery" data-to="Bus" data-label="publish/consume">
+  <rect x="1730.0037916666665" y="905.7000000000002" width="97.84000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1778.9237916666666" y="920.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish/consume</text>
+</g>
+<g class="edge-label" data-from="Notification" data-to="Bus" data-label="consume">
+  <rect x="690.5805000000003" y="869.7000000000002" width="60.418000000000006" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="720.7895000000003" y="884.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume</text>
+</g>
+<g class="edge-label" data-from="Report" data-to="Bus" data-label="consume">
+  <rect x="847.5736250000002" y="869.7000000000002" width="60.418000000000006" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="877.7826250000003" y="884.8500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume</text>
+</g>
+<g class="edge-label" data-from="Inpatient" data-to="Patient" data-label="REST xác minh">
+  <rect x="1132.1771250000002" y="481.5" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1176.642125" y="496.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">REST xác minh</text>
+</g>
+<g class="edge-label" data-from="Inpatient" data-to="Org" data-label="REST xác minh">
+  <rect x="1366.7750499999997" y="469.5" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1411.2400499999997" y="484.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">REST xác minh</text>
+</g>
+<g class="edge-label" data-from="Surgery" data-to="Org" data-label="REST xác minh">
+  <rect x="1551.6241249999998" y="505.5" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1596.0891249999997" y="520.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">REST xác minh</text>
+</g>
+<g class="edge-label" data-from="Clinical" data-to="Patient" data-label="REST xác minh">
+  <rect x="1085.0705" y="693.6000000000001" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1129.5355" y="708.7500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">REST xác minh</text>
+</g>
+<g class="edge-label" data-from="Clinical" data-to="Org" data-label="REST xác minh">
+  <rect x="1301.01855" y="693.6000000000001" width="88.93" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1345.48355" y="708.7500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">REST xác minh</text>
+</g>
+<g class="node" data-id="Gateway" data-label="API Gateway
+JWT · routing · correlation" data-shape="rectangle">
+  <rect x="931.4939492424243" y="182.9" width="201.265" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1032.1264492424243" y="209.8" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1032.1264492424243" dy="-3.9000000000000012">API Gateway</tspan><tspan x="1032.1264492424243" dy="16.900000000000002">JWT · routing · correlation</tspan></text>
+</g>
+<g class="node" data-id="Bus" data-label="RabbitMQ
+mediflow.events" data-shape="cylinder">
+  <rect x="731.4986250000001" y="962.0000000000001" width="133.834" height="53.80000000000001" fill="var(--_node-fill)" stroke="none" />
+  <line x1="731.4986250000001" y1="962.0000000000001" x2="731.4986250000001" y2="1015.8000000000002" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="865.332625" y1="962.0000000000001" x2="865.332625" y2="1015.8000000000002" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="798.4156250000001" cy="1015.8000000000002" rx="66.917" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="798.4156250000001" cy="962.0000000000001" rx="66.917" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="798.4156250000001" y="988.9000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="798.4156250000001" dy="-3.9000000000000012">RabbitMQ</tspan><tspan x="798.4156250000001" dy="16.900000000000002">mediflow.events</tspan></text>
+</g>
+<g class="node" data-id="Web" data-label="Next.js Web" data-shape="rectangle">
+  <rect x="1047.0904492424243" y="84" width="110.122" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1102.1514492424242" y="102.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Next.js Web</text>
+</g>
+<g class="node" data-id="Mobile" data-label="Flutter Mobile" data-shape="rectangle">
+  <rect x="901.1124492424242" y="84" width="121.978" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="962.1014492424242" y="102.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Flutter Mobile</text>
+</g>
+<g class="node" data-id="Org" data-label="Organization
+nhân sự · khoa · tài khoản" data-shape="rectangle">
+  <rect x="1312.3547500000002" y="758.9000000000001" width="194.59599999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1409.6527500000002" y="785.8000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1409.6527500000002" dy="-3.9000000000000012">Organization</tspan><tspan x="1409.6527500000002" dy="16.900000000000002">nhân sự · khoa · tài khoản</tspan></text>
+</g>
+<g class="node" data-id="Patient" data-label="Patient
+hồ sơ · BHYT · liên hệ" data-shape="rectangle">
+  <rect x="1117.4707500000002" y="758.9000000000001" width="170.88399999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1202.9127500000002" y="785.8000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1202.9127500000002" dy="-3.9000000000000012">Patient</tspan><tspan x="1202.9127500000002" dy="16.900000000000002">hồ sơ · BHYT · liên hệ</tspan></text>
+</g>
+<g class="node" data-id="Clinical" data-label="Clinical
+lịch hẹn · khám ngoại trú" data-shape="rectangle">
+  <rect x="1035.607" y="604.8000000000001" width="187.92699999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1129.5705" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1129.5705" dy="-3.9000000000000012">Clinical</tspan><tspan x="1129.5705" dy="16.900000000000002">lịch hẹn · khám ngoại trú</tspan></text>
+</g>
+<g class="node" data-id="Lab" data-label="Lab
+chỉ định · kết quả xét nghiệm" data-shape="rectangle">
+  <rect x="56" y="604.8000000000001" width="213.86199999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="162.93099999999998" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="162.93099999999998" dy="-3.9000000000000012">Lab</tspan><tspan x="162.93099999999998" dy="16.900000000000002">chỉ định · kết quả xét nghiệm</tspan></text>
+</g>
+<g class="node" data-id="Pharmacy" data-label="Pharmacy
+đơn · kho · cấp thuốc" data-shape="rectangle">
+  <rect x="293.862" y="604.8000000000001" width="167.17899999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="377.4515" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="377.4515" dy="-3.9000000000000012">Pharmacy</tspan><tspan x="377.4515" dy="16.900000000000002">đơn · kho · cấp thuốc</tspan></text>
+</g>
+<g class="node" data-id="Billing" data-label="Billing
+phí · thanh toán · quyết toán" data-shape="rectangle">
+  <rect x="485.041" y="604.8000000000001" width="207.934" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="589.008" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="589.008" dy="-3.9000000000000012">Billing</tspan><tspan x="589.008" dy="16.900000000000002">phí · thanh toán · quyết toán</tspan></text>
+</g>
+<g class="node" data-id="Notification" data-label="Notification
+thông báo" data-shape="rectangle">
+  <rect x="716.9749999999999" y="604.8000000000001" width="105.676" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="769.8129999999999" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="769.8129999999999" dy="-3.9000000000000012">Notification</tspan><tspan x="769.8129999999999" dy="16.900000000000002">thông báo</tspan></text>
+</g>
+<g class="node" data-id="Report" data-label="Report
+read model · báo cáo" data-shape="rectangle">
+  <rect x="846.6510000000001" y="604.8000000000001" width="164.95600000000002" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="929.1290000000001" y="631.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="929.1290000000001" dy="-3.9000000000000012">Report</tspan><tspan x="929.1290000000001" dy="16.900000000000002">read model · báo cáo</tspan></text>
+</g>
+<g class="node" data-id="Inpatient" data-label="Inpatient
+nhập viện · giường · điều trị · ra viện" data-shape="rectangle">
+  <rect x="1254.107125" y="334.70000000000005" width="259.063" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1383.638625" y="361.6" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1383.638625" dy="-3.9000000000000012">Inpatient</tspan><tspan x="1383.638625" dy="16.900000000000002">nhập viện · giường · điều trị · ra viện</tspan></text>
+</g>
+<g class="node" data-id="Surgery" data-label="Surgery
+chỉ định · tiền phẫu · lịch · kết quả mổ" data-shape="rectangle">
+  <rect x="1537.170125" y="334.70000000000005" width="270.178" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1672.259125" y="361.6" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1672.259125" dy="-3.9000000000000012">Surgery</tspan><tspan x="1672.259125" dy="16.900000000000002">chỉ định · tiền phẫu · lịch · kết quả mổ</tspan></text>
+</g>
+</svg>

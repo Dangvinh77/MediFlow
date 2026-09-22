@@ -1,0 +1,52 @@
+flowchart TB
+  subgraph Clients["Kênh sử dụng"]
+    Web["Next.js Web"]
+    Mobile["Flutter Mobile"]
+  end
+
+  Gateway["API Gateway\nJWT · routing · correlation"]
+  Bus[("RabbitMQ\nmediflow.events")]
+
+  subgraph Existing["Bounded context hiện có"]
+    Org["Organization\nnhân sự · khoa · tài khoản"]
+    Patient["Patient\nhồ sơ · BHYT · liên hệ"]
+    Clinical["Clinical\nlịch hẹn · khám ngoại trú"]
+    Lab["Lab\nchỉ định · kết quả xét nghiệm"]
+    Pharmacy["Pharmacy\nđơn · kho · cấp thuốc"]
+    Billing["Billing\nphí · thanh toán · quyết toán"]
+    Notification["Notification\nthông báo"]
+    Report["Report\nread model · báo cáo"]
+  end
+
+  subgraph New["Bounded context bổ sung"]
+    Inpatient["Inpatient\nnhập viện · giường · điều trị · ra viện"]
+    Surgery["Surgery\nchỉ định · tiền phẫu · lịch · kết quả mổ"]
+  end
+
+  Web --> Gateway
+  Mobile --> Gateway
+  Gateway --> Org
+  Gateway --> Patient
+  Gateway --> Clinical
+  Gateway --> Lab
+  Gateway --> Pharmacy
+  Gateway --> Billing
+  Gateway --> Notification
+  Gateway --> Report
+  Gateway --> Inpatient
+  Gateway --> Surgery
+
+  Clinical -. publish/consume .-> Bus
+  Lab -. publish/consume .-> Bus
+  Pharmacy -. publish/consume .-> Bus
+  Billing -. publish/consume .-> Bus
+  Inpatient -. publish/consume .-> Bus
+  Surgery -. publish/consume .-> Bus
+  Notification -. consume .-> Bus
+  Report -. consume .-> Bus
+
+  Clinical -->|"REST xác minh"| Patient
+  Clinical -->|"REST xác minh"| Org
+  Inpatient -->|"REST xác minh"| Patient
+  Inpatient -->|"REST xác minh"| Org
+  Surgery -->|"REST xác minh"| Org
