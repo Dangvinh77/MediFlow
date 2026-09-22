@@ -10,6 +10,10 @@ export interface AppointmentSearchParams {
 }
 
 export const appointmentApi = {
+  getById: (appointmentId: string) =>
+    api.get<AppointmentDTO>(
+      `/v1/appointments/${encodeURIComponent(appointmentId)}`,
+    ),
   search: (params: AppointmentSearchParams = {}) => {
     const query = new URLSearchParams({
       page: String(params.page ?? 0),

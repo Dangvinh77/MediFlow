@@ -1,15 +1,19 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
+import type { Role } from "@/lib/roles";
 import { isUuid } from "@/lib/validation";
 import { appointmentApi, type AppointmentSearchParams } from "../api";
-import type { AppointmentDTO, AppointmentStatus } from "../types";
+import { appointmentStatusPresentation } from "../presentation";
+import type { AppointmentDTO } from "../types";
 
 interface RequestError {
   message: string;
@@ -21,11 +25,8 @@ interface AppointmentRequest {
   filters: AppointmentSearchParams;
 }
 
-const statusPresentation: Record<AppointmentStatus, { label: string; tone: StatusTone }> = {
-  PENDING: { label: "Chờ tiếp nhận", tone: "warning" },
-  ARRIVED: { label: "Đã đến", tone: "info" },
-  CANCELLED: { label: "Đã hủy", tone: "neutral" },
-};
+const detailRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE"];
+const getServerRole = (): Role | null => null;
 
 function getRequestError(cause: unknown): RequestError {
   if (cause instanceof ApiRequestError) {
@@ -39,6 +40,8 @@ function getRequestError(cause: unknown): RequestError {
 
 export function AppointmentTable() {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
+  const canViewDetail = role !== null && detailRoles.includes(role);
   const [appointments, setAppointments] = useState<AppointmentDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
@@ -166,11 +169,11 @@ export function AppointmentTable() {
           <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full min-w-4xl text-left text-sm">
               <thead className="border-b border-border bg-surface-muted">
-                <tr><th scope="col" className="px-4 py-3">Ngày</th><th scope="col" className="px-4 py-3">Giờ</th><th scope="col" className="px-4 py-3">Bệnh nhân</th><th scope="col" className="px-4 py-3">Bác sĩ</th><th scope="col" className="px-4 py-3">Khoa</th><th scope="col" className="px-4 py-3">Trạng thái</th><th scope="col" className="px-4 py-3">Lý do</th></tr>
+                <tr><th scope="col" className="px-4 py-3">Ngày</th><th scope="col" className="px-4 py-3">Giờ</th><th scope="col" className="px-4 py-3">Bệnh nhân</th><th scope="col" className="px-4 py-3">Bác sĩ</th><th scope="col" className="px-4 py-3">Khoa</th><th scope="col" className="px-4 py-3">Trạng thái</th><th scope="col" className="px-4 py-3">Lý do</th><th scope="col" className="px-4 py-3">Chi tiết</th></tr>
               </thead>
               <tbody>
                 {appointments.map((appointment) => {
-                  const status = statusPresentation[appointment.status] ?? { label: "Không xác định", tone: "neutral" as const };
+                  const status = appointmentStatusPresentation[appointment.status] ?? { label: "Không xác định", tone: "neutral" as const };
                   return (
                     <tr key={appointment.appointmentId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(appointment.appointmentDate)}</td>
@@ -180,6 +183,16 @@ export function AppointmentTable() {
                       <td className="px-4 py-3 font-mono text-xs">{appointment.departmentId}</td>
                       <td className="px-4 py-3"><StatusBadge tone={status.tone}>{status.label}</StatusBadge></td>
                       <td className="px-4 py-3">{appointment.reason ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        {canViewDetail ? (
+                          <Link
+                            href={`/appointments/${appointment.appointmentId}`}
+                            className="font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          >
+                            Xem
+                          </Link>
+                        ) : "—"}
+                      </td>
                     </tr>
                   );
                 })}

@@ -17,14 +17,16 @@ department, Lab, Pharmacy, and Billing data remain external references.
 ## Current UI baseline
 
 - `/appointments`: paged appointment list with department/date filters through
-  `GET /v1/appointments`; UI roles `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`.
+  `GET /v1/appointments`; UI roles `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`. ADMIN, DOCTOR, and NURSE
+  can open `/appointments/{appointmentId}` backed by `GET /v1/appointments/{id}`.
 - `/records`: explicit patient UUID lookup through `GET /v1/records/patient/{patientId}`; UI roles
   `ADMIN`, `DOCTOR`, `NURSE`.
 - Both flows use feature-local types/API modules, shared async states, and the gateway API wrapper.
 
 ## Owner queue
 
-- `FE-CLINICAL-01` — `VERIFY-CONTRACT`: add appointment detail using the live controller DTO.
+- `FE-CLINICAL-01` — `DONE`: appointment detail with UUID validation, role gate, loading,
+  not-found, error/retry, and list navigation.
 - `FE-CLINICAL-02` — `VERIFY-CONTRACT`: add one appointment create/update/status vertical slice,
   including exact role, validation, conflict, and retry behavior.
 - `FE-CLINICAL-03` — `VERIFY-CONTRACT`: add record detail, then one create/update/diagnosis slice
