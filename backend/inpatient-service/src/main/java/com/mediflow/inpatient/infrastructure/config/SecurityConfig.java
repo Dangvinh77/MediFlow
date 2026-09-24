@@ -3,7 +3,7 @@ package com.mediflow.inpatient.infrastructure.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
-import com.mediflow.common.security.JwtClaims;
+import com.mediflow.inpatient.infrastructure.correlation.CorrelationIdRequestAttribute;
 import com.mediflow.inpatient.infrastructure.security.JwtAuthFilter;
 import com.mediflow.inpatient.infrastructure.security.JwtProperties;
 import jakarta.servlet.DispatcherType;
@@ -19,7 +19,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -100,10 +99,10 @@ public class SecurityConfig {
             String code,
             String message) throws IOException {
 
-        String correlationId = request.getHeader(JwtClaims.HEADER_CORRELATION_ID);
-        if (!StringUtils.hasText(correlationId)) {
-            correlationId = UUID.randomUUID().toString();
-        }
+        UUID requestCorrelationId = CorrelationIdRequestAttribute.read(request);
+        String correlationId = requestCorrelationId == null
+                ? UUID.randomUUID().toString()
+                : requestCorrelationId.toString();
         ApiResponse<Void> body = ApiResponse.fail(ApiError.of(code, message), correlationId);
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
