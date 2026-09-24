@@ -37,6 +37,7 @@ Các handoff đã triển khai vẫn có hiệu lực và được link thay vì
 
 - [Billing → Lab payment references](../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md)
 - [Billing ↔ Pharmacy saga](../../../backend/billing-service/HANDOFF.md)
+- [Pharmacy payment idempotency race](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md)
 - [Pharmacy → Clinical prescription correlation](../../../backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md)
 - [Organization → Clinical staff lookup](../../../backend/organization-service/HANDOFF-CLINICAL-STAFF-LOOKUP.md)
 - [Patient → Clinical patient lookup](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md)

@@ -77,7 +77,9 @@ Ràng buộc DB: `price >= 0`, `stock_quantity >= 0` — đây là "tuyến phò
 
 ### `PROCESSED_EVENT` — sổ ghi các event đã xử lý
 
-`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin (xem quy tắc BR-D9). Payment consumer claim bằng `INSERT ... ON CONFLICT DO NOTHING` trong cùng transaction với dispense.
+`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này ghi nhận event đã đạt outcome terminal.
+Payment consumer còn dùng `PAYMENT_RECEIPT` để claim payload và cho phép resume sau lỗi tạm thời.
+Không được mô tả `PROCESSED_EVENT` là cùng transaction với dispense khi code chưa bảo đảm điều đó.
 
 ### `PHARMACY_EVENT_OUTBOX` — hàng đợi event bền vững
 
@@ -171,7 +173,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 | Phương thức | Làm gì | Quy tắc khớp |
 |-------------|--------|--------------|
-| `claimIfAbsent(UUID eventId, String routingKey)` | claim atomically bằng unique `event_id` | BR-D9, chống race hai consumer |
+| `claimIfAbsent(UUID eventId, String routingKey)` | ghi atomically bằng unique `event_id` sau outcome terminal | BR-D9, chống xử lý lại event đã hoàn tất |
 
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
@@ -212,9 +214,14 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 ### 6.3 Nhận tin "đã thanh toán" (`onPaymentCompleted`)
 
 1. Đối chiếu `patientId`/`departmentId` của event với đơn trước khi claim; không so tổng invoice với tổng thuốc vì invoice có thể gồm phí khác.
-2. Claim `eventId` atomically — đã có owner thì dừng (BR-D9).
-3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation.
-4. Lỗi hạ tầng được retry hữu hạn với exponential backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát compensation một lần.
+2. Claim payload vào `PAYMENT_RECEIPT`. Receipt terminal thì dừng; receipt `RECEIVED` cùng payload
+   được phép resume sau lỗi tạm thời; cùng `eventId` nhưng payload khác phải bị từ chối.
+3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation. Khóa database và trạng thái phiếu xuất phải bảo đảm một stock side effect.
+4. Chỉ đánh dấu processed sau outcome terminal. Lỗi hạ tầng được retry hữu hạn với exponential
+   backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát
+   compensation nhiều nhất một lần.
+5. Chính sách xử lý hai delivery đồng thời đang chờ Pharmacy hoàn thiện theo
+   [`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).
 
 ## 7. API
 
@@ -321,3 +328,5 @@ Handoff bắt buộc trước khi đổi contract:
 Existing outpatient compatibility remains specified by
 [`backend/billing-service/HANDOFF.md`](../../../backend/billing-service/HANDOFF.md) and the
 [`prescription.filled` Clinical handoff](../../../backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md).
+Trước khi sửa payment receipt hoặc test tương tranh, phải xử lý
+[`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).
