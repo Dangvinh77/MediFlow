@@ -12,6 +12,7 @@ public interface VerifyCredentialsUseCase {
             UUID accountId,
             UUID staffId,
             UUID departmentId,
+            UUID patientId,
             Role role) {
     }
 }

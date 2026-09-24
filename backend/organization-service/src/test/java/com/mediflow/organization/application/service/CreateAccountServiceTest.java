@@ -104,29 +104,32 @@ class CreateAccountServiceTest {
     }
 
     @Test
+    void execute_patientWithoutPatientId_throwsInvalidAccountException() {
+        when(accountRepository.existsByUsername("patient.one")).thenReturn(false);
+
+        assertThrows(InvalidAccountException.class, () -> service.execute(
+                "patient.one", "plainpass", null, null, Role.PATIENT));
+    }
+
+    @Test
     void execute_patientWithoutStaffId_isValid() {
         when(accountRepository.existsByUsername("patient.one")).thenReturn(false);
         when(passwordHasher.hash("plainpass")).thenReturn("$2a$10$hashed-value");
         when(accountRepository.save(any(Account.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Account account = service.execute("patient.one", "plainpass", null, Role.PATIENT);
+        UUID patientId = UUID.randomUUID();
+        Account account = service.execute("patient.one", "plainpass", null, patientId, Role.PATIENT);
 
         assertEquals(Role.PATIENT, account.getRole());
         org.junit.jupiter.api.Assertions.assertNull(account.getStaffId());
+        assertEquals(patientId, account.getPatientId());
     }
 
     @Test
-    void execute_systemWithoutStaffId_isValid() {
-        when(accountRepository.existsByUsername("system")).thenReturn(false);
-        when(passwordHasher.hash("plainpass")).thenReturn("$2a$10$hashed-value");
-        when(accountRepository.save(any(Account.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        Account account = service.execute("system", "plainpass", null, Role.SYSTEM);
-
-        assertEquals(Role.SYSTEM, account.getRole());
-        org.junit.jupiter.api.Assertions.assertNull(account.getStaffId());
+    void execute_systemAccount_isRejected() {
+        assertThrows(InvalidAccountException.class,
+                () -> service.execute("system", "plainpass", null, null, Role.SYSTEM));
     }
 
     @Test

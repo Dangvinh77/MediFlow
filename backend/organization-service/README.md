@@ -58,6 +58,7 @@ The Organization Service owns:
 | `username`      | VARCHAR(50)  | Unique username                                                                                 |
 | `password_hash` | VARCHAR(255) | BCrypt password hash                                                                            |
 | `staff_id`      | UUID         | Foreign key to `STAFF`, nullable                                                                |
+| `patient_id`    | UUID         | Bare UUID reference to `patient-service`, required only for `PATIENT` accounts                 |
 | `role`          | ENUM         | `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, `SYSTEM` |
 | `is_active`     | BOOLEAN      | Whether the account can log in                                                                  |
 | `last_login_at` | TIMESTAMPTZ  | Nullable                                                                                        |
@@ -227,6 +228,7 @@ Successful response:
     "accountId": "...",
     "staffId": "...",
     "departmentId": "...",
+    "patientId": null,
     "role": "DOCTOR"
   },
   "error": null,
@@ -235,7 +237,10 @@ Successful response:
 }
 ```
 
-The gateway posts credentials to this endpoint. The Organization Service verifies the account and BCrypt password hash, then returns the authenticated identity. The gateway uses the result to mint the JWT.
+The gateway posts credentials to this endpoint using a short-lived signed service JWT with
+`type=service` and `role=SYSTEM`. The Organization Service verifies the account and BCrypt password
+hash, then returns the authenticated identity. The gateway uses the result to mint human JWTs with
+`type=access|refresh`, `sub=accountId`, and optional `staffId`, `departmentId`, and `patientId` claims.
 
 Invalid username, password, or inactive account returns HTTP `422` with the stable
 `AUTH_INVALID_CREDENTIALS` code. The Gateway maps that internal result to public HTTP `401`.
@@ -304,8 +309,8 @@ None. This is reference data; it drives other contexts rather than reacting to t
 6. A department with active staff cannot be deactivated.
 7. Staff transfer updates the existing `STAFF` record and publishes `staff.department.changed`; it never deletes and recreates the staff member.
 8. Transferring staff to its current department is a no-op: no database write and no event.
-9. `role = PATIENT` accounts must have `staff_id = null`, because patients are not staff.
-10. `role = SYSTEM` accounts may have no `staff_id`; other staff roles require one.
+9. `role = PATIENT` accounts must have `patient_id` and `staff_id = null`, because patients are not staff.
+10. `role = SYSTEM` is reserved for short-lived service tokens; SYSTEM accounts cannot be created or logged in.
 11. Deactivating an account (`is_active = false`) prevents future logins.
 12. Existing JWTs expire naturally according to the gateway's JWT configuration.
 13. `Role` must remain synchronized with `backend/common/security/Roles.java`.
@@ -329,13 +334,14 @@ Client
 Gateway
   │
   │ POST /api/v1/org/accounts/verify
+  │ Authorization: Bearer (type=service, role=SYSTEM)
   ▼
 Organization Service
   │
   ├── find ACCOUNT by username
   ├── verify BCrypt password
   ├── verify account is active
-  └── return accountId, staffId, departmentId, role
+  └── return accountId, staffId, departmentId, patientId, role
   │
   ▼
 Gateway
@@ -351,7 +357,7 @@ The gateway must **never** read `ACCOUNT` directly.
 
 `APPOINTMENT` and `MEDICAL_RECORD` use this endpoint to validate `staff_id`.
 
-The endpoint is an internal `SYSTEM`-authenticated lookup and returns the common envelope:
+The endpoint is an internal `type=service`, `SYSTEM`-authenticated lookup and returns the common envelope:
 
 ```json
 {
@@ -642,6 +648,7 @@ The service is complete when:
 - [x] Account verification uses BCrypt.
 - [x] Plaintext passwords are never stored or logged.
 - [x] Patient accounts have no `staff_id`.
+- [x] Patient accounts carry `patient_id`; SYSTEM is service-token-only.
 - [x] Department and staff domain events are published.
 - [x] No events are consumed by this service.
 - [x] Cross-service references use bare UUIDs.

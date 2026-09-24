@@ -38,7 +38,10 @@ public class Account {
      *
      * SYSTEM:
      */
-    private final UUID staffId;
+        private final UUID staffId;
+
+        /** Bare UUID reference to patient-service; never a cross-service JPA relation. */
+        private final UUID patientId;
 
         private final Role role;
 
@@ -60,12 +63,28 @@ public class Account {
             Instant lastLoginAt,
             Instant createdAt,
             Instant updatedAt) {
-        validate(username, passwordHash, role, staffId);
+        this(accountId, username, passwordHash, staffId, null, role, active,
+                lastLoginAt, createdAt, updatedAt);
+    }
+
+        public Account(
+            UUID accountId,
+            String username,
+            String passwordHash,
+            UUID staffId,
+            UUID patientId,
+            Role role,
+            boolean active,
+            Instant lastLoginAt,
+            Instant createdAt,
+            Instant updatedAt) {
+        validate(username, passwordHash, role, staffId, patientId);
 
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
         this.staffId = staffId;
+        this.patientId = patientId;
         this.role = role;
         this.active = active;
         this.lastLoginAt = lastLoginAt;
@@ -79,6 +98,16 @@ public class Account {
             String passwordHash,
             UUID staffId,
             Role role) {
+        return create(accountId, username, passwordHash, staffId, null, role);
+    }
+
+        public static Account create(
+            UUID accountId,
+            String username,
+            String passwordHash,
+            UUID staffId,
+            UUID patientId,
+            Role role) {
         Instant now = Instant.now();
 
         return new Account(
@@ -86,6 +115,7 @@ public class Account {
                 username,
                 passwordHash,
                 staffId,
+                patientId,
                 role,
                 true,
                 null,
@@ -97,7 +127,8 @@ public class Account {
             String username,
             String passwordHash,
             Role role,
-            UUID staffId) {
+            UUID staffId,
+            UUID patientId) {
         if (username == null
                 || username.length() < 3
                 || username.length() > 50
@@ -118,20 +149,23 @@ public class Account {
 
         /*
          */
-        if (role == Role.PATIENT && staffId != null) {
+        if (role == Role.PATIENT && (staffId != null || patientId == null)) {
             throw new InvalidAccountException(
-                    "PATIENT account must not have staffId");
+                    "PATIENT account must have patientId and must not have staffId");
         }
 
         /*
          *
          */
-        if (role != Role.PATIENT
-                && role != Role.SYSTEM
-                && staffId == null) {
+        if (role != Role.PATIENT && role != Role.SYSTEM && (staffId == null || patientId != null)) {
 
             throw new InvalidAccountException(
                     "Staff account must have staffId");
+        }
+
+        if (role == Role.SYSTEM && (staffId != null || patientId != null)) {
+            throw new InvalidAccountException(
+                    "SYSTEM account must not have staffId or patientId");
         }
     }
 
@@ -193,6 +227,10 @@ public class Account {
 
     public UUID getStaffId() {
         return staffId;
+    }
+
+    public UUID getPatientId() {
+        return patientId;
     }
 
     public Role getRole() {

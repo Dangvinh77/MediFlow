@@ -36,6 +36,9 @@ public class AccountEntity {
     @Column(name = "staff_id")
     private UUID staffId;
 
+    @Column(name = "patient_id")
+    private UUID patientId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private Role role;
@@ -65,10 +68,26 @@ public class AccountEntity {
             Instant lastLoginAt,
             Instant createdAt,
             Instant updatedAt) {
+        this(accountId, username, passwordHash, staffId, null, role, active,
+                lastLoginAt, createdAt, updatedAt);
+    }
+
+    public AccountEntity(
+            UUID accountId,
+            String username,
+            String passwordHash,
+            UUID staffId,
+            UUID patientId,
+            Role role,
+            boolean active,
+            Instant lastLoginAt,
+            Instant createdAt,
+            Instant updatedAt) {
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
         this.staffId = staffId;
+        this.patientId = patientId;
         this.role = role;
         this.active = active;
         this.lastLoginAt = lastLoginAt;
@@ -90,6 +109,10 @@ public class AccountEntity {
 
     public UUID getStaffId() {
         return staffId;
+    }
+
+    public UUID getPatientId() {
+        return patientId;
     }
 
     public Role getRole() {

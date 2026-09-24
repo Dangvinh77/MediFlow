@@ -42,11 +42,12 @@ class AccountControllerSecurityTest {
     private VerifyCredentialsUseCase verifyCredentialsUseCase;
 
     @Test
-    @WithMockUser(roles = "SYSTEM")
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void verify_systemRole_isAllowed() throws Exception {
         when(verifyCredentialsUseCase.execute("admin", "password"))
                 .thenReturn(new VerifyCredentialsUseCase.VerifiedAccount(
                         UUID.randomUUID(),
+                        null,
                         null,
                         null,
                         Role.ADMIN));
@@ -77,7 +78,7 @@ class AccountControllerSecurityTest {
     }
 
     @Test
-    @WithMockUser(roles = "SYSTEM")
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void verify_invalidCredentials_returnsInternal422Contract() throws Exception {
         when(verifyCredentialsUseCase.execute("admin", "bad"))
                 .thenThrow(new InvalidCredentialsException("Invalid username or password"));
