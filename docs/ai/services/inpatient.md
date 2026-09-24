@@ -5,9 +5,10 @@
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 **Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Planned base path:** `/api/v1/inpatient` (no business endpoint or Gateway route is live)
 
-The foundation contains runtime configuration, health/info, OpenAPI assets and default-deny JWT
-security only. Business DDL, API DTOs, events and domain behavior wait for the future
-implementation-ready Inpatient spec. The Inpatient business contracts remain `DESIGN_READY`;
+The foundation contains runtime configuration, health/info, OpenAPI assets, default-deny JWT
+security and canonical `X-Correlation-Id` propagation. Business DDL, API DTOs, events and domain
+behavior wait for the future implementation-ready Inpatient spec. The Inpatient business contracts
+remain `DESIGN_READY`;
 the shared identity contract retains its separately tracked `PARTIAL` status.
 
 ## Bounded context

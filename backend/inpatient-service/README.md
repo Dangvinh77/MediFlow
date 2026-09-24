@@ -2,7 +2,8 @@
 
 This module is a **preliminary bootable foundation only** for the approved Inpatient bounded
 context. It provides the Spring Boot runtime on port `8090`, PostgreSQL/Flyway/JPA configuration,
-Eureka and RabbitMQ configuration, actuator health/info, OpenAPI assets and stateless JWT security.
+Eureka and RabbitMQ configuration, actuator health/info, OpenAPI assets, stateless JWT security and
+canonical `X-Correlation-Id` propagation for every HTTP request.
 
 There are no business endpoints, admission model, DTOs, business migrations, events, publishers or
 consumers. Business DDL, API shapes and events require the future implementation-ready Inpatient

@@ -1,27 +1,34 @@
 package com.mediflow.inpatient;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
+
+import javax.crypto.SecretKey;
+import javax.sql.DataSource;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.security.JwtClaims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-
-import javax.crypto.SecretKey;
-import javax.sql.DataSource;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -37,6 +44,9 @@ class InpatientServiceSmokeTest {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void applicationContext_startsWithoutExternalInfrastructure() {
@@ -68,9 +78,45 @@ class InpatientServiceSmokeTest {
     }
 
     @Test
-    void plannedBusinessPath_requiresAuthentication() throws Exception {
-        mockMvc.perform(get("/api/v1/inpatient/admissions"))
-                .andExpect(status().isUnauthorized());
+    void plannedBusinessPath_withoutCorrelationId_generatesCorrelationIdAndRequiresAuthentication()
+            throws Exception {
+
+        MvcResult result = mockMvc.perform(get("/api/v1/inpatient/admissions"))
+                .andExpect(status().isUnauthorized())
+                .andReturn();
+
+        String correlationId = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        assertThatCode(() -> UUID.fromString(correlationId)).doesNotThrowAnyException();
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.path("correlationId").asText()).isEqualTo(correlationId);
+    }
+
+    @Test
+    void unauthorizedRequest_validCorrelationId_preservesHeaderAndEnvelope() throws Exception {
+        String correlationId = "c7146758-cfaa-4f6f-9615-4cf3b8044442";
+
+        mockMvc.perform(get("/api/v1/inpatient/admissions")
+                        .header(JwtClaims.HEADER_CORRELATION_ID, correlationId))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header()
+                        .string(JwtClaims.HEADER_CORRELATION_ID, correlationId))
+                .andExpect(jsonPath("$.correlationId").value(correlationId));
+    }
+
+    @Test
+    void unauthorizedRequest_invalidCorrelationId_generatesCanonicalIdForHeaderAndEnvelope()
+            throws Exception {
+
+        MvcResult result = mockMvc.perform(get("/api/v1/inpatient/admissions")
+                        .header(JwtClaims.HEADER_CORRELATION_ID, "not-a-uuid"))
+                .andExpect(status().isUnauthorized())
+                .andReturn();
+
+        String correlationId = result.getResponse().getHeader(JwtClaims.HEADER_CORRELATION_ID);
+        assertThat(correlationId).isNotEqualTo("not-a-uuid");
+        assertThatCode(() -> UUID.fromString(correlationId)).doesNotThrowAnyException();
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.path("correlationId").asText()).isEqualTo(correlationId);
     }
 
     @Test
