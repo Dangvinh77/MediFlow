@@ -42,5 +42,6 @@
 5. **Every endpoint declares its roles** (`07`). No endpoint is open except gateway `/auth/**` and `/actuator/health`.
 6. **Money is `BigDecimal`**, IDs are `UUID`, times are `Instant`/`LocalDate` — never `float`/`double`/`String` for these.
 7. **Cross-service contract changes are atomic team work.** Read `16` and the service's registered
-   handoffs; update producer schema/fixture and every consumer fixture/test together, or mark the
-   consumer explicitly blocked.
+   [active handoffs](../handoffs/README.md); update producer schema/fixture and every consumer
+   fixture/test together, or mark the consumer explicitly blocked. Delete completed handoffs after
+   moving lasting rules into canonical contracts.

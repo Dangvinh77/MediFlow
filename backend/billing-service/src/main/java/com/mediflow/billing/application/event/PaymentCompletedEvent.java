@@ -24,7 +24,7 @@ import com.mediflow.billing.domain.model.PaymentMethod;
  * @param paymentMethod  hình thức thanh toán (billing sở hữu enum này)
  * @param labTestIds     {@code sourceRefId} (= {@code labId}) của mọi khoản phí LAB nằm trong hóa
  *                       đơn này, khử trùng lặp — đây là "test ID" thật để Lab đánh dấu đã thanh
- *                       toán (HANDOFF-LAB-PAYMENT-COMPLETED.md); hóa đơn không có phí LAB thì
+ *                       toán (CONTRACT-CARE-BILLING-01); hóa đơn không có phí LAB thì
  *                       rỗng. Không được suy diễn test ID từ invoiceId/prescriptionId/recordId.
  */
 public record PaymentCompletedEvent(

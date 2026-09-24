@@ -115,10 +115,11 @@ Billing opens/updates the receivable. The override does not forge a paid transac
 
 - Keep current FEE/INVOICE physical tables and `payment.completed` consumers while introducing the
   logical account/charge/transaction/allocation model additively.
-- Existing Billing → Lab `labTestIds` contract remains valid during migration; see
-  [`HANDOFF-LAB-PAYMENT-COMPLETED`](../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md).
-- Existing Billing ↔ Pharmacy saga remains valid for outpatient prescriptions; see
-  [`backend/billing-service/HANDOFF.md`](../../../backend/billing-service/HANDOFF.md).
+- Existing Billing → Lab `labTestIds` is an implemented compatibility contract: Billing builds the
+  deduplicated list from paid LAB fee source references and Lab consumes only those explicit IDs.
+- Existing Billing ↔ Pharmacy `prescription.created` → `payment.completed` →
+  `prescription.filled|prescription.dispense.failed` remains the outpatient compatibility path.
+  Its durable field definitions live in the event catalog and Billing/Pharmacy service docs.
 - Do not claim clearance implementation complete until producer and all operational consumers share
   v1 fixtures and duplicate-event tests.
 

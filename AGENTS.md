@@ -50,8 +50,10 @@ in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
 - Production changes are limited to the active developer's owned modules unless the user explicitly
   grants a task-scoped override naming another module or shared path.
 - Other services may be inspected read-only to verify API and event contracts. If a required
-  producer contract is missing, write a `HANDOFF` document under `docs/`; do not edit its service,
-  infer identifiers, query its database, or add temporary cross-service coupling.
+  producer contract is missing, write a `HANDOFF` document and register it in
+  [`docs/handoffs/README.md`](docs/handoffs/README.md); do not edit its service, infer identifiers,
+  query its database, or add temporary cross-service coupling. Delete a handoff after both sides
+  pass its acceptance criteria and move any lasting rule into the canonical contract/service docs.
 - `backend/common`, `backend/eureka-server`, root build files, `.github`, and repository scripts are
   shared. Change them only when the task explicitly assigns that shared work.
 - Vinh may coordinate, review, and merge across the repository; this does not silently expand
@@ -67,7 +69,8 @@ Each owned backend module has a nested `AGENTS.md` that identifies its owner and
 2. [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md) — mandatory package layout.
 3. `docs/ai/services/<service>.md` — the bounded context you are touching.
 4. [`docs/ai/16-care-finance-integration-contracts.md`](docs/ai/16-care-finance-integration-contracts.md)
-   and the handoffs registered for that service whenever a REST/event contract is involved.
+   and the active handoffs in [`docs/handoffs/README.md`](docs/handoffs/README.md) registered for
+   that service whenever a REST/event contract is involved.
 5. As needed: `01-architecture`, `03-coding-standards`, `05-api-conventions`, `06-events-rabbitmq`, `07-security-rbac`, `08-persistence-naming`, `09-testing`.
 
 **Actually writing the code?** Read [`docs/eproject_general_plan/backend-spec/`](docs/eproject_general_plan/backend-spec/README.md) —

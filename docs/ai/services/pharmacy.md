@@ -318,15 +318,15 @@ Prescription/dispense phải có `careContext = OUTPATIENT | ADMISSION`.
 - `prescription.filled` và `prescription.dispense.failed` phải idempotent; stock side effect và event
   outbox nằm cùng transaction nghiệp vụ.
 
-Handoff bắt buộc trước khi đổi contract:
+Contract bắt buộc trước khi đổi integration:
 
 - [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
 - [`CONTRACT-INPATIENT-SURGERY-01`](../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
 - [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
 
-Existing outpatient compatibility remains specified by
-[`backend/billing-service/HANDOFF.md`](../../../backend/billing-service/HANDOFF.md) and the
-[`prescription.filled` Clinical handoff](../../../backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md).
+Existing outpatient compatibility and the implemented `prescription.filled.recordId` projection
+remain specified by `CONTRACT-CARE-BILLING-01`, the event catalog, and the Billing/Clinical/Pharmacy
+fixtures.
 Trước khi sửa payment receipt hoặc test tương tranh, phải xử lý
 [`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).

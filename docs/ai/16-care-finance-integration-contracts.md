@@ -10,8 +10,9 @@ bổ sung là Inpatient và Surgery.
 Khi tài liệu mâu thuẫn, dùng thứ tự sau:
 
 1. HTML kiến trúc care-finance quyết định **luồng nghiệp vụ và ranh giới service**.
-2. Handoff trong [`docs/handoffs/care-finance/`](../handoffs/care-finance/README.md) quyết định
-   **wire contract giữa producer và consumer**.
+2. Canonical contract trong [`docs/handoffs/care-finance/`](../handoffs/care-finance/README.md)
+   quyết định **wire contract giữa producer và consumer**; handoff blocker còn mở được đăng ký tại
+   [`docs/handoffs/README.md`](../handoffs/README.md).
 3. `docs/ai/services/<service>.md` quyết định **trách nhiệm và invariant cục bộ của service**.
 4. `docs/ai/` còn lại quyết định **cách triển khai, bảo mật, persistence và testing**.
 5. Code/fixture hiện tại cho biết **trạng thái đã triển khai**, không tự động thay thế thiết kế đích.
@@ -24,10 +25,11 @@ hợp thức hóa một implementation tạm thời.
 Mọi thay đổi REST/event được service khác dùng phải đi qua gate sau:
 
 1. Xác định contract ID và producer owner.
-2. Cập nhật handoff canonical trước hoặc trong cùng PR với code producer.
+2. Cập nhật canonical contract trước hoặc trong cùng PR với code producer.
 3. Cập nhật producer DTO/schema, serializer, fixture và contract test.
 4. Cập nhật fixture/deserializer/contract test của mọi consumer trong cùng PR; nếu ownership không
-   cho phép, ghi consumer là `BLOCKED` và tạo handoff có acceptance criteria cụ thể.
+   cho phép, ghi consumer là `BLOCKED`, tạo handoff có acceptance criteria cụ thể và đăng ký vào
+   active handoff registry.
 5. Chỉ merge breaking change sau khi có version mới và compatibility path.
 6. Không đánh dấu `IMPLEMENTED` cho tới khi cả producer lẫn consumer có test trên cùng fixture.
 

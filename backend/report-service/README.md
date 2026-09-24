@@ -18,8 +18,8 @@ Reference: [`docs/ai/services/report.md`](../../docs/ai/services/report.md) · d
 **T01–T11 và review hardening trong report-service đã hoàn tất.** Domain rules, persistence
 mappings/adapters, payment compensation, aggregate updates, read queries, RabbitMQ consumer/DLQ
 topology, secured HTTP endpoints và bộ cross-layer Testcontainers đều đã được kiểm chứng. Runtime
-gate với Docker Desktop xanh; phần phân biệt access/refresh token còn chờ gateway triển khai theo
-[JWT handoff](../../docs/HANDOFF-report-jwt-token-type.md).
+gate với Docker Desktop xanh. Gateway đã phát typed token; Report còn phải bỏ legacy fallback cho
+token thiếu `type` theo [JWT handoff](../../docs/HANDOFF-report-jwt-token-type.md).
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 

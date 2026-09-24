@@ -1,5 +1,7 @@
 # Handoff — Notification must use the `patientId` JWT claim
 
+- **Status (2026-09-24): OPEN in Notification.** Gateway already issues typed human tokens with
+  `sub=accountId` and an explicit `patientId`; Notification still reads `sub` as the patient ID.
 - **Producer of contract:** Gateway / Organization
 - **Consumer:** Notification Service
 - **Reason:** Phase 0 standardizes `sub=accountId` for every human JWT.
@@ -31,6 +33,4 @@ and `sdt`.
 - A refresh token and a service token cannot access the human Notification endpoints.
 - A staff token is not interpreted as a patient token.
 
-This handoff is required before enabling the strict Organization/Gateway JWT validation in an
-environment where Notification serves patient callers.
-
+Complete this handoff before enabling patient-facing Notification routes in a shared environment.

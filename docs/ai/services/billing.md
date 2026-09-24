@@ -57,8 +57,9 @@ purpose and target IDs.
 - Mandatory: [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md),
   [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md) and
   [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
-- Preserve the implemented [Lab reference contract](../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md)
-  and [Pharmacy saga contract](../../../backend/billing-service/HANDOFF.md) during migration.
+- Preserve the implemented `labTestIds` projection and outpatient Pharmacy saga described in
+  `CONTRACT-CARE-BILLING-01`, the event catalog, and the Billing/Pharmacy service documents during
+  migration.
 - Producer changes require Billing fixture/outbox tests plus every consumer fixture/test. If another
   owner cannot update in the same PR, keep the registry status blocked and retain compatibility.
 
