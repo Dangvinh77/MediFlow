@@ -40,12 +40,14 @@ Implemented baseline:
 
 - Organization returns `ApiResponse<StaffLookupDTO>` with `exists`, `eligibleDoctor` and
   authoritative `departmentId`; Clinical already projects the three states and preserves outages.
+- Clinical signs its Organization lookup credential with `type=service`, `role=SYSTEM`, a
+  `clinical-service` subject and a 60-second lifetime while preserving the request correlation ID.
 - Gateway verifies accounts through Organization, issues typed access/refresh tokens and carries
   optional `staffId`, `departmentId` and `patientId` claims.
 - Pharmacy consumes the explicit `staffId` claim and never treats `sub` as a staff identity.
 
-Open work is listed only in the [active handoff registry](../README.md), including Clinical's
-`type=service` credential, Patient read/existence APIs and consumer JWT claim migrations.
+Open work is listed only in the [active handoff registry](../README.md), including Patient
+read/existence APIs and consumer JWT claim migrations.
 
 ## Planned Inpatient/Surgery routing
 

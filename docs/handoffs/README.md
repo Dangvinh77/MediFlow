@@ -8,7 +8,6 @@ wire contracts belong in the canonical contract documents under
 
 | Handoff | Status | Owner who must act | Unblocks |
 |---|---|---|---|
-| [Clinical service-token type](../../backend/clinical-service/HANDOFF-CLINICAL-SERVICE-TOKEN-TYPE.md) | OPEN | Vinh | Clinical → Organization authenticated lookup |
 | [Patient read/existence API](../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md) | OPEN | Hoàng Anh | Clinical patient validation and frontend patient landing |
 | [Notification patient JWT claim](../../backend/notification-service/HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md) | OPEN | Lộc | correct patient authorization with `sub=accountId` |
 | [Report strict access-token validation](../HANDOFF-report-jwt-token-type.md) | OPEN | Huy | rejection of legacy/missing token types |
