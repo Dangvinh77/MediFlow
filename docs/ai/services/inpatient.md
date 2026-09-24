@@ -1,9 +1,14 @@
 # Service: inpatient (planned)
 
-**Status:** approved bounded context, module not scaffolded
+**Status:** approved bounded context, preliminary bootable foundation only; business service remains planned
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
-**Planned module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Base path:** `/api/v1/inpatient`
+**Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Planned base path:** `/api/v1/inpatient` (no business endpoint or Gateway route is live)
+
+The foundation contains runtime configuration, health/info, OpenAPI assets and default-deny JWT
+security only. Business DDL, API DTOs, events and domain behavior wait for the future
+implementation-ready Inpatient spec. The Inpatient business contracts remain `DESIGN_READY`;
+the shared identity contract retains its separately tracked `PARTIAL` status.
 
 ## Bounded context
 
@@ -80,10 +85,12 @@ Lab/Pharmacy completion facts needed for the admission timeline.
 - [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
+- [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../../handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md)
 
 ## Scaffold/implementation gate
 
-Before production code: write an implementation-ready spec; scaffold with the project skill; add
-root Maven module, Flyway DB, Eureka registration, Gateway route, Compose service, nested `AGENTS.md`,
-contract fixtures and tests. Contract status stays `DESIGN_READY` until dependent producers and
-consumers share passing fixtures.
+Before business code: write an implementation-ready spec, then implement its exact business DDL,
+API, events and tests. The foundation already registers the module, configures Flyway/JPA/Eureka,
+creates the empty database, wires Compose and adds nested `AGENTS.md`. The Gateway route remains
+tracked by the active handoff above. Contract status stays `DESIGN_READY` until dependent producers
+and consumers share passing fixtures.

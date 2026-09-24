@@ -35,6 +35,7 @@ COPY backend/pharmacy-service/pom.xml backend/pharmacy-service/pom.xml
 COPY backend/billing-service/pom.xml backend/billing-service/pom.xml
 COPY backend/notification-service/pom.xml backend/notification-service/pom.xml
 COPY backend/report-service/pom.xml backend/report-service/pom.xml
+COPY backend/inpatient-service/pom.xml backend/inpatient-service/pom.xml
 
 # Tải dependencies (layer này được cache nếu POM không đổi)
 # --fail-at-end để không fail ngay nếu thiếu dependency của service khác

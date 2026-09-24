@@ -15,8 +15,9 @@ the contracts listed in the service's nested `AGENTS.md`.
 | Billing | Lộc | implemented; ledger redesign planned | [billing](billing.md) |
 | Notification | Lộc | implemented | [notification](notification.md) |
 | Report | Huy | implemented | [report](report.md) |
-| Inpatient | Vinh | planned, not scaffolded | [inpatient](inpatient.md) |
+| Inpatient | Vinh | planned, foundation shell only | [inpatient](inpatient.md) |
 | Surgery | Huy | planned, not scaffolded | [surgery](surgery.md) |
 
-`planned` is a design state. Do not add imports, routes, Compose dependencies or placeholder code for
-a planned module outside its dedicated scaffold PR.
+`planned` means the bounded context does not yet have its business implementation. A preliminary
+foundation may contain runtime configuration and infrastructure wiring only; do not add business
+models, migrations, endpoints, DTOs, or events before its implementation-ready spec exists.

@@ -34,7 +34,7 @@ services:
       - "5432:5432"
     volumes:
       - mediflow-pgdata:/var/lib/postgresql/data
-      # Script tạo 8 databases khi chạy lần đầu
+      # Script tạo 9 databases khi chạy lần đầu
       - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -323,6 +323,39 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+    networks:
+      - mediflow-net
+
+  # ======================================================================
+  # PLANNED CARE CONTEXT — bootable foundation only, no business API yet
+  # ======================================================================
+  inpatient-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: inpatient-service
+    container_name: mediflow-inpatient
+    ports:
+      - "8090:8090"
+    environment:
+      SERVER_PORT: 8090
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_inpatient
+      SPRING_RABBITMQ_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - mediflow-net
 
