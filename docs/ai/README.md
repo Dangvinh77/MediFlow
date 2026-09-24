@@ -14,7 +14,7 @@
 
 | # | File | What it governs |
 |---|------|-----------------|
-| 00 | [00-project-overview.md](00-project-overview.md) | Domain, the 9 services, glossary |
+| 00 | [00-project-overview.md](00-project-overview.md) | Domain, implemented and planned service landscape, glossary |
 | 01 | [01-architecture.md](01-architecture.md) | System topology, communication patterns |
 | 02 | [02-tech-stack.md](02-tech-stack.md) | Pinned versions, libraries, build tool |
 | 03 | [03-coding-standards.md](03-coding-standards.md) | Java style, naming, error handling |
@@ -30,7 +30,8 @@
 | 13 | [13-codebase-tools.md](13-codebase-tools.md) | Optional AI tools: codebase-memory-mcp + Understand-Anything |
 | 14 | [14-flutter.md](14-flutter.md) | Flutter mobile — Clean Architecture, feature structure, API contract |
 | 15 | [15-frontend-ownership.md](15-frontend-ownership.md) | Frontend ownership matrix, shared scope, work routing, and quota-aware model use |
-| — | [services/](services/) | Per-service bounded context, data model, endpoints, events |
+| 16 | [16-care-finance-integration-contracts.md](16-care-finance-integration-contracts.md) | Mandatory cross-service contract gate for care episodes, finance, inpatient and surgery |
+| — | [services/README.md](services/README.md) | Per-service bounded context, owner, runtime status, data, endpoints and events |
 
 ## Golden rules (the 30-second version)
 
@@ -40,3 +41,6 @@
 4. **Change data → publish an event.** Cross-service reads are REST; cross-service reactions are events (`06`).
 5. **Every endpoint declares its roles** (`07`). No endpoint is open except gateway `/auth/**` and `/actuator/health`.
 6. **Money is `BigDecimal`**, IDs are `UUID`, times are `Instant`/`LocalDate` — never `float`/`double`/`String` for these.
+7. **Cross-service contract changes are atomic team work.** Read `16` and the service's registered
+   handoffs; update producer schema/fixture and every consumer fixture/test together, or mark the
+   consumer explicitly blocked.

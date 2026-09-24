@@ -6,19 +6,20 @@ sequenceDiagram
   participant B as Billing
   participant L as Lab
   participant P as Pharmacy
+  participant I as Inpatient
 
   BN->>TD: Đăng ký / check-in
   TD->>C: Ghi nhận ARRIVED
-  C-->>B: appointment.arrived
+  C-->>B: appointment.status.changed (ARRIVED)
   B->>B: Tạo phí khám + payment request
   BN->>B: Thanh toán phí khám
-  B-->>C: financial.clearance.granted (EXAM)
+  B-->>C: financial.clearance.granted (purpose=EXAM)
   C->>C: READY_FOR_EXAM → IN_EXAM
   C->>L: Tạo chỉ định xét nghiệm
   L-->>B: lab.request.created
   B->>B: Tạo phí xét nghiệm
   BN->>B: Thanh toán hóa đơn xét nghiệm
-  B-->>L: financial.clearance.granted (LAB)
+  B-->>L: financial.clearance.granted (purpose=LAB_TEST)
   L->>L: IN_PROGRESS → COMPLETED
   L-->>C: lab.result.created
   C->>C: Kết luận và hướng xử lý
@@ -26,8 +27,8 @@ sequenceDiagram
     C->>P: Tạo đơn thuốc
     P-->>B: prescription.created
     BN->>B: Thanh toán tiền thuốc
-    B-->>P: financial.clearance.granted (DRUG)
+    B-->>P: financial.clearance.granted (purpose=PRESCRIPTION)
     P->>BN: Cấp thuốc
   else Cần nhập viện
-    C-->>BN: Lập chỉ định nhập viện
+    C-->>I: admission.requested
   end

@@ -524,3 +524,21 @@ SYSTEM
 ```
 
 There must be no Vietnamese table names, column names, enum values, API field names, event payload fields, or Java domain names in the Organization Service.
+
+## Care-finance integration alignment
+
+Organization remains the authority for `staffId`, `departmentId`, account roles, staff eligibility
+and department membership. It does not own beds, admissions, surgery cases, payment or patient data.
+
+- Clinical, Inpatient and Surgery use resilient service-authenticated lookups for staff/department
+  validation. Surgery owns its case/team assignment and stores Organization staff IDs as references.
+- Staff transfer or deactivation never rewrites historical care records; operational services keep
+  the staff/department references and audit snapshots valid at the time of action.
+- Internal endpoints accept only short-lived JWTs with `type=service`, `role=SYSTEM`, service subject
+  and correlation propagation. They do not accept a forwarded human token as service authority.
+- New fields are additive. Breaking lookup changes require versioning and fixture updates for every
+  consumer.
+
+Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+The existing Clinical staff and Gateway account-verification handoffs remain the detailed contracts
+for their implemented endpoints.

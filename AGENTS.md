@@ -27,9 +27,10 @@ node scripts/changelog.js --files     # chi tiết từng file + tác giả + s�
 
 **MediFlow** — a hospital management system. Two halves:
 
-- **Backend** — Spring Boot microservices, Maven multi-module monorepo. 8 business services
-  (patient, appointment, medical-record, lab, pharmacy, billing, notification, report) plus
-  `gateway`, `eureka-server`, `common`. PostgreSQL (one DB per service) + RabbitMQ.
+- **Backend** — Spring Boot microservices, Maven multi-module monorepo. 8 implemented business
+  services (organization, patient, clinical, lab, pharmacy, billing, notification, report) and 2
+  approved planned contexts (inpatient, surgery), plus `gateway`, `eureka-server`, `common`.
+  PostgreSQL (one DB per service) + RabbitMQ.
 - **Frontend** — `frontend/`: Next.js 16 App Router, TypeScript, Tailwind v4, pnpm.
 
 Authoritative business design: `docs/eproject_general_plan/*.html`. Coding standards: `docs/ai/`.
@@ -38,8 +39,8 @@ Authoritative business design: `docs/eproject_general_plan/*.html`. Coding stand
 
 | Developer | Owned backend modules |
 |---|---|
-| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service` |
-| Huy (`LQHuy0210`) | `pharmacy-service`, `report-service` |
+| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service`, planned `inpatient-service` |
+| Huy (`LQHuy0210`) | `pharmacy-service`, `report-service`, planned `surgery-service` |
 | Hoàng Anh (`TranHoangAnh94`) | `organization-service`, `patient-service`, `gateway` |
 | Lộc (`locgit-89`) | `billing-service`, `notification-service` |
 
@@ -65,7 +66,9 @@ Each owned backend module has a nested `AGENTS.md` that identifies its owner and
 1. [`docs/ai/README.md`](docs/ai/README.md) — the golden rules.
 2. [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md) — mandatory package layout.
 3. `docs/ai/services/<service>.md` — the bounded context you are touching.
-4. As needed: `01-architecture`, `03-coding-standards`, `05-api-conventions`, `06-events-rabbitmq`, `07-security-rbac`, `08-persistence-naming`, `09-testing`.
+4. [`docs/ai/16-care-finance-integration-contracts.md`](docs/ai/16-care-finance-integration-contracts.md)
+   and the handoffs registered for that service whenever a REST/event contract is involved.
+5. As needed: `01-architecture`, `03-coding-standards`, `05-api-conventions`, `06-events-rabbitmq`, `07-security-rbac`, `08-persistence-naming`, `09-testing`.
 
 **Actually writing the code?** Read [`docs/eproject_general_plan/backend-spec/`](docs/eproject_general_plan/backend-spec/README.md) —
 implementation-ready specs: DDL, domain invariants, port signatures, DTOs with validation, use-case
@@ -138,7 +141,9 @@ scripts\setup-tools.bat               # both at once (Windows)
 git config core.hooksPath scripts/git-hooks   # or: scripts\setup-hooks.bat / bash scripts/setup-hooks.sh
 ```
 
-Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000) → `flutter run`.
+Start order: `eureka-server` (8761) → `gateway` (8080) → implemented business services
+(8081–8089) → planned Inpatient/Surgery (8090/8091, only after scaffold) → `pnpm dev` (3000) →
+`flutter run`.
 
 ## Git workflow
 
