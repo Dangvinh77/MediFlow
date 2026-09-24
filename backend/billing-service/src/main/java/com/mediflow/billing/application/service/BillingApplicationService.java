@@ -181,7 +181,7 @@ public class BillingApplicationService implements ManageInvoiceUseCase, QueryRev
     /**
      * {@code sourceRefId} (= {@code labId}) của mọi khoản phí LAB trong hóa đơn vừa trả, khử trùng
      * lặp và sắp thứ tự ổn định — đây là test ID thật để Lab đánh dấu đã thanh toán
-     * (HANDOFF-LAB-PAYMENT-COMPLETED.md). Hóa đơn không có phí LAB thì trả về danh sách rỗng.
+     * (CONTRACT-CARE-BILLING-01). Hóa đơn không có phí LAB thì trả về danh sách rỗng.
      */
     private static List<UUID> labTestIds(List<Fee> fees) {
         return List.copyOf(fees.stream()

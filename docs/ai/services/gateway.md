@@ -754,6 +754,6 @@ JWT keeps `sub=accountId` and explicit optional `patientId`, `staffId`, `departm
 use `type=service`, `role=SYSTEM`. Gateway never derives missing business IDs or rewrites domain
 payload fields.
 
-Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
-The current account verification contract remains in
-[`HANDOFF-ORGANIZATION-ACCOUNT-VERIFY`](../../../backend/gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md).
+Mandatory contract: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+Organization account verification and typed identity claims are an implemented baseline; any change
+updates both Gateway and Organization contract tests.

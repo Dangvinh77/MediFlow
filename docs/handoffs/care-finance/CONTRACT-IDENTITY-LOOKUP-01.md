@@ -1,6 +1,7 @@
 # CONTRACT-IDENTITY-LOOKUP-01 — Stable identity, lookup and Gateway routing
 
-- **Status:** `PARTIAL`; current Clinical lookups/auth are tracked by existing handoffs
+- **Status:** `PARTIAL`; Organization staff lookup and Gateway account verification are implemented,
+  while Patient lookup and several consumer claim migrations remain open
 - **Producer owners:** Organization, Patient, Gateway — Hoàng Anh
 - **Consumers:** Clinical, Lab, Pharmacy, Billing, Notification, Inpatient, Surgery
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -35,13 +36,16 @@ subject and correlation propagation. Human access/refresh tokens are not reused 
 Human access tokens use `sub=accountId` and explicit `patientId`, `staffId`, `departmentId` claims;
 no service may interpret `sub` as a patient or staff ID.
 
-Existing detailed handoffs remain authoritative for implemented paths:
+Implemented baseline:
 
-- [Clinical service token type](../../../backend/clinical-service/HANDOFF-CLINICAL-SERVICE-TOKEN-TYPE.md)
-- [Organization staff lookup](../../../backend/organization-service/HANDOFF-CLINICAL-STAFF-LOOKUP.md)
-- [Patient lookup](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md)
-- [Gateway account verification](../../../backend/gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md)
-- [Notification patient claim](../../../backend/notification-service/HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md)
+- Organization returns `ApiResponse<StaffLookupDTO>` with `exists`, `eligibleDoctor` and
+  authoritative `departmentId`; Clinical already projects the three states and preserves outages.
+- Gateway verifies accounts through Organization, issues typed access/refresh tokens and carries
+  optional `staffId`, `departmentId` and `patientId` claims.
+- Pharmacy consumes the explicit `staffId` claim and never treats `sub` as a staff identity.
+
+Open work is listed only in the [active handoff registry](../README.md), including Clinical's
+`type=service` credential, Patient read/existence APIs and consumer JWT claim migrations.
 
 ## Planned Inpatient/Surgery routing
 

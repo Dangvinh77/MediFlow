@@ -176,8 +176,9 @@ public record LabResultDTO(UUID resultId, String indicator, String value, String
 `lab.result.created` bắn từ `addResults`, sau khi commit. Trường `departmentId` lấy từ `requestingDepartmentId`.
 
 `labId` lấy từ `testId`; `labType` dùng tra giá bên billing và template notification,
-`performedDate` dùng làm ngày thống kê bên report. Xem [contract handoff](clinical-lab-contract-handoff.md)
-cho các điều kiện còn thiếu ở producer thanh toán và consumer.
+`performedDate` dùng làm ngày thống kê bên report. Contract canonical nằm trong
+[`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md) và
+[`06-events-rabbitmq.md`](../../ai/06-events-rabbitmq.md).
 
 **Subscribe** — queue `lab.q`
 

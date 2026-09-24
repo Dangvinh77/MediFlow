@@ -29,7 +29,7 @@ TypeScript contract is spec-backed. At the current source baseline, Patient back
 - Producer: Patient / Hoàng Anh. Consumers: Patient UI, Clinical, Lab, Billing, Notification.
   Acceptance: secured lookup/search responses and stable `patientId` semantics.
 - The missing list contract currently breaks the first page after a successful ADMIN login. Follow
-  [`../../../docs/HANDOFF-patient-login-landing.md`](../../../docs/HANDOFF-patient-login-landing.md).
+  [`../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md`](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md).
 - Patient self-service and “my notifications” require a documented patient identity mapping from
   Gateway and Patient. Do not decode or infer an undocumented token claim.
 - Until the live backend exists, do not add mutations, fake data, direct database access, or UI that

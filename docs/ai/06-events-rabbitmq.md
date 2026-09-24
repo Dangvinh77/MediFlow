@@ -90,7 +90,7 @@ department, so `report-service` can aggregate by department without ever calling
 > reach for an event to change something you already own, the service boundary is cut in the wrong place.
 
 > Keep this table in sync with each `services/*.md` publish/subscribe section. For care-finance
-> flows, the approved architecture HTML and canonical handoffs in `docs/handoffs/care-finance/`
+> flows, the approved architecture HTML and canonical contracts in `docs/handoffs/care-finance/`
 > are authoritative. `planned` means the contract is designed, not live.
 
 ## Compatibility saga (billing orchestrates prescribe → pay → dispense)

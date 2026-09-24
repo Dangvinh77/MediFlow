@@ -52,8 +52,8 @@ contract with test codes and producer-generated order ID.
 - Required: [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md),
   [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md) and
   [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
-- Existing explicit `labTestIds` behavior remains defined by
-  [`HANDOFF-LAB-PAYMENT-COMPLETED`](../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md)
-  until clearance v1 is implemented on both sides.
+- Existing explicit `labTestIds` compatibility behavior is implemented and recorded in
+  `CONTRACT-CARE-BILLING-01` plus the Billing/Lab event fixtures until clearance v1 is implemented
+  on both sides.
 - Any change to `lab.request.created`, `lab.result.created`, or clearance fixtures must update Billing,
   Clinical, Notification and Report consumer fixtures in the same PR or mark those consumers blocked.

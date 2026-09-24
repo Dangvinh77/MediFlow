@@ -31,21 +31,14 @@ không copy một bản contract khác.
 | Inpatient (planned) | all five contracts |
 | Surgery (planned) | all five contracts except outpatient-only parts of CARE-BILLING |
 
-## Existing handoffs retained
+## Implementation blockers
 
-Các handoff đã triển khai vẫn có hiệu lực và được link thay vì viết lại:
-
-- [Billing → Lab payment references](../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md)
-- [Billing ↔ Pharmacy saga](../../../backend/billing-service/HANDOFF.md)
-- [Pharmacy payment idempotency race](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md)
-- [Pharmacy → Clinical prescription correlation](../../../backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md)
-- [Organization → Clinical staff lookup](../../../backend/organization-service/HANDOFF-CLINICAL-STAFF-LOOKUP.md)
-- [Patient → Clinical patient lookup](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md)
-- [Gateway → Organization account verification](../../../backend/gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md)
-- [Notification patient JWT claim](../../../backend/notification-service/HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md)
+Chỉ các blocker còn mở mới tồn tại dưới dạng handoff. Danh sách canonical nằm tại
+[`docs/handoffs/README.md`](../README.md). Các rollout đã hoàn thành được ghi trực tiếp vào contract
+và service docs; không giữ file handoff lịch sử làm tài liệu bắt buộc.
 
 ## Update rule
 
 Một PR đổi contract phải cập nhật registry status, canonical handoff, producer fixture/test và consumer
 fixture/test. Nếu không có quyền sửa consumer, PR giữ status chưa `IMPLEMENTED`, ghi blocker và tag
-đúng owner; không dùng default field hoặc suy luận ID để “cho chạy trước”.
+đúng owner trong registry active; không dùng default field hoặc suy luận ID để “cho chạy trước”.

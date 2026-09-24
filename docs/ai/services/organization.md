@@ -539,6 +539,6 @@ and department membership. It does not own beds, admissions, surgery cases, paym
 - New fields are additive. Breaking lookup changes require versioning and fixture updates for every
   consumer.
 
-Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
-The existing Clinical staff and Gateway account-verification handoffs remain the detailed contracts
-for their implemented endpoints.
+Mandatory contract: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+Clinical staff lookup and Gateway account verification are implemented baselines. Their lasting
+wire rules and acceptance gates live in that canonical contract and the Organization/Gateway tests.

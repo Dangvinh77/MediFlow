@@ -329,8 +329,8 @@ thì pharmacy phải đoán — đừng bỏ nó.
 
 `labTestIds` mang `sourceRefId` (= `labId`) của mọi khoản phí `LAB` nằm trong hóa đơn vừa trả, khử
 trùng lặp; hóa đơn không có phí LAB thì rỗng. Đây là "test ID" thật để Lab đánh dấu xét nghiệm đã
-thanh toán — không được suy diễn từ `invoiceId`/`prescriptionId`/`recordId`
-(../../../backend/billing-service/HANDOFF-LAB-PAYMENT-COMPLETED.md).
+thanh toán — không được suy diễn từ `invoiceId`/`prescriptionId`/`recordId`. Contract bền vững nằm
+trong [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
 
 **Subscribe** — queue `billing.q`
 

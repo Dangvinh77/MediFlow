@@ -23,13 +23,13 @@ tokens and forbidden roles return the common API error envelope.
 Domain and validation failures are mapped to the specified HTTP statuses with stable error codes.
 
 The RabbitMQ publisher sends JSON events to the durable shared exchange only after transaction
-commit. Inbound consumers remain follow-up work, and payment consumers still require an explicit
-test identifier.
+commit. Inbound consumers use explicit producer IDs; Billing supplies `labTestIds` and Clinical
+supplies record identifiers. Cross-service fields and remaining target workflow work are recorded
+in the [event catalog](../../docs/ai/06-events-rabbitmq.md), the
+[care-finance contracts](../../docs/handoffs/care-finance/README.md), and the
+[active handoff registry](../../docs/handoffs/README.md).
 
-Cross-service field choices and unresolved producer gaps are recorded in the
-[clinical/lab contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
-
-The remaining adapter packages are reserved for follow-up integration work:
+Integration adapters are organized under:
 
 ```
 infrastructure/client   messaging/consumer

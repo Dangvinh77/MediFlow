@@ -1,5 +1,7 @@
 # Handoff — Clinical service token must declare `type=service`
 
+- **Status (2026-09-24): OPEN in Clinical.** The interceptor still emits `role=SYSTEM` without
+  `JwtClaims.TYPE=service`; Organization now requires both claims.
 - **Producer of contract:** Gateway / shared security contract
 - **Consumer to update:** Clinical Service (`clinical-service`)
 - **Owner:** Vinh (`Dangvinh77` / `Harori`)
@@ -29,4 +31,3 @@ an account login token for service-to-service calls.
 
 This handoff intentionally does not modify Clinical source code because that module is owned by a
 different developer.
-

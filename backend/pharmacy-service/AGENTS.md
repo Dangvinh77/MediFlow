@@ -8,8 +8,6 @@ Root `AGENTS.md` rules continue to apply.
 - Other services are read-only unless the user explicitly grants a task-scoped override.
 - Do not infer cross-service identifiers, query another service's database, or edit its producer.
 - Subagents inherit this boundary and cannot bypass it.
-- **Required handoff:** before changing `PrescriptionFilledEvent` or dispense contracts, read
-  [`HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md`](HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md).
 - **Required concurrency handoff:** before changing `payment.completed`, payment receipts,
   dispense idempotency or their tests, read
   [`HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md`](HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).

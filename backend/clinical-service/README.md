@@ -35,13 +35,18 @@ tokens and forbidden roles return the common API error envelope.
 Domain, validation and upstream failures are mapped to the specified 400/404/409/422/503 statuses
 with stable error codes.
 
-Published records live in `application/event`, following billing/pharmacy, to keep publisher ports independent of infrastructure. JSON compatibility notes and the remaining producer gaps are in [the contract handoff](../../docs/eproject_general_plan/backend-spec/clinical-lab-contract-handoff.md).
+Published records live in `application/event`, following billing/pharmacy, to keep publisher ports
+independent of infrastructure. Cross-service wire rules live in the
+[event catalog](../../docs/ai/06-events-rabbitmq.md), the
+[care-finance contracts](../../docs/handoffs/care-finance/README.md), and the
+[active handoff registry](../../docs/handoffs/README.md).
 
 The RabbitMQ publisher sends all four domain events as JSON to the durable shared exchange only
 after transaction commit. External Lab and Pharmacy references are stored separately with an
 idempotent composite key instead of altering clinical text. The `lab.result.created` consumer uses
 a durable queue, dead-letter queue and processed-event ledger. Feign clients and the
-`prescription.filled` consumer remain follow-up work. The `.http` requests match both controllers.
+`prescription.filled` consumer use explicit producer IDs; Patient lookup remains blocked by the
+registered Patient handoff. The `.http` requests match both controllers.
 
 ## Run locally
 
