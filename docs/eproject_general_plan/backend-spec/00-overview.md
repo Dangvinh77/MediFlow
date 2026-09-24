@@ -1,7 +1,11 @@
 # 00 — Tổng quan Backend (đọc trước mọi spec service)
 
-Mọi thứ trong file này **giống hệt nhau ở cả tám service nghiệp vụ**. Các spec riêng từng service
-mặc định bạn đã đọc file này và sẽ không nhắc lại.
+Mọi thứ trong file này **giống hệt nhau ở các service nghiệp vụ**. Tám module hiện có dùng các spec
+01–08. Hai bounded context đã duyệt là Inpatient và Surgery dùng
+[`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html),
+[`docs/ai/services/inpatient.md`](../../ai/services/inpatient.md),
+[`docs/ai/services/surgery.md`](../../ai/services/surgery.md) và các canonical handoff cho tới khi có
+implementation-ready spec riêng. Không suy diễn phần còn thiếu từ service khác.
 
 ## 1. Công nghệ
 
@@ -20,11 +24,15 @@ Phiên bản được ghim ở `pom.xml` gốc — **module con không bao giờ
 | `billing-service` | `com.mediflow.billing` | 8086 | `mediflow_billing` | `/api/v1/billing` |
 | `notification-service` | `com.mediflow.notification` | 8087 | `mediflow_notification` | `/api/v1/notifications` |
 | `report-service` | `com.mediflow.report` | 8088 | `mediflow_report` | `/api/v1/reports` |
+| `inpatient-service` *(planned)* | `com.mediflow.inpatient` | 8090 | `mediflow_inpatient` | `/api/v1/inpatient` |
+| `surgery-service` *(planned)* | `com.mediflow.surgery` | 8091 | `mediflow_surgery` | `/api/v1/surgery` |
 | `gateway` | `com.mediflow.gateway` | 8080 | — | định tuyến tất cả các mục trên |
 | `eureka-server` | `com.mediflow.eureka` | 8761 | — | — |
 
-Tất cả module đã tồn tại sẵn dưới dạng khung, với `pom.xml`, `application.yml`, class `Application`
-và cây package đúng chuẩn. **Đừng tạo lại** — chỉ điền vào.
+Tám business module hiện tại đã tồn tại sẵn dưới dạng khung/implementation. Inpatient và Surgery
+chưa tồn tại; chỉ tạo chúng bằng skill scaffold và một PR riêng có module registration, database,
+Gateway route, Compose service, health và authorization tests. Không tạo thư mục production rỗng chỉ
+để làm docs.
 
 ## 3. Cấu trúc package (bắt buộc)
 

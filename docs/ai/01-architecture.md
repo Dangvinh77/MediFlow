@@ -49,6 +49,12 @@ service exist?", and every service must have one.
 | **department** | `billing-service` | 8086 | `mediflow_billing` | `/api/v1/billing` | Phòng Viện phí — **saga orchestrator** |
 | support | `notification-service` | 8087 | `mediflow_notification` | `/api/v1/notifications` | notification history |
 | support | `report-service` | 8088 | `mediflow_report` | `/api/v1/reports` | read model built from events |
+| **department** *(planned)* | `inpatient-service` | 8090 | `mediflow_inpatient` | `/api/v1/inpatient` | admissions, beds, treatment and discharge |
+| **department** *(planned)* | `surgery-service` | 8091 | `mediflow_surgery` | `/api/v1/surgery` | surgery cases, readiness, schedule and result |
+
+The planned rows are approved allocations, not a claim that their Maven modules, databases,
+Gateway routes or Compose containers already exist. Their scaffold PR must add all of those pieces
+and health/authorization tests together.
 
 **Reference services** hold data everyone else points at; they are read far more than written, and
 that is correct for their role, not a sign of an anemic service. **Department services** each map to
@@ -114,9 +120,29 @@ Why this matters more than it looks: the moment two services share a table, they
 
 ---
 
-## 5. Saga — the distributed transaction
+## 5. Care and finance workflows
 
-There is no `@Transactional` across services. `billing-service` is the **orchestrator** for `prescribe → dispense → pay`:
+The approved end-to-end design is
+[`mediflow-care-finance-redesign.html`](../architecture/mediflow-care-finance-redesign.html).
+Cross-service payloads and readiness gates are canonical in
+[`16-care-finance-integration-contracts.md`](16-care-finance-integration-contracts.md).
+
+Rules that apply to every workflow:
+
+- Operational services publish what happened. Billing alone owns charges, transactions, deposits,
+  refunds, allocations and settlement.
+- Every financial record belongs to one care episode: `OUTPATIENT_VISIT` or `ADMISSION`.
+- Payment unlocks an explicit purpose/target through `financial.clearance.granted`; it is never a
+  patient-wide paid flag.
+- Medical discharge and administrative close are separate. Inpatient closes after settlement or an
+  approved audited debt/emergency override.
+- Inpatient and Surgery are planned modules; no current service may temporarily absorb their tables
+  or query another database to simulate them.
+
+### Existing outpatient pharmacy saga
+
+There is no `@Transactional` across services. `billing-service` is the **orchestrator** for
+`prescribe → pay → dispense`:
 
 ```
 pharmacy: prescription.created ──► billing: create invoice
@@ -132,6 +158,24 @@ pharmacy: prescription.created ──► billing: create invoice
 ```
 
 Every participant must be **idempotent** and must handle compensation. Details in `06` and `services/billing.md`.
+
+This current saga remains a compatibility path while Billing migrates to the episode ledger and
+purpose-scoped clearance. Do not broaden `payment.completed` to unlock unrelated clinical actions.
+
+### Planned admission and surgery flow
+
+```text
+clinical: admission.requested
+  -> inpatient: bed + deposit request
+  -> billing: ADMISSION_DEPOSIT clearance
+  -> inpatient: admission.started
+  -> surgery: request + clinical/resource readiness
+  -> billing: SURGERY clearance
+  -> surgery: completed/cancelled
+  -> inpatient: discharge.medically.approved
+  -> billing: settlement.completed
+  -> inpatient: admission.closed
+```
 
 ---
 
