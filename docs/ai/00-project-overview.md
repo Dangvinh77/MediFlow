@@ -6,9 +6,11 @@
 
 ## The service landscape
 
-MediFlow has ten business bounded contexts in the approved target architecture. Eight are currently
-implemented Maven modules. Inpatient and Surgery are approved designs and remain **planned** until a
-scaffold PR registers their modules, ports, databases, Gateway routes and Compose services.
+MediFlow has ten business bounded contexts in the approved target architecture. Eight have
+implemented business services. Inpatient now has a preliminary bootable foundation (module,
+configuration, database and Compose service) but remains **planned** until its business spec,
+endpoints, schema, contracts and Gateway route are implemented. Surgery remains planned and
+unscaffolded.
 
 | Service | Bounded context (owns) | Key tables |
 |---------|------------------------|------------|

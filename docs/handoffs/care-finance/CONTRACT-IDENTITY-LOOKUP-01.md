@@ -51,10 +51,11 @@ read/existence APIs and consumer JWT claim migrations.
 
 ## Planned Inpatient/Surgery routing
 
-When modules are scaffolded, Gateway adds `/api/v1/inpatient/**` and `/api/v1/surgery/**` using
-service discovery and the same auth/correlation policies. Ports, module registration and Compose
-configuration are decided in the scaffold PR; docs must not claim routes are live before health and
-authorization tests pass.
+The Inpatient foundation now has its module, port, and Compose configuration, while its Gateway
+route remains open in [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../HANDOFF-INPATIENT-GATEWAY-ROUTE.md).
+Surgery remains unscaffolded. Gateway routes for `/api/v1/inpatient/**` and
+`/api/v1/surgery/**` use service discovery and the same auth/correlation policies when implemented;
+neither route is live before health and authorization tests pass.
 
 ## Acceptance criteria
 

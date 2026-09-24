@@ -12,6 +12,7 @@ wire contracts belong in the canonical contract documents under
 | [Notification patient JWT claim](../../backend/notification-service/HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md) | OPEN | Lộc | correct patient authorization with `sub=accountId` |
 | [Report strict access-token validation](../HANDOFF-report-jwt-token-type.md) | OPEN | Huy | rejection of legacy/missing token types |
 | [Pharmacy payment idempotency race](../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md) | OPEN | Huy | deterministic concurrent `payment.completed` processing |
+| [Inpatient Gateway route](HANDOFF-INPATIENT-GATEWAY-ROUTE.md) | OPEN | Hoàng Anh | expose the future inpatient API through Gateway |
 
 ## Lifecycle rule
 

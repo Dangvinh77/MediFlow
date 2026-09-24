@@ -184,7 +184,7 @@ scripts\setup-tools.bat                   # Windows (installs both)
 
 ## Infrastructure (PostgreSQL + RabbitMQ)
 
-The fastest path — one command, all eight databases created for you:
+The fastest path — one command, all nine databases created for you:
 
 ```bash
 docker compose up -d
@@ -192,11 +192,12 @@ docker compose up -d
 
 That starts **PostgreSQL** on `5432` (running [`scripts/init-databases.sql`](scripts/init-databases.sql), which creates
 `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`,
-`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`) and
+`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`, and the
+empty `mediflow_inpatient` foundation database) and
 **RabbitMQ** on `5672` with its management UI at http://localhost:15672 (`guest`/`guest`).
 
-Only the infrastructure runs in Docker — the Java services and the frontend still run from
-your IDE, so hot reload and the debugger keep working.
+Compose can also build and run the Java services and frontend. For hot reload and the debugger,
+start the shared infrastructure and the selected service from your IDE.
 
 | | |
 |---|---|
@@ -220,10 +221,11 @@ The Eureka server (8761) must also be running before any business service starts
 
 ## Building & running
 
-All 11 modules exist. Only `patient-service` has code in it today — the other seven are
-**skeletons** (module + dependencies + config + the mandated package layout, no business logic).
+All 12 backend Maven modules exist. Eight business services have their implementations; Inpatient
+has a bootable configuration/security shell only, and Surgery remains planned. Inpatient has no
+business API, domain model, or schema until its implementation-ready spec is approved.
 
-Eight business services in three groups — each one exists for a reason you can state in a sentence:
+Eight implemented business services, plus the preliminary Inpatient foundation:
 
 | Module | Port | Database | Base path | Why it exists |
 |--------|------|----------|-----------|---------------|
@@ -240,6 +242,8 @@ Eight business services in three groups — each one exists for a reason you can
 | **Support** | | | | |
 | `notification-service` | 8087 | `mediflow_notification` | `/api/v1/notifications` | email/SMS/in-app |
 | `report-service` | 8088 | `mediflow_report` | `/api/v1/reports` | read model from events |
+| **Planned care context** | | | | |
+| `inpatient-service` | 8090 | `mediflow_inpatient` | planned `/api/v1/inpatient` (no business route yet) | bootable foundation only |
 
 ```bash
 mvn -q -DskipTests install                   # build all modules
@@ -296,7 +300,7 @@ MediFlow/
 ├── .codex/                       ← Codex config, agents, and hooks
 ├── .agents/skills/               ← team-shared Codex workflows
 ├── scripts/                      ← bootstrap.ps1 / .sh + tool setup scripts
-├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 business services)
+├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 implemented services + Inpatient foundation)
 │   ├── common/                   ← shared lib (envelope, pagination, base exceptions)
 │   ├── eureka-server/            ← service registry
 │   ├── gateway/                  ← API gateway (JWT, routing)

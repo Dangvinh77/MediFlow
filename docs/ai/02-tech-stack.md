@@ -72,7 +72,7 @@ Added only to **`notification-service`**: `spring-boot-starter-mail` (autoconfig
 
 ## Databases
 
-- **PostgreSQL**, one database per service — `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`, `mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`.
+- **PostgreSQL**, one database per service — `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`, `mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`, and `mediflow_inpatient` (foundation only; no business schema yet).
 - No shared tables, no cross-database joins, no foreign keys across service boundaries (`01`, `08`).
 - Types: PK = `UUID`, money = `DECIMAL(15,2)` ↔ `BigDecimal`, timestamps = `TIMESTAMPTZ` ↔ `Instant`.
 - **Flyway** owns the schema: `src/main/resources/db/migration/V<n>__<desc>.sql`, append-only. `ddl-auto` is `validate` — never `update` outside local experimentation.

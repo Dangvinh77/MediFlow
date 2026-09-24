@@ -1,6 +1,6 @@
 # CONTRACT-INPATIENT-SURGERY-01 — Admission, surgery and inpatient medication
 
-- **Status:** `DESIGN_READY`, implementation blocked until Inpatient and Surgery modules are scaffolded
+- **Status:** `DESIGN_READY`, implementation blocked until Surgery is scaffolded and both services have implementation-ready business specs
 - **Owners:** Inpatient/Clinical — Vinh; Surgery/Pharmacy — Huy
 - **Consumers involved:** Billing, Notification, Report
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
