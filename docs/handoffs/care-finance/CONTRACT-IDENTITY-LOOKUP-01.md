@@ -1,14 +1,16 @@
 # CONTRACT-IDENTITY-LOOKUP-01 — Stable identity, lookup and Gateway routing
 
-- **Status:** `PARTIAL`; Organization staff lookup and Gateway account verification are implemented,
-  while Patient lookup and several consumer claim migrations remain open
+- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff lookup and Gateway account verification
+  are implemented. The additive Patient and Organization lookup endpoint shapes are now locked, but
+  their producers and several consumer claim migrations remain open.
 - **Producer owners:** Organization, Patient, Gateway — Hoàng Anh
 - **Consumers:** Clinical, Lab, Pharmacy, Billing, Notification, Inpatient, Surgery
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 
 ## Identity ownership
 
-- Patient owns `patientId`, demographics, insurance summary input and emergency contact.
+- Patient owns `patientId` and demographics. Insurance-summary and emergency-contact fields are not
+  part of the locked V1 schema; they require a separate additive contract with exact field definitions.
 - Organization owns `staffId`, `departmentId`, roles, staff eligibility and department membership.
 - Gateway owns public authentication, JWT issuance and routing. It does not own patient/staff data.
 - Operational services store bare UUID references and snapshots needed for audit. They do not create
@@ -25,6 +27,35 @@ shared `ApiResponse` envelope, short timeout, bounded retry/circuit breaker and 
 | staff eligibility | Organization | exists, role/job eligibility, authoritative departmentId |
 | department read | Organization | exists, active status, type/name needed for display/audit |
 | account verification | Organization | accountId, role, optional staffId/departmentId/patientId |
+
+## Phase 1 endpoint lock
+
+The following paths are the additive service-to-service contracts for this phase. They must be
+authenticated with a short-lived JWT carrying `type=service`, `role=SYSTEM`, a service subject and
+the request correlation ID. Human access/refresh tokens are not accepted.
+
+### Patient
+
+- `GET /api/v1/patients/{id}` remains the human/public read endpoint and returns the locked Patient
+  DTO. It is not a service-auth bypass.
+- `GET /api/v1/patients/{id}/exists` is the minimal service-only lookup and returns
+  `ApiResponse<PatientLookupDTO>` with `{ exists, patientId }`. `exists=false` is confirmed absence;
+  timeout, 5xx, circuit-open or malformed envelopes are upstream unavailable.
+  `PatientLookupDTO` is an internal lookup projection, not the public Vietnamese Patient DTO.
+
+### Organization
+
+- `GET /api/v1/org/staff/{id}/lookup` returns
+  `ApiResponse<StaffIdentityLookupDTO>` with `{ exists, active, jobTitle, departmentId }`.
+- `GET /api/v1/org/departments/{id}/lookup` returns
+  `ApiResponse<DepartmentLookupDTO>` with `{ exists, active, departmentId, departmentName,
+  departmentType }`.
+- Existing `GET /api/v1/org/staff/{id}/exists` is retained unchanged for Clinical compatibility; it
+  remains the doctor-eligibility contract and is not reinterpreted as the generic staff lookup.
+
+All lookup responses use the shared `ApiResponse` envelope and preserve `X-Correlation-Id`.
+Gateway must treat the `/lookup` and `/exists` paths above as internal-only and must not expose them
+as public human routes.
 
 HTTP 404 or `exists=false` means confirmed absence only. Timeout, circuit-open, 5xx and malformed
 envelopes map to upstream unavailable; consumer must not turn them into “not found”.

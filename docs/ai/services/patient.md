@@ -1,6 +1,8 @@
 # Service: patient
 
-**Source of truth:** `docs/eproject_general_plan/patient-service.html`  
+**Source of truth:** `docs/eproject_general_plan/patient-service.html` and the locked cross-service
+contracts under `docs/handoffs/care-finance/`. The current module is a skeleton; this document is the
+target contract, not a claim that the implementation already exists.
 **Module:** `backend/patient-service/` · **Base path:** `/api/v1/patients` · **DB table:** `PATIENT`
 
 ## Bounded context
@@ -18,7 +20,7 @@ The Patient Service is the source of truth for patient identity and demographic 
 | `patient_id`              | UUID PK            | Patient identifier                |
 | `full_name`               | VARCHAR(100)       | Patient full name                 |
 | `date_of_birth`           | DATE               | Patient date of birth             |
-| `gender`                  | ENUM               | `MALE`, `FEMALE`                  |
+| `gender`                  | VARCHAR(1)         | `M`, `F`                          |
 | `identity_number`         | VARCHAR(20) UNIQUE | National identity document number |
 | `address`                 | VARCHAR(255)       | Patient address                   |
 | `phone_number`            | VARCHAR(15)        | Patient phone number              |
@@ -32,36 +34,50 @@ The Patient Service is the source of truth for patient identity and demographic 
 #### `Gender`
 
 ```text
-MALE
-FEMALE
+M
+F
 ```
 
-The Patient Service must use these enum values consistently across the database, Java domain model, API DTOs, JSON payloads, and events.
+The persistence value is English-named (`gender`) while the public wire value is the locked `M`/`F`
+contract. Do not introduce `MALE`/`FEMALE` aliases.
 
 ## API Endpoints
 
 | Method | Path                                 | Request                | Response           | Roles                |
 | ------ | ------------------------------------ | ---------------------- | ------------------ | -------------------- |
 | GET    | `/api/v1/patients/{id}`              | -                      | `PatientDTO`       | ADMIN, DOCTOR, NURSE |
+| GET    | `/api/v1/patients/{id}/exists`       | -                      | `PatientLookupDTO` | SYSTEM service token only |
 | GET    | `/api/v1/patients?page&size&keyword` | -                      | `Page<PatientDTO>` | ADMIN, DOCTOR, NURSE |
 | POST   | `/api/v1/patients`                   | `CreatePatientRequest` | `PatientDTO`       | ADMIN, NURSE         |
 | PUT    | `/api/v1/patients/{id}`              | `UpdatePatientRequest` | `PatientDTO`       | ADMIN, NURSE         |
 | DELETE | `/api/v1/patients/{id}`              | -                      | `204 No Content`   | ADMIN                |
 
+`GET /api/v1/patients/{id}/exists` is an internal lookup. Its response is intentionally minimal:
+
+```json
+{
+  "exists": true,
+  "patientId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+The endpoint accepts only a short-lived service JWT (`type=service`, `role=SYSTEM`) and is not a
+replacement for the human-facing list or mutation endpoints.
+
 ### DTO fields
 
-Use English camelCase names:
+Public request/response DTOs use Vietnamese `camelCase` names to match the existing frontend contract:
 
 ```text
-patientId
-fullName
-dateOfBirth
-gender
-identityNumber
-address
-phoneNumber
+maBenhNhan
+hoTen
+ngaySinh
+gioiTinh
+soCmnd
+diaChi
+soDienThoai
 email
-healthInsuranceNumber
+bhytSo
 createdAt
 updatedAt
 ```
@@ -70,15 +86,15 @@ Example:
 
 ```json
 {
-  "patientId": "550e8400-e29b-41d4-a716-446655440000",
-  "fullName": "Nguyen Van A",
-  "dateOfBirth": "1990-01-15",
-  "gender": "MALE",
-  "identityNumber": "001234567890",
-  "address": "Ho Chi Minh City",
-  "phoneNumber": "0901234567",
+  "maBenhNhan": "550e8400-e29b-41d4-a716-446655440000",
+  "hoTen": "Nguyen Van A",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M",
+  "soCmnd": "001234567890",
+  "diaChi": "Ho Chi Minh City",
+  "soDienThoai": "0901234567",
   "email": "patient@example.com",
-  "healthInsuranceNumber": "01-12345678-9",
+  "bhytSo": "01-12345678-9",
   "createdAt": "2026-08-13T10:00:00Z",
   "updatedAt": "2026-08-13T10:00:00Z"
 }
@@ -88,16 +104,22 @@ Example:
 
 ### Publish
 
-The Patient Service publishes the following domain events.
+The Patient Service publishes the following domain events. `patient.created` is intentionally kept in
+the flat compatibility shape consumed by Notification. A versioned envelope is a separate contract
+change and requires producer and consumer fixtures/tests before rollout; see
+[`CONTRACT-PATIENT-NOTIFICATION-01`](../../handoffs/care-finance/CONTRACT-PATIENT-NOTIFICATION-01.md).
 
 #### `patient.created`
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "patientId": "...",
-  "fullName": "...",
+  "hoTen": "...",
   "email": "...",
-  "phoneNumber": "..."
+  "sdt": "..."
 }
 ```
 
@@ -107,11 +129,14 @@ Published when a patient is successfully created.
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "patientId": "...",
-  "fullName": "...",
+  "hoTen": "...",
   "email": "...",
-  "phoneNumber": "...",
-  "address": "..."
+  "sdt": "...",
+  "diaChi": "..."
 }
 ```
 
@@ -185,7 +210,7 @@ PATIENT
 
 ### Java
 
-Use English domain names:
+Use English class/domain names. Public request/response fields remain Vietnamese as listed above:
 
 ```text
 Patient
@@ -196,37 +221,37 @@ CreatePatientRequest
 UpdatePatientRequest
 ```
 
-Fields:
+Public DTO/request fields:
 
 ```text
-patientId
-fullName
-dateOfBirth
-gender
-identityNumber
-address
-phoneNumber
+maBenhNhan
+hoTen
+ngaySinh
+gioiTinh
+soCmnd
+diaChi
+soDienThoai
 email
-healthInsuranceNumber
+bhytSo
 createdAt
 updatedAt
 ```
 
 ### JSON / API
 
-Use `camelCase`:
+Use the locked Vietnamese `camelCase` wire contract:
 
 ```json
 {
-  "patientId": "...",
-  "fullName": "...",
-  "dateOfBirth": "1990-01-15",
-  "gender": "MALE",
-  "identityNumber": "...",
-  "address": "...",
-  "phoneNumber": "...",
+  "maBenhNhan": "...",
+  "hoTen": "...",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M",
+  "soCmnd": "...",
+  "diaChi": "...",
+  "soDienThoai": "...",
   "email": "...",
-  "healthInsuranceNumber": "..."
+  "bhytSo": "..."
 }
 ```
 
@@ -305,8 +330,8 @@ The service is complete when:
 - [ ] `PATIENT` is implemented.
 - [ ] All database columns use English naming.
 - [ ] Java domain classes and fields use English names.
-- [ ] `Gender` uses exactly `MALE` and `FEMALE`.
-- [ ] DTOs and request objects use English camelCase fields.
+- [ ] `Gender` uses exactly `M` and `F`.
+- [ ] DTOs and request objects use Vietnamese camelCase fields.
 - [ ] Patient CRUD endpoints are implemented.
 - [ ] `identity_number` uniqueness is enforced.
 - [ ] Email validation is implemented.
@@ -323,13 +348,16 @@ The service is complete when:
 
 ## Care-finance integration alignment
 
-Patient owns the canonical patient identity and may own insurance-summary input and emergency
-contact details. It does not calculate insurance benefit, patient liability, deposits or settlement;
-those financial results belong to Billing.
+Patient owns the canonical patient identity. Insurance-summary and emergency-contact fields are not
+part of the locked V1 schema; add them only through a separate additive contract and migration after
+their exact field definitions are agreed. Patient does not calculate insurance benefit, patient
+liability, deposits or settlement; those financial results belong to Billing.
 
 - Clinical, Lab, Pharmacy, Inpatient and Surgery store only bare `patientId` references and permitted
   event snapshots. They never join or query the Patient database.
-- Patient existence/read APIs distinguish confirmed absence from upstream outage/malformed response.
+- `GET /api/v1/patients/{id}/exists` is service-only (`type=service`, `role=SYSTEM`) and returns a
+  minimal existence result. Human/public reads use `GET /api/v1/patients/{id}`. Both contracts must
+  distinguish confirmed absence from upstream outage/malformed response.
 - Human JWT uses explicit `patientId`; `sub` is `accountId` and must not be reinterpreted.
 - Insurance fields are source inputs. Billing publishes the approved/reconciled financial amounts.
 - `payment.completed` log-only behavior remains compatibility behavior and does not mutate patient

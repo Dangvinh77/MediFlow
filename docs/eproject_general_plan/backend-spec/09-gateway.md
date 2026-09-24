@@ -48,7 +48,7 @@ sang `organization-service`:
 ```
 POST /api/v1/auth/login {username, password}
   1. WebClient → lb://organization-service  POST /api/v1/org/accounts/verify
-  2. organization trả về { maTaiKhoan, maNhanVien, maKhoa, vaiTro }
+  2. organization trả về `{ accountId, staffId, departmentId, patientId, role }`
   3. gateway ký access token  (các claim bên dưới)
   4. gateway ký refresh token (sub + type=refresh, hạn dài hơn)
   5. → { accessToken, refreshToken, role }
@@ -68,11 +68,12 @@ tài khoản ghi cứng — một credential stub sống sót tới production l
 
 | Claim | Giá trị |
 |-------|---------|
-| `sub` | `maTaiKhoan` |
-| `role` | `vaiTro` — một chuỗi role, phía dưới đọc thành `ROLE_<role>` |
-| `maNhanVien` | id nhân viên, hoặc vắng mặt với tài khoản `PATIENT` |
-| `maKhoa` | id khoa, hoặc vắng mặt |
-| `maBenhNhan` | id bệnh nhân — **bắt buộc** với tài khoản `PATIENT`; việc kiểm quyền sở hữu phụ thuộc vào nó |
+| `sub` | `accountId` for human tokens; service identity for service tokens |
+| `role` | canonical role string, phía dưới đọc thành `ROLE_<role>` |
+| `type` | `access`, `refresh`, hoặc `service` |
+| `staffId` | id nhân viên, tùy chọn |
+| `departmentId` | id khoa, tùy chọn |
+| `patientId` | id bệnh nhân — **bắt buộc** với tài khoản `PATIENT`; `sub` vẫn là `accountId` |
 | `exp` | hiện tại + `mediflow.jwt.access-token-minutes` (30) |
 
 Refresh token mang `sub`, `type=refresh` và `exp = hiện tại + refresh-token-minutes` (1440). Một

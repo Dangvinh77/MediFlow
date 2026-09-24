@@ -4,22 +4,21 @@ Master patient index (`PATIENT`) — the system's authoritative source for patie
 
 Reference: [`docs/ai/services/patient.md`](../docs/ai/services/patient.md) · design doc [`EProject/patient-service.html`](../docs/eproject_general_plan/patient-service.html) · implementation spec [`EProject/backend-spec/02-patient.md`](../docs/eproject_general_plan/backend-spec/02-patient.md).
 
-> ✅ **This is the project's reference implementation.** When implementing another service and the blueprint is unclear, use this module as the implementation reference.
->
-> | Layer             | Files | Allowed imports                                                            |
-> | ----------------- | ----: | -------------------------------------------------------------------------- |
-> | `domain/`         |     4 | only `java.*` + `common` — **no framework dependencies**                   |
-> | `application/`    |    11 | additionally `@Service`, `@Transactional`, MapStruct, `jakarta.validation` |
-> | `infrastructure/` |    15 | everything                                                                 |
->
-> 30 tests pass, including domain tests that run **without a Spring context**.
+> **Implementation status:** skeleton only. The production implementation and tests are planned in
+> the Patient workstream; this README documents the locked target contract and must not be read as a
+> claim that the service is already complete.
 
-## Key implementation patterns
+## Target implementation patterns
 
-- **`domain/model/Patient`** — has no setters. All state changes go through `update()`, so domain invariants cannot be bypassed.
-- **`PatientEventPublisherAdapter`** — publishes **after the transaction commits**, using `TransactionSynchronization`. Publishing directly inside the transaction could notify other services about a patient that was subsequently removed by a rollback.
-- **`PatientRepositoryPort`** — contains no `Pageable`, `Page`, or JPA types. The conversion between `PageQuery` and `Pageable` is fully contained inside `PatientPersistenceAdapter`.
-- **Two-layer validation is intentional:** Bean Validation on DTOs provides HTTP 400 responses with field-level details; domain invariants produce HTTP 422 responses and protect the rules from **every caller**, including event consumers and tests.
+- **`domain/model/Patient`** must have no setters. All state changes go through domain methods so
+  invariants cannot be bypassed.
+- **`PatientEventPublisherAdapter`** must publish after the transaction commits. Critical event
+  delivery will use the agreed outbox/envelope contract; do not publish an event for a rolled-back
+  patient write.
+- **`PatientRepositoryPort`** must contain no `Pageable`, `Page`, or JPA types. Convert `PageQuery` to
+  `Pageable` only inside the persistence adapter.
+- **Two-layer validation is intentional:** Bean Validation produces HTTP 400 field details; domain
+  invariants produce HTTP 422 and protect every caller, including tests and event consumers.
 
 ## Service information
 
@@ -38,7 +37,7 @@ The service owns the `PATIENT` table.
 | `patient_id`              | UUID PK            | Patient identifier                |
 | `full_name`               | VARCHAR(100)       | Patient full name                 |
 | `date_of_birth`           | DATE               | Patient date of birth             |
-| `gender`                  | ENUM               | `MALE`, `FEMALE`                  |
+| `gender`                  | VARCHAR(1)         | `M`, `F`                          |
 | `identity_number`         | VARCHAR(20) UNIQUE | National identity document number |
 | `address`                 | VARCHAR(255)       | Patient address                   |
 | `phone_number`            | VARCHAR(15)        | Patient phone number              |
@@ -52,8 +51,8 @@ The service owns the `PATIENT` table.
 `Gender` is defined as:
 
 ```text
-MALE
-FEMALE
+M
+F
 ```
 
 These values must remain consistent across:
@@ -71,6 +70,7 @@ These values must remain consistent across:
 | Method | Path                                 | Request                | Response           | Roles                |
 | ------ | ------------------------------------ | ---------------------- | ------------------ | -------------------- |
 | GET    | `/api/v1/patients/{id}`              | -                      | `PatientDTO`       | ADMIN, DOCTOR, NURSE |
+| GET    | `/api/v1/patients/{id}/exists`       | -                      | `PatientLookupDTO` | SYSTEM service token only |
 | GET    | `/api/v1/patients?page&size&keyword` | -                      | `Page<PatientDTO>` | ADMIN, DOCTOR, NURSE |
 | POST   | `/api/v1/patients`                   | `CreatePatientRequest` | `PatientDTO`       | ADMIN, NURSE         |
 | PUT    | `/api/v1/patients/{id}`              | `UpdatePatientRequest` | `PatientDTO`       | ADMIN, NURSE         |
@@ -116,6 +116,10 @@ Example:
 ## Events
 
 Publishes `patient.created` and `patient.updated` to the `mediflow.events` topic exchange.
+
+`patient.created` is locked to the current flat Notification-compatible payload. Moving it to the
+versioned event envelope requires producer and consumer fixtures/tests in the same contract change;
+see [`CONTRACT-PATIENT-NOTIFICATION-01`](../../docs/handoffs/care-finance/CONTRACT-PATIENT-NOTIFICATION-01.md).
 
 See [`docs/ai/06-events-rabbitmq.md`](../docs/ai/06-events-rabbitmq.md).
 
@@ -535,7 +539,8 @@ mvn -pl backend/patient-service verify
 
 `verify` includes integration tests using Testcontainers and therefore requires Docker.
 
-The reference implementation currently has 30 passing tests, including domain tests that execute without a Spring context.
+No Patient implementation tests exist yet because the module is still a skeleton. The test suite is
+part of the implementation work described below.
 
 ## Definition of Done
 
@@ -544,8 +549,8 @@ The Patient Service is complete when:
 - [ ] `PATIENT` is implemented.
 - [ ] All database identifiers use English `snake_case`.
 - [ ] All Java/domain names use English terminology.
-- [ ] `Gender` contains exactly `MALE` and `FEMALE`.
-- [ ] DTO and API JSON fields use English `camelCase`.
+- [ ] `Gender` contains exactly `M` and `F`.
+- [ ] DTO and API JSON fields use Vietnamese `camelCase`.
 - [ ] Patient CRUD endpoints are implemented.
 - [ ] `identity_number` uniqueness is enforced.
 - [ ] Email validation is implemented.

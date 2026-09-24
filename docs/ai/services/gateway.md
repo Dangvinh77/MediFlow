@@ -183,7 +183,10 @@ Expected claims include:
 ```text
 sub
 role
+type
+staffId
 departmentId
+patientId
 exp
 ```
 
@@ -193,8 +196,16 @@ Where:
 | -------------- | ------------------------------------- |
 | `sub`          | Authenticated user/account identifier |
 | `role`         | User role                             |
+| `type`         | `access`, `refresh`, or `service`     |
+| `staffId`      | Optional authenticated staff identifier |
 | `departmentId` | Department identifier when applicable |
+| `patientId`    | Optional authenticated patient identifier |
 | `exp`          | Token expiration timestamp            |
+
+Human tokens are normalized as `type=access|refresh` with `sub=accountId`; `staffId`, `departmentId`
+and `patientId` are explicit optional identity claims. A PATIENT account must carry `patientId` and
+must not carry `staffId`. `SYSTEM` is reserved for `type=service` tokens and is never a human login
+role. Service tokens use the calling service as `sub` and carry correlation metadata.
 
 For new English naming conventions, internal Java objects and API models should use:
 
