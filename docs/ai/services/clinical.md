@@ -101,6 +101,8 @@ Both are synchronous reads, so both must be resilient (timeout + circuit breaker
   before changing admission/surgery referral events.
 - Read [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
   before changing Patient/Organization lookups or service JWTs.
+- Read [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
+  before changing `medicalrecord.completed` or any event consumed by Report/Notification.
 - Current `appointment.status.changed`/`medicalrecord.created` Billing behavior is a compatibility
   path. Do not remove it until Billing and Clinical share clearance v1 fixtures and migration tests.
 - Contract status is not `IMPLEMENTED` until the producer fixture and Clinical consumer fixture/test
