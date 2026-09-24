@@ -139,9 +139,21 @@ Every endpoint returns the shared `ApiResponse<T>` envelope. The staff list uses
 | PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                                             |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                                             |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM _(internal lookup used by other services)_ |
+| GET    | `/api/v1/org/staff/{id}/lookup`                     | SYSTEM service token _(additive identity lookup)_ |
+| GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token _(additive department lookup)_ |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                                             |
 | PUT    | `/api/v1/org/accounts/{id}/status`                  | ADMIN                                             |
 | POST   | `/api/v1/org/accounts/verify`                       | SYSTEM _(gateway only — never exposed publicly)_  |
+
+The additive internal lookup endpoints use the English Organization wire contract and accept only a
+short-lived service JWT (`type=service`, `role=SYSTEM`):
+
+- `/api/v1/org/staff/{id}/lookup` → `{ exists, active, jobTitle, departmentId }`.
+- `/api/v1/org/departments/{id}/lookup` →
+  `{ exists, active, departmentId, departmentName, departmentType }`.
+
+The existing `/api/v1/org/staff/{id}/exists` doctor-eligibility response remains unchanged for
+Clinical compatibility.
 
 ### Department Transfer Request
 
@@ -284,7 +296,8 @@ This service owns reference data and drives other contexts rather than reacting 
 
 9. Accounts with `role = PATIENT` must have a null `staff_id`, because patients are not staff members.
 
-10. Accounts with a staff role must have a `staff_id`; `SYSTEM` accounts may omit it.
+10. Accounts with a staff role must have a `staff_id`. `SYSTEM` is reserved for short-lived service
+    tokens; it is not a user account and cannot be created or used for human login.
 
 11. Deactivating an account (`is_active = false`) must prevent future logins.
 

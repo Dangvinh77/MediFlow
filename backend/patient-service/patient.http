@@ -1,7 +1,7 @@
 ### MediFlow — Patient service (qua gateway :8080) — DEMO / TEMPLATE
 ###
-### ⚠️ Trạng thái: source của patient-service đã bị xoá (Huy xác nhận, commit a328dae).
-### Các request bên dưới là DEMO soạn theo spec chuẩn:
+### ⚠️ Trạng thái: patient-service hiện vẫn là skeleton; các request bên dưới là DEMO theo contract,
+### chưa phải smoke test của controller live.
 ###   docs/eproject_general_plan/backend-spec/02-patient.md
 ### Khi service được dựng lại, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
 ###
@@ -23,6 +23,7 @@
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
+# @serviceToken = paste-short-lived-system-service-token-here
 
 ### Danh sách bệnh nhân (page 0, size 20)
 GET {{host}}/api/v1/patients?page=0&size=20
@@ -35,6 +36,10 @@ Authorization: Bearer {{token}}
 ### Xem một bệnh nhân (thay UUID — mong đợi 200 hoặc 404 PATIENT_NOT_FOUND)
 GET {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
+
+### Kiểm tra tồn tại — service token only (type=service, role=SYSTEM)
+GET {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000/exists
+Authorization: Bearer {{serviceToken}}
 
 ### Tạo bệnh nhân (201 — role ADMIN/NURSE)
 POST {{host}}/api/v1/patients
@@ -49,7 +54,7 @@ Content-Type: application/json
   "diaChi": "12 Lê Lợi, Quận 1, TP.HCM",
   "soDienThoai": "0901234567",
   "email": "nguyenvana@example.com",
-  "bhytSo": "DN1234567890123"
+  "bhytSo": "01-12345678-9"
 }
 
 ### Tạo trùng soCmnd → 409 PATIENT_CMND_DUPLICATE
@@ -65,7 +70,7 @@ Content-Type: application/json
   "diaChi": "5 Nguyễn Huệ, Quận 1, TP.HCM",
   "soDienThoai": "0901234568",
   "email": "nguyenvb@example.com",
-  "bhytSo": "DN1234567890123"
+  "bhytSo": "01-12345678-9"
 }
 
 ### Tạo sai Bean Validation → 400, error.details liệt kê từng field
@@ -91,7 +96,7 @@ Content-Type: application/json
   "diaChi": "88 Võ Văn Tần, Quận 3, TP.HCM",
   "soDienThoai": "0901234567",
   "email": "nguyenvana@example.com",
-  "bhytSo": "DN1234567890123"
+  "bhytSo": "01-12345678-9"
 }
 
 ### Xoá bệnh nhân (204 — chỉ ADMIN)

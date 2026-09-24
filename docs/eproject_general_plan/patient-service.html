@@ -125,7 +125,7 @@
       </tr>
       <tr>
         <td>gender</td>
-        <td>ENUM('MALE','FEMALE')</td>
+        <td>VARCHAR(1), one of 'M' or 'F'</td>
         <td>Giới tính</td>
       </tr>
       <tr>
@@ -191,6 +191,13 @@
         <td>ADMIN, DOCTOR, NURSE</td>
       </tr>
       <tr>
+        <td>GET</td>
+        <td>/api/v1/patients/{id}/exists</td>
+        <td>-</td>
+        <td>PatientLookupDTO { exists, patientId }</td>
+        <td>SYSTEM service token only</td>
+      </tr>
+      <tr>
         <td>POST</td>
         <td>/api/v1/patients</td>
         <td>CreatePatientRequest</td>
@@ -214,8 +221,8 @@
     </table>
     <p><strong>Request/Response schemas:</strong></p>
     <div class="code">
-      CreatePatientRequest: { fullName, dateOfBirth, gender, identityNumber, address, phoneNumber, email, healthInsuranceNumber }<br>
-      PatientDTO: { patientId, fullName, dateOfBirth, gender, identityNumber, address, phoneNumber, email, healthInsuranceNumber, createdAt, updatedAt }
+      CreatePatientRequest: { hoTen, ngaySinh, gioiTinh, soCmnd, diaChi, soDienThoai, email, bhytSo }<br>
+      PatientDTO: { maBenhNhan, hoTen, ngaySinh, gioiTinh, soCmnd, diaChi, soDienThoai, email, bhytSo, createdAt, updatedAt }
     </div>
   </div>
 
@@ -229,15 +236,20 @@
       </tr>
       <tr>
         <td>patient.created</td>
-        <td>{ patientId, fullName, email, phoneNumber }</td>
+        <td>{ eventId, occurredAt, correlationId, patientId, hoTen, email, sdt }</td>
         <td>Khi tạo mới bệnh nhân</td>
       </tr>
       <tr>
         <td>patient.updated</td>
-        <td>{ patientId, fullName, email, phoneNumber, address }</td>
+        <td>{ eventId, occurredAt, correlationId, patientId, hoTen, email, sdt, diaChi }</td>
         <td>Khi cập nhật thông tin</td>
       </tr>
     </table>
+    <p>
+      <code>patient.created</code> giữ payload phẳng tương thích Notification ở giai đoạn này. Chỉ
+      chuyển sang envelope có version sau khi producer và consumer cùng có fixture/contract test theo
+      <code>CONTRACT-PATIENT-NOTIFICATION-01</code>.
+    </p>
   </div>
 
   <div class="section">

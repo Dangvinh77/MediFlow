@@ -5,9 +5,12 @@
 Hồ sơ bệnh nhân gốc. Sở hữu thông tin nhân khẩu và số BHYT. Gần như mọi service khác đều đọc nó;
 nó không sở hữu gì về lịch hẹn, hồ sơ khám, xét nghiệm, thuốc hay tiền.
 
-> ✅ **Module này đã được hiện thực đầy đủ theo spec này** và là **reference implementation** của cả
-> dự án. Khi xây service khác mà thấy spec chưa rõ chỗ nào, hãy mở `patient-service/` ra xem nó
-> làm thế nào. 30 test đang xanh; quy tắc phụ thuộc đã được kiểm chứng.
+> **Implementation status (2026-09-24):** module hiện vẫn là skeleton. Nội dung dưới đây là target
+> contract để triển khai, không phải xác nhận rằng code hoặc test đã tồn tại.
+>
+> **Naming lock:** persistence identifiers remain English `snake_case`; public DTO/request/event
+> fields remain Vietnamese camelCase. Java class and method names follow the project coding standard
+> (`Patient`, `Gender`, `create`, `update`) and must not change the public wire names.
 
 ## 1. Lược đồ — `V1__init_patient.sql`
 
@@ -16,7 +19,7 @@ CREATE TABLE PATIENT (
     patient_id               UUID          PRIMARY KEY,
     full_name                VARCHAR(100)  NOT NULL,
     date_of_birth            DATE          NOT NULL,
-    gender                   VARCHAR(10)   NOT NULL,
+    gender                   VARCHAR(1)    NOT NULL,
     identity_number          VARCHAR(20)   NOT NULL,
     address                  VARCHAR(255),
     phone_number             VARCHAR(15),
@@ -122,6 +125,9 @@ public record UpdatePatientRequest(
 public record PatientDTO(UUID maBenhNhan, String hoTen, LocalDate ngaySinh, GioiTinh gioiTinh,
                          String soCmnd, String diaChi, String soDienThoai, String email,
                          String bhytSo, Instant createdAt, Instant updatedAt) {}
+
+/** Minimal service-only existence result; the public DTO remains Vietnamese camelCase. */
+public record PatientLookupDTO(boolean exists, UUID patientId) {}
 ```
 
 ## 7. Tầng application
@@ -152,6 +158,7 @@ Page<PatientJpaEntity> search(@Param("keyword") String keyword, Pageable pageabl
 | Method | Path | Body | Trả về | Role |
 |--------|------|------|--------|------|
 | GET | `/api/v1/patients/{id}` | — | `PatientDTO` | ADMIN, DOCTOR, NURSE |
+| GET | `/api/v1/patients/{id}/exists` | — | `PatientLookupDTO` | SYSTEM service token |
 | GET | `/api/v1/patients?keyword&page&size` | — | `PageResult<PatientDTO>` | ADMIN, DOCTOR, NURSE |
 | POST | `/api/v1/patients` | `CreatePatientRequest` | 201 `PatientDTO` | ADMIN, NURSE |
 | PUT | `/api/v1/patients/{id}` | `UpdatePatientRequest` | `PatientDTO` | ADMIN, NURSE |
@@ -163,7 +170,7 @@ Page<PatientJpaEntity> search(@Param("keyword") String keyword, Pageable pageabl
 
 | Routing key | Payload |
 |-------------|---------|
-| `patient.created` | `{eventId, occurredAt, correlationId, patientId, hoTen, email, sdt}` |
+| `patient.created` | `{eventId, occurredAt, correlationId, patientId, hoTen, email, sdt}` (flat compatibility payload; Notification consumer must remain unchanged until a versioned fixture migration is complete) |
 | `patient.updated` | `{eventId, occurredAt, correlationId, patientId, hoTen, email, sdt, diaChi}` |
 
 **Subscribe**
