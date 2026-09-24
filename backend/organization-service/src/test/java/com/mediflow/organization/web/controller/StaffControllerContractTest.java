@@ -64,7 +64,7 @@ class StaffControllerContractTest {
     private UpdateStaffUseCase updateStaffUseCase;
 
     @Test
-    @WithMockUser(roles = "SYSTEM")
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void lookup_eligibleDoctor_returnsEnvelopeAndDepartment() throws Exception {
         UUID staffId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
@@ -97,7 +97,7 @@ class StaffControllerContractTest {
     }
 
     @Test
-    @WithMockUser(roles = "SYSTEM")
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void lookup_missingStaff_returnsConfirmedNegativeEnvelope() throws Exception {
         UUID staffId = UUID.randomUUID();
         when(getStaffUseCase.lookup(staffId)).thenReturn(StaffLookupDTO.missing());
@@ -111,7 +111,7 @@ class StaffControllerContractTest {
     }
 
     @Test
-    @WithMockUser(roles = "SYSTEM")
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void lookup_nonDoctor_returnsIneligibleEnvelope() throws Exception {
         UUID staffId = UUID.randomUUID();
         when(getStaffUseCase.lookup(staffId)).thenReturn(StaffLookupDTO.ineligible());
@@ -166,6 +166,7 @@ class StaffControllerContractTest {
         return Jwts.builder()
                 .subject("clinical-service")
                 .claim(JwtClaims.ROLE, "SYSTEM")
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
                 .expiration(Date.from(Instant.now().plusSeconds(300)))
                 .signWith(SIGNING_KEY)

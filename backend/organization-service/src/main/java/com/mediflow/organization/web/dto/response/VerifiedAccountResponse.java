@@ -9,6 +9,7 @@ public record VerifiedAccountResponse(
         UUID accountId,
         UUID staffId,
         UUID departmentId,
+        UUID patientId,
         Role role) {
 
     public static VerifiedAccountResponse from(VerifiedAccount account) {
@@ -16,6 +17,7 @@ public record VerifiedAccountResponse(
                 account.accountId(),
                 account.staffId(),
                 account.departmentId(),
+                account.patientId(),
                 account.role());
     }
 }

@@ -128,7 +128,7 @@ public class StaffController {
         }
 
         @GetMapping("/{id}/exists")
-        @PreAuthorize("hasRole('SYSTEM')")
+        @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
         public ResponseEntity<ApiResponse<StaffLookupDTO>> staffExists(@PathVariable UUID id) {
                 StaffLookupDTO result = getStaffUseCase.lookup(id);
                 return ResponseEntity.ok(ApiResponse.ok(

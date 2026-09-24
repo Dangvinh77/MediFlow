@@ -78,18 +78,19 @@ These values must remain consistent across:
 
 ### DTO fields
 
-All DTO fields use English `camelCase`:
+Persistence identifiers remain English, but public DTO fields use Vietnamese `camelCase` to match
+the current frontend contract:
 
 ```text
-patientId
-fullName
-dateOfBirth
-gender
-identityNumber
-address
-phoneNumber
+maBenhNhan
+hoTen
+ngaySinh
+gioiTinh
+soCmnd
+diaChi
+soDienThoai
 email
-healthInsuranceNumber
+bhytSo
 createdAt
 updatedAt
 ```
@@ -98,15 +99,15 @@ Example:
 
 ```json
 {
-  "patientId": "550e8400-e29b-41d4-a716-446655440000",
-  "fullName": "Nguyen Van A",
-  "dateOfBirth": "1990-01-15",
-  "gender": "MALE",
-  "identityNumber": "001234567890",
-  "address": "Ho Chi Minh City",
-  "phoneNumber": "0901234567",
+  "maBenhNhan": "550e8400-e29b-41d4-a716-446655440000",
+  "hoTen": "Nguyen Van A",
+  "ngaySinh": "1990-01-15",
+  "gioiTinh": "M",
+  "soCmnd": "001234567890",
+  "diaChi": "Ho Chi Minh City",
+  "soDienThoai": "0901234567",
   "email": "patient@example.com",
-  "healthInsuranceNumber": "01-12345678-9",
+  "bhytSo": "01-12345678-9",
   "createdAt": "2026-08-13T10:00:00Z",
   "updatedAt": "2026-08-13T10:00:00Z"
 }
@@ -122,10 +123,13 @@ See [`docs/ai/06-events-rabbitmq.md`](../docs/ai/06-events-rabbitmq.md).
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "patientId": "...",
-  "fullName": "...",
+  "hoTen": "...",
   "email": "...",
-  "phoneNumber": "..."
+  "sdt": "..."
 }
 ```
 
@@ -135,11 +139,14 @@ Published after a patient is successfully created and the transaction commits.
 
 ```json
 {
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
   "patientId": "...",
-  "fullName": "...",
+  "hoTen": "...",
   "email": "...",
-  "phoneNumber": "...",
-  "address": "..."
+  "sdt": "...",
+  "diaChi": "..."
 }
 ```
 
@@ -323,50 +330,53 @@ CreatePatientRequest
 UpdatePatientRequest
 ```
 
-Java fields:
+Persistence fields:
 
 ```text
-patientId
-fullName
-dateOfBirth
+patient_id
+full_name
+date_of_birth
 gender
-identityNumber
+identity_number
 address
-phoneNumber
+phone_number
 email
-healthInsuranceNumber
-createdAt
-updatedAt
+health_insurance_number
+created_at
+updated_at
 ```
 
 ### JSON / API
 
-Use `camelCase`:
+Public JSON uses Vietnamese `camelCase`:
 
 ```json
 {
-  "patientId": "...",
-  "fullName": "...",
-  "dateOfBirth": "...",
-  "gender": "MALE",
-  "identityNumber": "...",
-  "address": "...",
-  "phoneNumber": "...",
+  "maBenhNhan": "...",
+  "hoTen": "...",
+  "ngaySinh": "...",
+  "gioiTinh": "M",
+  "soCmnd": "...",
+  "diaChi": "...",
+  "soDienThoai": "...",
   "email": "...",
-  "healthInsuranceNumber": "..."
+  "bhytSo": "..."
 }
 ```
 
 ### Events
 
-Use English field names:
+Use the locked event field names:
 
 ```text
+eventId
+occurredAt
+correlationId
 patientId
-fullName
+hoTen
 email
-phoneNumber
-address
+sdt
+diaChi
 ```
 
 Event names:

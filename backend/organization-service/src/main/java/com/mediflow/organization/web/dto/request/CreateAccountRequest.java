@@ -23,6 +23,8 @@ public record CreateAccountRequest(
 
         UUID staffId,
 
+        UUID patientId,
+
         @NotNull(message = "Role must not be null")
         Role role) {
 }

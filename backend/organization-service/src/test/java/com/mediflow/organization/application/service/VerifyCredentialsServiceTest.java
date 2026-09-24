@@ -77,13 +77,15 @@ class VerifyCredentialsServiceTest {
         assertEquals(account.getAccountId(), result.accountId());
         assertEquals(staffId, result.staffId());
         assertEquals(departmentId, result.departmentId());
+        assertNull(result.patientId());
         assertEquals(Role.DOCTOR, result.role());
         verify(accountRepository).save(account);
     }
 
     @Test
     void execute_patientCredentials_returnsNullDepartment() {
-        Account account = account(null, true, Role.PATIENT);
+        UUID patientId = UUID.randomUUID();
+        Account account = account(null, patientId, true, Role.PATIENT);
         when(accountRepository.findByUsername("patient.one"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("plainpass", account.getPasswordHash()))
@@ -94,6 +96,7 @@ class VerifyCredentialsServiceTest {
         VerifiedAccount result = service.execute("patient.one", "plainpass");
 
         assertNull(result.departmentId());
+        assertEquals(patientId, result.patientId());
     }
 
     @Test
@@ -130,16 +133,32 @@ class VerifyCredentialsServiceTest {
         verify(passwordHasher, never()).matches(any(), any());
     }
 
+    @Test
+    void execute_systemAccount_isRejectedAsHumanLogin() {
+        Account account = account(null, true, Role.SYSTEM);
+        when(accountRepository.findByUsername("doctor.one"))
+                .thenReturn(Optional.of(account));
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> service.execute("doctor.one", "plainpass"));
+        verify(passwordHasher, never()).matches(any(), any());
+    }
+
     private Account account(UUID staffId, boolean active) {
         return account(staffId, active, Role.DOCTOR);
     }
 
     private Account account(UUID staffId, boolean active, Role role) {
+        return account(staffId, role == Role.PATIENT ? UUID.randomUUID() : null, active, role);
+    }
+
+    private Account account(UUID staffId, UUID patientId, boolean active, Role role) {
         return new Account(
                 UUID.randomUUID(),
                 role == Role.PATIENT ? "patient.one" : "doctor.one",
                 "$2a$10$hashed-value",
                 staffId,
+                patientId,
                 role,
                 active,
                 null,

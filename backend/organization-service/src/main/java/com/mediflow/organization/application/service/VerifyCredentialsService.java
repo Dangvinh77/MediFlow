@@ -8,6 +8,7 @@ import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.InvalidCredentialsException;
 import com.mediflow.organization.domain.model.Account;
+import com.mediflow.organization.domain.model.Role;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -34,7 +35,8 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> invalidCredentials());
 
-        if (!account.isActive()
+        if (account.getRole() == Role.SYSTEM
+                || !account.isActive()
                 || rawPassword == null
                 || !passwordHasher.matches(rawPassword, account.getPasswordHash())) {
             throw invalidCredentials();
@@ -54,6 +56,7 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
                 account.getAccountId(),
                 account.getStaffId(),
                 departmentId,
+                account.getPatientId(),
                 account.getRole());
     }
 

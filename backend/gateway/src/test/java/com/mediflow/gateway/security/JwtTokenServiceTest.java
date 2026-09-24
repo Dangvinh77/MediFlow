@@ -35,6 +35,8 @@ class JwtTokenServiceTest {
 
         assertThat(claims.getSubject())
                 .isEqualTo(userId.toString());
+        assertThat(claims.get(JwtClaims.TYPE, String.class))
+                .isEqualTo(JwtClaims.ACCESS_TOKEN_TYPE);
 
         assertThat(claims.get(
                 JwtClaims.ROLE,
@@ -62,11 +64,27 @@ class JwtTokenServiceTest {
 
         assertThat(claims.getSubject())
                 .isEqualTo(userId.toString());
+        assertThat(claims.get(JwtClaims.TYPE, String.class))
+                .isEqualTo(JwtClaims.REFRESH_TOKEN_TYPE);
 
         assertThat(claims.get(
                 JwtClaims.ROLE,
                 String.class))
                 .isEqualTo(Roles.ADMIN);
+    }
+
+    @Test
+    void issuePatientAccessToken_keepsAccountAndPatientIdentitySeparate() {
+        UUID accountId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+
+        Claims claims = tokenService.parse(tokenService.issueAccessToken(
+                accountId, Roles.PATIENT, null, null, patientId));
+
+        assertThat(claims.getSubject()).isEqualTo(accountId.toString());
+        assertThat(claims.get(JwtClaims.PATIENT_ID, String.class))
+                .isEqualTo(patientId.toString());
+        assertThat(claims.get(JwtClaims.STAFF_ID, String.class)).isNull();
     }
 
     @Test
@@ -79,6 +97,8 @@ class JwtTokenServiceTest {
         Claims claims = tokenService.parse(token);
 
         assertThat(claims.getSubject()).isEqualTo("gateway");
+        assertThat(claims.get(JwtClaims.TYPE, String.class))
+                .isEqualTo(JwtClaims.SERVICE_TOKEN_TYPE);
         assertThat(claims.get(JwtClaims.ROLE, String.class))
                 .isEqualTo(Roles.SYSTEM);
         assertThat(claims.get(JwtClaims.CORRELATION_ID, String.class))

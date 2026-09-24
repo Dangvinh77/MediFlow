@@ -29,8 +29,7 @@ public class OrganizationAuthClient {
             Roles.CASHIER,
             Roles.LAB_TECH,
             Roles.MANAGER,
-            Roles.PATIENT,
-            Roles.SYSTEM);
+            Roles.PATIENT);
 
     private final WebClient client;
     private final JwtTokenService jwt;
@@ -92,9 +91,20 @@ public class OrganizationAuthClient {
     private VerifiedAccount validate(VerifiedAccount account) {
         if (account.accountId() == null
                 || !StringUtils.hasText(account.role())
-                || !SUPPORTED_ROLES.contains(account.role())) {
+                || !SUPPORTED_ROLES.contains(account.role())
+                || Roles.SYSTEM.equals(account.role())) {
             throw new UpstreamUnavailableException(
                     "Organization returned an invalid account verification response");
+        }
+        if (Roles.PATIENT.equals(account.role())
+                && (account.patientId() == null || account.staffId() != null)) {
+            throw new UpstreamUnavailableException(
+                    "Organization returned an incomplete patient identity");
+        }
+        if (!Roles.PATIENT.equals(account.role())
+                && account.patientId() != null) {
+            throw new UpstreamUnavailableException(
+                    "Organization returned a patient identity for a staff account");
         }
         return account;
     }
@@ -117,6 +127,7 @@ public class OrganizationAuthClient {
             UUID accountId,
             UUID staffId,
             UUID departmentId,
+            UUID patientId,
             String role) {
     }
 }

@@ -30,6 +30,7 @@ The successful response is:
     "accountId": "00000000-0000-0000-0000-000000000001",
     "staffId": "00000000-0000-0000-0000-000000000002",
     "departmentId": "00000000-0000-0000-0000-000000000003",
+    "patientId": null,
     "role": "ADMIN"
   },
   "error": null,
@@ -38,8 +39,8 @@ The successful response is:
 }
 ```
 
-Organization accepts only a signed JWT carrying `role=SYSTEM`. Both services must use the same
-externally supplied `MEDIFLOW_JWT_SECRET`. Invalid username, password, or inactive account must be
+Organization accepts only a signed JWT carrying `type=service` and `role=SYSTEM`. Both services must
+use the same externally supplied `MEDIFLOW_JWT_SECRET`. Invalid username, password, or inactive account must be
 reported as invalid credentials without revealing which value failed. Organization returns the
 internal `422 AUTH_INVALID_CREDENTIALS` contract; Gateway maps it to public HTTP `401`.
 
@@ -49,8 +50,9 @@ internal `422 AUTH_INVALID_CREDENTIALS` contract; Gateway maps it to public HTTP
    Organization through service discovery. Do not access Organization's database.
 2. Authenticate the internal request with a short-lived service JWT whose subject identifies the
    Gateway and whose role is `SYSTEM`; never reuse the login caller's credentials.
-3. Mint access and refresh JWTs from the returned `accountId`, `role`, and `departmentId` according
-   to the Gateway JWT contract.
+3. Mint access and refresh JWTs from the returned `accountId`, `role`, and optional
+   `staffId`/`departmentId`/`patientId` according to the Gateway JWT contract. `sub` is always
+   `accountId`; `patientId` is never inferred from `sub`.
 4. Preserve or create `X-Correlation-Id` on the internal call.
 5. Map confirmed invalid credentials to HTTP 401. Map timeout, circuit-open, malformed response,
    and Organization 5xx to an upstream/service-unavailable response, not HTTP 401.
@@ -69,12 +71,12 @@ internal `422 AUTH_INVALID_CREDENTIALS` contract; Gateway maps it to public HTTP
 ## Gateway implementation status (PR2 + PR3)
 
 - Gateway calls Organization through a load-balanced `WebClient`.
-- The internal request uses a short-lived JWT with `sub=gateway` and `role=SYSTEM`.
+- The internal request uses a short-lived JWT with `type=service`, `sub=gateway`, and `role=SYSTEM`.
 - Human login credentials are sent only in the verification request body; the caller's bearer token
   is never forwarded to Organization.
 - Organization's confirmed invalid credentials return internal `422 AUTH_INVALID_CREDENTIALS`; the
   Gateway maps that result to public `401 AUTH_INVALID_CREDENTIALS`.
 - Organization/network failures return `503 AUTH_UPSTREAM_UNAVAILABLE`.
-- Access and refresh tokens are minted from the Organization account identity, including
-  `departmentId` when present.
+- Access and refresh tokens use `type=access|refresh`, `sub=accountId`, and include optional
+  `staffId`, `departmentId`, and `patientId` claims when present.
 - `X-Correlation-Id` is preserved or generated and propagated to Organization.
