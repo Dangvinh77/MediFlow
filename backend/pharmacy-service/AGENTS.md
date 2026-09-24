@@ -10,6 +10,9 @@ Root `AGENTS.md` rules continue to apply.
 - Subagents inherit this boundary and cannot bypass it.
 - **Required handoff:** before changing `PrescriptionFilledEvent` or dispense contracts, read
   [`HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md`](HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md).
+- **Required concurrency handoff:** before changing `payment.completed`, payment receipts,
+  dispense idempotency or their tests, read
+  [`HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md`](HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).
 - **Integration gate:** before changing prescription/payment/dispense contracts, inpatient
   medication context, queues or fixtures, read the
   [care-finance registry](../../docs/handoffs/care-finance/README.md),
