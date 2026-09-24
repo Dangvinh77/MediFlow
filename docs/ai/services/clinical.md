@@ -1,6 +1,8 @@
 # Service: clinical (Khoa Khám bệnh)
 
-**Source of truth:** `docs/eproject_general_plan/clinical-service.html`
+**Source of truth:** `docs/eproject_general_plan/clinical-service.html` plus the approved
+[`care-finance redesign`](../../architecture/mediflow-care-finance-redesign.html) for payment gates,
+admission referral and cross-service contracts.
 **Module:** `backend/clinical-service/` · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`
 
 > **Why appointments and records share one service.** They are one department's single workflow —
@@ -19,7 +21,7 @@ drugs (→ `pharmacy`), money (→ `billing`).
 ## Data
 
 **`APPOINTMENT`** — appointment
-`appointment_id` UUID PK · `patient_id` UUID (ref → patient) · `doctor_id` UUID (ref → organization `STAFF`) · `department_id` UUID (ref → organization `DEPARTMENT`) · `appointment_date` DATE · `appointment_time` TIME · `status` ENUM('PENDING','ARRIVED','CANCELLED') · `reason` TEXT · `created_at` · `updated_at`.
+`appointment_id` UUID PK · `patient_id` UUID (ref → patient) · `doctor_id` UUID (ref → organization `STAFF`) · `department_id` UUID (ref → organization `DEPARTMENT`) · `appointment_date` DATE · `appointment_time` TIME · `status` current `PENDING|ARRIVED|CANCELLED`, target adds `AWAITING_PAYMENT|READY_FOR_EXAM|IN_EXAM|COMPLETED` · `reason` TEXT · `created_at` · `updated_at`.
 
 **`MEDICAL_RECORD`** — medical record
 `record_id` UUID PK · `patient_id` UUID (ref → patient) · `doctor_id` UUID (ref → organization) · `department_id` UUID (ref → organization) · `examination_date` DATE · `symptoms` TEXT · `appointment_id` UUID (**FK, same service**, nullable) · `created_at` · `updated_at`.
@@ -52,8 +54,11 @@ examination belong to, so every downstream fee, test and report can be attribute
   - `appointment.created` `{appointmentId, patientId, doctorId, departmentId, appointmentDate, appointmentTime}`
   - `appointment.status.changed` `{appointmentId, recordId, status, patientId, departmentId}` — `recordId` nullable until the record exists; billing must defer record-based fees when absent.
   - `medicalrecord.created` `{recordId, patientId, doctorId, departmentId, diagnosis, examinationDate}`
+  - `medicalrecord.completed` `{recordId, patientId, departmentId, disposition, admissionRequired, completedAt}` *(target)*
+  - `admission.requested` `{admissionRequestId, recordId, patientId, departmentId, requestedBy, diagnosisSummary, priority, emergency, requestedAt}` *(target)*
   - `diagnosis.added` `{recordId, diagnosisCode, diagnosisName}`
 - **Subscribe:**
+  - `financial.clearance.granted` with `purpose=EXAM` and matching appointment/record target *(target)*
   - `lab.result.created` → attach the result to the record
   - `prescription.filled` → attach prescription info to the record
 
@@ -74,6 +79,12 @@ examination belong to, so every downstream fee, test and report can be attribute
 6. A patient has one active record per examination; create one if none exists.
 7. Cannot create a record if the patient does not exist (REST-check `patient-service`).
 8. Creating a record from an appointment sets that appointment to `ARRIVED` — **same transaction**, not an event.
+9. `ARRIVED` means the patient checked in; it does not authorize examination. Starting examination
+   requires matching EXAM clearance or an audited emergency override.
+10. Completing a record requires an explicit disposition: outpatient follow-up, prescription,
+    admission referral, transfer, or other approved outcome.
+11. An admission referral uses a producer-generated `admissionRequestId`; Clinical never creates an
+    Inpatient row or queries the Inpatient database.
 
 ## Cross-service
 
@@ -81,3 +92,16 @@ Both are synchronous reads, so both must be resilient (timeout + circuit breaker
 
 - `patient-service` — does this patient exist?
 - `organization-service` — does this doctor exist, and are they in this department?
+
+## Care-finance integration gate
+
+- Read [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md) before
+  changing appointment/exam payment state or clearance consumption.
+- Read [`CONTRACT-INPATIENT-SURGERY-01`](../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
+  before changing admission/surgery referral events.
+- Read [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
+  before changing Patient/Organization lookups or service JWTs.
+- Current `appointment.status.changed`/`medicalrecord.created` Billing behavior is a compatibility
+  path. Do not remove it until Billing and Clinical share clearance v1 fixtures and migration tests.
+- Contract status is not `IMPLEMENTED` until the producer fixture and Clinical consumer fixture/test
+  pass together. Missing target IDs must block the flow; never select a record by patient.

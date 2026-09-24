@@ -36,7 +36,7 @@ Gateway route, Compose service, health và authorization tests. Không tạo th�
 
 ## 3. Cấu trúc package (bắt buộc)
 
-Giải thích đầy đủ ở [`docs/ai/04-microservice-blueprint.md`](../../docs/ai/04-microservice-blueprint.md).
+Giải thích đầy đủ ở [`docs/ai/04-microservice-blueprint.md`](../../ai/04-microservice-blueprint.md).
 Phụ thuộc chỉ hướng vào trong: `infrastructure → application → domain`.
 
 ```

@@ -739,3 +739,21 @@ The Gateway is complete when:
 - [ ] Passwords and tokens are never logged.
 - [ ] `/actuator/health` is available for internal monitoring.
 - [ ] Reactive request processing contains no blocking operations.
+
+## Care-finance route alignment
+
+Gateway remains an infrastructure boundary: it authenticates, authorizes, routes and propagates
+identity/correlation, but never calculates clearance, settlement, admission or surgery readiness.
+
+Current routes for the eight implemented contexts stay unchanged. When the new modules are
+scaffolded, add discovery routes for `/api/v1/inpatient/**` → `inpatient-service` and
+`/api/v1/surgery/**` → `surgery-service`. A route is not considered live until Eureka discovery,
+health, public role RBAC, downstream JWT verification and correlation tests pass.
+
+JWT keeps `sub=accountId` and explicit optional `patientId`, `staffId`, `departmentId`; service calls
+use `type=service`, `role=SYSTEM`. Gateway never derives missing business IDs or rewrites domain
+payload fields.
+
+Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+The current account verification contract remains in
+[`HANDOFF-ORGANIZATION-ACCOUNT-VERIFY`](../../../backend/gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md).

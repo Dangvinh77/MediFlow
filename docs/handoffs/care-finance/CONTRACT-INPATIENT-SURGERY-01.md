@@ -67,4 +67,3 @@ retain `prescriptionId`, `patientId`, `departmentId`, item snapshots and correla
 - Duplicate `surgery.completed` does not duplicate admission notes, charges or reports.
 - Pharmacy never chooses an admission by patient ID; inpatient prescriptions carry `admissionId`.
 - Medical discharge and administrative close remain separate states.
-

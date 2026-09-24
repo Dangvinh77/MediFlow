@@ -69,4 +69,3 @@ date or department.
 - Notification templates do not expose diagnosis/result details on insecure channels.
 - Unknown event version or missing source ID follows retry/DLQ policy and does not silently alter a
   projection.
-

@@ -320,3 +320,21 @@ The service is complete when:
 - [ ] No cross-service database access exists.
 - [ ] Unit tests pass.
 - [ ] Integration tests pass.
+
+## Care-finance integration alignment
+
+Patient owns the canonical patient identity and may own insurance-summary input and emergency
+contact details. It does not calculate insurance benefit, patient liability, deposits or settlement;
+those financial results belong to Billing.
+
+- Clinical, Lab, Pharmacy, Inpatient and Surgery store only bare `patientId` references and permitted
+  event snapshots. They never join or query the Patient database.
+- Patient existence/read APIs distinguish confirmed absence from upstream outage/malformed response.
+- Human JWT uses explicit `patientId`; `sub` is `accountId` and must not be reinterpreted.
+- Insurance fields are source inputs. Billing publishes the approved/reconciled financial amounts.
+- `payment.completed` log-only behavior remains compatibility behavior and does not mutate patient
+  profile or mean the complete care episode is settled.
+
+Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+The current Clinical lookup remains tracked in
+[`HANDOFF-CLINICAL-PATIENT-LOOKUP`](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md).

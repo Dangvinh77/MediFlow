@@ -12,4 +12,9 @@ Root `AGENTS.md` rules continue to apply.
   [`HANDOFF-CLINICAL-STAFF-LOOKUP.md`](HANDOFF-CLINICAL-STAFF-LOOKUP.md).
 - **Required handoff:** before changing account verification used by Gateway, read
   [`../gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md`](../gateway/HANDOFF-ORGANIZATION-ACCOUNT-VERIFY.md).
+- **Integration gate:** before changing staff/department IDs, eligibility DTOs, JWT claims or
+  service authentication, read the [care-finance registry](../../docs/handoffs/care-finance/README.md)
+  and [IDENTITY-LOOKUP](../../docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+- Clinical, Inpatient and Surgery consumers require stable additive lookup contracts; update their
+  fixtures/tests together or leave an explicit blocked handoff.
 - **Verify:** `mvn -q -pl backend/organization-service -am test`

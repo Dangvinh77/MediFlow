@@ -14,20 +14,23 @@ sequenceDiagram
   BN->>B: Nộp tạm ứng
   B-->>I: financial.clearance.granted (ADMISSION_DEPOSIT)
   I->>I: ADMITTED
+  I-->>B: admission.started
   I->>L: Chỉ định xét nghiệm nội trú
   I->>P: Y lệnh thuốc nội trú
-  L-->>B: lab.charge.incurred
-  P-->>B: medication.charge.incurred
+  L-->>B: lab.request.created (episode=ADMISSION)
+  P-->>B: prescription.created (careContext=ADMISSION)
   I-->>S: surgery.requested
+  I-->>B: surgery.requested (same event)
   S->>S: Tiền phẫu + cam kết + gây mê + lịch/ê-kíp
-  S-->>B: surgery.estimate.created
+  B->>B: Tạo procedure charge + payment request
   opt Cần tạm ứng bổ sung
     B-->>I: deposit.topup.required
     BN->>B: Nộp thêm
-    B-->>S: financial.clearance.granted (SURGERY)
   end
+  B-->>S: financial.clearance.granted (purpose=SURGERY)
   S->>S: READY → IN_PROGRESS → COMPLETED
   S-->>I: surgery.completed
+  S-->>B: surgery.completed (same event)
   I->>I: Điều trị hậu phẫu
   I-->>B: discharge.medically.approved
   B->>B: Chốt chi phí và lập quyết toán
@@ -35,6 +38,8 @@ sequenceDiagram
     BN->>B: Thanh toán phần thiếu
   else Phải hoàn
     B->>BN: Hoàn phần dư
+    B-->>BN: payment.refunded
   end
   B-->>I: settlement.completed
   I->>I: CLOSED
+  I-->>B: admission.closed

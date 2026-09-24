@@ -22,6 +22,10 @@ Billing deduplicates a charge by `(sourceType, sourceId, priceCode)`. An invoice
 created from selected charge IDs within one account/episode. It must not collect all unpaid fees for
 the same patient across episodes.
 
+For `OUTPATIENT_VISIT`, `careEpisodeId` is `appointmentId` when an appointment exists; a walk-in with
+no appointment uses `recordId`. Billing chooses it when the account opens and does not replace it
+later. `recordId` can still be carried as a source/clinical reference.
+
 ## Operational facts that create charges
 
 | Event | Producer | Billing action |
@@ -31,7 +35,8 @@ the same patient across episodes.
 | `prescription.created` | Pharmacy | create outpatient DRUG charge or admission charge according to `careContext` |
 | `admission.deposit.requested` | Inpatient | create a deposit payment request; deposit is liability until settlement |
 | `admission.started` / treatment facts | Inpatient | open/continue the admission billing account |
-| `surgery.requested` / `surgery.completed` | Surgery | handled with `CONTRACT-SURGERY-BILLING-01` |
+| `surgery.requested` | Clinical/Inpatient | create planned procedure charges under `CONTRACT-SURGERY-BILLING-01` |
+| `surgery.completed` | Surgery | reconcile performed items under `CONTRACT-SURGERY-BILLING-01` |
 
 Each fact uses the common envelope and an immutable producer-sourced `sourceId`. Redelivery must not
 create another charge.
@@ -56,7 +61,12 @@ Producer: Billing. Consumers: Clinical, Lab, Pharmacy, Inpatient, Surgery.
     "careEpisodeType": "OUTPATIENT_VISIT",
     "careEpisodeId": "uuid",
     "purpose": "LAB_TEST",
-    "targetIds": ["uuid"],
+    "appointmentId": null,
+    "recordId": "uuid",
+    "labTestIds": ["uuid"],
+    "prescriptionId": null,
+    "admissionId": null,
+    "surgeryCaseId": null,
     "amount": 250000.00,
     "currency": "VND",
     "paymentMethod": "CASH",
@@ -68,9 +78,11 @@ Producer: Billing. Consumers: Clinical, Lab, Pharmacy, Inpatient, Surgery.
 
 Rules:
 
-1. `purpose` determines the target type: EXAM → appointment/record; LAB_TEST → lab test IDs;
-   PRESCRIPTION → prescription ID; ADMISSION_DEPOSIT → admission ID; SURGERY → surgery case ID.
-2. `targetIds` is non-empty and contains authoritative IDs from charges in the payment request.
+1. `purpose` determines the required target: EXAM → `appointmentId` or walk-in `recordId`;
+   LAB_TEST → non-empty `labTestIds`; PRESCRIPTION → `prescriptionId`; ADMISSION_DEPOSIT →
+   `admissionId`; SURGERY → `surgeryCaseId` plus `admissionId` when inpatient.
+2. Target fields contain authoritative source IDs from charges in the payment request. Unrelated
+   optional target fields are null/empty and never used as fallback identifiers.
 3. Consumer accepts only a clearance whose episode, patient, purpose and target all match its
    aggregate. A mismatched event is a contract error, not a no-op success.
 4. Consumer stores/claims `eventId` and applies the clearance atomically. Redelivery is a no-op.
@@ -118,4 +130,3 @@ Billing opens/updates the receivable. The override does not forge a paid transac
 - Settlement can result in `PAID_IN_FULL`, `ADDITIONAL_PAYMENT_REQUIRED`, `REFUND_DUE`, or approved
   debt/waiver without mutating completed transactions.
 - Producer and consumers reject missing/malformed target IDs and exercise DLQ behavior.
-

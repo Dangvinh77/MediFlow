@@ -195,7 +195,7 @@ Nếu `department_id` null (payment completed hiện tại) thì chỉ cập nh�
 | `medicalrecord.created` | `visit_count += 1` |
 | `lab.result.created` | `lab_count += 1` |
 | `prescription.filled` | `prescription_count += 1`; mỗi mặt hàng `DRUG_STATISTIC.dispensed_quantity += quantity` |
-| `payment.completed` | tạo/apply contribution; daily/monthly `revenue += amount`, `invoice_count += 1` |
+| `payment.completed` | current outpatient compatibility: apply invoice contribution; admission deposits require the classified target projection below and must not increment earned revenue |
 | `payment.failed` | đảo contribution theo invoice; trừ đúng ngày/khoa gốc và giảm invoice count |
 
 ### 6.3 `findOrCreate` an toàn concurrency
@@ -311,3 +311,21 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
   lặp 10 vòng, top query inclusive/scope/tie-break/latest-name và future-date zero-fill.
 - Report-service filter đã sẵn sàng từ chối JWT có `type` khác `access`; gateway vẫn phải phát hành
   claim `type` theo [JWT handoff](../../HANDOFF-report-jwt-token-type.md) để đóng hoàn toàn lỗ hổng refresh-token.
+
+## 12. Care-finance projection đích
+
+Report tiếp tục là read model thuần event. Nó không trở thành nguồn chuẩn của tiền, admission hay
+surgery và không gọi REST để bù dữ liệu thiếu trong event.
+
+Financial projection phải tách `cashReceived`, `depositLiability`, `earnedRevenue`, `refunds` và
+`outstandingReceivable`. `payment.completed` cho tạm ứng chỉ tăng cash/liability; earned revenue chỉ
+được ghi từ classification/settlement fact do Billing sở hữu. Refund/adjustment tham chiếu
+transaction/contribution gốc để đảo đúng kỳ và department.
+
+Target subscriptions bổ sung: `medicalrecord.completed`, `admission.started`, `admission.closed`,
+`surgery.completed`, `surgery.cancelled`, `payment.refunded`, `settlement.completed`. Mỗi contribution
+dedupe bằng event ID và source business ID; toàn bộ projection phải rebuild được bằng replay.
+
+Mandatory handoff: [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
+Không đổi current five-event projection sang semantics mới trước khi Billing/producer fixtures và
+Report consumer fixtures cùng version đã pass.

@@ -57,4 +57,3 @@ authorization tests pass.
 - Consumers use returned canonical IDs and never search by name or infer from JWT subject.
 - Inpatient/Surgery route tests prove public role authorization and downstream service auth before
   registry status changes to `IMPLEMENTED`.
-

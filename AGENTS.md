@@ -141,7 +141,9 @@ scripts\setup-tools.bat               # both at once (Windows)
 git config core.hooksPath scripts/git-hooks   # or: scripts\setup-hooks.bat / bash scripts/setup-hooks.sh
 ```
 
-Start order: `eureka-server` (8761) → `gateway` (8080) → business services (8081–8088) → `pnpm dev` (3000) → `flutter run`.
+Start order: `eureka-server` (8761) → `gateway` (8080) → implemented business services
+(8081–8089) → planned Inpatient/Surgery (8090/8091, only after scaffold) → `pnpm dev` (3000) →
+`flutter run`.
 
 ## Git workflow
 

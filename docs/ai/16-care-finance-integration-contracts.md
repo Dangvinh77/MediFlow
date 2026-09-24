@@ -64,7 +64,8 @@ Mọi domain event có:
 
 Mọi charge, payment request, clearance và settlement phải gắn với:
 
-- `careEpisodeType = OUTPATIENT_VISIT`, `careEpisodeId = recordId` hoặc appointment/visit ID đã chốt;
+- `careEpisodeType = OUTPATIENT_VISIT`: dùng `appointmentId` cho lượt có lịch; walk-in không có lịch
+  dùng `recordId`. ID được chọn khi mở Billing account và không đổi khi record xuất hiện;
 - `careEpisodeType = ADMISSION`, `careEpisodeId = admissionId`.
 
 `financial.clearance.granted` là quyền thực hiện **một mục đích cụ thể**, không phải cờ “đã trả
@@ -106,4 +107,3 @@ phát fact; Billing ghi khoản phải thu. Không dùng `emergency=true` như m
 - Correlation ID được giữ xuyên REST, outbox và event.
 - Frontend/mobile chỉ gọi Gateway; Gateway route không thay đổi payload nghiệp vụ.
 - Report có thể rebuild projection bằng replay; Notification không trở thành nguồn dữ liệu nghiệp vụ.
-

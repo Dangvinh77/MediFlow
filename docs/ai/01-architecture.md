@@ -197,4 +197,7 @@ Rows marked *not implemented* are real gaps, not oversights in the doc. Treat th
 
 ## 7. Why "defense in depth" on auth
 
-The gateway validates the JWT, and then **every service validates it again**. That is not redundant. Services are reachable on their own ports (8081–8088) and register in Eureka; anything inside the network can call them directly, bypassing the gateway entirely. A service that trusts a request merely because it arrived is a service with no authorization at all.
+The gateway validates the JWT, and then **every service validates it again**. That is not redundant.
+Implemented services are reachable on their own ports (8081–8089), and planned Inpatient/Surgery
+reserve 8090/8091. Anything inside the network could call a service directly, bypassing the gateway.
+A service that trusts a request merely because it arrived has no authorization at all.

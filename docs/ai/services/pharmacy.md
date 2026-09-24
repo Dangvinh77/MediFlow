@@ -297,3 +297,27 @@ Chi tiết ánh xạ quy tắc → tầng test → tên test: xem mục 11 và 1
 - `infrastructure/messaging/`: publisher adapter + 4 payload event.
 - `infrastructure/config/` + `security/`: `RabbitConfig`, `SecurityConfig`, `JwtAuthFilter`, `JwtProperties`, `OpenApiConfig`.
 - Test đủ 5 tầng, phủ 12 quy tắc nghiệp vụ (danh sách test cụ thể ở spec 05 mục 13.5).
+
+## 12. Care-finance và nội trú — contract đích
+
+Prescription/dispense phải có `careContext = OUTPATIENT | ADMISSION`.
+
+- `OUTPATIENT`: giữ saga hiện tại — tạo đơn → Billing tạo phí/yêu cầu thanh toán → clearance hoặc
+  compatibility `payment.completed` → cấp thuốc.
+- `ADMISSION`: bắt buộc có `admissionId`; thuốc được ghi charge vào admission account theo
+  `CONTRACT-CARE-BILLING-01`. Không dùng outpatient clearance cho thuốc nội trú.
+- Mọi event tiếp tục mang `prescriptionId`, `patientId`, `departmentId`, item snapshot, event envelope
+  và exact `recordId`/`admissionId` theo context. Không tìm admission/record gần nhất theo patient.
+- `prescription.filled` và `prescription.dispense.failed` phải idempotent; stock side effect và event
+  outbox nằm cùng transaction nghiệp vụ.
+
+Handoff bắt buộc trước khi đổi contract:
+
+- [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
+- [`CONTRACT-INPATIENT-SURGERY-01`](../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
+- [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
+- [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
+
+Existing outpatient compatibility remains specified by
+[`backend/billing-service/HANDOFF.md`](../../../backend/billing-service/HANDOFF.md) and the
+[`prescription.filled` Clinical handoff](../../../backend/pharmacy-service/HANDOFF-CLINICAL-PRESCRIPTION-FILLED.md).

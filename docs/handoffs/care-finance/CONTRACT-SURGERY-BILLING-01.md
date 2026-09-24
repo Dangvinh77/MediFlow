@@ -13,8 +13,8 @@ queries Billing tables.
 
 ## Clearance
 
-Billing publishes `financial.clearance.granted` with `purpose=SURGERY`, the admission episode and
-`targetIds=[surgeryCaseId]`. Surgery accepts it only when patient, admission and case all match. The
+Billing publishes `financial.clearance.granted` with `purpose=SURGERY`, the admission episode,
+`admissionId` and `surgeryCaseId`. Surgery accepts it only when patient, admission and case all match. The
 clearance satisfies the financial guard only; consent, pre-op, team and schedule guards remain
 independent.
 
@@ -39,4 +39,3 @@ Billing publishes `payment.refunded` when a real ledger refund completes.
 - Cancellation after payment creates an auditable adjustment; no event is described as a bank
   refund unless a completed refund transaction exists.
 - Producer and consumer fixtures cover planned vs performed item differences and unknown price code.
-
