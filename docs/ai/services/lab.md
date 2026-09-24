@@ -12,6 +12,9 @@ Owns: lab tests (`LAB_TEST`) & results (`LAB_RESULT`). Does NOT own: patients, r
 `LAB_TEST`: `test_id` UUID PK · `record_id` UUID (ref → clinical) · `patient_id` UUID (ref → patient) · `requesting_department_id` UUID (ref → organization `DEPARTMENT`, which department ordered it) · `test_type` VARCHAR(50) · `requested_date` DATE · `performed_date` DATE · `status` ENUM('PENDING','IN_PROGRESS','COMPLETED','CANCELLED') · current compatibility `paid` projection · `conclusion` TEXT.
 `LAB_RESULT`: `result_id` UUID PK · `test_id` UUID (FK, same service) · `indicator` VARCHAR(100) · `value` VARCHAR(50) · `unit` VARCHAR(20) · `reference_range` VARCHAR(50).
 
+Target migration adds `care_episode_type`, `care_episode_id` and emergency-override audit reference to
+`LAB_TEST`; the physical migration must be additive and preserve existing rows.
+
 ## Endpoints
 | Method | Path | Roles |
 |--------|------|-------|

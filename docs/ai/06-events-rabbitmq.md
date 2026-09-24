@@ -53,7 +53,7 @@ Publish an event whenever a service **changes its own state and other contexts m
 | `patient.created` | patient | notification | current |
 | `patient.updated` | patient | — | current |
 | `appointment.created` | clinical | notification | current |
-| `appointment.status.changed` | clinical | billing | compatibility path for exam fee |
+| `appointment.status.changed` | clinical | billing, notification | compatibility path for exam fee; arrival/cancel notice projection |
 | `medicalrecord.created` | clinical | billing, report | current; Lab must not infer an order from diagnosis text |
 | `medicalrecord.completed` | clinical | report, notification | planned |
 | `diagnosis.added` | clinical | — | current |

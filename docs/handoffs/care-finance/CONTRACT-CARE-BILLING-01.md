@@ -55,7 +55,7 @@ Producer: Billing. Consumers: Clinical, Lab, Pharmacy, Inpatient, Surgery.
   "producer": "billing-service",
   "payload": {
     "clearanceId": "uuid",
-    "paymentRequestId": "uuid",
+    "invoiceId": "uuid",
     "accountId": "uuid",
     "patientId": "uuid",
     "careEpisodeType": "OUTPATIENT_VISIT",
@@ -89,6 +89,8 @@ Rules:
 5. Current `payment.completed` remains a financial fact for Report/Notification and a compatibility
    input for existing Pharmacy/Lab consumers. New operational gates migrate to clearance and do not
    expand the meaning of `payment.completed`.
+6. Clearance v1 keeps the approved wire field `invoiceId`. During ledger migration, Billing may map
+   its internal payment request to that public identifier; renaming the wire field requires v2.
 
 ## Deposit, top-up and settlement
 

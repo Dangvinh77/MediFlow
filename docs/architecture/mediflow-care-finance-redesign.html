@@ -232,12 +232,13 @@ settlementStatus  = SETTLED khi outstanding = 0 hoặc có approved waiver/debt 
 <h2>14. Danh mục integration contracts</h2>
 <table><thead><tr><th>Event</th><th>Producer</th><th>Consumer chính</th><th>Trường bắt buộc / tác dụng</th></tr></thead><tbody>
 <tr><td><code>appointment.status.changed.v1</code></td><td>Clinical</td><td>Billing, Notification</td><td>appointmentId, patientId, recordId?, oldStatus, newStatus, episodeId.</td></tr>
-<tr><td><code>medicalrecord.created.v1</code></td><td>Clinical</td><td>Lab, Pharmacy, Billing</td><td>recordId, appointmentId, patientId, doctorId, episodeId.</td></tr>
+<tr><td><code>medicalrecord.created.v1</code></td><td>Clinical</td><td>Billing, Report</td><td>recordId, appointmentId, patientId, doctorId, episodeId; không phải lab/prescription order.</td></tr>
 <tr><td><code>medicalrecord.completed.v1</code> <span class="tag new">MỚI</span></td><td>Clinical</td><td>Report, Notification</td><td>recordId, disposition, admissionRequired, completedAt.</td></tr>
-<tr><td><code>lab.request.created.v1</code></td><td>Lab</td><td>Billing</td><td>labTestId, patientId, recordId, episodeId, testType, priceCode.</td></tr>
-<tr><td><code>lab.result.created.v1</code></td><td>Lab</td><td>Clinical, Report</td><td>labTestId, recordId, resultVersion, verifiedBy, completedAt.</td></tr>
+<tr><td><code>lab.request.created.v1</code></td><td>Lab</td><td>Billing</td><td>labId, patientId, recordId, episodeId, testType, priceCode.</td></tr>
+<tr><td><code>lab.result.created.v1</code></td><td>Lab</td><td>Clinical, Notification, Report</td><td>labId, recordId, resultVersion, verifiedBy, completedAt.</td></tr>
 <tr><td><code>prescription.created.v1</code></td><td>Pharmacy</td><td>Billing</td><td>prescriptionId, recordId/admissionId, careContext, patientId, pricedItems.</td></tr>
-<tr><td><code>prescription.filled.v1</code></td><td>Pharmacy</td><td>Clinical, Report</td><td>prescriptionId, recordId, dispenseId, careContext, filledAt.</td></tr>
+<tr><td><code>prescription.filled.v1</code></td><td>Pharmacy</td><td>Clinical, Notification, Report</td><td>prescriptionId, recordId/admissionId, careContext, filledAt.</td></tr>
+<tr><td><code>prescription.dispense.failed.v1</code></td><td>Pharmacy</td><td>Billing</td><td>prescriptionId, recordId/admissionId, patientId, reason, failedAt.</td></tr>
 <tr><td><code>admission.requested.v1</code> <span class="tag new">MỚI</span></td><td>Clinical</td><td>Inpatient, Billing</td><td>admissionRequestId, recordId, patientId, departmentId, priority, emergency.</td></tr>
 <tr><td><code>admission.deposit.requested.v1</code> <span class="tag new">MỚI</span></td><td>Inpatient</td><td>Billing, Notification</td><td>admissionId, patientId, suggestedAmount, reason.</td></tr>
 <tr><td><code>admission.started.v1</code> <span class="tag new">MỚI</span></td><td>Inpatient</td><td>Billing, Report, Notification</td><td>admissionId, patientId, bedId, departmentId, admittedAt.</td></tr>
@@ -246,11 +247,14 @@ settlementStatus  = SETTLED khi outstanding = 0 hoặc có approved waiver/debt 
 <tr><td><code>surgery.requested.v1</code> <span class="tag new">MỚI</span></td><td>Inpatient/Clinical</td><td>Surgery, Billing</td><td>surgeryRequestId, admissionId?, recordId?, patientId, procedureCode, priority.</td></tr>
 <tr><td><code>surgery.ready.v1</code> <span class="tag new">MỚI</span></td><td>Surgery</td><td>Inpatient, Notification</td><td>surgeryCaseId, scheduleId, readinessSnapshotId, readyAt.</td></tr>
 <tr><td><code>surgery.completed.v1</code> <span class="tag new">MỚI</span></td><td>Surgery</td><td>Inpatient, Billing, Report</td><td>surgeryCaseId, admissionId, resultId, performedItems, completedAt.</td></tr>
-<tr><td><code>payment.completed.v1</code></td><td>Billing</td><td>Report, Notification</td><td>transactionId, accountId, episodeId, amount, method; là financial fact.</td></tr>
+<tr><td><code>surgery.cancelled.v1</code> <span class="tag new">MỚI</span></td><td>Surgery</td><td>Inpatient, Billing, Notification, Report</td><td>surgeryCaseId, admissionId, cancellationStage, reason, cancelledAt.</td></tr>
+<tr><td><code>invoice.created.v1</code></td><td>Billing</td><td>Notification</td><td>invoiceId, patientId, totalAmount, episode references.</td></tr>
+<tr><td><code>payment.completed.v1</code></td><td>Billing</td><td>Pharmacy, Lab, Report, Notification</td><td>current invoiceId/patientId/totalAmount/paymentMethod/prescriptionId?/labTestIds[]; target adds account/episode/transaction classification.</td></tr>
 <tr><td><code>financial.clearance.granted.v1</code> <span class="tag new">MỚI</span></td><td>Billing</td><td>Clinical, Lab, Pharmacy, Inpatient, Surgery</td><td>clearanceId, purpose, careEpisodeType/id, target refs, amount, expiresAt?, emergencyOverride.</td></tr>
 <tr><td><code>deposit.topup.required.v1</code> <span class="tag new">MỚI</span></td><td>Billing</td><td>Inpatient, Notification</td><td>admissionId, accountId, currentBalance, requestedAmount, reason.</td></tr>
 <tr><td><code>payment.refunded.v1</code> <span class="tag new">MỚI</span></td><td>Billing</td><td>Report, Notification</td><td>refundTransactionId, originalTransactionId, amount, reason.</td></tr>
 <tr><td><code>settlement.completed.v1</code> <span class="tag new">MỚI</span></td><td>Billing</td><td>Inpatient, Report, Notification</td><td>settlementId, admissionId, totals, outcome, completedAt.</td></tr>
+<tr><td><code>payment.failed.v1</code></td><td>Billing</td><td>Notification</td><td>invoiceId, patientId, reason; compatibility compensation fact.</td></tr>
 </tbody></table>
 <h3>Payload clearance chuẩn</h3>
 <pre>{

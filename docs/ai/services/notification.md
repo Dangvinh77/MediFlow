@@ -32,7 +32,7 @@ Owns: notification history (`NOTIFICATION`) and consumer idempotency records (`P
   `lab.result.created` (results), `prescription.filled` (drug ready), `payment.completed` (receipt),
   `payment.failed` (payment error).
 - **Subscribe target:** `invoice.created`/payment request, `payment.refunded`,
-  `admission.deposit.requested`, `deposit.topup.required`, `admission.started`, `surgery.ready`,
+  `appointment.status.changed`, `admission.deposit.requested`, `deposit.topup.required`, `admission.started`, `surgery.ready`,
   `surgery.cancelled`, `settlement.completed`, `admission.closed`.
 
 ## Business rules
