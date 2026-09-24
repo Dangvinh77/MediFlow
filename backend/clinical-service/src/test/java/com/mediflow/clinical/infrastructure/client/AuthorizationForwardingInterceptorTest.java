@@ -95,6 +95,8 @@ class AuthorizationForwardingInterceptorTest {
         Claims claims = parseServiceClaims(template);
         assertThat(claims.getSubject()).isEqualTo("clinical-service");
         assertThat(claims.get(JwtClaims.ROLE, String.class)).isEqualTo(Roles.SYSTEM);
+        assertThat(claims.get(JwtClaims.TYPE, String.class))
+                .isEqualTo(JwtClaims.SERVICE_TOKEN_TYPE);
         assertThat(claims.getIssuedAt().toInstant()).isEqualTo(NOW);
         assertThat(claims.getExpiration().toInstant()).isEqualTo(NOW.plusSeconds(60));
         assertThat(template.headers().get(JwtClaims.HEADER_CORRELATION_ID)).hasSize(1);
