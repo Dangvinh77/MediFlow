@@ -45,8 +45,9 @@ The RabbitMQ publisher sends all four domain events as JSON to the durable share
 after transaction commit. External Lab and Pharmacy references are stored separately with an
 idempotent composite key instead of altering clinical text. The `lab.result.created` consumer uses
 a durable queue, dead-letter queue and processed-event ledger. Feign clients and the
-`prescription.filled` consumer use explicit producer IDs; Patient lookup remains blocked by the
-registered Patient handoff. The `.http` requests match both controllers.
+`prescription.filled` consumer use explicit producer IDs. The Patient lookup consumer implements
+the locked service-only `/{id}/exists` envelope contract; live lookup remains blocked until Patient
+ships that producer endpoint. The `.http` requests match both controllers.
 
 ## Run locally
 
@@ -70,12 +71,16 @@ Swagger UI: http://localhost:8082/swagger-ui.html
 Clinical resolves patient existence through `patient-service` and doctor department membership
 through `organization-service` using short-timeout Feign clients. Confirmed 404 responses become
 domain lookup misses; transport failures, circuit-open responses and invalid envelopes become
-`UPSTREAM_UNAVAILABLE` (503). The caller's bearer token is forwarded to these internal reads.
+`UPSTREAM_UNAVAILABLE` (503). Each internal read uses a short-lived `type=service`, `role=SYSTEM`
+JWT and preserves the request correlation ID; a human bearer token is never reused.
 
 - `patient-service` — does this patient exist?
 - `organization-service` — does this doctor exist, and which department are they in?
 
-Future adapters must use Feign with a 2s connect / 3s read timeout and a circuit breaker. A confirmed miss returns false/empty; an outage throws `UpstreamUnavailableException` (`UPSTREAM_UNAVAILABLE`, future HTTP 503 mapping). Returning false from every fallback would incorrectly report a missing patient or doctor.
+Adapters use Feign with a 2s connect / 3s read timeout and a circuit breaker. A confirmed miss
+returns false/empty; an outage throws `UpstreamUnavailableException` (`UPSTREAM_UNAVAILABLE`, HTTP
+503 mapping). Returning false from every fallback would incorrectly report a missing patient or
+doctor.
 
 ## Tests
 

@@ -9,6 +9,7 @@ wire contracts belong in the canonical contract documents under
 | Handoff | Status | Owner who must act | Unblocks |
 |---|---|---|---|
 | [Patient read/existence API](../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md) | OPEN | Hoàng Anh | Clinical patient validation and frontend patient landing |
+| [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | OPEN | Lộc | Clinical EXAM authorization and Lab exact-test clearance |
 | [Report strict access-token validation](../HANDOFF-report-jwt-token-type.md) | OPEN | Huy | rejection of legacy/missing token types |
 | [Pharmacy payment idempotency race](../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md) | OPEN | Huy | deterministic concurrent `payment.completed` processing |
 | [Inpatient Gateway route](HANDOFF-INPATIENT-GATEWAY-ROUTE.md) | OPEN | Hoàng Anh | expose the future inpatient API through Gateway |

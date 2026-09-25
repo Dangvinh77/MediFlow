@@ -2,11 +2,11 @@ package com.mediflow.clinical.infrastructure.client;
 
 import java.util.UUID;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
+import com.mediflow.common.api.ApiResponse;
 
 @Component
 public class PatientLookupAdapter implements PatientLookupPort {
@@ -20,18 +20,15 @@ public class PatientLookupAdapter implements PatientLookupPort {
     @Override
     public boolean exists(UUID patientId) {
         try {
-            ResponseEntity<Void> response = client.findById(patientId);
-            if (response == null) {
+            ApiResponse<PatientLookupResponse> response = client.exists(patientId);
+            if (response == null || !response.success() || response.data() == null) {
                 throw new UpstreamUnavailableException("patient-service returned an invalid response");
             }
-            if (response.getStatusCode().is2xxSuccessful()) {
-                return true;
+            PatientLookupResponse patient = response.data();
+            if (!patientId.equals(patient.patientId())) {
+                throw new UpstreamUnavailableException("patient-service returned an invalid response");
             }
-            if (response.getStatusCode().value() == 404) {
-                return false;
-            }
-            throw new UpstreamUnavailableException(
-                    "patient-service returned HTTP " + response.getStatusCode().value());
+            return patient.exists();
         } catch (UpstreamUnavailableException exception) {
             throw exception;
         } catch (RuntimeException exception) {
