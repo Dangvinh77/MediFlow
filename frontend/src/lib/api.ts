@@ -143,7 +143,17 @@ async function request<T>(
     );
   }
 
-  return body.data as T;
+  if (body.data === null) {
+    throw new ApiRequestError(
+      "Gateway returned an empty success payload",
+      200,
+      undefined,
+      [],
+      body.correlationId,
+    );
+  }
+
+  return body.data;
 }
 
 function mutationInit(

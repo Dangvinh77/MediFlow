@@ -12,6 +12,7 @@ import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
@@ -22,10 +23,12 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Drug;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.PaymentReceiptStatus;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,6 +56,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
     private final DispenseSlipRepositoryPort dispenseSlipRepository;
     private final StockReservationRepositoryPort reservationRepository;
     private final PharmacyEventPublisherPort eventPublisher;
+    private final PaymentReceiptRepositoryPort paymentReceipts;
     private final PrescriptionDtoMapper prescriptionDtoMapper;
     private final Clock clock;
     private final Duration reservationTtl;
@@ -64,6 +68,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
             DispenseSlipRepositoryPort dispenseSlipRepository,
             StockReservationRepositoryPort reservationRepository,
             PharmacyEventPublisherPort eventPublisher,
+            PaymentReceiptRepositoryPort paymentReceipts,
             PrescriptionDtoMapper prescriptionDtoMapper,
             Clock clock,
             Duration reservationTtl) {
@@ -75,6 +80,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
         this.dispenseSlipRepository = dispenseSlipRepository;
         this.reservationRepository = reservationRepository;
         this.eventPublisher = eventPublisher;
+        this.paymentReceipts = paymentReceipts;
         this.prescriptionDtoMapper = prescriptionDtoMapper;
         this.clock = clock;
         this.reservationTtl = reservationTtl;
@@ -121,7 +127,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
                 (first, ignored) -> first,
                 LinkedHashMap::new));
         publishCreated(savedPrescription, drugNames, command.correlationId());
-        return toDto(savedPrescription, pendingSlip.getStatus(), drugNames);
+        return toDto(savedPrescription, pendingSlip.getStatus(), false, drugNames);
     }
 
     /** Reads prescription detail and current dispense lifecycle without a write lock. */
@@ -144,7 +150,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
                 (first, ignored) -> first,
                 LinkedHashMap::new));
         drugIds.stream().filter(id -> !drugNames.containsKey(id)).forEach(id -> drugNames.put(id, null));
-        return toDto(prescription, slip.getStatus(), drugNames);
+        return toDto(prescription, slip.getStatus(), hasPaymentConfirmation(prescriptionId), drugNames);
     }
 
     private void validateCreator(CreatePrescriptionCommand command) {
@@ -220,11 +226,23 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
     private PrescriptionDTO toDto(
             Prescription prescription,
             DispenseStatus dispenseStatus,
+            boolean paymentConfirmed,
             Map<UUID, String> drugNames) {
         List<PrescriptionLineDTO> lines = prescription.getLines().stream()
                 .map(line -> prescriptionDtoMapper.toLineDto(line, drugNames.get(line.getDrugId())))
                 .toList();
-        return prescriptionDtoMapper.toDto(prescription, dispenseStatus, lines);
+        return prescriptionDtoMapper.toDto(prescription, dispenseStatus, paymentConfirmed, lines);
+    }
+
+    /**
+     * Pharmacy only exposes a confirmed payment after its own durable receipt is present. A
+     * compensated receipt does not authorize a manual dispense.
+     */
+    private boolean hasPaymentConfirmation(UUID prescriptionId) {
+        List<PaymentReceipt> receipts = paymentReceipts.findByPrescriptionId(prescriptionId);
+        return receipts != null && receipts.stream().anyMatch(receipt -> receipt != null
+                && (receipt.getStatus() == PaymentReceiptStatus.RECEIVED
+                || receipt.getStatus() == PaymentReceiptStatus.DISPENSED));
     }
 
     /** Holds a server-resolved price/name beside a prescription line during one use case. */

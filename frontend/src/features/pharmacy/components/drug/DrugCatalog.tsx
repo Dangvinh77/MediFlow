@@ -5,9 +5,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncEx
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { PageResult } from "@/lib/types";
 import type { Role } from "@/lib/roles";
-import { getRole } from "@/lib/session";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { DrugDTO } from "../../types";
@@ -19,23 +19,16 @@ import {
 } from "../../utils";
 import { DrugTable } from "./DrugTable";
 
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
-
 function getServerRole(): Role | null {
   return null;
 }
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
-    if (cause.status === 403) return "Bạn không có quyền xem danh mục thuốc.";
+    if (cause.status === 403) {
+      const correlation = cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
+      return `Bạn không có quyền xem danh mục thuốc.${correlation}`;
+    }
     if (cause.correlationId) {
       return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
     }
@@ -64,7 +57,7 @@ export function DrugCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = useSyncExternalStore(
-    subscribeToRoleChanges,
+    subscribeToAuthChanges,
     getRole,
     getServerRole,
   );

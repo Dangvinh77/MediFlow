@@ -29,15 +29,18 @@ public interface PrescriptionDtoMapper {
      *
      * @param prescription aggregate đơn thuốc
      * @param dispenseStatus trạng thái phiếu xuất tương ứng
+     * @param paymentConfirmed Billing đã xác nhận thanh toán cho đơn
      * @param lineDtos các dòng đã bổ sung tên thuốc
      * @return DTO hoàn chỉnh gửi qua HTTP
      */
     @Mapping(target = "status", source = "prescription.status")
     @Mapping(target = "dispenseStatus", source = "dispenseStatus")
+    @Mapping(target = "paymentConfirmed", source = "paymentConfirmed")
     @Mapping(target = "lines", source = "lineDtos")
     PrescriptionDTO toDto(
             Prescription prescription,
             DispenseStatus dispenseStatus,
+            boolean paymentConfirmed,
             List<PrescriptionLineDTO> lineDtos);
 
     /**

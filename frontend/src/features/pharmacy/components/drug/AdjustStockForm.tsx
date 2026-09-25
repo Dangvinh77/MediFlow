@@ -18,17 +18,23 @@ interface FieldErrors {
   reason?: string;
 }
 
+const INTEGER_MIN = -2_147_483_648;
+const INTEGER_MAX = 2_147_483_647;
+
 function parseQuantity(value: string): number | null {
   const normalized = value.trim();
   if (!/^-?\d+$/.test(normalized)) return null;
   const quantity = Number(normalized);
-  return Number.isSafeInteger(quantity) ? quantity : null;
+  return Number.isInteger(quantity) && quantity >= INTEGER_MIN && quantity <= INTEGER_MAX
+    ? quantity
+    : null;
 }
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
     if (cause.status === 403) {
-      return "Không được phép điều chỉnh tồn kho; kiểm tra quyền và staffId đã ký trong token.";
+      const correlation = cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
+      return `Không được phép điều chỉnh tồn kho; kiểm tra quyền và staffId đã ký trong token.${correlation}`;
     }
     if (cause.correlationId) {
       return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
