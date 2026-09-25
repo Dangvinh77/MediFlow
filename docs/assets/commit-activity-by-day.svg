@@ -1,19 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 1166 484">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 1184 484">
   <title>Commit activity by day</title>
-  <desc>482 commits from 2026-07-28 through 2026-09-25, grouped by contributor.</desc>
-  <rect width="1166" height="484" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <desc>484 commits from 2026-07-28 through 2026-09-26, grouped by contributor.</desc>
+  <rect width="1184" height="484" rx="12" fill="#ffffff" stroke="#d0d7de"/>
   <style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.axis{fill:#57606a;font-size:11px}.heading{fill:#1f2328;font-size:18px;font-weight:600}.subheading{fill:#57606a;font-size:12px}.grid{stroke:#d8dee4;stroke-width:1}.legend{fill:#1f2328;font-size:12px}</style>
   <text class="heading" x="58" y="30">Commits by day</text>
   <text class="subheading" x="58" y="49">Full changelog history · Asia/Saigon</text>
-  <line class="grid" x1="58" y1="366.00" x2="1138" y2="366.00"/>
+  <line class="grid" x1="58" y1="366.00" x2="1156" y2="366.00"/>
   <text class="axis" x="49" y="370.00" text-anchor="end">0</text>
-  <line class="grid" x1="58" y1="291.00" x2="1138" y2="291.00"/>
+  <line class="grid" x1="58" y1="291.00" x2="1156" y2="291.00"/>
   <text class="axis" x="49" y="295.00" text-anchor="end">14</text>
-  <line class="grid" x1="58" y1="216.00" x2="1138" y2="216.00"/>
+  <line class="grid" x1="58" y1="216.00" x2="1156" y2="216.00"/>
   <text class="axis" x="49" y="220.00" text-anchor="end">28</text>
-  <line class="grid" x1="58" y1="141.00" x2="1138" y2="141.00"/>
+  <line class="grid" x1="58" y1="141.00" x2="1156" y2="141.00"/>
   <text class="axis" x="49" y="145.00" text-anchor="end">42</text>
-  <line class="grid" x1="58" y1="66.00" x2="1138" y2="66.00"/>
+  <line class="grid" x1="58" y1="66.00" x2="1156" y2="66.00"/>
   <text class="axis" x="49" y="70.00" text-anchor="end">56</text>
   <g data-date="2026-07-28">
     <rect x="60.52" y="280.29" width="12.96" height="85.71" fill="#0072B2"><title>2026-07-28 · Harori: 16</title></rect>
@@ -32,9 +32,9 @@
   </g>
   <g data-date="2026-08-03">
   </g>
-  <text class="axis" x="175.00" y="383" text-anchor="end" transform="rotate(-42 175.00 383)">2026-08-03</text>
   <g data-date="2026-08-04">
   </g>
+  <text class="axis" x="193.00" y="383" text-anchor="end" transform="rotate(-42 193.00 383)">2026-08-04</text>
   <g data-date="2026-08-05">
   </g>
   <g data-date="2026-08-06">
@@ -49,25 +49,24 @@
   </g>
   <g data-date="2026-08-09">
   </g>
-  <text class="axis" x="283.00" y="383" text-anchor="end" transform="rotate(-42 283.00 383)">2026-08-09</text>
   <g data-date="2026-08-10">
   </g>
   <g data-date="2026-08-11">
   </g>
+  <text class="axis" x="319.00" y="383" text-anchor="end" transform="rotate(-42 319.00 383)">2026-08-11</text>
   <g data-date="2026-08-12">
   </g>
   <g data-date="2026-08-13">
     <rect x="348.52" y="323.14" width="12.96" height="42.86" fill="#0072B2"><title>2026-08-13 · Harori: 8</title></rect>
     <rect x="348.52" y="301.71" width="12.96" height="21.43" fill="#E69F00"><title>2026-08-13 · LQHuy0210: 4</title></rect>
-    <rect x="348.52" y="296.36" width="12.96" height="5.36" fill="#CC79A7"><title>2026-08-13 · TranHoangAnh94: 1</title></rect>
+    <rect x="348.52" y="296.36" width="12.96" height="5.36" fill="#009E73"><title>2026-08-13 · TranHoangAnh94: 1</title></rect>
   </g>
   <g data-date="2026-08-14">
     <rect x="366.52" y="344.57" width="12.96" height="21.43" fill="#0072B2"><title>2026-08-14 · Harori: 4</title></rect>
   </g>
   <g data-date="2026-08-15">
-    <rect x="384.52" y="355.29" width="12.96" height="10.71" fill="#009E73"><title>2026-08-15 · locgit-89: 2</title></rect>
+    <rect x="384.52" y="355.29" width="12.96" height="10.71" fill="#CC79A7"><title>2026-08-15 · locgit-89: 2</title></rect>
   </g>
-  <text class="axis" x="391.00" y="383" text-anchor="end" transform="rotate(-42 391.00 383)">2026-08-15</text>
   <g data-date="2026-08-16">
   </g>
   <g data-date="2026-08-17">
@@ -77,13 +76,13 @@
   <g data-date="2026-08-18">
     <rect x="438.52" y="269.57" width="12.96" height="96.43" fill="#0072B2"><title>2026-08-18 · Harori: 18</title></rect>
   </g>
+  <text class="axis" x="445.00" y="383" text-anchor="end" transform="rotate(-42 445.00 383)">2026-08-18</text>
   <g data-date="2026-08-19">
   </g>
   <g data-date="2026-08-20">
   </g>
   <g data-date="2026-08-21">
   </g>
-  <text class="axis" x="499.00" y="383" text-anchor="end" transform="rotate(-42 499.00 383)">2026-08-21</text>
   <g data-date="2026-08-22">
   </g>
   <g data-date="2026-08-23">
@@ -92,12 +91,12 @@
   </g>
   <g data-date="2026-08-25">
   </g>
+  <text class="axis" x="571.00" y="383" text-anchor="end" transform="rotate(-42 571.00 383)">2026-08-25</text>
   <g data-date="2026-08-26">
     <rect x="582.52" y="333.86" width="12.96" height="32.14" fill="#0072B2"><title>2026-08-26 · Harori: 6</title></rect>
   </g>
   <g data-date="2026-08-27">
   </g>
-  <text class="axis" x="607.00" y="383" text-anchor="end" transform="rotate(-42 607.00 383)">2026-08-27</text>
   <g data-date="2026-08-28">
   </g>
   <g data-date="2026-08-29">
@@ -110,10 +109,10 @@
     <rect x="690.52" y="344.57" width="12.96" height="21.43" fill="#0072B2"><title>2026-09-01 · Harori: 4</title></rect>
     <rect x="690.52" y="333.86" width="12.96" height="10.71" fill="#E69F00"><title>2026-09-01 · LQHuy0210: 2</title></rect>
   </g>
+  <text class="axis" x="697.00" y="383" text-anchor="end" transform="rotate(-42 697.00 383)">2026-09-01</text>
   <g data-date="2026-09-02">
     <rect x="708.52" y="344.57" width="12.96" height="21.43" fill="#0072B2"><title>2026-09-02 · Harori: 4</title></rect>
   </g>
-  <text class="axis" x="715.00" y="383" text-anchor="end" transform="rotate(-42 715.00 383)">2026-09-02</text>
   <g data-date="2026-09-03">
     <rect x="726.52" y="248.14" width="12.96" height="117.86" fill="#0072B2"><title>2026-09-03 · Harori: 22</title></rect>
     <rect x="726.52" y="226.71" width="12.96" height="21.43" fill="#E69F00"><title>2026-09-03 · LQHuy0210: 4</title></rect>
@@ -121,8 +120,8 @@
   <g data-date="2026-09-04">
     <rect x="744.52" y="199.93" width="12.96" height="166.07" fill="#0072B2"><title>2026-09-04 · Harori: 31</title></rect>
     <rect x="744.52" y="178.50" width="12.96" height="21.43" fill="#E69F00"><title>2026-09-04 · LQHuy0210: 4</title></rect>
-    <rect x="744.52" y="157.07" width="12.96" height="21.43" fill="#009E73"><title>2026-09-04 · locgit-89: 4</title></rect>
-    <rect x="744.52" y="151.71" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-04 · TranHoangAnh94: 1</title></rect>
+    <rect x="744.52" y="173.14" width="12.96" height="5.36" fill="#009E73"><title>2026-09-04 · TranHoangAnh94: 1</title></rect>
+    <rect x="744.52" y="151.71" width="12.96" height="21.43" fill="#CC79A7"><title>2026-09-04 · locgit-89: 4</title></rect>
   </g>
   <g data-date="2026-09-05">
     <rect x="762.52" y="232.07" width="12.96" height="133.93" fill="#0072B2"><title>2026-09-05 · Harori: 25</title></rect>
@@ -137,7 +136,7 @@
   <g data-date="2026-09-08">
     <rect x="816.52" y="333.86" width="12.96" height="32.14" fill="#0072B2"><title>2026-09-08 · Harori: 6</title></rect>
     <rect x="816.52" y="328.50" width="12.96" height="5.36" fill="#E69F00"><title>2026-09-08 · LQHuy0210: 1</title></rect>
-    <rect x="816.52" y="296.36" width="12.96" height="32.14" fill="#009E73"><title>2026-09-08 · locgit-89: 6</title></rect>
+    <rect x="816.52" y="296.36" width="12.96" height="32.14" fill="#CC79A7"><title>2026-09-08 · locgit-89: 6</title></rect>
   </g>
   <text class="axis" x="823.00" y="383" text-anchor="end" transform="rotate(-42 823.00 383)">2026-09-08</text>
   <g data-date="2026-09-09">
@@ -155,24 +154,24 @@
   <g data-date="2026-09-13">
     <rect x="906.52" y="216.00" width="12.96" height="150.00" fill="#0072B2"><title>2026-09-13 · Harori: 28</title></rect>
     <rect x="906.52" y="71.36" width="12.96" height="144.64" fill="#E69F00"><title>2026-09-13 · LQHuy0210: 27</title></rect>
-    <rect x="906.52" y="66.00" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-13 · TranHoangAnh94: 1</title></rect>
+    <rect x="906.52" y="66.00" width="12.96" height="5.36" fill="#009E73"><title>2026-09-13 · TranHoangAnh94: 1</title></rect>
   </g>
   <g data-date="2026-09-14">
     <rect x="924.52" y="333.86" width="12.96" height="32.14" fill="#0072B2"><title>2026-09-14 · Harori: 6</title></rect>
     <rect x="924.52" y="216.00" width="12.96" height="117.86" fill="#E69F00"><title>2026-09-14 · LQHuy0210: 22</title></rect>
-    <rect x="924.52" y="199.93" width="12.96" height="16.07" fill="#009E73"><title>2026-09-14 · locgit-89: 3</title></rect>
-    <rect x="924.52" y="194.57" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-14 · TranHoangAnh94: 1</title></rect>
+    <rect x="924.52" y="210.64" width="12.96" height="5.36" fill="#009E73"><title>2026-09-14 · TranHoangAnh94: 1</title></rect>
+    <rect x="924.52" y="194.57" width="12.96" height="16.07" fill="#CC79A7"><title>2026-09-14 · locgit-89: 3</title></rect>
   </g>
-  <text class="axis" x="931.00" y="383" text-anchor="end" transform="rotate(-42 931.00 383)">2026-09-14</text>
   <g data-date="2026-09-15">
     <rect x="942.52" y="323.14" width="12.96" height="42.86" fill="#0072B2"><title>2026-09-15 · Harori: 8</title></rect>
     <rect x="942.52" y="291.00" width="12.96" height="32.14" fill="#E69F00"><title>2026-09-15 · LQHuy0210: 6</title></rect>
   </g>
+  <text class="axis" x="949.00" y="383" text-anchor="end" transform="rotate(-42 949.00 383)">2026-09-15</text>
   <g data-date="2026-09-16">
     <rect x="960.52" y="280.29" width="12.96" height="85.71" fill="#0072B2"><title>2026-09-16 · Harori: 16</title></rect>
     <rect x="960.52" y="194.57" width="12.96" height="85.71" fill="#E69F00"><title>2026-09-16 · LQHuy0210: 16</title></rect>
-    <rect x="960.52" y="189.21" width="12.96" height="5.36" fill="#009E73"><title>2026-09-16 · locgit-89: 1</title></rect>
-    <rect x="960.52" y="183.86" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-16 · TranHoangAnh94: 1</title></rect>
+    <rect x="960.52" y="189.21" width="12.96" height="5.36" fill="#009E73"><title>2026-09-16 · TranHoangAnh94: 1</title></rect>
+    <rect x="960.52" y="183.86" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-16 · locgit-89: 1</title></rect>
   </g>
   <g data-date="2026-09-17">
     <rect x="978.52" y="323.14" width="12.96" height="42.86" fill="#0072B2"><title>2026-09-17 · Harori: 8</title></rect>
@@ -181,8 +180,8 @@
   <g data-date="2026-09-18">
     <rect x="996.52" y="280.29" width="12.96" height="85.71" fill="#0072B2"><title>2026-09-18 · Harori: 16</title></rect>
     <rect x="996.52" y="269.57" width="12.96" height="10.71" fill="#E69F00"><title>2026-09-18 · LQHuy0210: 2</title></rect>
-    <rect x="996.52" y="264.21" width="12.96" height="5.36" fill="#009E73"><title>2026-09-18 · locgit-89: 1</title></rect>
-    <rect x="996.52" y="221.36" width="12.96" height="42.86" fill="#CC79A7"><title>2026-09-18 · TranHoangAnh94: 8</title></rect>
+    <rect x="996.52" y="226.71" width="12.96" height="42.86" fill="#009E73"><title>2026-09-18 · TranHoangAnh94: 8</title></rect>
+    <rect x="996.52" y="221.36" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-18 · locgit-89: 1</title></rect>
   </g>
   <g data-date="2026-09-19">
     <rect x="1014.52" y="360.64" width="12.96" height="5.36" fill="#0072B2"><title>2026-09-19 · Harori: 1</title></rect>
@@ -191,7 +190,6 @@
     <rect x="1032.52" y="301.71" width="12.96" height="64.29" fill="#0072B2"><title>2026-09-20 · Harori: 12</title></rect>
     <rect x="1032.52" y="280.29" width="12.96" height="21.43" fill="#E69F00"><title>2026-09-20 · LQHuy0210: 4</title></rect>
   </g>
-  <text class="axis" x="1039.00" y="383" text-anchor="end" transform="rotate(-42 1039.00 383)">2026-09-20</text>
   <g data-date="2026-09-21">
     <rect x="1050.52" y="349.93" width="12.96" height="16.07" fill="#0072B2"><title>2026-09-21 · Harori: 3</title></rect>
   </g>
@@ -199,23 +197,27 @@
     <rect x="1068.52" y="344.57" width="12.96" height="21.43" fill="#0072B2"><title>2026-09-22 · Harori: 4</title></rect>
     <rect x="1068.52" y="333.86" width="12.96" height="10.71" fill="#E69F00"><title>2026-09-22 · LQHuy0210: 2</title></rect>
   </g>
+  <text class="axis" x="1075.00" y="383" text-anchor="end" transform="rotate(-42 1075.00 383)">2026-09-22</text>
   <g data-date="2026-09-23">
   </g>
   <g data-date="2026-09-24">
     <rect x="1104.52" y="328.50" width="12.96" height="37.50" fill="#0072B2"><title>2026-09-24 · Harori: 7</title></rect>
-    <rect x="1104.52" y="317.79" width="12.96" height="10.71" fill="#CC79A7"><title>2026-09-24 · TranHoangAnh94: 2</title></rect>
+    <rect x="1104.52" y="317.79" width="12.96" height="10.71" fill="#009E73"><title>2026-09-24 · TranHoangAnh94: 2</title></rect>
   </g>
   <g data-date="2026-09-25">
     <rect x="1122.52" y="360.64" width="12.96" height="5.36" fill="#0072B2"><title>2026-09-25 · Harori: 1</title></rect>
-    <rect x="1122.52" y="355.29" width="12.96" height="5.36" fill="#CC79A7"><title>2026-09-25 · TranHoangAnh94: 1</title></rect>
+    <rect x="1122.52" y="349.93" width="12.96" height="10.71" fill="#009E73"><title>2026-09-25 · TranHoangAnh94: 2</title></rect>
   </g>
-  <text class="axis" x="1129.00" y="383" text-anchor="end" transform="rotate(-42 1129.00 383)">2026-09-25</text>
+  <g data-date="2026-09-26">
+    <rect x="1140.52" y="360.64" width="12.96" height="5.36" fill="#009E73"><title>2026-09-26 · TranHoangAnh94: 1</title></rect>
+  </g>
+  <text class="axis" x="1147.00" y="383" text-anchor="end" transform="rotate(-42 1147.00 383)">2026-09-26</text>
   <rect x="58.00" y="440" width="12" height="12" rx="2" fill="#0072B2"/>
   <text class="legend" x="76.00" y="451">Harori (331)</text>
-  <rect x="328.00" y="440" width="12" height="12" rx="2" fill="#E69F00"/>
-  <text class="legend" x="346.00" y="451">LQHuy0210 (118)</text>
-  <rect x="598.00" y="440" width="12" height="12" rx="2" fill="#009E73"/>
-  <text class="legend" x="616.00" y="451">locgit-89 (17)</text>
-  <rect x="868.00" y="440" width="12" height="12" rx="2" fill="#CC79A7"/>
-  <text class="legend" x="886.00" y="451">TranHoangAnh94 (16)</text>
+  <rect x="332.50" y="440" width="12" height="12" rx="2" fill="#E69F00"/>
+  <text class="legend" x="350.50" y="451">LQHuy0210 (118)</text>
+  <rect x="607.00" y="440" width="12" height="12" rx="2" fill="#009E73"/>
+  <text class="legend" x="625.00" y="451">TranHoangAnh94 (18)</text>
+  <rect x="881.50" y="440" width="12" height="12" rx="2" fill="#CC79A7"/>
+  <text class="legend" x="899.50" y="451">locgit-89 (17)</text>
 </svg>
