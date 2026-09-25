@@ -30,6 +30,7 @@ class AuthControllerTest {
                         accountId,
                         UUID.randomUUID(),
                         departmentId,
+                        null,
                         "ADMIN")));
         AuthController controller = new AuthController(jwt, organization);
 
@@ -43,6 +44,8 @@ class AuthControllerTest {
         LoginResponse body = (LoginResponse) response.getBody();
         assertThat(body).isNotNull();
         assertThat(jwt.parse(body.accessToken()).getSubject()).isEqualTo(accountId.toString());
+        assertThat(jwt.parse(body.accessToken()).get("type", String.class)).isEqualTo("access");
+        assertThat(jwt.parse(body.refreshToken()).get("type", String.class)).isEqualTo("refresh");
         assertThat(jwt.parse(body.accessToken()).get(
                 JwtTokenService.DEPARTMENT_ID_CLAIM,
                 String.class))

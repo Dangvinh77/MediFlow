@@ -70,6 +70,7 @@ public class AuthorizationForwardingInterceptor implements RequestInterceptor {
         return Jwts.builder()
                 .subject(SERVICE_SUBJECT)
                 .claim(JwtClaims.ROLE, Roles.SYSTEM)
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(issuedAt.plusSeconds(TOKEN_TTL_SECONDS)))
                 .signWith(signingKey)

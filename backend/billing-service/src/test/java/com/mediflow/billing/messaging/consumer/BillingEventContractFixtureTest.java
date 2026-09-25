@@ -42,7 +42,7 @@ class BillingEventContractFixtureTest {
                 .isEqualTo(java.util.UUID.fromString("66666666-6666-6666-6666-666666666666"));
     }
 
-    /** HANDOFF-LAB-PAYMENT-COMPLETED.md — Lab must read labTestIds, never invoice/prescription/record IDs. */
+    /** CONTRACT-CARE-BILLING-01 — Lab reads labTestIds, never invoice/prescription/record IDs. */
     @Test
     void paymentCompleted_ordinaryInvoiceCarriesEmptyLabTestIds() throws Exception {
         PaymentCompletedEvent event = read("payment.completed-no-lab-fees.json", PaymentCompletedEvent.class);

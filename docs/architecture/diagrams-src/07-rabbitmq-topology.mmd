@@ -10,12 +10,12 @@ flowchart LR
   X[(mediflow.events)]
   DLX[(mediflow.events.dlx)]
 
-  C -->|"appointment.arrived\nmedicalrecord.completed\nadmission.recommended"| X
+  C -->|"appointment.status.changed\nmedicalrecord.completed\nadmission.requested"| X
   L -->|"lab.request.created\nlab.result.created"| X
-  P -->|"prescription.created\nprescription.filled\ndispense.failed"| X
-  I -->|"admission.requested\nadmission.started\ndischarge.medically.approved\nadmission.closed"| X
-  S -->|"surgery.requested\nsurgery.ready\nsurgery.completed\nsurgery.cancelled"| X
-  B -->|"invoice.created\npayment.completed\nfinancial.clearance.granted\npayment.refunded\nsettlement.completed"| X
+  P -->|"prescription.created\nprescription.filled\nprescription.dispense.failed"| X
+  I -->|"admission.deposit.requested\nadmission.started\nsurgery.requested\ndischarge.medically.approved\nadmission.closed"| X
+  S -->|"surgery.ready\nsurgery.completed\nsurgery.cancelled"| X
+  B -->|"invoice.created\npayment.completed\nfinancial.clearance.granted\ndeposit.topup.required\npayment.refunded\nsettlement.completed"| X
 
   X -->|clinical.q| C
   X -->|lab.q| L

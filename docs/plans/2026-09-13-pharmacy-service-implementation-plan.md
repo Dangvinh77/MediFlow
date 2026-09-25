@@ -273,7 +273,9 @@ Checklist:
 - [x] Test account khác staff, thiếu claim, sai role, Admin override và dependency unavailable.
 - [x] Nếu producer contract thiếu, tạo HANDOFF; không sửa Organization/Gateway.
 
-**Trạng thái:** BLOCKED ở phần end-to-end cho tới khi Gateway phát claim `staffId` theo [identity handoff](../eproject_general_plan/backend-spec/pharmacy-identity-contract-handoff.md).
+**Trạng thái cập nhật 2026-09-24:** identity blocker đã được giải quyết. Gateway phát claim
+`staffId` tách biệt với `sub=accountId` theo
+[`CONTRACT-IDENTITY-LOOKUP-01`](../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
 
 **Bằng chứng phần đã hoàn thành:** `ActorIdentity` tách account/staff/role; JWT filter fail-closed với
 subject hoặc `staffId` sai định dạng; prescription/cancel ownership chỉ dùng `staffId`; test account
@@ -452,7 +454,8 @@ suite xác nhận quarantine không bị tính là retryable pending.
 - [ ] E2E nhánh compensation.
 - [ ] E2E redelivery và broker restart.
 - [ ] Notification/report consumer compatibility được ghi nhận.
-- [x] Dependency chưa có được ghi tại `docs/HANDOFF-pharmacy-t16-cross-service.md`; chưa tuyên bố E2E pass.
+- [ ] Các blocker E2E còn mở phải nằm trong [active handoff registry](../handoffs/README.md); hiện
+  concurrency của `payment.completed` vẫn được theo dõi riêng, nên chưa tuyên bố E2E pass.
 
 ### T17 — Release gate
 

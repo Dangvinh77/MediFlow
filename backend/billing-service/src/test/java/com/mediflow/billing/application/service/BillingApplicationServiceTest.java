@@ -142,7 +142,7 @@ class BillingApplicationServiceTest {
         assertThat(payment.getValue().labTestIds()).isEmpty();
     }
 
-    // ---- payment.completed carries labTestIds for Lab (HANDOFF-LAB-PAYMENT-COMPLETED.md) ----
+    // ---- payment.completed carries labTestIds for Lab (CONTRACT-CARE-BILLING-01) ----
     @Test
     void pay_invoiceWithOneLabFee_publishesSingleLabTestId() {
         UUID invoiceId = UUID.randomUUID();

@@ -7,6 +7,16 @@ Sở hữu cơ cấu tổ chức của bệnh viện: có những khoa nào, ai 
 
 Xây **đầu tiên**. `clinical` và `gateway` phụ thuộc vào nó.
 
+> **Contract lock (2026-09-24):** Organization giữ nguyên wire contract tiếng Anh đang chạy trong
+> `docs/ai/services/organization.md`, `organization-service.html` và code hiện tại. Các tên tiếng
+> Việt trong bản spec lịch sử này chỉ mô tả nghiệp vụ; không dùng chúng để đổi tên JSON/DTO/event của
+> Organization. JWT và service lookup tuân theo canonical
+> [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+>
+> Cụ thể, các snippet `TaiKhoan`/`VerifiedAccountDTO` bên dưới là bản lịch sử: implementation phải
+> giữ `patientId` cho tài khoản PATIENT, cấm tạo/đăng nhập tài khoản SYSTEM, và trả wire fields
+> `accountId`, `staffId`, `departmentId`, `patientId`, `role`.
+
 ## 1. Lược đồ — `V1__init.sql`
 
 ```sql

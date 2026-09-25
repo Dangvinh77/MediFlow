@@ -36,7 +36,8 @@ class JwtAuthFilterTest {
 
     @Test
     void validSystemToken_createsSystemAuthentication() throws Exception {
-        String token = createToken("clinical-service", "SYSTEM", Instant.now().plusSeconds(300));
+        String token = createToken("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(300));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -45,12 +46,23 @@ class JwtAuthFilterTest {
         assertThat(authentication.getName()).isEqualTo("clinical-service");
         assertThat(authentication.getAuthorities())
                 .extracting("authority")
-                .containsExactly("ROLE_SYSTEM");
+                .containsExactly("ROLE_SYSTEM", "ROLE_SYSTEM_SERVICE");
     }
 
     @Test
     void expiredToken_leavesRequestUnauthenticated() throws Exception {
-        String token = createToken("clinical-service", "SYSTEM", Instant.now().minusSeconds(60));
+        String token = createToken("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().minusSeconds(60));
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void refreshToken_isNotAcceptedAsServiceAuthentication() throws Exception {
+        String token = createToken("clinical-service", "SYSTEM", JwtClaims.REFRESH_TOKEN_TYPE,
+                Instant.now().plusSeconds(300));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -63,10 +75,11 @@ class JwtAuthFilterTest {
         return request;
     }
 
-    private String createToken(String subject, String role, Instant expiresAt) {
+    private String createToken(String subject, String role, String type, Instant expiresAt) {
         return Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, type)
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
                 .expiration(Date.from(expiresAt))
                 .signWith(SIGNING_KEY)

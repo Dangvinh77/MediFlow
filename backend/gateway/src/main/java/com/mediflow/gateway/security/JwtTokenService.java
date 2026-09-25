@@ -16,12 +16,13 @@ import java.util.UUID;
 /**
  * Issues and validates MediFlow JWTs using HS256.
  *
- * <p>The JWT subject always contains the authenticated user's UUID.
+ * <p>Human JWT subjects contain the authenticated account UUID. Service JWT subjects identify the
+ * calling service, while human patient identity is carried separately in {@code patientId}.
  */
 @Service
 public class JwtTokenService {
 
-    public static final String DEPARTMENT_ID_CLAIM = "departmentId";
+    public static final String DEPARTMENT_ID_CLAIM = JwtClaims.DEPARTMENT_ID;
 
     private final SecretKey key;
     private final JwtProperties props;
@@ -49,28 +50,52 @@ public class JwtTokenService {
     }
 
     public String issueAccessToken(UUID userId, String role) {
-        return issueAccessToken(userId, role, null);
+        return issueAccessToken(userId, role, null, null, null);
     }
 
     public String issueAccessToken(UUID userId, String role, UUID departmentId) {
+        return issueAccessToken(userId, role, null, departmentId, null);
+    }
+
+    public String issueAccessToken(
+            UUID accountId,
+            String role,
+            UUID staffId,
+            UUID departmentId,
+            UUID patientId) {
         return build(
-                userId.toString(),
+                accountId.toString(),
                 role,
+                JwtClaims.ACCESS_TOKEN_TYPE,
                 props.accessTokenMinutes() * 60,
+                staffId,
                 departmentId,
+                patientId,
                 UUID.randomUUID().toString());
     }
 
     public String issueRefreshToken(UUID userId, String role) {
-        return issueRefreshToken(userId, role, null);
+        return issueRefreshToken(userId, role, null, null, null);
     }
 
     public String issueRefreshToken(UUID userId, String role, UUID departmentId) {
+        return issueRefreshToken(userId, role, null, departmentId, null);
+    }
+
+    public String issueRefreshToken(
+            UUID accountId,
+            String role,
+            UUID staffId,
+            UUID departmentId,
+            UUID patientId) {
         return build(
-                userId.toString(),
+                accountId.toString(),
                 role,
+                JwtClaims.REFRESH_TOKEN_TYPE,
                 props.refreshTokenMinutes() * 60,
+                staffId,
                 departmentId,
+                patientId,
                 UUID.randomUUID().toString());
     }
 
@@ -81,7 +106,10 @@ public class JwtTokenService {
         return build(
                 subject,
                 role,
+                JwtClaims.SERVICE_TOKEN_TYPE,
                 props.serviceTokenMinutes() * 60,
+                null,
+                null,
                 null,
                 correlationId);
     }
@@ -89,8 +117,11 @@ public class JwtTokenService {
     private String build(
             String subject,
             String role,
+            String tokenType,
             long ttlSeconds,
+            UUID staffId,
             UUID departmentId,
+            UUID patientId,
             String correlationId) {
 
         Objects.requireNonNull(subject, "subject is required");
@@ -98,20 +129,28 @@ public class JwtTokenService {
 
         Instant now = Instant.now();
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, tokenType)
                 .claim(
                         JwtClaims.CORRELATION_ID,
                         correlationId == null || correlationId.isBlank()
                                 ? UUID.randomUUID().toString()
                                 : correlationId)
-                .claim(DEPARTMENT_ID_CLAIM, departmentId == null ? null : departmentId.toString())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(
-                        now.plusSeconds(ttlSeconds)))
-                .signWith(key)
-                .compact();
+                        now.plusSeconds(ttlSeconds)));
+        if (staffId != null) {
+            builder.claim(JwtClaims.STAFF_ID, staffId.toString());
+        }
+        if (departmentId != null) {
+            builder.claim(JwtClaims.DEPARTMENT_ID, departmentId.toString());
+        }
+        if (patientId != null) {
+            builder.claim(JwtClaims.PATIENT_ID, patientId.toString());
+        }
+        return builder.signWith(key).compact();
     }
 
     /**

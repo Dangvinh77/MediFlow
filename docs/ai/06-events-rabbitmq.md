@@ -26,6 +26,9 @@ Publish an event whenever a service **changes its own state and other contexts m
       String sdt
   ) {}
   ```
+- New care-finance contracts also carry `eventType`, integer `version`, and `producer` in the wire
+  envelope. Existing unversioned event records migrate additively; do not create a second routing
+  key solely to encode the version. Full rules: [`16-care-finance-integration-contracts.md`](16-care-finance-integration-contracts.md).
 - Serialize as JSON (`Jackson2JsonMessageConverter`, configured in `common`).
 
 ## Publishing
@@ -42,28 +45,43 @@ Publish an event whenever a service **changes its own state and other contexts m
 
 ## Canonical event catalog (from the design docs)
 
-| Event (routing key) | Publisher | Subscribers |
-|---------------------|-----------|-------------|
-| `department.created` | organization | — |
-| `staff.created` | organization | — |
-| `staff.department.changed` | organization | report |
-| `patient.created` | patient | notification |
-| `patient.updated` | patient | — |
-| `appointment.created` | clinical | notification |
-| `appointment.status.changed` | clinical | billing |
-| `medicalrecord.created` | clinical | lab, billing, report |
-| `diagnosis.added` | clinical | — |
-| `lab.request.created` | lab | — |
-| `lab.result.created` | lab | clinical, billing, notification, report |
-| `prescription.created` | pharmacy | billing (saga) |
-| `prescription.filled` | pharmacy | clinical, notification, report |
-| `stock.low` | pharmacy | (ops/notification) |
-| `invoice.created` | billing | — |
-| `payment.completed` | billing | pharmacy, lab, patient(log), notification, report |
-| `payment.failed` | billing | notification (+ saga compensation) |
-| `notification.sent` | notification | — |
+| Event (routing key) | Publisher | Subscribers | Status / contract note |
+|---------------------|-----------|-------------|------------------------|
+| `department.created` | organization | — | current |
+| `staff.created` | organization | — | current |
+| `staff.department.changed` | organization | report | current when staffing projection exists |
+| `patient.created` | patient | notification | current |
+| `patient.updated` | patient | — | current |
+| `appointment.created` | clinical | notification | current |
+| `appointment.status.changed` | clinical | billing, notification | compatibility path for exam fee; arrival/cancel notice projection |
+| `medicalrecord.created` | clinical | billing, report | current; Lab must not infer an order from diagnosis text |
+| `medicalrecord.completed` | clinical | report, notification | planned |
+| `diagnosis.added` | clinical | — | current |
+| `admission.requested` | clinical | inpatient, billing | planned; explicit admission referral |
+| `lab.request.created` | lab | billing | target charge trigger |
+| `lab.result.created` | lab | clinical, notification, report | current; Billing result-time fee is deprecated |
+| `prescription.created` | pharmacy | billing | current; adds `careContext`/`admissionId` for inpatient use |
+| `prescription.filled` | pharmacy | clinical, notification, report | current |
+| `prescription.dispense.failed` | pharmacy | billing | current compensation fact |
+| `stock.low` | pharmacy | notification/ops | current |
+| `admission.deposit.requested` | inpatient | billing, notification | planned |
+| `admission.started` | inpatient | billing, notification, report | planned |
+| `discharge.medically.approved` | inpatient | billing | planned |
+| `admission.closed` | inpatient | notification, report | planned |
+| `surgery.requested` | clinical/inpatient | surgery, billing | planned |
+| `surgery.ready` | surgery | inpatient, notification | planned |
+| `surgery.completed` | surgery | inpatient, billing, report | planned |
+| `surgery.cancelled` | surgery | inpatient, billing, notification, report | planned |
+| `invoice.created` | billing | notification | current compatibility event/payment request notice |
+| `payment.completed` | billing | pharmacy, lab, patient(log), notification, report | financial fact; do not unlock unrelated targets |
+| `financial.clearance.granted` | billing | clinical, lab, pharmacy, inpatient, surgery | planned purpose/target-specific authorization |
+| `deposit.topup.required` | billing | inpatient, notification | planned |
+| `payment.refunded` | billing | notification, report | planned immutable refund fact |
+| `settlement.completed` | billing | inpatient, notification, report | planned final reconciliation |
+| `payment.failed` | billing | notification (+ current pharmacy saga compensation) | current compatibility event |
+| `notification.sent` | notification | — | current |
 
-**Operational events carry `maKhoa`.** `appointment.created`, `medicalrecord.created`,
+**Operational events carry `departmentId`.** `appointment.created`, `medicalrecord.created`,
 `lab.result.created`, `prescription.created` and the billing events all include the originating
 department, so `report-service` can aggregate by department without ever calling another service.
 
@@ -71,9 +89,11 @@ department, so `report-service` can aggregate by department without ever calling
 > record is created happens in a local transaction inside `clinical-service`, not over the bus. If you
 > reach for an event to change something you already own, the service boundary is cut in the wrong place.
 
-> Keep this table in sync with each `services/*.md` publish/subscribe section. If they disagree, the per-service design doc (`docs/eproject_general_plan/*.html`) is authoritative.
+> Keep this table in sync with each `services/*.md` publish/subscribe section. For care-finance
+> flows, the approved architecture HTML and canonical contracts in `docs/handoffs/care-finance/`
+> are authoritative. `planned` means the contract is designed, not live.
 
-## Saga (billing orchestrates prescribe → dispense → pay)
+## Compatibility saga (billing orchestrates prescribe → pay → dispense)
 
 - Forward: `prescription.created` → billing creates invoice → on pay, `payment.completed` → pharmacy dispenses (`CHO_XUAT`→`DA_XUAT`).
 - Compensate: dispense failure (out of stock / expired) → publish failure → `payment.failed` → notify + reverse. See `services/billing.md` and `services/pharmacy.md`.

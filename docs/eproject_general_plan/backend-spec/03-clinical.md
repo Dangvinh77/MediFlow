@@ -232,7 +232,7 @@ public record DiagnosisDTO(UUID diagnosisId, String diagnosisName, String descri
 6. publish `MedicalRecordCreatedEvent` sau commit; nếu bước 4 chạy thì publish thêm `AppointmentStatusChangedEvent`
 
 > Bước 4 chính là lý do lịch hẹn và hồ sơ nằm chung một service. Nó phải là **một transaction**,
-> không bao giờ dùng event. Xem [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md).
+> không bao giờ dùng event. Xem [`docs/ai/06-events-rabbitmq.md`](../../ai/06-events-rabbitmq.md).
 
 **`addDiagnosis`** — nạp hồ sơ hoặc 404 → `addDiagnosis` → lưu → publish `DiagnosisAddedEvent`.
 
@@ -270,7 +270,9 @@ Hai controller trong `infrastructure/web/`: `AppointmentController`, `MedicalRec
 `recordId` của `appointment.status.changed` nullable: có giá trị khi tạo hồ sơ đồng thời đặt
 `ARRIVED`, chưa có khi chỉ đổi trạng thái lịch hẹn. Billing phải chờ `medicalrecord.created`
 nếu chưa có mã hồ sơ; không dùng `appointmentId` thay `recordId`. Hai event phải cùng tham chiếu
-hồ sơ để tránh thu phí khám hai lần. Xem [contract handoff](clinical-lab-contract-handoff.md).
+hồ sơ để tránh thu phí khám hai lần. Contract canonical nằm trong
+[`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md) và
+[`06-events-rabbitmq.md`](../../ai/06-events-rabbitmq.md).
 
 | Routing key | Xử lý |
 |-------------|-------|

@@ -4,19 +4,27 @@
 
 **MediFlow** — a **hospital / clinic management system** built as **Spring Boot microservices**. The authoritative technical design lives in `docs/eproject_general_plan/*.html` (one file per service). These AI rules turn that design into consistent, buildable code.
 
-## The 9 services
+## The service landscape
+
+MediFlow has ten business bounded contexts in the approved target architecture. Eight have
+implemented business services. Inpatient now has a preliminary bootable foundation (module,
+configuration, database and Compose service) but remains **planned** until its business spec,
+endpoints, schema, contracts and Gateway route are implemented. Surgery remains planned and
+unscaffolded.
 
 | Service | Bounded context (owns) | Key tables |
 |---------|------------------------|------------|
 | **gateway** | API gateway: JWT auth, RBAC, routing, rate limiting. No business data. | route config only |
+| **organization** | Departments, staff, accounts and authoritative staff/department identities | `DEPARTMENT`, `STAFF`, `ACCOUNT` |
 | **patient** | Patient demographics & records (incl. BHYT) | `BENH_NHAN` |
-| **appointment** | Appointments, status, scheduling | `LICH_HEN` |
-| **medical-record** | Medical records & diagnoses | `HO_SO_BA`, `CHUAN_DOAN` |
+| **clinical** | Outpatient appointments, medical records, diagnoses and admission referrals | `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS` |
 | **lab** | Lab tests & results | `XET_NGHIEM`, `KET_QUA_XN` |
 | **pharmacy** | Drugs, prescriptions, dispensing, stock | `THUOC`, `BAN_KE_CP`, `PHIEU_XUAT`, `CHI_TIET_BAN_KE` |
-| **billing** | Fees, invoices, **Saga orchestrator** (prescribe→dispense→pay) | `VIEN_PHI`, `HOADON` |
+| **billing** | Charges, payment requests/transactions, allocations, deposits, refunds and settlement | current `VIEN_PHI`, `HOADON`; target ledger tables |
 | **notification** | Email/SMS/in-app notification history | `THONG_BAO` |
 | **report** | Aggregated analytics (read-model built from events) | `DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC` |
+| **inpatient** *(planned)* | Admissions, beds, assignments, treatment log and discharge | target `ADMISSION`, `BED`, `BED_ASSIGNMENT`, `TREATMENT_ENTRY`, `DISCHARGE_SUMMARY` |
+| **surgery** *(planned)* | Surgery case, consent, pre-op checklist, schedule, team and result | target `SURGERY_CASE`, `CONSENT`, `PREOP_CHECK_ITEM`, `SURGERY_SCHEDULE`, `SURGERY_RESULT` |
 
 Supporting infrastructure: **Eureka** (service registry), **RabbitMQ** (event bus), a **config source** for gateway routes.
 
@@ -50,6 +58,11 @@ See `08-persistence-naming.md` for the exact mapping mechanism.
 | hoa_don | invoice | billing-service |
 | thong_bao | notification | notification-service |
 | bao_cao | report | report-service |
+| nhap_vien | admission | inpatient-service *(planned)* |
+| giuong_benh | bed | inpatient-service *(planned)* |
+| phau_thuat | surgery | surgery-service *(planned)* |
+| tam_ung | deposit | billing-service |
+| quyet_toan | settlement | billing-service |
 
 ## Roles in the system
 

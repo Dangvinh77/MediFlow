@@ -21,5 +21,8 @@ CREATE DATABASE mediflow_billing;        -- Phòng Viện phí
 CREATE DATABASE mediflow_notification;
 CREATE DATABASE mediflow_report;
 
+-- Planned care context (foundation only; schema will be owned by Flyway)
+CREATE DATABASE mediflow_inpatient;
+
 -- Schemas themselves are owned by Flyway, per service, from
 -- <service>/src/main/resources/db/migration/. Never create tables here.

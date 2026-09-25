@@ -183,7 +183,10 @@ Expected claims include:
 ```text
 sub
 role
+type
+staffId
 departmentId
+patientId
 exp
 ```
 
@@ -193,8 +196,16 @@ Where:
 | -------------- | ------------------------------------- |
 | `sub`          | Authenticated user/account identifier |
 | `role`         | User role                             |
+| `type`         | `access`, `refresh`, or `service`     |
+| `staffId`      | Optional authenticated staff identifier |
 | `departmentId` | Department identifier when applicable |
+| `patientId`    | Optional authenticated patient identifier |
 | `exp`          | Token expiration timestamp            |
+
+Human tokens are normalized as `type=access|refresh` with `sub=accountId`; `staffId`, `departmentId`
+and `patientId` are explicit optional identity claims. A PATIENT account must carry `patientId` and
+must not carry `staffId`. `SYSTEM` is reserved for `type=service` tokens and is never a human login
+role. Service tokens use the calling service as `sub` and carry correlation metadata.
 
 For new English naming conventions, internal Java objects and API models should use:
 
@@ -739,3 +750,21 @@ The Gateway is complete when:
 - [ ] Passwords and tokens are never logged.
 - [ ] `/actuator/health` is available for internal monitoring.
 - [ ] Reactive request processing contains no blocking operations.
+
+## Care-finance route alignment
+
+Gateway remains an infrastructure boundary: it authenticates, authorizes, routes and propagates
+identity/correlation, but never calculates clearance, settlement, admission or surgery readiness.
+
+Current routes for the eight implemented contexts stay unchanged. When the new modules are
+scaffolded, add discovery routes for `/api/v1/inpatient/**` → `inpatient-service` and
+`/api/v1/surgery/**` → `surgery-service`. A route is not considered live until Eureka discovery,
+health, public role RBAC, downstream JWT verification and correlation tests pass.
+
+JWT keeps `sub=accountId` and explicit optional `patientId`, `staffId`, `departmentId`; service calls
+use `type=service`, `role=SYSTEM`. Gateway never derives missing business IDs or rewrites domain
+payload fields.
+
+Mandatory contract: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+Organization account verification and typed identity claims are an implemented baseline; any change
+updates both Gateway and Organization contract tests.

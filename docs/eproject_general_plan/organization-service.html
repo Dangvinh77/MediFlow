@@ -234,6 +234,11 @@
         <td>Null với tài khoản vai trò PATIENT</td>
       </tr>
       <tr>
+        <td>patient_id</td>
+        <td>UUID (bare reference, nullable)</td>
+        <td>Bắt buộc với tài khoản PATIENT; không tạo quan hệ JPA sang Patient Service</td>
+      </tr>
+      <tr>
         <td>role</td>
         <td>ENUM('ADMIN','DOCTOR','NURSE','PHARMACIST','CASHIER','LAB_TECH','MANAGER','PATIENT','SYSTEM')</td>
         <td>Khớp chính xác với <code>Roles.java</code></td>
@@ -354,7 +359,7 @@
         <td>POST</td>
         <td>/api/v1/org/accounts/verify</td>
         <td>{ username, password }</td>
-        <td>{ accountId, staffId, departmentId, role }</td>
+        <td>{ accountId, staffId, departmentId, patientId, role }</td>
         <td>SYSTEM (chỉ Gateway)</td>
       </tr>
     </table>
@@ -405,7 +410,8 @@
       <li><code>department_head_id</code> nếu có phải là <code>STAFF</code> <strong>thuộc chính khoa đó</strong>.</li>
       <li>Không thể đặt <code>is_active = false</code> cho khoa còn nhân viên đang làm việc.</li>
       <li>Điều chuyển nhân viên phải publish <code>staff.department.changed</code>; không được xóa rồi tạo lại.</li>
-      <li>Tài khoản vai trò <code>PATIENT</code> không có <code>staff_id</code> (bệnh nhân không phải nhân viên).</li>
+      <li>Tài khoản vai trò <code>PATIENT</code> bắt buộc có <code>patient_id</code> và không có <code>staff_id</code> (bệnh nhân không phải nhân viên).</li>
+      <li><code>SYSTEM</code> chỉ dành cho service token ngắn hạn; không được tạo hoặc đăng nhập như tài khoản người dùng.</li>
       <li>Vô hiệu hóa tài khoản phải chặn được lần đăng nhập kế tiếp; JWT đã cấp sẽ hết hạn tự nhiên.</li>
     </ul>
   </div>
@@ -452,8 +458,8 @@
       2. Gateway → POST /api/v1/org/accounts/verify<br>
       3. Organization: tìm ACCOUNT theo username<br>
       4. Organization: so khớp BCrypt hash, kiểm tra is_active<br>
-      5. Organization → { accountId, staffId, departmentId, role }<br>
-      6. Gateway ký JWT với claim: sub, role, departmentId, exp<br>
+      5. Organization → { accountId, staffId, departmentId, patientId, role }<br>
+      6. Gateway ký JWT với claim: sub=accountId, role, type, staffId?, departmentId?, patientId?, exp<br>
       7. Trả về { accessToken, refreshToken, role }
     </div>
   </div>

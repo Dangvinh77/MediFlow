@@ -32,7 +32,13 @@ public class CreateAccountService implements CreateAccountUseCase {
             String username,
             String rawPassword,
             UUID staffId,
+            UUID patientId,
             Role role) {
+
+        if (role == Role.SYSTEM) {
+            throw new InvalidAccountException(
+                    "SYSTEM accounts are issued only as short-lived service tokens");
+        }
 
         if (accountRepository.existsByUsername(username)) {
             throw new DuplicateResourceException(
@@ -49,6 +55,7 @@ public class CreateAccountService implements CreateAccountUseCase {
                 username,
                 passwordHash,
                 staffId,
+                patientId,
                 role);
 
         return accountRepository.save(account);

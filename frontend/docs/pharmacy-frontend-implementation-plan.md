@@ -451,11 +451,12 @@ export interface OutboxReplayResult {
 
 ## 5. Blocker liên service đã xác nhận từ code
 
-### 5.1 JWT chưa có `staffId`
+### 5.1 JWT `staffId` đã có contract chính thức
 
-Code pharmacy đọc claim tùy chọn `staffId`, nhưng gateway hiện chỉ phát `sub`, `role`, `cid` và
-`departmentId`; gateway chưa ký `staffId` vào access/refresh token.
-Các thao tác staff-owned fail closed:
+Code Pharmacy đọc claim tùy chọn `staffId`; Gateway ký claim này riêng trong typed access/refresh
+token cùng `sub=accountId`, `role`, `cid` và `departmentId` theo
+[`CONTRACT-IDENTITY-LOOKUP-01`](../../docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+Các thao tác staff-owned vẫn fail closed khi claim thiếu hoặc sai:
 
 - DOCTOR tạo đơn;
 - DOCTOR hủy đơn;
@@ -464,17 +465,13 @@ Các thao tác staff-owned fail closed:
 
 ADMIN vẫn hoạt động vì backend cho phép dùng account id làm audit actor cho admin.
 
-Handoff hiện có:
-
-`docs/eproject_general_plan/backend-spec/pharmacy-identity-contract-handoff.md`
-
 Quy tắc cho AI:
 
 - không dùng `sub` làm `staffId`;
 - không cho người dùng tự nhập `staffId` để giả ownership;
 - không tự sửa gateway/organization trong task frontend;
-- có thể implement UI cho đúng role, nhưng E2E staff workflow phải ghi **blocked by signed staffId claim**;
-- E2E mutation trước khi blocker được giải quyết chỉ xác nhận bằng tài khoản ADMIN.
+- có thể implement UI theo role, nhưng E2E phải dùng token Gateway thật và kiểm tra claim `staffId`;
+- không tạo identity handoff mới trừ khi contract hiện hành bị vi phạm thực tế.
 
 ### 5.2 Không có prescription list/search API
 
@@ -1642,8 +1639,8 @@ data-fetching/component library. Implement every state and test listed by the se
 
 After coding, report changed files, completed work packages, state/error matrix covered, deferred
 items and exact verification commands/results. Run task acceptance checks plus pnpm typecheck,
-pnpm lint, and pnpm build. If staffId is required, do not fake it; mark the staff E2E path blocked by
-the existing gateway identity handoff and verify with ADMIN where valid.
+pnpm lint, and pnpm build. If `staffId` is required, do not fake it; use a real typed Gateway token
+and verify the current identity contract.
 ```
 
 ## 13. Milestone đề xuất

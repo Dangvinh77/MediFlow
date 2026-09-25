@@ -64,7 +64,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
-            if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (!StringUtils.hasText(subject)
+                    || !StringUtils.hasText(role)
+                    || !StringUtils.hasText(tokenType)) {
+                SecurityContextHolder.clearContext();
+                return;
+            }
+
+            if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
+                if (!"SYSTEM".equals(role)) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        subject,
+                        null,
+                        List.of(
+                                new SimpleGrantedAuthority(ROLE_PREFIX + role),
+                                new SimpleGrantedAuthority("ROLE_SYSTEM_SERVICE")));
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                return;
+            }
+
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || "SYSTEM".equals(role)) {
                 SecurityContextHolder.clearContext();
                 return;
             }

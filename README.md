@@ -3,18 +3,18 @@
 <!-- commit-activity:start -->
 ## Commit activity
 
-Changelog updated through **2026-09-22 22:54:41 Asia/Saigon** · **471 unique commits**
+Changelog updated through **2026-09-25 00:04:46 Asia/Saigon** · **481 unique commits**
 
 | Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
 |---|---:|---:|---:|---|---|---|
-| Harori | 323 | 30 | 10.77 | 2026-09-09 (32) | 18:00 (48) | 2026-09-22 22:54:41 |
+| Harori | 330 | 31 | 10.65 | 2026-09-09 (32) | 18:00 (48) | 2026-09-24 21:23:07 |
 | LQHuy0210 | 118 | 18 | 6.56 | 2026-09-13 (27) | 20:00 (21) | 2026-09-22 08:32:52 |
 | locgit-89 | 17 | 6 | 2.83 | 2026-09-08 (6) | 14:00 (4) | 2026-09-18 14:55:28 |
-| TranHoangAnh94 | 13 | 6 | 2.17 | 2026-09-18 (8) | 01:00 (4) | 2026-09-18 20:53:43 |
+| TranHoangAnh94 | 16 | 8 | 2.00 | 2026-09-18 (8) | 01:00 (4) | 2026-09-25 00:04:46 |
 
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=5488518fb311)
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=b2fe22283e05)
 
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=7c6458c09638)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=b8970fc67ffc)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
@@ -184,7 +184,7 @@ scripts\setup-tools.bat                   # Windows (installs both)
 
 ## Infrastructure (PostgreSQL + RabbitMQ)
 
-The fastest path — one command, all eight databases created for you:
+The fastest path — one command, all nine databases created for you:
 
 ```bash
 docker compose up -d
@@ -192,11 +192,12 @@ docker compose up -d
 
 That starts **PostgreSQL** on `5432` (running [`scripts/init-databases.sql`](scripts/init-databases.sql), which creates
 `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`,
-`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`) and
+`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`, and the
+empty `mediflow_inpatient` foundation database) and
 **RabbitMQ** on `5672` with its management UI at http://localhost:15672 (`guest`/`guest`).
 
-Only the infrastructure runs in Docker — the Java services and the frontend still run from
-your IDE, so hot reload and the debugger keep working.
+Compose can also build and run the Java services and frontend. For hot reload and the debugger,
+start the shared infrastructure and the selected service from your IDE.
 
 | | |
 |---|---|
@@ -220,10 +221,11 @@ The Eureka server (8761) must also be running before any business service starts
 
 ## Building & running
 
-All 11 modules exist. Only `patient-service` has code in it today — the other seven are
-**skeletons** (module + dependencies + config + the mandated package layout, no business logic).
+All 12 backend Maven modules exist. Eight business services have their implementations; Inpatient
+has a bootable configuration/security shell only, and Surgery remains planned. Inpatient has no
+business API, domain model, or schema until its implementation-ready spec is approved.
 
-Eight business services in three groups — each one exists for a reason you can state in a sentence:
+Eight implemented business services, plus the preliminary Inpatient foundation:
 
 | Module | Port | Database | Base path | Why it exists |
 |--------|------|----------|-----------|---------------|
@@ -240,6 +242,8 @@ Eight business services in three groups — each one exists for a reason you can
 | **Support** | | | | |
 | `notification-service` | 8087 | `mediflow_notification` | `/api/v1/notifications` | email/SMS/in-app |
 | `report-service` | 8088 | `mediflow_report` | `/api/v1/reports` | read model from events |
+| **Planned care context** | | | | |
+| `inpatient-service` | 8090 | `mediflow_inpatient` | planned `/api/v1/inpatient` (no business route yet) | bootable foundation only |
 
 ```bash
 mvn -q -DskipTests install                   # build all modules
@@ -296,7 +300,7 @@ MediFlow/
 ├── .codex/                       ← Codex config, agents, and hooks
 ├── .agents/skills/               ← team-shared Codex workflows
 ├── scripts/                      ← bootstrap.ps1 / .sh + tool setup scripts
-├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 business services)
+├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 implemented services + Inpatient foundation)
 │   ├── common/                   ← shared lib (envelope, pagination, base exceptions)
 │   ├── eureka-server/            ← service registry
 │   ├── gateway/                  ← API gateway (JWT, routing)

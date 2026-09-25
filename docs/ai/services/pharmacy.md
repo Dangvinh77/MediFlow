@@ -77,7 +77,9 @@ Ràng buộc DB: `price >= 0`, `stock_quantity >= 0` — đây là "tuyến phò
 
 ### `PROCESSED_EVENT` — sổ ghi các event đã xử lý
 
-`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này dùng để **chống xử lý trùng** khi RabbitMQ gửi lại tin (xem quy tắc BR-D9). Payment consumer claim bằng `INSERT ... ON CONFLICT DO NOTHING` trong cùng transaction với dispense.
+`event_id` UUID PK · `routing_key` · `processed_at`. Bảng này ghi nhận event đã đạt outcome terminal.
+Payment consumer còn dùng `PAYMENT_RECEIPT` để claim payload và cho phép resume sau lỗi tạm thời.
+Không được mô tả `PROCESSED_EVENT` là cùng transaction với dispense khi code chưa bảo đảm điều đó.
 
 ### `PHARMACY_EVENT_OUTBOX` — hàng đợi event bền vững
 
@@ -171,7 +173,7 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 
 | Phương thức | Làm gì | Quy tắc khớp |
 |-------------|--------|--------------|
-| `claimIfAbsent(UUID eventId, String routingKey)` | claim atomically bằng unique `event_id` | BR-D9, chống race hai consumer |
+| `claimIfAbsent(UUID eventId, String routingKey)` | ghi atomically bằng unique `event_id` sau outcome terminal | BR-D9, chống xử lý lại event đã hoàn tất |
 
 #### `PharmacyEventPublisherPort` — gửi event ra ngoài
 
@@ -212,9 +214,14 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 ### 6.3 Nhận tin "đã thanh toán" (`onPaymentCompleted`)
 
 1. Đối chiếu `patientId`/`departmentId` của event với đơn trước khi claim; không so tổng invoice với tổng thuốc vì invoice có thể gồm phí khác.
-2. Claim `eventId` atomically — đã có owner thì dừng (BR-D9).
-3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation.
-4. Lỗi hạ tầng được retry hữu hạn với exponential backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát compensation một lần.
+2. Claim payload vào `PAYMENT_RECEIPT`. Receipt terminal thì dừng; receipt `RECEIVED` cùng payload
+   được phép resume sau lỗi tạm thời; cùng `eventId` nhưng payload khác phải bị từ chối.
+3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation. Khóa database và trạng thái phiếu xuất phải bảo đảm một stock side effect.
+4. Chỉ đánh dấu processed sau outcome terminal. Lỗi hạ tầng được retry hữu hạn với exponential
+   backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát
+   compensation nhiều nhất một lần.
+5. Chính sách xử lý hai delivery đồng thời đang chờ Pharmacy hoàn thiện theo
+   [`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).
 
 ## 7. API
 
@@ -297,3 +304,29 @@ Chi tiết ánh xạ quy tắc → tầng test → tên test: xem mục 11 và 1
 - `infrastructure/messaging/`: publisher adapter + 4 payload event.
 - `infrastructure/config/` + `security/`: `RabbitConfig`, `SecurityConfig`, `JwtAuthFilter`, `JwtProperties`, `OpenApiConfig`.
 - Test đủ 5 tầng, phủ 12 quy tắc nghiệp vụ (danh sách test cụ thể ở spec 05 mục 13.5).
+
+## 12. Care-finance và nội trú — contract đích
+
+Prescription/dispense phải có `careContext = OUTPATIENT | ADMISSION`.
+
+- `OUTPATIENT`: giữ saga hiện tại — tạo đơn → Billing tạo phí/yêu cầu thanh toán → clearance hoặc
+  compatibility `payment.completed` → cấp thuốc.
+- `ADMISSION`: bắt buộc có `admissionId`; thuốc được ghi charge vào admission account theo
+  `CONTRACT-CARE-BILLING-01`. Không dùng outpatient clearance cho thuốc nội trú.
+- Mọi event tiếp tục mang `prescriptionId`, `patientId`, `departmentId`, item snapshot, event envelope
+  và exact `recordId`/`admissionId` theo context. Không tìm admission/record gần nhất theo patient.
+- `prescription.filled` và `prescription.dispense.failed` phải idempotent; stock side effect và event
+  outbox nằm cùng transaction nghiệp vụ.
+
+Contract bắt buộc trước khi đổi integration:
+
+- [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
+- [`CONTRACT-INPATIENT-SURGERY-01`](../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
+- [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
+- [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
+
+Existing outpatient compatibility and the implemented `prescription.filled.recordId` projection
+remain specified by `CONTRACT-CARE-BILLING-01`, the event catalog, and the Billing/Clinical/Pharmacy
+fixtures.
+Trước khi sửa payment receipt hoặc test tương tranh, phải xử lý
+[`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).

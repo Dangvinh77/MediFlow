@@ -55,6 +55,7 @@ public class AccountController {
                 request.username(),
                 request.password(),
                 request.staffId(),
+                request.patientId(),
                 request.role());
 
         return ResponseEntity
@@ -80,7 +81,7 @@ public class AccountController {
     }
 
     @PostMapping("/verify")
-    @PreAuthorize("hasRole('SYSTEM')")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
     public ResponseEntity<ApiResponse<VerifiedAccountResponse>> verifyCredentials(
             @Valid @RequestBody VerifyCredentialsRequest request) {
 

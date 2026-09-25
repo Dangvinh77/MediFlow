@@ -60,6 +60,7 @@ class OrganizationAuthClientTest {
                 .substring("Bearer ".length());
         assertThat(JWT.parse(serviceToken).getSubject()).isEqualTo("gateway");
         assertThat(JWT.parse(serviceToken).get("role", String.class)).isEqualTo("SYSTEM");
+        assertThat(JWT.parse(serviceToken).get("type", String.class)).isEqualTo("service");
     }
 
     @Test
