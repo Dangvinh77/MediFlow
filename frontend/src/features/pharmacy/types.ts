@@ -86,6 +86,7 @@ export interface PrescriptionDTO {
   lines: PrescriptionLineDTO[];
   status: PrescriptionStatus;
   dispenseStatus: DispenseStatus;
+  paymentConfirmed: boolean;
   cancelledAt: string | null;
   cancelledBy: string | null;
   cancellationReason: string | null;

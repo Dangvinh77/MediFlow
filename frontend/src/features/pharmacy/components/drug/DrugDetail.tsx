@@ -5,7 +5,7 @@ import { useEffect, useRef, useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole } from "@/lib/session";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
@@ -28,23 +28,16 @@ type DetailRequestState =
   | { key: string; status: "not-found" }
   | { key: string; status: "error"; message: string };
 
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
-
 function getServerRole(): Role | null {
   return null;
 }
 
 function detailErrorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
-    if (cause.status === 403) return "Bạn không có quyền xem thuốc này.";
+    if (cause.status === 403) {
+      const correlation = cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
+      return `Bạn không có quyền xem thuốc này.${correlation}`;
+    }
     if (cause.correlationId) {
       return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
     }
@@ -98,7 +91,7 @@ function DetailError({
 export function DrugDetail({ drugId }: DrugDetailProps) {
   const router = useRouter();
   const role = useSyncExternalStore(
-    subscribeToRoleChanges,
+    subscribeToAuthChanges,
     getRole,
     getServerRole,
   );

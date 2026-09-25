@@ -2,20 +2,10 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
-import { getRole } from "@/lib/session";
 import { getPharmacyCapabilities } from "../../permissions";
 import { isUuid } from "../../utils";
-
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
 
 function getServerRole(): Role | null {
   return null;
@@ -24,7 +14,7 @@ function getServerRole(): Role | null {
 export function PrescriptionLookup() {
   const router = useRouter();
   const role = useSyncExternalStore(
-    subscribeToRoleChanges,
+    subscribeToAuthChanges,
     getRole,
     getServerRole,
   );

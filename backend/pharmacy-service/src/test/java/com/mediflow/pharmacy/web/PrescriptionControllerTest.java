@@ -95,6 +95,7 @@ class PrescriptionControllerTest {
                 .andExpect(jsonPath("$.data.prescriptionId").value(prescriptionId.toString()))
                 .andExpect(jsonPath("$.data.totalAmount").value(2000.00))
                 .andExpect(jsonPath("$.data.dispenseStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.paymentConfirmed").value(false))
                 .andExpect(jsonPath("$.data.lines[0].drugName").value("Paracetamol"));
     }
 
@@ -315,6 +316,7 @@ class PrescriptionControllerTest {
                         new BigDecimal("2000.00"))),
                 PrescriptionStatus.ACTIVE,
                 DispenseStatus.PENDING,
+                false,
                 null,
                 null,
                 null,

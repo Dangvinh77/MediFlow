@@ -27,6 +27,9 @@ function errorMessage(cause: unknown): string {
     const correlation = cause.correlationId
       ? ` (Mã tra cứu: ${cause.correlationId})`
       : "";
+    if (cause.code === "PRESCRIPTION_CANCELLATION_FORBIDDEN") {
+      return `Chỉ bác sĩ kê đơn hoặc ADMIN được phép hủy đơn thuốc này.${correlation}`;
+    }
     if (cause.status === 403) {
       return `Bạn không có quyền hủy đơn thuốc này.${correlation}`;
     }

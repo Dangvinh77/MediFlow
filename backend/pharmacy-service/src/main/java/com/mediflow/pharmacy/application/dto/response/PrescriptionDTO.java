@@ -22,6 +22,7 @@ import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
  * @param lines các dòng thuốc
  * @param status trạng thái vòng đời của đơn
  * @param dispenseStatus trạng thái phiếu xuất
+ * @param paymentConfirmed Billing đã xác nhận thanh toán cho đơn; chỉ khi đó Pharmacy mới được xuất thuốc
  * @param cancelledAt thời điểm hủy, nếu có
  * @param cancelledBy người hủy, nếu có
  * @param cancellationReason lý do hủy, nếu có
@@ -32,7 +33,7 @@ public record PrescriptionDTO(
         UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
         UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount,
         List<PrescriptionLineDTO> lines,
-        PrescriptionStatus status, DispenseStatus dispenseStatus,
+        PrescriptionStatus status, DispenseStatus dispenseStatus, boolean paymentConfirmed,
         Instant cancelledAt, UUID cancelledBy, String cancellationReason,
         Instant createdAt, Instant updatedAt
 ) {}

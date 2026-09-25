@@ -3,11 +3,11 @@
 > Kế hoạch triển khai frontend cho bounded context `pharmacy`.
 >
 > **Nguồn chuẩn là code backend hiện tại**, không phải thiết kế dự kiến. Kế hoạch này được kiểm tra
-> lại ngày 2026-09-21 trên repository HEAD `dc79f8928cccb8d5b763415cbed2194446f23fd4`
-> cùng các thay đổi chưa commit trong workspace;
+> lại ngày 2026-09-24 trên repository HEAD `65c2d900f4ce19eee4e5501e2fafef99d625f95f`
+> cùng các thay đổi chưa commit trong working tree;
 > commit gần nhất chạm `backend/pharmacy-service` là
 > `8cea770c70e7bc9b078a8e7c6ef5d43e0a0d170b`, còn commit gần nhất triển khai frontend Pharmacy là
-> `8958fc169fde136d9d72f4feb52b7814a523e06b`.
+> `fe3e59f1a4879459dcaf8fdee0761d79ec33963a`.
 
 ## 1. Mục tiêu và giới hạn
 
@@ -71,8 +71,10 @@ Nếu controller chưa có endpoint thì frontend không được gọi endpoint
 - Shared UI hiện có `PageShell`, `DashboardHeader`, `Pagination`, `RoleGate`, `AsyncState`,
   `lib/format.ts`, `lib/validation.ts` và route loading chung từ master service-base foundation.
 - `PH-FE-00` đã có contract/client boundary và `PH-FE-01` đã có route shell/navigation.
-- `PH-FE-02` đến `PH-FE-07` đã có read flow, drug form và prescription create/lookup/detail; mutation
-  prescription terminal actions vẫn để ở `PH-FE-08`/`PH-FE-09`.
+- `PH-FE-02` đến `PH-FE-09` đã có code production cho read flow, drug operations, prescription
+  create/lookup/detail và hai terminal action cancel/dispense.
+- `PH-FE-10` đã có flow production nhưng confirmation accessibility còn mở; `PH-FE-11` chưa có test
+  harness; `PH-FE-12` mới có static gate.
 - Các Pharmacy page hiện compose shared `RoleGate` ở route boundary; feature component vẫn giữ
   capability/error checks riêng để xử lý backend 401/403 và race state.
 - Shared auth hiện phát sự kiện khi session đổi trong cùng tab, lắng nghe thay đổi giữa các tab,
@@ -113,6 +115,87 @@ Khi nhận `401`, wrapper xóa session để dashboard/login guard không tiếp
 
 `src/lib/api.ts` đã có `import "client-only"` để Next.js báo lỗi build nếu một Server Component vô
 tình import HTTP client. Việc migration token sang httpOnly cookie vẫn là roadmap riêng.
+
+`src/lib/api.ts` là shared integration scope theo `docs/ai/15-frontend-ownership.md`. Mọi thay đổi mới
+ngoài bodyless mutation đã được giao trong PH-FE-00C phải có task/owner shared rõ ràng và được review
+với toàn bộ consumer. Cụ thể, việc reject success envelope có `data === null` chưa được xem là hoàn
+tất trong task Pharmacy cho tới khi có quyết định giữ ở shared wrapper hoặc tách khỏi diff feature.
+
+### 3.4 Component mẫu phải đọc trước khi implement
+
+Các file dưới đây là **code production mẫu**, không phải snippet để copy nguyên khối. Agent phải lấy
+đúng trách nhiệm, state model và boundary; không sao chép Tailwind hoặc helper cục bộ nếu repo đã có
+shared primitive tương ứng.
+
+| Nhu cầu | Component mẫu | Điều phải học từ ví dụ | Không được copy mù |
+|---|---|---|---|
+| Route shell | `drugs/page.tsx`, `drugs/new/page.tsx` | Server Component chỉ ghép `PageShell`, `RoleGate`, `Suspense` và feature component | Không gọi API, đọc `localStorage` hoặc đặt business rule trong page |
+| Read có URL state | `DrugCatalog.tsx` | Parse/build query riêng, page 0-based, stale-response guard, loading/error/empty/data tách biệt | Không tạo query string rải rác hoặc giữ filter chỉ trong state khiến reload mất dữ liệu |
+| Lookup known-id | `PrescriptionLookup.tsx` | Validate UUID trước khi điều hướng, không gọi endpoint list không tồn tại | Không biến lookup thành fake list hoặc autocomplete cross-service |
+| Detail + race recovery | `DrugDetail.tsx`, `PrescriptionDetail.tsx` | State discriminated, phân biệt 404/403/retryable, refetch snapshot sau mutation | Không optimistic lifecycle/stock hoặc dùng response cũ làm nguồn sự thật |
+| Create form | `CreateDrugForm.tsx`, `CreatePrescriptionForm.tsx` | UI string -> validate -> serializer -> typed facade; giữ input khi backend trả lỗi | Không gửi UI-only field, giá kê đơn hoặc tự suy diễn `staffId` |
+| Confirmed mutation | `AdjustStockForm.tsx` | Preview chỉ để giải thích, chống submit lặp, success dùng response server | Không lấy preview làm tồn kho chính thức |
+| Terminal dialog | `CancelPrescriptionDialog.tsx`, `DispensePrescriptionDialog.tsx` | Focus/escape/return focus, submitting state, correlation id, conflict refetch | Không tạo payment override, không tự đổi status trước response |
+| Shared async UI | `AsyncState.tsx`, `Pagination.tsx`, `StatusBadge.tsx` | Shared component không biết domain Pharmacy; feature truyền message/tone/data | Không đưa enum hoặc endpoint Pharmacy vào `components/ui` |
+
+`src/app/loading-test/page.tsx` là route demo trực quan cho loader. Nó **không phải** mẫu route nghiệp
+vụ, không được import vào Pharmacy và phải được xóa hoặc chuyển khỏi production route trước release.
+
+### 3.5 Template triển khai component mới
+
+#### 3.5.1 Server route shell
+
+```tsx
+export default function PharmacyOperationPage() {
+  return (
+    <PageShell title="..." description="...">
+      <RoleGate allowed={["ADMIN"]}>
+        <FeatureComponent />
+      </RoleGate>
+    </PageShell>
+  );
+}
+```
+
+Route chỉ compose và khai báo metadata. Mọi state, event handler và `pharmacyApi.*` nằm trong feature
+component có `"use client"`. Chỉ thêm `Suspense` khi subtree dùng hook như `useSearchParams`.
+
+#### 3.5.2 Shared role snapshot
+
+```tsx
+const role = useSyncExternalStore(
+  subscribeToAuthChanges,
+  getRole,
+  () => null,
+);
+```
+
+Không tạo thêm `subscribeToRoleChanges` trong từng component. Khi chạm vào component Pharmacy cũ,
+ưu tiên thay helper cục bộ bằng `subscribeToAuthChanges` từ `@/lib/auth` để cùng-tab login/logout và
+cross-tab storage dùng một nguồn duy nhất.
+
+#### 3.5.3 Mutation state machine
+
+```ts
+type MutationState<TResult> =
+  | { kind: "idle" }
+  | { kind: "confirming" }
+  | { kind: "submitting" }
+  | { kind: "success"; result: TResult }
+  | { kind: "error"; message: string; correlationId: string | null };
+```
+
+Luồng chuẩn là `idle -> confirming -> submitting -> success/error`. Guard chống double-submit phải
+được set đồng bộ trước `await` (state hoặc `ref`), request chỉ đi qua `pharmacyApi`, và success/conflict
+phải lấy lại snapshot backend nếu mutation làm thay đổi lifecycle hoặc stock.
+
+#### 3.5.4 Quy tắc extract shared component
+
+- Một pattern có ít nhất hai consumer thật và không chứa domain field thì chuyển lên `components/ui`.
+- Focus trap/escape/return-focus của hai dialog hiện là candidate cho `ConfirmDialog`.
+- Input label/error wrapper dùng lặp ở create drug, create prescription và stock form là candidate cho
+  `FormField`/`FieldError`; không tạo form framework mới.
+- Error mapping có domain code ở lại `features/pharmacy`; transport error parsing ở `lib/api.ts`.
 
 ## 4. Contract backend đang chạy
 
@@ -228,6 +311,7 @@ export interface PrescriptionDTO {
   lines: PrescriptionLineDTO[];
   status: PrescriptionStatus;
   dispenseStatus: DispenseStatus;
+  paymentConfirmed: boolean;
   cancelledAt: string | null;
   cancelledBy: string | null;
   cancellationReason: string | null;
@@ -584,9 +668,17 @@ canReplayOutbox: ADMIN
 Action còn phải thỏa state:
 
 - cancel: `prescription.status === "ACTIVE" && dispenseStatus === "PENDING"`;
-- dispense: `prescription.status === "ACTIVE" && dispenseStatus === "PENDING"`;
+- dispense: `prescription.status === "ACTIVE" && dispenseStatus === "PENDING" && paymentConfirmed`;
 - adjust stock: drug tồn tại;
 - replay: event id là UUID hợp lệ.
+
+Presentation phải giữ hai trạng thái độc lập:
+
+- `dispenseStatus === "PENDING"` có nhãn **“Chờ xuất thuốc”**;
+- `paymentConfirmed === true` có nhãn **“Đã xác nhận thanh toán”**;
+- `paymentConfirmed === false` có nhãn **“Chưa xác nhận thanh toán”**, không dùng “Chờ thanh toán”
+  vì boolean không chứng minh Billing đang xử lý;
+- nút xuất thuốc chỉ xuất hiện khi cả lifecycle và payment gate đều hợp lệ.
 
 Đây chỉ là UX gate. API vẫn phải xử lý 403/422 vì trạng thái có thể đổi giữa lúc render và submit.
 
@@ -594,12 +686,12 @@ Action còn phải thỏa state:
 
 ### 10.0 Cách đọc và giao task
 
-Trạng thái tại lần kiểm tra 2026-09-21 (HEAD + workspace hiện tại):
+Trạng thái tại lần kiểm tra 2026-09-24 trên HEAD `65c2d90` và working tree hiện tại:
 
 | Task | Tiến độ work package | Trạng thái theo code | Bằng chứng/việc tiếp theo |
 |---|---:|---|---|
 | PH-FE-00 | 6/6 | Code production hoàn thành | Contract/facade/policy/helper đã có; thêm test contract ở PH-FE-11 |
-| PH-FE-01 | 5/5 | Code production hoàn thành | Route shell, navigation, shared `RoleGate` và auth subscription đã có; outbox placeholder thuộc PH-FE-10 |
+| PH-FE-01 | 5/5 | Code production hoàn thành | Route shell, navigation, shared `RoleGate` và auth subscription đã có |
 | PH-FE-02 | 7/7 | Code production hoàn thành | Catalog URL state, stale-response guard, table và pagination đã có; còn test tự động |
 | PH-FE-03 | 5/5 | Code production hoàn thành | UUID route guard, detail states và mutation slot đã có; còn test tự động |
 | PH-FE-04 | 5/5 | Code production hoàn thành | Create form/validation/error mapping/navigation đã có; còn test tự động |
@@ -608,12 +700,25 @@ Trạng thái tại lần kiểm tra 2026-09-21 (HEAD + workspace hiện tại):
 | PH-FE-07 | 7/7 | Read flow hoàn thành | Lookup/detail/refresh boundary đã có; action slot đã được nối với PH-FE-08/09 |
 | PH-FE-08 | 5/5 | Code production hoàn thành, test/E2E chưa đóng | `CancelPrescriptionDialog.tsx` đã có reason validation, release count, idempotency và race refresh |
 | PH-FE-09 | 6/6 | Code production hoàn thành, test/E2E chưa đóng | `DispensePrescriptionDialog.tsx` đã có bodyless PUT, payment-proof gate, terminal failure và refresh |
-| PH-FE-10 | 0/5 | Chưa triển khai | Route outbox vẫn là placeholder; chưa có `OutboxReplayForm.tsx` |
+| PH-FE-10 | 4/5 đóng | Code production có đủ flow, confirmation accessibility chưa đóng | `OutboxReplayForm.tsx` còn phải chọn confirmation inline hoặc hoàn thiện `alertdialog` với focus trap/return-focus |
 | PH-FE-11 | 0/6 | Chưa triển khai | Chưa có `test` script, Vitest config hoặc test Pharmacy |
 | PH-FE-12 | 0/8 đóng | Đang kiểm tra từng phần | `typecheck`, `lint`, `build` xanh; còn `test`, smoke, E2E, accessibility, docs và release evidence |
 
-Tổng quan: 10/13 task đã có code production; 59/78 work package đã có implementation. Con số này
+Tổng quan: 11/13 task đã có code production; 63/78 work package đã đóng. Con số này
 không thay thế Definition of Done vì test/E2E và release evidence vẫn thuộc PH-FE-11/12.
+
+#### 10.0.1 Follow-up bắt buộc từ review trước merge
+
+1. **Tách nhãn payment/dispense:** đổi mapping `DispenseStatus.PENDING` về “Chờ xuất thuốc”; render
+   payment bằng badge riêng với “Đã xác nhận thanh toán”/“Chưa xác nhận thanh toán”. Không ghép hai
+   state vào một nhãn vì có trường hợp đã thanh toán nhưng chưa xuất thuốc.
+2. **Hoàn thiện confirmation replay:** nếu tiếp tục dùng `role="alertdialog"`, phải giữ focus trong
+   hai action bằng Tab/Shift+Tab, hỗ trợ Escape khi chưa submit và trả focus về control mở dialog.
+   Nếu confirmation vẫn là vùng inline, bỏ semantics dialog và dùng heading/region phù hợp.
+3. **Khóa shared scope cho `src/lib/api.ts`:** thay đổi transport dùng chung phải có task scope/owner
+   rõ ràng theo `docs/ai/15-frontend-ownership.md`. Trước merge, ghi quyết định giữ hay tách thay đổi
+   reject success envelope có `data === null`; Pharmacy không tự mở rộng shared transport trong một
+   task feature-only.
 
 Mỗi task chính được chia thành các **work package** có hậu tố `A`, `B`, `C`... để một agent có thể
 nhận phạm vi nhỏ mà không phải tự suy đoán. Một work package chỉ được xem là xong khi:
@@ -650,7 +755,7 @@ UUID validator của master. Test contract tự động được theo dõi ở P
 - `src/features/pharmacy/permissions.ts`
 - `src/features/pharmacy/presentation.ts`
 - `src/features/pharmacy/utils.ts`
-- `src/lib/api.ts`
+- `src/lib/api.ts` (shared integration scope; chỉ sửa khi task giao rõ shared work)
 - `src/lib/validation.ts` (shared dependency; Pharmacy không sở hữu contract này)
 - `src/lib/session.ts`/`src/lib/auth.ts` là shared auth dependency; không thêm Pharmacy contract vào đây.
 
@@ -671,7 +776,8 @@ UUID validator của master. Test contract tự động được theo dõi ở P
 - **PH-FE-00B — Wire types:** mirror enum/DTO/request vào `types.ts`; nullable response dùng
   `T | null`, optional chỉ dùng cho field request thực sự tùy chọn.
 - **PH-FE-00C — Shared HTTP boundary:** cập nhật `lib/api.ts` để body optional, không gửi
-  `Content-Type` khi không có body, giữ `ApiRequestError` gồm status/code/details/correlationId.
+  `Content-Type` khi không có body, giữ `ApiRequestError` gồm status/code/details/correlationId. Mọi
+  thay đổi transport khác cần một quyết định shared-scope riêng và bằng chứng không phá consumer khác.
 - **PH-FE-00D — Pharmacy facade:** implement đúng 9 hàm trong `api.ts`; query catalog luôn gửi page,
   size và chỉ gửi keyword đã trim khi không rỗng.
 - **PH-FE-00E — Pure policy/helpers:** implement capability matrix, state predicate, status mapping,
@@ -701,7 +807,8 @@ cross-service lookup.
 
 **Trạng thái:** 5/5 work package đã có code production (khởi đầu ở commit `eed19bb`); sau master
 service-base foundation, các route Pharmacy compose shared `RoleGate` theo role matrix. Auth guard
-hiện phản ứng đúng với login/logout cùng tab. Placeholder còn lại chỉ thuộc PH-FE-10.
+hiện phản ứng đúng với login/logout cùng tab. Outbox replay đã được nối; hardening còn lại thuộc
+PH-FE-11/12.
 
 **Dependency:** PH-FE-00.
 
@@ -1124,7 +1231,9 @@ E2E blocked đến signed `staffId`.
 
 ### PH-FE-10 — Admin outbox replay
 
-**Trạng thái:** 0/5 work package; route hiện vẫn là placeholder và chưa gọi API replay.
+**Trạng thái:** flow production đã có, 4/5 work package đóng. PH-FE-10C chưa đóng vì confirmation
+đang khai báo `role="alertdialog"` nhưng chưa trap Tab/Shift+Tab; test component/E2E và release
+evidence vẫn thuộc PH-FE-11/12.
 
 **Dependency:** PH-FE-00, PH-FE-01.
 
@@ -1139,14 +1248,78 @@ E2E blocked đến signed `staffId`.
 5. 404 giữ form để sửa id.
 6. Không tạo bảng/danh sách/quarantine filters.
 
+**Thiết kế component cụ thể:**
+
+```ts
+type ReplayState =
+  | { kind: "idle" }
+  | { kind: "confirming"; eventId: string }
+  | { kind: "submitting"; eventId: string }
+  | { kind: "success"; eventId: string; replayed: boolean }
+  | {
+      kind: "error";
+      eventId: string;
+      message: string;
+      correlationId: string | null;
+      focus: "input" | "submit" | "alert";
+    };
+```
+
+- `OutboxReplayForm` không nhận danh sách event và không fetch khi mount.
+- Role snapshot dùng `getRole` + `subscribeToAuthChanges`; capability lấy từ
+  `getPharmacyCapabilities(role).canReplayOutbox`.
+- Input state giữ chuỗi người dùng nhập; chỉ `trim()` khi validate/submit.
+- `prepareConfirmation()` chỉ chuyển `idle/error -> confirming`, chưa gọi API.
+- `confirmReplay()` set duplicate guard đồng bộ, chuyển `submitting`, gọi đúng
+  `pharmacyApi.replayOutbox(eventId)` một lần rồi chuyển `success/error`.
+- Success không tự động replay lần hai và không hứa consumer đã xử lý xong event.
+- Close/back từ confirmation trả về form với nguyên event id và focus về control đã mở confirmation.
+- Nếu dùng `role="alertdialog"`, Tab/Shift+Tab không được thoát khỏi hai action; Escape đóng khi chưa
+  submit. Nếu giữ confirmation inline, bỏ semantics dialog và không áp dụng focus trap giả.
+
+**Pseudo-flow bám các component mẫu:**
+
+```tsx
+const normalizedId = eventId.trim();
+if (!isUuid(normalizedId)) {
+  setFieldError("Event ID phải là UUID hợp lệ.");
+  inputRef.current?.focus();
+  return;
+}
+
+if (submittingRef.current) return;
+submittingRef.current = true;
+setState({ kind: "submitting", eventId: normalizedId });
+
+try {
+  const result = await pharmacyApi.replayOutbox(normalizedId);
+  setState({ kind: "success", ...result });
+} catch (cause) {
+  // 401: session chung xử lý; 403/404/500: giữ event id và correlation id.
+} finally {
+  submittingRef.current = false;
+}
+```
+
+**Error matrix bắt buộc:**
+
+| Trường hợp | UI | Giữ input | Focus sau lỗi | Retry |
+|---|---|---:|---|---:|
+| UUID sai ở client | Field error | Có | Input | Sau khi sửa |
+| `OUTBOX_EVENT_NOT_FOUND` | “Không tìm thấy event” + correlation id | Có | Input | Có |
+| HTTP 403 | Forbidden message, không giả 404 | Có | Submit/alert | Không khi role không đổi |
+| HTTP 401 | Xóa session, dashboard guard chuyển login | Không yêu cầu | Login | Sau đăng nhập |
+| HTTP 500/network | Retryable error + correlation id nếu có | Có | Submit | Có |
+
 **Work packages:**
 
 - **PH-FE-10A — Route capability state:** ADMIN thấy tool; non-admin thấy forbidden UX rõ ràng khi
   vào URL trực tiếp, đồng thời backend 403 vẫn được xử lý.
 - **PH-FE-10B — Input/form:** một event UUID duy nhất, trim/validate, giữ nguyên sau lỗi; mô tả rõ
   người vận hành phải lấy id từ nguồn quan sát bên ngoài.
-- **PH-FE-10C — Confirmation:** hiển thị chính xác eventId và hậu quả replay; không hứa event sẽ xử lý
-  nghiệp vụ thành công, chỉ yêu cầu đưa lại hàng đợi phát.
+- **PH-FE-10C — Confirmation (chưa đóng):** hiển thị chính xác eventId và hậu quả replay; không hứa
+  event sẽ xử lý nghiệp vụ thành công, chỉ yêu cầu đưa lại hàng đợi phát. Chọn một semantics nhất
+  quán: `alertdialog` có focus trap/Escape/return-focus, hoặc confirmation inline không mang role dialog.
 - **PH-FE-10D — Bodyless mutation:** POST không body, chống double-submit; success hiển thị eventId và
   `replayed` trong vùng `aria-live`.
 - **PH-FE-10E — Error handling:** `OUTBOX_EVENT_NOT_FOUND` giữ input; 403, validation, internal error
@@ -1156,6 +1329,8 @@ E2E blocked đến signed `staffId`.
 
 - Invalid UUID không gọi API; valid UUID gửi đúng path và không body.
 - ADMIN success render đúng `replayed`; 404 giữ input và focus hợp lý.
+- Confirmation dùng keyboard đúng semantics đã chọn; nếu là dialog thì test Tab, Shift+Tab, Escape
+  và return-focus sau khi hủy.
 - Non-admin không có nav/action; direct route không giả thành 404.
 - Scan không có endpoint list/quarantine hoặc bảng event.
 
@@ -1172,6 +1347,28 @@ Pharmacy tự động.
 
 **Files dự kiến:** `vitest.config.ts`, `vitest.setup.ts`, `tests/` hoặc test colocated; Playwright chỉ thêm
 khi team đồng ý chạy browser trong CI.
+
+**Tooling đề xuất theo stack hiện tại:**
+
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "<version được pnpm resolve>",
+    "@testing-library/react": "<version được pnpm resolve>",
+    "@testing-library/user-event": "<version được pnpm resolve>",
+    "jsdom": "<version được pnpm resolve>",
+    "vitest": "<version được pnpm resolve>"
+  }
+}
+```
+
+Không ghi số version bằng suy đoán trong plan/commit. Khi bắt đầu PH-FE-11, dùng version pnpm resolve
+tại thời điểm cài, review lockfile và ghi lại version thật trong release evidence. Chưa thêm Playwright
+nếu CI chưa có browser/runtime và fixture strategy được duyệt.
 
 **Unit/component bắt buộc:**
 
@@ -1227,6 +1424,24 @@ frontend/src/features/pharmacy/
 frontend/tests/e2e/pharmacy/*.spec.ts       # chỉ khi Playwright được duyệt
 ```
 
+**Mapping test theo component production mẫu:**
+
+| Test file | Subject thật | Case tối thiểu |
+|---|---|---|
+| `utils.test.ts` | `parse/buildDrugCatalogQuery`, date/money/UUID | invalid page/size, trim keyword, LocalDate không lệch ngày |
+| `permissions.test.ts` | capability + cancel/dispense gate | toàn bộ role × ACTIVE/PENDING/terminal state |
+| `drugFormValidation.test.ts` | create drug serializer | price precision, date boundary, optional field không gửi chuỗi rỗng |
+| `prescriptionFormValidation.test.ts` | create prescription serializer | duplicate drug, quantity, dosage 255/256, tuyệt đối không có price |
+| `DrugCatalog.test.tsx` | URL-driven read example | loading/empty/error/data, stale response, pagination reset keyword |
+| `AdjustStockForm.test.tsx` | confirmed mutation example | negative reason, double click, official snapshot, conflict refresh |
+| `PrescriptionDetail.test.tsx` | detail/race example | 404/403/dispense missing, badge enum, action visibility |
+| `CancelPrescriptionDialog.test.tsx` | terminal dialog | 1/500/501 chars, escape/focus, idempotent count 0, race refresh |
+| `DispensePrescriptionDialog.test.tsx` | terminal dialog | bodyless PUT, payment proof, terminal failure, no auto retry |
+| `OutboxReplayForm.test.tsx` | PH-FE-10 | invalid UUID, one POST, 404 giữ input, success live region, confirmation Tab/Shift+Tab/Escape/return-focus theo semantics đã chọn |
+
+Test component mock `pharmacyApi` tại facade boundary. Chỉ test riêng `lib/api.ts` mới mock `fetch` để
+chứng minh Authorization/envelope/401/bodyless request; không để mỗi component tự kiểm tra transport.
+
 **Coverage/quality rules:**
 
 - Không đặt mục tiêu phần trăm hình thức trước khi có baseline; mọi rule/branch quan trọng trong
@@ -1242,7 +1457,7 @@ timezone máy hoặc network thật; skip phải có issue/blocker cụ thể.
 ### PH-FE-12 — Quality gate và tài liệu vận hành
 
 **Trạng thái:** chưa work package nào đủ điều kiện đóng (0/8). `pnpm typecheck`, `pnpm lint`,
-`pnpm build` đã xanh tại lần kiểm tra 2026-09-21 và architecture scan hiện không phát hiện raw fetch
+`pnpm build` đã xanh tại lần kiểm tra 2026-09-22 và architecture scan hiện không phát hiện raw fetch
 ngoài `lib/api.ts`; chưa có `pnpm test`/contract smoke/E2E/accessibility/release evidence.
 
 **Dependency:** tất cả task được chọn cho release.
@@ -1267,6 +1482,48 @@ Ngoài ra:
 - chạy request backend tương ứng trong `pharmacy-service.http` để xác nhận contract trước E2E;
 - ghi rõ blocker staffId trong PR, không đánh dấu staff workflow là pass khi chưa có signed claim.
 
+**Architecture debt phải xử lý hoặc ghi quyết định trước release:**
+
+1. Quyết định extract `ConfirmDialog`/focus trap sau khi đã có hai consumer cancel/dispense; nếu chưa
+   extract thì phải có cùng bộ keyboard/focus test cho cả hai.
+2. Hoàn thiện semantics confirmation của `OutboxReplayForm`: trap focus đầy đủ nếu giữ
+   `role="alertdialog"`, hoặc đổi thành vùng inline phù hợp và test theo semantics đó.
+3. Đổi `DispenseStatus.PENDING` về “Chờ xuất thuốc” và giữ payment badge độc lập; dùng “Chưa xác nhận
+   thanh toán” khi `paymentConfirmed === false`.
+4. Ghi quyết định shared-scope cho thay đổi `lib/api.ts` reject success envelope có `data === null`;
+   không gộp vào feature diff khi chưa có owner/phạm vi shared rõ ràng.
+5. Xóa hoặc chuyển `/loading-test` khỏi production route.
+
+Đã xử lý trong code hiện tại: sáu component dùng `subscribeToAuthChanges`, lỗi validation nested của
+prescription được map theo row key, và replay outbox có error focus/retry policy. Các mục 2–4 phía
+trên vẫn là follow-up review mở. `docs/ai/12-frontend.md` đã đồng bộ policy `401` redirect và `403`
+forbidden in-context.
+
+**Lệnh scan lưu vào release evidence:**
+
+```bash
+rg -n "fetch\\(" frontend/src
+rg -n "8085|http://localhost:808[1-9]" frontend
+rg -n "@/features/" frontend/src/features
+rg --files frontend | rg "(\\.test\\.|\\.spec\\.|vitest|playwright|__tests__)"
+```
+
+Kết quả mong đợi: `fetch(` chỉ ở `src/lib/api.ts`; không có service port; không có cross-feature
+import; test inventory khớp danh sách PH-FE-11. Scan chỉ là gate bổ sung, không thay typecheck/lint/test/build.
+
+**Mẫu release evidence:**
+
+```text
+Frontend SHA:
+Backend pharmacy SHA:
+Node / pnpm / browser:
+typecheck / lint / test / build:
+ADMIN smoke ids và kết quả cuối:
+DOCTOR/PHARMACIST: PASS hoặc BLOCKED + contract/owner:
+Accessibility/responsive checks:
+Deferred items + owner:
+```
+
 **Work packages:**
 
 - **PH-FE-12A — Static gate:** chạy typecheck/lint/test/build từ clean install; lưu command và kết quả
@@ -1278,7 +1535,7 @@ Ngoài ra:
 - **PH-FE-12D — Role matrix:** kiểm tra ADMIN/DOCTOR/PHARMACIST cho nav/action và backend 403; phân biệt
   UI-hidden với server-enforced; ghi rõ staff path pass hay blocked.
 - **PH-FE-12E — Accessibility/responsive:** keyboard-only, focus sau validation/dialog, aria-live,
-  contrast/status text, table overflow ở mobile và zoom 200%.
+  focus trap/return-focus của dialog, contrast/status text, table overflow ở mobile và zoom 200%.
 - **PH-FE-12F — Failure/recovery:** tắt gateway/pharmacy hoặc dùng lỗi fixture để kiểm tra retry,
   correlation id, form preservation và route error boundary.
 - **PH-FE-12G — Documentation:** cập nhật frontend README/runbook, env `GATEWAY_URL`, route/role matrix,
@@ -1422,7 +1679,8 @@ Kết quả mục tiêu: ADMIN có thể tạo/hủy/xuất theo contract; DOCTO
 
 PH-FE-10, 11, 12.
 
-**Tiến độ hiện tại:** 0/3 task đóng. PH-FE-10/11 chưa bắt đầu; PH-FE-12 mới có static checks một phần.
+**Tiến độ hiện tại:** 1/3 task có code production (`PH-FE-10`); PH-FE-11 chưa bắt đầu và PH-FE-12
+mới có static checks một phần.
 
 Kết quả mục tiêu: outbox replay known-id, coverage, accessibility và production build.
 
@@ -1435,12 +1693,15 @@ Kết quả mục tiêu: outbox replay known-id, coverage, accessibility và pro
 - [x] Search/pagination nằm trong URL và hỗ trợ back/forward/reload theo implementation.
 - [x] Pages là Server Components; client boundary chỉ ở interactive/data components.
 - [x] `useSearchParams` nằm dưới Suspense.
-- [ ] Expected API errors có UI state cho toàn bộ scope; read/create/stock/cancel/dispense đã có,
-  PH-FE-10 chưa triển khai.
+- [x] Expected API errors có UI state cho toàn bộ code scope; read/create/stock/cancel/dispense/outbox
+  đã có. Test tự động và smoke evidence vẫn chưa đóng.
 - [x] Mutation hiện có không optimistic; cancel/dispense cũng refetch snapshot chính thức sau kết quả.
 - [x] Role visibility hiện tại đúng controller và backend vẫn xử lý 403.
 - [x] Không invent prescription/outbox list API.
 - [x] Không dùng account id thay staff id; staff E2E được ghi blocker thay vì fake claim.
+- [ ] Nhãn `dispenseStatus` và `paymentConfirmed` độc lập, không thể hiện sai trạng thái thanh toán.
+- [ ] Outbox confirmation đạt keyboard semantics đã chọn và có test focus tương ứng.
+- [ ] Thay đổi `src/lib/api.ts` có quyết định shared-scope/owner trước merge.
 - [ ] Typecheck, lint và production build đã xanh; `pnpm test` chưa tồn tại nên quality gate chưa đủ.
 - [ ] ADMIN E2E cho mutation xanh; staff E2E chỉ xanh sau khi signed `staffId` contract được merge.
 

@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
-import { getRole } from "@/lib/session";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { DrugDTO } from "../../types";
-import { getLocalTodayIso, mapFieldErrors } from "../../utils";
+import { getLocalTodayIso } from "../../utils";
 import {
   createEmptyPrescriptionForm,
   createPrescriptionLine,
@@ -22,31 +22,23 @@ import {
 } from "./prescriptionFormValidation";
 import { PrescriptionLinesEditor } from "./PrescriptionLinesEditor";
 
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
-
 function getServerRole(): Role | null {
   return null;
 }
 
-function apiErrorMessage(cause: unknown, fallback: string): string {
-  if (cause instanceof ApiRequestError) {
-    if (cause.status === 403) return "Bạn không có quyền thực hiện thao tác này.";
-    if (cause.correlationId) return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
-    return cause.message;
-  }
-  return cause instanceof Error ? cause.message : fallback;
+function correlationSuffix(cause: ApiRequestError): string {
+  return cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
 }
 
-function isLineErrorKey(field: string): boolean {
-  return field.startsWith("lines[") || field.startsWith("lines.");
+function apiErrorMessage(cause: unknown, fallback: string): string {
+  if (cause instanceof ApiRequestError) {
+    if (cause.code === "PRESCRIPTION_CREATION_FORBIDDEN") {
+      return `Không thể tạo đơn: JWT phải có staffId trùng với doctorId của đơn.${correlationSuffix(cause)}`;
+    }
+    if (cause.status === 403) return `Bạn không có quyền thực hiện thao tác này.${correlationSuffix(cause)}`;
+    return `${cause.message}${correlationSuffix(cause)}`;
+  }
+  return cause instanceof Error ? cause.message : fallback;
 }
 
 function fieldInputClass(invalid: boolean): string {
@@ -54,6 +46,37 @@ function fieldInputClass(invalid: boolean): string {
     "w-full rounded-lg border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground",
     invalid ? "border-danger" : "border-border",
   ].join(" ");
+}
+
+function mapPrescriptionValidationDetails(
+  details: { field: string; message: string }[],
+  lines: CreatePrescriptionFormValues["lines"],
+): CreatePrescriptionValidationErrors {
+  const fields: CreatePrescriptionFieldErrors = {};
+  const lineErrors: Record<string, CreatePrescriptionValidationErrors["lines"][string]> = {};
+  const lineFieldPattern = /^lines(?:\[(\d+)\]|\.(\d+))\.(drugId|quantity|dosage)$/;
+
+  for (const detail of details) {
+    const match = lineFieldPattern.exec(detail.field);
+    if (match) {
+      const lineIndex = Number(match[1] ?? match[2]);
+      const row = lines[lineIndex];
+      if (row) {
+        const field = match[3] as keyof CreatePrescriptionValidationErrors["lines"][string];
+        lineErrors[row.rowKey] = {
+          ...lineErrors[row.rowKey],
+          [field]: detail.message,
+        };
+      }
+      continue;
+    }
+
+    if (["recordId", "patientId", "doctorId", "departmentId", "prescribedDate"].includes(detail.field)) {
+      fields[detail.field as PrescriptionFormField] = detail.message;
+    }
+  }
+
+  return { fields, lines: lineErrors };
 }
 
 function FormField({
@@ -83,7 +106,7 @@ function FormField({
 export function CreatePrescriptionForm() {
   const router = useRouter();
   const role = useSyncExternalStore(
-    subscribeToRoleChanges,
+    subscribeToAuthChanges,
     getRole,
     getServerRole,
   );
@@ -158,8 +181,16 @@ export function CreatePrescriptionForm() {
 
   function focusFirstError(errors: CreatePrescriptionValidationErrors) {
     const field = Object.keys(errors.fields)[0] as PrescriptionFormField | undefined;
-    const lineKey = Object.keys(errors.lines)[0];
-    const targetId = field ?? (lineKey ? `drug-${lineKey}` : undefined);
+    const lineEntry = Object.entries(errors.lines)[0];
+    const lineKey = lineEntry?.[0];
+    const lineField = lineEntry?.[1]
+      ? (Object.keys(lineEntry[1])[0] as keyof CreatePrescriptionValidationErrors["lines"][string] | undefined)
+      : undefined;
+    const targetId = field
+      ? field
+      : lineKey && lineField
+        ? `${lineField}-${lineKey}`
+        : undefined;
     if (!targetId) return;
     window.requestAnimationFrame(() => document.getElementById(targetId)?.focus());
   }
@@ -193,14 +224,12 @@ export function CreatePrescriptionForm() {
       }
 
       if (cause instanceof ApiRequestError && cause.details.length > 0) {
-        const mapped = mapFieldErrors(cause.details);
-        const fieldErrors: CreatePrescriptionFieldErrors = {};
-        Object.entries(mapped).forEach(([field, message]) => {
-          if (field in values && !isLineErrorKey(field)) {
-            fieldErrors[field as PrescriptionFormField] = message;
-          }
-        });
-        setValidationErrors((current) => ({ ...current, fields: { ...current.fields, ...fieldErrors } }));
+        const mapped = mapPrescriptionValidationDetails(cause.details, values.lines);
+        setValidationErrors((current) => ({
+          fields: { ...current.fields, ...mapped.fields },
+          lines: { ...current.lines, ...mapped.lines },
+        }));
+        focusFirstError(mapped);
       }
 
       if (cause instanceof ApiRequestError && cause.code === "PRESCRIPTION_DUPLICATE_DRUG") {

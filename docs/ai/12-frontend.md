@@ -175,7 +175,9 @@ beats marking the whole page client.
 - `lib/auth.ts` owns `login` / `logout` / `getToken` / `getRole`, talking to the gateway's `/api/v1/auth/*`.
 - `app/(dashboard)/layout.tsx` is the single auth guard — unauthenticated users get redirected once, from one place, not from every page.
 - `lib/roles.ts` mirrors `backend/common/src/main/java/com/mediflow/common/security/Roles.java`. Keep them in sync.
-- On `401`/`403` from `ApiRequestError`, redirect to `/login`.
+- On `401` from `ApiRequestError`, clear the session and redirect to `/login`. A `403` remains an
+  in-context forbidden state so the user can understand that the authenticated role or ownership
+  is not allowed to perform that operation.
 
 > **Hiding a button is UX, not security.** Every rule in `07-security-rbac.md` is enforced by the
 > backend. The frontend may hide what a role can't use, but must never be the thing that stops them.
@@ -217,7 +219,11 @@ Full-stack order: `docker compose up -d` → `eureka-server` → `gateway` → t
 
 ## Current state and ownership pointer
 
-The route and feature state changes as implementation lands. Use the dated
+The original patient-only demo has been migrated far enough that `frontend/src/` now contains
+feature-based modules and bounded-context routes, including the Pharmacy implementation. Continue
+using the tree above for new work; do not reintroduce DTOs into `lib/types.ts` or domain UI logic into
+route files. Any remaining legacy route should be migrated or explicitly marked as a demo before
+release. The route and feature state changes as implementation lands, so use the dated
 [frontend workboard](../../frontend/docs/frontend-workboard.md) for the verified current route
 inventory and next task IDs. Use [`15-frontend-ownership.md`](15-frontend-ownership.md) for the
 canonical owner matrix, shared integration scope, and `IMPLEMENT`/`HANDOFF`/`VERIFY-CONTRACT` rules.

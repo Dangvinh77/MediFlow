@@ -10,6 +10,7 @@ import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.DrugRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
+import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
@@ -17,6 +18,7 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionCreationForbiddenExcep
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Drug;
+import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
@@ -40,6 +42,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,6 +60,7 @@ class PrescriptionApplicationServiceTest {
     private final DispenseSlipRepositoryPort dispenseSlipRepo = mock(DispenseSlipRepositoryPort.class);
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
+    private final PaymentReceiptRepositoryPort paymentReceiptRepo = mock(PaymentReceiptRepositoryPort.class);
     private final PrescriptionDtoMapper prescriptionDtoMapper = mock(PrescriptionDtoMapper.class);
 
     private PrescriptionApplicationService service;
@@ -68,6 +73,7 @@ class PrescriptionApplicationServiceTest {
                 dispenseSlipRepo,
                 reservationRepo,
                 eventPublisher,
+                paymentReceiptRepo,
                 prescriptionDtoMapper,
                 Clock.systemUTC(),
                 Duration.ofHours(24));
@@ -258,18 +264,24 @@ class PrescriptionApplicationServiceTest {
         PrescriptionDTO expected = new PrescriptionDTO(
                 prescriptionId, prescription.getRecordId(), prescription.getPatientId(),
                 prescription.getDoctorId(), prescription.getDepartmentId(), prescription.getPrescribedDate(),
-                prescription.getTotalAmount(), List.of(), prescription.getStatus(), slip.getStatus(),
+                prescription.getTotalAmount(), List.of(), prescription.getStatus(), slip.getStatus(), true,
                 null, null, null, prescription.getCreatedAt(), prescription.getUpdatedAt());
 
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescription));
         when(dispenseSlipRepo.findByPrescription(prescriptionId)).thenReturn(Optional.of(slip));
         when(drugRepo.findByIds(List.of(drugId))).thenReturn(List.of(drug));
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of(PaymentReceipt.receive(
+                UUID.randomUUID(), UUID.randomUUID(), prescriptionId, prescription.getPatientId(),
+                prescription.getDepartmentId(), new BigDecimal("2000.00"), "CASH", Instant.now(),
+                "payment-confirmed", null)));
         when(prescriptionDtoMapper.toLineDto(any(), any())).thenReturn(null);
-        when(prescriptionDtoMapper.toDto(any(), any(), any())).thenReturn(expected);
+        when(prescriptionDtoMapper.toDto(any(), any(), anyBoolean(), any())).thenReturn(expected);
 
         assertThat(service.getPrescriptionById(prescriptionId)).isSameAs(expected);
         verify(prescriptionRepo, never()).findByIdForUpdate(prescriptionId);
         verify(drugRepo).findByIds(List.of(drugId));
+        verify(paymentReceiptRepo).findByPrescriptionId(prescriptionId);
+        verify(prescriptionDtoMapper).toDto(eq(prescription), eq(slip.getStatus()), eq(true), any());
     }
 
     private void stubSavedPrescription(UUID prescriptionId) {

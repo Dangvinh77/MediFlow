@@ -11,8 +11,8 @@ import {
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
-import { getRole } from "@/lib/session";
 import { pharmacyApi } from "../../api";
 import {
   canCancelPrescription,
@@ -50,23 +50,16 @@ interface ActionFeedback {
   message: string;
 }
 
-function subscribeToRoleChanges(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-  };
-}
-
 function getServerRole(): Role | null {
   return null;
 }
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
-    if (cause.status === 403) return "Bạn không có quyền xem đơn thuốc này.";
+    if (cause.status === 403) {
+      const correlation = cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
+      return `Bạn không có quyền xem đơn thuốc này.${correlation}`;
+    }
     if (cause.correlationId) return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
     return cause.message;
   }
@@ -121,7 +114,7 @@ function CopyValue({ label, value }: { label: string; value: string }) {
 
 export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) {
   const router = useRouter();
-  const role = useSyncExternalStore(subscribeToRoleChanges, getRole, getServerRole);
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const capabilities = getPharmacyCapabilities(role);
   const [requestState, setRequestState] = useState<DetailRequestState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -262,6 +255,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   const dispenseStatus = dispenseStatusPresentation[prescription.dispenseStatus];
   const showCancelSlot = canCancelPrescription(role, prescription);
   const showDispenseSlot = canDispensePrescription(role, prescription);
+  const canDispenseNow = showDispenseSlot && prescription.paymentConfirmed;
 
   return (
     <section className="mt-6 space-y-6">
@@ -276,6 +270,9 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
           <StatusBadge tone={dispenseStatus.tone}>{dispenseStatus.label}</StatusBadge>
+          <StatusBadge tone={prescription.paymentConfirmed ? "success" : "warning"}>
+            {prescription.paymentConfirmed ? "Đã xác nhận thanh toán" : "Chờ thanh toán"}
+          </StatusBadge>
         </div>
       </div>
 
@@ -302,6 +299,11 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
             Hủy đơn sẽ giải phóng reservation. Xuất thuốc chỉ được thực hiện khi Billing đã xác nhận
             thanh toán; backend vẫn là lớp quyết định cuối cùng.
           </p>
+          {showDispenseSlot && !prescription.paymentConfirmed && (
+            <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
+              Đơn đang chờ Billing xác nhận thanh toán, nên chưa thể xuất thuốc.
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap gap-3">
             {showCancelSlot && (
               <button
@@ -313,7 +315,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
                 Hủy đơn
               </button>
             )}
-            {showDispenseSlot && (
+            {canDispenseNow && (
               <button
                 type="button"
                 onClick={() => setActiveAction("dispense")}
