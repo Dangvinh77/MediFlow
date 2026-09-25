@@ -63,6 +63,12 @@ mediflow:
     access-token-minutes: 30
     refresh-token-minutes: 1440
     service-token-minutes: 1
+  organization-auth:
+    timeout-millis: ${MEDIFLOW_ORGANIZATION_AUTH_TIMEOUT_MILLIS:1500}
+    failure-rate-threshold: ${MEDIFLOW_ORGANIZATION_AUTH_FAILURE_RATE:50}
+    sliding-window-size: ${MEDIFLOW_ORGANIZATION_AUTH_WINDOW_SIZE:10}
+    minimum-number-of-calls: ${MEDIFLOW_ORGANIZATION_AUTH_MIN_CALLS:5}
+    wait-duration-seconds: ${MEDIFLOW_ORGANIZATION_AUTH_OPEN_SECONDS:10}
 
 management:
   endpoints:

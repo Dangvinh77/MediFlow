@@ -33,20 +33,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
-            "/actuator/health"
+            "/actuator/health",
+            "/actuator/info"
     );
-    private static final Set<String> SUPPORTED_ROLES = Set.of(
+    private static final Set<String> HUMAN_ROLES = Set.of(
             Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.PHARMACIST,
             Roles.CASHIER, Roles.LAB_TECH, Roles.MANAGER, Roles.PATIENT);
     private static final UUID INVALID_UUID = new UUID(0L, 0L);
-    private static final List<String> INTERNAL_ONLY_PATHS = List.of(
-            "/api/v1/org/accounts/verify",
-            "/api/v1/org/staff/");
-
     private final JwtTokenService jwt;
+    private final GatewayErrorResponseWriter errors;
 
-    public JwtAuthenticationFilter(JwtTokenService jwt) {
+    public JwtAuthenticationFilter(
+            JwtTokenService jwt,
+            GatewayErrorResponseWriter errors) {
         this.jwt = jwt;
+        this.errors = errors;
     }
 
     @Override
@@ -54,9 +55,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         if (isPublic(path)) {
             return chain.filter(exchange);
-        }
-        if (isInternalOnly(path)) {
-            return forbidden(exchange);
         }
 
         String auth = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
@@ -68,36 +66,32 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             Claims claims = jwt.parse(auth.substring(7));
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
             String role = claims.get(JwtClaims.ROLE, String.class);
+            if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
+                if (!isValidServiceToken(claims)) {
+                    return unauthorized(exchange, "Invalid service token");
+                }
+                if (!isInternalOnly(path) && !Roles.SYSTEM.equals(role)) {
+                    return unauthorized(exchange, "Invalid service token role");
+                }
+                return continueWithIdentity(exchange, chain, claims, Roles.SYSTEM, true);
+            }
+
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || isInternalOnly(path)
                     || claims.getSubject() == null
                     || claims.getSubject().isBlank()
                     || role == null
-                    || !SUPPORTED_ROLES.contains(role)
+                    || !HUMAN_ROLES.contains(role)
+                    || !isUuid(claims.getSubject())
                     || !hasValidIdentityClaims(claims, role)) {
+                if (isInternalOnly(path)
+                        && JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                        && HUMAN_ROLES.contains(role)) {
+                    return forbidden(exchange, "Service token is required");
+                }
                 return unauthorized(exchange, "Invalid access token");
             }
-            String correlationId = claims.get(JwtClaims.CORRELATION_ID, String.class);
-            if (correlationId == null || correlationId.isBlank()) {
-                correlationId = UUID.randomUUID().toString();
-            }
-            String downstreamCorrelationId = correlationId;
-            var requestBuilder = exchange.getRequest().mutate();
-            requestBuilder.headers(headers -> {
-                headers.remove("X-User-Id");
-                headers.remove("X-User-Role");
-                headers.remove("X-Staff-Id");
-                headers.remove("X-Department-Id");
-                headers.remove("X-Patient-Id");
-                headers.remove(JwtClaims.HEADER_CORRELATION_ID);
-                headers.set("X-User-Id", claims.getSubject());
-                headers.set("X-User-Role", role);
-                headers.set(JwtClaims.HEADER_CORRELATION_ID, downstreamCorrelationId);
-                setClaimHeader(headers, claims, "X-Staff-Id", JwtClaims.STAFF_ID);
-                setClaimHeader(headers, claims, "X-Department-Id", JwtClaims.DEPARTMENT_ID);
-                setClaimHeader(headers, claims, "X-Patient-Id", JwtClaims.PATIENT_ID);
-            });
-            ServerHttpRequest mutated = requestBuilder.build();
-            return chain.filter(exchange.mutate().request(mutated).build());
+            return continueWithIdentity(exchange, chain, claims, role, false);
         } catch (Exception e) {
             log.debug("Rejected request to {} — invalid token: {}", path, e.getMessage());
             return unauthorized(exchange, "Invalid or expired token");
@@ -109,8 +103,64 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isInternalOnly(String path) {
-        return path.equals(INTERNAL_ONLY_PATHS.get(0))
-                || (path.startsWith(INTERNAL_ONLY_PATHS.get(1)) && path.endsWith("/exists"));
+        return "/api/v1/org/accounts/verify".equals(path)
+                || path.matches("/api/v1/org/staff/[^/]+/(exists|lookup)")
+                || path.matches("/api/v1/org/departments/[^/]+/lookup")
+                || path.matches("/api/v1/patients/[^/]+/exists");
+    }
+
+    private boolean isValidServiceToken(Claims claims) {
+        return Roles.SYSTEM.equals(claims.get(JwtClaims.ROLE, String.class))
+                && claims.getSubject() != null
+                && !claims.getSubject().isBlank()
+                && optionalUuid(claims, JwtClaims.PATIENT_ID) == null
+                && optionalUuid(claims, JwtClaims.STAFF_ID) == null
+                && optionalUuid(claims, JwtClaims.DEPARTMENT_ID) == null;
+    }
+
+    private boolean isUuid(String value) {
+        try {
+            UUID.fromString(value);
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private Mono<Void> continueWithIdentity(
+            ServerWebExchange exchange,
+            GatewayFilterChain chain,
+            Claims claims,
+            String role,
+            boolean serviceToken) {
+        String correlationId = exchange.getRequest().getHeaders()
+                .getFirst(JwtClaims.HEADER_CORRELATION_ID);
+        if (correlationId == null || correlationId.isBlank()) {
+            correlationId = CorrelationIdWebFilter.normalize(null);
+        }
+        String downstreamCorrelationId = correlationId;
+        var requestBuilder = exchange.getRequest().mutate();
+        requestBuilder.headers(headers -> {
+            headers.remove("X-User-Id");
+            headers.remove("X-User-Role");
+            headers.remove("X-Staff-Id");
+            headers.remove("X-Department-Id");
+            headers.remove("X-Patient-Id");
+            headers.remove("X-Service-Id");
+            headers.set(JwtClaims.HEADER_CORRELATION_ID, downstreamCorrelationId);
+            headers.set("X-User-Role", role);
+            if (serviceToken) {
+                headers.set("X-Service-Id", claims.getSubject());
+            } else {
+                headers.set("X-User-Id", claims.getSubject());
+                setClaimHeader(headers, claims, "X-Staff-Id", JwtClaims.STAFF_ID);
+                setClaimHeader(headers, claims, "X-Department-Id", JwtClaims.DEPARTMENT_ID);
+                setClaimHeader(headers, claims, "X-Patient-Id", JwtClaims.PATIENT_ID);
+            }
+        });
+        ServerHttpRequest mutated = requestBuilder.build();
+        exchange.getAttributes().put(RouteAuthorizationFilter.ROLE_ATTRIBUTE, role);
+        return chain.filter(exchange.mutate().request(mutated).build());
     }
 
     private void setClaimHeader(
@@ -150,14 +200,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String reason) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().add("X-Auth-Error", reason);
-        return exchange.getResponse().setComplete();
+        return errors.write(exchange, HttpStatus.UNAUTHORIZED,
+                "AUTH_UNAUTHORIZED", reason);
     }
 
-    private Mono<Void> forbidden(ServerWebExchange exchange) {
-        exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-        return exchange.getResponse().setComplete();
+    private Mono<Void> forbidden(ServerWebExchange exchange, String reason) {
+        return errors.write(exchange, HttpStatus.FORBIDDEN,
+                "AUTH_FORBIDDEN", reason);
     }
 
     @Override
