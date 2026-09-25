@@ -20,6 +20,7 @@ import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.common.security.Roles;
+import com.mediflow.notification.application.dto.command.CallerIdentity;
 import com.mediflow.notification.application.dto.request.SendNotificationRequest;
 import com.mediflow.notification.application.dto.response.NotificationDTO;
 import com.mediflow.notification.application.port.in.ReadNotificationUseCase;
@@ -80,21 +81,22 @@ public class NotificationController {
     }
 
     /**
-     * {@code sub} của JWT là accountId; với vai trò {@code PATIENT}, accountId chính là
-     * {@code patientId} của người gọi — hệ thống không phát hành claim {@code patientId} riêng
-     * (docs/ai/07-security-rbac.md). Nhân viên (không phải PATIENT) không có "patientId của chính
-     * mình" nên trả về {@code null}; {@code isStaff() == true} khiến giá trị này không được dùng
-     * tới trong quyết định BR-N6.
+     * {@code sub} của JWT luôn là accountId, không bao giờ là patientId
+     * (docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md). Với vai trò {@code PATIENT},
+     * danh tính bệnh nhân đến từ claim {@code patientId} ký riêng, do {@link
+     * com.mediflow.notification.infrastructure.security.JwtAuthFilter} đặt vào principal dạng
+     * {@link CallerIdentity}; claim thiếu/hỏng cho {@code null}, không bao giờ rơi về accountId.
+     * Nhân viên (không phải PATIENT) không có "patientId của chính mình" nên trả về {@code null};
+     * {@code isStaff() == true} khiến giá trị này không được dùng tới trong quyết định BR-N6.
      */
     private UUID callerPatientId(Authentication authentication) {
-        if (isStaff(authentication) || authentication == null || authentication.getName() == null) {
+        if (isStaff(authentication) || authentication == null) {
             return null;
         }
-        try {
-            return UUID.fromString(authentication.getName());
-        } catch (IllegalArgumentException exception) {
-            return null;
+        if (authentication.getPrincipal() instanceof CallerIdentity identity) {
+            return identity.patientId();
         }
+        return null;
     }
 
     private boolean isStaff(Authentication authentication) {

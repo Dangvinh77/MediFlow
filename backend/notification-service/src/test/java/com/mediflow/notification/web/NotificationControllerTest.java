@@ -12,10 +12,13 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.mediflow.notification.application.dto.command.CallerIdentity;
 import com.mediflow.notification.application.dto.request.SendNotificationRequest;
 import com.mediflow.notification.application.dto.response.NotificationDTO;
 import com.mediflow.notification.application.port.in.ReadNotificationUseCase;
@@ -31,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,13 +62,14 @@ class NotificationControllerTest {
     private ReadNotificationUseCase readNotificationUseCase;
 
     @Test
-    @WithMockUser(username = "22222222-2222-2222-2222-222222222222", roles = "PATIENT")
     void getById_patientOwnNotification_returns200WithCallerPatientId() throws Exception {
         UUID id = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
         UUID patientId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         when(readNotificationUseCase.getById(id, patientId, false)).thenReturn(dto(id, patientId));
 
-        mockMvc.perform(get(BASE_PATH + "/{id}", id))
+        mockMvc.perform(get(BASE_PATH + "/{id}", id)
+                        .with(authentication(patientAuthentication(accountId, patientId))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.notificationId").value(id.toString()));
 
@@ -72,16 +77,34 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "22222222-2222-2222-2222-222222222222", roles = "PATIENT")
     void getById_otherPatientNotification_returns403Envelope() throws Exception {
         UUID id = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
         UUID patientId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         when(readNotificationUseCase.getById(id, patientId, false))
                 .thenThrow(new NotificationAccessDeniedException("Không có quyền xem thông báo này"));
 
-        mockMvc.perform(get(BASE_PATH + "/{id}", id))
+        mockMvc.perform(get(BASE_PATH + "/{id}", id)
+                        .with(authentication(patientAuthentication(accountId, patientId))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("NOTIFICATION_ACCESS_DENIED"));
+    }
+
+    /** Token PATIENT thiếu claim patientId (HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md): không được
+     * rơi về accountId — callerPatientId phải là null nên tầng application luôn từ chối BR-N6. */
+    @Test
+    void getById_patientTokenWithoutPatientIdClaim_neverFallsBackToAccountId() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        when(readNotificationUseCase.getById(id, null, false))
+                .thenThrow(new NotificationAccessDeniedException("Không có quyền xem thông báo này"));
+
+        mockMvc.perform(get(BASE_PATH + "/{id}", id)
+                        .with(authentication(patientAuthentication(accountId, null))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("NOTIFICATION_ACCESS_DENIED"));
+
+        verify(readNotificationUseCase).getById(id, null, false);
     }
 
     @Test
@@ -126,6 +149,12 @@ class NotificationControllerTest {
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(sendNotificationUseCase);
+    }
+
+    private UsernamePasswordAuthenticationToken patientAuthentication(UUID accountId, UUID patientId) {
+        CallerIdentity identity = new CallerIdentity(accountId, patientId, "PATIENT");
+        return new UsernamePasswordAuthenticationToken(
+                identity, null, List.of(new SimpleGrantedAuthority("ROLE_PATIENT")));
     }
 
     private NotificationDTO dto(UUID id, UUID patientId) {
