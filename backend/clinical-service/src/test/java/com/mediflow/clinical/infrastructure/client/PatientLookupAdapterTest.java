@@ -12,16 +12,16 @@ import java.util.Collections;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.http.ResponseEntity;
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
 
 import com.mediflow.clinical.application.exception.UpstreamUnavailableException;
+import com.mediflow.common.api.ApiResponse;
 
 import feign.FeignException;
 import feign.Request;
 import feign.RetryableException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
 
 class PatientLookupAdapterTest {
 
@@ -29,41 +29,89 @@ class PatientLookupAdapterTest {
     private final PatientLookupAdapter adapter = new PatientLookupAdapter(client);
 
     @Test
-    void exists_successfulLookup_returnsTrue() {
+    void exists_confirmedExistingPatient_returnsTrue() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenReturn(ResponseEntity.ok().build());
+        when(client.exists(patientId))
+                .thenReturn(ApiResponse.ok(new PatientLookupResponse(true, patientId)));
+
         assertThat(adapter.exists(patientId)).isTrue();
     }
 
     @Test
-    void exists_httpServerFailure_throwsTypedUnavailable() {
+    void exists_confirmedMissingPatient_returnsFalse() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenReturn(ResponseEntity.internalServerError().build());
-        assertUnavailable(patientId);
+        when(client.exists(patientId))
+                .thenReturn(ApiResponse.ok(new PatientLookupResponse(false, patientId)));
+
+        assertThat(adapter.exists(patientId)).isFalse();
     }
 
     @Test
-    void exists_confirmedNotFound_returnsFalse() {
+    void exists_directNotFound_returnsFalse() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenThrow(notFound());
+        when(client.exists(patientId)).thenThrow(notFound());
+
         assertThat(adapter.exists(patientId)).isFalse();
     }
 
     @Test
     void exists_circuitBreakerWrappedNotFound_returnsFalse() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenThrow(
+        when(client.exists(patientId)).thenThrow(
                 new NoFallbackAvailableException("no fallback", notFound()));
+
         assertThat(adapter.exists(patientId)).isFalse();
+    }
+
+    @Test
+    void exists_nullEnvelope_throwsTypedUnavailable() {
+        UUID patientId = UUID.randomUUID();
+        when(client.exists(patientId)).thenReturn(null);
+
+        assertInvalidResponse(patientId);
+    }
+
+    @Test
+    void exists_failedEnvelope_throwsTypedUnavailable() {
+        UUID patientId = UUID.randomUUID();
+        when(client.exists(patientId)).thenReturn(ApiResponse.fail(
+                ApiResponse.ApiError.of("UPSTREAM_ERROR", "lookup failed")));
+
+        assertInvalidResponse(patientId);
+    }
+
+    @Test
+    void exists_missingPayload_throwsTypedUnavailable() {
+        UUID patientId = UUID.randomUUID();
+        when(client.exists(patientId)).thenReturn(ApiResponse.ok(null));
+
+        assertInvalidResponse(patientId);
+    }
+
+    @Test
+    void exists_missingCanonicalPatientId_throwsTypedUnavailable() {
+        UUID patientId = UUID.randomUUID();
+        when(client.exists(patientId))
+                .thenReturn(ApiResponse.ok(new PatientLookupResponse(true, null)));
+
+        assertInvalidResponse(patientId);
+    }
+
+    @Test
+    void exists_mismatchedCanonicalPatientId_throwsTypedUnavailable() {
+        UUID patientId = UUID.randomUUID();
+        when(client.exists(patientId))
+                .thenReturn(ApiResponse.ok(new PatientLookupResponse(true, UUID.randomUUID())));
+
+        assertInvalidResponse(patientId);
     }
 
     @Test
     void exists_transportFailure_throwsTypedUnavailable() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenThrow(new IllegalStateException("timeout"));
-        assertThatThrownBy(() -> adapter.exists(patientId))
-                .isInstanceOf(UpstreamUnavailableException.class)
-                .hasMessageContaining("patient-service");
+        when(client.exists(patientId)).thenThrow(new IllegalStateException("timeout"));
+
+        assertUnavailable(patientId);
     }
 
     @Test
@@ -71,7 +119,8 @@ class PatientLookupAdapterTest {
         UUID patientId = UUID.randomUUID();
         RetryableException timeout = new RetryableException(0, "timeout", Request.HttpMethod.GET,
                 new SocketTimeoutException("read timed out"), (Long) null, request());
-        when(client.findById(patientId)).thenThrow(new NoFallbackAvailableException("no fallback", timeout));
+        when(client.exists(patientId)).thenThrow(new NoFallbackAvailableException("no fallback", timeout));
+
         assertUnavailable(patientId);
     }
 
@@ -80,16 +129,18 @@ class PatientLookupAdapterTest {
         UUID patientId = UUID.randomUUID();
         RetryableException connectionFailure = new RetryableException(0, "connection refused", Request.HttpMethod.GET,
                 new ConnectException("connection refused"), (Long) null, request());
-        when(client.findById(patientId)).thenThrow(
+        when(client.exists(patientId)).thenThrow(
                 new NoFallbackAvailableException("no fallback", connectionFailure));
+
         assertUnavailable(patientId);
     }
 
     @Test
     void exists_circuitBreakerWrappedServerFailure_throwsTypedUnavailable() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenThrow(
+        when(client.exists(patientId)).thenThrow(
                 new NoFallbackAvailableException("no fallback", serverError()));
+
         assertUnavailable(patientId);
     }
 
@@ -100,15 +151,23 @@ class PatientLookupAdapterTest {
         circuitBreaker.transitionToOpenState();
         CallNotPermittedException openCircuit =
                 CallNotPermittedException.createCallNotPermittedException(circuitBreaker);
-        when(client.findById(patientId)).thenThrow(new NoFallbackAvailableException("no fallback", openCircuit));
+        when(client.exists(patientId)).thenThrow(new NoFallbackAvailableException("no fallback", openCircuit));
+
         assertUnavailable(patientId);
     }
 
     @Test
     void exists_cyclicCause_throwsTypedUnavailableWithoutLooping() {
         UUID patientId = UUID.randomUUID();
-        when(client.findById(patientId)).thenThrow(new CyclicCauseException());
+        when(client.exists(patientId)).thenThrow(new CyclicCauseException());
+
         assertUnavailable(patientId);
+    }
+
+    private void assertInvalidResponse(UUID patientId) {
+        assertThatThrownBy(() -> adapter.exists(patientId))
+                .isInstanceOf(UpstreamUnavailableException.class)
+                .hasMessageContaining("invalid response");
     }
 
     private void assertUnavailable(UUID patientId) {
@@ -127,7 +186,7 @@ class PatientLookupAdapterTest {
     }
 
     private static Request request() {
-        return Request.create(Request.HttpMethod.GET, "http://patient-service/api/v1/patients/test",
+        return Request.create(Request.HttpMethod.GET, "http://patient-service/api/v1/patients/test/exists",
                 Collections.emptyMap(), null, StandardCharsets.UTF_8);
     }
 
