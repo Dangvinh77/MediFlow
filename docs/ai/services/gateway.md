@@ -317,6 +317,22 @@ If the authenticated role is not allowed:
 
 must be returned.
 
+### Gateway phase-2 enforcement
+
+The implementation in `backend/gateway` applies the following edge guarantees:
+
+- `CorrelationIdWebFilter` runs before JWT validation, accepts a valid `X-Correlation-Id` or
+  generates a UUID, and returns the same value in the request/response header.
+- `RouteAuthorizationFilter` is default-deny and evaluates the HTTP method, path, and the
+  canonical role matrix before routing. Service-only lookup paths require a `type=service`,
+  `role=SYSTEM` token.
+- Edge authentication/authorization failures use `ApiResponse` error codes
+  `AUTH_UNAUTHORIZED` and `AUTH_FORBIDDEN`. Downstream timeout/unavailability uses
+  `GATEWAY_TIMEOUT`/`GATEWAY_UPSTREAM_UNAVAILABLE` (login maps the Organization dependency to
+  `AUTH_UPSTREAM_TIMEOUT`/`AUTH_UPSTREAM_UNAVAILABLE`).
+- Organization account verification uses a bounded reactive timeout and circuit breaker. Invalid
+  credentials are excluded from the breaker failure count.
+
 ## Route Configuration
 
 Routes map external API paths to Eureka service names.
