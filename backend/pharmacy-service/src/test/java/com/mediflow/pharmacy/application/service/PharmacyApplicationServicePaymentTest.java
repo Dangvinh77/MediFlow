@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,16 +38,18 @@ import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.exception.PaymentReceiptRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
+import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 
 /**
  * Kiểm tra application flow khi nhận event thanh toán từ billing-service.
  */
 class PaymentApplicationServiceTest {
 
-    private static final UUID SYSTEM_USER = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final DispenseActor SYSTEM_ACTOR = DispenseActor.system();
 
     private final PrescriptionRepositoryPort prescriptionRepo = mock(PrescriptionRepositoryPort.class);
     private final ProcessedEventPort processedEventPort = mock(ProcessedEventPort.class);
@@ -75,39 +78,42 @@ class PaymentApplicationServiceTest {
         PaymentCompletedCommand command = command(eventId, prescriptionId);
         DispenseDTO result = new DispenseDTO(
                 UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
-                Instant.parse("2026-08-31T03:01:00Z"), SYSTEM_USER, null);
+                Instant.parse("2026-08-31T03:01:00Z"), null, DispenseActorType.SYSTEM, null);
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
         PaymentReceipt receipt = receipt(command);
         when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
         when(dispenseUseCase.dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001"))
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), "payment-flow-001"))
                 .thenReturn(result);
 
         service.onPaymentCompleted(command);
         service.onPaymentCompleted(command);
 
         verify(dispenseUseCase, times(1)).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), "payment-flow-001");
         verify(processedEventPort, times(2)).claimIfAbsent(eventId, "payment.completed");
     }
 
-    /** Concurrent redelivery of one event produces one dispense outcome via durable claims/locks. */
+    /** Concurrent redeliveries use independent receipt snapshots; durable effect idempotency is covered by PostgreSQL integration. */
     @Test
-    void onPaymentCompleted_sameEventConcurrent_dispensesOnce() throws Exception {
+    void onPaymentCompleted_sameEventConcurrent_independentReceiptsCanResume() throws Exception {
         UUID eventId = UUID.randomUUID();
         UUID prescriptionId = UUID.randomUUID();
         PaymentCompletedCommand command = command(eventId, prescriptionId);
-        PaymentReceipt receipt = receipt(command);
+        AtomicInteger claimCount = new AtomicInteger();
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
         when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
-                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt))
-                .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
+                .thenAnswer(invocation -> new PaymentReceiptClaimResult(
+                        claimCount.incrementAndGet() == 1
+                                ? PaymentReceiptClaimStatus.CLAIMED
+                                : PaymentReceiptClaimStatus.DUPLICATE_SAME,
+                        receipt(command)));
         when(dispenseUseCase.dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId()))
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId()))
                 .thenReturn(new DispenseDTO(UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
-                        Instant.now(), SYSTEM_USER, command.correlationId()));
+                        Instant.now(), null, DispenseActorType.SYSTEM, command.correlationId()));
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
         try {
@@ -119,8 +125,8 @@ class PaymentApplicationServiceTest {
         } finally {
             executor.shutdownNow();
         }
-        verify(dispenseUseCase, times(1)).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+        verify(dispenseUseCase, times(2)).dispenseWithPaymentProof(
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId());
     }
 
     private void runConcurrent(PaymentCompletedCommand command, CountDownLatch ready) {
@@ -139,7 +145,7 @@ class PaymentApplicationServiceTest {
                 .thenReturn(new PaymentReceiptClaimResult(
                         PaymentReceiptClaimStatus.CLAIMED, receipt(command)));
         doThrow(new IllegalStateException("temporary database outage")).when(dispenseUseCase).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), "payment-flow-001");
 
         assertThatThrownBy(() -> service.onPaymentCompleted(command))
                 .isInstanceOf(IllegalStateException.class)
@@ -201,15 +207,15 @@ class PaymentApplicationServiceTest {
         when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
         when(dispenseUseCase.dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId()))
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId()))
                 .thenReturn(new DispenseDTO(
                         UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
-                        Instant.now(), SYSTEM_USER, command.correlationId()));
+                        Instant.now(), null, DispenseActorType.SYSTEM, command.correlationId()));
 
         service.onPaymentCompleted(command);
 
         verify(dispenseUseCase).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId());
         verify(paymentReceiptRepo).save(receipt);
         verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
     }
@@ -227,7 +233,7 @@ class PaymentApplicationServiceTest {
                 .thenReturn(new PaymentReceiptClaimResult(
                         PaymentReceiptClaimStatus.CLAIMED, receipt(command)));
         doThrow(new IllegalStateException("PRESCRIPTION_NOT_ACTIVE")).when(dispenseUseCase).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), "payment-flow-001");
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), "payment-flow-001");
 
         service.onPaymentCompleted(command);
 
@@ -248,7 +254,7 @@ class PaymentApplicationServiceTest {
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt));
         doThrow(new IllegalStateException("PRESCRIPTION_NOT_ACTIVE")).when(dispenseUseCase)
                 .dispenseWithPaymentProof(
-                        prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+                        prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId());
 
         service.onPaymentCompleted(command);
 
@@ -285,13 +291,13 @@ class PaymentApplicationServiceTest {
         PaymentReceipt receipt = receipt(command);
         DispenseDTO result = new DispenseDTO(
                 UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
-                Instant.now(), SYSTEM_USER, command.correlationId());
+                Instant.now(), null, DispenseActorType.SYSTEM, command.correlationId());
         when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(prescriptionFor(command)));
         when(paymentReceiptRepo.claim(org.mockito.ArgumentMatchers.any(PaymentReceipt.class)))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.CLAIMED, receipt))
                 .thenReturn(new PaymentReceiptClaimResult(PaymentReceiptClaimStatus.DUPLICATE_SAME, receipt));
         when(dispenseUseCase.dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId()))
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId()))
                 .thenThrow(new IllegalStateException("temporary database outage"))
                 .thenReturn(result);
 
@@ -300,7 +306,7 @@ class PaymentApplicationServiceTest {
         service.onPaymentCompleted(command);
 
         verify(dispenseUseCase, times(2)).dispenseWithPaymentProof(
-                prescriptionId, SYSTEM_USER, command.invoiceId(), command.correlationId());
+                prescriptionId, SYSTEM_ACTOR, command.invoiceId(), command.correlationId());
         verify(paymentReceiptRepo).save(receipt);
         verify(processedEventPort).claimIfAbsent(eventId, "payment.completed");
     }

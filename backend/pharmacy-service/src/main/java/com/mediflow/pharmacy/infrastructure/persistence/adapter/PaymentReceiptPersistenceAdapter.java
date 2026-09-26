@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimResult;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptClaimStatus;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
+import com.mediflow.pharmacy.domain.exception.PaymentReceiptRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PaymentReceiptJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.PaymentReceiptJpaRepository;
@@ -80,8 +82,31 @@ public class PaymentReceiptPersistenceAdapter implements PaymentReceiptRepositor
     @Override
     @Transactional
     public PaymentReceipt save(PaymentReceipt receipt) {
-        PaymentReceiptJpaEntity saved = jpaRepository.saveAndFlush(toEntity(receipt));
-        return toDomain(saved);
+        if (!receipt.isTerminal()) {
+            throw new PaymentReceiptRuleException(
+                    "PAYMENT_RECEIPT_OUTCOME_REQUIRED",
+                    "Chỉ được lưu payment receipt sau khi đã có kết quả cuối");
+        }
+
+        jpaRepository.finalizeIfReceived(
+                receipt.getEventId(), receipt.getStatus().name(), receipt.getFailureCode());
+        PaymentReceipt current = jpaRepository.findByEventId(receipt.getEventId())
+                .map(this::toDomain)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Không tìm thấy payment receipt sau thao tác hoàn tất"));
+        if (hasSameTerminalOutcome(receipt, current)) {
+            return current;
+        }
+        throw new PaymentReceiptRuleException(
+                "PAYMENT_RECEIPT_TERMINAL_CONFLICT",
+                "Kết quả payment receipt đã được hoàn tất với outcome khác");
+    }
+
+    private boolean hasSameTerminalOutcome(PaymentReceipt requested, PaymentReceipt current) {
+        return requested.hasSamePayload(current)
+                && current.isTerminal()
+                && requested.getStatus() == current.getStatus()
+                && Objects.equals(requested.getFailureCode(), current.getFailureCode());
     }
 
     private PaymentReceipt toDomain(PaymentReceiptJpaEntity entity) {

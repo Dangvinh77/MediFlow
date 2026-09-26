@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.domain.model.Prescription;
@@ -43,6 +44,7 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Prescription> findById(UUID id) {
         return jpaRepo.findById(id).map(this::toDomain);
     }
@@ -58,6 +60,7 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Prescription> findByPatient(UUID patientId) {
         return jpaRepo.findByPatientId(patientId).stream().map(this::toDomain).toList();
     }

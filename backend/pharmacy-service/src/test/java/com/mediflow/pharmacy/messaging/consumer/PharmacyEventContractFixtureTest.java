@@ -8,8 +8,10 @@ import java.io.InputStream;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.pharmacy.application.event.PrescriptionCancelledEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionCreatedEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
+import com.mediflow.pharmacy.application.event.PrescriptionExpiredEvent;
 import com.mediflow.pharmacy.application.event.PrescriptionFilledEvent;
 import com.mediflow.pharmacy.messaging.consumer.payload.PaymentCompletedEvent;
 
@@ -73,6 +75,31 @@ class PharmacyEventContractFixtureTest {
         assertThat(event.failedItems()).singleElement()
                 .extracting(PrescriptionDispenseFailedEvent.FailedItem::availableQty)
                 .isEqualTo(0);
+    }
+
+    /** The existing Billing consumer fixture must keep the cancellation actor and reason. */
+    @Test
+    void prescriptionCancelled_legacyBillingFixtureMatchesPharmacyEvent() throws Exception {
+        PrescriptionCancelledEvent event = read(
+                "prescription.cancelled.json", PrescriptionCancelledEvent.class);
+
+        assertEnvelope(event.eventId(), event.occurredAt(), event.correlationId());
+        assertThat(event.prescriptionId()).isNotNull();
+        assertThat(event.patientId()).isNotNull();
+        assertThat(event.cancelledBy()).isNotNull();
+        assertThat(event.reason()).isEqualTo("PATIENT_REQUEST");
+    }
+
+    /** The existing Billing consumer fixture keeps reservation count and prescription identity. */
+    @Test
+    void prescriptionExpired_legacyBillingFixtureMatchesPharmacyEvent() throws Exception {
+        PrescriptionExpiredEvent event = read(
+                "prescription.expired.json", PrescriptionExpiredEvent.class);
+
+        assertEnvelope(event.eventId(), event.occurredAt(), event.correlationId());
+        assertThat(event.prescriptionId()).isNotNull();
+        assertThat(event.patientId()).isNotNull();
+        assertThat(event.expiredReservations()).isEqualTo(1);
     }
 
     private <T> T read(String name, Class<T> type) throws IOException {

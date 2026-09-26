@@ -14,6 +14,7 @@ import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DispenseRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
+import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
@@ -75,7 +76,7 @@ public class DispenseTransactionService {
      * @return persisted dispense slip DTO
      */
     @Transactional
-    public DispenseDTO execute(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+    public DispenseDTO execute(UUID prescriptionId, DispenseActor actor, String correlationId) {
         Instant now = Instant.now(clock);
         Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId)
                 .orElseThrow(() -> new com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException(
@@ -144,13 +145,18 @@ public class DispenseTransactionService {
         }
 
         lockedDrugs.values().forEach(drugRepo::save);
-        slip.markDispensed(dispensedBy, now);
+        slip.markDispensed(actor, now);
         DispenseSlip savedSlip = dispenseSlipRepo.save(slip);
         prescription.markFulfilled(now);
         prescriptionRepo.save(prescription);
         publishStockLow(lockedDrugs, correlationId);
         publishFilled(savedSlip, prescription, lockedDrugs, correlationId);
         return dispenseDtoMapper.toDto(savedSlip);
+    }
+
+    /** Compatibility overload for internal callers that identify a verified staff member. */
+    public DispenseDTO execute(UUID prescriptionId, UUID dispensedBy, String correlationId) {
+        return execute(prescriptionId, DispenseActor.staff(dispensedBy), correlationId);
     }
 
     private void publishStockLow(Map<UUID, Drug> drugs, String correlationId) {

@@ -14,6 +14,7 @@ import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.infrastructure.config.SecurityConfig;
@@ -143,6 +144,29 @@ class PrescriptionControllerTest {
         verifyNoInteractions(useCase);
     }
 
+    /** Legacy outpatient creation still requires an explicit medical-record reference. */
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void create_missingRecordId_returns400() throws Exception {
+        java.util.Map<String, Object> legacyRequestWithoutRecordId = java.util.Map.of(
+                "patientId", UUID.randomUUID(),
+                "doctorId", UUID.randomUUID(),
+                "departmentId", UUID.randomUUID(),
+                "prescribedDate", LocalDate.now(),
+                "lines", List.of(java.util.Map.of(
+                        "drugId", UUID.randomUUID(),
+                        "quantity", 1,
+                        "dosage", "Ngày 1 lần")));
+
+        mockMvc.perform(post(BASE_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(legacyRequestWithoutRecordId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        verifyNoInteractions(useCase);
+    }
+
     @Test
     @WithMockUser(roles = "DOCTOR")
     void create_duplicateDrug_returns422() throws Exception {
@@ -234,9 +258,12 @@ class PrescriptionControllerTest {
         UUID actorId = UUID.randomUUID();
         DispenseDTO response = new DispenseDTO(
                 UUID.randomUUID(), prescriptionId, DispenseStatus.DISPENSED,
-                Instant.now(), actorId, null);
+                Instant.now(), actorId,
+                "ADMIN".equals(role) ? DispenseActorType.ACCOUNT : DispenseActorType.STAFF, null);
+        ActorIdentity expectedActor = new ActorIdentity(
+                actorId, "PHARMACIST".equals(role) ? actorId : null, role);
         when(dispensePrescriptionUseCase.dispense(
-                prescriptionId, actorId, "manual-dispense-correlation"))
+                prescriptionId, expectedActor, "manual-dispense-correlation"))
                 .thenReturn(response);
 
         mockMvc.perform(put(BASE_PATH + "/{prescriptionId}/dispense", prescriptionId)
@@ -247,10 +274,12 @@ class PrescriptionControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.prescriptionId").value(prescriptionId.toString()))
                 .andExpect(jsonPath("$.data.status").value("DISPENSED"))
+                .andExpect(jsonPath("$.data.dispensedActorType").value(
+                        "ADMIN".equals(role) ? "ACCOUNT" : "STAFF"))
                 .andExpect(jsonPath("$.correlationId").value("manual-dispense-correlation"));
 
         verify(dispensePrescriptionUseCase).dispense(
-                eq(prescriptionId), eq(actorId), eq("manual-dispense-correlation"));
+                eq(prescriptionId), eq(expectedActor), eq("manual-dispense-correlation"));
     }
 
     /** DOCTOR không được phép gọi endpoint xuất thuốc. */

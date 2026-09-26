@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.mediflow.pharmacy.domain.exception.DispenseRuleException;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 
 import lombok.Getter;
@@ -22,6 +23,7 @@ public class DispenseSlip {
     private DispenseStatus status;
     private Instant dispensedAt;
     private UUID dispensedBy;
+    private DispenseActorType dispensedActorType;
     private String failureReason;
     private final Instant createdAt;
     private Instant updatedAt;
@@ -32,6 +34,7 @@ public class DispenseSlip {
             DispenseStatus status,
             Instant dispensedAt,
             UUID dispensedBy,
+            DispenseActorType dispensedActorType,
             String failureReason,
             Instant createdAt,
             Instant updatedAt) {
@@ -41,6 +44,7 @@ public class DispenseSlip {
         this.status = status;
         this.dispensedAt = dispensedAt;
         this.dispensedBy = dispensedBy;
+        this.dispensedActorType = dispensedActorType;
         this.failureReason = failureReason;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -55,7 +59,7 @@ public class DispenseSlip {
     public static DispenseSlip createPending(UUID prescriptionId) {
         return new DispenseSlip(
                 null, prescriptionId, DispenseStatus.PENDING,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     /**
@@ -77,32 +81,55 @@ public class DispenseSlip {
             DispenseStatus status,
             Instant dispensedAt,
             UUID dispensedBy,
+            DispenseActorType dispensedActorType,
             String failureReason,
             Instant createdAt,
             Instant updatedAt) {
 
         return new DispenseSlip(
-                dispenseId, prescriptionId, status, dispensedAt, dispensedBy,
+                dispenseId, prescriptionId, status, dispensedAt, dispensedBy, dispensedActorType,
                 failureReason, createdAt, updatedAt);
+    }
+
+    /** Compatibility overload for legacy fixtures that have no actor type. */
+    public static DispenseSlip restore(
+            UUID dispenseId,
+            UUID prescriptionId,
+            DispenseStatus status,
+            Instant dispensedAt,
+            UUID dispensedBy,
+            String failureReason,
+            Instant createdAt,
+            Instant updatedAt) {
+        DispenseActorType actorType = status == DispenseStatus.DISPENSED
+                ? DispenseActorType.LEGACY_UNKNOWN : null;
+        return restore(dispenseId, prescriptionId, status, dispensedAt, dispensedBy,
+                actorType, failureReason, createdAt, updatedAt);
     }
 
     /**
      * Đánh dấu phiếu đã xuất thành công.
      *
-     * @param actorId mã người hoặc tác nhân hệ thống thực hiện xuất
+     * @param actor typed staff, account, or system identity
      * @param timestamp thời điểm xuất
      */
-    public void markDispensed(UUID actorId, Instant timestamp) {
+    public void markDispensed(DispenseActor actor, Instant timestamp) {
         requirePending();
-        if (actorId == null || timestamp == null) {
+        if (actor == null || timestamp == null) {
             throw new DispenseRuleException(
                     "DISPENSE_ACTOR_TIME_REQUIRED",
                     "Người thực hiện và thời điểm xuất là bắt buộc");
         }
         status = DispenseStatus.DISPENSED;
-        dispensedBy = actorId;
+        dispensedBy = actor.id();
+        dispensedActorType = actor.type();
         dispensedAt = timestamp;
         updatedAt = timestamp;
+    }
+
+    /** Compatibility overload for call sites that supply an employee id. */
+    public void markDispensed(UUID actorId, Instant timestamp) {
+        markDispensed(DispenseActor.staff(actorId), timestamp);
     }
 
     /**

@@ -24,6 +24,7 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import java.math.BigDecimal;
@@ -95,7 +96,8 @@ class DispenseTransactionServiceTest {
     void execute_validReservation_dispensesAndPublishesCorrelatedEvents() {
         UUID actorId = UUID.randomUUID();
         DispenseDTO expected = new DispenseDTO(
-                slip.getDispenseId(), prescriptionId, DispenseStatus.DISPENSED, NOW, actorId, null);
+                slip.getDispenseId(), prescriptionId, DispenseStatus.DISPENSED,
+                NOW, actorId, DispenseActorType.STAFF, null);
         when(mapper.toDto(slip)).thenReturn(expected);
 
         DispenseDTO result = service.execute(prescriptionId, actorId, "dispense-correlation");

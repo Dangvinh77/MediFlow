@@ -36,7 +36,8 @@ class JwtAuthFilterTest {
     @Test
     void validToken_createsAuthenticationWithRoleAuthority() throws Exception {
         String accountId = "00000000-0000-0000-0000-000000000004";
-        String token = createToken(accountId, "PHARMACIST", Instant.now().plusSeconds(300));
+        String token = createToken(accountId, "PHARMACIST", JwtClaims.ACCESS_TOKEN_TYPE,
+                Instant.now().plusSeconds(300));
         MockHttpServletRequest request = requestWithToken(token);
 
         filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
@@ -51,7 +52,8 @@ class JwtAuthFilterTest {
 
     @Test
     void expiredToken_leavesRequestUnauthenticated() throws Exception {
-        String token = createToken(UUID.randomUUID().toString(), "PHARMACIST", Instant.now().minusSeconds(60));
+        String token = createToken(UUID.randomUUID().toString(), "PHARMACIST",
+                JwtClaims.ACCESS_TOKEN_TYPE, Instant.now().minusSeconds(60));
 
         filter.doFilter(
                 requestWithToken(token),
@@ -87,6 +89,7 @@ class JwtAuthFilterTest {
         String token = Jwts.builder()
                 .subject(accountId.toString())
                 .claim(JwtClaims.ROLE, "DOCTOR")
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
                 .claim("staffId", staffId.toString())
                 .expiration(Date.from(Instant.now().plusSeconds(300)))
                 .signWith(SIGNING_KEY)
@@ -107,10 +110,31 @@ class JwtAuthFilterTest {
         String token = Jwts.builder()
                 .subject(UUID.randomUUID().toString())
                 .claim(JwtClaims.ROLE, "DOCTOR")
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
                 .claim("staffId", "not-a-uuid")
                 .expiration(Date.from(Instant.now().plusSeconds(300)))
                 .signWith(SIGNING_KEY)
                 .compact();
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void refreshToken_leavesRequestUnauthenticated() throws Exception {
+        assertRejectedTokenType(JwtClaims.REFRESH_TOKEN_TYPE);
+    }
+
+    @Test
+    void serviceToken_leavesRequestUnauthenticated() throws Exception {
+        assertRejectedTokenType(JwtClaims.SERVICE_TOKEN_TYPE);
+    }
+
+    @Test
+    void missingTokenType_leavesRequestUnauthenticated() throws Exception {
+        String token = createToken(UUID.randomUUID().toString(), "PHARMACIST", null,
+                Instant.now().plusSeconds(300));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -123,13 +147,22 @@ class JwtAuthFilterTest {
         return request;
     }
 
-    private String createToken(String subject, String role, Instant expiresAt) {
-        return Jwts.builder()
+    private void assertRejectedTokenType(String tokenType) throws Exception {
+        String token = createToken(UUID.randomUUID().toString(), "PHARMACIST", tokenType,
+                Instant.now().plusSeconds(300));
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    private String createToken(String subject, String role, String tokenType, Instant expiresAt) {
+        var builder = Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
-                .expiration(Date.from(expiresAt))
-                .signWith(SIGNING_KEY)
-                .compact();
+                .expiration(Date.from(expiresAt));
+        if (tokenType != null) {
+            builder.claim(JwtClaims.TYPE, tokenType);
+        }
+        return builder.signWith(SIGNING_KEY).compact();
     }
 }

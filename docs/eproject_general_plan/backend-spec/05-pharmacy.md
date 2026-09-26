@@ -23,7 +23,7 @@ Pharmacy lo 4 việc: danh mục thuốc, tồn kho, đơn thuốc và phiếu x
 | CHI_TIET_BAN_KE | PRESCRIPTION_LINE | bảng |
 | ma_chi_tiet / ma_thuoc / so_luong / don_gia / lieu_dung / thanh_tien | line_id / drug_id / quantity / unit_price / dosage / line_total | cột PRESCRIPTION_LINE |
 | PHIEU_XUAT | DISPENSE_SLIP | bảng |
-| ma_phieu_xuat / trang_thai / ngay_xuat / nguoi_xuat / ly_do_that_bai | dispense_id / status / dispensed_at / dispensed_by / failure_reason | cột DISPENSE_SLIP |
+| ma_phieu_xuat / trang_thai / ngay_xuat / nguoi_xuat / loai_tac_nhan / ly_do_that_bai | dispense_id / status / dispensed_at / dispensed_by / dispensed_actor_type / failure_reason | cột DISPENSE_SLIP |
 | SU_KIEN_DA_XU_LY / xu_ly_luc | PROCESSED_EVENT / processed_at | bảng/cột |
 | TrangThaiPhieuXuat{CHO_XUAT, DA_XUAT, THAT_BAI} | DispenseStatus{PENDING, DISPENSED, FAILED} | enum |
 | Thuoc / BanKe / ChiTietBanKe / PhieuXuat | Drug / Prescription / PrescriptionLine / DispenseSlip | class |
@@ -81,12 +81,32 @@ CREATE TABLE DISPENSE_SLIP (
     prescription_id UUID          NOT NULL UNIQUE REFERENCES PRESCRIPTION(prescription_id),
     status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
     dispensed_at    TIMESTAMPTZ,
-    dispensed_by    UUID,                       -- tham chiếu nhân viên thực hiện
+    dispensed_by    UUID,                       -- nullable: staff/account id; NULL for SYSTEM
+    dispensed_actor_type VARCHAR(30),            -- STAFF / ACCOUNT / SYSTEM / LEGACY_UNKNOWN
     failure_reason  VARCHAR(255),
     created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ
 );
 CREATE INDEX idx_dispense_status ON DISPENSE_SLIP (status);
+
+-- V13: completed rows must record a known actor kind. LEGACY_UNKNOWN is migration-only;
+-- the all-zero UUID sentinel is converted to SYSTEM with dispensed_by = NULL.
+UPDATE DISPENSE_SLIP
+SET dispensed_actor_type = CASE
+    WHEN dispensed_by = '00000000-0000-0000-0000-000000000000'::UUID
+        THEN 'SYSTEM'
+    ELSE 'LEGACY_UNKNOWN'
+END
+WHERE status = 'DISPENSED';
+UPDATE DISPENSE_SLIP
+SET dispensed_by = NULL
+WHERE status = 'DISPENSED' AND dispensed_actor_type = 'SYSTEM';
+ALTER TABLE DISPENSE_SLIP ADD CONSTRAINT ck_dispense_actor_audit CHECK (
+    status <> 'DISPENSED'
+    OR dispensed_actor_type = 'LEGACY_UNKNOWN'
+    OR (dispensed_actor_type = 'SYSTEM' AND dispensed_by IS NULL)
+    OR (dispensed_actor_type IN ('STAFF', 'ACCOUNT') AND dispensed_by IS NOT NULL)
+);
 
 -- Sổ ghi các event đã xử lý — dùng để chống xử lý trùng khi RabbitMQ gửi lại tin (BR-D9).
 CREATE TABLE PROCESSED_EVENT (
@@ -216,14 +236,16 @@ Quy tắc: `quantity > 0` (`DRUG_QUANTITY_INVALID`).
 
 ### `DispenseSlip` — phiếu xuất thuốc
 
-`dispenseId`, `prescriptionId`, `status`, `dispensedAt`, `dispensedBy`, `failureReason`.
+`dispenseId`, `prescriptionId`, `status`, `dispensedAt`, `dispensedBy`, `dispensedActorType`, `failureReason`.
 
 ```java
 public static DispenseSlip createPending(UUID prescriptionId);   // BR-D3 — luôn là PENDING
-public void markDispensed(UUID dispensedBy, Instant timestamp);
+public void markDispensed(DispenseActor actor, Instant timestamp);
 public void markFailed(String reason);
 public boolean isPending();
 ```
+
+`DispenseActor` phân biệt `STAFF`, `ACCOUNT` và `SYSTEM`; system actor không có UUID. `LEGACY_UNKNOWN` chỉ được khôi phục từ row lịch sử, không hợp lệ cho thao tác mới.
 
 Quy tắc chuyển trạng thái: `PENDING → DISPENSED | FAILED`; cả hai đều là kết thúc, không quay lại được. Chuyển sai trạng thái → ném `DISPENSE_INVALID_TRANSITION`. Xuất một phiếu đã xuất rồi → `DISPENSE_ALREADY_DONE`.
 
@@ -418,6 +440,10 @@ public interface CreatePrescriptionUseCase {
 
 ```java
 public interface DispensePrescriptionUseCase {
+    DispenseDTO dispense(UUID prescriptionId, DispenseActor actor, String correlationId);
+    DispenseDTO dispenseWithPaymentProof(
+        UUID prescriptionId, DispenseActor actor, UUID invoiceId, String correlationId);
+    // Legacy UUID overload remains staff-only; new automation must use DispenseActor.system().
     DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy);
 }
 ```
@@ -495,7 +521,8 @@ public record PrescriptionLineDTO(UUID lineId, UUID drugId, String drugName,
                                   int quantity, BigDecimal unitPrice, String dosage, BigDecimal lineTotal) {}
 
 public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus status,
-                          Instant dispensedAt, UUID dispensedBy, String failureReason) {}
+                          Instant dispensedAt, UUID dispensedBy,
+                          DispenseActorType dispensedActorType, String failureReason) {}
 ```
 
 Điểm dễ quên: `PrescriptionLineRequest` **không có giá** (BR-D8) — nếu thấy client gửi giá thì bỏ qua, server luôn lấy giá từ kho tại thời điểm kê đơn.
@@ -540,7 +567,7 @@ public record DispenseDTO(UUID dispenseId, UUID prescriptionId, DispenseStatus s
 ### 7.3 Nhận tin "đã thanh toán" (`onPaymentCompleted(prescriptionId, invoiceId)`) — bước tiến của saga
 
 1. `processed.alreadyProcessed(eventId)` → đã xử lý rồi thì return.
-2. Gọi `dispense(prescriptionId, SYSTEM_USER)` — người thực hiện là hệ thống.
+2. Gọi dispense với actor type `SYSTEM` và không có user UUID giả — luồng tự động không được ghi nhận là dược sĩ hoặc account.
 3. `processed.markProcessed(...)` trong cùng transaction.
 4. Lỗi **không** ném ngược lại cho RabbitMQ — lỗi nghiệp vụ đã được publish thành `PrescriptionDispenseFailedEvent`. Chỉ lỗi hạ tầng mới được đưa vào dead-letter.
 ## 8. Endpoint

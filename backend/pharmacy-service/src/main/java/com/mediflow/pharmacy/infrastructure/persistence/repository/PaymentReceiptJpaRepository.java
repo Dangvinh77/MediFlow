@@ -50,4 +50,16 @@ public interface PaymentReceiptJpaRepository extends JpaRepository<PaymentReceip
             @Param("paymentOccurredAt") Instant paymentOccurredAt,
             @Param("correlationId") String correlationId,
             @Param("payloadFingerprint") String payloadFingerprint);
+
+    /** Transitions a receipt once; a stale snapshot cannot overwrite a terminal outcome. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE PAYMENT_RECEIPT
+            SET status = :status, failure_code = :failureCode, updated_at = now()
+            WHERE event_id = :eventId AND status = 'RECEIVED'
+            """, nativeQuery = true)
+    int finalizeIfReceived(
+            @Param("eventId") UUID eventId,
+            @Param("status") String status,
+            @Param("failureCode") String failureCode);
 }

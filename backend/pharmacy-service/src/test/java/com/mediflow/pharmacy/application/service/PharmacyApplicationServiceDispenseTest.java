@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.mapper.DispenseDtoMapper;
 import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
@@ -34,6 +35,7 @@ import com.mediflow.pharmacy.domain.exception.PaymentProofRequiredException;
 import com.mediflow.pharmacy.domain.exception.DrugRuleException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
+import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.Drug;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
@@ -134,17 +136,56 @@ class DispenseApplicationServiceTest {
 
         DispenseTransactionService transaction = mock(DispenseTransactionService.class);
         RecordDispenseFailureService failure = mock(RecordDispenseFailureService.class);
-        when(transaction.execute(prescriptionId, actorId, "manual-correlation"))
+        when(transaction.execute(prescriptionId, DispenseActor.staff(actorId), "manual-correlation"))
                 .thenThrow(new BusinessRuleException("DRUG_OUT_OF_STOCK", "Hết hàng"));
         DispenseApplicationService service = new DispenseApplicationService(
                 transaction, failure, paymentReceiptRepo);
 
         assertThatThrownBy(() -> service.dispense(
-                prescriptionId, actorId, null, "manual-correlation"))
+                prescriptionId, DispenseActor.staff(actorId), "manual-correlation"))
                 .isInstanceOf(BusinessRuleException.class);
 
         verify(failure).record(
                 eq(prescriptionId), eq(actorId), eq(invoiceId), eq("manual-correlation"), any());
+    }
+
+    /** The web-facing application port resolves a signed staff claim without exposing domain types in web. */
+    @Test
+    void manualDispense_verifiedStaffIdentity_recordsStaffActor() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        DispenseTransactionService transaction = mock(DispenseTransactionService.class);
+        RecordDispenseFailureService failure = mock(RecordDispenseFailureService.class);
+        PaymentReceipt receipt = PaymentReceipt.receive(
+                UUID.randomUUID(), UUID.randomUUID(), prescriptionId, UUID.randomUUID(),
+                UUID.randomUUID(), new BigDecimal("100.00"), "CASH", Instant.now(), "corr", null);
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of(receipt));
+        DispenseApplicationService service = new DispenseApplicationService(
+                transaction, failure, paymentReceiptRepo);
+
+        service.dispense(prescriptionId, new ActorIdentity(accountId, staffId, "PHARMACIST"), "corr");
+
+        verify(transaction).execute(prescriptionId, DispenseActor.staff(staffId), "corr");
+    }
+
+    /** An administrator without a staff claim retains the account audit identity. */
+    @Test
+    void manualDispense_verifiedAdminIdentity_recordsAccountActor() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        DispenseTransactionService transaction = mock(DispenseTransactionService.class);
+        RecordDispenseFailureService failure = mock(RecordDispenseFailureService.class);
+        PaymentReceipt receipt = PaymentReceipt.receive(
+                UUID.randomUUID(), UUID.randomUUID(), prescriptionId, UUID.randomUUID(),
+                UUID.randomUUID(), new BigDecimal("100.00"), "CASH", Instant.now(), "corr", null);
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of(receipt));
+        DispenseApplicationService service = new DispenseApplicationService(
+                transaction, failure, paymentReceiptRepo);
+
+        service.dispense(prescriptionId, new ActorIdentity(accountId, null, "ADMIN"), "corr");
+
+        verify(transaction).execute(prescriptionId, DispenseActor.account(accountId), "corr");
     }
 
     /** Reservation hết TTL phải chặn cấp trước khi trừ tồn vật lý. */
