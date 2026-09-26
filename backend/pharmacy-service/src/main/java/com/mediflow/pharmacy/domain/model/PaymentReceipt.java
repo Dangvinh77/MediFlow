@@ -1,7 +1,12 @@
 package com.mediflow.pharmacy.domain.model;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -90,10 +95,18 @@ public final class PaymentReceipt {
         requireAmount(totalAmount);
         requireInstant(paymentOccurredAt);
         requireText(correlationId, "PAYMENT_RECEIPT_CORRELATION_REQUIRED", "correlationId");
+        String normalizedPaymentMethod = normalizeOptional(paymentMethod);
+        String normalizedCorrelationId = correlationId.trim();
+        String normalizedFingerprint = normalizeOptional(payloadFingerprint);
+        if (normalizedFingerprint == null) {
+            normalizedFingerprint = fingerprint(
+                    eventId, invoiceId, prescriptionId, patientId, departmentId,
+                    totalAmount, normalizedPaymentMethod, paymentOccurredAt, normalizedCorrelationId);
+        }
         return new PaymentReceipt(
                 null, eventId, invoiceId, prescriptionId, patientId, departmentId,
-                totalAmount, normalizeOptional(paymentMethod), paymentOccurredAt,
-                correlationId.trim(), normalizeOptional(payloadFingerprint),
+                totalAmount, normalizedPaymentMethod, paymentOccurredAt,
+                normalizedCorrelationId, normalizedFingerprint,
                 PaymentReceiptStatus.RECEIVED, null, null, null);
     }
 
@@ -185,7 +198,8 @@ public final class PaymentReceipt {
 
     /**
      * So sánh snapshot payload, dùng để phát hiện cùng event/business key nhưng dữ liệu xung đột.
-     * Trạng thái, failure code và timestamp persistence không thuộc payload nên bị bỏ qua.
+     * Outcome/persistence timestamps bị bỏ qua; occurredAt so theo precision PostgreSQL lưu được,
+     * còn fingerprint giữ phân biệt của timestamp đầy đủ từ event gốc.
      */
     public boolean hasSamePayload(PaymentReceipt other) {
         if (other == null) {
@@ -198,10 +212,50 @@ public final class PaymentReceipt {
                 && Objects.equals(departmentId, other.departmentId)
                 && totalAmount.compareTo(other.totalAmount) == 0
                 && Objects.equals(paymentMethod, other.paymentMethod)
-                && Objects.equals(paymentOccurredAt, other.paymentOccurredAt)
+                && postgresTimestampPrecision(paymentOccurredAt)
+                        .equals(postgresTimestampPrecision(other.paymentOccurredAt))
                 && Objects.equals(correlationId, other.correlationId)
+                // Historical rows predate payload_fingerprint. For those rows the comparison
+                // can only use values PostgreSQL retained; sub-microsecond source precision is gone.
                 && (payloadFingerprint == null || other.payloadFingerprint == null
                         || Objects.equals(payloadFingerprint, other.payloadFingerprint));
+    }
+
+    private static String fingerprint(
+            UUID eventId,
+            UUID invoiceId,
+            UUID prescriptionId,
+            UUID patientId,
+            UUID departmentId,
+            BigDecimal totalAmount,
+            String paymentMethod,
+            Instant paymentOccurredAt,
+            String correlationId) {
+        String canonicalPayload = canonical(eventId.toString())
+                + canonical(invoiceId.toString())
+                + canonical(prescriptionId.toString())
+                + canonical(patientId.toString())
+                + canonical(departmentId.toString())
+                + canonical(totalAmount.stripTrailingZeros().toPlainString())
+                + canonical(paymentMethod)
+                + canonical(paymentOccurredAt.toString())
+                + canonical(correlationId);
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(canonicalPayload.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 must be available in the Java runtime", exception);
+        }
+    }
+
+    private static String canonical(String value) {
+        return value == null ? "-1:" : value.length() + ":" + value;
+    }
+
+    private static Instant postgresTimestampPrecision(Instant value) {
+        // PostgreSQL TIMESTAMPTZ stores microseconds and rounds fractional precision.
+        return value.plusNanos(500).truncatedTo(ChronoUnit.MICROS);
     }
 
     private void requireReceived(String target) {

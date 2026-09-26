@@ -1,0 +1,26 @@
+# HANDOFF — Huy-owned Pharmacy and Report care/finance contracts
+
+- **Status:** `OPEN` — requirements for producer review, not approved wire schemas.
+- **Consumer owner:** Huy (`LQHuy0210`) — Pharmacy and Report.
+- **Producers to act:** Inpatient/Clinical — Vinh; Billing/Notification — Lộc; Surgery — Huy for its future result facts.
+- **Source:** [Huy plan D08–D11](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#31-decision-backlog) and [independent preparation](../superpowers/plans/2026-09-26-huy-independent-slices.md).
+
+## Producer actions and Huy acceptance gates
+
+| Decision | Producer action needed | Huy consumer behavior after contract approval | Acceptance evidence |
+|---|---|---|---|
+| **D08 — admission medication** | Vinh identifies authoritative `admissionId`, patient/department relation, active/ended status, prescription-to-dispense authorization and whether one order may have multiple dispense operations. Lộc identifies charge/compensation outcome for cancel, expiry and failed dispense. | Pharmacy keeps outpatient pay-before-dispense unchanged. Admission requests use the **exact** approved admission/operation reference and fail closed on wrong/ended admission; they do not reinterpret `paymentConfirmed` as inpatient authorization. No new care-context field is emitted until these rules are versioned. | Matching producer/Pharmacy request and event fixtures for eligible, wrong patient/admission, ended admission, duplicate, partial dispense, failed/expired/cancelled and late compensation; PostgreSQL/Rabbit retry tests. |
+| **D09 — classified finance** | Lộc provides versioned completed receipt, deposit allocation/release, earned charge/recognition, completed refund and receivable/settlement facts. Specify transaction/allocation/reversal IDs, currency, signed delta versus replacement snapshot, effective period, account/episode and department allocation. | Report projects cash, liability, earned revenue, refund and receivable from explicit source facts. It does not treat an invoice total or deposit as earned revenue, or collapse legal partial transactions by invoice ID. Unknown classification/reference remains pending or rejected according to the agreed contract. | Billing producer and Report consumer decode the same fixture bytes; deposit→recognition→refund and two-partial-payment expected totals reconcile under replay, duplicates and reversed delivery. |
+| **D10 — inpatient/surgery reporting** | Vinh provides admission start/transfer/release/discharge/administrative-close facts and staffed/available-bed capacity if occupancy is wanted; Huy's future Surgery producer supplies completed/cancelled result operation/revision and actual times/items. Agree LOS and complication category semantics. | Report exposes only metrics backed by exact authoritative facts; active-admission count is not bed occupancy, `scheduledAt` is not actual start, and free-text is not a complication code. | Producer fixtures covering transfer across two departments, overnight stay, bed-capacity change, partial abort/correction and late delivery; Report totals and unavailable-vs-zero contract. |
+| **D11 — compatibility/replay** | All producers/consumers agree envelope versioning, field nullability, source business keys, cutover markers, correction revisions and legacy history retention/replay source. Identify which old events coexist with new classified facts. | Pharmacy retains committed legacy outbox bytes; Report retains five current bindings/queries until the cutover is proven. A new generation replays from a durable finite source without deleting live inbox or double-counting old/new finance facts. | Same-byte producer/consumer old/new fixtures, explicit source watermark, deterministic rebuild and live catch-up tests, retention limit and rollback runbook. |
+
+## Huy baseline and boundary
+
+- Pharmacy currently publishes `prescription.created`, `.filled`, `.dispense.failed`, `.cancelled`, `.expired` through its outbox. Legacy cancelled/expired fixture copies and Pharmacy decoder tests pass locally; this does **not** prove an admission payload.
+- Report currently binds `medicalrecord.created`, `lab.result.created`, `prescription.filled`, `payment.completed`, `payment.failed`. Its present payment projection is a legacy invoice contribution, not a classified ledger.
+- Huy may implement and test legacy-safe behavior within Pharmacy/Report. Do not add a guessed `admissionId`, transaction key, amount semantics, new Rabbit binding or API before the matching source fixture and canonical contract exist. Huy does not edit Clinical, Inpatient, Billing, Notification or Gateway here.
+- Surgery-specific D01–D07/D12 actions remain in [Surgery implementation decisions](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). D08 and D09 appear there only as cross-context summary; this file supplies Pharmacy/Report consumer acceptance criteria.
+
+## Close criteria
+
+For each row, record approval owner/date/link in the Huy plan, update the canonical care-finance contract and event catalog with the approved version, pass producer/consumer same-byte and failure-path tests, then remove the resolved row or this handoff from the active registry. A proposal, local decoder test or green build alone does not close a row.

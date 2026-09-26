@@ -1,8 +1,11 @@
 package com.mediflow.report.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +22,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.mediflow.report.application.dto.response.DailyReportDTO;
 import com.mediflow.report.application.dto.response.MonthlyReportDTO;
@@ -134,6 +138,48 @@ class ReportControllerTest {
     }
 
     @Test
+    void everyLegacyQuery_requiresAuthentication() throws Exception {
+        for (MockHttpServletRequestBuilder request : reportRequests()) {
+            mockMvc.perform(request.header("X-Correlation-Id", "unauthenticated-report"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"))
+                    .andExpect(jsonPath("$.correlationId").value("unauthenticated-report"));
+        }
+        verifyNoInteractions(readReportUseCase);
+    }
+
+    @Test
+    void everyLegacyQuery_acceptsAdminAndManager_butRejectsDoctor() throws Exception {
+        for (String role : List.of("ADMIN", "MANAGER")) {
+            for (MockHttpServletRequestBuilder request : reportRequests()) {
+                mockMvc.perform(request.with(user("report-reader").roles(role)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.success").value(true));
+            }
+        }
+        for (MockHttpServletRequestBuilder request : reportRequests()) {
+            mockMvc.perform(request.with(user("clinical-reader").roles("DOCTOR")))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void dailyResponse_exposesOnlyAggregateFields_notClinicalPayload() throws Exception {
+        LocalDate date = LocalDate.of(2026, 9, 15);
+        when(readReportUseCase.daily(date, null)).thenReturn(
+                new DailyReportDTO(date, null, 1, 0, 0, BigDecimal.ZERO));
+
+        String response = mockMvc.perform(get(BASE_PATH + "/daily").param("date", date.toString()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(response).contains("visitCount")
+                .doesNotContain("patientId", "recordId", "diagnosis", "clinicalNote");
+    }
+
+    @Test
     void swagger_requiresAuthenticationByDefault() throws Exception {
         mockMvc.perform(get("/swagger-ui/index.html"))
                 .andExpect(status().isUnauthorized())
@@ -164,5 +210,13 @@ class ReportControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.details[0].field").value("date"));
+    }
+
+    private static List<MockHttpServletRequestBuilder> reportRequests() {
+        return List.of(
+                get(BASE_PATH + "/daily").param("date", "2026-09-15"),
+                get(BASE_PATH + "/monthly").param("month", "9").param("year", "2026"),
+                get(BASE_PATH + "/top-medicines")
+                        .param("fromDate", "2026-09-01").param("toDate", "2026-09-15"));
     }
 }

@@ -134,7 +134,7 @@ public class PrescriptionController {
         ActorIdentity actor = parseActor(authentication);
         String traceId = normalizeCorrelationId(correlationId);
         DispenseDTO result = dispensePrescriptionUseCase.dispense(
-                prescriptionId, operationalActorId(actor), traceId);
+                prescriptionId, operationalActor(actor), traceId);
         return ResponseEntity.ok(ApiResponse.ok(result, traceId));
     }
 
@@ -160,9 +160,10 @@ public class PrescriptionController {
     }
 
     /** Resolves the signed staff identity allowed to own a dispensing operation. */
-    private UUID operationalActorId(ActorIdentity actor) {
+    private ActorIdentity operationalActor(ActorIdentity actor) {
         try {
-            return actor.auditActorId();
+            actor.auditActorId();
+            return actor;
         } catch (IllegalStateException exception) {
             throw new AccessDeniedException(
                     "JWT chưa cung cấp staffId đã xác thực cho thao tác nghiệp vụ", exception);

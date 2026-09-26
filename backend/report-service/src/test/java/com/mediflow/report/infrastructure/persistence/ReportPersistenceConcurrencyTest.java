@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -67,6 +68,12 @@ class ReportPersistenceConcurrencyTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void cleanProjectionTables() {
+        jdbcTemplate.execute("TRUNCATE TABLE processed_event, payment_contribution, "
+                + "daily_visit_report, monthly_revenue_report, drug_statistic CASCADE");
+    }
 
     @Test
     void claimConcurrent_sameEventHasSingleWinner() throws Exception {
@@ -219,10 +226,48 @@ class ReportPersistenceConcurrencyTest {
                     "SELECT invoice_count FROM monthly_revenue_report "
                             + "WHERE year = ? AND month = ? AND department_id IS NULL",
                     Integer.class, reportDate.getYear(), reportDate.getMonthValue())).isOne();
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT revenue FROM daily_visit_report WHERE report_date = ? AND department_id = ?",
+                    BigDecimal.class, reportDate, departmentId)).isEqualByComparingTo("100.00");
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT invoice_count FROM monthly_revenue_report "
+                            + "WHERE year = ? AND month = ? AND department_id = ?",
+                    Integer.class, reportDate.getYear(), reportDate.getMonthValue(), departmentId)).isOne();
         } finally {
             start.countDown();
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void paymentCompleted_nullDepartmentCreatesHospitalScopeOnly() {
+        UUID invoiceId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        Instant occurredAt = Instant.parse("2026-09-21T10:00:00Z");
+        LocalDate reportDate = occurredAt.atZone(ZoneId.of("Asia/Bangkok")).toLocalDate();
+
+        updater.onPaymentCompleted(eventId, occurredAt, invoiceId, null, new BigDecimal("80.00"));
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM daily_visit_report WHERE report_date = ? AND department_id IS NULL",
+                Integer.class, reportDate)).isOne();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM daily_visit_report WHERE report_date = ? AND department_id IS NOT NULL",
+                Integer.class, reportDate)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT revenue FROM daily_visit_report WHERE report_date = ? AND department_id IS NULL",
+                BigDecimal.class, reportDate)).isEqualByComparingTo("80.00");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM monthly_revenue_report WHERE year = ? AND month = ? "
+                        + "AND department_id IS NULL",
+                Integer.class, reportDate.getYear(), reportDate.getMonthValue())).isOne();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM monthly_revenue_report WHERE year = ? AND month = ? "
+                        + "AND department_id IS NOT NULL",
+                Integer.class, reportDate.getYear(), reportDate.getMonthValue())).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM payment_contribution WHERE invoice_id = ? AND department_id IS NULL",
+                Integer.class, invoiceId)).isOne();
     }
 
     @RepeatedTest(10)
@@ -254,6 +299,14 @@ class ReportPersistenceConcurrencyTest {
                     "SELECT COALESCE((SELECT revenue FROM daily_visit_report "
                             + "WHERE report_date = ? AND department_id IS NULL), 0)",
                     BigDecimal.class, reportDate)).isEqualByComparingTo("0.00");
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT COALESCE((SELECT revenue FROM daily_visit_report "
+                            + "WHERE report_date = ? AND department_id = ?), 0)",
+                    BigDecimal.class, reportDate, departmentId)).isEqualByComparingTo("0.00");
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT COALESCE((SELECT invoice_count FROM monthly_revenue_report "
+                            + "WHERE year = ? AND month = ? AND department_id = ?), 0)",
+                    Integer.class, reportDate.getYear(), reportDate.getMonthValue(), departmentId)).isZero();
         } finally {
             start.countDown();
             executor.shutdownNow();

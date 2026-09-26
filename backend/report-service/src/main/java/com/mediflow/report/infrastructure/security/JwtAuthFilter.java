@@ -30,9 +30,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String ROLE_PREFIX = "ROLE_";
-    static final String TOKEN_TYPE_CLAIM = "type";
-    static final String ACCESS_TOKEN_TYPE = "access";
-
     private final SecretKey signingKey;
 
     public JwtAuthFilter(JwtProperties properties) {
@@ -60,10 +57,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .build()
                     .parseSignedClaims(authorization.substring(BEARER_PREFIX.length()))
                     .getPayload();
-            String tokenType = claims.get(TOKEN_TYPE_CLAIM, String.class);
-            // Legacy gateway tokens omit type; accept them until the shared contract handoff
-            // is deployed, but fail closed for an explicitly non-access token.
-            if (StringUtils.hasText(tokenType) && !ACCESS_TOKEN_TYPE.equalsIgnoreCase(tokenType)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)) {
                 SecurityContextHolder.clearContext();
                 return;
             }

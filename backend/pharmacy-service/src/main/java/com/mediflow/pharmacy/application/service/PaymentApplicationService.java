@@ -12,11 +12,11 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException;
 import com.mediflow.pharmacy.domain.exception.PaymentReceiptRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
+import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,7 +30,6 @@ import org.springframework.stereotype.Service;
 public class PaymentApplicationService implements ReactToPaymentUseCase {
 
     private static final String PAYMENT_COMPLETED_ROUTING_KEY = "payment.completed";
-    private static final UUID SYSTEM_ACTOR = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private final PrescriptionRepositoryPort prescriptionRepository;
     private final ProcessedEventPort processedEventPort;
@@ -104,7 +103,7 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
         try {
             dispenseUseCase.dispenseWithPaymentProof(
                     command.prescriptionId(),
-                    SYSTEM_ACTOR,
+                    DispenseActor.system(),
                     command.invoiceId(),
                     command.correlationId());
             receipt.markDispensed(Instant.now(clock));

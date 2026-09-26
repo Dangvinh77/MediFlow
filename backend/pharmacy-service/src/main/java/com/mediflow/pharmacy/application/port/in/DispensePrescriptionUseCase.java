@@ -2,7 +2,9 @@ package com.mediflow.pharmacy.application.port.in;
 
 import java.util.UUID;
 
+import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
+import com.mediflow.pharmacy.domain.model.DispenseActor;
 
 /**
  * In-port — "xuất thuốc theo đơn". Là bước DUY NHẤT làm biến động tồn kho của cả hệ
@@ -31,7 +33,7 @@ public interface DispensePrescriptionUseCase {
      * {@code prescription.dispense.failed} để billing bù trừ (BR-D6).
      *
      * @param prescriptionId đơn cần xuất
-     * @param dispensedBy    id nhân viên thực hiện (dược sĩ) — khi do consumer gọi thì là id hệ thống
+     * @param dispensedBy legacy staff UUID compatibility overload; automated calls use typed actors
      * @return phiếu xuất sau khi xử lý (status DISPENSED hoặc FAILED)
      */
     DispenseDTO dispense(UUID prescriptionId, UUID dispensedBy);
@@ -40,7 +42,7 @@ public interface DispensePrescriptionUseCase {
      * Xuất thuốc và giữ mã tương quan của event hoặc request xuyên suốt các event kết quả.
      *
      * @param prescriptionId đơn cần xuất
-     * @param dispensedBy id nhân viên hoặc tác nhân hệ thống
+     * @param dispensedBy legacy staff UUID
      * @param correlationId mã tương quan, có thể {@code null} với job nội bộ
      * @return phiếu xuất sau khi xử lý
      */
@@ -48,38 +50,43 @@ public interface DispensePrescriptionUseCase {
         return dispense(prescriptionId, dispensedBy);
     }
 
-    /**
-     * Xuất thuốc trong ngữ cảnh payment để failure event có thể bù trừ đúng invoice.
+    /** Manual dispense preserving whether the verified identity is staff or an admin account.
      *
-     * @param prescriptionId đơn cần xuất
-     * @param dispensedBy tác nhân thực hiện
-     * @param invoiceId invoice liên quan, null với đường thủ công chưa có payment context
-     * @param correlationId mã tương quan của saga
-     * @return phiếu xuất sau khi xử lý
+     * @param prescriptionId prescription identity
+     * @param actor verified staff or account actor
+     * @param correlationId request trace id
+     * @return resulting dispense slip
      */
-    default DispenseDTO dispense(
+    DispenseDTO dispense(
             UUID prescriptionId,
-            UUID dispensedBy,
-            UUID invoiceId,
-            String correlationId) {
-        return dispense(prescriptionId, dispensedBy, correlationId);
-    }
+            DispenseActor actor,
+            String correlationId);
+
+    /** Manual dispense from a verified HTTP identity; the application resolves its audit kind.
+     *
+     * @param prescriptionId prescription identity
+     * @param actor signed account and optional staff identity
+     * @param correlationId request trace id
+     * @return resulting dispense slip
+     */
+    DispenseDTO dispense(
+            UUID prescriptionId,
+            ActorIdentity actor,
+            String correlationId);
 
     /**
      * Dispenses from the trusted payment workflow after its receipt has been claimed.
      * Driving adapters must never expose this method directly to clients.
      *
      * @param prescriptionId prescription to dispense
-     * @param dispensedBy trusted system actor
+     * @param actor explicit trusted actor; system automation has no user UUID
      * @param invoiceId related invoice
      * @param correlationId saga correlation id
      * @return resulting dispense slip
      */
-    default DispenseDTO dispenseWithPaymentProof(
+    DispenseDTO dispenseWithPaymentProof(
             UUID prescriptionId,
-            UUID dispensedBy,
+            DispenseActor actor,
             UUID invoiceId,
-            String correlationId) {
-        return dispense(prescriptionId, dispensedBy, invoiceId, correlationId);
-    }
+            String correlationId);
 }

@@ -41,6 +41,26 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void serviceTokenType_isRejectedEvenWhenSignatureAndRoleAreValid() throws Exception {
+        MockHttpServletRequest request = requestWithToken(token("service"));
+
+        new JwtAuthFilter(new JwtProperties(SECRET)).doFilter(request,
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void missingTokenType_isRejectedEvenWhenSignatureAndRoleAreValid() throws Exception {
+        MockHttpServletRequest request = requestWithToken(tokenWithoutType());
+
+        new JwtAuthFilter(new JwtProperties(SECRET)).doFilter(request,
+                new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void accessTokenType_isAccepted() throws Exception {
         MockHttpServletRequest request = requestWithToken(token("access"));
 
@@ -63,7 +83,18 @@ class JwtAuthFilterTest {
         return Jwts.builder()
                 .subject("user-1")
                 .claim(JwtClaims.ROLE, "ADMIN")
-                .claim(JwtAuthFilter.TOKEN_TYPE_CLAIM, tokenType)
+                .claim(JwtClaims.TYPE, tokenType)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + 60_000))
+                .signWith(KEY)
+                .compact();
+    }
+
+    private String tokenWithoutType() {
+        Date now = new Date();
+        return Jwts.builder()
+                .subject("user-1")
+                .claim(JwtClaims.ROLE, "ADMIN")
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + 60_000))
                 .signWith(KEY)

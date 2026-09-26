@@ -71,15 +71,35 @@ Ràng buộc DB: `price >= 0`, `stock_quantity >= 0` — đây là "tuyến phò
 
 ### `DISPENSE_SLIP` — phiếu xuất thuốc
 
-`dispense_id` UUID PK · `prescription_id` **UNIQUE** (mỗi đơn đúng một phiếu) · `status` `PENDING` / `DISPENSED` / `FAILED` · `dispensed_at` · `dispensed_by` (UUID, tham chiếu nhân viên) · `failure_reason` — lý do khi phiếu ở trạng thái `FAILED`.
+`dispense_id` UUID PK · `prescription_id` **UNIQUE** (mỗi đơn đúng một phiếu) · `status` · `dispensed_at` · `dispensed_by` UUID nullable · `dispensed_actor_type` (`STAFF` / `ACCOUNT` / `SYSTEM` / `LEGACY_UNKNOWN`) · `failure_reason`.
+
+`STAFF` lưu staff UUID từ claim đã xác thực; `ACCOUNT` lưu account/JWT subject khi ADMIN thao tác mà không có staff claim; `SYSTEM` là luồng tự động và để `dispensed_by` rỗng, không dùng UUID giả. `LEGACY_UNKNOWN` chỉ dùng cho dữ liệu cũ mà UUID không đủ để xác định loại actor; migration chỉ nhận diện UUID zero lịch sử là `SYSTEM`.
 
 > Tên trạng thái cũ trong bản thiết kế tổng: `CHO_XUAT` / `DA_XUAT` — nhánh C đổi thành `PENDING` / `DISPENSED` / `FAILED`.
+
+### `PAYMENT_RECEIPT` — snapshot và trạng thái xử lý payment
+
+`receipt_id` UUID PK · `event_id` UUID **UNIQUE** · invoice/prescription/patient/department UUID ·
+`total_amount` · `payment_method` · `payment_occurred_at` · `correlation_id` ·
+`payload_fingerprint` · `status` (`RECEIVED` / `DISPENSED` / `COMPENSATED`) ·
+`failure_code` · timestamps.
+
+Claim là insert-if-absent theo `event_id`; receipt mới bắt đầu ở `RECEIVED`. Nếu event chưa đạt outcome
+terminal, redelivery cùng payload được phép resume. Event cùng `eventId` nhưng payload khác bị từ chối.
+Receipt mới không có fingerprint đầu vào được Pharmacy gắn SHA-256 từ snapshot đã chuẩn hóa, gồm chính
+xác `occurredAt`; fingerprint giữ được khác biệt nano giây dù PostgreSQL `TIMESTAMPTZ` chỉ lưu microsecond.
+Riêng row lịch sử có fingerprint `NULL`, chỉ có thể so sánh các field và timestamp đã persist ở độ chính
+xác PostgreSQL; không thể khôi phục hoặc phát hiện khác biệt nano giây đã mất trước khi migration.
+
+Chỉ được finalize khi DB row còn `RECEIVED`. Finalize lặp với cùng payload/outcome là idempotent; stale
+snapshot ghi outcome terminal khác bị từ chối, không thể hạ hoặc đảo trạng thái đã thắng.
 
 ### `PROCESSED_EVENT` — sổ ghi các event đã xử lý
 
 `event_id` UUID PK · `routing_key` · `processed_at`. Bảng này ghi nhận event đã đạt outcome terminal.
-Payment consumer còn dùng `PAYMENT_RECEIPT` để claim payload và cho phép resume sau lỗi tạm thời.
-Không được mô tả `PROCESSED_EVENT` là cùng transaction với dispense khi code chưa bảo đảm điều đó.
+Payment consumer dùng `PAYMENT_RECEIPT` để claim payload và resume sau lỗi tạm thời. Processed marker
+không cùng transaction với stock/dispense success; không dựa riêng marker này để ngăn cấp thuốc lần hai.
+Nhánh compensation ghi processed marker cùng transaction với compensation outbox.
 
 ### `PHARMACY_EVENT_OUTBOX` — hàng đợi event bền vững
 
@@ -216,12 +236,24 @@ Vì sao phải vẽ ra hợp đồng như vậy? Vì application giữ toàn b�
 1. Đối chiếu `patientId`/`departmentId` của event với đơn trước khi claim; không so tổng invoice với tổng thuốc vì invoice có thể gồm phí khác.
 2. Claim payload vào `PAYMENT_RECEIPT`. Receipt terminal thì dừng; receipt `RECEIVED` cùng payload
    được phép resume sau lỗi tạm thời; cùng `eventId` nhưng payload khác phải bị từ chối.
-3. Gọi `dispense(prescriptionId, SYSTEM)` — người thực hiện là hệ thống, không phải dược sĩ; invoiceId được giữ cho compensation. Khóa database và trạng thái phiếu xuất phải bảo đảm một stock side effect.
+3. Gọi dispense với actor có kiểu `SYSTEM` và không có user UUID — không giả danh dược sĩ hay account; invoiceId được giữ cho compensation. Khóa database và trạng thái phiếu xuất phải bảo đảm một stock side effect.
 4. Chỉ đánh dấu processed sau outcome terminal. Lỗi hạ tầng được retry hữu hạn với exponential
    backoff; poison message reject sau lần cuối vào DLQ. Payment đến sau trạng thái terminal phát
    compensation nhiều nhất một lần.
-5. Chính sách xử lý hai delivery đồng thời đang chờ Pharmacy hoàn thiện theo
-   [`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).
+5. **Chính sách đã xác minh: effect-idempotent.** Hai handler có thể cùng qua receipt claim khi trạng thái
+   còn `RECEIVED`; PostgreSQL row locks trên đơn/phiếu/tồn kho bảo đảm một dispense effect. Stock,
+   reservation, prescription/slip và `prescription.filled` outbox cùng transaction. Nếu DB commit xong
+   nhưng receipt finalize lỗi, redelivery đọc lại slip đã `DISPENSED`, không trừ/phát lần hai rồi finalize
+   receipt. Receipt finalize có điều kiện `status = RECEIVED`; terminal conflict bị từ chối. Late-payment
+   compensation claim và `prescription.dispense.failed` outbox cùng transaction, nên chỉ có một logical
+   compensation.
+
+   Đã xác minh ngày 2026-09-25: `paymentCompleted_twoConcurrentDeliveries_commitsOneDispenseAndFilledEvent`
+   (5 lần), `paymentCompleted_receiptSaveFailsAfterDispense_redeliveryFinalizesSameEffect`,
+   `paymentReceipt_saveStaleConflictingTerminalOutcome_rejectsWithoutOverwritingWinner`,
+   `paymentCompleted_twoConcurrentDeliveries_afterCancellation_compensatesOnce` và
+   `PaymentReceiptTest.samePayload_survivesPostgresTimestampPrecision_withoutLosingNanosecondConflictDetection`.
+   Full Pharmacy suite: 207 tests, 0 failures/errors/skips với PostgreSQL/RabbitMQ Testcontainers.
 
 ## 7. API
 
@@ -328,5 +360,3 @@ Contract bắt buộc trước khi đổi integration:
 Existing outpatient compatibility and the implemented `prescription.filled.recordId` projection
 remain specified by `CONTRACT-CARE-BILLING-01`, the event catalog, and the Billing/Clinical/Pharmacy
 fixtures.
-Trước khi sửa payment receipt hoặc test tương tranh, phải xử lý
-[`HANDOFF-PHARMACY-PAYMENT-IDEMPOTENCY-RACE`](../../../backend/pharmacy-service/HANDOFF-PAYMENT-IDEMPOTENCY-RACE.md).

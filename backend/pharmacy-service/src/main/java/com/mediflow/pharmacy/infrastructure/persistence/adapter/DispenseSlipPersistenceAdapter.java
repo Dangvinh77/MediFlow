@@ -50,7 +50,7 @@ public class DispenseSlipPersistenceAdapter implements DispenseSlipRepositoryPor
     private DispenseSlip toDomain(DispenseSlipJpaEntity e) {
         return DispenseSlip.restore(
                 e.getDispenseId(), e.getPrescriptionId(), e.getStatus(),
-                e.getDispensedAt(), e.getDispensedBy(), e.getFailureReason(),
+                e.getDispensedAt(), e.getDispensedBy(), e.getDispensedActorType(), e.getFailureReason(),
                 e.getCreatedAt(), e.getUpdatedAt());
     }
 
@@ -61,6 +61,7 @@ public class DispenseSlipPersistenceAdapter implements DispenseSlipRepositoryPor
                 .status(s.getStatus())
                 .dispensedAt(s.getDispensedAt())
                 .dispensedBy(s.getDispensedBy())
+                .dispensedActorType(s.getDispensedActorType())
                 .failureReason(s.getFailureReason())
                 .build();
     }

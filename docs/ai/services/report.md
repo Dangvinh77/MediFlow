@@ -309,9 +309,8 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
   query hợp lệ và Swagger/actuator info mặc định yêu cầu xác thực (Swagger chỉ mở bằng explicit local opt-in).
 - PostgreSQL tests bao phủ null-scope natural keys, monthly/drug find-or-create, completed/failed race
   lặp 10 vòng, top query inclusive/scope/tie-break/latest-name và future-date zero-fill.
-- Gateway đã phát hành typed token. Report-service còn phải từ chối cả JWT thiếu `type`, không chỉ
-  giá trị khác `access`; blocker được theo dõi trong
-  [JWT handoff](../../HANDOFF-report-jwt-token-type.md).
+- Report-service yêu cầu JWT có `type=access`; token thiếu type, `refresh` và `service` bị từ chối.
+  Regression coverage nằm trong `JwtAuthFilterTest`.
 
 ## 12. Care-finance projection đích
 

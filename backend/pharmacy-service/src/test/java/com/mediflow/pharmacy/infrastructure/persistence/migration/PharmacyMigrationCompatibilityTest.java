@@ -44,7 +44,7 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("12");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("13");
         assertThat(tableExists("PAYMENT_RECEIPT")).isTrue();
         assertThat(tableExists("PHARMACY_SCHEDULER_LEASE")).isTrue();
         assertThat(columnExists("PHARMACY_SCHEDULER_LEASE", "LEASE_TOKEN")).isTrue();
@@ -54,9 +54,11 @@ class PharmacyMigrationCompatibilityTest {
         assertThat(constraintExists("PRESCRIPTION", "ck_prescription_status")).isTrue();
         assertThat(constraintExists("STOCK_RESERVATION", "ck_reservation_release_audit")).isTrue();
         assertThat(constraintExists("DISPENSE_SLIP", "ck_dispense_status")).isTrue();
+        assertThat(constraintExists("DISPENSE_SLIP", "ck_dispense_actor_audit")).isTrue();
         assertThat(constraintExists("STOCK_ADJUSTMENT", "ck_stock_adjustment_snapshot")).isTrue();
         assertThat(constraintExists("PHARMACY_EVENT_OUTBOX", "pharmacy_event_outbox_pkey")).isTrue();
         assertThat(columnExists("PHARMACY_EVENT_OUTBOX", "AGGREGATE_ID")).isTrue();
+        assertThat(columnExists("DISPENSE_SLIP", "DISPENSED_ACTOR_TYPE")).isTrue();
         assertThat(indexExists("idx_pharmacy_outbox_aggregate_order")).isTrue();
         assertThat(constraintExists("PAYMENT_RECEIPT", "payment_receipt_pkey")).isTrue();
         assertThat(foreignKeyExists("PRESCRIPTION_LINE", "prescription_id", "PRESCRIPTION", "prescription_id"))
@@ -117,6 +119,38 @@ class PharmacyMigrationCompatibilityTest {
                 + "' AND published_at IS NULL AND available_at IS NOT NULL"
                 + " AND quarantined_at IS NULL AND aggregate_id IS NULL"))
                 .isEqualTo(1);
+    }
+
+    /** V13 distinguishes known system actors but preserves ambiguous legacy UUIDs without guessing. */
+    @Test
+    void v12DatabaseWithDispensedRows_backfillsActorKindSafely() throws Exception {
+        flyway(MigrationVersion.fromVersion("12")).migrate();
+        UUID systemPrescriptionId = UUID.randomUUID();
+        UUID legacyPrescriptionId = UUID.randomUUID();
+        UUID systemDrugId = UUID.randomUUID();
+        UUID legacyDrugId = UUID.randomUUID();
+        UUID legacyActorId = UUID.randomUUID();
+        insertLegacyRows(systemDrugId, systemPrescriptionId);
+        insertLegacyRows(legacyDrugId, legacyPrescriptionId);
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("UPDATE DISPENSE_SLIP SET status = 'DISPENSED', "
+                    + "dispensed_at = now(), dispensed_by = '00000000-0000-0000-0000-000000000000' "
+                    + "WHERE prescription_id = '" + systemPrescriptionId + "'");
+            statement.executeUpdate("UPDATE DISPENSE_SLIP SET status = 'DISPENSED', "
+                    + "dispensed_at = now(), dispensed_by = '" + legacyActorId + "' "
+                    + "WHERE prescription_id = '" + legacyPrescriptionId + "'");
+        }
+
+        flyway().migrate();
+
+        assertThat(queryString("SELECT dispensed_actor_type FROM DISPENSE_SLIP WHERE prescription_id = '"
+                + systemPrescriptionId + "'")).isEqualTo("SYSTEM");
+        assertThat(queryInt("SELECT count(*) FROM DISPENSE_SLIP WHERE prescription_id = '"
+                + systemPrescriptionId + "' AND dispensed_by IS NULL")).isEqualTo(1);
+        assertThat(queryString("SELECT dispensed_actor_type FROM DISPENSE_SLIP WHERE prescription_id = '"
+                + legacyPrescriptionId + "'")).isEqualTo("LEGACY_UNKNOWN");
+        assertThat(queryString("SELECT dispensed_by::text FROM DISPENSE_SLIP WHERE prescription_id = '"
+                + legacyPrescriptionId + "'")).isEqualTo(legacyActorId.toString());
     }
 
     private void insertV5OutboxRow(UUID eventId, String payload) throws Exception {

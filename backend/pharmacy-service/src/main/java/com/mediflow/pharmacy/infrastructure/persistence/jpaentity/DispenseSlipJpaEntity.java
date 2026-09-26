@@ -1,6 +1,7 @@
 package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 import java.time.Instant;
 import java.util.UUID;
 import jakarta.persistence.Column;
@@ -45,6 +46,10 @@ public class DispenseSlipJpaEntity {
 
     @Column(name = "dispensed_by")
     private UUID dispensedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dispensed_actor_type", length = 30)
+    private DispenseActorType dispensedActorType;
 
     @Column(name = "failure_reason", length = 500)
     private String failureReason;

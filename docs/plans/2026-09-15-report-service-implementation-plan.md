@@ -1014,8 +1014,7 @@ Desktop, PostgreSQL 16 và RabbitMQ 3.13; số liệu test hiện tại được
 Report pin Testcontainers 1.20.6 trong POM (thay mặc định 1.19.8 dùng Docker API 1.32); khi máy có
 cấu hình Testcontainers cũ, dùng `-Dapi.version=1.40` như lệnh verify đã ghi ở trên.
 
-Gateway/Common đã phát hành và chia sẻ claim `type`. Phần còn lại nằm trong Report: bỏ legacy
-fallback chấp nhận token thiếu `type`, theo
-[HANDOFF-report-jwt-token-type](../HANDOFF-report-jwt-token-type.md).
+Gateway/Common đã phát hành và chia sẻ claim `type`. Report hiện yêu cầu chính xác `type=access`;
+token thiếu type, refresh và service bị từ chối. Regression tests nằm trong `JwtAuthFilterTest`.
 
 Baseline V1 được giữ nguyên: 5 bảng, atomic claim, 5 binding và `payment.failed` chỉ mang `invoiceId`.

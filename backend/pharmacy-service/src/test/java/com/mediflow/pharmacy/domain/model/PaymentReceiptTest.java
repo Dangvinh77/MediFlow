@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -85,6 +86,56 @@ class PaymentReceiptTest {
                 first.getPaymentOccurredAt(), first.getCorrelationId(), first.getPayloadFingerprint());
 
         assertThat(first.hasSamePayload(second)).isFalse();
+    }
+
+    @Test
+    void samePayload_survivesPostgresTimestampPrecision_withoutLosingNanosecondConflictDetection() {
+        UUID eventId = UUID.randomUUID();
+        UUID invoiceId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        Instant occurredAt = Instant.parse("2026-01-01T10:15:30.123456789Z");
+        PaymentReceipt received = PaymentReceipt.receive(
+                eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("120.00"), "CASH", occurredAt, "corr-precise", null);
+        PaymentReceipt restored = PaymentReceipt.restore(
+                UUID.randomUUID(), eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("120.00"), "CASH",
+                occurredAt.plusNanos(500).truncatedTo(ChronoUnit.MICROS),
+                "corr-precise", received.getPayloadFingerprint(), PaymentReceiptStatus.RECEIVED,
+                null, OCCURRED_AT, OCCURRED_AT);
+        PaymentReceipt conflicting = PaymentReceipt.receive(
+                eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("120.00"), "CASH", occurredAt.plusNanos(1), "corr-precise", null);
+
+        assertThat(received.getPayloadFingerprint()).hasSize(64);
+        assertThat(received.hasSamePayload(restored)).isTrue();
+        assertThat(received.hasSamePayload(conflicting)).isFalse();
+    }
+
+    @Test
+    void legacyPayloadWithoutFingerprint_comparesOnlyPersistedFields() {
+        UUID eventId = UUID.randomUUID();
+        UUID invoiceId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        Instant persistedAt = Instant.parse("2026-01-01T10:15:30.123457Z");
+        PaymentReceipt legacy = PaymentReceipt.restore(
+                UUID.randomUUID(), eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("120.00"), "CASH", persistedAt, "corr-legacy", null,
+                PaymentReceiptStatus.RECEIVED, null, OCCURRED_AT, OCCURRED_AT);
+        PaymentReceipt replay = PaymentReceipt.receive(
+                eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("120.00"), "CASH",
+                Instant.parse("2026-01-01T10:15:30.123456789Z"), "corr-legacy", null);
+        PaymentReceipt persistedConflict = PaymentReceipt.receive(
+                eventId, invoiceId, prescriptionId, patientId, departmentId,
+                new BigDecimal("121.00"), "CASH", persistedAt, "corr-legacy", null);
+
+        assertThat(legacy.hasSamePayload(replay)).isTrue();
+        assertThat(legacy.hasSamePayload(persistedConflict)).isFalse();
     }
 
     @Test

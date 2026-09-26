@@ -4,6 +4,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.mediflow.pharmacy.domain.model.DispenseActor;
+
 /**
  * Authenticated identity crossing the driving-adapter/application boundary.
  *
@@ -60,6 +62,17 @@ public record ActorIdentity(UUID accountId, UUID staffId, String role) {
     public UUID auditActorId() {
         if (staffId != null || isAdministrator() || isSystem()) {
             return staffId != null ? staffId : accountId;
+        }
+        throw new IllegalStateException("STAFF_ID_REQUIRED");
+    }
+
+    /** Resolves the explicit identity kind recorded when a human manually dispenses medication. */
+    public DispenseActor dispenseAuditActor() {
+        if (staffId != null) {
+            return DispenseActor.staff(staffId);
+        }
+        if (isAdministrator()) {
+            return DispenseActor.account(accountId);
         }
         throw new IllegalStateException("STAFF_ID_REQUIRED");
     }

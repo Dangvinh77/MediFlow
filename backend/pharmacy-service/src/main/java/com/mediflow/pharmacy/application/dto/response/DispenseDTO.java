@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 
 /**
  * DTO trả về khi xuất thuốc ({@code DispensePrescriptionUseCase.dispense}).
@@ -16,6 +17,7 @@ import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
  * @param status current dispense status
  * @param dispensedAt completion timestamp
  * @param dispensedBy actor identifier
+ * @param dispensedActorType kind of identity stored in dispensedBy
  * @param failureReason terminal failure reason, if any
  */
 public record DispenseDTO(
@@ -24,5 +26,18 @@ public record DispenseDTO(
         DispenseStatus status,
         Instant dispensedAt,
         UUID dispensedBy,
+        DispenseActorType dispensedActorType,
         String failureReason
-) {}
+) {
+    /** Compatibility constructor for callers that do not yet carry actor-kind metadata. */
+    public DispenseDTO(
+            UUID dispenseId,
+            UUID prescriptionId,
+            DispenseStatus status,
+            Instant dispensedAt,
+            UUID dispensedBy,
+            String failureReason) {
+        this(dispenseId, prescriptionId, status, dispensedAt, dispensedBy,
+                dispensedBy == null ? null : DispenseActorType.LEGACY_UNKNOWN, failureReason);
+    }
+}

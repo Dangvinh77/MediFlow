@@ -102,6 +102,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             Claims claims = parseClaims(authorization.substring(BEARER_PREFIX.length()));
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)) {
+                SecurityContextHolder.clearContext();
+                return;
+            }
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
 

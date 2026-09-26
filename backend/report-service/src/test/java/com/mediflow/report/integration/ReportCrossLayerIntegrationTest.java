@@ -139,6 +139,74 @@ class ReportCrossLayerIntegrationTest {
     }
 
     @Test
+    void legacyVisitRedelivery_countsOnceAcrossTwoDepartments_andHospitalScope() {
+        UUID otherDepartmentId = UUID.randomUUID();
+        Map<String, Object> firstVisit = event(
+                "eventId", UUID.randomUUID(), "occurredAt", "2026-09-15T01:00:00Z",
+                "correlationId", "visit-department-a", "recordId", UUID.randomUUID(),
+                "departmentId", DEPARTMENT_ID, "examinationDate", REPORT_DATE);
+        publish(RabbitConfig.RK_MEDICAL_RECORD_CREATED, firstVisit);
+        publish(RabbitConfig.RK_MEDICAL_RECORD_CREATED, firstVisit);
+        publish(RabbitConfig.RK_MEDICAL_RECORD_CREATED, event(
+                "eventId", UUID.randomUUID(), "occurredAt", "2026-09-15T02:00:00Z",
+                "correlationId", "visit-department-b", "recordId", UUID.randomUUID(),
+                "departmentId", otherDepartmentId, "examinationDate", REPORT_DATE));
+
+        awaitProjection("SELECT visit_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id IS NULL", REPORT_DATE, 2);
+        awaitProjection("SELECT visit_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id = ?", REPORT_DATE, DEPARTMENT_ID, 1);
+        awaitProjection("SELECT visit_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id = ?", REPORT_DATE, otherDepartmentId, 1);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM processed_event",
+                Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void legacyVisitWithNewEventIdForSameRecord_isStillDoubleCounted_characterization() {
+        UUID recordId = UUID.randomUUID();
+        for (int index = 1; index <= 2; index++) {
+            publish(RabbitConfig.RK_MEDICAL_RECORD_CREATED, event(
+                    "eventId", UUID.randomUUID(), "occurredAt", "2026-09-15T01:00:00Z",
+                    "correlationId", "same-record-new-event-" + index, "recordId", recordId,
+                    "departmentId", DEPARTMENT_ID, "examinationDate", REPORT_DATE));
+        }
+
+        // The legacy inbox keys only by eventId. Source-ID contributions are a D11/R-01 redesign,
+        // so this documents the existing gap rather than treating the value 2 as the target rule.
+        awaitProjection("SELECT visit_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id IS NULL", REPORT_DATE, 2);
+        awaitProjection("SELECT visit_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id = ?", REPORT_DATE, DEPARTMENT_ID, 2);
+    }
+
+    @Test
+    void prescriptionsAcrossBangkokMidnight_areBucketedIntoSeparateDays() {
+        UUID drugId = UUID.randomUUID();
+        publish(RabbitConfig.RK_PRESCRIPTION_FILLED, event(
+                "eventId", UUID.randomUUID(), "occurredAt", "2026-09-30T16:30:00Z",
+                "correlationId", "before-midnight", "prescriptionId", UUID.randomUUID(),
+                "departmentId", DEPARTMENT_ID, "dispensedItems", List.of(
+                        event("drugId", drugId, "drugName", "Boundary medicine", "quantity", 1))));
+        publish(RabbitConfig.RK_PRESCRIPTION_FILLED, event(
+                "eventId", UUID.randomUUID(), "occurredAt", "2026-09-30T17:30:00Z",
+                "correlationId", "after-midnight", "prescriptionId", UUID.randomUUID(),
+                "departmentId", DEPARTMENT_ID, "dispensedItems", List.of(
+                        event("drugId", drugId, "drugName", "Boundary medicine", "quantity", 2))));
+
+        LocalDate septemberEnd = LocalDate.of(2026, 9, 30);
+        LocalDate octoberStart = LocalDate.of(2026, 10, 1);
+        awaitProjection("SELECT prescription_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id IS NULL", septemberEnd, 1);
+        awaitProjection("SELECT prescription_count FROM daily_visit_report WHERE report_date = ? "
+                + "AND department_id = ?", octoberStart, DEPARTMENT_ID, 1);
+        awaitProjection("SELECT dispensed_quantity FROM drug_statistic WHERE report_date = ? "
+                + "AND drug_id = ? AND department_id IS NULL", septemberEnd, drugId, 1);
+        awaitProjection("SELECT dispensed_quantity FROM drug_statistic WHERE report_date = ? "
+                + "AND drug_id = ? AND department_id IS NULL", octoberStart, drugId, 2);
+    }
+
+    @Test
     @WithMockUser(roles = "MANAGER")
     void topMedicines_queryIsInclusiveScopedDeterministicAndUsesLatestName() throws Exception {
         UUID firstDrugId = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -227,6 +295,55 @@ class ReportCrossLayerIntegrationTest {
                 2026, 9, BigDecimal.ZERO.setScale(2));
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_contribution WHERE invoice_id = ?",
                 Integer.class, invoiceId)).isEqualTo(1);
+    }
+
+    @Test
+    void shuffledLegacyPaymentDeliveries_andRedelivery_leaveBothInvoicesReversed() {
+        UUID failedFirstInvoice = UUID.randomUUID();
+        UUID completedFirstInvoice = UUID.randomUUID();
+        Map<String, Object> failedFirst = event("eventId", UUID.randomUUID(),
+                "occurredAt", "2026-09-16T02:00:00Z", "correlationId", "shuffled-failed-first",
+                "invoiceId", failedFirstInvoice);
+        Map<String, Object> completedFirst = event("eventId", UUID.randomUUID(),
+                "occurredAt", "2026-09-15T02:00:00Z", "correlationId", "shuffled-completed-first",
+                "invoiceId", completedFirstInvoice, "departmentId", DEPARTMENT_ID,
+                "totalAmount", new BigDecimal("70.00"));
+        Map<String, Object> lateCompletion = event("eventId", UUID.randomUUID(),
+                "occurredAt", "2026-09-15T03:00:00Z", "correlationId", "shuffled-late-completion",
+                "invoiceId", failedFirstInvoice, "departmentId", DEPARTMENT_ID,
+                "totalAmount", new BigDecimal("40.00"));
+        Map<String, Object> lateFailure = event("eventId", UUID.randomUUID(),
+                "occurredAt", "2026-09-16T03:00:00Z", "correlationId", "shuffled-late-failure",
+                "invoiceId", completedFirstInvoice);
+
+        publish(RabbitConfig.RK_PAYMENT_FAILED, failedFirst);
+        awaitStatus(failedFirstInvoice, "PENDING_REVERSAL");
+        publish(RabbitConfig.RK_PAYMENT_COMPLETED, completedFirst);
+        awaitStatus(completedFirstInvoice, "APPLIED");
+        publish(RabbitConfig.RK_PAYMENT_COMPLETED, lateCompletion);
+        awaitStatus(failedFirstInvoice, "REVERSED");
+        publish(RabbitConfig.RK_PAYMENT_FAILED, lateFailure);
+        awaitStatus(completedFirstInvoice, "REVERSED");
+
+        // A replay of the same legacy deliveries must not re-apply either contribution.
+        publish(RabbitConfig.RK_PAYMENT_COMPLETED, lateCompletion);
+        publish(RabbitConfig.RK_PAYMENT_FAILED, lateFailure);
+        UUID barrierEventId = UUID.randomUUID();
+        publish(RabbitConfig.RK_LAB_RESULT_CREATED, event(
+                "eventId", barrierEventId, "occurredAt", "2026-09-17T01:00:00Z",
+                "correlationId", "shuffled-barrier", "labId", UUID.randomUUID(),
+                "departmentId", DEPARTMENT_ID, "performedDate", LocalDate.of(2026, 9, 17)));
+        // The Rabbit listener processes this queue serially; the barrier proves both redeliveries
+        // were consumed before checking that the processed ledger still has one row per event ID.
+        awaitProjection("SELECT COUNT(*) FROM processed_event WHERE event_id = ?", barrierEventId, 1L);
+        awaitProjection("SELECT total_revenue FROM monthly_revenue_report WHERE year = ? AND month = ? "
+                + "AND department_id IS NULL", 2026, 9, BigDecimal.ZERO.setScale(2));
+        awaitProjection("SELECT invoice_count FROM monthly_revenue_report WHERE year = ? AND month = ? "
+                + "AND department_id = ?", 2026, 9, DEPARTMENT_ID, 0);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_contribution",
+                Integer.class)).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM processed_event",
+                Integer.class)).isEqualTo(5);
     }
 
     @Test
@@ -327,6 +444,25 @@ class ReportCrossLayerIntegrationTest {
                 .isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM payment_contribution", Integer.class))
                 .isZero();
+    }
+
+    @Test
+    void missingLegacySourceId_isDeadLettered_withoutClaimingEvent() {
+        UUID eventId = UUID.randomUUID();
+        publish(RabbitConfig.RK_MEDICAL_RECORD_CREATED, event(
+                "eventId", eventId, "occurredAt", "2026-09-15T01:00:00Z",
+                "correlationId", "missing-source-id", "departmentId", DEPARTMENT_ID,
+                "examinationDate", REPORT_DATE, "diagnosis", "private-clinical-detail"));
+
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+            var info = rabbitAdmin.getQueueInfo(RabbitConfig.DLQ);
+            assertThat(info).isNotNull();
+            assertThat(info.getMessageCount()).isEqualTo(1);
+        });
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM processed_event WHERE event_id = ?",
+                Integer.class, eventId)).isZero();
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM daily_visit_report",
+                Integer.class)).isZero();
     }
 
     private void publish(String routingKey, Map<String, Object> payload) {
