@@ -2,10 +2,10 @@ package com.mediflow.report.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -106,7 +106,8 @@ class ReportApplicationServiceTest {
         assertThat(result.dailyDetails().get(2).visitCount()).isEqualTo(2);
         assertThat(result.dailyDetails().get(1).visitCount()).isZero();
         verify(dailyReports).findRange(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), null);
-        verify(dailyReports, never()).find(eq(LocalDate.of(2026, 9, 1)), eq(null));
+        verify(monthlyReports).find(2026, 9, null);
+        verifyNoMoreInteractions(dailyReports, monthlyReports);
     }
 
     @Test
@@ -121,6 +122,7 @@ class ReportApplicationServiceTest {
 
         assertThat(result).extracting(TopMedicineDTO::drugId).containsExactly(drugId);
         verify(drugStatistics).topMedicines(from, to, null, 50);
+        verifyNoMoreInteractions(drugStatistics);
     }
 
     @Test

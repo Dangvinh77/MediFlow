@@ -15,8 +15,9 @@
 ###  - GET /top-medicines?fromDate&toDate&departmentId&limit  (limit mặc định 10, tối đa 50)
 ###
 ### departmentId là tùy chọn ở cả ba: bỏ trống → số liệu toàn viện, truyền vào → của một khoa.
-### Report là READ MODEL, không có lỗi nghiệp vụ: ngày không có dữ liệu trả báo cáo toàn 0,
-### KHÔNG trả 404 (BR-R5).
+### Report là READ MODEL: ngày không có dữ liệu trả báo cáo toàn 0, KHÔNG trả 404 (BR-R5).
+### Dữ liệu tổng hợp đến bất đồng bộ qua event: số 0 không chứng minh producer đã chạy,
+### và 3 endpoint legacy chưa trả freshness/as-of. Không dùng số liệu này như quyết định điều trị.
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
@@ -24,6 +25,7 @@
 ### Báo cáo khám theo ngày (toàn viện — bỏ departmentId)
 GET {{host}}/api/v1/reports/daily?date=2026-08-14
 Authorization: Bearer {{token}}
+X-Correlation-Id: report-daily-hospital-example
 
 ### Báo cáo khám theo ngày (của một khoa)
 GET {{host}}/api/v1/reports/daily?date=2026-08-14&departmentId=00000000-0000-0000-0000-000000000000
@@ -32,6 +34,7 @@ Authorization: Bearer {{token}}
 ### Báo cáo doanh thu tháng (toàn viện)
 GET {{host}}/api/v1/reports/monthly?month=8&year=2026
 Authorization: Bearer {{token}}
+X-Correlation-Id: report-monthly-example
 
 ### Báo cáo doanh thu tháng (của một khoa)
 GET {{host}}/api/v1/reports/monthly?month=8&year=2026&departmentId=00000000-0000-0000-0000-000000000000
@@ -40,7 +43,18 @@ Authorization: Bearer {{token}}
 ### Top thuốc xuất nhiều nhất trong khoảng ngày (toàn viện, mặc định limit 10)
 GET {{host}}/api/v1/reports/top-medicines?fromDate=2026-08-01&toDate=2026-08-14
 Authorization: Bearer {{token}}
+X-Correlation-Id: report-top-medicines-example
 
 ### Top thuốc theo khoa + giới hạn tùy chỉnh (tối đa 50)
 GET {{host}}/api/v1/reports/top-medicines?fromDate=2026-08-01&toDate=2026-08-14&departmentId=00000000-0000-0000-0000-000000000000&limit=20
 Authorization: Bearer {{token}}
+
+### Kiểm tra 401 qua Gateway: không gửi bearer token
+GET {{host}}/api/v1/reports/daily?date=2026-08-14
+X-Correlation-Id: report-unauthorized-example
+
+### Kiểm tra 403 qua Gateway: thay token bằng access token role DOCTOR
+# @doctorToken = paste-doctor-access-token-here
+GET {{host}}/api/v1/reports/daily?date=2026-08-14
+Authorization: Bearer {{doctorToken}}
+X-Correlation-Id: report-forbidden-example
