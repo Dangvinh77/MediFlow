@@ -1,9 +1,6 @@
-### MediFlow — Patient service (qua gateway :8080) — DEMO / TEMPLATE
+### MediFlow — Patient service (qua gateway :8080) — read/lookup smoke tests
 ###
-### ⚠️ Trạng thái: patient-service hiện vẫn là skeleton; các request bên dưới là DEMO theo contract,
-### chưa phải smoke test của controller live.
-###   docs/eproject_general_plan/backend-spec/02-patient.md
-### Khi service được dựng lại, hãy đối chiếu với controller thật trước khi dùng làm chuẩn.
+### Read/lookup endpoints are live in Phase 3. Write requests remain examples until the write slice is implemented.
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → patient-service (8081) đang chạy.
@@ -41,7 +38,7 @@ Authorization: Bearer {{token}}
 GET {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000/exists
 Authorization: Bearer {{serviceToken}}
 
-### Tạo bệnh nhân (201 — role ADMIN/NURSE)
+### Tạo bệnh nhân (future write slice — chưa triển khai)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -57,7 +54,7 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Tạo trùng soCmnd → 409 PATIENT_CMND_DUPLICATE
+### Tạo trùng soCmnd (future write slice)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -73,7 +70,7 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Tạo sai Bean Validation → 400, error.details liệt kê từng field
+### Tạo sai Bean Validation (future write slice)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -84,7 +81,7 @@ Content-Type: application/json
   "gioiTinh": "M"
 }
 
-### Cập nhật bệnh nhân (200 — role ADMIN/NURSE; soCmnd không đổi được, chỉ có trong request tạo)
+### Cập nhật bệnh nhân (future write slice)
 PUT {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -99,6 +96,6 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Xoá bệnh nhân (204 — chỉ ADMIN)
+### Xoá bệnh nhân (future write slice)
 DELETE {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}

@@ -3,11 +3,10 @@
 > **Mandatory for coding agents:** read this file before adding or changing patient read/existence
 > APIs or service-to-service security in `patient-service`.
 >
-> **Status (2026-09-26): producer still open; Clinical consumer complete.** Clinical now calls the
-> locked service-only `/{id}/exists` path with a short-lived service JWT, validates the standard
-> envelope/canonical patient ID and preserves outage-vs-absence semantics. Patient still has no
-> Java lookup controller, so live appointment/record creation and the frontend patient landing
-> remain blocked until the producer contracts exist.
+> **Status (2026-09-26): producer read/lookup slice implemented; end-to-end acceptance remains.**
+> Patient now exposes the locked read, list and service-only existence endpoints with Flyway/JPA,
+> correlation propagation and access/service JWT validation. Clinical's consumer contract is ready;
+> the remaining step is to run the gateway/frontend end-to-end fixture before closing this handoff.
 
 - **Producer / owner:** Patient — TranHoangAnh94
 - **Consumer:** Clinical — Dangvinh77 / Harori
@@ -15,9 +14,8 @@
 
 ## Current gap
 
-The Patient module exposes no Java patient read or existence controller. Clinical's consumer can
-distinguish a confirmed miss from an unavailable/malformed producer response, but every live lookup
-still fails until Patient implements the endpoint and accepts the locked service credential.
+The producer-side slice is available. End-to-end gateway routing, frontend empty/error/retry states,
+and the shared producer/consumer fixture still need to be verified before this handoff is closed.
 
 ## Required contract
 
