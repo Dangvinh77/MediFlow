@@ -4,9 +4,8 @@ Master patient index (`PATIENT`) — the system's authoritative source for patie
 
 Reference: [`docs/ai/services/patient.md`](../docs/ai/services/patient.md) · design doc [`EProject/patient-service.html`](../docs/eproject_general_plan/patient-service.html) · implementation spec [`EProject/backend-spec/02-patient.md`](../docs/eproject_general_plan/backend-spec/02-patient.md).
 
-> **Implementation status:** skeleton only. The production implementation and tests are planned in
-> the Patient workstream; this README documents the locked target contract and must not be read as a
-> claim that the service is already complete.
+> **Implementation status:** Phase 3 read/lookup slice is implemented and tested. Patient write
+> operations, events and the remaining validation rules are still planned work.
 
 ## Target implementation patterns
 
@@ -539,14 +538,14 @@ mvn -pl backend/patient-service verify
 
 `verify` includes integration tests using Testcontainers and therefore requires Docker.
 
-No Patient implementation tests exist yet because the module is still a skeleton. The test suite is
-part of the implementation work described below.
+The current suite covers domain mapping, the JPA persistence adapter, Vietnamese DTO serialization,
+human/service JWT authorization, correlation propagation, 404 handling and datastore outage mapping.
 
 ## Definition of Done
 
 The Patient Service is complete when:
 
-- [ ] `PATIENT` is implemented.
+- [x] `PATIENT` read schema and migration are implemented.
 - [ ] All database identifiers use English `snake_case`.
 - [ ] All Java/domain names use English terminology.
 - [ ] `Gender` contains exactly `M` and `F`.
@@ -567,7 +566,7 @@ The Patient Service is complete when:
 - [ ] Pagination conversion is isolated inside `PatientPersistenceAdapter`.
 - [ ] Other services reference patients using bare `patient_id` UUIDs.
 - [ ] No cross-service database access exists.
-- [ ] Domain tests run without a Spring context.
-- [ ] Unit tests pass.
+- [x] Domain tests run without a Spring context.
+- [x] Read-slice unit, persistence and web/security tests pass.
 - [ ] Integration tests pass with Testcontainers.
 - [ ] Swagger/OpenAPI documentation is available.
