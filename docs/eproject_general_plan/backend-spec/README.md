@@ -8,7 +8,7 @@ chính xác. Viết để cả AI lẫn người đọc đều dùng được.
 
 | Ở đâu | Trả lời câu hỏi | Ví dụ |
 |-------|-----------------|-------|
-| [`docs/ai/`](../../docs/ai/README.md) | **Viết code thế nào** | "tầng domain không được import Spring" |
+| [`docs/ai/`](../../ai/README.md) | **Viết code thế nào** | "tầng domain không được import Spring" |
 | [`docs/eproject_general_plan/*.html`](..) | **Nghiệp vụ cần gì** | "một bệnh nhân không được có 2 lịch hẹn chờ trong cùng ngày" |
 | **thư mục này** | **Xây chính xác cái gì** | `boolean existsByMaBenhNhanAndNgayHenAndTrangThai(UUID, LocalDate, TrangThaiLichHen)` |
 
@@ -33,6 +33,7 @@ chứ không chép lại. Nếu có mâu thuẫn, thứ tự thẩm quyền là:
 | [07-notification.md](07-notification.md) | Email / SMS / trong ứng dụng | `notification-service` |
 | [08-report.md](08-report.md) | Read model dựng từ event | `report-service` |
 | [09-gateway.md](09-gateway.md) | Định tuyến, JWT, giới hạn tần suất | `gateway` |
+| [10-surgery.md](10-surgery.md) | **DRAFT H-01a–d + Surgery prep, chưa đủ để code nghiệp vụ** — glossary, rule/test inventory, contract/fixture manifest, aggregate/transaction/read/checklist alternatives và technical foundation; episode-referral, DDL và exact DTO/event vẫn chờ quyết định | `surgery-service` (planned) |
 
 ## Thứ tự xây dựng
 
