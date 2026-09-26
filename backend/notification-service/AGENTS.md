@@ -8,8 +8,6 @@ Root `AGENTS.md` rules continue to apply.
 - Other services are read-only unless the user explicitly grants a task-scoped override.
 - Do not infer cross-service identifiers, query another service's database, or edit its producer.
 - Subagents inherit this boundary and cannot bypass it.
-- **Active handoff:** before changing patient authorization or JWT parsing, read
-  [`HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md`](HANDOFF-NOTIFICATION-PATIENT-JWT-CLAIM.md).
 - **Integration gate:** before changing event bindings, templates, patient claims/contact lookup or
   fixtures, read the [care-finance registry](../../docs/handoffs/care-finance/README.md),
   [CARE-PROJECTIONS](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md), and

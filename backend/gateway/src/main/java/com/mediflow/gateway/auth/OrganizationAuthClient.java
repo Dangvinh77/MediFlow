@@ -10,10 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.core.ParameterizedTypeReference;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 /** Reactive client for the Organization account-verification contract. */
 @Service
@@ -33,10 +39,30 @@ public class OrganizationAuthClient {
 
     private final WebClient client;
     private final JwtTokenService jwt;
+    private final OrganizationAuthProperties properties;
+    private final CircuitBreaker circuitBreaker;
 
-    public OrganizationAuthClient(WebClient.Builder webClientBuilder, JwtTokenService jwt) {
+    public OrganizationAuthClient(
+            WebClient.Builder webClientBuilder,
+            JwtTokenService jwt,
+            OrganizationAuthProperties properties) {
         this.client = webClientBuilder.build();
         this.jwt = jwt;
+        this.properties = properties;
+        this.circuitBreaker = CircuitBreaker.of(
+                "organization-auth",
+                CircuitBreakerConfig.custom()
+                        .failureRateThreshold(properties.failureRateThreshold())
+                        .slidingWindowSize(properties.slidingWindowSize())
+                        .minimumNumberOfCalls(properties.minimumNumberOfCalls())
+                        .waitDurationInOpenState(Duration.ofSeconds(properties.waitDurationSeconds()))
+                        .ignoreExceptions(InvalidCredentialsException.class)
+                        .build());
+    }
+
+    /** Convenient constructor for focused unit tests using the production defaults. */
+    public OrganizationAuthClient(WebClient.Builder webClientBuilder, JwtTokenService jwt) {
+        this(webClientBuilder, jwt, new OrganizationAuthProperties(1500, 50, 10, 5, 10));
     }
 
     public Mono<VerifiedAccount> verify(
@@ -73,9 +99,17 @@ public class OrganizationAuthClient {
                 .switchIfEmpty(Mono.error(new UpstreamUnavailableException(
                         "Organization returned an empty account verification response")))
                 .map(this::unwrap)
+                .timeout(Duration.ofMillis(properties.timeoutMillis()))
+                .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
                 .onErrorMap(exception -> exception instanceof InvalidCredentialsException
                         || exception instanceof UpstreamUnavailableException
                         ? exception
+                        : exception instanceof TimeoutException
+                        ? new UpstreamTimeoutException(
+                                "Organization account verification timed out", exception)
+                        : exception instanceof CallNotPermittedException
+                        ? new UpstreamUnavailableException(
+                                "Organization account verification circuit is open", exception)
                         : new UpstreamUnavailableException(
                                 "Organization account verification is unavailable", exception));
     }
@@ -129,5 +163,11 @@ public class OrganizationAuthClient {
             UUID departmentId,
             UUID patientId,
             String role) {
+    }
+
+    public static class UpstreamTimeoutException extends UpstreamUnavailableException {
+        public UpstreamTimeoutException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

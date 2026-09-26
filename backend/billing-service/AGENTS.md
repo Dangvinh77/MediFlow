@@ -15,4 +15,6 @@ Root `AGENTS.md` rules continue to apply.
   [CARE-PROJECTIONS](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 - Billing is the sole money owner. Contract changes update outbox fixtures and every consumer
   fixture/test together or remain explicitly blocked; `payment.completed` is not a universal gate.
+- Before changing payment completion, clearance publishing or outbox fixtures, read the active
+  [Clinical/Lab financial-clearance handoff](HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
 - **Verify:** `mvn -q -pl backend/billing-service -am test`

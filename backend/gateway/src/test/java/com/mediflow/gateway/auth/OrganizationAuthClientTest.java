@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.net.ConnectException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -92,5 +93,33 @@ class OrganizationAuthClientTest {
         String normalized = OrganizationAuthClient.normalizeCorrelationId("not-a-uuid");
 
         assertThatCode(() -> UUID.fromString(normalized)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void verify_timesOutAsDedicatedUpstreamTimeout() {
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> Mono.never());
+        OrganizationAuthClient client = new OrganizationAuthClient(
+                builder,
+                JWT,
+                new OrganizationAuthProperties(10, 50, 10, 5, 10));
+
+        assertThatThrownBy(() -> client.verify("admin", "password", null).block())
+                .isInstanceOf(OrganizationAuthClient.UpstreamTimeoutException.class);
+    }
+
+    @Test
+    void repeatedOrganizationFailures_openCircuitAndReturn503Classification() {
+        WebClient.Builder builder = WebClient.builder()
+                .exchangeFunction(request -> Mono.error(new ConnectException("down")));
+        OrganizationAuthClient client = new OrganizationAuthClient(
+                builder,
+                JWT,
+                new OrganizationAuthProperties(100, 50, 2, 1, 10));
+
+        assertThatThrownBy(() -> client.verify("admin", "password", null).block())
+                .isInstanceOf(UpstreamUnavailableException.class);
+        assertThatThrownBy(() -> client.verify("admin", "password", null).block())
+                .isInstanceOf(UpstreamUnavailableException.class);
     }
 }

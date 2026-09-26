@@ -10,6 +10,7 @@ import com.mediflow.gateway.auth.AuthDtos.RefreshResponse;
 import com.mediflow.gateway.security.JwtTokenService;
 import com.mediflow.gateway.security.JwtTokenService.InvalidCredentialsException;
 import com.mediflow.gateway.security.JwtTokenService.UpstreamUnavailableException;
+import com.mediflow.gateway.auth.OrganizationAuthClient.UpstreamTimeoutException;
 import io.jsonwebtoken.Claims;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,6 +81,12 @@ public class AuthController {
                                 "AUTH_INVALID_CREDENTIALS",
                                 "Tên đăng nhập hoặc mật khẩu không đúng",
                                 correlationId)))
+                .onErrorResume(UpstreamTimeoutException.class, exception ->
+                        Mono.just(errorResponse(
+                                HttpStatus.GATEWAY_TIMEOUT,
+                                "AUTH_UPSTREAM_TIMEOUT",
+                                "Organization Service phản hồi quá thời gian",
+                                correlationId)))
                 .onErrorResume(UpstreamUnavailableException.class, exception ->
                         Mono.just(errorResponse(
                                 HttpStatus.SERVICE_UNAVAILABLE,
@@ -91,7 +97,13 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
-            @RequestBody RefreshRequest request) {
+            @RequestBody RefreshRequest request,
+            @org.springframework.web.bind.annotation.RequestHeader(
+                    value = JwtClaims.HEADER_CORRELATION_ID,
+                    required = false) String requestedCorrelationId) {
+
+        String correlationId = OrganizationAuthClient.normalizeCorrelationId(
+                requestedCorrelationId);
 
         try {
             Claims claims =
@@ -125,9 +137,11 @@ public class AuthController {
         } catch (Exception exception) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "error",
-                            "INVALID_REFRESH_TOKEN"));
+                    .body(ApiResponse.fail(
+                            ApiResponse.ApiError.of(
+                                    "AUTH_INVALID_REFRESH_TOKEN",
+                                    "Refresh token không hợp lệ hoặc đã hết hạn"),
+                            correlationId));
         }
     }
 

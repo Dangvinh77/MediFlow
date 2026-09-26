@@ -93,6 +93,11 @@ Both are synchronous reads, so both must be resilient (timeout + circuit breaker
 - `patient-service` — does this patient exist?
 - `organization-service` — does this doctor exist, and are they in this department?
 
+Clinical's Patient consumer uses the locked service-only `GET /api/v1/patients/{id}/exists`
+contract, validates the `ApiResponse<PatientLookupDTO>` envelope and canonical returned ID, and
+distinguishes confirmed absence from outage/malformed responses. The producer endpoint remains an
+active Patient-owner handoff until it is implemented and fixture-tested end to end.
+
 ## Care-finance integration gate
 
 - Read [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md) before
