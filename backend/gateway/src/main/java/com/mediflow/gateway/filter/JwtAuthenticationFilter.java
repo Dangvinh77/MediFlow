@@ -143,6 +143,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         requestBuilder.headers(headers -> {
             headers.remove("X-User-Id");
             headers.remove("X-User-Role");
+            // Reserved V2 aliases must be sanitized too, even while V1 emits X-User-*.
+            // A client-supplied alias must never reach a downstream trust boundary.
+            headers.remove("X-Account-Id");
+            headers.remove("X-Role");
             headers.remove("X-Staff-Id");
             headers.remove("X-Department-Id");
             headers.remove("X-Patient-Id");
