@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -70,7 +71,7 @@ class ClinicalCareFinancePersistenceTest {
                     status, completed_at
                 ) VALUES (?, ?, ?, ?, ?, 'COMPLETED', ?)
                 """, recordId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                LocalDate.now(), Instant.now()))
+                LocalDate.now(), Timestamp.from(Instant.now())))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

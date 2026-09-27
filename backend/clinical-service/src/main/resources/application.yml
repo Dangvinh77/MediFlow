@@ -28,6 +28,10 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
 
   cloud:
     openfeign:
@@ -66,6 +70,7 @@ mediflow:
       default-code: ${MEDIFLOW_EXAM_PRICE_CODE:OUTPATIENT_EXAM}
       by-department: {}
     outbox-poll-interval: ${MEDIFLOW_CLINICAL_OUTBOX_POLL_INTERVAL:1000}
+    outbox-confirm-timeout: ${MEDIFLOW_CLINICAL_OUTBOX_CONFIRM_TIMEOUT:5s}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
 
