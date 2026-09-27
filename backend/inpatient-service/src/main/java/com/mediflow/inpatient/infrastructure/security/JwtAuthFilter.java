@@ -14,7 +14,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,8 +22,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
-/** Verifies Bearer tokens locally before future controller role checks run. */
+/** Verifies Bearer tokens locally before controller role checks run. */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
@@ -81,11 +81,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     subject,
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+            authentication.setDetails(new InpatientAuthenticationDetails(subject,
+                    optionalUuid(claims, JwtClaims.STAFF_ID),
+                    optionalUuid(claims, JwtClaims.PATIENT_ID),
+                    optionalUuid(claims, JwtClaims.DEPARTMENT_ID)));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
         }
+    }
+
+    private static UUID optionalUuid(Claims claims, String claimName) {
+        Object value = claims.get(claimName);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            return UUID.fromString(text);
+        }
+        throw new IllegalArgumentException("JWT identity claim must be a UUID: " + claimName);
     }
 }
