@@ -125,6 +125,19 @@ class ClinicalCareFinanceControllerTest {
         verify(records).requestAdmission(any(), any(CreateAdmissionReferralRequest.class));
     }
 
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void startExam_nestedEmergencyOverrideMissingApprovedAt_returnsBadRequest() throws Exception {
+        mockMvc.perform(put(APPOINTMENTS + UUID.randomUUID() + "/start-exam")
+                        .with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"emergencyOverride\":{\"overrideId\":\""
+                                + UUID.randomUUID() + "\",\"approvedBy\":\"" + UUID.randomUUID()
+                                + "\",\"approverRole\":\"DOCTOR\",\"reason\":\"Critical condition\"}}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(examGate);
+    }
+
     private AppointmentDTO appointment(UUID id) {
         Instant now = Instant.now();
         return new AppointmentDTO(id, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
