@@ -63,7 +63,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
-            if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || !StringUtils.hasText(subject)
+                    || !StringUtils.hasText(role)
+                    || claims.getExpiration() == null) {
                 SecurityContextHolder.clearContext();
                 return;
             }
