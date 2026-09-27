@@ -63,7 +63,7 @@ public class InpatientEventConsumer {
     @Transactional
     public void receive(Message message) {
         JsonNode envelope = parse(message.getBody());
-        if (isLegacyFlatLabResult(envelope)) {
+        if (isLegacyFlatLabResult(envelope) || isLegacyFlatPrescriptionFilled(envelope)) {
             return;
         }
 
@@ -136,10 +136,7 @@ public class InpatientEventConsumer {
 
     private void onLabResultCreated(JsonNode payload, UUID eventId, int version,
                                     Instant occurredAt, String correlationId) {
-        JsonNode episodeTypeNode = payload.get("careEpisodeType");
-        if (episodeTypeNode == null) {
-            return;
-        }
+        JsonNode episodeTypeNode = required(payload, "careEpisodeType");
         if (!episodeTypeNode.isTextual() || episodeTypeNode.asText().isBlank()) {
             throw new AmqpException("lab.result.created careEpisodeType must be a supported string");
         }
@@ -188,7 +185,7 @@ public class InpatientEventConsumer {
     }
 
     private static boolean isLegacyFlatLabResult(JsonNode event) {
-        if (!event.isObject() || event.has("eventType") || event.has("version") || event.has("payload")) {
+        if (!isUnversionedFlatEvent(event)) {
             return false;
         }
         return isUuid(event, "eventId") && isInstant(event, "occurredAt")
@@ -196,6 +193,22 @@ public class InpatientEventConsumer {
                 && isUuid(event, "patientId") && isUuid(event, "recordId")
                 && isLocalDate(event, "performedDate")
                 && event.path("results").isArray() && !event.path("results").isEmpty();
+    }
+
+    private static boolean isLegacyFlatPrescriptionFilled(JsonNode event) {
+        JsonNode totalAmount = event.path("totalAmount");
+        JsonNode dispensedItems = event.path("dispensedItems");
+        return isUnversionedFlatEvent(event)
+                && isUuid(event, "eventId") && isInstant(event, "occurredAt")
+                && isNonBlankText(event, "correlationId") && isUuid(event, "prescriptionId")
+                && isUuid(event, "recordId") && isUuid(event, "patientId")
+                && isUuid(event, "departmentId") && totalAmount.isNumber()
+                && dispensedItems.isArray() && !dispensedItems.isEmpty();
+    }
+
+    private static boolean isUnversionedFlatEvent(JsonNode event) {
+        return event.isObject() && !event.has("eventType") && !event.has("version")
+                && !event.has("payload") && !event.has("producer");
     }
 
     private static boolean isUuid(JsonNode node, String field) {
