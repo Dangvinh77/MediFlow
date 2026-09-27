@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +48,26 @@ class JwtAuthFilterTest {
         assertThat(authentication.getAuthorities())
                 .extracting("authority")
                 .containsExactly("ROLE_LAB_TECH");
+    }
+
+    @Test
+    void authenticatedStaffId_comesFromExplicitClaimAndNeverSubject() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        String token = Jwts.builder()
+                .subject("account-id-is-not-staff-id")
+                .claim(JwtClaims.ROLE, "LAB_TECH")
+                .claim(JwtClaims.STAFF_ID, staffId.toString())
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(SIGNING_KEY)
+                .compact();
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication.getName()).isEqualTo("account-id-is-not-staff-id");
+        assertThat(authentication.getPrincipal()).isEqualTo(new LabAuthenticatedPrincipal(
+                "account-id-is-not-staff-id", staffId));
     }
 
     @Test

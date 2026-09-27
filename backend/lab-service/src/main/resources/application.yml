@@ -32,15 +32,18 @@ spring:
       simple:
         default-requeue-rejected: false
 
+mediflow:
+  jwt:
+    secret: ${MEDIFLOW_JWT_SECRET}
+  features:
+    care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  events:
+    outbox-poll-interval: ${MEDIFLOW_OUTBOX_POLL_INTERVAL:1000}
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-
-# Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
-mediflow:
-  jwt:
-    secret: ${MEDIFLOW_JWT_SECRET}
 
 management:
   info:

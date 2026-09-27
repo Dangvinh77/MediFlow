@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
+import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
@@ -18,9 +19,14 @@ public interface LabTestRepositoryPort {
 
     Optional<LabTest> findByIdForUpdate(UUID id);
 
+    boolean existsBySourceOrderId(UUID sourceOrderId);
+
     List<LabTest> findByPatient(UUID patientId);
 
     List<LabTest> findByRecord(UUID recordId);
 
     PageResult<LabTest> search(UUID departmentId, LabTestStatus status, PageQuery page);
+
+    PageResult<LabTest> search(UUID departmentId, LabTestStatus status,
+                               CareEpisodeType episodeType, UUID episodeId, PageQuery page);
 }

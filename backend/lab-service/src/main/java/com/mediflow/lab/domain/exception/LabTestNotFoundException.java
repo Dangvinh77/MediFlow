@@ -8,7 +8,7 @@ import com.mediflow.common.exception.ResourceNotFoundException;
 public class LabTestNotFoundException extends ResourceNotFoundException {
 
     public LabTestNotFoundException(String message) {
-        super("LAB_NOT_FOUND", message);
+        super("LAB_TEST_NOT_FOUND", message);
     }
 
     public LabTestNotFoundException(UUID testId) {
