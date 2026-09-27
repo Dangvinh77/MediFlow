@@ -1,8 +1,9 @@
 # Service: patient
 
 **Source of truth:** `docs/eproject_general_plan/patient-service.html` and the locked cross-service
-contracts under `docs/handoffs/care-finance/`. The current module is a skeleton; this document is the
-target contract, not a claim that the implementation already exists.
+contracts under `docs/handoffs/care-finance/`. The current module has the Phase 3 read/lookup slice;
+CRUD and event delivery remain Phase 4 work. This document is a target contract, not a claim that the
+full service or its Testcontainers integration is complete.
 **Module:** `backend/patient-service/` · **Base path:** `/api/v1/patients` · **DB table:** `PATIENT`
 
 ## Bounded context
@@ -327,7 +328,8 @@ Integration tests should use Testcontainers where database or messaging infrastr
 
 The service is complete when:
 
-- [ ] `PATIENT` is implemented.
+- [x] Patient read/lookup slice is implemented.
+- [ ] Patient CRUD and event delivery are implemented.
 - [ ] All database columns use English naming.
 - [ ] Java domain classes and fields use English names.
 - [ ] `Gender` uses exactly `M` and `F`.
