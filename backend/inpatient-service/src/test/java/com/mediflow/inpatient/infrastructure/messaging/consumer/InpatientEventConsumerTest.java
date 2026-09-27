@@ -122,9 +122,10 @@ class InpatientEventConsumerTest {
     }
 
     @Test
-    void legacyLabResultWithoutCareEpisodeTypeIsIgnored() {
-        assertThatCode(() -> consumer.receive(message(legacyLabResultEnvelope())))
-                .doesNotThrowAnyException();
+    void versionedLabResultWithoutCareEpisodeTypeIsRejected() {
+        assertThatThrownBy(() -> consumer.receive(message(legacyLabResultEnvelope())))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("careEpisodeType");
 
         verifyNoInteractions(externalOrders);
     }
@@ -133,6 +134,23 @@ class InpatientEventConsumerTest {
     void flatLegacyLabResultEventIsAcknowledgedWithoutV2EnvelopeFields() {
         assertThatCode(() -> consumer.receive(message(flatLegacyLabResultEvent())))
                 .doesNotThrowAnyException();
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void flatLegacyPrescriptionFilledEventIsAcknowledgedWithoutAdmissionInference() {
+        assertThatCode(() -> consumer.receive(message(flatLegacyPrescriptionFilledEvent())))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void versionedPrescriptionFilledWithoutAdmissionIdIsRejected() {
+        assertThatThrownBy(() -> consumer.receive(message(prescriptionFilledEnvelopeWithoutAdmissionId())))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("admissionId");
 
         verifyNoInteractions(externalOrders);
     }
@@ -243,6 +261,45 @@ class InpatientEventConsumerTest {
                   "conclusion": "Within expected range"
                 }
                 """.formatted(EVENT_ID, OCCURRED_AT, LAB_ID, PATIENT_ID, RECORD_ID, DEPARTMENT_ID);
+    }
+
+    private static String flatLegacyPrescriptionFilledEvent() {
+        return """
+                {
+                  "eventId": "%s",
+                  "occurredAt": "%s",
+                  "correlationId": "correlation-123",
+                  "prescriptionId": "%s",
+                  "recordId": "%s",
+                  "patientId": "%s",
+                  "departmentId": "%s",
+                  "totalAmount": 125000.00,
+                  "dispensedItems": [{
+                    "drugId": "%s",
+                    "drugName": "Amoxicillin",
+                    "quantity": 10
+                  }]
+                }
+                """.formatted(EVENT_ID, OCCURRED_AT, REQUEST_ID, RECORD_ID, PATIENT_ID,
+                DEPARTMENT_ID, LAB_ID);
+    }
+
+    private static String prescriptionFilledEnvelopeWithoutAdmissionId() {
+        return """
+                {
+                  "eventId": "%s",
+                  "eventType": "prescription.filled",
+                  "version": 1,
+                  "occurredAt": "%s",
+                  "correlationId": "correlation-123",
+                  "producer": "pharmacy-service",
+                  "payload": {
+                    "prescriptionId": "%s",
+                    "patientId": "%s",
+                    "filledAt": "%s"
+                  }
+                }
+                """.formatted(EVENT_ID, OCCURRED_AT, REQUEST_ID, PATIENT_ID, OCCURRED_AT);
     }
 
     private static String financialClearanceEnvelope(String purpose) {
