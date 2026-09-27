@@ -28,15 +28,31 @@ public class FinancialClearanceConsumer {
             throw new IllegalArgumentException("Invalid financial.clearance.granted v1 envelope");
         }
         FinancialClearancePayload payload = event.payload();
+        ClearancePurpose purpose = enumValue(ClearancePurpose.class, payload.purpose());
+        CareEpisodeType careEpisodeType = enumValue(CareEpisodeType.class, payload.careEpisodeType());
+        if (!hasValidSharedPayload(payload, purpose, careEpisodeType)) {
+            throw new IllegalArgumentException("Invalid financial.clearance.granted v1 payload");
+        }
+        if (purpose != ClearancePurpose.EXAM) {
+            return;
+        }
+
         useCase.onFinancialClearance(new FinancialClearanceCommand(
                     event.eventId(), event.eventType(), event.version(), event.occurredAt(),
                     event.correlationId(), event.producer(), payload.clearanceId(), payload.invoiceId(),
                     payload.accountId(), payload.patientId(),
-                    enumValue(CareEpisodeType.class, payload.careEpisodeType()),
-                    payload.careEpisodeId(), enumValue(ClearancePurpose.class, payload.purpose()),
+                    careEpisodeType, payload.careEpisodeId(), purpose,
                     payload.appointmentId(), payload.recordId(), payload.labTestIds(), payload.prescriptionId(),
                     payload.admissionId(), payload.surgeryCaseId(), payload.amount(), payload.currency(),
                     payload.paymentMethod(), payload.expiresAt(), payload.emergencyOverride()));
+    }
+
+    private static boolean hasValidSharedPayload(FinancialClearancePayload payload, ClearancePurpose purpose,
+                                                 CareEpisodeType careEpisodeType) {
+        return purpose != null && careEpisodeType != null && payload.clearanceId() != null
+                && payload.invoiceId() != null && payload.accountId() != null && payload.patientId() != null
+                && payload.careEpisodeId() != null && payload.amount() != null && payload.amount().signum() >= 0
+                && payload.currency() != null && payload.currency().matches("[A-Z]{3}");
     }
 
     private static <T extends Enum<T>> T enumValue(Class<T> type, String value) {
