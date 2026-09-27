@@ -20,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,7 +64,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
-            if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            Date expiration = claims.getExpiration();
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || expiration == null || !expiration.after(new Date())
+                    || !StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
                 SecurityContextHolder.clearContext();
                 return;
             }
