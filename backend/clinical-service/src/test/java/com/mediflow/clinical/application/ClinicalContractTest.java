@@ -32,7 +32,10 @@ class ClinicalContractTest {
         AppointmentDTO dto = mapper.toDto(domain);
         assertThat(dto).usingRecursiveComparison().isEqualTo(new AppointmentDTO(domain.getAppointmentId(),
                 domain.getPatientId(), domain.getDoctorId(), domain.getDepartmentId(), domain.getAppointmentDate(),
-                domain.getAppointmentTime(), domain.getStatus(), domain.getReason(), domain.getCreatedAt(), domain.getUpdatedAt()));
+                domain.getAppointmentTime(), domain.getStatus(), domain.getReason(), domain.getCreatedAt(), domain.getUpdatedAt(),
+                domain.getCareContractVersion(), domain.getExamClearanceId(), domain.getExamClearanceAt(),
+                domain.getEmergencyOverrideId(), domain.getExamPriceCode(), domain.getCheckedInAt(),
+                domain.getExaminationStartedAt(), domain.getCompletedAt()));
         assertThat(json.readTree(json.writeValueAsString(dto)).get("appointmentTime").asText()).isEqualTo("07:30");
     }
 
@@ -44,7 +47,8 @@ class ClinicalContractTest {
         assertThat(dto).usingRecursiveComparison().isEqualTo(new MedicalRecordDTO(record.getRecordId(), record.getPatientId(),
                 record.getDoctorId(), record.getDepartmentId(), record.getExaminationDate(), record.getSymptoms(),
                 record.getAppointmentId(), List.of(new DiagnosisDTO(diagnosis.getDiagnosisId(), "Flu", "Description", "J10.1")),
-                record.getCreatedAt(), record.getUpdatedAt()));
+                record.getCreatedAt(), record.getUpdatedAt(), record.getStatus(), record.getDisposition(),
+                record.getDispositionNote(), record.getCompletedAt()));
         assertThatThrownBy(() -> dto.diagnoses().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 

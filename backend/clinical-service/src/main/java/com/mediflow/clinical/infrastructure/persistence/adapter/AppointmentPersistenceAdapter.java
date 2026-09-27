@@ -71,14 +71,20 @@ public class AppointmentPersistenceAdapter implements AppointmentRepositoryPort 
     private Appointment toDomain(AppointmentJpaEntity e) {
         return Appointment.restore(e.getAppointmentId(), e.getPatientId(), e.getDoctorId(), e.getDepartmentId(),
                 e.getAppointmentDate(), e.getAppointmentTime(), e.getStatus(), e.getReason(),
-                e.getCreatedAt(), e.getUpdatedAt());
+                e.getCreatedAt(), e.getUpdatedAt(), e.getCareContractVersion(), e.getExamClearanceId(),
+                e.getExamClearanceAt(), e.getEmergencyOverrideId(), e.getExamPriceCode(), e.getCheckedInAt(),
+                e.getExaminationStartedAt(), e.getCompletedAt());
     }
     private AppointmentJpaEntity toEntity(Appointment a) {
         return AppointmentJpaEntity.builder().appointmentId(a.getAppointmentId()).patientId(a.getPatientId())
                 .doctorId(a.getDoctorId()).departmentId(a.getDepartmentId())
                 .appointmentDate(a.getAppointmentDate()).appointmentTime(a.getAppointmentTime())
                 .status(a.getStatus()).reason(a.getReason()).createdAt(a.getCreatedAt())
-                .updatedAt(a.getUpdatedAt()).build();
+                .updatedAt(a.getUpdatedAt()).careContractVersion(a.getCareContractVersion())
+                .examClearanceId(a.getExamClearanceId()).examClearanceAt(a.getExamClearanceAt())
+                .emergencyOverrideId(a.getEmergencyOverrideId()).examPriceCode(a.getExamPriceCode())
+                .checkedInAt(a.getCheckedInAt()).examinationStartedAt(a.getExaminationStartedAt())
+                .completedAt(a.getCompletedAt()).build();
     }
 
     private static boolean hasConstraint(Throwable error, String constraint) {

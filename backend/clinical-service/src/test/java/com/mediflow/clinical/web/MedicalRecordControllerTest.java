@@ -205,7 +205,9 @@ class MedicalRecordControllerTest {
                         "Niêm mạc họng đỏ",
                         "J00")),
                 now,
-                now);
+                now,
+                com.mediflow.clinical.domain.model.MedicalRecordStatus.OPEN,
+                null, null, null);
     }
 
     private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {

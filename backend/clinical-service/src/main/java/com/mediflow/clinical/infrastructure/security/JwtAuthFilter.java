@@ -20,7 +20,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /** Verifies Bearer tokens locally before controller role checks run. */
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -62,13 +64,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
-            if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            Date expiration = claims.getExpiration();
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || expiration == null || !expiration.after(new Date())
+                    || !StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
                 SecurityContextHolder.clearContext();
                 return;
             }
 
+            String staffIdClaim = claims.get(JwtClaims.STAFF_ID, String.class);
+            UUID staffId = staffIdClaim == null ? null : UUID.fromString(staffIdClaim);
             var authentication = new UsernamePasswordAuthenticationToken(
-                    subject,
+                    new ClinicalPrincipal(subject, role, staffId),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(

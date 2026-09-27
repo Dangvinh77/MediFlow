@@ -30,4 +30,18 @@ class InpatientConfigurationTest {
         assertThat(applicationProperties.getProperty("management.endpoints.web.exposure.include"))
                 .isEqualTo("health,info");
     }
+
+    @Test
+    void applicationConfiguration_disablesMessagingUntilSharedFixturesAreEnabled() throws Exception {
+        PropertySource<?> applicationProperties = new YamlPropertySourceLoader()
+                .load("inpatient-application", new ClassPathResource("application.yml"))
+                .stream()
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(applicationProperties.getProperty("mediflow.inpatient.messaging.producer.enabled"))
+                .isEqualTo(false);
+        assertThat(applicationProperties.getProperty("mediflow.inpatient.messaging.consumers.enabled"))
+                .isEqualTo(false);
+    }
 }

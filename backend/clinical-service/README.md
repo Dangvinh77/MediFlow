@@ -88,3 +88,14 @@ doctor.
 mvn -pl backend/clinical-service -am test    # unit/contract tests + PostgreSQL slices when Docker is available
 mvn -pl backend/clinical-service -am verify
 ```
+
+## Care & Finance V2 rollout
+
+The additive Clinical V2 schema and use cases support check-in, purpose-scoped EXAM clearance,
+examination start, audited emergency overrides, record completion and admission referrals. The
+HTTP endpoints, clearance consumer and transactional outbox dispatcher are registered only when
+`MEDIFLOW_CARE_FINANCE_V2_ENABLED=true`; the default is disabled. Department-specific stable exam
+price codes can be configured under `mediflow.clinical.exam-price.by-department`.
+
+Billing has not yet published the shared `financial.clearance.granted` producer fixture. Clinical
+keeps the consumer behind the gate until Billing's fixture and cross-service acceptance tests pass.

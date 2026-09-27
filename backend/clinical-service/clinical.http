@@ -175,3 +175,53 @@ Content-Type: application/json
   "diagnosisName": "Sai mã ICD",
   "icdCode": "99"
 }
+
+### Care & Finance V2 endpoints
+### These routes are registered only when MEDIFLOW_CARE_FINANCE_V2_ENABLED=true.
+
+### Check in and open EXAM payment gate (ADMIN/NURSE)
+PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000001/check-in
+Authorization: Bearer {{token}}
+
+### Start examination with exact clearance already delivered (ADMIN/DOCTOR)
+PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000001/start-exam
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Start examination with audited emergency override (ADMIN/DOCTOR)
+PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000001/start-exam
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "emergencyOverride": {
+    "overrideId": "00000000-0000-0000-0000-000000000002",
+    "approvedBy": "00000000-0000-0000-0000-000000000003",
+    "approverRole": "DOCTOR",
+    "reason": "Urgent treatment required",
+    "approvedAt": "2026-09-27T03:00:00Z"
+  }
+}
+
+### Complete record with a disposition (ADMIN/DOCTOR)
+PUT {{host}}/api/v1/records/00000000-0000-0000-0000-000000000004/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "disposition": "OUTPATIENT_FOLLOW_UP",
+  "dispositionNote": "Return in one week"
+}
+
+### Request admission referral for a completed ADMISSION record (ADMIN/DOCTOR)
+POST {{host}}/api/v1/records/00000000-0000-0000-0000-000000000004/admission-referrals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "diagnosisSummary": "Requires inpatient observation",
+  "priority": "URGENT",
+  "emergency": false
+}

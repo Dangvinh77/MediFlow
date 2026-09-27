@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,9 +51,57 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void authenticatedStaffId_comesFromExplicitClaimAndNeverSubject() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        String token = Jwts.builder()
+                .subject("account-id-is-not-staff-id")
+                .claim(JwtClaims.ROLE, "LAB_TECH")
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .claim(JwtClaims.STAFF_ID, staffId.toString())
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(SIGNING_KEY)
+                .compact();
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication.getName()).isEqualTo("account-id-is-not-staff-id");
+        assertThat(authentication.getPrincipal()).isEqualTo(new LabAuthenticatedPrincipal(
+                "account-id-is-not-staff-id", staffId, "LAB_TECH"));
+    }
+
+    @Test
     void expiredToken_leavesRequestUnauthenticated() throws Exception {
         String token = createToken("lab-tech-01", "LAB_TECH", SIGNING_KEY,
                 Instant.now().minusSeconds(60));
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void refreshToken_leavesRequestUnauthenticated() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        String token = createToken("lab-tech-01", "LAB_TECH", SIGNING_KEY,
+                JwtClaims.REFRESH_TOKEN_TYPE, Instant.now().plusSeconds(300), staffId);
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void missingExpiration_leavesRequestUnauthenticated() throws Exception {
+        String token = createToken("lab-tech-01", "LAB_TECH", SIGNING_KEY,
+                JwtClaims.ACCESS_TOKEN_TYPE, null, UUID.randomUUID());
 
         filter.doFilter(
                 requestWithToken(token),
@@ -89,13 +138,27 @@ class JwtAuthFilterTest {
             String role,
             SecretKey key,
             Instant expiresAt) {
+        return createToken(subject, role, key, JwtClaims.ACCESS_TOKEN_TYPE, expiresAt, null);
+    }
 
-        return Jwts.builder()
+    private String createToken(
+            String subject,
+            String role,
+            SecretKey key,
+            String tokenType,
+            Instant expiresAt,
+            UUID staffId) {
+        var builder = Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
-                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
-                .expiration(Date.from(expiresAt))
-                .signWith(key)
-                .compact();
+                .claim(JwtClaims.TYPE, tokenType)
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)));
+        if (staffId != null) {
+            builder.claim(JwtClaims.STAFF_ID, staffId.toString());
+        }
+        if (expiresAt != null) {
+            builder.expiration(Date.from(expiresAt));
+        }
+        return builder.signWith(key).compact();
     }
 }

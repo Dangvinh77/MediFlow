@@ -1,0 +1,28 @@
+{
+  "eventId": "7cfe50b1-0a5d-48f4-b2fc-f0889e8c7f01",
+  "eventType": "financial.clearance.granted",
+  "version": 1,
+  "occurredAt": "2026-09-24T03:00:00Z",
+  "correlationId": "2dbbd0cf-82a9-4a79-ae5e-f82cb640e0dd",
+  "producer": "billing-service",
+  "payload": {
+    "clearanceId": "bb9cbdba-7b90-4c91-a4bd-fca4d8c0b08a",
+    "invoiceId": "b47c7e20-59aa-4b7f-a8bb-51bbab2fd3dc",
+    "accountId": "9f50f6f8-110e-4be3-9ef4-815090ec05d8",
+    "patientId": "e5d04589-8120-40db-999a-c8a1da1d4900",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "bd0dfb15-31f7-4cea-9b57-4f5e5c1a2aa1",
+    "purpose": "EXAM",
+    "appointmentId": "bd0dfb15-31f7-4cea-9b57-4f5e5c1a2aa1",
+    "recordId": null,
+    "labTestIds": [],
+    "prescriptionId": null,
+    "admissionId": null,
+    "surgeryCaseId": null,
+    "amount": 150000.00,
+    "currency": "VND",
+    "paymentMethod": "CASH",
+    "expiresAt": null,
+    "emergencyOverride": false
+  }
+}

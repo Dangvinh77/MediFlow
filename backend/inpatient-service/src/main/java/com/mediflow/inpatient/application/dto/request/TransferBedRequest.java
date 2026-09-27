@@ -1,0 +1,13 @@
+package com.mediflow.inpatient.application.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.UUID;
+
+public record TransferBedRequest(
+        @NotNull UUID maGiuongDich,
+        @NotNull UUID nguoiChuyenGiuong,
+        @NotBlank @Size(max = 1000) String lyDo) {
+}

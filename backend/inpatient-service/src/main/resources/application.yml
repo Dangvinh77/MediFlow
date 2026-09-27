@@ -24,6 +24,10 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
 
 eureka:
   client:
@@ -31,6 +35,14 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 mediflow:
+  inpatient:
+    persistence:
+      enabled: true
+    messaging:
+      producer:
+        enabled: false
+      consumers:
+        enabled: false
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
 
@@ -46,7 +58,7 @@ management:
 info:
   app:
     name: MediFlow Inpatient Service
-    description: Preliminary foundation for the planned inpatient bounded context.
+    description: Inpatient admissions, beds and discharge workflow.
     version: v1
 
 springdoc:

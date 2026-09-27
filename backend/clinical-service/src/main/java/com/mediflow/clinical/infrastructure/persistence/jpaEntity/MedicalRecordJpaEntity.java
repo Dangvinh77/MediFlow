@@ -6,9 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.mediflow.clinical.domain.model.MedicalRecordStatus;
+import com.mediflow.clinical.domain.model.RecordDisposition;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -38,4 +42,10 @@ public class MedicalRecordJpaEntity {
     private List<DiagnosisJpaEntity> diagnoses = new ArrayList<>();
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at") private Instant updatedAt;
+    @Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20) private MedicalRecordStatus status;
+    @Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "disposition", length = 32) private RecordDisposition disposition;
+    @Column(name = "disposition_note", columnDefinition = "text") private String dispositionNote;
+    @Column(name = "completed_at") private Instant completedAt;
 }

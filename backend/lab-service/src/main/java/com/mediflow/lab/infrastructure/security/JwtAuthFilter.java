@@ -21,6 +21,7 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /** Verifies Bearer tokens locally before controller role checks run. */
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -62,13 +63,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
-            if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
+            String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || !StringUtils.hasText(subject)
+                    || !StringUtils.hasText(role)
+                    || claims.getExpiration() == null) {
                 SecurityContextHolder.clearContext();
                 return;
             }
 
+            UUID staffId = parseOptionalUuidClaim(claims.get(JwtClaims.STAFF_ID));
             var authentication = new UsernamePasswordAuthenticationToken(
-                    subject,
+                    new LabAuthenticatedPrincipal(subject, staffId, role),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
@@ -76,6 +82,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
+        }
+    }
+
+    private static UUID parseOptionalUuidClaim(Object claim) {
+        if (claim == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(claim.toString());
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 }

@@ -10,20 +10,18 @@
 ###     VS Code / Cursor: chạy auth.http, copy accessToken từ response, rồi bỏ comment
 ###       dòng "@token = ..." bên dưới và dán token vào.
 ###
-### Endpoint theo spec 04-lab.md (base /api/v1/lab):
-###  - GET /{id}, GET /patient/{patientId}, GET ?departmentId&status&page&size
-###  - POST, PUT /{id}/results, PUT /{id}/status
-### Mã lỗi chuẩn: LAB_NOT_FOUND (404),
-###               LAB_ALREADY_FINISHED / LAB_RESULT_EMPTY / LAB_DATE_BEFORE_REQUEST
-###               / LAB_INVALID_TRANSITION / LAB_TYPE_REQUIRED (422)
+### Endpoint theo spec 04-lab.md và care-finance-v2/04-lab.md (base /api/v1/lab).
+### Care & Finance V2 mặc định tắt; bật MEDIFLOW_CARE_FINANCE_V2=true để dùng request có episode.
+### Lỗi V2 gồm LAB_CLEARANCE_REQUIRED, LAB_CLEARANCE_TARGET_MISMATCH, LAB_CLEARANCE_EXPIRED,
+### LAB_OVERRIDE_INVALID, LAB_EPISODE_REQUIRED, LAB_PRICE_CODE_REQUIRED và LAB_RESULT_FINALIZED.
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
 # ============ XÉT NGHIỆM /api/v1/lab ============
 
-### Tìm xét nghiệm theo khoa + trạng thái (status: PENDING | IN_PROGRESS | COMPLETED | CANCELLED)
-GET {{host}}/api/v1/lab?departmentId=00000000-0000-0000-0000-000000000000&status=PENDING&page=0&size=20
+### Tìm xét nghiệm theo khoa, trạng thái hoặc care episode
+GET {{host}}/api/v1/lab?departmentId=00000000-0000-0000-0000-000000000000&status=AWAITING_PAYMENT&episodeType=OUTPATIENT_VISIT&episodeId=00000000-0000-0000-0000-000000000000&page=0&size=20
 Authorization: Bearer {{token}}
 
 ### Xét nghiệm của một bệnh nhân
@@ -45,6 +43,45 @@ Content-Type: application/json
   "requestingDepartmentId": "00000000-0000-0000-0000-000000000000",
   "labType": "Công thức máu",
   "requestedDate": "2026-08-14"
+}
+
+### Tạo chỉ định V2 (yêu cầu MEDIFLOW_CARE_FINANCE_V2=true; Billing nhận charge qua outbox)
+POST {{host}}/api/v1/lab
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recordId": "00000000-0000-0000-0000-000000000000",
+  "patientId": "00000000-0000-0000-0000-000000000000",
+  "requestingDepartmentId": "00000000-0000-0000-0000-000000000000",
+  "sourceOrderId": "00000000-0000-0000-0000-000000000001",
+  "careEpisodeType": "OUTPATIENT_VISIT",
+  "careEpisodeId": "00000000-0000-0000-0000-000000000002",
+  "labType": "Công thức máu",
+  "priceCode": "LAB-CBC",
+  "requestedDate": "2026-09-20"
+}
+
+### Bắt đầu sau clearance chính xác đã tới Lab (200 — role ADMIN/LAB_TECH)
+PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Bắt đầu cấp cứu (ghi audit, không đặt is_paid=true)
+PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "emergencyOverride": {
+    "overrideId": "00000000-0000-0000-0000-000000000010",
+    "approvedBy": "00000000-0000-0000-0000-000000000011",
+    "approverRole": "DOCTOR",
+    "reason": "Cần xét nghiệm khẩn cấp để xử trí",
+    "approvedAt": "2026-09-20T10:00:00Z"
+  }
 }
 
 ### Ghi kết quả (200 — role ADMIN/LAB_TECH; tự đặt COMPLETED)
@@ -105,4 +142,14 @@ Content-Type: application/json
 
 {
   "status": "IN_PROGRESS"
+}
+
+### Hủy xét nghiệm (200 — role ADMIN/DOCTOR/LAB_TECH)
+PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Bác sĩ hủy chỉ định",
+  "cancelledBy": "00000000-0000-0000-0000-000000000012"
 }
