@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.io.InputStream;
 import java.util.List;
@@ -45,13 +46,23 @@ class FinancialClearanceConsumerTest {
     }
 
     @Test
-    void consume_examClearance_rejectsWithoutForwarding() {
-        FinancialClearanceEnvelope event = validEvent(ClearancePurpose.EXAM, List.of(UUID.randomUUID()));
+    void consume_unrelatedPurposes_areValidatedNoOps() {
+        for (ClearancePurpose purpose : ClearancePurpose.values()) {
+            if (purpose != ClearancePurpose.LAB_TEST) {
+                consumer.consume(validEvent(purpose, List.of()));
+            }
+        }
 
-        assertThatThrownBy(() -> consumer.consume(event))
+        verifyNoInteractions(useCase);
+    }
+
+    @Test
+    void consume_unrelatedPurposeWithMissingCommonField_rejects() {
+        assertThatThrownBy(() -> consumer.consume(validEvent(ClearancePurpose.EXAM, List.of(), null)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("purpose");
-        verify(useCase, org.mockito.Mockito.never()).onFinancialClearance(any());
+                .hasMessageContaining("payload.amount");
+
+        verifyNoInteractions(useCase);
     }
 
     @Test
@@ -80,11 +91,23 @@ class FinancialClearanceConsumerTest {
     }
 
     private static FinancialClearanceEnvelope validEvent(ClearancePurpose purpose, List<UUID> labTestIds) {
+        return validEvent(purpose, labTestIds, new java.math.BigDecimal("250000.00"));
+    }
+
+    private static FinancialClearanceEnvelope validEvent(ClearancePurpose purpose, List<UUID> labTestIds,
+                                                          java.math.BigDecimal amount) {
+        com.mediflow.lab.domain.model.CareEpisodeType episodeType = purpose == ClearancePurpose.ADMISSION_DEPOSIT
+                ? com.mediflow.lab.domain.model.CareEpisodeType.ADMISSION
+                : com.mediflow.lab.domain.model.CareEpisodeType.OUTPATIENT_VISIT;
+        UUID admissionId = purpose == ClearancePurpose.ADMISSION_DEPOSIT ? UUID.randomUUID() : null;
         return new FinancialClearanceEnvelope(UUID.randomUUID(), "financial.clearance.granted", 1,
                 java.time.Instant.parse("2026-09-24T03:00:00Z"), "correlation-01", "billing-service",
                 new FinancialClearancePayload(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                        UUID.randomUUID(), com.mediflow.lab.domain.model.CareEpisodeType.OUTPATIENT_VISIT,
-                        UUID.randomUUID(), purpose, null, UUID.randomUUID(), labTestIds, null, null, null,
-                        new java.math.BigDecimal("250000.00"), "VND", "CASH", null, false));
+                        UUID.randomUUID(), episodeType, admissionId == null ? UUID.randomUUID() : admissionId,
+                        purpose, null, UUID.randomUUID(), labTestIds,
+                        purpose == ClearancePurpose.PRESCRIPTION ? UUID.randomUUID() : null,
+                        admissionId,
+                        purpose == ClearancePurpose.SURGERY ? UUID.randomUUID() : null,
+                        amount, "VND", "CASH", null, false));
     }
 }
