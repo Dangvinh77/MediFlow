@@ -160,15 +160,21 @@ class LabPersistenceAdapterTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional(propagation =
+            org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     void v1Constraints_rejectMissingEpisodeAndUnclearedExecution() {
         LabTest test = tests.save(v2Test(UUID.randomUUID()));
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE lab_test SET care_episode_id = NULL WHERE test_id = ?", test.getTestId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "UPDATE lab_test SET status = 'IN_PROGRESS' WHERE test_id = ?", test.getTestId()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        try {
+            assertThatThrownBy(() -> jdbcTemplate.update(
+                    "UPDATE lab_test SET care_episode_id = NULL WHERE test_id = ?", test.getTestId()))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> jdbcTemplate.update(
+                    "UPDATE lab_test SET status = 'IN_PROGRESS' WHERE test_id = ?", test.getTestId()))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbcTemplate.update("DELETE FROM lab_test WHERE test_id = ?", test.getTestId());
+        }
     }
 
     @Test
@@ -186,6 +192,13 @@ class LabPersistenceAdapterTest {
         assertThat(clearances.claimAndSave(eventId, targets)).isFalse();
         assertThat(clearanceRows.count()).isEqualTo(2);
         assertThat(processedEvents.tryClaim(eventId, "financial.clearance.granted")).isFalse();
+        assertThat(clearances.findLatestByTestId(first.getTestId()))
+                .get().extracting(LabFinancialClearance::currency).isEqualTo("VND");
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT data_type || ':' || character_maximum_length
+                FROM information_schema.columns
+                WHERE table_name = 'lab_financial_clearance' AND column_name = 'currency'
+                """, String.class)).isEqualTo("character:3");
     }
 
     @Test
@@ -193,23 +206,27 @@ class LabPersistenceAdapterTest {
             org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     void clearanceFailedTarget_rollsBackInboxClaimAndAllProjectionRows() {
         LabTest test = tests.save(v2Test(UUID.randomUUID()));
-        UUID eventId = UUID.randomUUID();
-        UUID clearanceId = UUID.randomUUID();
-        LabFinancialClearance valid = clearanceFor(test, eventId, clearanceId);
-        LabFinancialClearance invalid = LabFinancialClearance.grant(UUID.randomUUID(), clearanceId, eventId,
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), test.getPatientId(),
-                test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
-                new BigDecimal("250000.00"), "VND", null, false, Instant.now());
-        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-        transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        try {
+            UUID eventId = UUID.randomUUID();
+            UUID clearanceId = UUID.randomUUID();
+            LabFinancialClearance valid = clearanceFor(test, eventId, clearanceId);
+            LabFinancialClearance invalid = LabFinancialClearance.grant(UUID.randomUUID(), clearanceId, eventId,
+                    UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), test.getPatientId(),
+                    test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
+                    new BigDecimal("250000.00"), "VND", null, false, Instant.now());
+            TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+            transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        assertThatThrownBy(() -> transaction.execute(status -> {
-            clearances.claimAndSave(eventId, List.of(valid, invalid));
-            return null;
-        })).isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> transaction.execute(status -> {
+                clearances.claimAndSave(eventId, List.of(valid, invalid));
+                return null;
+            })).isInstanceOf(DataIntegrityViolationException.class);
 
-        assertThat(processedEventRows.findById(eventId)).isEmpty();
-        assertThat(clearanceRows.findAll()).isEmpty();
+            assertThat(processedEventRows.findById(eventId)).isEmpty();
+            assertThat(clearanceRows.findAll()).isEmpty();
+        } finally {
+            jdbcTemplate.update("DELETE FROM lab_test WHERE test_id = ?", test.getTestId());
+        }
     }
 
     @Test
@@ -243,32 +260,38 @@ class LabPersistenceAdapterTest {
             org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     void addResults_concurrentSingleCompletionCreatesOneResultVersion() throws Exception {
         LabTest test = v2Test(UUID.randomUUID());
-        LabEmergencyOverride override = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
-                test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), UUID.randomUUID(),
-                "DOCTOR", "Urgent diagnostic care", Instant.now());
-        test.start(null, override, Instant.now());
-        tests.save(test);
-        overrides.save(override);
-
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch start = new CountDownLatch(1);
-        ExecutorService workers = Executors.newFixedThreadPool(2);
         try {
-            Future<Boolean> first = workers.submit(() -> completeOnce(test.getTestId(), ready, start));
-            Future<Boolean> second = workers.submit(() -> completeOnce(test.getTestId(), ready, start));
-            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
-            start.countDown();
+            LabEmergencyOverride override = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
+                    test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), UUID.randomUUID(),
+                    "DOCTOR", "Urgent diagnostic care", Instant.now());
+            test.start(null, override, Instant.now());
+            tests.save(test);
+            overrides.save(override);
 
-            assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
-                    .containsExactlyInAnyOrder(true, false);
+            CountDownLatch ready = new CountDownLatch(2);
+            CountDownLatch start = new CountDownLatch(1);
+            ExecutorService workers = Executors.newFixedThreadPool(2);
+            try {
+                Future<Boolean> first = workers.submit(() -> completeOnce(test.getTestId(), ready, start));
+                Future<Boolean> second = workers.submit(() -> completeOnce(test.getTestId(), ready, start));
+                assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+                start.countDown();
+
+                assertThat(List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
+                        .containsExactlyInAnyOrder(true, false);
+            } finally {
+                workers.shutdownNow();
+            }
+
+            LabTest completed = tests.findById(test.getTestId()).orElseThrow();
+            assertThat(completed.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
+            assertThat(completed.getResultVersion()).isEqualTo(1);
+            assertThat(completed.getResults()).hasSize(1);
         } finally {
-            workers.shutdownNow();
+            jdbcTemplate.update("DELETE FROM lab_emergency_override WHERE test_id = ?", test.getTestId());
+            jdbcTemplate.update("DELETE FROM lab_result WHERE test_id = ?", test.getTestId());
+            jdbcTemplate.update("DELETE FROM lab_test WHERE test_id = ?", test.getTestId());
         }
-
-        LabTest completed = tests.findById(test.getTestId()).orElseThrow();
-        assertThat(completed.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
-        assertThat(completed.getResultVersion()).isEqualTo(1);
-        assertThat(completed.getResults()).hasSize(1);
     }
 
     private boolean completeOnce(UUID testId, CountDownLatch ready, CountDownLatch start)

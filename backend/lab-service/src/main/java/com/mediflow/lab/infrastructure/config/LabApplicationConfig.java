@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
-import com.mediflow.lab.application.port.out.AuthenticatedStaffIdPort;
+import com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
@@ -27,9 +27,9 @@ public class LabApplicationConfig {
             LabOutboxPort outbox,
             LabClearanceRepositoryPort clearances,
             LabEmergencyOverrideRepositoryPort overrides,
-            AuthenticatedStaffIdPort staffIds,
+            AuthenticatedStaffContextPort authenticatedStaff,
             @Value("${mediflow.features.care-finance-v2:false}") boolean careFinanceV2Enabled) {
         return new LabApplicationService(tests, publisher, mapper, correlationIds, outbox,
-                clearances, overrides, staffIds, careFinanceV2Enabled);
+                clearances, overrides, authenticatedStaff, careFinanceV2Enabled);
     }
 }

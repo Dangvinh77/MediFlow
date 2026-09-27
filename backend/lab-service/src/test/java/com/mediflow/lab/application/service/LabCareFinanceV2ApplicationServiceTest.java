@@ -29,7 +29,8 @@ import com.mediflow.lab.application.dto.request.StartLabTestRequest;
 import com.mediflow.lab.application.event.DomainEventEnvelope;
 import com.mediflow.lab.application.event.LabRequestV2Payload;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
-import com.mediflow.lab.application.port.out.AuthenticatedStaffIdPort;
+import com.mediflow.lab.application.port.out.AuthenticatedStaffContext;
+import com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
@@ -40,6 +41,7 @@ import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.lab.domain.model.ClearancePurpose;
 import com.mediflow.lab.domain.model.LabFinancialClearance;
+import com.mediflow.lab.domain.model.LabEmergencyOverride;
 import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
@@ -55,9 +57,9 @@ class LabCareFinanceV2ApplicationServiceTest {
     private final LabOutboxPort outbox = mock(LabOutboxPort.class);
     private final LabClearanceRepositoryPort clearances = mock(LabClearanceRepositoryPort.class);
     private final LabEmergencyOverrideRepositoryPort overrides = mock(LabEmergencyOverrideRepositoryPort.class);
-    private final AuthenticatedStaffIdPort staffIds = mock(AuthenticatedStaffIdPort.class);
+    private final AuthenticatedStaffContextPort authenticatedStaff = mock(AuthenticatedStaffContextPort.class);
     private final LabApplicationService service = new LabApplicationService(tests, compatibilityEvents,
-            mapper, correlations, outbox, clearances, overrides, staffIds, true);
+            mapper, correlations, outbox, clearances, overrides, authenticatedStaff, true);
 
     @Test
     void create_v2AppendsRequestTimeChargeFactToOutbox() {
@@ -174,15 +176,60 @@ class LabCareFinanceV2ApplicationServiceTest {
         when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
         when(clearances.findValidByTestId(eq(test.getTestId()), any(Instant.class))).thenReturn(Optional.empty());
         when(clearances.findLatestByTestId(test.getTestId())).thenReturn(Optional.empty());
-        EmergencyOverrideRequest approval = new EmergencyOverrideRequest(UUID.randomUUID(), actor, "DOCTOR",
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(actor, "ADMIN")));
+        EmergencyOverrideRequest approval = new EmergencyOverrideRequest(UUID.randomUUID(), actor, "ADMIN",
                 "Urgent diagnostic care", NOW.minusSeconds(1));
 
         service.start(test.getTestId(), new StartLabTestRequest(approval));
 
         assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
         assertThat(test.isPaid()).isFalse();
-        verify(overrides).save(any());
+        ArgumentCaptor<LabEmergencyOverride> audit = ArgumentCaptor.forClass(LabEmergencyOverride.class);
+        verify(overrides).save(audit.capture());
+        assertThat(audit.getValue().approvedBy()).isEqualTo(actor);
+        assertThat(audit.getValue().approverRole()).isEqualTo("ADMIN");
         verify(tests).save(test);
+    }
+
+    @Test
+    void start_emergencyOverrideRejectsSpoofedApproverIdentity() {
+        LabTest test = v2Test();
+        UUID authenticatedAdmin = UUID.randomUUID();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(authenticatedAdmin, "ADMIN")));
+        EmergencyOverrideRequest spoofedApproval = new EmergencyOverrideRequest(
+                UUID.randomUUID(), UUID.randomUUID(), "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+
+        assertThatThrownBy(() -> service.start(test.getTestId(), new StartLabTestRequest(spoofedApproval)))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_OVERRIDE_INVALID");
+
+        verify(overrides, never()).save(any());
+        verify(tests, never()).save(any());
+    }
+
+    @Test
+    void start_emergencyOverrideRejectsLabTechClaimingAdminRole() {
+        LabTest test = v2Test();
+        UUID authenticatedLabTech = UUID.randomUUID();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(authenticatedLabTech, "LAB_TECH")));
+        EmergencyOverrideRequest spoofedApproval = new EmergencyOverrideRequest(
+                UUID.randomUUID(), authenticatedLabTech, "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+
+        assertThatThrownBy(() -> service.start(test.getTestId(), new StartLabTestRequest(spoofedApproval)))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_OVERRIDE_INVALID");
+
+        verify(overrides, never()).save(any());
+        verify(tests, never()).save(any());
     }
 
     private static CreateLabRequest v2Request(UUID sourceOrderId, UUID episodeId) {

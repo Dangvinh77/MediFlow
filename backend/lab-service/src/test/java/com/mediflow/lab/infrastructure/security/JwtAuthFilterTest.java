@@ -67,7 +67,7 @@ class JwtAuthFilterTest {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         assertThat(authentication.getName()).isEqualTo("account-id-is-not-staff-id");
         assertThat(authentication.getPrincipal()).isEqualTo(new LabAuthenticatedPrincipal(
-                "account-id-is-not-staff-id", staffId));
+                "account-id-is-not-staff-id", staffId, "LAB_TECH"));
     }
 
     @Test
