@@ -21,6 +21,7 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /** Verifies Bearer tokens locally before controller role checks run. */
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -67,8 +68,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
+            String staffIdClaim = claims.get(JwtClaims.STAFF_ID, String.class);
+            UUID staffId = staffIdClaim == null ? null : UUID.fromString(staffIdClaim);
             var authentication = new UsernamePasswordAuthenticationToken(
-                    subject,
+                    new ClinicalPrincipal(subject, role, staffId),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(

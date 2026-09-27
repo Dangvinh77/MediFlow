@@ -201,7 +201,9 @@ class AppointmentControllerTest {
                 AppointmentStatus.PENDING,
                 "Khám tổng quát",
                 now,
-                now);
+                now,
+                (short) 0,
+                null, null, null, null, null, null, null);
     }
 
     private void assertCorrelationIdMatchesHeader(MvcResult result) throws Exception {

@@ -58,6 +58,14 @@ resilience4j:
 
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
+  features:
+    care-finance-v2:
+      enabled: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:false}
+  clinical:
+    exam-price:
+      default-code: ${MEDIFLOW_EXAM_PRICE_CODE:OUTPATIENT_EXAM}
+      by-department: {}
+    outbox-poll-interval: ${MEDIFLOW_CLINICAL_OUTBOX_POLL_INTERVAL:1000}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
 

@@ -33,4 +33,12 @@ public class AppointmentJpaEntity {
     @Column(name = "reason", columnDefinition = "text") private String reason;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at") private Instant updatedAt;
+    @Column(name = "care_contract_version", nullable = false) private short careContractVersion;
+    @Column(name = "exam_clearance_id") private UUID examClearanceId;
+    @Column(name = "exam_clearance_at") private Instant examClearanceAt;
+    @Column(name = "emergency_override_id") private UUID emergencyOverrideId;
+    @Column(name = "exam_price_code", length = 64) private String examPriceCode;
+    @Column(name = "checked_in_at") private Instant checkedInAt;
+    @Column(name = "examination_started_at") private Instant examinationStartedAt;
+    @Column(name = "completed_at") private Instant completedAt;
 }

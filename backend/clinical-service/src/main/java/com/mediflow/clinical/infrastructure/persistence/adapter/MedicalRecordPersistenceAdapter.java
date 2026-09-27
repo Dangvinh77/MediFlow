@@ -51,14 +51,17 @@ public class MedicalRecordPersistenceAdapter implements MedicalRecordRepositoryP
                 .toList();
         UUID appointmentId = e.getAppointment() == null ? null : e.getAppointment().getAppointmentId();
         return MedicalRecord.restore(e.getRecordId(), e.getPatientId(), e.getDoctorId(), e.getDepartmentId(),
-                e.getExaminationDate(), e.getSymptoms(), appointmentId, diagnoses, e.getCreatedAt(), e.getUpdatedAt());
+                e.getExaminationDate(), e.getSymptoms(), appointmentId, diagnoses, e.getCreatedAt(), e.getUpdatedAt(),
+                e.getStatus(), e.getDisposition(), e.getDispositionNote(), e.getCompletedAt());
     }
     private MedicalRecordJpaEntity toEntity(MedicalRecord r) {
         MedicalRecordJpaEntity entity = MedicalRecordJpaEntity.builder().recordId(r.getRecordId())
                 .patientId(r.getPatientId()).doctorId(r.getDoctorId()).departmentId(r.getDepartmentId())
                 .examinationDate(r.getExaminationDate()).symptoms(r.getSymptoms())
                 .appointment(r.getAppointmentId() == null ? null : appointments.getReferenceById(r.getAppointmentId()))
-                .createdAt(r.getCreatedAt()).updatedAt(r.getUpdatedAt()).build();
+                .createdAt(r.getCreatedAt()).updatedAt(r.getUpdatedAt()).status(r.getStatus())
+                .disposition(r.getDisposition()).dispositionNote(r.getDispositionNote())
+                .completedAt(r.getCompletedAt()).build();
         entity.setDiagnoses(new ArrayList<>(r.getDiagnoses().stream().map(d -> DiagnosisJpaEntity.builder()
                 .diagnosisId(d.getDiagnosisId()).record(entity).diagnosisName(d.getDiagnosisName())
                 .description(d.getDescription()).icdCode(d.getIcdCode()).build()).toList()));
