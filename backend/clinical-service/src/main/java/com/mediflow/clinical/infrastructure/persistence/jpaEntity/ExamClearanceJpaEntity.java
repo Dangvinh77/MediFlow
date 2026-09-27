@@ -16,6 +16,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "exam_clearance")
@@ -47,6 +49,7 @@ public class ExamClearanceJpaEntity {
     private UUID careEpisodeId;
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
     @Column(name = "expires_at")
