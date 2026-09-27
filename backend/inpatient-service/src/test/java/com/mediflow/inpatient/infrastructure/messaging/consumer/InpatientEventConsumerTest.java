@@ -73,6 +73,30 @@ class InpatientEventConsumerTest {
     }
 
     @Test
+    void missingProducerIsRejectedBeforeApplyingEvent() {
+        String event = admissionRequestedEnvelope("true")
+                .replace("\"producer\": \"clinical-service\",\n", "");
+
+        assertThatThrownBy(() -> consumer.receive(message(event)))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("producer");
+
+        verifyNoInteractions(referrals, clearances, settlements, topups, externalOrders);
+    }
+
+    @Test
+    void wrongProducerIsRejectedBeforeApplyingEvent() {
+        String event = admissionRequestedEnvelope("true")
+                .replace("\"producer\": \"clinical-service\"", "\"producer\": \"billing-service\"");
+
+        assertThatThrownBy(() -> consumer.receive(message(event)))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("producer");
+
+        verifyNoInteractions(referrals, clearances, settlements, topups, externalOrders);
+    }
+
+    @Test
     void inpatientLabResultUsesCanonicalLabAndCareEpisodeIdentifiers() {
         consumer.receive(message(inpatientLabResultEnvelope()));
 
@@ -106,6 +130,14 @@ class InpatientEventConsumerTest {
     }
 
     @Test
+    void flatLegacyLabResultEventIsAcknowledgedWithoutV2EnvelopeFields() {
+        assertThatCode(() -> consumer.receive(message(flatLegacyLabResultEvent())))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
     void admissionLabResultMissingRequiredLabIdIsRejected() {
         String malformed = inpatientLabResultEnvelope()
                 .replace("\"labId\": \"" + LAB_ID + "\",", "");
@@ -124,6 +156,31 @@ class InpatientEventConsumerTest {
                 .hasMessageContaining("unsupported careEpisodeType");
 
         verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void examClearanceWithoutAdmissionIdIsIgnoredBeforeAdmissionTargetParsing() {
+        assertThatCode(() -> consumer.receive(message(financialClearanceEnvelope("EXAM"))))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(clearances);
+    }
+
+    @Test
+    void labTestClearanceWithoutAdmissionIdIsIgnoredBeforeAdmissionTargetParsing() {
+        assertThatCode(() -> consumer.receive(message(financialClearanceEnvelope("LAB_TEST"))))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(clearances);
+    }
+
+    @Test
+    void malformedAdmissionDepositClearanceStillRequiresAdmissionId() {
+        assertThatThrownBy(() -> consumer.receive(message(financialClearanceEnvelope("ADMISSION_DEPOSIT"))))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("admissionId");
+
+        verifyNoInteractions(clearances);
     }
 
     private static Message message(String json) {
@@ -162,6 +219,61 @@ class InpatientEventConsumerTest {
     private static String legacyLabResultEnvelope() {
         return inpatientLabResultEnvelope()
                 .replace("\"careEpisodeType\": \"ADMISSION\",", "");
+    }
+
+    private static String flatLegacyLabResultEvent() {
+        return """
+                {
+                  "eventId": "%s",
+                  "occurredAt": "%s",
+                  "correlationId": "correlation-123",
+                  "labId": "%s",
+                  "patientId": "%s",
+                  "recordId": "%s",
+                  "departmentId": "%s",
+                  "labType": "CBC",
+                  "performedDate": "2026-09-27",
+                  "results": [{
+                    "resultId": "00000000-0000-4000-8000-000000000009",
+                    "indicator": "Hemoglobin",
+                    "value": "13.5",
+                    "unit": "g/dL",
+                    "referenceRange": "12.0-16.0"
+                  }],
+                  "conclusion": "Within expected range"
+                }
+                """.formatted(EVENT_ID, OCCURRED_AT, LAB_ID, PATIENT_ID, RECORD_ID, DEPARTMENT_ID);
+    }
+
+    private static String financialClearanceEnvelope(String purpose) {
+        return """
+                {
+                  "eventId": "%s",
+                  "eventType": "financial.clearance.granted",
+                  "version": 1,
+                  "occurredAt": "%s",
+                  "correlationId": "correlation-123",
+                  "producer": "billing-service",
+                  "payload": {
+                    "clearanceId": "%s",
+                    "invoiceId": "%s",
+                    "accountId": "%s",
+                    "patientId": "%s",
+                    "careEpisodeType": "OUTPATIENT_VISIT",
+                    "careEpisodeId": "%s",
+                    "purpose": "%s",
+                    "appointmentId": "%s",
+                    "recordId": "%s",
+                    "labTestIds": ["%s"],
+                    "amount": 100000,
+                    "currency": "VND",
+                    "paymentMethod": "CASH",
+                    "expiresAt": null,
+                    "emergencyOverride": false
+                  }
+                }
+                """.formatted(EVENT_ID, OCCURRED_AT, EVENT_ID, EVENT_ID, EVENT_ID, PATIENT_ID,
+                REQUEST_ID, purpose, REQUEST_ID, RECORD_ID, LAB_ID);
     }
 
     private static String labResultEnvelope(String careEpisodeType, int version) {
