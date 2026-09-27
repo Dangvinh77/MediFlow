@@ -24,6 +24,7 @@ import com.mediflow.inpatient.infrastructure.messaging.config.InpatientConsumerC
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
@@ -62,12 +63,17 @@ public class InpatientEventConsumer {
     @Transactional
     public void receive(Message message) {
         JsonNode envelope = parse(message.getBody());
-        UUID eventId = uuid(envelope, "eventId");
+        if (isLegacyFlatLabResult(envelope)) {
+            return;
+        }
+
         String eventType = text(envelope, "eventType");
+        validateProducer(eventType, text(envelope, "producer"));
+        UUID eventId = uuid(envelope, "eventId");
         int version = integer(envelope, "version");
         Instant occurredAt = instant(envelope, "occurredAt");
         String correlationId = text(envelope, "correlationId");
-        JsonNode payload = required(envelope, "payload");
+        JsonNode payload = requiredObject(envelope, "payload");
 
         switch (eventType) {
             case "admission.requested" -> referrals.onAdmissionRequested(new AdmissionRequestedCommand(
@@ -77,14 +83,8 @@ public class InpatientEventConsumer {
                     uuid(payload, "requestedBy"), text(payload, "diagnosisSummary"),
                     enumValue(payload, "priority", AdmissionPriority.class),
                     booleanValue(payload, "emergency"), instant(payload, "requestedAt")));
-            case "financial.clearance.granted" -> clearances.onFinancialClearance(new FinancialClearanceCommand(
-                    eventId, version, occurredAt, correlationId,
-                    uuid(payload, "clearanceId"), uuid(payload, "invoiceId"), uuid(payload, "accountId"),
-                    uuid(payload, "patientId"), enumValue(payload, "careEpisodeType", CareEpisodeType.class),
-                    uuid(payload, "careEpisodeId"), enumValue(payload, "purpose", ClearancePurpose.class),
-                    uuid(payload, "admissionId"), decimal(payload, "amount"), text(payload, "currency"),
-                    text(payload, "paymentMethod"), optionalInstant(payload, "expiresAt"),
-                    booleanValue(payload, "emergencyOverride")));
+            case "financial.clearance.granted" -> onFinancialClearance(
+                    payload, eventId, version, occurredAt, correlationId);
             case "settlement.completed" -> settlements.onSettlementCompleted(new SettlementCompletedCommand(
                     eventId, version, occurredAt, correlationId,
                     uuid(payload, "settlementId"), uuid(payload, "admissionId"), uuid(payload, "accountId"),
@@ -115,6 +115,23 @@ public class InpatientEventConsumer {
                     instant(payload, "cancelledAt"), occurredAt));
             default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);
         }
+    }
+
+    private void onFinancialClearance(JsonNode payload, UUID eventId, int version,
+                                      Instant occurredAt, String correlationId) {
+        ClearancePurpose purpose = enumValue(payload, "purpose", ClearancePurpose.class);
+        if (purpose != ClearancePurpose.ADMISSION_DEPOSIT) {
+            return;
+        }
+
+        clearances.onFinancialClearance(new FinancialClearanceCommand(
+                eventId, version, occurredAt, correlationId,
+                uuid(payload, "clearanceId"), uuid(payload, "invoiceId"), uuid(payload, "accountId"),
+                uuid(payload, "patientId"), enumValue(payload, "careEpisodeType", CareEpisodeType.class),
+                uuid(payload, "careEpisodeId"), purpose, uuid(payload, "admissionId"),
+                decimal(payload, "amount"), text(payload, "currency"),
+                text(payload, "paymentMethod"), optionalInstant(payload, "expiresAt"),
+                booleanValue(payload, "emergencyOverride")));
     }
 
     private void onLabResultCreated(JsonNode payload, UUID eventId, int version,
@@ -155,10 +172,88 @@ public class InpatientEventConsumer {
         }
     }
 
+    private static void validateProducer(String eventType, String producer) {
+        String expectedProducer = switch (eventType) {
+            case "admission.requested" -> "clinical-service";
+            case "financial.clearance.granted", "settlement.completed", "deposit.topup.required" -> "billing-service";
+            case "lab.result.created" -> "lab-service";
+            case "prescription.filled" -> "pharmacy-service";
+            case "surgery.ready", "surgery.completed", "surgery.cancelled" -> "surgery-service";
+            default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);
+        };
+        if (!expectedProducer.equals(producer)) {
+            throw new AmqpException("Inpatient event producer does not match event type " + eventType
+                    + "; expected " + expectedProducer);
+        }
+    }
+
+    private static boolean isLegacyFlatLabResult(JsonNode event) {
+        if (!event.isObject() || event.has("eventType") || event.has("version") || event.has("payload")) {
+            return false;
+        }
+        return isUuid(event, "eventId") && isInstant(event, "occurredAt")
+                && isNonBlankText(event, "correlationId") && isUuid(event, "labId")
+                && isUuid(event, "patientId") && isUuid(event, "recordId")
+                && isLocalDate(event, "performedDate")
+                && event.path("results").isArray() && !event.path("results").isEmpty();
+    }
+
+    private static boolean isUuid(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isTextual()) {
+            return false;
+        }
+        try {
+            UUID.fromString(value.asText());
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static boolean isInstant(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isTextual()) {
+            return false;
+        }
+        try {
+            Instant.parse(value.asText());
+            return true;
+        } catch (RuntimeException exception) {
+            return false;
+        }
+    }
+
+    private static boolean isLocalDate(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isTextual()) {
+            return false;
+        }
+        try {
+            LocalDate.parse(value.asText());
+            return true;
+        } catch (RuntimeException exception) {
+            return false;
+        }
+    }
+
+    private static boolean isNonBlankText(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value != null && value.isTextual() && !value.asText().isBlank();
+    }
+
     private static JsonNode required(JsonNode node, String field) {
         JsonNode value = node.get(field);
         if (value == null || value.isNull() || value.isMissingNode()) {
             throw new AmqpException("Required inpatient event field is missing: " + field);
+        }
+        return value;
+    }
+
+    private static JsonNode requiredObject(JsonNode node, String field) {
+        JsonNode value = required(node, field);
+        if (!value.isObject()) {
+            throw new AmqpException("Inpatient event field must be an object: " + field);
         }
         return value;
     }
