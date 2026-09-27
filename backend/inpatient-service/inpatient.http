@@ -1,0 +1,174 @@
+### MediFlow Inpatient service through Gateway :8080
+### Start Eureka, Gateway, PostgreSQL and (when enabled) RabbitMQ first.
+### Get an access token from backend/auth.http and set @token below.
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+@admissionId = 11111111-1111-4111-8111-111111111111
+@bedId = 22222222-2222-4222-8222-222222222222
+@entryId = 33333333-3333-4333-8333-333333333333
+@staffId = 44444444-4444-4444-8444-444444444444
+
+### POST /admissions — ADMIN, DOCTOR
+POST {{host}}/api/v1/inpatient/admissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maYeuCauNoiTru": "55555555-5555-4555-8555-555555555555",
+  "maHoSoNguon": "66666666-6666-4666-8666-666666666666",
+  "maBenhNhan": "77777777-7777-4777-8777-777777777777",
+  "maKhoa": "88888888-8888-4888-8888-888888888888",
+  "nguoiYeuCau": "{{staffId}}",
+  "tomTatChanDoan": "Community-acquired pneumonia",
+  "doUuTien": "ROUTINE",
+  "capCuu": false,
+  "thoiGianYeuCau": "2026-09-27T06:00:00Z"
+}
+
+### GET /admissions/{id} — ADMIN, DOCTOR, NURSE, CASHIER
+GET {{host}}/api/v1/inpatient/admissions/{{admissionId}}
+Authorization: Bearer {{token}}
+
+### GET /admissions — ADMIN, MANAGER, DOCTOR, NURSE, CASHIER
+GET {{host}}/api/v1/inpatient/admissions?departmentId=88888888-8888-4888-8888-888888888888&patientId=77777777-7777-4777-8777-777777777777&status=AWAITING_BED&from=2026-09-01&to=2026-09-30&page=0&size=20
+Authorization: Bearer {{token}}
+
+### PUT /admissions/{id}/bed — ADMIN, NURSE
+PUT {{host}}/api/v1/inpatient/admissions/{{admissionId}}/bed
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maGiuong": "{{bedId}}",
+  "nguoiPhanGiuong": "{{staffId}}"
+}
+
+### PUT /admissions/{id}/bed/transfer — ADMIN, NURSE
+PUT {{host}}/api/v1/inpatient/admissions/{{admissionId}}/bed/transfer
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maGiuongDich": "99999999-9999-4999-8999-999999999999",
+  "nguoiChuyenGiuong": "{{staffId}}",
+  "lyDo": "Move closer to nursing station"
+}
+
+### PUT /admissions/{id}/bed/release — ADMIN, NURSE
+PUT {{host}}/api/v1/inpatient/admissions/{{admissionId}}/bed/release
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nguoiTraGiuong": "{{staffId}}",
+  "lyDo": "Transfer to another facility"
+}
+
+### POST /admissions/{id}/admit — ADMIN, DOCTOR, NURSE
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/admit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nguoiNhapVien": "{{staffId}}",
+  "pheDuyetCapCuu": null
+}
+
+### POST /admissions/{id}/treatments — ADMIN, DOCTOR, NURSE
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/treatments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "loaiMuc": "NOTE",
+  "noiDung": "Patient reports improved breathing.",
+  "nguoiGhi": "{{staffId}}",
+  "thoiGianGhi": "2026-09-27T06:30:00Z"
+}
+
+### POST /admissions/{id}/treatments/{entryId}/corrections — ADMIN, DOCTOR, NURSE
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/treatments/{{entryId}}/corrections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "noiDungDaDinhChinh": "Corrected note: patient reports improved breathing.",
+  "nguoiGhi": "{{staffId}}",
+  "thoiGianGhi": "2026-09-27T06:35:00Z"
+}
+
+### POST /admissions/{id}/order-references — ADMIN, DOCTOR, NURSE
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/order-references
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "loaiYLenh": "LAB_TEST",
+  "maYLenhBenNgoai": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "status": "REQUESTED",
+  "tomTat": "CBC"
+}
+
+### POST /admissions/{id}/medical-discharge — ADMIN, DOCTOR
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/medical-discharge
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maTomTat": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "tomTatChanDoan": "Community-acquired pneumonia",
+  "tomTatDieuTri": "Antibiotics and supportive care",
+  "ketQua": "IMPROVED",
+  "keHoachTheoDoi": "Follow up with primary care in one week",
+  "nguoiDuyet": "{{staffId}}",
+  "thoiGianDuyet": "2026-09-27T07:00:00Z"
+}
+
+### POST /admissions/{id}/close — ADMIN, CASHIER
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/close
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nguoiDong": "{{staffId}}",
+  "pheDuyet": null
+}
+
+### POST /admissions/{id}/cancel — ADMIN, DOCTOR
+POST {{host}}/api/v1/inpatient/admissions/{{admissionId}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nguoiHuy": "{{staffId}}",
+  "lyDo": "Referral withdrawn before admission"
+}
+
+### POST /beds — ADMIN, MANAGER
+POST {{host}}/api/v1/inpatient/beds
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maKhoa": "88888888-8888-4888-8888-888888888888",
+  "maKhu": "A",
+  "maPhong": "101",
+  "maGiuong": "01",
+  "loaiGiuong": "STANDARD"
+}
+
+### PUT /beds/{id} — ADMIN, MANAGER
+PUT {{host}}/api/v1/inpatient/beds/{{bedId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "loaiGiuong": "STANDARD",
+  "status": "AVAILABLE",
+  "active": true
+}
+
+### GET /beds — ADMIN, MANAGER, DOCTOR, NURSE
+GET {{host}}/api/v1/inpatient/beds?departmentId=88888888-8888-4888-8888-888888888888&wardCode=A&status=AVAILABLE&page=0&size=20
+Authorization: Bearer {{token}}

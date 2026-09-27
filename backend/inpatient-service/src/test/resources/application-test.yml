@@ -16,3 +16,11 @@ eureka:
 mediflow:
   jwt:
     secret: inpatient-test-secret-at-least-32-bytes
+  inpatient:
+    persistence:
+      enabled: false
+    messaging:
+      producer:
+        enabled: false
+      consumers:
+        enabled: false
