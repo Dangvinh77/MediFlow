@@ -78,6 +78,39 @@ class JwtAuthFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    @Test
+    void refreshTokenWithHumanRoleAndStaffId_leavesRequestUnauthenticated() throws Exception {
+        String token = Jwts.builder()
+                .subject("doctor-01")
+                .claim(JwtClaims.ROLE, "DOCTOR")
+                .claim(JwtClaims.TYPE, JwtClaims.REFRESH_TOKEN_TYPE)
+                .claim(JwtClaims.STAFF_ID, "22222222-2222-2222-2222-222222222222")
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .signWith(SIGNING_KEY)
+                .compact();
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void missingExpiration_leavesRequestUnauthenticated() throws Exception {
+        String token = createToken("doctor-01", "DOCTOR", SIGNING_KEY,
+                null, JwtClaims.ACCESS_TOKEN_TYPE);
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
     private MockHttpServletRequest requestWithToken(String token) {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
@@ -89,13 +122,23 @@ class JwtAuthFilterTest {
             String role,
             SecretKey key,
             Instant expiresAt) {
+        return createToken(subject, role, key, expiresAt, JwtClaims.ACCESS_TOKEN_TYPE);
+    }
 
-        return Jwts.builder()
+    private String createToken(
+            String subject,
+            String role,
+            SecretKey key,
+            Instant expiresAt,
+            String tokenType) {
+        var builder = Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
-                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
-                .expiration(Date.from(expiresAt))
-                .signWith(key)
-                .compact();
+                .claim(JwtClaims.TYPE, tokenType)
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)));
+        if (expiresAt != null) {
+            builder.expiration(Date.from(expiresAt));
+        }
+        return builder.signWith(key).compact();
     }
 }
