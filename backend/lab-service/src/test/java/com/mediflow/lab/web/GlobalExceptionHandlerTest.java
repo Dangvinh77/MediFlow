@@ -60,7 +60,7 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get(BASE_PATH + "/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("LAB_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.code").value("LAB_TEST_NOT_FOUND"))
                 .andDo(this::assertCorrelationIdMatchesHeader);
     }
 

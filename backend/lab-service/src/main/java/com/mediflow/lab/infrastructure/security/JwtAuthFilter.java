@@ -21,6 +21,7 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /** Verifies Bearer tokens locally before controller role checks run. */
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -67,8 +68,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
+            UUID staffId = parseOptionalUuidClaim(claims.get(JwtClaims.STAFF_ID));
             var authentication = new UsernamePasswordAuthenticationToken(
-                    subject,
+                    new LabAuthenticatedPrincipal(subject, staffId),
                     null,
                     List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(
@@ -76,6 +78,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
+        }
+    }
+
+    private static UUID parseOptionalUuidClaim(Object claim) {
+        if (claim == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(claim.toString());
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 }

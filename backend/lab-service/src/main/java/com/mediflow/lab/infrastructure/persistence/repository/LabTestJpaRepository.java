@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.mediflow.lab.domain.model.LabTestStatus;
+import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.lab.infrastructure.persistence.jpaEntity.LabTestJpaEntity;
 
 import jakarta.persistence.LockModeType;
@@ -24,6 +25,7 @@ public interface LabTestJpaRepository extends JpaRepository<LabTestJpaEntity, UU
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM LabTestJpaEntity t WHERE t.testId = :id")
     Optional<LabTestJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+    boolean existsBySourceOrderId(UUID sourceOrderId);
     @EntityGraph(attributePaths = "results")
     List<LabTestJpaEntity> findByPatientIdOrderByRequestedDateDesc(UUID patientId);
     @EntityGraph(attributePaths = "results")
@@ -32,4 +34,17 @@ public interface LabTestJpaRepository extends JpaRepository<LabTestJpaEntity, UU
             UUID requestingDepartmentId, LabTestStatus status, Pageable pageable);
     Page<LabTestJpaEntity> findByRequestingDepartmentId(UUID requestingDepartmentId, Pageable pageable);
     Page<LabTestJpaEntity> findByStatus(LabTestStatus status, Pageable pageable);
+    @EntityGraph(attributePaths = "results")
+    @Query("""
+            SELECT t FROM LabTestJpaEntity t
+            WHERE (:departmentId IS NULL OR t.requestingDepartmentId = :departmentId)
+              AND (:status IS NULL OR t.status = :status)
+              AND (:episodeType IS NULL OR t.careEpisodeType = :episodeType)
+              AND (:episodeId IS NULL OR t.careEpisodeId = :episodeId)
+            """)
+    Page<LabTestJpaEntity> search(@Param("departmentId") UUID departmentId,
+                                  @Param("status") LabTestStatus status,
+                                  @Param("episodeType") CareEpisodeType episodeType,
+                                  @Param("episodeId") UUID episodeId,
+                                  Pageable pageable);
 }

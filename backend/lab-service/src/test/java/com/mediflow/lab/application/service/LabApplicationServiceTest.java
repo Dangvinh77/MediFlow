@@ -89,7 +89,7 @@ class LabApplicationServiceTest {
 
         assertThatThrownBy(() -> service.changeStatus(testId, LabTestStatus.IN_PROGRESS))
                 .isInstanceOf(LabTestNotFoundException.class)
-                .hasFieldOrPropertyWithValue("code", "LAB_NOT_FOUND");
+                .hasFieldOrPropertyWithValue("code", "LAB_TEST_NOT_FOUND");
         verify(tests, never()).save(any());
     }
 

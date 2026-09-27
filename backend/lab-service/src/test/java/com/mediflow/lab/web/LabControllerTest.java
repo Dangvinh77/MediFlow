@@ -5,12 +5,15 @@ import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.lab.application.dto.request.AddResultRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
+import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
 import com.mediflow.lab.application.dto.request.LabResultItem;
+import com.mediflow.lab.application.dto.request.StartLabTestRequest;
 import com.mediflow.lab.application.dto.response.LabTestDTO;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.lab.infrastructure.web.CorrelationIdFilter;
 import com.mediflow.lab.domain.model.LabTestStatus;
+import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +110,7 @@ class LabControllerTest {
         UUID departmentId = UUID.randomUUID();
         PageQuery pageQuery = new PageQuery(1, 10);
         when(manageLabTestUseCase.search(
-                departmentId, LabTestStatus.PENDING, pageQuery))
+                departmentId, LabTestStatus.PENDING, null, null, pageQuery))
                 .thenReturn(PageResult.of(List.of(labTest(UUID.randomUUID())), 12, 1, 10));
 
         mockMvc.perform(get(BASE_PATH)
@@ -120,7 +123,22 @@ class LabControllerTest {
                 .andDo(this::assertCorrelationIdMatchesHeader);
 
         verify(manageLabTestUseCase)
-                .search(departmentId, LabTestStatus.PENDING, pageQuery);
+                .search(departmentId, LabTestStatus.PENDING, null, null, pageQuery);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void search_careEpisodeFiltersReachUseCase() throws Exception {
+        UUID episodeId = UUID.randomUUID();
+        when(manageLabTestUseCase.search(null, null, CareEpisodeType.ADMISSION, episodeId,
+                new PageQuery(0, 20))).thenReturn(PageResult.of(List.of(), 0, 0, 20));
+
+        mockMvc.perform(get(BASE_PATH).param("episodeType", "ADMISSION")
+                        .param("episodeId", episodeId.toString()))
+                .andExpect(status().isOk());
+
+        verify(manageLabTestUseCase).search(null, null, CareEpisodeType.ADMISSION,
+                episodeId, new PageQuery(0, 20));
     }
 
     @Test
@@ -175,6 +193,49 @@ class LabControllerTest {
                 .andDo(this::assertCorrelationIdMatchesHeader);
 
         verify(manageLabTestUseCase).changeStatus(testId, LabTestStatus.IN_PROGRESS);
+    }
+
+    @Test
+    @WithMockUser(roles = "LAB_TECH")
+    void start_usesGuardedStartUseCase() throws Exception {
+        UUID testId = UUID.randomUUID();
+        when(manageLabTestUseCase.start(testId, new StartLabTestRequest(null))).thenReturn(labTest(testId));
+
+        mockMvc.perform(put(BASE_PATH + "/{id}/start", testId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        verify(manageLabTestUseCase).start(testId, new StartLabTestRequest(null));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void start_doctorRoleIsDenied() throws Exception {
+        mockMvc.perform(put(BASE_PATH + "/{id}/start", UUID.randomUUID())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(manageLabTestUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void cancel_doctorRoleCanRequestCancellation() throws Exception {
+        UUID testId = UUID.randomUUID();
+        CancelLabTestRequest request = new CancelLabTestRequest("Duplicate order", UUID.randomUUID());
+        when(manageLabTestUseCase.cancel(testId, request)).thenReturn(labTest(testId));
+
+        mockMvc.perform(put(BASE_PATH + "/{id}/cancel", testId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(manageLabTestUseCase).cancel(testId, request);
     }
 
     @Test

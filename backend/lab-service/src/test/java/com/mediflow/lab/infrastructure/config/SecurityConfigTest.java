@@ -63,7 +63,7 @@ class SecurityConfigTest {
     }
 
     @Test
-    @WithMockUser(roles = "NURSE")
+    @WithMockUser(roles = "PATIENT")
     void search_withForbiddenRole_returns403Envelope() throws Exception {
         mockMvc.perform(get("/api/v1/lab"))
                 .andExpect(status().isForbidden())
@@ -73,8 +73,8 @@ class SecurityConfigTest {
     }
 
     @Test
-    @WithMockUser(roles = "LAB_TECH")
-    void search_withAllowedRole_returns200() throws Exception {
+    @WithMockUser(roles = "NURSE")
+    void search_withNurseRole_returns200() throws Exception {
         PageQuery defaultPage = PageQuery.of(null, null);
         when(manageLabTestUseCase.search(isNull(), isNull(), eq(defaultPage)))
                 .thenReturn(PageResult.empty(defaultPage));

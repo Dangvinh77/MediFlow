@@ -4,12 +4,15 @@ import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.lab.application.dto.request.AddResultRequest;
+import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
 import com.mediflow.lab.application.dto.request.ChangeStatusRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
+import com.mediflow.lab.application.dto.request.StartLabTestRequest;
 import com.mediflow.lab.application.dto.response.LabTestDTO;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.domain.model.LabTestStatus;
+import com.mediflow.lab.domain.model.CareEpisodeType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,23 +42,27 @@ public class LabController {
     private final CorrelationIdProvider correlationIds;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'LAB_TECH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE', 'LAB_TECH')")
     public ResponseEntity<ApiResponse<PageResult<LabTestDTO>>> search(
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) LabTestStatus status,
+            @RequestParam(required = false) CareEpisodeType episodeType,
+            @RequestParam(required = false) UUID episodeId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
 
         PageResult<LabTestDTO> result = manageLabTestUseCase.search(
                 departmentId,
                 status,
+                episodeType,
+                episodeId,
                 PageQuery.of(page, size));
         return ResponseEntity.ok(ApiResponse.ok(
                 result, correlationIds.currentOrCreate().toString()));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECH')")
     public ResponseEntity<ApiResponse<LabTestDTO>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(
                 manageLabTestUseCase.getById(id), correlationIds.currentOrCreate().toString()));
@@ -88,6 +95,24 @@ public class LabController {
 
         return ResponseEntity.ok(ApiResponse.ok(
                 manageLabTestUseCase.addResults(id, request), correlationIds.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/{id}/start")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LAB_TECH')")
+    public ResponseEntity<ApiResponse<LabTestDTO>> start(
+            @PathVariable UUID id,
+            @Valid @RequestBody StartLabTestRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageLabTestUseCase.start(id, request), correlationIds.currentOrCreate().toString()));
+    }
+
+    @PutMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'LAB_TECH')")
+    public ResponseEntity<ApiResponse<LabTestDTO>> cancel(
+            @PathVariable UUID id,
+            @Valid @RequestBody CancelLabTestRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                manageLabTestUseCase.cancel(id, request), correlationIds.currentOrCreate().toString()));
     }
 
     @PutMapping("/{id}/status")
