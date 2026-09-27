@@ -1,6 +1,7 @@
 package com.mediflow.inpatient.infrastructure.messaging.consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -89,10 +90,29 @@ class InpatientEventConsumerTest {
     }
 
     @Test
-    void outpatientLabResultIsNotAppliedToAnAdmission() {
-        assertThatThrownBy(() -> consumer.receive(message(labResultEnvelope("OUTPATIENT_VISIT", 1))))
+    void outpatientLabResultIsIgnoredWithoutApplyingAdmissionUseCase() {
+        assertThatCode(() -> consumer.receive(message(labResultEnvelope("OUTPATIENT_VISIT", 1))))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void legacyLabResultWithoutCareEpisodeTypeIsIgnored() {
+        assertThatCode(() -> consumer.receive(message(legacyLabResultEnvelope())))
+                .doesNotThrowAnyException();
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void admissionLabResultMissingRequiredLabIdIsRejected() {
+        String malformed = inpatientLabResultEnvelope()
+                .replace("\"labId\": \"" + LAB_ID + "\",", "");
+
+        assertThatThrownBy(() -> consumer.receive(message(malformed)))
                 .isInstanceOf(AmqpException.class)
-                .hasMessageContaining("inpatient care episode");
+                .hasMessageContaining("labId");
 
         verifyNoInteractions(externalOrders);
     }
@@ -101,7 +121,7 @@ class InpatientEventConsumerTest {
     void unsupportedLabCareEpisodeTypeIsNotAppliedToAnAdmission() {
         assertThatThrownBy(() -> consumer.receive(message(labResultEnvelope("INPATIENT", 1))))
                 .isInstanceOf(AmqpException.class)
-                .hasMessageContaining("inpatient care episode");
+                .hasMessageContaining("unsupported careEpisodeType");
 
         verifyNoInteractions(externalOrders);
     }
@@ -137,6 +157,11 @@ class InpatientEventConsumerTest {
 
     private static String inpatientLabResultEnvelope() {
         return labResultEnvelope("ADMISSION", 1);
+    }
+
+    private static String legacyLabResultEnvelope() {
+        return inpatientLabResultEnvelope()
+                .replace("\"careEpisodeType\": \"ADMISSION\",", "");
     }
 
     private static String labResultEnvelope(String careEpisodeType, int version) {

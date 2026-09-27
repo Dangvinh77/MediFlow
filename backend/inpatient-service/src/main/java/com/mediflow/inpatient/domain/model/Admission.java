@@ -149,6 +149,10 @@ public final class Admission {
     }
 
     public Admission applyBedAssignment(boolean activeBed, Instant now) {
+        require(now, "now");
+        if (status == AdmissionStatus.ADMITTED) {
+            return this;
+        }
         requireBeforeMedicalDischarge();
         recalculateReadiness(activeBed, now);
         return this;

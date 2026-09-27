@@ -258,7 +258,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         }
         targetBed.assign();
         current.release(request.nguoiChuyenGiuong(), request.lyDo(), now);
-        assignments.save(current);
+        assignments.saveAndFlush(current);
         oldBed.release();
         beds.save(oldBed);
         beds.save(targetBed);

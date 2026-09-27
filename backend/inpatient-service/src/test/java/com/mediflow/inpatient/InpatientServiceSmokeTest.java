@@ -91,6 +91,18 @@ class InpatientServiceSmokeTest {
     }
 
     @Test
+    void rabbitOutboxUsesCorrelatedConfirmsAndReturnsForMandatoryMessages() {
+        var environment = applicationContext.getEnvironment();
+
+        assertThat(environment.getProperty("spring.rabbitmq.publisher-confirm-type"))
+                .isEqualTo("correlated");
+        assertThat(environment.getProperty("spring.rabbitmq.publisher-returns", Boolean.class))
+                .isTrue();
+        assertThat(environment.getProperty("spring.rabbitmq.template.mandatory", Boolean.class))
+                .isTrue();
+    }
+
+    @Test
     void healthAndInfo_arePublic() throws Exception {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())

@@ -96,15 +96,8 @@ public class InpatientEventConsumer {
                     eventId, version, occurredAt, correlationId, uuid(payload, "accountId"),
                     uuid(payload, "admissionId"), decimal(payload, "currentBalance"),
                     decimal(payload, "requestedAmount"), text(payload, "reason")));
-            case "lab.result.created" -> {
-                if (!CareEpisodeType.ADMISSION.name().equals(text(payload, "careEpisodeType"))) {
-                    throw new AmqpException("lab.result.created is not an inpatient care episode");
-                }
-                externalOrders.onExternalOrderFact(new LabResultFactCommand(
-                        eventId, version, correlationId, uuid(payload, "labId"),
-                        uuid(payload, "careEpisodeId"), uuid(payload, "patientId"),
-                        integer(payload, "resultVersion"), text(payload, "conclusion"), occurredAt));
-            }
+            case "lab.result.created" -> onLabResultCreated(
+                    payload, eventId, version, occurredAt, correlationId);
             case "prescription.filled" -> externalOrders.onExternalOrderFact(new PrescriptionFilledFactCommand(
                     eventId, version, correlationId, uuid(payload, "prescriptionId"), uuid(payload, "admissionId"),
                     uuid(payload, "patientId"), instant(payload, "filledAt"), occurredAt));
@@ -122,6 +115,32 @@ public class InpatientEventConsumer {
                     instant(payload, "cancelledAt"), occurredAt));
             default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);
         }
+    }
+
+    private void onLabResultCreated(JsonNode payload, UUID eventId, int version,
+                                    Instant occurredAt, String correlationId) {
+        JsonNode episodeTypeNode = payload.get("careEpisodeType");
+        if (episodeTypeNode == null) {
+            return;
+        }
+        if (!episodeTypeNode.isTextual() || episodeTypeNode.asText().isBlank()) {
+            throw new AmqpException("lab.result.created careEpisodeType must be a supported string");
+        }
+
+        CareEpisodeType episodeType;
+        try {
+            episodeType = CareEpisodeType.valueOf(episodeTypeNode.asText());
+        } catch (IllegalArgumentException exception) {
+            throw new AmqpException("lab.result.created has an unsupported careEpisodeType", exception);
+        }
+        if (episodeType == CareEpisodeType.OUTPATIENT_VISIT) {
+            return;
+        }
+
+        externalOrders.onExternalOrderFact(new LabResultFactCommand(
+                eventId, version, correlationId, uuid(payload, "labId"),
+                uuid(payload, "careEpisodeId"), uuid(payload, "patientId"),
+                integer(payload, "resultVersion"), text(payload, "conclusion"), occurredAt));
     }
 
     private JsonNode parse(byte[] body) {
