@@ -18,6 +18,17 @@
 Gateway authenticates, authorizes, routes and propagates identity/correlation. It does not calculate
 clearance, settlement, admission state, surgery readiness or financial totals.
 
+## 1.1 V1 compatibility decisions
+
+The current public `/api/v1` contract keeps the already deployed trust-boundary headers
+`X-User-Id`, `X-User-Role`, `X-Patient-Id`, `X-Staff-Id`, `X-Department-Id` and
+`X-Correlation-Id`. The proposed `X-Account-Id`/`X-Role` names are reserved for a separately versioned
+contract; they must not replace the V1 names without a consumer migration and fixture update.
+
+The current Gateway transport error code `GATEWAY_UPSTREAM_UNAVAILABLE` is also retained for V1.
+`DOWNSTREAM_UNAVAILABLE` is descriptive terminology in the target design, not a silent wire-code
+rename. Any new error code requires a versioned contract and regression fixtures.
+
 ## 2. Additive route configuration
 
 ```yaml
@@ -62,9 +73,9 @@ role=<one canonical role>
 patientId? staffId? departmentId?
 ```
 
-Gateway removes client-supplied identity headers and writes trusted `X-Account-Id`, `X-Role`,
-`X-Patient-Id`, `X-Staff-Id`, `X-Department-Id` only from verified claims. A missing claim remains
-missing; Gateway never derives a business ID from `sub`.
+Gateway removes client-supplied identity headers and writes trusted V1 headers `X-User-Id`,
+`X-User-Role`, `X-Patient-Id`, `X-Staff-Id`, `X-Department-Id` only from verified claims. A missing
+claim remains missing; Gateway never derives a business ID from `sub`.
 
 Service-to-service tokens use `type=service`, `role=SYSTEM` and service subject. Internal lookup
 paths reject human tokens even when routed inside the network.
@@ -73,7 +84,7 @@ paths reject human tokens even when routed inside the network.
 
 - Accept a valid incoming `X-Correlation-Id` or generate one UUID.
 - Propagate it downstream and return it in all success/error responses.
-- Discovery unavailable/timeout maps to `503 DOWNSTREAM_UNAVAILABLE`.
+- Discovery unavailable/timeout maps to `503 GATEWAY_UPSTREAM_UNAVAILABLE` in V1.
 - Authentication failure returns `401`; authenticated but forbidden returns `403`.
 - Gateway never converts a downstream business `409/422` to `500`.
 - Request/response logs exclude JWTs and medical/financial payload bodies.

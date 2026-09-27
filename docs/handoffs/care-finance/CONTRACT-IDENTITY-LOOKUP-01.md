@@ -67,6 +67,15 @@ subject and correlation propagation. Human access/refresh tokens are not reused 
 Human access tokens use `sub=accountId` and explicit `patientId`, `staffId`, `departmentId` claims;
 no service may interpret `sub` as a patient or staff ID.
 
+### Gateway V1 compatibility lock
+
+Gateway V1 continues to sanitize and emit the existing trusted headers `X-User-Id`, `X-User-Role`,
+`X-Patient-Id`, `X-Staff-Id`, `X-Department-Id` and `X-Correlation-Id`. The proposed
+`X-Account-Id`/`X-Role` names are reserved for a separately versioned migration and must not be
+introduced as a silent replacement. Likewise, `GATEWAY_UPSTREAM_UNAVAILABLE` remains the V1
+transport-unavailable error code; a new `DOWNSTREAM_UNAVAILABLE` code requires a versioned fixture
+change across consumers.
+
 Implemented baseline:
 
 - Organization returns `ApiResponse<StaffLookupDTO>` with `exists`, `eligibleDoctor` and

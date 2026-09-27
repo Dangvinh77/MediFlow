@@ -5,12 +5,13 @@
 Hồ sơ bệnh nhân gốc. Sở hữu thông tin nhân khẩu và số BHYT. Gần như mọi service khác đều đọc nó;
 nó không sở hữu gì về lịch hẹn, hồ sơ khám, xét nghiệm, thuốc hay tiền.
 
-> **Implementation status (2026-09-24):** module hiện vẫn là skeleton. Nội dung dưới đây là target
-> contract để triển khai, không phải xác nhận rằng code hoặc test đã tồn tại.
+> **Implementation status (2026-09-27):** read/lookup slice đã được triển khai và kiểm thử cục bộ;
+> Patient CRUD/events vẫn nằm trong Giai đoạn 4. Nội dung bên dưới là contract triển khai và không
+> được hiểu là tuyên bố rằng toàn bộ CRUD, messaging hoặc Testcontainers đã hoàn tất.
 >
 > **Naming lock:** persistence identifiers remain English `snake_case`; public DTO/request/event
 > fields remain Vietnamese camelCase. Java class and method names follow the project coding standard
-> (`Patient`, `Gender`, `create`, `update`) and must not change the public wire names.
+> (`Patient`, `Gender`, `create`, `restore`, `update`) and must not change the public wire names.
 
 ## 1. Lược đồ — `V1__init_patient.sql`
 
@@ -35,25 +36,27 @@ CREATE INDEX idx_patient_full_name ON PATIENT (full_name);
 ## 2. Enum
 
 ```java
-public enum GioiTinh { M, F }
+public enum Gender { M, F }
 ```
 
 ## 3. Domain model — `Patient`
 
-Các trường: `maBenhNhan`, `hoTen`, `ngaySinh`, `gioiTinh`, `soCmnd` (**bất biến**), `diaChi`,
-`soDienThoai`, `email`, `bhytSo`, `createdAt`, `updatedAt`.
+Domain/persistence fields use English identifiers: `patientId`, `fullName`, `dateOfBirth`, `gender`,
+`identityNumber` (**immutable**), `address`, `phoneNumber`, `email`, `healthInsuranceNumber`,
+`createdAt`, `updatedAt`. Public DTO/request/event fields intentionally remain Vietnamese
+camelCase: `maBenhNhan`, `hoTen`, `ngaySinh`, `gioiTinh`, `soCmnd`, `diaChi`, `soDienThoai`,
+`bhytSo`.
 
 ```java
-public static Patient taoMoi(String hoTen, LocalDate ngaySinh, GioiTinh gioiTinh, String soCmnd,
-                             String diaChi, String soDienThoai, String email, String bhytSo);
-public static Patient khoiPhuc(UUID id, ..., Instant createdAt, Instant updatedAt);
-/** soCmnd không phải tham số — nó không thể thay đổi. Trường tùy chọn nếu null thì giữ giá trị cũ. */
-public void capNhat(String hoTen, LocalDate ngaySinh, GioiTinh gioiTinh,
-                    String diaChi, String soDienThoai, String email, String bhytSo);
-public int tuoi();   // suy ra từ ngaySinh, tiện cho giao diện
+public static Patient create(String fullName, LocalDate dateOfBirth, Gender gender, String identityNumber,
+                             String address, String phoneNumber, String email, String healthInsuranceNumber);
+public static Patient restore(UUID patientId, ..., Instant createdAt, Instant updatedAt);
+/** identityNumber is immutable and is not an update parameter. */
+public void update(String fullName, LocalDate dateOfBirth, Gender gender,
+                   String address, String phoneNumber, String email, String healthInsuranceNumber);
 ```
 
-Bất biến được kiểm trong `taoMoi` và `capNhat`:
+Bất biến được kiểm trong `create` và `update`:
 
 | Kiểm tra | Mã lỗi |
 |----------|--------|
@@ -105,7 +108,7 @@ public interface GetPatientUseCase {
 public record CreatePatientRequest(
     @NotBlank @Size(max = 100) String hoTen,
     @NotNull @PastOrPresent LocalDate ngaySinh,
-    @NotNull GioiTinh gioiTinh,
+    @NotNull Gender gioiTinh,
     @NotBlank @Size(max = 20) String soCmnd,
     @Size(max = 255) String diaChi,
     @Pattern(regexp = "\\d{10,15}") String soDienThoai,
@@ -116,13 +119,13 @@ public record CreatePatientRequest(
 public record UpdatePatientRequest(
     @NotBlank @Size(max = 100) String hoTen,
     @NotNull @PastOrPresent LocalDate ngaySinh,
-    @NotNull GioiTinh gioiTinh,
+    @NotNull Gender gioiTinh,
     @Size(max = 255) String diaChi,
     @Pattern(regexp = "\\d{10,15}") String soDienThoai,
     @Email @Size(max = 100) String email,
     @Pattern(regexp = "\\d{2}-\\d{8}-\\d") String bhytSo) {}
 
-public record PatientDTO(UUID maBenhNhan, String hoTen, LocalDate ngaySinh, GioiTinh gioiTinh,
+public record PatientDTO(UUID maBenhNhan, String hoTen, LocalDate ngaySinh, Gender gioiTinh,
                          String soCmnd, String diaChi, String soDienThoai, String email,
                          String bhytSo, Instant createdAt, Instant updatedAt) {}
 
@@ -132,20 +135,20 @@ public record PatientLookupDTO(boolean exists, UUID patientId) {}
 
 ## 7. Tầng application
 
-**`create`** — `existsBySoCmnd` → `PATIENT_CMND_DUPLICATE`; `Patient.taoMoi(...)`; lưu;
+**`create`** — `existsByIdentityNumber` → `PATIENT_CMND_DUPLICATE`; `Patient.create(...)`; lưu;
 publish `PatientCreatedEvent` **sau khi commit**; trả DTO.
 
-**`update`** — nạp hoặc `PATIENT_NOT_FOUND`; `capNhat(...)`; lưu; publish `PatientUpdatedEvent`.
+**`update`** — nạp hoặc `PATIENT_NOT_FOUND`; `update(...)`; lưu; publish `PatientUpdatedEvent`.
 
 **`search`** — `keyword` rỗng thì chuyển thành null. Câu truy vấn không phân biệt hoa thường trên
-`hoTen`, khớp tiền tố trên `soCmnd`:
+`fullName`, khớp tiền tố trên `identityNumber`:
 
 ```java
 @Query("""
     SELECT p FROM PatientJpaEntity p
     WHERE :keyword IS NULL
-       OR LOWER(p.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%'))
-       OR p.soCmnd LIKE CONCAT(:keyword, '%')
+       OR LOWER(p.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+       OR p.identityNumber LIKE CONCAT(:keyword, '%')
     """)
 Page<PatientJpaEntity> search(@Param("keyword") String keyword, Pageable pageable);
 ```
