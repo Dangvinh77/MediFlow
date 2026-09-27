@@ -5,6 +5,8 @@ import java.util.UUID;
 
 public record SurgeryReadyFactCommand(
         UUID maSuKien,
+        int phienBan,
+        String maTuongQuan,
         UUID maYLenhBenNgoai,
         UUID maDotNoiTru,
         UUID maLichMo,

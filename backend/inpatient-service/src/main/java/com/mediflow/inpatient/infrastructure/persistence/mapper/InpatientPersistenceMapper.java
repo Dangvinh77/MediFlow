@@ -31,11 +31,11 @@ import java.util.UUID;
 @Component
 public class InpatientPersistenceMapper {
 
-    public Admission toDomain(AdmissionJpaEntity row) {
+    public Admission toDomain(AdmissionJpaEntity row, Instant depositExpiresAt) {
         return Admission.restore(row.maDotNoiTru, row.maYeuCauNoiTru, row.maBenhNhan,
                 row.maHoSoNguon, row.nguoiYeuCau, row.tomTatChanDoan, row.thoiGianYeuCau,
                 row.maKhoa, row.doUuTien, row.capCuu, row.trangThai, row.thoiGianYeuCauTamUng,
-                row.maXacNhanTamUng, row.hetHanXacNhanTamUng, row.maPheDuyetCapCuu,
+                row.maXacNhanTamUng, depositExpiresAt, row.maPheDuyetCapCuu,
                 row.maQuyetToan, row.maPheDuyetDong, row.maTomTatRaVien, row.thoiGianNhapVien,
                 row.thoiGianRaVienYTe, row.thoiGianDong, row.thoiGianHuy, row.lyDoHuy);
     }
@@ -54,7 +54,6 @@ public class InpatientPersistenceMapper {
         row.trangThai = model.status();
         row.thoiGianYeuCauTamUng = model.depositRequestedAt();
         row.maXacNhanTamUng = model.depositClearanceId();
-        row.hetHanXacNhanTamUng = model.depositExpiresAt();
         row.maPheDuyetCapCuu = model.emergencyOverrideId();
         row.maQuyetToan = model.settlementId();
         row.maPheDuyetDong = model.closeOverrideId();

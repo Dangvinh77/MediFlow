@@ -7,6 +7,7 @@ import com.mediflow.inpatient.domain.model.Admission;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.AdmissionJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.mapper.InpatientPersistenceMapper;
 import com.mediflow.inpatient.infrastructure.persistence.repository.AdmissionJpaRepository;
+import com.mediflow.inpatient.infrastructure.persistence.repository.FinancialClearanceJpaRepository;
 import java.sql.ResultSet;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -21,39 +22,49 @@ import org.springframework.stereotype.Repository;
 @ConditionalOnProperty(name = "mediflow.inpatient.persistence.enabled", havingValue = "true", matchIfMissing = true)
 public class AdmissionPersistenceAdapter implements AdmissionRepositoryPort {
     private final AdmissionJpaRepository repository;
+    private final FinancialClearanceJpaRepository clearances;
     private final InpatientPersistenceMapper mapper;
     private final JdbcTemplate jdbcTemplate;
 
     public AdmissionPersistenceAdapter(AdmissionJpaRepository repository,
+                                       FinancialClearanceJpaRepository clearances,
                                        InpatientPersistenceMapper mapper,
                                        JdbcTemplate jdbcTemplate) {
         this.repository = repository;
+        this.clearances = clearances;
         this.mapper = mapper;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public Optional<Admission> findById(UUID admissionId) {
-        return repository.findById(admissionId).map(mapper::toDomain);
+        return repository.findById(admissionId).map(this::toDomain);
     }
 
     @Override
     public Optional<Admission> findByIdForUpdate(UUID admissionId) {
-        return repository.lockById(admissionId).map(mapper::toDomain);
+        return repository.lockById(admissionId).map(this::toDomain);
     }
 
     @Override
     public Optional<Admission> findByAdmissionRequestId(UUID requestId) {
         jdbcTemplate.query("SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))",
                 (ResultSet resultSet) -> null, requestId.toString());
-        return repository.findByMaYeuCauNoiTru(requestId).map(mapper::toDomain);
+        return repository.findByMaYeuCauNoiTru(requestId).map(this::toDomain);
     }
 
     @Override
     public Admission save(Admission admission) {
         AdmissionJpaEntity row = repository.findById(admission.admissionId())
                 .orElseGet(AdmissionJpaEntity::new);
-        return mapper.toDomain(repository.save(mapper.copy(admission, row)));
+        return toDomain(repository.save(mapper.copy(admission, row)));
+    }
+
+    @Override
+    public Admission saveAndFlush(Admission admission) {
+        AdmissionJpaEntity row = repository.findById(admission.admissionId())
+                .orElseGet(AdmissionJpaEntity::new);
+        return toDomain(repository.saveAndFlush(mapper.copy(admission, row)));
     }
 
     @Override
@@ -63,7 +74,13 @@ public class AdmissionPersistenceAdapter implements AdmissionRepositoryPort {
                 .atStartOfDay().toInstant(ZoneOffset.UTC);
         var page = repository.search(query.maKhoa(), query.maBenhNhan(), query.status(), from, to,
                 PageRequest.of(query.phanTrang().page(), query.phanTrang().size()));
-        return PageResult.of(page.getContent().stream().map(mapper::toDomain).toList(),
+        return PageResult.of(page.getContent().stream().map(this::toDomain).toList(),
                 page.getTotalElements(), page.getNumber(), page.getSize());
+    }
+
+    private Admission toDomain(AdmissionJpaEntity row) {
+        Instant depositExpiresAt = row.maXacNhanTamUng == null
+                ? null : clearances.findExpiryById(row.maXacNhanTamUng).orElse(null);
+        return mapper.toDomain(row, depositExpiresAt);
     }
 }

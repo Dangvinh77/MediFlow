@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.inpatient.application.dto.command.AdmissionRequestedCommand;
+import com.mediflow.inpatient.application.dto.command.ExternalOrderFactCommand;
+import com.mediflow.inpatient.application.dto.command.LabResultFactCommand;
 import com.mediflow.inpatient.application.port.in.ReactToAdmissionReferralUseCase;
 import com.mediflow.inpatient.application.port.in.ReactToDepositTopupUseCase;
 import com.mediflow.inpatient.application.port.in.ReactToExternalOrderUseCase;
@@ -30,6 +32,8 @@ class InpatientEventConsumerTest {
     private static final String PATIENT_ID = "00000000-0000-4000-8000-000000000004";
     private static final String DEPARTMENT_ID = "00000000-0000-4000-8000-000000000005";
     private static final String STAFF_ID = "00000000-0000-4000-8000-000000000006";
+    private static final String LAB_ID = "00000000-0000-4000-8000-000000000007";
+    private static final String ADMISSION_ID = "00000000-0000-4000-8000-000000000008";
     private static final String OCCURRED_AT = "2026-09-27T04:00:00Z";
 
     private final ReactToAdmissionReferralUseCase referrals = mock(ReactToAdmissionReferralUseCase.class);
@@ -67,6 +71,41 @@ class InpatientEventConsumerTest {
         verifyNoInteractions(referrals, clearances, settlements, topups, externalOrders);
     }
 
+    @Test
+    void inpatientLabResultUsesCanonicalLabAndCareEpisodeIdentifiers() {
+        consumer.receive(message(inpatientLabResultEnvelope()));
+
+        var command = org.mockito.ArgumentCaptor.forClass(ExternalOrderFactCommand.class);
+        verify(externalOrders).onExternalOrderFact(command.capture());
+        assertThat(command.getValue()).isInstanceOf(LabResultFactCommand.class);
+        LabResultFactCommand labResult = (LabResultFactCommand) command.getValue();
+        assertThat(labResult.phienBan()).isEqualTo(1);
+        assertThat(labResult.maTuongQuan()).isEqualTo("correlation-123");
+        assertThat(labResult.maYLenhBenNgoai()).isEqualTo(UUID.fromString(LAB_ID));
+        assertThat(labResult.maDotNoiTru()).isEqualTo(UUID.fromString(ADMISSION_ID));
+        assertThat(labResult.maBenhNhan()).isEqualTo(UUID.fromString(PATIENT_ID));
+        assertThat(labResult.phienBanKetQua()).isEqualTo(3);
+        assertThat(labResult.ketLuan()).isEqualTo("No acute finding");
+    }
+
+    @Test
+    void outpatientLabResultIsNotAppliedToAnAdmission() {
+        assertThatThrownBy(() -> consumer.receive(message(labResultEnvelope("OUTPATIENT_VISIT", 1))))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("inpatient care episode");
+
+        verifyNoInteractions(externalOrders);
+    }
+
+    @Test
+    void unsupportedLabCareEpisodeTypeIsNotAppliedToAnAdmission() {
+        assertThatThrownBy(() -> consumer.receive(message(labResultEnvelope("INPATIENT", 1))))
+                .isInstanceOf(AmqpException.class)
+                .hasMessageContaining("inpatient care episode");
+
+        verifyNoInteractions(externalOrders);
+    }
+
     private static Message message(String json) {
         return new Message(json.getBytes(StandardCharsets.UTF_8), new MessageProperties());
     }
@@ -94,5 +133,31 @@ class InpatientEventConsumerTest {
                 }
                 """.formatted(EVENT_ID, OCCURRED_AT, REQUEST_ID, RECORD_ID, PATIENT_ID,
                 DEPARTMENT_ID, STAFF_ID, emergency, OCCURRED_AT);
+    }
+
+    private static String inpatientLabResultEnvelope() {
+        return labResultEnvelope("ADMISSION", 1);
+    }
+
+    private static String labResultEnvelope(String careEpisodeType, int version) {
+        return """
+                {
+                  "eventId": "%s",
+                  "eventType": "lab.result.created",
+                  "version": %d,
+                  "occurredAt": "%s",
+                  "correlationId": "correlation-123",
+                  "producer": "lab-service",
+                  "payload": {
+                    "labId": "%s",
+                    "careEpisodeType": "%s",
+                    "careEpisodeId": "%s",
+                    "patientId": "%s",
+                    "resultVersion": 3,
+                    "conclusion": "No acute finding"
+                  }
+                }
+                """.formatted(EVENT_ID, version, OCCURRED_AT, LAB_ID,
+                        careEpisodeType, ADMISSION_ID, PATIENT_ID);
     }
 }

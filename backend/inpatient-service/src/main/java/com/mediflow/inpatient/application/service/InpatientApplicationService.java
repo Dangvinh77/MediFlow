@@ -472,7 +472,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
 
     @Override
     public void onExternalOrderFact(ExternalOrderFactCommand command) {
-        validateEnvelope(command.maSuKien(), CONTRACT_VERSION, command.xayRaLuc(), "event-correlation");
+        validateEnvelope(command.maSuKien(), command.phienBan(), command.xayRaLuc(), command.maTuongQuan());
         require(command.maYLenhBenNgoai(), "externalOrderId");
         require(command.maDotNoiTru(), "admissionId");
         if (!processedEvents.tryClaim(command.maSuKien(), externalEventType(command))) {
@@ -538,6 +538,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
                 request.maBenhNhan(), request.maHoSoNguon(), request.nguoiYeuCau(),
                 request.tomTatChanDoan(), request.thoiGianYeuCau(), request.maKhoa(),
                 request.doUuTien(), request.capCuu());
+        admissions.saveAndFlush(admission);
         Instant now = clock.instant();
         appendTransition(admission, null, request.nguoiYeuCau(), "Admission requested", correlationId, now);
         admission.markAwaitingBed();

@@ -12,5 +12,6 @@ public interface AdmissionRepositoryPort {
     Optional<Admission> findByIdForUpdate(UUID admissionId);
     Optional<Admission> findByAdmissionRequestId(UUID requestId);
     Admission save(Admission admission);
+    Admission saveAndFlush(Admission admission);
     PageResult<Admission> search(AdmissionSearchQuery query);
 }

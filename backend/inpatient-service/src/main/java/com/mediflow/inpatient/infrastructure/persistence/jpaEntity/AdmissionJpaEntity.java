@@ -29,7 +29,6 @@ public class AdmissionJpaEntity {
     @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false, length = 32) public AdmissionStatus trangThai;
     @Column(name = "deposit_clearance_id") public UUID maXacNhanTamUng;
     @Column(name = "deposit_requested_at") public Instant thoiGianYeuCauTamUng;
-    @Column(name = "deposit_expires_at") public Instant hetHanXacNhanTamUng;
     @Column(name = "emergency_override_id") public UUID maPheDuyetCapCuu;
     @Column(name = "settlement_id") public UUID maQuyetToan;
     @Column(name = "close_override_id") public UUID maPheDuyetDong;
