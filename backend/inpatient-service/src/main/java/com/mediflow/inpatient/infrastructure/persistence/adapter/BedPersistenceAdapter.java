@@ -85,4 +85,11 @@ public class BedPersistenceAdapter implements BedRepositoryPort, BedAssignmentRe
                 .orElseGet(BedAssignmentJpaEntity::new);
         return mapper.toDomain(assignments.save(mapper.copy(assignment, row)));
     }
+
+    @Override
+    public BedAssignment saveAndFlush(BedAssignment assignment) {
+        BedAssignmentJpaEntity row = assignments.findById(assignment.assignmentId())
+                .orElseGet(BedAssignmentJpaEntity::new);
+        return mapper.toDomain(assignments.saveAndFlush(mapper.copy(assignment, row)));
+    }
 }
