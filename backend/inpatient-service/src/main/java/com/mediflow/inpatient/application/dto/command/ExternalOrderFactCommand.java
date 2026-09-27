@@ -8,6 +8,8 @@ public sealed interface ExternalOrderFactCommand permits LabResultFactCommand,
         SurgeryCompletedFactCommand, SurgeryCancelledFactCommand {
 
     UUID maSuKien();
+    int phienBan();
+    String maTuongQuan();
     UUID maYLenhBenNgoai();
     UUID maDotNoiTru();
     Instant xayRaLuc();

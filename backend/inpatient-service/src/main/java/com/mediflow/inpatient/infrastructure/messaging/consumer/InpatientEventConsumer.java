@@ -96,23 +96,28 @@ public class InpatientEventConsumer {
                     eventId, version, occurredAt, correlationId, uuid(payload, "accountId"),
                     uuid(payload, "admissionId"), decimal(payload, "currentBalance"),
                     decimal(payload, "requestedAmount"), text(payload, "reason")));
-            case "lab.result.created" -> externalOrders.onExternalOrderFact(new LabResultFactCommand(
-                    eventId, uuid(payload, "labTestId"), uuid(payload, "admissionId"),
-                    uuid(payload, "patientId"), integer(payload, "resultVersion"),
-                    text(payload, "conclusion"), occurredAt));
+            case "lab.result.created" -> {
+                if (!CareEpisodeType.ADMISSION.name().equals(text(payload, "careEpisodeType"))) {
+                    throw new AmqpException("lab.result.created is not an inpatient care episode");
+                }
+                externalOrders.onExternalOrderFact(new LabResultFactCommand(
+                        eventId, version, correlationId, uuid(payload, "labId"),
+                        uuid(payload, "careEpisodeId"), uuid(payload, "patientId"),
+                        integer(payload, "resultVersion"), text(payload, "conclusion"), occurredAt));
+            }
             case "prescription.filled" -> externalOrders.onExternalOrderFact(new PrescriptionFilledFactCommand(
-                    eventId, uuid(payload, "prescriptionId"), uuid(payload, "admissionId"),
+                    eventId, version, correlationId, uuid(payload, "prescriptionId"), uuid(payload, "admissionId"),
                     uuid(payload, "patientId"), instant(payload, "filledAt"), occurredAt));
             case "surgery.ready" -> externalOrders.onExternalOrderFact(new SurgeryReadyFactCommand(
-                    eventId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
+                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
                     uuid(payload, "scheduleId"), uuid(payload, "readinessSnapshotId"),
                     instant(payload, "readyAt"), occurredAt));
             case "surgery.completed" -> externalOrders.onExternalOrderFact(new SurgeryCompletedFactCommand(
-                    eventId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
+                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
                     uuid(payload, "resultId"), optionalText(payload, "complicationsSummary"),
                     instant(payload, "completedAt"), occurredAt));
             case "surgery.cancelled" -> externalOrders.onExternalOrderFact(new SurgeryCancelledFactCommand(
-                    eventId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
+                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
                     text(payload, "cancellationStage"), text(payload, "reason"),
                     instant(payload, "cancelledAt"), occurredAt));
             default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);

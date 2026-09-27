@@ -2,6 +2,7 @@ package com.mediflow.inpatient.application.service;
 
 import com.mediflow.inpatient.application.dto.command.AdmissionRequestedCommand;
 import com.mediflow.inpatient.application.dto.command.FinancialClearanceCommand;
+import com.mediflow.inpatient.application.dto.command.LabResultFactCommand;
 import com.mediflow.inpatient.application.mapper.InpatientDtoMapper;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -92,6 +95,11 @@ class InpatientApplicationServiceTest {
         assertEquals(AdmissionStatus.AWAITING_BED, saved.getValue().status());
         verify(eventStore, times(2)).appendHistory(any());
         verify(outbox, never()).append(eq(saved.getValue().admissionId()), any());
+
+        InOrder persistenceOrder = inOrder(admissions, eventStore);
+        persistenceOrder.verify(admissions).saveAndFlush(any());
+        persistenceOrder.verify(eventStore, times(2)).appendHistory(any());
+        persistenceOrder.verify(admissions).save(any());
     }
 
     @Test
@@ -103,6 +111,17 @@ class InpatientApplicationServiceTest {
 
         verify(processedEvents, never()).tryClaim(any(), any());
         verify(eventStore, never()).saveClearance(any());
+    }
+
+    @Test
+    void externalOrderFact_unsupportedEnvelopeVersionIsRejectedBeforeClaim() {
+        LabResultFactCommand command = new LabResultFactCommand(UUID.randomUUID(), 2, "corr-lab",
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 1, "normal", NOW);
+
+        assertThrows(AdmissionRuleViolationException.class, () -> service.onExternalOrderFact(command));
+
+        verify(processedEvents, never()).tryClaim(any(), any());
+        verify(references, never()).findByTypeAndExternalId(any(), any());
     }
 
     private static AdmissionRequestedCommand referral() {
