@@ -35,6 +35,13 @@ chứ không chép lại. Nếu có mâu thuẫn, thứ tự thẩm quyền là:
 | [09-gateway.md](09-gateway.md) | Định tuyến, JWT, giới hạn tần suất | `gateway` |
 | [10-surgery.md](10-surgery.md) | **DRAFT H-01a–d + Surgery prep, chưa đủ để code nghiệp vụ** — glossary, rule/test inventory, contract/fixture manifest, aggregate/transaction/read/checklist alternatives và technical foundation; episode-referral, DDL và exact DTO/event vẫn chờ quyết định | `surgery-service` (planned) |
 
+## Care-finance V2 TARGET
+
+[`care-finance-v2/README.md`](care-finance-v2/README.md) chứa bộ spec đích tách biệt cho luồng thu
+phí trước dịch vụ, tạm ứng nội trú, phẫu thuật và quyết toán. Các file ở bảng trên tiếp tục là
+CURRENT trong giai đoạn migration; không ghi đè CURRENT bằng TARGET khi producer/consumer fixture và
+Docker acceptance flow chưa đạt.
+
 ## Thứ tự xây dựng
 
 Phụ thuộc chạy từ trái sang phải — chỉ xây một service sau khi các service nó gọi REST đã tồn tại:
