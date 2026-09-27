@@ -21,8 +21,11 @@ public class FinancialClearanceConsumer {
     }
 
     public void consume(FinancialClearanceEnvelope event) {
-        validate(event);
-        FinancialClearancePayload payload = event.payload();
+        FinancialClearancePayload payload = validate(event);
+        if (payload.purpose() != ClearancePurpose.LAB_TEST) {
+            return;
+        }
+        validateLabTarget(payload);
         useCase.onFinancialClearance(new FinancialClearanceCommand(
                 event.eventId(), event.eventType(), event.version(), event.occurredAt(),
                 event.correlationId(), event.producer(), payload.clearanceId(), payload.invoiceId(),
@@ -31,7 +34,7 @@ public class FinancialClearanceConsumer {
                 payload.expiresAt(), payload.emergencyOverride()));
     }
 
-    private static void validate(FinancialClearanceEnvelope event) {
+    private static FinancialClearancePayload validate(FinancialClearanceEnvelope event) {
         if (event == null) {
             throw new IllegalArgumentException("financial.clearance.granted event is required");
         }
@@ -57,16 +60,18 @@ public class FinancialClearanceConsumer {
         require(payload.patientId(), "payload.patientId");
         require(payload.careEpisodeType(), "payload.careEpisodeType");
         require(payload.careEpisodeId(), "payload.careEpisodeId");
-        if (payload.purpose() != ClearancePurpose.LAB_TEST) {
-            throw new IllegalArgumentException("financial.clearance.granted purpose must be LAB_TEST");
-        }
+        require(payload.purpose(), "payload.purpose");
+        require(payload.amount(), "payload.amount");
+        require(payload.currency(), "payload.currency");
+        return payload;
+    }
+
+    private static void validateLabTarget(FinancialClearancePayload payload) {
         if (payload.labTestIds() == null || payload.labTestIds().isEmpty()
                 || payload.labTestIds().stream().anyMatch(Objects::isNull)
                 || payload.labTestIds().stream().distinct().count() != payload.labTestIds().size()) {
             throw new IllegalArgumentException("financial.clearance.granted labTestIds must be explicit and unique");
         }
-        require(payload.amount(), "payload.amount");
-        require(payload.currency(), "payload.currency");
     }
 
     private static void require(Object value, String fieldName) {
