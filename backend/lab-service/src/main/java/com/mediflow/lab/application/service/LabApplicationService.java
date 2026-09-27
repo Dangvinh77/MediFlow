@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,8 @@ import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
 import com.mediflow.lab.application.port.in.ReactToClinicalUseCase;
 import com.mediflow.lab.application.port.in.ReactToFinancialClearanceUseCase;
 import com.mediflow.lab.application.port.in.UpdateLabPaymentUseCase;
-import com.mediflow.lab.application.port.out.AuthenticatedStaffIdPort;
+import com.mediflow.lab.application.port.out.AuthenticatedStaffContext;
+import com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
@@ -56,13 +58,14 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final LabOutboxPort outbox;
     private final LabClearanceRepositoryPort clearances;
     private final LabEmergencyOverrideRepositoryPort overrides;
-    private final AuthenticatedStaffIdPort staffIds;
+    private final AuthenticatedStaffContextPort authenticatedStaff;
     private final boolean careFinanceV2Enabled;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
                                  LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
-                                 LabEmergencyOverrideRepositoryPort overrides, AuthenticatedStaffIdPort staffIds,
+                                 LabEmergencyOverrideRepositoryPort overrides,
+                                 AuthenticatedStaffContextPort authenticatedStaff,
                                  boolean careFinanceV2Enabled) {
         this.tests = tests;
         this.publisher = publisher;
@@ -71,7 +74,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         this.outbox = outbox;
         this.clearances = clearances;
         this.overrides = overrides;
-        this.staffIds = staffIds;
+        this.authenticatedStaff = authenticatedStaff;
         this.careFinanceV2Enabled = careFinanceV2Enabled;
     }
 
@@ -79,7 +82,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds) {
         this(tests, publisher, mapper, correlationIds, event -> { }, null, null,
-                OptionalStaffIdPort.INSTANCE, false);
+                OptionalStaffContextPort.INSTANCE, false);
     }
 
     @Override
@@ -172,7 +175,8 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         UUID verifiedBy = null;
         if (test.getCareContractVersion() == 1) {
             requireV2Enabled();
-            verifiedBy = staffIds.currentStaffId().orElseThrow(() ->
+            verifiedBy = authenticatedStaff.currentStaff().map(AuthenticatedStaffContext::staffId)
+                    .orElseThrow(() ->
                     new LabRuleException("LAB_STAFF_REQUIRED", "Người xác nhận kết quả phải là nhân viên đã xác thực"));
         }
         LabTest saved = tests.save(test);
@@ -284,9 +288,15 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         if (request == null) {
             return null;
         }
+        AuthenticatedStaffContext approver = authenticatedStaff.currentStaff()
+                .filter(staff -> "ADMIN".equals(staff.role()))
+                .filter(staff -> staff.staffId().equals(request.approvedBy()))
+                .filter(staff -> staff.role().equals(request.approverRole()))
+                .orElseThrow(() -> new LabRuleException("LAB_OVERRIDE_INVALID",
+                        "Người duyệt cấp cứu phải là ADMIN đã xác thực và khớp thông tin kiểm toán"));
         return LabEmergencyOverride.approve(request.overrideId(), test.getTestId(), test.getPatientId(),
-                test.getCareEpisodeType(), test.getCareEpisodeId(), request.approvedBy(),
-                request.approverRole(), request.reason(), request.approvedAt());
+                test.getCareEpisodeType(), test.getCareEpisodeId(), approver.staffId(),
+                approver.role(), request.reason(), request.approvedAt());
     }
 
     private static void validateClearanceCommand(FinancialClearanceCommand command) {
@@ -320,10 +330,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                 "Luồng Care & Finance V2 của Lab chưa được bật");
     }
 
-    private enum OptionalStaffIdPort implements AuthenticatedStaffIdPort {
+    private enum OptionalStaffContextPort implements AuthenticatedStaffContextPort {
         INSTANCE;
 
-        @Override public java.util.Optional<UUID> currentStaffId() { return java.util.Optional.empty(); }
+        @Override public Optional<AuthenticatedStaffContext> currentStaff() { return Optional.empty(); }
     }
 
     private LabTest locked(UUID id) {

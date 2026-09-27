@@ -8,6 +8,8 @@ import com.mediflow.lab.domain.model.CareEpisodeType;
 import com.mediflow.lab.infrastructure.persistence.jpaEntity.LabTestJpaEntity;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,7 +43,9 @@ public class LabFinancialClearanceJpaEntity {
     private CareEpisodeType careEpisodeType;
     @Column(name = "care_episode_id", nullable = false) private UUID careEpisodeId;
     @Column(name = "amount", nullable = false, precision = 19, scale = 2) private BigDecimal amount;
-    @Column(name = "currency", nullable = false, length = 3, columnDefinition = "char(3)") private String currency;
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "currency", nullable = false, length = 3, columnDefinition = "char(3)")
+    private String currency;
     @Column(name = "expires_at") private Instant expiresAt;
     @Column(name = "emergency_override", nullable = false) private boolean emergencyOverride;
     @Column(name = "granted_at", nullable = false) private Instant grantedAt;

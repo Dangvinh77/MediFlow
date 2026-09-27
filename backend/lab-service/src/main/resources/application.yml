@@ -28,6 +28,10 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
     listener:
       simple:
         default-requeue-rejected: false
@@ -39,6 +43,7 @@ mediflow:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   events:
     outbox-poll-interval: ${MEDIFLOW_OUTBOX_POLL_INTERVAL:1000}
+    outbox-confirm-timeout-ms: ${MEDIFLOW_LAB_OUTBOX_CONFIRM_TIMEOUT_MS:5000}
 
 eureka:
   client:
