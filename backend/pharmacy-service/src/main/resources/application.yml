@@ -45,6 +45,8 @@ eureka:
 
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
+  features:
+    care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:

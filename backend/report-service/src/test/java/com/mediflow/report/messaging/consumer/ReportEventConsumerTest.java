@@ -114,6 +114,23 @@ class ReportEventConsumerTest {
     }
 
     @Test
+    void versionedEnvelope_onLegacyRoutingKey_isRejectedWithoutFallback() {
+        String payload = """
+                {"eventId":"12121212-1212-1212-1212-121212121212",
+                 "eventType":"payment.completed","version":2,
+                 "occurredAt":"2026-09-16T04:00:00Z","correlationId":"cid",
+                 "producer":"billing-service",
+                 "payload":{"transactionId":"13131313-1313-1313-1313-131313131313"}}
+                """;
+
+        assertThatThrownBy(() -> consumer.onMessage(message(
+                RabbitConfig.RK_PAYMENT_COMPLETED, payload.getBytes(StandardCharsets.UTF_8))))
+                .isInstanceOf(ReportEventValidationException.class)
+                .hasMessageContaining("cannot enter the legacy projection");
+        verifyNoInteractions(updater);
+    }
+
+    @Test
     void missingRequiredField_isRejectedBeforeUseCase() {
         String payload = "{\"eventId\":\"12121212-1212-1212-1212-121212121212\","
                 + "\"occurredAt\":\"2026-09-16T04:00:00Z\",\"correlationId\":\"cid\","
