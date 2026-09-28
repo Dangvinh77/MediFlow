@@ -46,6 +46,19 @@ class LabCareFinanceV2ContractFixtureTest {
         assertMatchesFixture("lab.result.created.v1.json", event);
     }
 
+    @Test
+    void admissionLabResultCreatedMatchesCanonicalV1Fixture() throws IOException {
+        var result = new LabResultCreatedEvent.Result(id(9), "Hemoglobin", "13.5", "g/dL", "12-16");
+        var payload = new LabResultV2Payload(id(7), id(4), id(3), id(5),
+                CareEpisodeType.ADMISSION, id(8), "CBC", 3, List.of(result),
+                "No acute finding", id(6), LocalDate.parse("2026-09-27"),
+                Instant.parse("2026-09-27T04:00:00Z"));
+        var event = new DomainEventEnvelope<>(id(1), "lab.result.created", 1,
+                Instant.parse("2026-09-27T04:00:00Z"), "correlation-123", "lab-service", payload);
+
+        assertMatchesFixture("lab.result.created.admission.v1.json", event);
+    }
+
     private void assertMatchesFixture(String fixtureName, DomainEventEnvelope<?> event) throws IOException {
         JsonNode actual = objectMapper.readTree(objectMapper.writeValueAsBytes(event));
         JsonNode fixture = objectMapper.readTree(readFixture(fixtureName));

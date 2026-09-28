@@ -1,0 +1,31 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000001",
+  "eventType": "lab.result.created",
+  "version": 1,
+  "occurredAt": "2026-09-27T04:00:00Z",
+  "correlationId": "correlation-123",
+  "producer": "lab-service",
+  "payload": {
+    "labId": "00000000-0000-4000-8000-000000000007",
+    "patientId": "00000000-0000-4000-8000-000000000004",
+    "recordId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000008",
+    "labType": "CBC",
+    "resultVersion": 3,
+    "results": [
+      {
+        "resultId": "00000000-0000-4000-8000-000000000009",
+        "indicator": "Hemoglobin",
+        "value": "13.5",
+        "unit": "g/dL",
+        "referenceRange": "12-16"
+      }
+    ],
+    "conclusion": "No acute finding",
+    "verifiedBy": "00000000-0000-4000-8000-000000000006",
+    "performedDate": "2026-09-27",
+    "completedAt": "2026-09-27T04:00:00Z"
+  }
+}
