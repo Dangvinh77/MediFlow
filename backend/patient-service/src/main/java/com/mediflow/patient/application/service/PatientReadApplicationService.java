@@ -6,7 +6,7 @@ import com.mediflow.patient.application.dto.response.PatientDTO;
 import com.mediflow.patient.application.dto.response.PatientLookupDTO;
 import com.mediflow.patient.application.mapper.PatientDtoMapper;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
-import com.mediflow.patient.application.port.in.LookupPatientUseCase;
+import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.out.PatientRepositoryPort;
 import com.mediflow.patient.domain.exception.PatientNotFoundException;
 import com.mediflow.patient.domain.model.Patient;
@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
-public class PatientReadApplicationService implements GetPatientUseCase, LookupPatientUseCase {
+public class PatientReadApplicationService implements GetPatientUseCase, ReadPatientIdentityUseCase {
 
     private final PatientRepositoryPort patients;
     private final PatientDtoMapper mapper;
