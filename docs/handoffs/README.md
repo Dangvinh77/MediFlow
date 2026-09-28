@@ -10,7 +10,7 @@ wire contracts belong in the canonical contract documents under
 |---|---|---|---|
 | [Patient read/existence API](../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md) | OPEN | Hoàng Anh | Clinical patient validation and frontend patient landing |
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | OPEN | Lộc | Clinical EXAM authorization and Lab exact-test clearance |
-| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | OPEN — proposals prepared; owner approval/fixtures pending | Vinh, Lộc, Hoàng Anh, Huy | accept V2 candidate; resolve episode/referral/charge/event mapping and eight §14 policies before Surgery scaffold |
+| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | OPEN — Huy-local V1 defaults recorded by delegation; cross-owner confirmations/fixtures pending | Vinh, Lộc, Hoàng Anh; Huy for joint mapping | confirm episode/referral/charge/event mapping, clinical evidence and Organization lookups; initial internal case/episode domain core exists |
 | [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) | OPEN | Shared-build integrator (confirm with Vinh), Hoàng Anh | register Surgery module/DB/Compose and route through Gateway after module/spec gates |
 | [Huy Pharmacy/Report care-finance contracts](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) | OPEN | Vinh, Lộc, Huy; Hoàng Anh for Gateway roles | V2 producer fixtures, remaining admission/finance/replay gaps and route roles; additive Huy local work can proceed behind disabled flags |
 | [Inpatient Gateway route](HANDOFF-INPATIENT-GATEWAY-ROUTE.md) | OPEN | Hoàng Anh | expose the future inpatient API through Gateway |

@@ -1,9 +1,9 @@
 # Kế hoạch code của Huy — Surgery, Pharmacy, Report theo Care–Finance V2
 
 **Cập nhật:** 2026-09-28 · **Owner:** Huy (LQHuy0210).
-**Baseline đã đọc:** nhánh Huy đồng bộ với master, commit f69dd1d6f1e7088dabec4127deb02d0f3d318223.
-**Loại kiểm chứng lần này:** clean Maven baseline + full module regression, implement Pharmacy/Report local foundation; Docker engine không truy cập được.
-**Trạng thái:** P-01.3, P-02.1, R-02.2, R-01.1 và audit H-01.4.1/2, H-01.5.1 hoàn tất local. H-01.2/3 đã có proposal/handoff chung; owner acceptance và fixture còn mở, nên Surgery chưa scaffold.
+**Baseline đã đọc:** nhánh Huy tại commit `dd797f9`; changelog được rà trước khi sửa.
+**Loại kiểm chứng lần này:** chốt Huy-local V1 decisions và triển khai domain core Surgery; `mvn -f backend/surgery-service/pom.xml test` pass (30 tests, 0 failures). Build được chạy sau khi cài artifact `common` hiện tại vào Maven local repository; chưa kiểm tra root reactor, Docker, DB hay Gateway vì shared registration chưa được thực hiện.
+**Trạng thái:** P-01.3, P-02.1, R-02.2, R-01.1 và audit H-01.4.1/2, H-01.5.1 đã hoàn tất local. Nền platform và domain core ban đầu của Surgery đã có. Theo ủy quyền rõ ràng của Huy ngày 2026-09-28, các default nghiệp vụ thuộc riêng Surgery đã được chọn và ghi trong handoff; contract/fixture giao cắt H-01.2/3 vẫn chờ owner liên quan xác nhận.
 
 ## 1. Phạm vi, nguồn chuẩn và thay đổi so với plan cũ
 
@@ -20,7 +20,7 @@ Thứ tự ưu tiên: [kiến trúc Care–Finance](../../architecture/mediflow-
 | [V2 index/maturity](../../eproject_general_plan/backend-spec/care-finance-v2/README.md), [plan sản xuất spec](2026-09-27-care-finance-v2-specs.md) | Thiếu fixture producer chặn bật tính năng, không chặn mọi code additive cục bộ. Plan sản xuất spec đã tick không có nghĩa backend đã implement. |
 | [Pharmacy V2](../../eproject_general_plan/backend-spec/care-finance-v2/05-pharmacy.md) | Version 0/1; context/episode; V14; prescription clearance; admission projection; một đơn tối đa một slip; feature flag mặc định false. |
 | [Report V2](../../eproject_general_plan/backend-spec/care-finance-v2/08-report.md) | Contribution/aggregate riêng; cash/liability/revenue/refund/receivable; endpoint financial/operations riêng; replay và đối soát trước chuyển client. |
-| [Surgery V2 candidate](../../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md) | Có DDL, ports, DTO, sáu readiness guards, lịch chuẩn bị trước READY, override chỉ tài chính. §14 vẫn là gate trước production coding/scaffold. |
+| [Surgery V2 candidate](../../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md) | Có DDL, ports, DTO, sáu readiness guards, lịch chuẩn bị trước READY, override chỉ tài chính. §14 vẫn là gate trước business code/schema/API/events; không chặn platform-only shell theo quyết định của owner Huy. |
 | [Inpatient Core V1](../../eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md) | Có đặc tả admission/bed/treatment/medical discharge/settlement/close; medical discharge khác administrative close. Code hiện mới foundation. |
 | [Billing V2](../../eproject_general_plan/backend-spec/care-finance-v2/06-billing.md) | Account/charge/payment request/transaction/allocation/settlement; exact clearance; classified payment/refund; còn gap dữ liệu recognition/revision cho Report. |
 | [Clinical V2](../../eproject_general_plan/backend-spec/care-finance-v2/03-clinical.md), [Lab V2](../../eproject_general_plan/backend-spec/care-finance-v2/04-lab.md) | Episode ngoại trú appointment-backed; completion/disposition/referral; Lab order/clearance/result version và exact order correlation. |
@@ -38,7 +38,7 @@ Giữ 16 mã task cha H-01, S-01…07, P-01…03, R-01…04, X-01. Subtask mới
 | NGAY | Làm độc lập trong scope Huy: tài liệu, characterization hoặc code đã đủ ngữ nghĩa, mặc định không bật V2. |
 | LOCAL | Code/test offline sau task nội bộ được ghi rõ; không cần producer chạy live. Fixture tự viết chỉ là test nội bộ, chưa đạt gate liên service. |
 | CONTRACT | Lát cắt cần chốt chính xác field/policy còn mâu thuẫn hoặc fixture owner; không đoán ID/giá/ý nghĩa tiền. Các phần khác tiếp tục được. |
-| SURGERY-G0 | Chờ xử lý §14 của candidate và các gap liên quan; không tạo module rỗng để lách gate. |
+| SURGERY-G0 | Huy-local defaults §14 đã được chọn, nên có thể làm domain/schema nội bộ theo các quyết định đó; các cạnh REST/event và fields do service khác sở hữu vẫn chờ handoff/fixture. |
 | OWNER | Cần owner khác/shared integrator thực hiện; Huy chuẩn bị handoff và kiểm thử consumer, không sửa production ngoài phạm vi. |
 | VERIFY | Code đã có hoặc đã viết test nhưng cần thực thi lại trên môi trường tương ứng. |
 | ĐÃ CÓ | Giữ/reuse implementation hoặc thiết kế cũ, không lập lại như tính năng chưa làm. |
@@ -78,11 +78,11 @@ SPEC_CHOICE = spec mới đã chọn hướng nhưng không tự chứng minh ap
 |---|---|---|---|
 | D01 | Surgery candidate chọn cả ADMISSION và OUTPATIENT; admission episode đúng admissionId. | E01: chưa Surgery. | CONFLICT: candidate buộc outpatient episode=recordId, canonical dùng appointmentId nếu có lịch; Surgery–Billing còn mô tả admission. H-01.2 khóa mapping/fixture cho từng context; không backfill ID suy đoán. |
 | D02 | Candidate dùng surgeryRequestId unique; Clinical/Inpatient là referral producers, case do Surgery tạo. | E01/E02/E09: chưa producer referral hay case. | PARTIAL: chưa có wire post-case charge fact mang caseId + planned items. Không dùng cùng surgery.requested cho hai producer/ý nghĩa khác. H-01.2, S-03.1, S-04.2. |
-| D03 | Có checklist rows/status/mandatory/evidence và sáu readiness guards. | E01/E09: chưa Surgery/evidence correlation. | PARTIAL: template catalogue/version, mandatory NOT_APPLICABLE, expiry/correction và exact order/case chưa đủ. H-01.3, S-05.1; không tick từ Lab result bất kỳ. |
-| D04 | Schedule/team DDL, room_reference, guard eligibility và yêu cầu chống overlap đã có. | E11 chỉ doctor lookup cũ; chưa resource booking. | PARTIAL: room authority, staff-role mapping, interval/buffer/TTL, DB chống tranh slot; index thường không chặn overlap. H-01.3, S-06.1–3. |
-| D05 | SPEC_CHOICE: chuẩn bị/xác nhận slot khi PREOP; READY xong mới chuyển SCHEDULED; START chỉ SCHEDULED. | E01: chưa runtime. | Đã giải được vòng READY–schedule ở thiết kế; còn API phân biệt prepare/finalize, invalidation/re-ready revision và expiry. H-01.3, S-05.4, S-06.4. |
-| D06 | SPEC_CHOICE: consent ACTIVE/REVOKED; override chỉ FINANCIAL_EMERGENCY, không bỏ consent/checklist/team/room. | E01: chưa runtime. | Còn consent types/signer/witness, revoke endpoint/role, approver/self-approve/expiry và audit. H-01.3, S-05.2, S-07.3; không nhận role người duyệt tự khai. |
-| D07 | Actual itemCode/priceCode/quantity; one result/case; Billing định giá. | E01: chưa runtime. | CONFLICT: chart chỉ hủy trước START nhưng enum có IN_PROGRESS_ABORTED; thiếu partial-work payload/revision/correction; completed category khác Inpatient complicationsSummary. H-01.2–3, S-07.2/4. |
+| D03 | Có checklist rows/status/mandatory/evidence và sáu readiness guards. | E01/E09: chưa Surgery/evidence correlation. | PARTIAL: Huy chọn template version/snapshot; Vinh còn phải xác nhận mandatory set, evidence source/correlation; NOT_APPLICABLE, expiry/correction chưa đủ. H-01.3.3, S-05.1; không tick từ Lab result bất kỳ. |
+| D04 | Schedule/team DDL, room_reference, guard eligibility và yêu cầu chống overlap đã có. | E11 chỉ doctor lookup cũ; chưa resource booking. | PARTIAL: Huy chọn không tạo room master trùng và interval UTC `[start,end)` không buffer; Organization room source/job-title mapping còn thiếu, DB phải chống tranh slot. H-01.3.3, S-06.1–3. |
+| D05 | SPEC_CHOICE: chuẩn bị/xác nhận slot khi PREOP; READY xong mới chuyển SCHEDULED; START chỉ SCHEDULED. | E01: chưa runtime. | Huy đã chọn prepare/finalize, invalidation snapshot khi guard thay đổi, chỉ reserve khi finalize; API/runtime và owner fixture còn thiếu. H-01.3.2/.3, S-05.4, S-06.4. |
+| D06 | SPEC_CHOICE: consent ACTIVE/REVOKED; override chỉ FINANCIAL_EMERGENCY, không bỏ consent/checklist/team/room. | E01: chưa runtime. | Huy chọn hai consent type riêng và override disabled V1; guardian/witness/signer authorization, revoke endpoint/role và audit implementation còn chờ clinical policy. H-01.3.3, S-05.2, S-07.3; không nhận role người duyệt tự khai. |
+| D07 | Actual itemCode/priceCode/quantity; one result/case; Billing định giá. | E01: chưa runtime. | Huy chọn chỉ cancel trước START trong V1 và code/quantity-only; partial-abort payload/revision/correction bị defer; Billing validation/adjustment và completed category vs Inpatient summary vẫn cần contract. H-01.2–3, S-07.2/4. |
 | D08 | SPEC_CHOICE Pharmacy: v0 compatibility, v1 exact context; một đơn tối đa một slip; ADMISSION cần active projection đúng patient/khoa, không prepaid. | E03–E05: one-slip, reservation/payment/stock/outbox/actor đã có; chưa V2. | Không hỏi lại full vs multiple dispense cho V1. Còn medical-discharge eligibility, transfer/freshness/order và cancel/expiry/failure charge adjustment. P-02/P-03; multiple-dose/returns ngoài V1. |
 | D09 | Billing target có transactionId/refund original/account/classification, settlement totals; Report có 5 nhóm chỉ tiêu riêng. | E06/E08: legacy invoice/compensation, chưa ledger V2. | PARTIAL: payload thiếu allocated earned/deposit-release/split department và settlement version/supersedes; cash gross/net, period và receivable stock/delta chưa thống nhất. H-01.5, R-03. |
 | D10 | Inpatient tách medical discharge và CLOSED; Report target dùng admission.closed cho discharge/LOS, Surgery có actual times/category. | E02/E06/E09: chưa admission/surgery KPI. | PARTIAL: chốt tên administrative duration vs medical LOS, close thiếu department phải lấy exact start snapshot; thiếu bed transfer/release/capacity. R-04 không công bố occupancy bằng active admission count. |
@@ -140,9 +140,10 @@ Feature flag target: mediflow.features.care-finance-v2=false ở Pharmacy/Report
 - [ ] **H-01.2 · CONTRACT · episode/referral/event mapping:** với Vinh/Lộc khóa D01/D02/D07 và ready/completed/cancelled field gaps. Đầu ra: mỗi context có request→case→charge→clearance→result fixture, exact source key, producer, version, consumers và pricing boundary. Test plan: một clinical intent đi qua hai producers vẫn một case/charge; appointment-backed không đổi episode khi record xuất hiện.
   - [x] **H-01.2.1 · DONE/LOCAL:** đối chiếu và ghi trong [handoff G0 chung](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) các xung đột episode outpatient, producer/referral key, post-case charge bridge, clearance scope và field gaps của ready/completed/cancelled.
   - [ ] **H-01.2.2 · CONTRACT:** Vinh/Lộc/Huy chốt mapping và cùng-version producer/consumer fixtures; handoff còn OPEN cho tới khi canonical contract/spec và test links được cập nhật.
-- [ ] **H-01.3 · SURGERY-G0 · local policy acceptance:** ghi từng lựa chọn §14, template/consent/room/team, prepare-vs-finalize schedule, invalidation, override, pre-start cancel/partial abort, naming/DDL mapping. Ưu tiên chấp nhận phần không mâu thuẫn của candidate; phần không hỗ trợ V1 phải ghi rõ reject, không triển khai nửa đường. Acceptance: transition table và negative cases đủ để viết domain tests, có người/ngày/link xác nhận thật.
+- [ ] **H-01.3 · SURGERY-G0 · policy + external acceptance:** Huy-local V1 defaults đã được chọn theo ủy quyền và có thể dùng cho domain work. Các phần giao cắt vẫn cần Vinh/Lộc/Hoàng Anh xác nhận; không bật wire integration hoặc đánh dấu G0 hoàn tất trước canonical updates/fixtures.
   - [x] **H-01.3.1 · DONE/LOCAL:** lập đủ 8 lựa chọn §14 thành proposal có mặc định an toàn, owner và evidence cần thiết trong [handoff G0 chung](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md); không ghi proposal là approval.
-  - [ ] **H-01.3.2 · OWNER:** Huy xác nhận các lựa chọn thuộc Surgery; Vinh/Lộc/Hoàng Anh xác nhận phần giao cắt tương ứng, ghi ngày/link. Candidate và scaffold vẫn blocked trước acceptance thật.
+  - [x] **H-01.3.2 · DONE/LOCAL by delegation (2026-09-28):** chọn Huy-owned defaults cho episode, checklist template ownership, typed consent, room reference, team roles, disabled V1 override, pre-start-only cancellation, code/quantity-only items và READY/schedule invalidation; xem [handoff G0 chung](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). Đây là delegated implementation decision, không giả lập xác nhận cá nhân hay cross-owner approval.
+  - [ ] **H-01.3.3 · CONTRACT/OWNER:** Vinh/Lộc/Hoàng Anh xác nhận clinical evidence/consent, episode/referral/charge/clearance/event fields, Organization room/staff lookup và fixtures; cập nhật canonical docs. Handoff vẫn OPEN cho tới acceptance này.
 - [ ] **H-01.4 · NGAY/CONTRACT · compatibility matrix:** chốt selector request/event v0-v1; V2-only fields thiếu không downgrade sang v0. Inventory cả created/filled/failed/cancelled/expired, consumers Clinical/Inpatient/Billing/Notification/Report. Acceptance: old outbox bytes không bị rewrite; raw legacy fixture và V1 envelope đều có phiên bản/nguồn rõ.
   - [x] **H-01.4.1 · DONE/LOCAL:** inventory source hiện tại cho đủ 5 Pharmacy events và consumers trong repo. `created`/`dispense.failed`/`cancelled`/`expired` chỉ có Billing; `filled` có Billing, Clinical, Inpatient, Notification và Report. Tất cả producer DTO hiện tại là flat legacy, không có `version`; các fixture legacy hiện hữu được giữ nguyên.
   - [x] **H-01.4.2 · DONE/LOCAL:** đối chiếu V1 harness: Report decoder offline yêu cầu envelope `version=1`, producer và source ID; `prescription.filled` V1 yêu cầu `dispenseId`, trong khi wire legacy hiện chỉ có `prescriptionId`. Decoder chưa bind Rabbit và không thay đổi outbox/consumer legacy.
@@ -156,24 +157,27 @@ Phần tài liệu H-01.6 đã cập nhật ngày 2026-09-27 trong hai Huy hando
 
 ## 6. Surgery — service mới của Huy
 
-Các file dưới đây thuộc backend/surgery-service, hiện chưa tồn tại. Tên class là đích triển khai, không phải bằng chứng có code. Dùng new-microservice/new-service skill đúng lúc scaffold; lượt làm plan này không scaffold.
+Module `backend/surgery-service` hiện có platform foundation và domain core ban đầu cho episode/case lifecycle/readiness. Các model/schema/adapter nghiệp vụ còn lại bên dưới vẫn là đích triển khai. Nền và local decisions được xử lý theo chỉ đạo của Huy; không tự phê duyệt H-01.2/H-01.3 hay thay thế việc đăng ký root/Gateway/DB/Compose.
 
 ### S-01 — module, cấu hình, security và khả năng kiểm thử
 
-**Gate:** H-01.2/3 đạt G0 liên quan; shared integrator nhận bootstrap. **Trạng thái:** chưa code.
-**Files:** pom.xml module, SurgeryServiceApplication, domain/application/web/messaging/infrastructure, application.yml, AGENTS.md, README, Dockerfile, surgery.http và tests.
+**Gate:** platform shell đã có. Domain nội bộ đi theo quyết định Huy đã ghi; REST/event liên service chỉ triển khai khi H-01.2/3 có contract/fixture. Shared integrator xử lý bootstrap ngoài module. **Trạng thái:** nền platform và case/episode lifecycle core đã có; phần nghiệp vụ còn lại chưa triển khai.
+**Files:** `backend/surgery-service/pom.xml`, `SurgeryServiceApplication`, package skeleton, JWT/default-deny security, correlation, feature/config properties, AGENTS, README và tests. Chưa có Dockerfile hoặc request mẫu vì chưa có endpoint nghiệp vụ thật.
 
-- [ ] **S-01.1 · SURGERY-G0:** tạo module theo blueprint và package com.mediflow.surgery, port 8091/DB mediflow_surgery; phiên bản dependency kế thừa. Không tạo API success placeholder.
-- [ ] **S-01.2 · LOCAL sau S-01.1:** cấu hình DB/Rabbit/Eureka/JWT/correlation, flag surgery=false; test profile tách hạ tầng, không secret mặc định dùng production.
-- [ ] **S-01.3 · LOCAL sau S-01.1:** human access-token strict, default-deny; actor account/staff tách rõ. ApiResponse/error mapping, validation và 401/403 cho access/refresh/service/missing type.
+- [x] **S-01.1 · DONE/LOCAL · foundation-only:** tạo module theo blueprint và package `com.mediflow.surgery`, port 8091/DB `mediflow_surgery`; dependency dùng version kế thừa. Không tạo API success placeholder; domain model thuộc S-02.
+- [x] **S-01.2 · DONE/LOCAL:** cấu hình DB/Rabbit/Eureka/JWT/correlation, feature flag mặc định false và test profile tách hạ tầng; module tests pass.
+- [x] **S-01.3 · DONE/LOCAL:** JWT human access-token với account UUID tách staff/patient/department identity, default-deny cho API chưa xác thực và API error response; module tests pass.
 - [ ] **S-01.4 · OWNER:** dùng [bootstrap handoff](../../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) cho root module, DB, Compose, Gateway; root chưa đăng ký thì không báo reactor build toàn repo đã hỗ trợ Surgery.
-- [ ] **S-01.5 · VERIFY:** ArchitectureTest, config/context và health; chỉ thêm request .http cho endpoint thật. Acceptance: module build và auth tests pass; shared boot/Gateway ghi evidence riêng.
+- [x] **S-01.5 · DONE/LOCAL:** ArchitectureTest, config/context, health/auth smoke và domain unit tests; 30 tests pass với 0 failures. Không thêm request .http khi chưa có endpoint thật. Root reactor/shared boot/Gateway vẫn cần evidence riêng.
 
 ### S-02 — model, schema và reliable persistence
 
-**Gate:** S-01 + policy/DDL của slice ở H-01.3. **Files:** domain/model, application/port/out, infrastructure/persistence/messaging, db/migration/V1__surgery_core.sql và tests.
+**Gate:** S-01 + quyết định cục bộ Huy đã ghi ở H-01.3. Có thể làm model/schema nội bộ theo các quyết định này; referral inbound, wire charge/clearance, evidence lâm sàng và room/staff do Organization sở hữu vẫn cần fixture từ owner. **Files:** domain/model, application/port/out, infrastructure/persistence/messaging, db/migration/V1__surgery_core.sql và tests.
 
-- [ ] **S-02.1 · LOCAL sau G0:** SurgeryCase + CareEpisode/Status/Priority; ChecklistItem, Consent, Schedule/Team, Result, ReadinessSnapshot, Clearance, EmergencyOverride và History. Pure domain giữ transition/invariant; phân biệt case-owned data với resource locks dùng chung nhiều case.
+- [ ] **S-02.1 · LOCAL theo quyết định Huy:** hoàn thiện domain thuần Java: case/episode lifecycle, checklist, consent, schedule/team, result, readiness và history. Emergency override không thuộc V1; clearance wire model chờ contract Billing. Phân biệt case-owned data với resource locks dùng chung nhiều case.
+  - [x] **S-02.1.1 · DONE/LOCAL:** exact care-episode identity, SurgeryCase state lifecycle, immutable readiness snapshot, cả hai typed consent guards, START recheck, invalidation và cancellation chỉ trước IN_PROGRESS; 13 domain unit tests pass.
+  - [ ] **S-02.1.2 · LOCAL/CONTRACT:** checklist/template snapshot, consent signer/witness policy, schedule/team/resource models; dùng default Huy nhưng không khóa evidence/job-title/room fields trước xác nhận Vinh/Hoàng Anh.
+  - [ ] **S-02.1.3 · CONTRACT:** Billing clearance domain shape và early-delivery behavior sau khi Lộc xác nhận event contract.
 - [ ] **S-02.2 · LOCAL sau S-02.1:** physical DDL đã map naming; UUID/FK nội bộ, unique surgeryRequestId/result/active consent, version, time/enum/nonblank/check, index query/outbox. Bổ sung template revision, authorization tuple và revision/fingerprint cần thiết đã được khóa; không copy thiếu từ DDL minh họa.
 - [ ] **S-02.3 · LOCAL sau S-02.2:** ports framework-free + JPA entities/mappers/adapters; optimistic version và row lock cho command; resource lock order thống nhất S-06. ORM round-trip không làm mất audit/episode.
 - [ ] **S-02.4 · LOCAL sau G0 reliability:** inbox eventId/type/version/fingerprint; cùng ID/cùng nội dung no-op, khác nội dung conflict; business command/referral key riêng. Pending early clearance giữ payload tối thiểu/reason/retry state, chưa đánh dấu APPLIED.
@@ -351,10 +355,10 @@ Không tạo handoff trùng cho gap đã có; cập nhật requirement còn thi�
 |---|---|---|
 | 1 — làm ngay | P-01.3 baseline → P-02.1 context policy/flag → H-01.4 compatibility → P-02.2/3 migration/DTO và test local | Không. Chỉ chặn phần field/policy còn gap; writer V1 vẫn off. |
 | 2 — Report foundation | R-02.2 regression → R-01.1 namespace/decoder harness → H-01.5 source/metric keys → R-01.2/3 → journal/replay | Không cần Surgery cho nền hay finance; từng projector cần source tương ứng. |
-| 3 — Surgery | H-01.2/3 chốt candidate + shared assignment → S-01/02 → S-03/04 → S-06 prepare + S-05 guards → S-06 finalize → S-07 | Gate §14 có thật; shared bootstrap là blocker khác quyết định nghiệp vụ. |
+| 3 — Surgery | platform-only S-01 foundation → Huy-local §14 defaults → S-02 internal domain/schema → owner fixtures for each H-01.2/3 edge → S-03/04 → S-06 prepare + S-05 guards → S-06 finalize → S-07 | Huy-local decisions unblock internal work; do not enable cross-service integrations before their owners confirm contracts. Shared bootstrap remains separately assigned. |
 | 4 — integration riêng | Billing clearance → outpatient V1; Inpatient lifecycle → admission thuốc; Billing finance → Report finance; Surgery outcomes → Report surgery | Mỗi slice đạt G1/G2/G3 riêng, không chờ cả 12 D cùng đóng. |
 
-Đã hoàn tất local P-01.3, P-02.1, R-02.2, R-01.1 và các audit H-01.4.1/2, H-01.5.1 ngày 2026-09-28; xem evidence §10.1. H-01.2.1/H-01.3.1 proposal đã được gom vào handoff chung; H-01.2.2/H-01.3.2 còn chờ xác nhận và fixture owner. Không còn subtask code “râu ria” Pharmacy/Report có thể đóng an toàn nếu thiếu contract. Report finance không phải gate để bắt đầu Surgery; tuy vậy S-01.1 vẫn chờ H-01.2/3 được chấp nhận và shared integrator xác nhận bootstrap.
+Đã hoàn tất local P-01.3, P-02.1, R-02.2, R-01.1 và các audit H-01.4.1/2, H-01.5.1 ngày 2026-09-28; xem evidence §10.1. H-01.2.1/H-01.3.1 proposals đã được gom vào handoff chung; H-01.3.2 Huy-local defaults được quyết định theo ủy quyền ngày 2026-09-28. H-01.2.2/H-01.3.3 vẫn chờ owner confirmations/fixtures. Surgery platform + case/episode domain core hiện có, 30 module tests pass; root reactor/Docker/shared integration chưa chạy vì registration chưa có. Không còn subtask code “râu ria” Pharmacy/Report có thể đóng an toàn nếu thiếu contract. Report finance không phải gate để bắt đầu Surgery; Surgery-owned internal domain work có thể tiến hành theo default đã ghi, integration edges vẫn theo handoff.
 
 ### X-01 — kiểm thử hệ thống, rollout và báo cáo bằng chứng
 
@@ -396,7 +400,7 @@ Không tạo handoff trùng cho gap đã có; cập nhật requirement còn thi�
 - Report giữ nguyên năm routing bindings và ba API; V2 flag vẫn false, không tạo live listener, projector, migration hoặc endpoint.
 - Build scope chỉ Pharmacy/Report cùng dependencies trong Maven reactor; không sửa Common/Gateway hay producer ngoài scope. git diff --check sạch.
 - **H-01.4/5 audit 2026-09-28:** xác nhận actual Pharmacy legacy event shapes/consumer bindings và đối chiếu offline V1 decoder/source key; đồng thời ghi rõ Report metric/replay source gaps. Chỉ các subtask `.1/.2` nêu trên được DONE/LOCAL; chưa có V1 producer bytes, owner approval hoặc shared expected-totals fixture, nên parent H-01.4/5 vẫn OPEN.
-- **H-01.2/3 handoff 2026-09-28:** cập nhật [handoff Surgery G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) làm một đầu mối chung đã có trong registry; ghi episode/referral/charge/event mapping proposals, đủ tám lựa chọn §14, owner cần phản hồi và acceptance evidence. Chỉ H-01.2.1/H-01.3.1 là DONE/LOCAL; không có owner approval/fixture giả định và S-01.1 vẫn blocked.
+- **H-01.2/3 + domain core 2026-09-28:** [handoff Surgery G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) ghi mapping proposals, tám Huy-local V1 decisions theo ủy quyền, residual owners và evidence cần cung cấp. H-01.3.2 và S-02.1.1 DONE/LOCAL; H-01.2.2/H-01.3.3 vẫn OPEN cho owner fixtures/contract updates. Domain core có 13 unit tests; shared registration vẫn ở bootstrap handoff.
 
 ### 10.2. Checklist đóng mỗi task
 
