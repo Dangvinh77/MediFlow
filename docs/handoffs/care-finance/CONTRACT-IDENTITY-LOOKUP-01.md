@@ -1,8 +1,8 @@
 # CONTRACT-IDENTITY-LOOKUP-01 — Stable identity, lookup and Gateway routing
 
-- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff lookup and Gateway account verification
-  are implemented. The additive Patient and Organization lookup endpoint shapes are now locked, but
-  their producers and several consumer claim migrations remain open.
+- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff lookup, Gateway account verification
+  and the Patient existence/read producer slice are implemented. End-to-end Patient acceptance,
+  Gateway routes and several consumer claim migrations remain open.
 - **Producer owners:** Organization, Patient, Gateway — Hoàng Anh
 - **Consumers:** Clinical, Lab, Pharmacy, Billing, Notification, Inpatient, Surgery
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -80,6 +80,8 @@ Implemented baseline:
 
 - Organization returns `ApiResponse<StaffLookupDTO>` with `exists`, `eligibleDoctor` and
   authoritative `departmentId`; Clinical already projects the three states and preserves outages.
+- Patient exposes the locked service-only existence lookup and human read/list contracts; Clinical
+  already distinguishes confirmed absence from malformed/unavailable responses.
 - Clinical signs its Organization lookup credential with `type=service`, `role=SYSTEM`, a
   `clinical-service` subject and a 60-second lifetime while preserving the request correlation ID.
 - Gateway verifies accounts through Organization, issues typed access/refresh tokens and carries
@@ -87,13 +89,14 @@ Implemented baseline:
 - Pharmacy consumes the explicit `staffId` claim and never treats `sub` as a staff identity.
 
 Open work is listed only in the [active handoff registry](../README.md), including Patient
-read/existence APIs and consumer JWT claim migrations.
+end-to-end/shared-fixture acceptance and consumer JWT claim migrations.
 
 ## Planned Inpatient/Surgery routing
 
-The Inpatient foundation now has its module, port, and Compose configuration, while its Gateway
-route remains open in [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../HANDOFF-INPATIENT-GATEWAY-ROUTE.md).
-Surgery remains unscaffolded. Gateway routes for `/api/v1/inpatient/**` and
+Inpatient Core V1 now has business APIs and guarded integrations, while its Gateway route remains
+open in [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../HANDOFF-INPATIENT-GATEWAY-ROUTE.md).
+Surgery has a bootable foundation and initial domain core but no business API/schema/events yet.
+Gateway routes for `/api/v1/inpatient/**` and
 `/api/v1/surgery/**` use service discovery and the same auth/correlation policies when implemented;
 neither route is live before health and authorization tests pass.
 

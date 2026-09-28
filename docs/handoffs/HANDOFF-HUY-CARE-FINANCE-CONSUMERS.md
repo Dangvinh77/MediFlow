@@ -48,6 +48,19 @@ specs therefore reduce the decision backlog without establishing implementation 
 - Huy may implement legacy-safe changes and the specified additive local V2 models/adapters/tests with activation off. Missing fixtures block live binding/writer/API enablement, not every local scaffold; unresolved amount/identity/policy gaps still block the affected behavior. Do not invent IDs, transaction semantics or producer fixtures. Huy does not edit Clinical, Inpatient, Billing, Notification or Gateway here.
 - Surgery-specific D01–D07/D12 actions remain in [Surgery implementation decisions](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). D08 and D09 appear there only as cross-context summary; this file supplies Pharmacy/Report consumer acceptance criteria.
 
+## Vinh producer evidence — 2026-09-28
+
+Vinh's next producer slice supplies deterministic version-1 fixtures for Clinical
+`admission.requested` and the currently approved Inpatient lifecycle events under each service's
+`src/test/resources/contracts/` directory. Producer tests serialize the real envelope/wire mapper;
+the Inpatient consumer test reads the same `admission.requested` shape. These fixtures are evidence
+for D08/D10/D11, but they do not enable any feature flag or close this handoff until Huy's consumers
+read the same bytes and the remaining acceptance paths pass.
+
+Still open: Pharmacy admission eligibility/freshness and late compensation, Report bed
+transfer/release/capacity facts and LOS semantics, and a durable replay/cutover policy. No new
+transfer, release, capacity or Surgery event may be inferred from the existing admission events.
+
 ## Close criteria
 
 For each row, record approval owner/date/link in the Huy plan, update the canonical care-finance contract and event catalog with the approved version, pass producer/consumer same-byte and failure-path tests, then remove the resolved row or this handoff from the active registry. A proposal, local decoder test or green build alone does not close a row.

@@ -1,15 +1,17 @@
-# Service: inpatient (planned)
+# Service: inpatient
 
-**Status:** approved bounded context, preliminary bootable foundation only; business service remains planned
+**Status:** Core V1 implemented; cross-service activation remains integration-gated
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
-**Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Planned base path:** `/api/v1/inpatient` (no business endpoint or Gateway route is live)
+**Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Base path:** `/api/v1/inpatient` (Gateway route is not live)
 
-The foundation contains runtime configuration, health/info, OpenAPI assets, default-deny JWT
-security and canonical `X-Correlation-Id` propagation. Business DDL, API DTOs, events and domain
-behavior wait for the future implementation-ready Inpatient spec. The Inpatient business contracts
-remain `DESIGN_READY`;
-the shared identity contract retains its separately tracked `PARTIAL` status.
+Core V1 now contains the implementation-ready DDL, admission/bed/treatment/discharge APIs, domain
+state machine, outbox publisher and guarded consumers from
+[`10-inpatient.md`](../../eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md).
+Producer and consumer activation remain off until the named service owners pass the canonical
+same-byte fixtures. The Gateway route is still tracked separately. Inpatient business contracts
+therefore remain `DESIGN_READY`; the shared identity contract retains its separately tracked
+`PARTIAL` status.
 
 ## Bounded context
 
@@ -30,8 +32,8 @@ surgery cases or money. Those remain bare UUID references and event snapshots.
 - `DISCHARGE_SUMMARY`: diagnosis/outcome/instructions, approver and medical approval time.
 - `ADMISSION_STATUS_HISTORY`: old/new state, actor, reason, time and correlation.
 
-Physical DDL and Vietnamese/English naming mapping are defined in the future implementation-ready
-spec. No other service may create these tables temporarily.
+Physical DDL and Vietnamese/English naming mapping are implemented from the Inpatient backend spec.
+No other service may create or query these tables.
 
 ## State machine
 
@@ -44,7 +46,7 @@ REQUESTED → AWAITING_BED → AWAITING_DEPOSIT → READY → ADMITTED
 bypass the financial wait but must record audit and create a Billing receivable. It does not bypass
 the need for a bed assignment unless the future spec defines an emergency holding location.
 
-## Planned endpoints
+## Core V1 endpoints
 
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
@@ -56,7 +58,8 @@ the need for a bed assignment unless the future spec defines an emergency holdin
 | POST | `/api/v1/inpatient/admissions/{id}/medical-discharge` | ADMIN, DOCTOR | approve medical discharge |
 | POST | `/api/v1/inpatient/admissions/{id}/close` | ADMIN, CASHIER | administrative close after settlement/override |
 
-Exact request/response DTOs require a dedicated implementation spec before coding.
+Exact request/response DTOs and the additional bed/treatment endpoints are defined by the
+implementation-ready Inpatient backend spec and implemented in the service controller.
 
 ## Events
 
@@ -88,10 +91,10 @@ Lab/Pharmacy completion facts needed for the admission timeline.
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
 - [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../../handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md)
 
-## Scaffold/implementation gate
+## Integration activation gate
 
-Before business code: write an implementation-ready spec, then implement its exact business DDL,
-API, events and tests. The foundation already registers the module, configures Flyway/JPA/Eureka,
-creates the empty database, wires Compose and adds nested `AGENTS.md`. The Gateway route remains
-tracked by the active handoff above. Contract status stays `DESIGN_READY` until dependent producers
-and consumers share passing fixtures.
+Core business DDL, APIs, events and tests are implemented. Keep Inpatient RabbitMQ producer and
+consumer flags disabled until dependent producers and consumers share passing fixtures. Do not add
+bed-transfer/release/capacity or Surgery wire events before their canonical fields and routing keys
+are approved. The Gateway route remains tracked by the active handoff above. Contract status stays
+`DESIGN_READY` until the integration gates pass.
