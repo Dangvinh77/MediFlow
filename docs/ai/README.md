@@ -22,7 +22,7 @@
 | 05 | [05-api-conventions.md](05-api-conventions.md) | REST paths, DTOs, responses, validation |
 | 06 | [06-events-rabbitmq.md](06-events-rabbitmq.md) | Event naming, exchanges, publish/subscribe |
 | 07 | [07-security-rbac.md](07-security-rbac.md) | JWT, roles, endpoint authorization |
-| 08 | [08-persistence-naming.md](08-persistence-naming.md) | DB naming (VN snake_case) ↔ Java/JSON mapping |
+| 08 | [08-persistence-naming.md](08-persistence-naming.md) | Service-scoped DB ↔ Java/JSON naming, including Huy-owned English identifiers |
 | 09 | [09-testing.md](09-testing.md) | Test layers, coverage bar, tools |
 | 10 | [10-git-workflow.md](10-git-workflow.md) | Branches, commits, PRs |
 | 11 | [11-ide-setup.md](11-ide-setup.md) | IntelliJ / VS Code (Cursor) / NetBeans setup for a mixed-IDE team |
@@ -37,7 +37,7 @@
 
 1. **One bounded context per service.** Never reach into another service's database.
 2. **Copy the blueprint** (`04`) for every new service — package layout is not negotiable.
-3. **DB in Vietnamese snake_case, Java/JSON in camelCase.** Map explicitly (`08`).
+3. **Use the service-scoped DB/Java/JSON naming in `08`.** Map explicitly; Pharmacy, Report and Surgery use English identifiers.
 4. **Change data → publish an event.** Cross-service reads are REST; cross-service reactions are events (`06`).
 5. **Every endpoint declares its roles** (`07`). No endpoint is open except gateway `/auth/**` and `/actuator/health`.
 6. **Money is `BigDecimal`**, IDs are `UUID`, times are `Instant`/`LocalDate` — never `float`/`double`/`String` for these.

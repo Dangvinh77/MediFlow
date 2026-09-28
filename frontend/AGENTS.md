@@ -34,8 +34,8 @@ A feature never imports from another feature. Cross-feature code moves up to `co
 - Gateway only via `/api/*`. Never call a service port (`:8081`…) directly.
 - Every HTTP call goes through `src/lib/api.ts`. No raw `fetch` in components.
 - Per-feature DTOs in `features/<ctx>/types.ts` mirror the backend wire contract exactly. Patient
-  uses Vietnamese camelCase (`hoTen`, `maBenhNhan`); Clinical and Lab use English camelCase
-  (`appointmentId`, `recordId`, `testId`).
+  uses Vietnamese camelCase (`hoTen`, `maBenhNhan`); Clinical, Lab, Pharmacy and Report use
+  English camelCase. Future Surgery DTOs also use English camelCase (`docs/ai/08`).
 - **Tailwind utilities only** — no CSS-in-JS, no component library, no ad-hoc per-component CSS files.
 - **No data-fetching library** (no TanStack Query, SWR). Fetch directly through `api.ts`.
 - Role-based UI hiding is UX, not security — the backend enforces authorization.

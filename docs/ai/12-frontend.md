@@ -156,7 +156,8 @@ Never call the gateway path from a component. Components call `patientApi.*`.
 - **Shared** (`lib/types.ts`): `ApiResponse<T>`, `ApiError`, `PageResult<T>` — the envelope from `05`. Defined once.
 - **Per feature** (`features/<ctx>/types.ts`): the DTOs of that context, field-for-field identical
   to its Java records. Patient currently uses Vietnamese camelCase (`hoTen`, `maBenhNhan`,
-  `ngaySinh`); Clinical and Lab use English camelCase (`appointmentId`, `recordId`, `testId`).
+  `ngaySinh`); Clinical, Lab, Pharmacy and Report use English camelCase. Future Surgery DTOs
+  also use English camelCase (`appointmentId`, `recordId`, `surgeryCaseId` are examples).
 
 When a backend DTO changes, the matching `features/<ctx>/types.ts` changes **in the same PR**. A
 frontend type that has drifted from its DTO is a bug that TypeScript cannot catch for you.

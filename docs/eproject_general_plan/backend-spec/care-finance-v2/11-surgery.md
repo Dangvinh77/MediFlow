@@ -2,13 +2,15 @@
 
 **Owner:** Huy (`LQHuy0210`)
 
-**Planned module:** `backend/surgery-service`
+**Module:** `backend/surgery-service` — platform and initial pure-Java domain exist; business persistence/API/messaging are not implemented yet.
 
 **Package / port / database:** `com.mediflow.surgery` / `8091` / `mediflow_surgery`
 
 **Base path:** `/api/v1/surgery`
 
-**Status:** detailed implementation candidate; scaffold is blocked until the decision gate in §14 is accepted
+**Status (2026-09-28):** cross-service implementation candidate. Huy-delegated local V1 decisions permit internal code; unresolved wire/clinical/identity inputs still require owner acceptance. The executable backlog is [Huy plan §6](../../../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog), with decisions in the [active handoff](../../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). Do not scaffold the module again or treat all §14 rows as blockers for local persistence/tests.
+
+**Example maturity:** SQL/DTO snippets below remain candidate illustrations, not copy-ready migrations or approved wire contracts. They omit revision/receipt/resource-lock details added to the current plan, use naming requiring correction, and retain future override shapes. Local V1 has **no override implementation/table/endpoint**. S-02/S-03/S-04 must finalize each affected schema/API/contract before implementing that slice; no shared contract is approved by this plan update.
 
 ## 1. Sources and boundary
 
@@ -17,7 +19,7 @@
 - [`CONTRACT-SURGERY-BILLING-01`](../../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
 - [`CONTRACT-CARE-BILLING-01`](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
-- [CURRENT working draft](../10-surgery.md)
+- [Historical working draft / scenario inventory](../10-surgery.md)
 
 Surgery owns case, checklist, consent, schedule, team, readiness snapshot, result and status history.
 It stores bare UUID references to admission/record/patient/staff/department and never owns their
@@ -27,15 +29,15 @@ aggregates or Billing amounts.
 
 - `surgeryRequestId` is the producer idempotency key and creates at most one case.
 - Inpatient case: `careEpisodeType=ADMISSION`, `careEpisodeId=admissionId`, `recordId` optional.
-- Outpatient case: `careEpisodeType=OUTPATIENT_VISIT`, `careEpisodeId=recordId`, `admissionId` null.
+- Outpatient case: `careEpisodeType=OUTPATIENT_VISIT`, exact selected `appointmentId` when appointment-backed, otherwise `recordId`; `admissionId` null. A distinct recordId remains clinical context and does not replace an already selected episode. This is the Huy-local choice following CARE-BILLING; producer mapping/shared fixtures remain open.
 - Patient and department must match the request forever; no lookup by latest admission/record.
 
 ## 3. Database — `V1__surgery_core.sql`
 
-Database identifiers follow the project Vietnamese snake_case rule; Java/JSON remains English.
+Surgery-owned database identifiers follow English snake_case; Java/HTTP DTO and Surgery-owned event payload fields follow English camelCase under the Huy-scoped exception in `docs/ai/08`. Class names/URLs remain English. Cross-service keys produced by another owner follow their accepted canonical version and must not be silently translated. This is a V2 target candidate, not the exact already-implemented V1 schema: compare each proposed field/table against the live Surgery migration and contract gate before implementation. S-02.2 has completed the V1 mapping; S-04.6 must preserve these English wire names when business endpoints are added.
 
 ```sql
-CREATE TABLE ca_phau_thuat (
+CREATE TABLE surgery_case (
     surgery_case_id UUID PRIMARY KEY,
     surgery_request_id UUID NOT NULL UNIQUE,
     care_episode_type VARCHAR(32) NOT NULL,
@@ -71,11 +73,11 @@ CREATE TABLE ca_phau_thuat (
          'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))
 );
 CREATE INDEX idx_surgery_schedule_board
-    ON ca_phau_thuat(department_id, status, requested_at);
+    ON surgery_case(department_id, status, requested_at);
 
-CREATE TABLE muc_kiem_tra_tien_phau (
+CREATE TABLE preop_checklist_item (
     checklist_item_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     item_code VARCHAR(64) NOT NULL,
     mandatory BOOLEAN NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
@@ -87,9 +89,9 @@ CREATE TABLE muc_kiem_tra_tien_phau (
     CONSTRAINT ck_preop_status CHECK (status IN ('PENDING', 'SATISFIED', 'NOT_APPLICABLE', 'FAILED'))
 );
 
-CREATE TABLE dong_y_phau_thuat (
+CREATE TABLE surgery_consent (
     consent_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     consent_type VARCHAR(40) NOT NULL,
     signer_reference UUID NOT NULL,
     witness_staff_id UUID NOT NULL,
@@ -102,11 +104,11 @@ CREATE TABLE dong_y_phau_thuat (
         (status = 'ACTIVE' OR (revoked_at IS NOT NULL AND revocation_reason IS NOT NULL))
 );
 CREATE UNIQUE INDEX uq_active_surgery_consent
-    ON dong_y_phau_thuat(surgery_case_id, consent_type) WHERE status = 'ACTIVE';
+    ON surgery_consent(surgery_case_id, consent_type) WHERE status = 'ACTIVE';
 
-CREATE TABLE lich_phau_thuat (
+CREATE TABLE surgery_schedule (
     schedule_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL UNIQUE REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL UNIQUE REFERENCES surgery_case(surgery_case_id),
     room_reference VARCHAR(64) NOT NULL,
     planned_start TIMESTAMPTZ NOT NULL,
     planned_end TIMESTAMPTZ NOT NULL,
@@ -116,11 +118,11 @@ CREATE TABLE lich_phau_thuat (
     CONSTRAINT ck_surgery_schedule_time CHECK (planned_end > planned_start),
     CONSTRAINT ck_surgery_schedule_status CHECK (status IN ('CONFIRMED', 'CANCELLED', 'COMPLETED'))
 );
-CREATE INDEX idx_surgery_room_time ON lich_phau_thuat(room_reference, planned_start, planned_end);
+CREATE INDEX idx_surgery_room_time ON surgery_schedule(room_reference, planned_start, planned_end);
 
-CREATE TABLE thanh_vien_ekip_phau_thuat (
+CREATE TABLE surgery_team_assignment (
     team_member_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     staff_id UUID NOT NULL,
     team_role VARCHAR(32) NOT NULL,
     active_from TIMESTAMPTZ NOT NULL,
@@ -129,9 +131,9 @@ CREATE TABLE thanh_vien_ekip_phau_thuat (
     CONSTRAINT ck_team_interval CHECK (active_to IS NULL OR active_to > active_from)
 );
 
-CREATE TABLE ket_qua_phau_thuat (
+CREATE TABLE surgery_result (
     result_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL UNIQUE REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL UNIQUE REFERENCES surgery_case(surgery_case_id),
     performed_method TEXT NOT NULL,
     outcome VARCHAR(40) NOT NULL,
     complications_summary TEXT,
@@ -142,9 +144,9 @@ CREATE TABLE ket_qua_phau_thuat (
     CONSTRAINT ck_surgery_result_time CHECK (completed_at > started_at)
 );
 
-CREATE TABLE anh_chup_san_sang_phau_thuat (
+CREATE TABLE surgery_readiness_snapshot (
     readiness_snapshot_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     indication_valid BOOLEAN NOT NULL,
     checklist_complete BOOLEAN NOT NULL,
     consent_active BOOLEAN NOT NULL,
@@ -155,12 +157,12 @@ CREATE TABLE anh_chup_san_sang_phau_thuat (
     evaluated_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE xac_nhan_tai_chinh_phau_thuat (
+CREATE TABLE surgery_financial_clearance (
     clearance_id UUID PRIMARY KEY,
     event_id UUID NOT NULL UNIQUE,
     account_id UUID NOT NULL,
     invoice_id UUID NOT NULL,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     admission_id UUID,
     patient_id UUID NOT NULL,
     amount DECIMAL(19,2) NOT NULL CHECK (amount >= 0),
@@ -169,9 +171,9 @@ CREATE TABLE xac_nhan_tai_chinh_phau_thuat (
     granted_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE phe_duyet_ngoai_le_phau_thuat (
+CREATE TABLE surgery_override_approval (
     override_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     override_type VARCHAR(32) NOT NULL,
     approved_by UUID NOT NULL,
     approver_role VARCHAR(32) NOT NULL,
@@ -182,9 +184,9 @@ CREATE TABLE phe_duyet_ngoai_le_phau_thuat (
         (override_type = 'FINANCIAL_EMERGENCY')
 );
 
-CREATE TABLE lich_su_trang_thai_phau_thuat (
+CREATE TABLE surgery_status_history (
     history_id UUID PRIMARY KEY,
-    surgery_case_id UUID NOT NULL REFERENCES ca_phau_thuat(surgery_case_id),
+    surgery_case_id UUID NOT NULL REFERENCES surgery_case(surgery_case_id),
     from_status VARCHAR(32),
     to_status VARCHAR(32) NOT NULL,
     actor_id UUID,
@@ -193,13 +195,13 @@ CREATE TABLE lich_su_trang_thai_phau_thuat (
     changed_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE su_kien_da_xu_ly_phau_thuat (
+CREATE TABLE surgery_inbox (
     event_id UUID PRIMARY KEY,
     event_type VARCHAR(100) NOT NULL,
     processed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE su_kien_outbox_phau_thuat (
+CREATE TABLE surgery_outbox (
     event_id UUID PRIMARY KEY,
     aggregate_type VARCHAR(64) NOT NULL,
     aggregate_id UUID NOT NULL,
@@ -212,15 +214,15 @@ CREATE TABLE su_kien_outbox_phau_thuat (
     retry_count INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_surgery_outbox_unpublished
-    ON su_kien_outbox_phau_thuat(occurred_at) WHERE published_at IS NULL;
+    ON surgery_outbox(occurred_at) WHERE published_at IS NULL;
 
-ALTER TABLE ca_phau_thuat
+ALTER TABLE surgery_case
     ADD CONSTRAINT fk_surgery_clearance
         FOREIGN KEY (financial_clearance_id)
-        REFERENCES xac_nhan_tai_chinh_phau_thuat(clearance_id),
+        REFERENCES surgery_financial_clearance(clearance_id),
     ADD CONSTRAINT fk_surgery_override
         FOREIGN KEY (emergency_override_id)
-        REFERENCES phe_duyet_ngoai_le_phau_thuat(override_id);
+        REFERENCES surgery_override_approval(override_id);
 ```
 
 ## 4. State machine and readiness
@@ -235,14 +237,15 @@ READY and START both require:
 ```text
 valid indication
 AND every mandatory checklist item satisfied
-AND active consent
+AND active SURGERY consent AND active ANESTHESIA consent
 AND eligible team assigned
 AND confirmed room/time
-AND matching SURGERY clearance or audited financial emergency override
+AND matching, valid SURGERY clearance
 ```
 
-Emergency override may replace only the financial guard. It never fabricates consent, checklist,
-team or schedule readiness.
+Emergency override is disabled in local V1, including for ADMIN. A future approved version may
+replace only the financial guard, never consent/checklist/team/schedule. Candidate override snippets
+below are future-design material, not authorization to implement a V1 bypass.
 
 The schedule row may be prepared and confirmed while the case is `PREOP_IN_PROGRESS`; that does not
 change the case status. Readiness evaluation then moves the case to `READY`. The explicit scheduling
@@ -318,7 +321,7 @@ codes. Actor IDs come from verified claims, not request bodies where the acting 
 
 1. Lock case, checklist, consent and schedule.
 2. Check team eligibility snapshots and overlapping room/team schedules.
-3. Match non-expired clearance by case, patient and episode, or validate financial override.
+3. Match valid, non-expired/non-revoked clearance by exact case, patient and episode; no V1 override.
 4. Persist immutable readiness snapshot.
 5. Move to READY and append `surgery.ready` only when every guard is true.
 
@@ -326,7 +329,7 @@ codes. Actor IDs come from verified claims, not request bodies where the acting 
 
 - START re-evaluates all guards and moves only `SCHEDULED → IN_PROGRESS`.
 - COMPLETE inserts one result, records actual item/price codes and appends `surgery.completed`.
-- CANCEL requires stage and reason; it preserves charges/payments and appends `surgery.cancelled` so
+- CANCEL is pre-start only, derives stage from persisted state and requires a reason; it preserves charges/payments and appends `surgery.cancelled` so
   Billing applies adjustment policy.
 
 ## 7. REST endpoints and roles
@@ -386,7 +389,7 @@ Key codes: `SURGERY_CASE_NOT_FOUND` (404), `SURGERY_DUPLICATE_REQUEST` (409),
 |---|---|
 | duplicate request creates one case | `create_duplicateRequest_singleCase` |
 | one missing guard blocks ready | `evaluateReadiness_eachMissingGuard_rejects` |
-| override bypasses finance only | `evaluateReadiness_overrideCannotBypassConsent` |
+| V1 rejects every financial override/bypass | `evaluateReadiness_overrideDisabled_rejects` and `start_missingClearance_evenAdmin_rejects` |
 | wrong case/admission clearance rejected | `onClearance_wrongTarget_rejects` |
 | room/team conflicts rejected | `schedule_overlappingResource_conflicts` |
 | start rechecks readiness | `start_guardChangedAfterReady_rejects` |
@@ -397,25 +400,35 @@ Key codes: `SURGERY_CASE_NOT_FOUND` (404), `SURGERY_DUPLICATE_REQUEST` (409),
 
 ## 11. Scaffold map
 
-Create the module only after §14 acceptance. Follow the standard clean architecture package map,
-add root Maven module, DB/Compose/Eureka configuration, Gateway feature route, nested `AGENTS.md`,
-security/correlation, Flyway, Rabbit topology, contract fixtures and Testcontainers persistence tests.
+The module, nested `AGENTS.md`, security/correlation and configuration already exist. Follow the
+standard blueprint for remaining models/application/driving adapters/driven adapters. Huy implements
+local Flyway/reliability/contracts/tests; root module, DB/Compose and Gateway wiring are assigned
+separately through the bootstrap handoff, not silently included in Huy's production scope.
 
 ## 12. Rollout
 
-Scaffold technical foundation behind `mediflow.features.surgery=false`; implement request and local
-read model first; enable Billing and Inpatient integrations only when fixtures pass. Gateway route
-stays disabled until health and role tests are green.
+Keep existing `mediflow.features.surgery.enabled`, `mediflow.surgery.messaging.producer.enabled`
+and `mediflow.surgery.messaging.consumers.enabled` false by default. Implement core persistence and
+reliability before real create/read workflows. Enable each integration only after its contract/fixture
+and local tests pass; flags need runtime enforcement, not only property binding. Gateway activation
+requires health/role tests and assigned-owner changes.
 
 ## 13. Definition of Done
 
-The P4 Docker path request → checklist/consent → clearance → schedule → start → complete/cancel must
-pass with duplicate delivery, resource conflicts, expired clearance and emergency override covered.
+The P4 Docker path request → preop → checklist/two consents → clearance → draft schedule → READY →
+finalize → start → complete, plus pre-start cancellation, must pass with duplicate delivery, resource
+conflicts/overrun, expired/revoked clearance and rejected override attempts. Local module tests do
+not substitute for same-version downstream fixtures and actual cross-service/Gateway verification.
 
 ## 14. Owner decision gate
 
-Before production coding, Huy must accept this candidate's explicit choices: episode mapping,
-mandatory checklist catalogue source, consent types/signers, room-reference authority, team-role
-eligibility map, financial-only emergency override, cancellation stage policy, and planned/performed
-item catalogue. Acceptance converts this file from `candidate` to `implementation-ready`; changing
-one choice requires updating the affected producer/consumer fixtures in the same PR.
+Huy-local choices are already recorded by delegation: exact selected episode, immutable checklist
+templates, two typed consents, external room authority, named team roles, no V1 override,
+pre-start-only cancellation and code/quantity-only items. These permit internal implementation;
+they do not approve clinical mandatory sets/signers, Organization eligibility/room lookups, Billing
+catalogue/clearance, referral/reference registration or event consumer semantics owned elsewhere.
+
+Close the corresponding handoff rows and update canonical specs with shared producer/consumer
+fixtures before enabling each integration. The file remains a cross-service `candidate` until its
+required owner inputs and example-schema gaps are resolved. Do not reopen Huy-local choices as
+approval requests or block unrelated local tasks while one contract remains open.

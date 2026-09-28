@@ -28,6 +28,17 @@ The selected episode ID is exact: outpatient uses `appointmentId` when present, 
 an admission uses its exact `admissionId`. A distinct outpatient `recordId` remains clinical context.
 Physical DDL and naming mappings belong to the implementation-ready spec.
 
+Surgery-owned SQL identifiers are English snake_case, and Java/JSON/event fields are English
+camelCase (see `docs/ai/08-persistence-naming.md`). The initial internal schema uses
+`surgery_case`, `preop_checklist_*`, `surgery_consent*`, `surgery_schedule*`,
+`surgery_resource_*`, `surgery_readiness_*`, `surgery_result`, `surgery_inbox` and
+`surgery_outbox`. Its case identity is `surgeryCaseId` / `surgery_case_id`; the exact
+episode fields are `episodeType`, `episodeId`, `admissionId`, and `medicalRecordId`.
+Patient's lookup response remains the Patient-owned English `exists`/`patientId` contract.
+No Surgery business endpoint or published event exists yet, so these names do not constitute
+a breaking change to a live Surgery wire. Future producer/consumer DTOs must be tested
+against the registered handoffs before enabling integrations.
+
 ## State machine
 
 ```text
@@ -74,10 +85,14 @@ Spring Boot entry point, configuration, JWT authentication/default-deny authoriz
 handling, feature flag (disabled by default), package skeleton and test sources. Huy-delegated local
 V1 defaults are recorded in the implementation-decision handoff; they guide internal Surgery work
 but do **not** approve the V2 candidate's still-open cross-service contracts. There is
-not yet a Surgery business endpoint, database migration, persistence adapter, Rabbit event/queue binding,
-or Gateway route. The current domain slice contains exact episode identity and case lifecycle/readiness
-rules. The module-local Maven test suite passes (30 tests); root-reactor, Docker/database
-and Gateway integration are not yet verified. See the current Huy plan for the exact verification scope.
+not yet a Surgery business endpoint, Rabbit event/queue binding, or Gateway route. The current domain
+slice contains exact episode identity and case lifecycle/readiness rules, checklist/consent/schedule/result
+models, snapshot rehydration and business-revision audit. Surgery now has a V1 Flyway schema, case JPA
+mapping, checklist/consent/result persistence adapters, schedule-history readback, resource/reliability
+adapters and an Organization lookup port shape. The newest child persistence slices still need PostgreSQL
+verification; these are internal foundation, not an activated workflow. The module-local suite passed 67 tests before these additions, including PostgreSQL 16 Testcontainers migration,
+JPA, reliability and resource-race tests. Root-reactor, Rabbit and Gateway integration are not yet verified.
+See the current Huy plan for the exact verification scope.
 
 ## Events
 
@@ -107,10 +122,16 @@ complete a checklist item without exact case/order correlation.
 
 ## Business implementation and shared bootstrap gates
 
-The initial internal domain slice is not a production workflow by itself. Before business endpoints, persistence,
-or event consumers/producers are implemented, resolve the relevant H-01.2/H-01.3 decisions and use
-the implementation-ready Surgery specification for the slice. The module-local test suite passes
-(30 tests); root-reactor, Docker/database and Gateway integration are not yet verified. Shared root Maven registration,
+The initial internal domain slice is not a production workflow by itself. The [active Surgery backlog](../../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog)
+separates executable local tasks from unresolved integration edges. Huy-delegated V1 defaults allow
+internal models, persistence, reliability and application tests with port doubles; they do not require
+all H-01.2/H-01.3 rows to close first. Update the slice's local API/schema specification before coding;
+unconfirmed producer fields, clinical evidence/consent policies and Organization eligibility remain
+fail-closed. Wire adapters and real workflows require the corresponding canonical contract/fixtures,
+not just a local mock. V1 has no emergency override, post-start abort or result correction.
+The initial-domain implementation passed 30 tests; the current full module-local suite passed 67 tests
+with real PostgreSQL 16 migration/JPA/reliability/race verification on 2026-09-28. Root-reactor,
+Rabbit and Gateway integration are not yet verified. Shared root Maven registration,
 database/Compose wiring and Gateway routing are tracked separately in the registered bootstrap
 handoff and must be done by their assigned owners. Add same-version producer/consumer fixtures and
 contract tests before enabling any integration. Status remains `DESIGN_READY` while any required

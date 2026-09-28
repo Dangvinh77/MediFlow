@@ -49,6 +49,8 @@ file, and that request matches the real controller.**
 - Field names must match each service's Java DTO and wire contract exactly. Patient and Organization
   currently use Vietnamese camelCase examples such as `hoTen`, `ngaySinh`, and `maBenhNhan`;
   Clinical and Lab use English camelCase such as `appointmentId`, `recordId`, and `testId`.
+  Pharmacy, Report and Surgery also use English camelCase for their owned DTO/JSON and event payload fields,
+  as scoped in `08-persistence-naming.md`. This does not change the names of fields produced by another service.
 
 Example (patient):
 ```java

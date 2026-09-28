@@ -13,6 +13,8 @@
 | JSON / DTO field | Vietnamese camelCase | `maBenhNhan`, `hoTen` |
 | Event class | English PascalCase + `Event` | `PatientCreatedEvent` |
 
+The naming rows above are the default for contexts using Vietnamese fields. Pharmacy, Report and Surgery use the scoped English identifier/wire exception in [`08-persistence-naming.md`](08-persistence-naming.md); do not apply that exception to another owner's service.
+
 Base package: `com.mediflow.<service>` (e.g. `com.mediflow.pharmacy`).
 
 ## Clean architecture (inside every service — see `04` for the full tree)
