@@ -1,0 +1,19 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000001",
+  "eventType": "admission.requested",
+  "version": 1,
+  "occurredAt": "2026-09-28T02:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "clinical-service",
+  "payload": {
+    "admissionRequestId": "00000000-0000-4000-8000-000000000002",
+    "recordId": "00000000-0000-4000-8000-000000000003",
+    "patientId": "00000000-0000-4000-8000-000000000004",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "requestedBy": "00000000-0000-4000-8000-000000000006",
+    "diagnosisSummary": "Community-acquired pneumonia",
+    "priority": "URGENT",
+    "emergency": false,
+    "requestedAt": "2026-09-28T02:00:00Z"
+  }
+}

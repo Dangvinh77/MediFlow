@@ -1,0 +1,15 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000014",
+  "eventType": "admission.closed",
+  "version": 1,
+  "occurredAt": "2026-10-01T11:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "admissionId": "00000000-0000-4000-8000-000000000021",
+    "patientId": "00000000-0000-4000-8000-000000000022",
+    "settlementId": "00000000-0000-4000-8000-000000000027",
+    "approvedOverrideId": null,
+    "closedAt": "2026-10-01T11:00:00Z"
+  }
+}
