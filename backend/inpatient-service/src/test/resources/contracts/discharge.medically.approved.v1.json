@@ -1,0 +1,15 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000013",
+  "eventType": "discharge.medically.approved",
+  "version": 1,
+  "occurredAt": "2026-09-30T09:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "admissionId": "00000000-0000-4000-8000-000000000021",
+    "patientId": "00000000-0000-4000-8000-000000000022",
+    "summaryId": "00000000-0000-4000-8000-000000000025",
+    "approvedBy": "00000000-0000-4000-8000-000000000026",
+    "approvedAt": "2026-09-30T09:00:00Z"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000012",
+  "eventType": "admission.started",
+  "version": 1,
+  "occurredAt": "2026-09-28T02:10:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "admissionId": "00000000-0000-4000-8000-000000000021",
+    "patientId": "00000000-0000-4000-8000-000000000022",
+    "bedId": "00000000-0000-4000-8000-000000000024",
+    "departmentId": "00000000-0000-4000-8000-000000000023",
+    "admittedAt": "2026-09-28T02:10:00Z",
+    "emergency": false,
+    "emergencyOverrideId": null
+  }
+}
