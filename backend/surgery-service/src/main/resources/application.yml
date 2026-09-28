@@ -1,0 +1,76 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: surgery-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mediflow_surgery
+    username: ${MEDIFLOW_DB_USER:postgres}
+    password: ${MEDIFLOW_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  rabbitmq:
+    host: ${MEDIFLOW_RABBIT_HOST:localhost}
+    port: 5672
+    username: ${MEDIFLOW_RABBIT_USER:guest}
+    password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 3000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+mediflow:
+  features:
+    surgery:
+      enabled: false
+  jwt:
+    secret: ${MEDIFLOW_JWT_SECRET}
+  surgery:
+    messaging:
+      producer:
+        enabled: false
+      consumers:
+        enabled: false
+
+management:
+  info:
+    env:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+info:
+  app:
+    name: MediFlow Surgery Service
+    description: Surgery platform foundation; business features are disabled.
+    version: v1
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
