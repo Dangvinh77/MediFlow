@@ -50,16 +50,25 @@ the need for a bed assignment unless the future spec defines an emergency holdin
 
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
-| POST | `/api/v1/inpatient/admissions` | ADMIN, DOCTOR, NURSE | create from exact admission request/referral |
-| GET | `/api/v1/inpatient/admissions/{id}` | ADMIN, DOCTOR, NURSE | read admission |
-| GET | `/api/v1/inpatient/admissions` | ADMIN, MANAGER, DOCTOR, NURSE | filter by department/status/date |
-| PUT | `/api/v1/inpatient/admissions/{id}/bed` | ADMIN, NURSE | assign/transfer bed |
+| POST | `/api/v1/inpatient/admissions` | ADMIN, DOCTOR | create from exact admission request/referral |
+| GET | `/api/v1/inpatient/admissions/{id}` | ADMIN, DOCTOR, NURSE, CASHIER | read admission |
+| GET | `/api/v1/inpatient/admissions` | ADMIN, MANAGER, DOCTOR, NURSE, CASHIER | filter by department/status/date |
+| PUT | `/api/v1/inpatient/admissions/{id}/bed` | ADMIN, NURSE | assign bed |
+| PUT | `/api/v1/inpatient/admissions/{id}/bed/transfer` | ADMIN, NURSE | transfer bed |
+| PUT | `/api/v1/inpatient/admissions/{id}/bed/release` | ADMIN, NURSE | release bed |
+| POST | `/api/v1/inpatient/admissions/{id}/admit` | ADMIN, DOCTOR, NURSE | admit after bed and financial gates |
 | POST | `/api/v1/inpatient/admissions/{id}/treatments` | ADMIN, DOCTOR, NURSE | append treatment entry |
+| POST | `/api/v1/inpatient/admissions/{id}/treatments/{entryId}/corrections` | ADMIN, DOCTOR, NURSE | append treatment correction |
+| POST | `/api/v1/inpatient/admissions/{id}/order-references` | ADMIN, DOCTOR, NURSE | register a clinical order reference |
 | POST | `/api/v1/inpatient/admissions/{id}/medical-discharge` | ADMIN, DOCTOR | approve medical discharge |
 | POST | `/api/v1/inpatient/admissions/{id}/close` | ADMIN, CASHIER | administrative close after settlement/override |
+| POST | `/api/v1/inpatient/admissions/{id}/cancel` | ADMIN, DOCTOR | cancel before admission under policy |
+| POST | `/api/v1/inpatient/beds` | ADMIN, MANAGER | create bed |
+| PUT | `/api/v1/inpatient/beds/{id}` | ADMIN, MANAGER | update bed |
+| GET | `/api/v1/inpatient/beds` | ADMIN, MANAGER, DOCTOR, NURSE | filter beds by department/ward/status |
 
-Exact request/response DTOs and the additional bed/treatment endpoints are defined by the
-implementation-ready Inpatient backend spec and implemented in the service controller.
+Exact request/response DTOs are defined by the implementation-ready Inpatient backend spec and
+implemented in the service controller.
 
 ## Events
 
