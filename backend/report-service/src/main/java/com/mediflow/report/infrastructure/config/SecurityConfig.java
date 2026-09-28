@@ -29,7 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /** Stateless JWT verification and default-deny authorization for report HTTP endpoints. */
 @Configuration
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, CareFinanceFeatureProperties.class})
 public class SecurityConfig {
 
     @Bean

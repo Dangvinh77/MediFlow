@@ -13,6 +13,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.report.application.dto.command.DispensedItem;
@@ -54,6 +55,7 @@ public class ReportEventConsumer {
         if (routingKey == null || routingKey.isBlank()) {
             throw invalid("routing key là bắt buộc");
         }
+        rejectCareFinanceEnvelopeFromLegacyProjection(message);
 
         switch (routingKey) {
             case RabbitConfig.RK_MEDICAL_RECORD_CREATED ->
@@ -67,6 +69,22 @@ public class ReportEventConsumer {
             case RabbitConfig.RK_PAYMENT_FAILED ->
                     handlePaymentFailed(read(message, PaymentFailedPayload.class), routingKey);
             default -> throw invalid("routing key không được hỗ trợ: " + routingKey);
+        }
+    }
+
+    /**
+     * A versioned envelope must be handled by an explicitly enabled V2 consumer, never parsed as a
+     * legacy flat payload whose unknown fields are intentionally ignored.
+     */
+    private void rejectCareFinanceEnvelopeFromLegacyProjection(Message message) {
+        try {
+            JsonNode root = objectMapper.readTree(message.getBody());
+            if (root != null && root.isObject()
+                    && (root.has("eventType") || root.has("producer") || root.has("payload"))) {
+                throw invalid("Versioned Care-finance envelope cannot enter the legacy projection");
+            }
+        } catch (IOException exception) {
+            throw new ReportEventValidationException("Payload event không hợp lệ", exception);
         }
     }
 

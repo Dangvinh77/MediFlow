@@ -1,59 +1,82 @@
-# HANDOFF — Surgery implementation decisions
+# HANDOFF — Surgery G0 decisions (H-01.2 / H-01.3)
 
-- **Status:** `OPEN`
-- **Coordinator:** Huy (`LQHuy0210`), Surgery owner
-- **Owners needed:** Clinical/Inpatient — Vinh; Billing/Notification — Lộc; Organization/Patient/Gateway — Hoàng Anh
-- **Purpose:** accept the detailed Care–Finance V2 Surgery candidate and resolve its remaining business/cross-service gaps before `surgery-service` production code.
-- **Canonical contracts:** [`INPATIENT-SURGERY`](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [`SURGERY-BILLING`](care-finance/CONTRACT-SURGERY-BILLING-01.md), [`CARE-BILLING`](care-finance/CONTRACT-CARE-BILLING-01.md), [`IDENTITY-LOOKUP`](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [`CARE-PROJECTIONS`](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
+- **Status:** `OPEN` — shared proposal and decision checklist prepared; no cross-owner approvals or shared fixtures are recorded yet.
+- **Coordinator / service owner:** Huy (`LQHuy0210`).
+- **Owners needed:** Vinh — Clinical/Inpatient; Lộc — Billing/Notification; Hoàng Anh — Organization/Patient/Gateway; Huy — Surgery policy and acceptance.
+- **Purpose:** close the episode/referral/event mapping and owner-policy gate before creating the Surgery service scaffold.
+- **Updated:** 2026-09-28, audited against working baseline `f69dd1d`; Pharmacy/Report local foundation is unrelated to Surgery approval.
+- **Canonical sources:** [Care–Finance architecture](../architecture/mediflow-care-finance-redesign.html), [Surgery V2 candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md), [INPATIENT-SURGERY](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md), [IDENTITY-LOOKUP](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
-## Reassessment — 2026-09-27
+## Gate status
 
-The [V2 Surgery candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md)
-now supplies DDL, DTOs, readiness guards and an explicit §14 acceptance gate. Its choices include
-preparing a confirmed schedule during PREOP before READY/SCHEDULED, financial-only emergency
-override, and one result per case. These are no longer unspecified alternatives, but the candidate
-gate and shared contract tests are not satisfied merely by the documentation merge.
+The V2 candidate has enough detail to review, but remains a **candidate**, not an approved implementation contract. The Huy plan requires H-01.2 and H-01.3 plus confirmation that the shared-build integrator has accepted the bootstrap handoff before S-01.1. Do not scaffold or represent any row below as approved until its named owners record a decision here and update the canonical contract/spec as needed.
 
-At code baseline `30e0296`, Surgery is absent and Inpatient has technical foundation only. Patient's
-service-only existence endpoint is present; Organization still exposes the doctor-specific
-`/staff/{id}/exists`, not the new generic staff/department lookups. No new Surgery/referral/clearance
-producer fixture or end-to-end run was established by the static audit.
+Huy has prepared proposed defaults to accelerate review. They are proposals only. A checkbox, local test, or this handoff does not mean that Vinh, Lộc, Hoàng Anh, or Huy approved a business decision.
 
-Remaining priorities are the outpatient appointment-versus-record episode conflict, referral-to-case
-charge bridge, checklist/template/evidence rules, room/team authority and concurrency, consent and
-invalidation, and partial-abort/result contracts. The candidate's cancellation state chart excludes
-in-progress cancellation while its enum includes `IN_PROGRESS_ABORTED`; this requires an explicit
-V1 policy. Producer payloads must also align planned-time data for Notification, complication
-summary/category for Inpatient/Report, and cancellation dimensions for Report.
+## H-01.2 — episode, referral, charge and event mapping
 
-See the [revised Huy plan, D01–D12 and H/S tasks](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md)
-for code evidence and slice-level gates. This reassessment does not record owner approval or close
-any shared contract.
+### A. Episode and referral identity
 
-## Decisions required
+| Path | Current conflict / proposed V1 mapping | Confirmation needed | Acceptance evidence |
+|---|---|---|---|
+| Outpatient surgery | `CARE-BILLING` selects `appointmentId` when an appointment exists, otherwise `recordId`; the Surgery candidate currently maps every outpatient episode to `recordId`. **Proposal:** use the canonical Billing rule; carry `recordId` as a clinical reference when distinct, not as a silent replacement for the selected episode ID. | Huy + Vinh + Lộc | One request fixture for appointment-backed and walk-in surgery, with exact `careEpisodeType/id`, and mismatch rejection. Update the Surgery candidate and CARE-BILLING/SURGERY-BILLING contract consistently. |
+| Admission surgery | `careEpisodeType=ADMISSION`, `careEpisodeId=admissionId`; optional `recordId` is context only and cannot select the admission. | Huy + Vinh + Lộc | One admission request/clearance fixture proving exact `admissionId`, patient and department match. |
+| Referral producer | Architecture allows Clinical/Inpatient to produce `surgery.requested`; the producer-to-path ownership and globally stable `surgeryRequestId` are not fixed. **Proposal:** Clinical owns outpatient referrals and Inpatient owns admission referrals; if the same intent can be emitted on both paths, both must preserve one shared `surgeryRequestId`. | Vinh + Huy | Producer/path matrix, same-intent duplicate fixture and concurrent create test: at most one case and one charge intent. `eventId` remains delivery identity, not the business key. |
 
-| Owner(s) | Decision / contract to lock | Acceptance evidence |
+### B. Charge bridge and clearance
+
+There is a contract naming/ownership conflict to resolve: the architecture lists `surgery.requested.v1` from Clinical/Inpatient to Surgery **and Billing**, while `CONTRACT-SURGERY-BILLING-01` describes a Surgery-originated request carrying `surgeryCaseId` and planned items. Those are different facts because Billing cannot use a Surgery case ID before the case exists.
+
+**Proposal:** keep referral-to-Surgery and post-case charge intent as two semantically distinct facts. Do not reuse `surgery.requested` for both meanings. The post-case charge fact should identify `surgeryCaseId` as the stable `sourceId`, selected care episode, department, procedure and planned `{itemCode, priceCode, quantity}` lines. Surgery sends codes/quantities only; Billing owns catalog validity and all prices/amounts. Event name, envelope version and whether Billing may also observe the original referral remain for owner decision; do not invent a routing key in code.
+
+The clearance path must be exact and purpose-specific: `purpose=SURGERY`, matching `surgeryCaseId`, patient and selected episode; admission target is required for inpatient surgery. The current Surgery–Billing contract describes admission clearance, while the Surgery candidate supports outpatient cases too.
+
+**Decision requested from Lộc + Huy (and Vinh for episode fields):** confirm the outpatient `SURGERY` clearance target and charge source contract, and provide canonical producer bytes. Acceptance is one same-byte producer/consumer fixture for each supported episode plus wrong-case/wrong-episode rejection. Unknown `priceCode` is a contract/catalog error, never zero-priced.
+
+### C. Surgery event facts and consumer fields
+
+Every event fixture must include the common envelope (`eventId`, `eventType`, `version`, `occurredAt`, `correlationId`, `producer`) and exact producer-owned source/business keys. Owner teams must decide whether corrections are new revisions of an operation or a replacement fact; `eventId` alone does not make a semantic operation unique.
+
+| Event | Candidate/current gap | Required owner decision and fixture |
 |---|---|---|
-| Vinh + Huy + Lộc | **Care episode for surgery:** `surgery.requested` accepts `recordId` or `admissionId`, while the current Surgery–Billing clearance describes an admission. Decide whether record-only outpatient cases must first become admissions, or define the OUTPATIENT_VISIT surgery clearance target and charge. | One canonical request and clearance fixture for each supported episode; exact target IDs and rejection case for a mismatched episode. |
-| Vinh + Huy | **Referral producer and identity:** Clinical and/or Inpatient may publish `surgery.requested`. Define which producer owns each referral path and ensure `surgeryRequestId` is globally stable if the same clinical intent crosses both services. | Producer mapping, payload fixture, and duplicate/concurrent request acceptance test that creates at most one case. |
-| Huy + Vinh | **Pre-op checklist:** identify which checklist codes are mandatory, how templates vary by procedure, and which service supplies each external fact/evidence. Keep source order/case references exact. | Versioned template or explicit checklist command contract plus fixtures for complete, missing, stale, and mismatched evidence. |
-| Huy + Hoàng Anh | **Operating room identity:** Surgery owns schedule-conflict enforcement, but the room master and validity lookup are not assigned. Decide the owner/API and inactive-room behavior, or explicitly assign Surgery its own room catalog. | Room lookup/ownership contract and concurrent same-room/time booking test case. |
-| Hoàng Anh + Huy | **Team eligibility:** the V2 lookup target provides active state, job title, and department, but CURRENT code only provides doctor eligibility. Implement the generic lookup and define the authoritative surgeon/anesthesiologist/nurse mapping. | Role/job-title mapping and lookup fixtures for eligible, ineligible, inactive, absent, and unavailable staff. |
-| Huy + Lộc + Vinh | **Emergency override:** decide whether surgery readiness can bypass any financial/selected guard, exact approval claims/audit fields, and whether bypassed care creates a receivable. Consent and team cannot be fabricated. | Explicit allow/deny policy and versioned audit/event fixtures; if unsupported, record that no override path exists in V1. |
-| Huy + Vinh + Lộc | **Cancellation/result boundary:** clarify how a case cancelled `IN_PROGRESS_ABORTED` records performed items and how Billing reconciles partial work; define which cancellation facts Report counts. | One partial-abort fixture with actual performed items, zero performed items, and an idempotent Billing/Report outcome. |
-| Huy + Vinh + Lộc | **Inpatient medication:** Pharmacy V2 selects one slip per prescription and an active admission projection matching patient/department, separate from outpatient clearance. Resolve medical-discharge eligibility, transfer/freshness/out-of-order lifecycle and charge adjustments; multiple-dose administration is not the V1 target. | Same-version fixtures for eligible, wrong/closed admission, lifecycle reordering, failed/cancelled/expired dispensing and duplicate delivery; preserve version-0 outpatient compatibility. |
-| Lộc + Huy | **Report financial facts:** identify the Billing events/fields that classify cash, deposit liability, earned revenue, refunds, and outstanding receivable; define source transaction keys and original-contribution references. | Same-version Billing producer and Report consumer fixtures, with deposit and refund replay expected totals. |
+| `surgery.ready` | Candidate has case/admission/record/patient, schedule and readiness snapshot IDs plus `readyAt`; Notification needs a planned-time snapshot, which is absent from the proposed payload. | Huy + Lộc: include the exact planned start/end (or an explicitly agreed immutable schedule snapshot), override indicator and revision/source key. Test notification consumer from the same fixture; no REST lookup to recover the times. |
+| `surgery.completed` | `INPATIENT-SURGERY` carries a clinical complications summary; Report needs a stable category. Candidate has performed item/price codes and actual times but correction/revision identity is not defined. | Huy + Vinh + Lộc: agree result/operation ID and correction revision, department/episode fields, actual start/end, performed lines and a controlled `complicationsCategory` separate from any clinical summary. Same bytes must support Inpatient, Billing and Report without exposing clinical summary to aggregate-only Report. |
+| `surgery.cancelled` | Candidate has case/admission/record/patient, stage/reason/actor/time, but department/episode and a semantic cancellation key/revision are not complete for Report and idempotent Billing adjustment. | Huy + Vinh + Lộc: include exact episode/department, cancellation operation identity, stage and reason taxonomy. Fixture must show Billing adjustment and Report count without patient-level clinical data. |
 
-## Boundaries while open
+## H-01.3 — proposed owner-policy decisions from Surgery §14
 
-- Keep the related canonical contracts at `DESIGN_READY`/`BLOCKED`; do not mark a producer or consumer implemented without shared fixtures and tests.
-- Do not query another service's database, infer `admissionId` from `patientId`, invent a room/staff identifier, assume a price, or treat a payment event as general surgery clearance.
-- Huy may prepare domain tests and non-binding schema alternatives, but production behavior that depends on an undecided row above remains gated.
-- The [Huy plan](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md) separates spec choices, code evidence, shared fixtures and runtime acceptance. D05's basic schedule ordering now has a candidate answer; invalidation/re-ready semantics remain open. D02 charge source, D09/D10 metric inputs and D11/D12 replay/freshness still need the specific evidence listed there. The [older Surgery draft](../eproject_general_plan/backend-spec/10-surgery.md) remains historical preparation; the V2 candidate is the target to complete, not another blank spec to recreate.
+The eight rows below are the candidate's explicit decision gate. “Proposed default” accelerates review; it is **not approval**. Huy must record an explicit accept/reject with date, and named cross-service owners must confirm their fields before the candidate becomes implementation-ready.
 
-## Close criteria
+| # | Decision | Proposed V1 default for review | Owner(s) / evidence required | Status |
+|---:|---|---|---|---|
+| 1 | Episode mapping | Use the canonical outpatient appointment-or-walk-in rule above; admission uses exact `admissionId`. Never infer by patient or latest record. | Huy + Vinh + Lộc; request and clearance fixtures for outpatient/admission and mismatch rejection. | OPEN |
+| 2 | Mandatory checklist catalogue source | Surgery owns immutable, versioned templates keyed by procedure; Clinical/Inpatient supplies/validates the source facts and medical mandatory set. Case snapshots keep the template revision; a template update never rewrites existing cases. Exact codes and valid evidence sources remain to be supplied by Vinh/Huy. | Huy + Vinh; versioned sample template plus complete/missing/stale/mismatched evidence fixtures. | OPEN |
+| 3 | Consent types and signers | Keep consent typed and auditable (`ACTIVE`/`REVOKED`); never reduce consent to a boolean. Proposed separate surgery and anesthesia consent categories. Exact signer authority, guardian handling, witness requirement and revocation role are not inferred here. | Huy + Vinh; accepted consent types/signers and sign/revoke/expiry authorization tests. | OPEN |
+| 4 | Operating-room reference authority | Use one authoritative active-room source and stable opaque room reference; Surgery owns overlap enforcement, not a second room master. The current Organization API has no room lookup. Decide whether Organization supplies a lookup or explicitly assigns a Surgery-owned room catalog. | Huy + Hoàng Anh; owner/API, inactive/absent/unavailable semantics and concurrent same-room overlap test. | OPEN |
+| 5 | Team-role eligibility | Map explicit Surgery `teamRole` values to Organization job-title values; never use login role (`ADMIN`/`DOCTOR`) as clinical eligibility. Proposed roles are primary surgeon, assistant surgeon, anesthesiologist and operating-room nursing roles; exact enum/job-title mapping must be confirmed against Organization's real values. | Huy + Hoàng Anh (+ Vinh for clinical role meaning); eligible/ineligible/inactive/absent/unavailable fixtures and lookup contract. | OPEN |
+| 6 | Emergency override | Candidate permits only `FINANCIAL_EMERGENCY`; it cannot bypass indication, consent, checklist, team or room/time. Proposal: keep the feature disabled until verified approver-role allow-list and Billing receivable behavior are explicit; never accept approver identity/role from request body. | Huy + Vinh + Lộc; role/self-approval policy, audit fields, financial outcome and positive/negative same-version fixture. | OPEN |
+| 7 | Cancellation stage / partial abort | Derive stage from persisted state, never trust client stage. Proposal: V1 supports cancellation before START only; defer `IN_PROGRESS_ABORTED` until actual performed-item, Billing adjustment and Report correction semantics are agreed. Preserve completed payments; do not call an adjustment a refund until Billing emits a completed refund fact. | Huy + Vinh + Lộc; before-start cancellation fixture now, and an explicit partial-abort fixture before enabling that path. | OPEN |
+| 8 | Planned/performed item catalogue | Billing owns price/catalog truth. Surgery stores stable procedure/item/price codes and quantity, never authoritative amount; unknown codes reject before charge/result commit. Planned-to-performed delta and catalog version/effective-date behavior remain to be agreed. | Huy + Lộc (+ Vinh for clinical procedure coding); catalog fixture, planned-vs-performed reconciliation and unknown-code rejection. | OPEN |
 
-1. Every row above and every applicable D01–D12 decision in the Huy plan is either decided in its canonical contract/service doc or explicitly excluded from V1, with real approver/date/link evidence.
-2. Producer/consumer owners agree on event/API fixtures and version.
-3. Huy publishes the implementation-ready Surgery spec with DDL, DTOs, ports, use-case algorithms, and business-rule-to-test mapping.
-4. The handoff is removed from [`active handoffs`](README.md) in the same change that records the lasting decisions in canonical docs.
+### Additional local state transition choice
+
+The candidate resolves the READY/schedule cycle by preparing and confirming room/time during `PREOP_IN_PROGRESS`, evaluating all guards into `READY`, then explicitly finalizing `READY → SCHEDULED`; START accepts only `SCHEDULED`. **Huy proposal:** retain that sequence. The exact invalidation/re-ready revision, slot expiry/overrun and resource release rules still need Huy's explicit acceptance before the affected S-05/S-06 implementation slice.
+
+## Owner response checklist
+
+Reply by editing this handoff (or link a canonical contract/spec PR) with the real owner, date and evidence. Do not check a row using a mock-only fixture or another service's database state.
+
+| Owner | Required response | Status / link / date |
+|---|---|---|
+| Vinh — Clinical/Inpatient | Confirm outpatient/admission referral ownership and stable request identity; validate required checklist/evidence sources and clinical result fields; approve/defer partial-abort semantics. | `OPEN` — fill in after review |
+| Lộc — Billing/Notification | Confirm distinct post-case charge fact, price-code contract, outpatient/admission SURGERY clearance and adjustment/refund semantics; confirm ready planned-time consumer fields. | `OPEN` — fill in after review |
+| Hoàng Anh — Organization | Confirm room master/lookup owner and active-state behavior; provide authoritative job-title values for team-role mapping. Gateway/build assignments remain tracked in [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). | `OPEN` — fill in after review |
+| Huy — Surgery | Accept/reject each proposed §14 choice; record approver identity, date and canonical link. | `OPEN` — fill in after review |
+
+## Implementation boundaries and close criteria
+
+- This is the single active cross-owner handoff for H-01.2/H-01.3; the existing registry entry points here. Do not create a second handoff for the same Surgery decision set.
+- While open, only source-backed audit and non-binding proposals are allowed. Do not write the Surgery scaffold, invent identifiers/event names/price codes, edit producer-owned modules, query another service database, or modify root/shared/Gateway production files.
+- The separate [Surgery foundation bootstrap handoff](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) tracks explicit shared-build and Gateway ownership; H-01.2/3 approval does not grant Huy authority over those files.
+- Close H-01.2/3 only after: (1) all applicable rows above have real owner decisions in canonical contract/spec docs, (2) candidate §14 is explicitly accepted by Huy, (3) same-version producer/consumer fixtures and required mismatch/duplicate tests are linked, and (4) this file and the registry are retired/updated in the same change that moves lasting rules to canonical docs.
+- D08 Pharmacy admission and D09 Report finance remain tracked in [Huy care-finance consumers](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md); they are not prerequisites for starting Surgery G0, except where their exact event fields directly participate in a Surgery contract row above.

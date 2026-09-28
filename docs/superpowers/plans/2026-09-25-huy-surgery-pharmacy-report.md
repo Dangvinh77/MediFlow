@@ -1,9 +1,9 @@
 # Kế hoạch code của Huy — Surgery, Pharmacy, Report theo Care–Finance V2
 
-**Cập nhật:** 2026-09-27 · **Owner:** Huy (LQHuy0210).
-**Baseline đã đọc:** nhánh Huy, commit 30e0296f6290f2f90abbcbae13e5cee33fb6fd4d.
-**Loại kiểm chứng lần này:** đọc source, migration, test source và đối chiếu spec; không chạy lại backend/Docker.
-**Trạng thái:** plan V2 đã viết lại; chưa triển khai code V2 trong lượt cập nhật tài liệu này.
+**Cập nhật:** 2026-09-28 · **Owner:** Huy (LQHuy0210).
+**Baseline đã đọc:** nhánh Huy đồng bộ với master, commit f69dd1d6f1e7088dabec4127deb02d0f3d318223.
+**Loại kiểm chứng lần này:** clean Maven baseline + full module regression, implement Pharmacy/Report local foundation; Docker engine không truy cập được.
+**Trạng thái:** P-01.3, P-02.1, R-02.2, R-01.1 và audit H-01.4.1/2, H-01.5.1 hoàn tất local. H-01.2/3 đã có proposal/handoff chung; owner acceptance và fixture còn mở, nên Surgery chưa scaffold.
 
 ## 1. Phạm vi, nguồn chuẩn và thay đổi so với plan cũ
 
@@ -138,9 +138,18 @@ Feature flag target: mediflow.features.care-finance-v2=false ở Pharmacy/Report
 
 - [x] **H-01.1 · NGAY · audit baseline:** đọc code E01–E12, cập nhật D01–D12 và maturity; lưu bản cũ. Acceptance: mọi “đã code” có source, mọi “đã test” có ngày/phạm vi; không lấy tick plan spec làm code evidence.
 - [ ] **H-01.2 · CONTRACT · episode/referral/event mapping:** với Vinh/Lộc khóa D01/D02/D07 và ready/completed/cancelled field gaps. Đầu ra: mỗi context có request→case→charge→clearance→result fixture, exact source key, producer, version, consumers và pricing boundary. Test plan: một clinical intent đi qua hai producers vẫn một case/charge; appointment-backed không đổi episode khi record xuất hiện.
+  - [x] **H-01.2.1 · DONE/LOCAL:** đối chiếu và ghi trong [handoff G0 chung](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) các xung đột episode outpatient, producer/referral key, post-case charge bridge, clearance scope và field gaps của ready/completed/cancelled.
+  - [ ] **H-01.2.2 · CONTRACT:** Vinh/Lộc/Huy chốt mapping và cùng-version producer/consumer fixtures; handoff còn OPEN cho tới khi canonical contract/spec và test links được cập nhật.
 - [ ] **H-01.3 · SURGERY-G0 · local policy acceptance:** ghi từng lựa chọn §14, template/consent/room/team, prepare-vs-finalize schedule, invalidation, override, pre-start cancel/partial abort, naming/DDL mapping. Ưu tiên chấp nhận phần không mâu thuẫn của candidate; phần không hỗ trợ V1 phải ghi rõ reject, không triển khai nửa đường. Acceptance: transition table và negative cases đủ để viết domain tests, có người/ngày/link xác nhận thật.
+  - [x] **H-01.3.1 · DONE/LOCAL:** lập đủ 8 lựa chọn §14 thành proposal có mặc định an toàn, owner và evidence cần thiết trong [handoff G0 chung](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md); không ghi proposal là approval.
+  - [ ] **H-01.3.2 · OWNER:** Huy xác nhận các lựa chọn thuộc Surgery; Vinh/Lộc/Hoàng Anh xác nhận phần giao cắt tương ứng, ghi ngày/link. Candidate và scaffold vẫn blocked trước acceptance thật.
 - [ ] **H-01.4 · NGAY/CONTRACT · compatibility matrix:** chốt selector request/event v0-v1; V2-only fields thiếu không downgrade sang v0. Inventory cả created/filled/failed/cancelled/expired, consumers Clinical/Inpatient/Billing/Notification/Report. Acceptance: old outbox bytes không bị rewrite; raw legacy fixture và V1 envelope đều có phiên bản/nguồn rõ.
+  - [x] **H-01.4.1 · DONE/LOCAL:** inventory source hiện tại cho đủ 5 Pharmacy events và consumers trong repo. `created`/`dispense.failed`/`cancelled`/`expired` chỉ có Billing; `filled` có Billing, Clinical, Inpatient, Notification và Report. Tất cả producer DTO hiện tại là flat legacy, không có `version`; các fixture legacy hiện hữu được giữ nguyên.
+  - [x] **H-01.4.2 · DONE/LOCAL:** đối chiếu V1 harness: Report decoder offline yêu cầu envelope `version=1`, producer và source ID; `prescription.filled` V1 yêu cầu `dispenseId`, trong khi wire legacy hiện chỉ có `prescriptionId`. Decoder chưa bind Rabbit và không thay đổi outbox/consumer legacy.
+  - [ ] **H-01.4.3 · CONTRACT:** owner cần chốt request selector V0/V1 và V1 payload/source key cho đủ năm event; V2-only field thiếu phải reject, không fallback. H-01.4.1/2 là audit code-local, không phải producer/consumer contract pass. Handoff: [Huy care-finance consumers](../../handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md).
 - [ ] **H-01.5 · CONTRACT · Report metric/source contract:** cùng Lộc/Vinh khóa bảng §8: cash gross/net, allocation/recognition/refund scope, settlement revision/snapshot, administrative LOS, operation correction, journal source/retention. Acceptance: expected totals fixture có đủ data thực; unsupported metric trả unavailable, không zero giả.
+  - [x] **H-01.5.1 · DONE/LOCAL:** lập gap inventory từ spec V2, canonical contracts và producer code hiện có. Cash/recognition/refund/receivable chưa đủ source facts; administrative LOS/operation correction chưa đủ thống nhất; Report chưa có durable replay journal. Các metric phụ thuộc gap phải unavailable, không project số suy diễn.
+  - [ ] **H-01.5.2 · CONTRACT:** Lộc/Vinh xác nhận semantics, source identity/revision/retention và cùng producer fixture có expected totals; H-01.5.1 không thay owner approval. Handoff: [Huy care-finance consumers](../../handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md).
 - [ ] **H-01.6 · NGAY/OWNER · handoff evidence:** cập nhật các handoff đã đăng ký với tiến bộ từ V2, bỏ blocker Patient endpoint đã có nhưng giữ consumer/test gate; bổ sung cụ thể missing generic Org lookup và Gateway roles. Không đóng handoff khi mới có spec; không viết production ngoài scope.
 
 Phần tài liệu H-01.6 đã cập nhật ngày 2026-09-27 trong hai Huy handoff và registry: candidate Surgery, one-slip admission policy, missing finance/replay fields, generic Org lookup và Gateway role gaps. Checkbox còn mở cho xác nhận/fixture/test từ các owner và retirement đúng acceptance; không phải chưa viết handoff.
@@ -234,14 +243,14 @@ Các file dưới đây thuộc backend/surgery-service, hiện chưa tồn tạ
 
 - [x] **P-01.1 · ĐÃ CÓ:** receipt payload fingerprint/resume, terminal conditional finalize; lock Rx/slip/stock cho effect-idempotency; compensation/outbox và actor audit V13.
 - [x] **P-01.2 · ĐÃ CÓ:** tests race/recovery/late compensation/rollback; strict actor từ claims, SYSTEM không UUID giả; legacy cancelled/expired fixtures.
-- [ ] **P-01.3 · NGAY/VERIFY:** trước refactor P-03 chạy lại baseline, ghi số tests/skip thực; regression cả create/cancel/expiry/reconcile/admin outbox. Không đổi production Billing wire hoặc receipt policy trong task này.
+- [x] **P-01.3 · DONE/VERIFY:** baseline trước refactor P-03 và lần regression sau thay đổi đã chạy, có số tests/skip tại §10.1. Unit/web cho create/cancel/expiry/admin outbox chạy; DB/Rabbit concurrency/reconcile vẫn chưa xác minh vì Docker engine không reachable. Không đổi Billing wire hoặc receipt policy.
 
 ### P-02 — context/schema/DTO/event additive, bắt đầu được trước producer live
 
 **Gate:** Pharmacy V2 đã implementation-ready; xử lý gap §3.2 theo slice. **Trạng thái:** chưa code V2.
 **Files:** Prescription/CareContext/CareEpisode, request/command/response/mappers, JPA entity/adapter, migrations, application/event, publisher, config và fixture tests.
 
-- [ ] **P-02.1 · NGAY:** domain value objects/version 0/1 và config flag=false; validation matrix legacy vs v1. ADMISSION yêu cầu admissionId=careEpisodeId; OUTPATIENT không có admissionId và không tự đổi appointment episode thành recordId. Pure unit tests không cần producer/Docker.
+- [x] **P-02.1 · DONE/LOCAL:** domain value objects/version 0/1, flag mặc định false và validation matrix legacy vs v1 đã có pure tests. ADMISSION yêu cầu admissionId=careEpisodeId; OUTPATIENT không có admissionId/không suy careEpisodeId từ recordId. Chưa thay request/DB/writer.
 - [ ] **P-02.2 · LOCAL sau P-02.1:** V14 additive cho columns/index/conditional constraints + PRESCRIPTION_CLEARANCE/ADMISSION_MEDICATION_CONTEXT. Upgrade V13 rows thành version0/OUTPATIENT, không bịa episode; cho record nullable đúng nhánh V2 đồng thời giữ v0 constraint. Test null CHECK loopholes, ORM, old rows/outbox/actor audit. Pending/freshness storage mở rộng ở P-03 sau khi policy rõ.
 - [ ] **P-02.3 · LOCAL sau H-01.4:** backward-compatible DTO boundary: request v0 không đổi, v1 có đủ context/episode/priceCode; selected V2 mà thiếu field trả lỗi, không silently downgrade. Giữ prescribedDate và doctor authorization: DOCTOR đúng staff claim, ADMIN delegation theo rule hiện hữu, client không cung cấp giá/dispensedBy.
 - [ ] **P-02.4 · LOCAL sau P-02.1:** versioned serializer/decoder tách legacy flat và V1 envelope, không rewrite committed outbox. Created/filled/failed đủ exact context, price/source refs và timestamps; filled mang dispenseId; cancelled/expired cũng phải được lập contract V2 cho đường compensation, không bỏ quên vì bảng spec chỉ liệt kê ba event.
@@ -271,7 +280,7 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
 **Gate:** Report V2 cho phép additive offline; D09/D11 chỉ chặn phần cần data/policy chưa rõ.
 **Files:** messaging/consumer, application commands/ports/projectors, domain contribution/delta, infrastructure/persistence/config, migrations và contract tests.
 
-- [ ] **R-01.1 · NGAY:** dựng namespace/commands/interfaces V2 + flag=false, giữ 5 binding/3 API cũ; pure validation và decoder framework test harness. Unknown version/source không vào legacy bằng fallback. Chưa bind V2 live chỉ để ACK bỏ.
+- [x] **R-01.1 · DONE/LOCAL:** đã dựng namespace/commands/port V2, flag mặc định false và decoder harness offline; unknown version/type/producer/source bị reject, V2 envelope không fallback vào consumer legacy. Giữ nguyên 5 binding/3 API; chưa bind V2 live. Surgery source identity chưa được thêm do D07/D11 chưa khóa.
 - [ ] **R-01.2 · LOCAL sau H-01.5:** schema riêng FINANCIAL_CONTRIBUTION/DAILY_FINANCIAL_REPORT/OPERATIONAL_CONTRIBUTION/DAILY_OPERATIONAL_REPORT theo target V6 (xác minh numbering trước code). Inbox delivery key khác semantic key: transaction/refund operation, settlement revision, result/dispense operation. eventId là provenance, không đủ unique cho nghiệp vụ. Null hospital scope không được va với department sentinel hợp lệ.
 - [ ] **R-01.3 · LOCAL sau keys:** transaction claim + contribution + hai scopes department/hospital; atomic insert/upsert và lock order ổn định; no JVM mutex. Refund-before-original/close-before-start vào pending có exact original ref và retry/checkpoint, không FK lỗi lặp vô hạn hoặc invent date/department.
 - [ ] **R-01.4 · CONTRACT D11:** chọn durable replay source (Report minimal journal từ activation hoặc archive/outbox retention do owner cung cấp), schema/projector version, retention/access/redaction, horizon dữ liệu có thể rebuild. Queue ACK không phải archive; lịch sử trước source activation phải có export hoặc ghi unavailable.
@@ -285,7 +294,7 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
 **Files:** JwtAuthFilter/SecurityConfig, report controllers/web tests, report.http.
 
 - [x] **R-02.1 · ĐÃ CÓ:** human type=access strict, refresh/service/missing type bị reject; legacy daily/monthly/top-medicines ADMIN/MANAGER.
-- [ ] **R-02.2 · NGAY/VERIFY:** giữ focused JWT tests trong mọi PR Report, không viết lại filter hoặc sửa Common/Gateway.
+- [x] **R-02.2 · DONE/VERIFY:** Report JwtAuthFilterTest chạy 4/4, 0 skip/fail/error trong full suite; không sửa filter, Common hay Gateway.
 - [ ] **R-02.3 · LOCAL/OWNER:** financial mới ADMIN/MANAGER; operations mới ADMIN/MANAGER/DOCTOR theo target, không mở DOCTOR cho legacy revenue. Gateway rule cần Hoàng Anh sửa route cụ thể; kiểm thử direct-service và Gateway riêng.
 
 ### R-03 — projection tài chính theo fact đủ dữ liệu
@@ -345,13 +354,13 @@ Không tạo handoff trùng cho gap đã có; cập nhật requirement còn thi�
 | 3 — Surgery | H-01.2/3 chốt candidate + shared assignment → S-01/02 → S-03/04 → S-06 prepare + S-05 guards → S-06 finalize → S-07 | Gate §14 có thật; shared bootstrap là blocker khác quyết định nghiệp vụ. |
 | 4 — integration riêng | Billing clearance → outpatient V1; Inpatient lifecycle → admission thuốc; Billing finance → Report finance; Surgery outcomes → Report surgery | Mỗi slice đạt G1/G2/G3 riêng, không chờ cả 12 D cùng đóng. |
 
-Ba subtask code local ưu tiên ngay khi được yêu cầu triển khai tiếp: **P-02.1**, **R-01.1**, cùng **P-01.3/R-02.2** để chốt baseline test. Migration/DTO tiếp theo cần compatibility matrix cụ thể, không bật producer chỉ vì model compile.
+Đã hoàn tất local P-01.3, P-02.1, R-02.2, R-01.1 và các audit H-01.4.1/2, H-01.5.1 ngày 2026-09-28; xem evidence §10.1. H-01.2.1/H-01.3.1 proposal đã được gom vào handoff chung; H-01.2.2/H-01.3.2 còn chờ xác nhận và fixture owner. Không còn subtask code “râu ria” Pharmacy/Report có thể đóng an toàn nếu thiếu contract. Report finance không phải gate để bắt đầu Surgery; tuy vậy S-01.1 vẫn chờ H-01.2/3 được chấp nhận và shared integrator xác nhận bootstrap.
 
 ### X-01 — kiểm thử hệ thống, rollout và báo cáo bằng chứng
 
 **Files Huy:** tests/resources/contracts, module .http/README, plan/evidence/handoff. Shared runtime do owner thực hiện.
 
-- [ ] **X-01.1 · NGAY/VERIFY:** xác minh Docker engine thực sự reachable; clean baseline Huy suites, đọc Surefire counts. Docker Desktop đang mở không tự chứng minh Testcontainers chạy được.
+- [ ] **X-01.1 · NGAY/VERIFY:** xác minh Docker engine thực sự reachable; clean baseline Huy suites, đọc Surefire counts. Docker Desktop đang mở không tự chứng minh Testcontainers chạy được. 2026-09-28: counts đã ghi tại §10.1 nhưng CLI docker.exe bị Access Denied và Testcontainers không tìm thấy Docker hợp lệ; X-01.1 còn mở.
 - [ ] **X-01.2 · CONTRACT/VERIFY:** manifest mỗi event có canonical ID/version, producer/consumer paths, SHA-256 và command/test output; valid/duplicate/new-eventId-same-operation/poison/missing target/unsupported version đều có case.
 - [ ] **X-01.3 · VERIFY:** Docker outpatient legacy + outpatient V1 exact clearance, admission started→prescribe→dispense→charge→close; duplicate authorization/close race và failures không phá stock/ledger. Không giả producer bằng DB inserts rồi gọi đó E2E.
 - [ ] **X-01.4 · VERIFY sau Surgery G0–G2:** request→checklist/consent→clearance→prepare/finalize schedule→start→complete/cancel, cùng resource race, consent revoke, expiry, financial-only override. Gateway roles và downstream consumer fixtures/runtime đúng.
@@ -377,6 +386,18 @@ Ba subtask code local ưu tiên ngay khi được yêu cầu triển khai tiếp
 - 2026-09-26: independent evidence ghi Pharmacy 217 discovered, 46 skipped; Report 123 discovered, 24 skipped; 0 failures/errors, nhưng container tests chưa chạy. Focused Pharmacy architecture/web/dispense/fixture 42 pass, 0 skip.
 - 2026-09-27, lượt này: **static source/spec audit và sửa tài liệu**, không chạy Maven/Docker. Không lấy test count lịch sử khác commit làm chứng nhận release hiện tại.
 
+**Evidence implementation slice 2026-09-28**, source commit f69dd1d:
+
+- Trước thay đổi (baseline): Pharmacy **217 tests / 46 skipped / 0 failures / 0 errors**; Report **123 / 24 / 0 / 0**.
+- Sau thay đổi, lệnh mvn -q -pl backend/pharmacy-service,backend/report-service -am clean test: Pharmacy **228 / 46 / 0 / 0**; Report **134 / 24 / 0 / 0**. Tổng **362 discovered**, 70 skipped, 0 failure/error. 11 test mới ở mỗi module.
+- Report JwtAuthFilterTest: **4/4 pass**, 0 skipped/failure/error. Testcontainers suites bị skip gồm PostgreSQL/Rabbit integration, reconciliation và migration checks; Docker binary tồn tại nhưng không khởi chạy được (Access Denied), Testcontainers báo không có Docker environment hợp lệ.
+- Pharmacy thêm CareEpisode, PrescriptionCareContext, enum version/context/type; ma trận v0/v1 được unit-test và mediflow.features.care-finance-v2 bind mặc định false. Không đổi schema, API, outbox hoặc authorization legacy.
+- Report thêm command/port namespace, feature property, offline envelope decoder kiểm version=1, routing key, producer và canonical source ID; versioned envelope không được parse như event phẳng legacy. Decoder hiện chỉ nhận 8 event có producer/source field đã xác định từ spec; surgery.completed/surgery.cancelled vẫn reject đến khi D07/D11 khóa source key.
+- Report giữ nguyên năm routing bindings và ba API; V2 flag vẫn false, không tạo live listener, projector, migration hoặc endpoint.
+- Build scope chỉ Pharmacy/Report cùng dependencies trong Maven reactor; không sửa Common/Gateway hay producer ngoài scope. git diff --check sạch.
+- **H-01.4/5 audit 2026-09-28:** xác nhận actual Pharmacy legacy event shapes/consumer bindings và đối chiếu offline V1 decoder/source key; đồng thời ghi rõ Report metric/replay source gaps. Chỉ các subtask `.1/.2` nêu trên được DONE/LOCAL; chưa có V1 producer bytes, owner approval hoặc shared expected-totals fixture, nên parent H-01.4/5 vẫn OPEN.
+- **H-01.2/3 handoff 2026-09-28:** cập nhật [handoff Surgery G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) làm một đầu mối chung đã có trong registry; ghi episode/referral/charge/event mapping proposals, đủ tám lựa chọn §14, owner cần phản hồi và acceptance evidence. Chỉ H-01.2.1/H-01.3.1 là DONE/LOCAL; không có owner approval/fixture giả định và S-01.1 vẫn blocked.
+
 ### 10.2. Checklist đóng mỗi task
 
 - [ ] Ghi subtask ID, source commit, files đã sửa, rule/contract version; phân biệt code với design.
@@ -387,6 +408,8 @@ Ba subtask code local ưu tiên ngay khi được yêu cầu triển khai tiếp
 - [ ] Nếu ghi E2E_PASS: có Gateway + producers/consumers thật, dữ liệu expected/actual, reconciliation và rollback.
 - [ ] git diff --check; link docs/fixture/task IDs hợp lệ; scope chỉ Huy + docs đã giao, không sửa production của owner khác.
 - [ ] Cập nhật checkbox, trạng thái SPEC/CODE/FIXTURE/TEST/E2E, handoff còn mở và bước kế tiếp.
+
+**Slices đã đóng trong lượt 2026-09-28:** P-01.3, P-02.1, R-02.2, R-01.1 — CODE=LOCAL, TEST=PASS cho test chạy được; E2E=NOT_RUN do Docker unreachable. V2 producer/consumer contract không được đánh dấu IMPLEMENTED.
 
 Mẫu evidence cho mỗi slice:
 

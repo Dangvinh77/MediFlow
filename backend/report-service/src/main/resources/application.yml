@@ -39,6 +39,8 @@ eureka:
 
 # Shared HS256 secret — MUST match the gateway and be provided via environment.
 mediflow:
+  features:
+    care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   report:
     zone-id: ${MEDIFLOW_REPORT_ZONE_ID:Asia/Bangkok}
     rabbit:
