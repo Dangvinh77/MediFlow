@@ -174,7 +174,7 @@ such as `HH:mm`; they do not belong in domain models.
 - [ ] Package layout matches this blueprint exactly (`domain` / `application` / `infrastructure`).
 - [ ] **Dependency rule verified:** no framework imports in `domain`; no `infrastructure` or Spring Data imports in `application`.
 - [ ] `application.yml`: port, DB, Eureka client, RabbitMQ, actuator, app name `<service>-service`.
-- [ ] Flyway `V1__init.sql` creates the tables from the design doc (VN snake_case).
+- [ ] Flyway `V1__init.sql` creates the tables from the design doc, following the service-specific naming rule in `08-persistence-naming.md`.
 - [ ] Domain model with its invariants; JPA entity + persistence mapper + adapter implementing the repository port.
 - [ ] In-ports (one interface per use case) + application service implementing them, enforcing **all business rules** from the design doc.
 - [ ] DTOs (records) in `application/dto`; MapStruct DTO mapper.

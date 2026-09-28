@@ -100,7 +100,7 @@ file wins**, so it takes precedence when you work inside that folder.
 - **Clean architecture.** `infrastructure → application → domain`, inward only. No framework imports in `domain`; no Spring Data / infrastructure imports in `application`. Ports in `application`, adapters in `infrastructure` (`04`).
 - One bounded context per service; **no cross-service DB access** — references are bare `UUID`s, never JPA relations.
 - Copy the blueprint (`04`) for every service. The layout is not negotiable.
-- DB = Vietnamese snake_case; Java/JSON fields = Vietnamese camelCase; class names and URLs = English (`08`).
+- DB/Java/JSON naming follows `08` (including its Pharmacy/Report/Surgery English exception); class names and URLs are English.
 - Change state → publish an event. Need another context's data to finish this request → resilient REST (`01`, `06`).
 - Every endpoint declares roles via `@PreAuthorize` (`07`). Default deny.
 - Money = `BigDecimal`, ids = `UUID`, dates = `LocalDate`/`Instant`. Constructor injection. DTO records cross boundaries; entities never do.
@@ -111,7 +111,7 @@ file wins**, so it takes precedence when you work inside that folder.
 - **Feature-based structure.** `src/features/<bounded-context>/` mirrors the backend services 1:1.
 - Call the **gateway** only, via same-origin `/api/*`. Never a service port (`:8081`…) directly.
 - All HTTP goes through `src/lib/api.ts`. No raw `fetch` in components.
-- Shared envelope types in `src/lib/types.ts`; per-feature DTOs in `src/features/<ctx>/types.ts`, Vietnamese camelCase.
+- Shared envelope types in `src/lib/types.ts`; per-feature DTOs in `src/features/<ctx>/types.ts` mirror each service's exact wire names (`12`, `08`).
 - Tailwind utilities only — no CSS-in-JS, no component library.
 - Hiding UI by role is UX, not security. The backend enforces authorization, always.
 

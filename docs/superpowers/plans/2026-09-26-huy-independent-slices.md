@@ -1,5 +1,7 @@
 # Huy — 15 independent slices, 2026-09-26
 
+> Historical evidence at the 2026-09-26 baseline. Statements such as “no Surgery test exists” and unselected locking strategies below are not current status. Active Surgery implementation tasks, selected local lock protocol and scenario mapping are in [Huy plan §6](2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog). Preserve these original completion/evidence records; do not execute two competing backlogs.
+
 **Scope:** Huy-owned Surgery design, Pharmacy and Report; integration preparation only for other owners. **State:** `DONE_LOCAL` means the explicitly independent preparation is done, not that the parent business task, G1 contract, or G3 workflow is complete. No new cross-service ID, price, event schema, admission authorization or finance classification is treated as approved here. The task source is the [Huy implementation plan](2026-09-25-huy-surgery-pharmacy-report.md).
 
 ## Surgery (2)

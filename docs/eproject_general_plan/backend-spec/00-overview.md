@@ -123,6 +123,8 @@ Persistence adapter chịu trách nhiệm chuyển `PageQuery → PageRequest` v
 
 ## 5. Quy tắc đặt tên song ngữ (phải làm đúng tuyệt đối)
 
+Bảng dưới là quy tắc mặc định cho các context còn dùng tên tiếng Việt. Riêng ba service Huy sở hữu — Pharmacy, Report, Surgery — dùng tên SQL tiếng Anh snake_case và Java/JSON/event field tiếng Anh camelCase theo ngoại lệ giới hạn trong [`docs/ai/08`](../../ai/08-persistence-naming.md). Không áp dụng ngoại lệ này cho service của owner khác và không tự đổi wire do service khác sản xuất.
+
 | Tầng | Kiểu | Ví dụ |
 |------|------|-------|
 | Bảng DB | Tiếng Việt UPPER_SNAKE | `BENH_NHAN`, `LICH_HEN` |
@@ -135,7 +137,7 @@ Persistence adapter chịu trách nhiệm chuyển `PageQuery → PageRequest` v
 | Routing key | dot.case | `patient.created` |
 
 **Luôn luôn** viết `@Column(name = "...")` và `@Table(name = "...")` tường minh. Không bao giờ dựa vào
-naming strategy — tên là tiếng Việt và không theo quy luật nào.
+naming strategy — tên physical phải khớp chính xác migration và quy tắc riêng của service.
 
 ## 6. Quy ước DDL
 
@@ -303,7 +305,7 @@ Mỗi spec service kèm sẵn bảng rule → test case; hiện thực đủ t�
 
 ## 15. Definition of Done (áp dụng cho mọi service)
 
-- [ ] `V1__init.sql` tạo đủ mọi bảng trong spec, đúng tiếng Việt snake_case
+- [ ] `V1__init.sql` tạo đủ mọi bảng trong spec, đúng quy tắc đặt tên riêng của service trong `docs/ai/08`
 - [ ] Domain model đủ bất biến; domain exception
 - [ ] In-port (mỗi use case một interface) + application service hiện thực chúng
 - [ ] Out-port + adapter persistence/messaging/client

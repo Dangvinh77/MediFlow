@@ -6,23 +6,23 @@ import java.util.UUID;
 
 /** The exact clinical episode selected for this case; all other IDs remain context only. */
 public record CareEpisode(
-        CareEpisodeType loaiTapDieuTri,
-        UUID maTapDieuTri,
-        UUID maNhapVien,
-        UUID maHoSo) {
+        CareEpisodeType episodeType,
+        UUID episodeId,
+        UUID admissionId,
+        UUID medicalRecordId) {
 
     public CareEpisode {
-        if (loaiTapDieuTri == null || maTapDieuTri == null) {
+        if (episodeType == null || episodeId == null) {
             throw new SurgeryRuleException(
                     "SURGERY_EPISODE_REQUIRED", "Loại và mã đợt điều trị là bắt buộc");
         }
-        if (loaiTapDieuTri == CareEpisodeType.ADMISSION
-                && (maNhapVien == null || !maTapDieuTri.equals(maNhapVien))) {
+        if (episodeType == CareEpisodeType.ADMISSION
+                && (admissionId == null || !episodeId.equals(admissionId))) {
             throw new SurgeryRuleException(
                     "SURGERY_EPISODE_MISMATCH",
                     "Đợt điều trị nội trú phải trùng chính xác mã lần nhập viện");
         }
-        if (loaiTapDieuTri == CareEpisodeType.OUTPATIENT_VISIT && maNhapVien != null) {
+        if (episodeType == CareEpisodeType.OUTPATIENT_VISIT && admissionId != null) {
             throw new SurgeryRuleException(
                     "SURGERY_EPISODE_MISMATCH",
                     "Đợt ngoại trú không được chọn mã lần nhập viện làm episode");
@@ -30,18 +30,18 @@ public record CareEpisode(
     }
 
     public CareEpisodeType type() {
-        return loaiTapDieuTri;
+        return episodeType;
     }
 
     public UUID episodeId() {
-        return maTapDieuTri;
+        return episodeId;
     }
 
     public UUID admissionId() {
-        return maNhapVien;
+        return admissionId;
     }
 
     public UUID recordId() {
-        return maHoSo;
+        return medicalRecordId;
     }
 }

@@ -4,7 +4,7 @@
 - **Coordinator / service owner:** Huy (`LQHuy0210`).
 - **Owners needed:** Vinh — Clinical/Inpatient; Lộc — Billing/Notification; Hoàng Anh — Organization/Patient/Gateway; Huy — Surgery policy and acceptance.
 - **Purpose:** close the episode/referral/event mapping and owner-policy gate for cross-service Surgery behavior. The local domain core and delegated defaults do not satisfy producer/consumer contract acceptance.
-- **Updated:** 2026-09-28, audited against working baseline `dd797f9`; platform foundation and initial case/episode domain now exist, with no business API/schema/event or shared registration implied.
+- **Updated:** 2026-09-28, source audit at `6686f9e`; platform/domain and internal V1 schema/adapters exist, with no business API, published Surgery event or shared registration implied. Detailed executable task breakdown: [current Huy plan, Surgery backlog](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog).
 - **Canonical sources:** [Care–Finance architecture](../architecture/mediflow-care-finance-redesign.html), [Surgery V2 candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md), [INPATIENT-SURGERY](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md), [IDENTITY-LOOKUP](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
 ## Gate status
@@ -13,13 +13,17 @@ The V2 candidate has enough detail to review, but remains a **candidate**, not a
 
 Earlier rows marked as proposals remain proposals. Rows explicitly marked `HUY-DECIDED` record only the local choices delegated to the implementation agent on 2026-09-28; they are not cross-owner approvals. A checkbox or local test never means that Vinh, Lộc or Hoàng Anh approved a contract.
 
+### Huy-owned identifier and wire naming
+
+Huy has selected English snake_case for Surgery-owned SQL identifiers and English camelCase for Surgery Java fields, DTO/JSON fields and future Surgery-produced event payload keys. Pharmacy and Report follow the same naming rule for their owned fields; this changes no already-released Pharmacy/Report wire or migration in the current slice. Surgery's V1 migration is new and carries the English names directly. The canonical scoped rule is `docs/ai/08-persistence-naming.md`. Surgery has no live business API or published event to version-migrate today. When the joint event/API fixtures are approved, consumers must use the exact English Surgery-owned keys; Huy will not rename fields produced by Clinical, Inpatient, Billing, Organization or Patient. Any actual future breaking published-wire rename requires the version/compatibility process in `docs/ai/05` and `06`, plus same-byte producer/consumer fixtures.
+
 ## H-01.2 — episode, referral, charge and event mapping
 
 ### A. Episode and referral identity
 
 | Path | Current conflict / Huy-selected V1 mapping | Confirmation needed | Acceptance evidence |
 |---|---|---|---|
-| Outpatient surgery | `CARE-BILLING` selects `appointmentId` when an appointment exists, otherwise `recordId`; the Surgery candidate currently maps every outpatient episode to `recordId`. **Huy chose:** use the canonical Billing rule; carry `recordId` as clinical context when distinct, never silently replace the selected episode ID. | Vinh + Lộc confirm producer fields and canonical contract. | One request fixture for appointment-backed and walk-in surgery, with exact `careEpisodeType/id`, and mismatch rejection. Update the Surgery candidate and CARE-BILLING/SURGERY-BILLING contract consistently. |
+| Outpatient surgery | `CARE-BILLING` selects `appointmentId` when an appointment exists, otherwise `recordId`; the candidate's original record-only rule has been corrected to the **Huy-local choice**. Carry a distinct `recordId` as clinical context, never replace the selected episode ID. This does not establish producer wire compatibility. | Vinh + Lộc confirm producer fields and canonical contract. | One request fixture for appointment-backed and walk-in surgery, with exact `careEpisodeType/id`, and mismatch rejection; reconcile CARE-BILLING/SURGERY-BILLING and final DTOs with those fixtures. |
 | Admission surgery | **Huy chose:** `careEpisodeType=ADMISSION`, `careEpisodeId=admissionId`; optional `recordId` is context only and cannot select the admission. | Vinh + Lộc confirm producer/clearance fields and canonical contract. | One admission request/clearance fixture proving exact `admissionId`, patient and department match. |
 | Referral producer | Architecture allows Clinical/Inpatient to produce `surgery.requested`; producer-to-path ownership and globally stable `surgeryRequestId` are not fixed. **Huy chose as target:** Clinical owns outpatient referrals and Inpatient owns admission referrals; if the same intent can be emitted on both paths, both preserve one shared `surgeryRequestId`. | Vinh confirms producer/path ownership and ability to preserve one business key across duplicate intent. | Producer/path matrix, same-intent duplicate fixture and concurrent create test: at most one case and one charge intent. `eventId` remains delivery identity, not the business key. |
 
@@ -39,9 +43,22 @@ Every event fixture must include the common envelope (`eventId`, `eventType`, `v
 
 | Event | Candidate/current gap | Required owner decision and fixture |
 |---|---|---|
-| `surgery.ready` | Candidate has case/admission/record/patient, schedule and readiness snapshot IDs plus `readyAt`; Notification needs a planned-time snapshot, which is absent from the proposed payload. | Huy + Lộc: include the exact planned start/end (or an explicitly agreed immutable schedule snapshot), override indicator and revision/source key. Test notification consumer from the same fixture; no REST lookup to recover the times. |
-| `surgery.completed` | `INPATIENT-SURGERY` carries a clinical complications summary; Report needs a stable category. Candidate has performed item/price codes and actual times but correction/revision identity is not defined. | Huy + Vinh + Lộc: agree result/operation ID and correction revision, department/episode fields, actual start/end, performed lines and a controlled `complicationsCategory` separate from any clinical summary. Same bytes must support Inpatient, Billing and Report without exposing clinical summary to aggregate-only Report. |
+| `surgery.ready` | Candidate lacks the planned-time snapshot Notification needs. Under the selected lifecycle, READY precedes finalized resource reservation; it is not proof of a confirmed booking. | Huy + Lộc: exact planned times/schedule revision and readiness source identity, provisional wording, invalidation/reschedule/re-ready handling. No V1 override is permitted; if an agreed compatibility field remains, it is always false. Test unchanged retry, newer readiness and stale delivery using shared bytes; no REST lookup to reconstruct times. |
+| `surgery.completed` | `INPATIENT-SURGERY` carries a clinical summary; Report needs a stable category. Candidate has performed codes/actual times, but semantic operation identity and narrative exposure need agreement. | Huy + Vinh + Lộc: agree result/operation identity, department/episode, actual times, performed lines and controlled category separate from summary. Shared fixtures must prove Report does not persist/log clinical narrative; if transport separation is required, agree version/channel before publishing, never silently vary one event schema per consumer. Corrections are deferred from V1 and must not block its initial completion contract. |
 | `surgery.cancelled` | Candidate has case/admission/record/patient, stage/reason/actor/time, but department/episode and a semantic cancellation key/revision are not complete for Report and idempotent Billing adjustment. | Huy + Vinh + Lộc: include exact episode/department, cancellation operation identity, stage and reason taxonomy. Fixture must show Billing adjustment and Report count without patient-level clinical data. |
+
+### D. Existing Inpatient consumer compatibility — source audit 2026-09-28
+
+Inpatient is **not** a scaffold-only dependency anymore. Its [event consumer](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/infrastructure/messaging/consumer/InpatientEventConsumer.java) decodes Surgery ready/completed/cancelled; [application handling](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/application/service/InpatientApplicationService.java) requires an existing external-order reference for the case/admission. This is code presence, not a shared Surgery fixture pass.
+
+| Gap / current behavior | Owner action and acceptance | Huy task |
+|---|---|---|
+| No Surgery referral producer found; ready/completed/cancelled require an already registered SURGERY external-order reference. | Vinh + Huy: agree how referral request ID maps to the Surgery-created case ID and how reference registration completes before outcomes. Provide reference-first, event-first and duplicate fixtures, including durable pending/recovery or explicitly agreed rejection. Do not invent a case-created event or cross-service DB write. | S-03.1/.6, S-04.2 |
+| Consumer requires admissionId for every Surgery event; Surgery also supports OUTPATIENT. | Vinh: classify a valid outpatient fact as not-applicable before admission-specific requirements; malformed ADMISSION remains an error. Huy supplies one fixture per context and wrong-episode negatives. | S-03.4/.5/.6 |
+| Completed/cancelled treatment-entry handling expects an ADMITTED admission; delivery can be late or out of order. | Vinh + Huy: define late outcome after discharge/close and READY after terminal outcome, including revision/semantic dedupe. Test no lost durable fact, no reopened admission and no repeated treatment entry. | S-03.6, S-07.5 |
+| Human-authorized admission GET exists, but does not by itself establish a service-auth relationship lookup. | Vinh: specify authoritative referral proof or service-only lookup and freshness for exact patient/department/admission eligibility. No assumption that Patient exists proves this relationship. | S-03.3.3, S-04.1 |
+
+These are additional acceptance details in the existing handoff, not authorization for Huy to edit Inpatient. All four rows remain **OPEN** until owner contract changes and shared tests exist.
 
 ## H-01.3 — Huy-delegated local decisions and remaining owner policy inputs
 
@@ -70,8 +87,8 @@ Reply by editing this handoff (or link a canonical contract/spec PR) with the re
 
 | Owner | Required response | Status / link / date |
 |---|---|---|
-| Vinh — Clinical/Inpatient | Confirm outpatient/admission referral ownership and stable request identity; validate required checklist/evidence sources and clinical result fields; approve/defer partial-abort semantics. | `OPEN` — fill in after review |
-| Lộc — Billing/Notification | Confirm distinct post-case charge fact, price-code contract, outpatient/admission SURGERY clearance and adjustment/refund semantics; confirm ready planned-time consumer fields. | `OPEN` — fill in after review |
+| Vinh — Clinical/Inpatient | Confirm referral ownership/stable identity, relationship proof, external-order registration and outpatient/late-event handling (§D); provide checklist/consent/clinical result policies. Post-start abort is deferred from V1. | `OPEN` — fill in after review |
+| Lộc — Billing/Notification | Confirm distinct post-case charge fact, item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `OPEN` — fill in after review |
 | Hoàng Anh — Organization | Confirm room master/lookup owner and active-state behavior; provide authoritative job-title values for team-role mapping. Gateway/build assignments remain tracked in [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). | `OPEN` — fill in after review |
 | Huy — Surgery | Choose the Surgery-owned V1 defaults in §14, episode mapping, charge/clearance intent and READY/schedule lifecycle. | `LOCAL CHOICES RECORDED BY DELEGATION — 2026-09-28; joint fixtures/other-owner confirmations remain OPEN` |
 
