@@ -29,10 +29,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataAccessException.class)
-    ResponseEntity<ApiResponse<Void>> storeUnavailable(DataAccessException ex) {
-        log.error("Patient store unavailable", ex);
-        return build(HttpStatus.SERVICE_UNAVAILABLE, "PATIENT_STORE_UNAVAILABLE",
-                "Patient store hiện không khả dụng");
+    ResponseEntity<ApiResponse<Void>> lookupUnavailable(DataAccessException ex) {
+        log.error("Patient lookup unavailable", ex);
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "PATIENT_LOOKUP_UNAVAILABLE",
+                "Patient lookup hiện không khả dụng");
     }
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, HttpMessageNotReadableException.class,

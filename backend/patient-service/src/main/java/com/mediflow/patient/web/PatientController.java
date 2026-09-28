@@ -6,7 +6,7 @@ import com.mediflow.common.api.PageResult;
 import com.mediflow.patient.application.dto.response.PatientDTO;
 import com.mediflow.patient.application.dto.response.PatientLookupDTO;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
-import com.mediflow.patient.application.port.in.LookupPatientUseCase;
+import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.out.CorrelationIdProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,10 +22,10 @@ import java.util.UUID;
 @RequestMapping("/api/v1/patients")
 public class PatientController {
     private final GetPatientUseCase patients;
-    private final LookupPatientUseCase lookup;
+    private final ReadPatientIdentityUseCase lookup;
     private final CorrelationIdProvider correlationIds;
 
-    public PatientController(GetPatientUseCase patients, LookupPatientUseCase lookup,
+    public PatientController(GetPatientUseCase patients, ReadPatientIdentityUseCase lookup,
                              CorrelationIdProvider correlationIds) {
         this.patients = patients;
         this.lookup = lookup;
