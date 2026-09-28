@@ -1,0 +1,31 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000011",
+  "eventType": "lab.result.created",
+  "version": 1,
+  "occurredAt": "2026-09-28T06:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "lab-service",
+  "payload": {
+    "labId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "recordId": "00000000-0000-4000-8000-000000000004",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+    "labType": "CBC",
+    "resultVersion": 1,
+    "results": [
+      {
+        "resultId": "00000000-0000-4000-8000-000000000012",
+        "indicator": "Hemoglobin",
+        "value": "13.5",
+        "unit": "g/dL",
+        "referenceRange": "12-16"
+      }
+    ],
+    "conclusion": "Normal",
+    "verifiedBy": "00000000-0000-4000-8000-000000000009",
+    "performedDate": "2026-09-28",
+    "completedAt": "2026-09-28T06:00:00Z"
+  }
+}

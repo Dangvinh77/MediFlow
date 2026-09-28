@@ -1,5 +1,7 @@
 package com.mediflow.lab.infrastructure.config;
 
+import java.time.Clock;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +21,11 @@ import com.mediflow.lab.application.service.LabApplicationService;
 public class LabApplicationConfig {
 
     @Bean
+    Clock labClock() {
+        return Clock.systemUTC();
+    }
+
+    @Bean
     public LabApplicationService labApplicationService(
             LabTestRepositoryPort tests,
             LabEventPublisherPort publisher,
@@ -28,8 +35,9 @@ public class LabApplicationConfig {
             LabClearanceRepositoryPort clearances,
             LabEmergencyOverrideRepositoryPort overrides,
             AuthenticatedStaffContextPort authenticatedStaff,
+            Clock clock,
             @Value("${mediflow.features.care-finance-v2:false}") boolean careFinanceV2Enabled) {
         return new LabApplicationService(tests, publisher, mapper, correlationIds, outbox,
-                clearances, overrides, authenticatedStaff, careFinanceV2Enabled);
+                clearances, overrides, authenticatedStaff, careFinanceV2Enabled, clock);
     }
 }

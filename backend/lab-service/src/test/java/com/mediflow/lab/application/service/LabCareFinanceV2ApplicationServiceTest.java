@@ -12,8 +12,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,11 +25,14 @@ import org.mockito.ArgumentCaptor;
 
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.lab.application.dto.command.FinancialClearanceCommand;
+import com.mediflow.lab.application.dto.request.AddResultRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.request.EmergencyOverrideRequest;
+import com.mediflow.lab.application.dto.request.LabResultItem;
 import com.mediflow.lab.application.dto.request.StartLabTestRequest;
 import com.mediflow.lab.application.event.DomainEventEnvelope;
 import com.mediflow.lab.application.event.LabRequestV2Payload;
+import com.mediflow.lab.application.event.LabResultV2Payload;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.out.AuthenticatedStaffContext;
 import com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort;
@@ -59,7 +64,8 @@ class LabCareFinanceV2ApplicationServiceTest {
     private final LabEmergencyOverrideRepositoryPort overrides = mock(LabEmergencyOverrideRepositoryPort.class);
     private final AuthenticatedStaffContextPort authenticatedStaff = mock(AuthenticatedStaffContextPort.class);
     private final LabApplicationService service = new LabApplicationService(tests, compatibilityEvents,
-            mapper, correlations, outbox, clearances, overrides, authenticatedStaff, true);
+            mapper, correlations, outbox, clearances, overrides, authenticatedStaff, true,
+            Clock.fixed(NOW, ZoneOffset.UTC));
 
     @Test
     void create_v2AppendsRequestTimeChargeFactToOutbox() {
@@ -77,13 +83,44 @@ class LabCareFinanceV2ApplicationServiceTest {
         verify(outbox).append(envelope.capture());
         assertThat(envelope.getValue().eventType()).isEqualTo("lab.request.created");
         assertThat(envelope.getValue().version()).isEqualTo(1);
+        assertThat(envelope.getValue().occurredAt()).isEqualTo(NOW);
         assertThat(envelope.getValue().correlationId()).isEqualTo(correlationId.toString());
         LabRequestV2Payload payload = (LabRequestV2Payload) envelope.getValue().payload();
         assertThat(payload.sourceType()).isEqualTo("LAB_TEST");
         assertThat(payload.sourceId()).isEqualTo(payload.labId());
         assertThat(payload.sourceOrderId()).isEqualTo(sourceOrderId);
         assertThat(payload.careEpisodeId()).isEqualTo(episodeId);
+        assertThat(payload.requestedAt()).isEqualTo(NOW);
         verify(compatibilityEvents, never()).publishRequestCreated(any());
+    }
+
+    @Test
+    void addResults_v2UsesOneClockInstantForEnvelopeAndPayload() {
+        LabTest test = v2Test();
+        UUID verifiedBy = UUID.randomUUID();
+        UUID correlationId = UUID.randomUUID();
+        LabEmergencyOverride approval = LabEmergencyOverride.approve(UUID.randomUUID(), test.getTestId(),
+                test.getPatientId(), test.getCareEpisodeType(), test.getCareEpisodeId(), verifiedBy,
+                "ADMIN", "Urgent diagnostic care", NOW.minusSeconds(1));
+        test.start(null, approval, NOW);
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(verifiedBy, "LAB_TECH")));
+        when(correlations.currentOrCreate()).thenReturn(correlationId);
+
+        service.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")),
+                "Normal", REQUESTED_DATE));
+
+        ArgumentCaptor<DomainEventEnvelope<?>> envelope = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox).append(envelope.capture());
+        assertThat(envelope.getValue().occurredAt()).isEqualTo(NOW);
+        assertThat(envelope.getValue().correlationId()).isEqualTo(correlationId.toString());
+        LabResultV2Payload payload = (LabResultV2Payload) envelope.getValue().payload();
+        assertThat(payload.completedAt()).isEqualTo(NOW);
+        assertThat(payload.verifiedBy()).isEqualTo(verifiedBy);
+        assertThat(payload.resultVersion()).isEqualTo(1);
     }
 
     @Test
