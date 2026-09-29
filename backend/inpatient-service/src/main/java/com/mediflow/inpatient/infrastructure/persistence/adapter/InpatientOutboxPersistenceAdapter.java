@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.infrastructure.messaging.InpatientEventWireMapper;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class InpatientOutboxPersistenceAdapter implements InpatientOutboxPort {
                        correlation_id, payload, occurred_at)
                     VALUES (?, 'ADMISSION', ?, ?, ?, ?, CAST(? AS jsonb), ?)
                     """, event.maSuKien(), aggregateId, event.loaiSuKien(), event.phienBan(),
-                    event.maTuongQuan(), payload, event.xayRaLuc());
+                    event.maTuongQuan(), payload, Timestamp.from(event.xayRaLuc()));
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("Inpatient event could not be serialized", exception);
         }
@@ -61,7 +62,7 @@ public class InpatientOutboxPersistenceAdapter implements InpatientOutboxPort {
     @Override
     public void markPublished(UUID eventId, Instant publishedAt) {
         jdbcTemplate.update("UPDATE su_kien_outbox_noi_tru SET published_at = ? WHERE event_id = ?",
-                publishedAt, eventId);
+                Timestamp.from(publishedAt), eventId);
     }
 
     @Override
