@@ -2,6 +2,7 @@ package com.mediflow.surgery.application.port.out;
 
 import com.mediflow.surgery.domain.model.SurgeryChecklistSnapshot;
 import com.mediflow.surgery.domain.model.SurgeryChecklistTemplate;
+import com.mediflow.surgery.domain.model.SurgeryChecklistItemChange;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -17,4 +18,8 @@ public interface SurgeryChecklistRepositoryPort {
     void createSnapshot(SurgeryChecklistSnapshot snapshot);
 
     Optional<SurgeryChecklistSnapshot> findSnapshotByCaseId(UUID caseId);
+
+    SurgeryChecklistSnapshot saveItemChange(SurgeryChecklistSnapshot snapshot,
+                                            long expectedSnapshotRevision,
+                                            SurgeryChecklistItemChange change);
 }

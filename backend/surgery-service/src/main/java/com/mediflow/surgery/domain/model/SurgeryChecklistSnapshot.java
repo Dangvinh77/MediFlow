@@ -43,6 +43,30 @@ public record SurgeryChecklistSnapshot(
                 && items.stream().allMatch(SurgeryChecklistItem::satisfiesMandatoryRequirement);
     }
 
+    public SurgeryChecklistSnapshot reviseItem(UUID itemId, long expectedSnapshotRevision,
+                                               SurgeryChecklistItem revisedItem) {
+        if (itemId == null || revisedItem == null || revision != expectedSnapshotRevision
+                || revisedItem.revision() < 1 || !surgeryCaseId.equals(revisedItem.surgeryCaseId())) {
+            throw invalid("SURGERY_CHECKLIST_REVISION_CONFLICT");
+        }
+        List<SurgeryChecklistItem> revisedItems = new java.util.ArrayList<>(items);
+        int index = -1;
+        for (int current = 0; current < items.size(); current++) {
+            if (items.get(current).checklistItemId().equals(itemId)) index = current;
+        }
+        if (index < 0 || !items.get(index).itemCode().equals(revisedItem.itemCode())
+                || !items.get(index).templateDefinitionId().equals(revisedItem.templateDefinitionId())
+                || items.get(index).revision() + 1 != revisedItem.revision()
+                || items.get(index).status() == revisedItem.status()
+                && java.util.Objects.equals(items.get(index).evidenceReferenceId(), revisedItem.evidenceReferenceId())
+                && java.util.Objects.equals(items.get(index).evidenceRevision(), revisedItem.evidenceRevision())) {
+            throw invalid("SURGERY_CHECKLIST_REVISION_CONFLICT");
+        }
+        revisedItems.set(index, revisedItem);
+        return new SurgeryChecklistSnapshot(checklistSnapshotId, surgeryCaseId, templateId,
+                templateRevision, revision + 1, revisedItems);
+    }
+
     private static SurgeryRuleException invalid(String code) {
         return new SurgeryRuleException(code, "Ảnh chụp checklist của ca phẫu thuật không hợp lệ");
     }

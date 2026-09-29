@@ -3,6 +3,7 @@ package com.mediflow.surgery.infrastructure.persistence;
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.out.SurgeryChecklistRepositoryPort;
 import com.mediflow.surgery.domain.model.SurgeryChecklistItem;
+import com.mediflow.surgery.domain.model.SurgeryChecklistItemChange;
 import com.mediflow.surgery.domain.model.SurgeryChecklistItemDefinition;
 import com.mediflow.surgery.domain.model.SurgeryChecklistSnapshot;
 import com.mediflow.surgery.domain.model.SurgeryChecklistStatus;
@@ -150,7 +151,7 @@ public class SurgeryChecklistPersistenceAdapter implements SurgeryChecklistRepos
             UUID snapshotId = rs.getObject("checklist_snapshot_id", UUID.class);
             List<SurgeryChecklistItem> items = jdbc.query("""
                     SELECT checklist_item_id, surgery_case_id, template_definition_id, item_code,
-                           mandatory, display_order, status, evidence_reference_id, evidence_revision
+                           mandatory, display_order, status, evidence_reference_id, evidence_revision, revision
                     FROM preop_checklist_item WHERE checklist_snapshot_id = ? ORDER BY display_order
                     """, (item, unused) -> new SurgeryChecklistItem(
                     item.getObject("checklist_item_id", UUID.class),
@@ -159,12 +160,83 @@ public class SurgeryChecklistPersistenceAdapter implements SurgeryChecklistRepos
                     item.getBoolean("mandatory"), item.getInt("display_order"),
                     SurgeryChecklistStatus.valueOf(item.getString("status")),
                     item.getObject("evidence_reference_id", UUID.class),
-                    (Long) item.getObject("evidence_revision")), snapshotId);
+                    (Long) item.getObject("evidence_revision"), item.getLong("revision")), snapshotId);
             return new SurgeryChecklistSnapshot(snapshotId, rs.getObject("surgery_case_id", UUID.class),
                     rs.getObject("template_id", UUID.class), rs.getLong("template_revision"),
                     rs.getLong("revision"), items);
         }, caseId);
         return found.stream().findFirst();
+    }
+
+    @Override
+    public SurgeryChecklistSnapshot saveItemChange(SurgeryChecklistSnapshot snapshot,
+                                                   long expectedSnapshotRevision,
+                                                   SurgeryChecklistItemChange change) {
+        requireTransaction();
+        if (snapshot == null || change == null || snapshot.revision() != expectedSnapshotRevision + 1) {
+            throw new IllegalArgumentException("Checklist update revision is invalid");
+        }
+        SurgeryCaseJpaEntity surgeryCase = cases.lockById(snapshot.surgeryCaseId())
+                .orElseThrow(SurgeryRevisionConflictException::new);
+        if (surgeryCase.status != SurgeryStatus.REQUESTED
+                && surgeryCase.status != SurgeryStatus.PREOP_IN_PROGRESS) {
+            throw new SurgeryRevisionConflictException();
+        }
+        SurgeryChecklistSnapshot current = findSnapshotByCaseId(snapshot.surgeryCaseId())
+                .orElseThrow(SurgeryRevisionConflictException::new);
+        if (current.revision() != expectedSnapshotRevision
+                || !current.checklistSnapshotId().equals(snapshot.checklistSnapshotId())
+                || !current.templateId().equals(snapshot.templateId())
+                || current.templateRevision() != snapshot.templateRevision()) {
+            throw new SurgeryRevisionConflictException();
+        }
+        SurgeryChecklistItem before = current.items().stream()
+                .filter(item -> item.checklistItemId().equals(change.checklistItemId()))
+                .findFirst().orElseThrow(SurgeryRevisionConflictException::new);
+        SurgeryChecklistItem after = snapshot.items().stream()
+                .filter(item -> item.checklistItemId().equals(change.checklistItemId()))
+                .findFirst().orElseThrow(SurgeryRevisionConflictException::new);
+        if (before.revision() + 1 != after.revision() || change.revision() != after.revision()
+                || before.status() != change.previousStatus() || after.status() != change.newStatus()
+                || !java.util.Objects.equals(after.evidenceReferenceId(), change.evidenceReferenceId())
+                || !java.util.Objects.equals(after.evidenceRevision(), change.evidenceRevision())
+                || current.items().size() != snapshot.items().size()) {
+            throw new SurgeryRevisionConflictException();
+        }
+        for (SurgeryChecklistItem currentItem : current.items()) {
+            if (currentItem.checklistItemId().equals(change.checklistItemId())) continue;
+            SurgeryChecklistItem updatedItem = snapshot.items().stream()
+                    .filter(item -> item.checklistItemId().equals(currentItem.checklistItemId()))
+                    .findFirst().orElseThrow(SurgeryRevisionConflictException::new);
+            if (!currentItem.equals(updatedItem)) throw new SurgeryRevisionConflictException();
+        }
+        int snapshotUpdated = jdbc.update("""
+                UPDATE preop_checklist_snapshot SET revision = ?
+                WHERE checklist_snapshot_id = ? AND surgery_case_id = ? AND revision = ?
+                """, snapshot.revision(), snapshot.checklistSnapshotId(), snapshot.surgeryCaseId(),
+                expectedSnapshotRevision);
+        if (snapshotUpdated != 1) throw new SurgeryRevisionConflictException();
+        int itemUpdated = jdbc.update("""
+                UPDATE preop_checklist_item
+                SET status = ?, evidence_reference_id = ?, evidence_revision = ?, revision = ?
+                WHERE checklist_item_id = ? AND surgery_case_id = ? AND checklist_snapshot_id = ?
+                  AND revision = ? AND status = ?
+                """, after.status().name(), after.evidenceReferenceId(), after.evidenceRevision(),
+                after.revision(), after.checklistItemId(), after.surgeryCaseId(),
+                snapshot.checklistSnapshotId(), before.revision(), before.status().name());
+        if (itemUpdated != 1) throw new SurgeryRevisionConflictException();
+        jdbc.update("""
+                INSERT INTO preop_checklist_item_history
+                (change_code, checklist_item_id, revision, previous_status, new_status,
+                 evidence_reference_id, evidence_revision, actor_type, account_id, staff_id,
+                 system_producer, occurred_at, correlation_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, change.changeId(), change.checklistItemId(), change.revision(),
+                change.previousStatus().name(), change.newStatus().name(), change.evidenceReferenceId(),
+                change.evidenceRevision(), change.actor().actorType().name(), change.actor().accountId(),
+                change.actor().verifiedStaffId(), change.actor().systemProducer(),
+                Timestamp.from(change.occurredAt()), change.correlationId());
+        return snapshot;
     }
 
     private static void requireTransaction() {

@@ -101,7 +101,7 @@ public class SurgerySchedulePersistenceAdapter implements SurgeryScheduleReposit
                     UPDATE surgery_schedule
                     SET revision = ?, room_id = ?, starts_at = ?, ends_at = ?, updated_at = ?
                     WHERE schedule_id = ? AND surgery_case_id = ?
-                      AND revision = ? AND status = 'DRAFT'
+                      AND revision = ? AND status IN ('DRAFT', 'RELEASED')
                     """, schedule.revision(), schedule.roomId(),
                     Timestamp.from(schedule.startsAt()), Timestamp.from(schedule.endsAt()),
                     Timestamp.from(at), schedule.scheduleId(), schedule.surgeryCaseId(), expectedRevision);
