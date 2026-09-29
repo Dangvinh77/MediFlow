@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +27,7 @@ class ServiceTokenFactoryTest {
         String bearer = factory.bearerToken();
         assertThat(bearer).startsWith("Bearer ");
         var claims = Jwts.parser()
+                .clock(() -> Date.from(now))
                 .verifyWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))
                 .build().parseSignedClaims(bearer.substring(7)).getPayload();
         assertThat(claims.getSubject()).isEqualTo("surgery-service");
