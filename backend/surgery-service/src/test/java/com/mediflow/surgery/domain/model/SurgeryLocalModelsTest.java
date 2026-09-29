@@ -186,6 +186,50 @@ class SurgeryLocalModelsTest {
                         .isEqualTo("SURGERY_READINESS_REASON_MISMATCH"));
     }
 
+    @Test
+    void readinessSnapshot_requiresBothTypedConsentsAndFinancialClearance() {
+        List<SurgeryDependencyRevision> dependencies = dependencies();
+
+        ReadinessSnapshot missingSurgeryConsent = ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                UUID.randomUUID(), true, true, false, true, true, true, true, NOW,
+                dependencies, null);
+        ReadinessSnapshot missingAnesthesiaConsent = ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                UUID.randomUUID(), true, true, true, false, true, true, true, NOW,
+                dependencies, null);
+        ReadinessSnapshot missingFinancialClearance = ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                UUID.randomUUID(), true, true, true, true, true, true, false, NOW,
+                dependencies, null);
+
+        assertThat(missingSurgeryConsent.isReady()).isFalse();
+        assertThat(missingSurgeryConsent.blockingReasons()).containsExactly("SURGERY_CONSENT_MISSING");
+        assertThat(missingAnesthesiaConsent.isReady()).isFalse();
+        assertThat(missingAnesthesiaConsent.blockingReasons()).containsExactly("ANESTHESIA_CONSENT_MISSING");
+        assertThat(missingFinancialClearance.isReady()).isFalse();
+        assertThat(missingFinancialClearance.blockingReasons())
+                .containsExactly("FINANCIAL_CLEARANCE_INVALID");
+    }
+
+    @Test
+    void readinessSnapshot_eachCoreGuardBlocksIndependently() {
+        List<SurgeryDependencyRevision> dependencies = dependencies();
+        List<ReadinessSnapshot> blocked = List.of(
+                ReadinessSnapshot.evaluate(UUID.randomUUID(), UUID.randomUUID(),
+                        false, true, true, true, true, true, true, NOW, dependencies, null),
+                ReadinessSnapshot.evaluate(UUID.randomUUID(), UUID.randomUUID(),
+                        true, false, true, true, true, true, true, NOW, dependencies, null),
+                ReadinessSnapshot.evaluate(UUID.randomUUID(), UUID.randomUUID(),
+                        true, true, true, true, false, true, true, NOW, dependencies, null),
+                ReadinessSnapshot.evaluate(UUID.randomUUID(), UUID.randomUUID(),
+                        true, true, true, true, true, false, true, NOW, dependencies, null));
+        List<String> expectedReasons = List.of(
+                "INDICATION_INVALID", "CHECKLIST_INCOMPLETE", "TEAM_INELIGIBLE", "SCHEDULE_INVALID");
+
+        for (int index = 0; index < blocked.size(); index++) {
+            assertThat(blocked.get(index).isReady()).as(expectedReasons.get(index)).isFalse();
+            assertThat(blocked.get(index).blockingReasons()).containsExactly(expectedReasons.get(index));
+        }
+    }
+
     private static SurgeryResult result(SurgeryPerformedItem line, Instant start, Instant end) {
         return new SurgeryResult(UUID.randomUUID(), UUID.randomUUID(), "PROC-001", "METHOD-1",
                 "OUTCOME-1", null, start, end, List.of(line), end, HUMAN, "result-correlation");

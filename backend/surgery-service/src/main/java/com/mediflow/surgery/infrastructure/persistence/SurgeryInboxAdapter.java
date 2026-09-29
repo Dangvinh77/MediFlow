@@ -38,7 +38,7 @@ public class SurgeryInboxAdapter implements SurgeryInboxPort {
                 event.eventType(), event.version(), event.producer(), event.fingerprint(),
                 event.semanticKey(), event.payload(), Timestamp.from(event.receivedAt()));
         StoredEvent stored = loadForUpdate(event.eventId());
-        if (!sameBusinessIdentity(stored, event)) {
+        if (!sameEventContent(stored, event)) {
             recordConflict(event, "EVENT_ID_CONTENT_MISMATCH");
             return Decision.CONFLICT;
         }
@@ -162,13 +162,17 @@ public class SurgeryInboxAdapter implements SurgeryInboxPort {
                 rs.getString("status"));
     }
 
+    private static boolean sameEventContent(StoredEvent stored, IncomingEvent incoming) {
+        return sameBusinessIdentity(stored, incoming)
+                && Arrays.equals(stored.payload(), incoming.payload());
+    }
+
     private static boolean sameBusinessIdentity(StoredEvent stored, IncomingEvent incoming) {
         return stored.type().equals(incoming.eventType())
                 && stored.version() == incoming.version()
                 && stored.producer().equals(incoming.producer())
                 && stored.fingerprint().equals(incoming.fingerprint())
-                && stored.semanticKey().equals(incoming.semanticKey())
-                && Arrays.equals(stored.payload(), incoming.payload());
+                && stored.semanticKey().equals(incoming.semanticKey());
     }
 
     private static void requireTransaction() {

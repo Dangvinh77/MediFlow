@@ -32,6 +32,12 @@ class SurgeryConfigurationTest {
         assertThat(properties.getProperty("mediflow.features.surgery.enabled")).isEqualTo(false);
         assertThat(properties.getProperty("mediflow.surgery.messaging.producer.enabled"))
                 .isEqualTo(false);
+        assertThat(properties.getProperty("mediflow.surgery.messaging.producer.exchange"))
+                .isEqualTo("mediflow.events");
+        assertThat(properties.getProperty("mediflow.surgery.messaging.producer.poll-interval-ms"))
+                .isEqualTo(1000);
+        assertThat(properties.getProperty("mediflow.surgery.messaging.producer.batch-size"))
+                .isEqualTo(20);
         assertThat(properties.getProperty("mediflow.surgery.messaging.consumers.enabled"))
                 .isEqualTo(false);
         assertThat(properties.getProperty("spring.cloud.openfeign.client.config.default.connectTimeout"))

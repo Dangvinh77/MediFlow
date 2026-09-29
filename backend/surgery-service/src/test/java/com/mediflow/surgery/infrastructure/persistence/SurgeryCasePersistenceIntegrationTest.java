@@ -2,12 +2,17 @@ package com.mediflow.surgery.infrastructure.persistence;
 
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
+import com.mediflow.surgery.application.port.in.ManageSurgeryConsentUseCase;
+import com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase;
+import com.mediflow.surgery.application.port.out.OrganizationLookupPort;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryChecklistRepositoryPort;
+import com.mediflow.surgery.application.port.out.SurgeryCommandReceiptPort;
 import com.mediflow.surgery.application.port.out.SurgeryConsentRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryResourceReservationPort;
 import com.mediflow.surgery.application.port.out.SurgeryResultRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryScheduleRepositoryPort;
+import com.mediflow.surgery.application.service.SurgeryScheduleApplicationService;
 import com.mediflow.surgery.application.exception.SurgeryScheduleConflictException;
 import com.mediflow.surgery.domain.model.CareEpisode;
 import com.mediflow.surgery.domain.model.CareEpisodeType;
@@ -34,6 +39,7 @@ import com.mediflow.surgery.domain.model.SurgeryTeamRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -90,6 +96,8 @@ class SurgeryCasePersistenceIntegrationTest {
     @Autowired private SurgeryScheduleRepositoryPort schedules;
     @Autowired private SurgeryResourceReservationPort resources;
     @Autowired private BeginPreopUseCase beginPreop;
+    @Autowired private ManageSurgeryConsentUseCase manageConsents;
+    @Autowired private SurgeryCommandReceiptPort receipts;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private JdbcTemplate jdbc;
 
@@ -256,6 +264,60 @@ class SurgeryCasePersistenceIntegrationTest {
     }
 
     @Test
+    void reservationDatabaseFailureAfterRoomInsert_rollsBackEveryResourceAndKeepsDraft() {
+        UUID roomId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        Instant start = REQUESTED_AT.plusSeconds(9600);
+        SurgerySchedule schedule = draft(roomId, staffId, start, start.plusSeconds(1800));
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        jdbc.execute("""
+                CREATE FUNCTION reject_staff_reservation_for_test()
+                RETURNS trigger AS $$
+                BEGIN
+                    IF NEW.resource_type = 'STAFF' THEN
+                        RAISE EXCEPTION 'injected reservation failure';
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+                """);
+        try {
+            jdbc.execute("""
+                    CREATE TRIGGER reject_staff_reservation_for_test
+                    BEFORE INSERT ON surgery_resource_reservation
+                    FOR EACH ROW EXECUTE FUNCTION reject_staff_reservation_for_test()
+                    """);
+
+            assertThatThrownBy(() -> tx.executeWithoutResult(
+                    ignored -> resources.reserve(schedule, start)))
+                    .isInstanceOf(DataAccessException.class);
+        } finally {
+            jdbc.execute("DROP TRIGGER IF EXISTS reject_staff_reservation_for_test "
+                    + "ON surgery_resource_reservation");
+            jdbc.execute("DROP FUNCTION IF EXISTS reject_staff_reservation_for_test()");
+        }
+
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND status IN ('RESERVED', 'IN_USE')
+                """, Integer.class, schedule.surgeryCaseId())).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE resource_id IN (?, ?) AND status IN ('RESERVED', 'IN_USE')
+                """, Integer.class, roomId, staffId)).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_schedule WHERE schedule_id = ?
+                """, String.class, schedule.scheduleId())).isEqualTo("DRAFT");
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_case WHERE surgery_case_id = ?
+                """, String.class, schedule.surgeryCaseId())).isEqualTo("READY");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_mutex
+                WHERE resource_id IN (?, ?)
+                """, Integer.class, roomId, staffId)).isZero();
+    }
+
+    @Test
     void staleReleaseCannotTouchNewScheduleRevision() {
         UUID roomId = UUID.randomUUID();
         Instant start = REQUESTED_AT.plusSeconds(10800);
@@ -309,6 +371,9 @@ class SurgeryCasePersistenceIntegrationTest {
         tx.executeWithoutResult(ignored -> schedules.saveDraft(replacement, 1, start.plusSeconds(2)));
 
         assertThat(schedules.findByCaseId(original.surgeryCaseId())).contains(replacement);
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_schedule WHERE schedule_id = ?
+                """, String.class, original.scheduleId())).isEqualTo("DRAFT");
         assertThat(schedules.findRevision(original.surgeryCaseId(), 1)).contains(original);
         assertThat(schedules.findRevision(original.surgeryCaseId(), 2)).contains(replacement);
         assertThat(schedules.findRevision(original.surgeryCaseId(), 1).orElseThrow().teamAssignments())
@@ -319,6 +384,11 @@ class SurgeryCasePersistenceIntegrationTest {
                 SELECT count(*) FROM surgery_resource_reservation
                 WHERE surgery_case_id = ? AND schedule_revision = 1 AND status = 'RELEASED'
                 """, Integer.class, original.surgeryCaseId())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND schedule_revision = 2
+                  AND status IN ('RESERVED', 'IN_USE')
+                """, Integer.class, original.surgeryCaseId())).isZero();
     }
 
     @Test
@@ -401,6 +471,166 @@ class SurgeryCasePersistenceIntegrationTest {
         tx.executeWithoutResult(ignored -> consents.save(replacement));
         assertThat(consents.findByCaseId(surgeryCase.getSurgeryCaseId()))
                 .containsExactlyInAnyOrder(revoked, replacement);
+    }
+
+    @Test
+    void schedulePreparation_commitsDraftCaseRevisionAndReceiptWithoutReservations() {
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = persistRequestedCase(actor, "schedule-prepare-pg");
+        surgeryCase.beginPreop(actor, "schedule-prepare-pg", REQUESTED_AT.plusSeconds(301));
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 0));
+
+        UUID roomId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        OrganizationLookupPort organization = org.mockito.Mockito.mock(OrganizationLookupPort.class);
+        org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId()))
+                .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
+                        surgeryCase.getDepartmentId()));
+        org.mockito.Mockito.when(organization.findRoom(roomId))
+                .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
+        org.mockito.Mockito.when(organization.findStaff(staffId))
+                .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
+        SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
+                cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
+        Instant startsAt = REQUESTED_AT.plusSeconds(86400);
+        PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
+                surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
+                List.of(new PrepareSurgeryScheduleUseCase.TeamMember(
+                        staffId, SurgeryTeamRole.PRIMARY_SURGEON)),
+                "schedule-prepare-pg-key", actor, "schedule-prepare-pg");
+
+        var outcome = tx.execute(ignored -> service.prepare(command));
+
+        assertThat(outcome).isNotNull();
+        assertThat(outcome.caseRevision()).isEqualTo(2);
+        assertThat(outcome.subjectRevision()).isEqualTo(1);
+        assertThat(cases.findById(surgeryCase.getSurgeryCaseId()).orElseThrow().getStatus())
+                .isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
+        assertThat(cases.findById(surgeryCase.getSurgeryCaseId()).orElseThrow().getRevision()).isEqualTo(2);
+        SurgerySchedule persisted = schedules.findByCaseId(surgeryCase.getSurgeryCaseId()).orElseThrow();
+        assertThat(persisted.roomId()).isEqualTo(roomId);
+        assertThat(persisted.teamAssignments()).containsExactly(
+                new SurgeryTeamAssignment(staffId, SurgeryTeamRole.PRIMARY_SURGEON));
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_schedule_history WHERE schedule_id = ?
+                """, Integer.class, persisted.scheduleId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation WHERE surgery_case_id = ?
+                """, Integer.class, surgeryCase.getSurgeryCaseId())).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_command_receipt
+                WHERE idempotency_key = ? AND response_code = 'PREPARE_SCHEDULE' AND status = 'APPLIED'
+                """, Integer.class, "schedule-prepare-pg-key")).isEqualTo(1);
+    }
+
+    @Test
+    void schedulePreparation_caseAuditFailureRollsBackDraftHistoryAndReceipt() {
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = persistRequestedCase(actor, "schedule-prepare-rollback-pg");
+        surgeryCase.beginPreop(actor, "schedule-prepare-rollback-pg", REQUESTED_AT.plusSeconds(301));
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 0));
+
+        jdbc.execute("""
+                CREATE FUNCTION reject_schedule_draft_audit_for_test()
+                RETURNS trigger AS $$
+                BEGIN
+                    IF NEW.change_code = 'SCHEDULE_DRAFT_PREPARED' THEN
+                        RAISE EXCEPTION 'injected schedule audit failure';
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql
+                """);
+        jdbc.execute("""
+                CREATE TRIGGER reject_schedule_draft_audit_for_test
+                BEFORE INSERT ON surgery_revision_history
+                FOR EACH ROW EXECUTE FUNCTION reject_schedule_draft_audit_for_test()
+                """);
+
+        try {
+            UUID roomId = UUID.randomUUID();
+            UUID staffId = UUID.randomUUID();
+            OrganizationLookupPort organization = org.mockito.Mockito.mock(OrganizationLookupPort.class);
+            org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId()))
+                    .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
+                            surgeryCase.getDepartmentId()));
+            org.mockito.Mockito.when(organization.findRoom(roomId))
+                    .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
+            org.mockito.Mockito.when(organization.findStaff(staffId))
+                    .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
+            SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
+                    cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
+            Instant startsAt = REQUESTED_AT.plusSeconds(86400);
+            PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
+                    surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
+                    List.of(new PrepareSurgeryScheduleUseCase.TeamMember(
+                            staffId, SurgeryTeamRole.PRIMARY_SURGEON)),
+                    "schedule-prepare-rollback-pg-key", actor, "schedule-prepare-rollback-pg");
+
+            assertThatThrownBy(() -> tx.execute(ignored -> service.prepare(command)))
+                    .isInstanceOf(DataAccessException.class);
+        } finally {
+            jdbc.execute("DROP TRIGGER IF EXISTS reject_schedule_draft_audit_for_test "
+                    + "ON surgery_revision_history");
+            jdbc.execute("DROP FUNCTION IF EXISTS reject_schedule_draft_audit_for_test()");
+        }
+
+        assertThat(cases.findById(surgeryCase.getSurgeryCaseId()).orElseThrow().getRevision()).isEqualTo(1);
+        assertThat(schedules.findByCaseId(surgeryCase.getSurgeryCaseId())).isEmpty();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_schedule_history h
+                JOIN surgery_schedule s ON s.schedule_id = h.schedule_id
+                WHERE s.surgery_case_id = ?
+                """, Integer.class, surgeryCase.getSurgeryCaseId())).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_command_receipt WHERE idempotency_key = ?
+                """, Integer.class, "schedule-prepare-rollback-pg-key")).isZero();
+    }
+
+    @Test
+    void revokingConsentFromScheduledCase_invalidatesReadinessAndReleasesExactReservation() {
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        ScheduledFixture fixture = persistScheduledCaseWithActiveConsent(actor, "consent-invalidation-pg");
+        UUID caseId = fixture.surgeryCase().getSurgeryCaseId();
+        String idempotencyKey = "revoke-scheduled-consent-pg";
+
+        var outcome = manageConsents.revoke(new ManageSurgeryConsentUseCase.RevokeCommand(
+                caseId, fixture.consent().consentId(), fixture.surgeryCase().getRevision(),
+                "Signer withdrew permission", idempotencyKey, actor, "consent-invalidation-pg"));
+
+        SurgeryCase invalidated = cases.findById(caseId).orElseThrow();
+        assertThat(outcome.commandCode()).isEqualTo("REVOKE_CONSENT");
+        assertThat(invalidated.getStatus()).isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
+        assertThat(invalidated.getReadinessSnapshot()).isNull();
+        assertThat(invalidated.getReadyAt()).isNull();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_readiness_snapshot WHERE surgery_case_id = ?
+                """, Integer.class, caseId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_schedule WHERE schedule_id = ? AND revision = ?
+                """, String.class, fixture.schedule().scheduleId(), fixture.schedule().revision()))
+                .isEqualTo("RELEASED");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND schedule_id = ? AND schedule_revision = ?
+                  AND status = 'RELEASED'
+                """, Integer.class, caseId, fixture.schedule().scheduleId(),
+                fixture.schedule().revision())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND status IN ('RESERVED', 'IN_USE')
+                """, Integer.class, caseId)).isZero();
+
+        SurgeryConsentRecord revoked = consents.findById(fixture.consent().consentId()).orElseThrow();
+        assertThat(revoked.isActive()).isFalse();
+        assertThat(revoked.auditHistory()).extracting(entry -> entry.action().name())
+                .containsExactly("SIGNED", "REVOKED");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_command_receipt
+                WHERE idempotency_key = ? AND response_code = 'REVOKE_CONSENT' AND status = 'APPLIED'
+                """, Integer.class, idempotencyKey)).isEqualTo(1);
     }
 
     @Test
@@ -530,6 +760,76 @@ class SurgeryCasePersistenceIntegrationTest {
                 .isInstanceOf(SurgeryScheduleConflictException.class);
     }
 
+    @Test
+    void anyOverlappingStaffInContainedMultiStaffBooking_rejectsWholeReservation() {
+        UUID sharedStaffId = UUID.randomUUID();
+        UUID freeStaffId = UUID.randomUUID();
+        Instant start = REQUESTED_AT.plusSeconds(21600);
+        SurgerySchedule first = draft(UUID.randomUUID(), sharedStaffId,
+                start, start.plusSeconds(3600));
+        SurgerySchedule contained = draft(UUID.randomUUID(), List.of(
+                        new SurgeryTeamAssignment(freeStaffId, SurgeryTeamRole.ASSISTANT_SURGEON),
+                        new SurgeryTeamAssignment(sharedStaffId, SurgeryTeamRole.ANESTHESIOLOGIST)),
+                start.plusSeconds(300), start.plusSeconds(1200));
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> resources.reserve(first, start));
+
+        assertThat(contained.startsAt()).isAfter(first.startsAt());
+        assertThat(contained.endsAt()).isBefore(first.endsAt());
+        assertThat(contained.roomId()).isNotEqualTo(first.roomId());
+        assertThatThrownBy(() -> tx.executeWithoutResult(
+                ignored -> resources.reserve(contained, start.plusSeconds(1))))
+                .isInstanceOf(SurgeryScheduleConflictException.class);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND status IN ('RESERVED', 'IN_USE')
+                """, Integer.class, contained.surgeryCaseId())).isZero();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND status = 'RESERVED'
+                """, Integer.class, first.surgeryCaseId())).isEqualTo(2);
+    }
+
+    private ScheduledFixture persistScheduledCaseWithActiveConsent(SurgeryAuditActor actor,
+                                                                    String correlationId) {
+        SurgeryCase surgeryCase = persistRequestedCase(actor, correlationId);
+        Instant preopAt = REQUESTED_AT.plusSeconds(301);
+        surgeryCase.beginPreop(actor, correlationId, preopAt);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 0));
+
+        Instant consentAt = REQUESTED_AT.plusSeconds(302);
+        SurgeryConsentRecord consent = SurgeryConsentRecord.sign(UUID.randomUUID(),
+                surgeryCase.getSurgeryCaseId(), SurgeryConsentType.SURGERY,
+                UUID.randomUUID(), SurgeryConsentSignerType.PATIENT, UUID.randomUUID(),
+                actor, consentAt, correlationId);
+        tx.executeWithoutResult(ignored -> consents.save(consent));
+        surgeryCase.recordBusinessMutation(actor, correlationId, consentAt, "CONSENT_SIGNED");
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 1));
+
+        Instant startsAt = REQUESTED_AT.plusSeconds(86400);
+        SurgerySchedule schedule = new SurgerySchedule(UUID.randomUUID(), surgeryCase.getSurgeryCaseId(),
+                1, UUID.randomUUID(), startsAt, startsAt.plusSeconds(1800), List.of(
+                new SurgeryTeamAssignment(actor.verifiedStaffId(), SurgeryTeamRole.PRIMARY_SURGEON)));
+        tx.executeWithoutResult(ignored -> schedules.saveDraft(schedule, 0, REQUESTED_AT.plusSeconds(303)));
+
+        Instant evaluatedAt = REQUESTED_AT.plusSeconds(304);
+        ReadinessSnapshot snapshot = ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                surgeryCase.getSurgeryCaseId(), true, true, true, true, true, true, true,
+                evaluatedAt, Arrays.stream(SurgeryDependencyType.values())
+                        .map(type -> new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
+                evaluatedAt.plusSeconds(3600));
+        surgeryCase.markReady(snapshot, actor, correlationId);
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 2));
+        tx.executeWithoutResult(ignored -> resources.reserve(schedule, evaluatedAt.plusSeconds(1)));
+        surgeryCase.finalizeSchedule(actor, correlationId, evaluatedAt.plusSeconds(2));
+        tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 3));
+        return new ScheduledFixture(surgeryCase, schedule, consent);
+    }
+
+    private record ScheduledFixture(SurgeryCase surgeryCase, SurgerySchedule schedule,
+                                    SurgeryConsentRecord consent) { }
+
     private boolean reserveAfterBarrier(SurgerySchedule schedule, CyclicBarrier barrier) throws Exception {
         barrier.await(20, TimeUnit.SECONDS);
         try {
@@ -576,6 +876,13 @@ class SurgeryCasePersistenceIntegrationTest {
         new TransactionTemplate(transactionManager)
                 .executeWithoutResult(ignored -> cases.save(surgeryCase, -1));
         return surgeryCase;
+    }
+
+    private static OrganizationLookupPort.OrganizationLookupSnapshot activeLookup(
+            OrganizationLookupPort.ReferenceKind kind, UUID referenceId) {
+        return new OrganizationLookupPort.OrganizationLookupSnapshot(kind, referenceId,
+                OrganizationLookupPort.ReferenceState.ACTIVE, REQUESTED_AT.plusSeconds(302),
+                "org-test-revision", null);
     }
 
     private SurgeryCase persistInProgressCase(SurgeryAuditActor actor, String correlationId) {

@@ -3,6 +3,7 @@ package com.mediflow.surgery.domain.model;
 import com.mediflow.surgery.domain.exception.SurgeryRuleException;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +44,9 @@ public record SurgeryResult(
         treatmentOutcomeCode = treatmentOutcomeCode.trim();
         complicationGroupCode = complicationGroupCode == null ? null : complicationGroupCode.trim();
         correlationId = correlationId.trim();
-        performedItems = List.copyOf(performedItems);
+        performedItems = performedItems.stream()
+                .sorted(Comparator.comparing(SurgeryPerformedItem::performedItemId))
+                .toList();
         Set<UUID> lineIds = new HashSet<>();
         for (SurgeryPerformedItem item : performedItems) {
             if (!lineIds.add(item.performedItemId())) {

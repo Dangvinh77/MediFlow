@@ -8,7 +8,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
+import com.mediflow.pharmacy.domain.model.CareEpisode;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.PrescriptionCareContext;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PrescriptionJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.PrescriptionLineJpaEntity;
@@ -69,11 +72,17 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
 
     private Prescription toDomain(PrescriptionJpaEntity e) {
         List<PrescriptionLine> lines = e.getLines().stream().map(this::toDomainLine).toList();
+        PrescriptionCareContext careContext = CareContractVersion.from(e.getCareContractVersion())
+                == CareContractVersion.LEGACY
+                        ? PrescriptionCareContext.legacy()
+                        : PrescriptionCareContext.v1(e.getCareContext(),
+                                new CareEpisode(e.getCareEpisodeType(), e.getCareEpisodeId()),
+                                e.getAdmissionId(), e.getPriceCode());
         return Prescription.restore(
                 e.getPrescriptionId(), e.getRecordId(), e.getPatientId(), e.getDoctorId(),
                 e.getDepartmentId(), e.getPrescribedDate(), e.getTotalAmount(), lines,
                 e.getStatus(), e.getCancelledAt(), e.getCancelledBy(), e.getCancellationReason(),
-                e.getCreatedAt(), e.getUpdatedAt());
+                e.getCreatedAt(), e.getUpdatedAt(), careContext);
     }
 
     private PrescriptionLine toDomainLine(PrescriptionLineJpaEntity l) {
@@ -90,6 +99,14 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 .departmentId(p.getDepartmentId())
                 .prescribedDate(p.getPrescribedDate())
                 .totalAmount(p.getTotalAmount())
+                .careContractVersion((short) p.getCareContext().contractVersion().value())
+                .careContext(p.getCareContext().careContext())
+                .careEpisodeType(p.getCareContext().episode() == null
+                        ? null : p.getCareContext().episode().type())
+                .careEpisodeId(p.getCareContext().episode() == null
+                        ? null : p.getCareContext().episode().id())
+                .admissionId(p.getCareContext().admissionId())
+                .priceCode(p.getCareContext().priceCode())
                 .status(p.getStatus())
                 .cancelledAt(p.getCancelledAt())
                 .cancelledBy(p.getCancelledBy())

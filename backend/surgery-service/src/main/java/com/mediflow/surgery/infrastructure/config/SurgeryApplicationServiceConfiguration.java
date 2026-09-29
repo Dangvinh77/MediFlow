@@ -2,7 +2,9 @@ package com.mediflow.surgery.infrastructure.config;
 
 import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
 import com.mediflow.surgery.application.port.in.ManageSurgeryConsentUseCase;
+import com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase;
 import com.mediflow.surgery.application.port.in.UpdateChecklistItemUseCase;
+import com.mediflow.surgery.application.port.out.OrganizationLookupPort;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryChecklistRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
@@ -13,6 +15,8 @@ import com.mediflow.surgery.application.port.out.SurgeryScheduleRepositoryPort;
 import com.mediflow.surgery.application.service.SurgeryChecklistApplicationService;
 import com.mediflow.surgery.application.service.SurgeryConsentApplicationService;
 import com.mediflow.surgery.application.service.SurgeryPreopApplicationService;
+import com.mediflow.surgery.application.service.SurgeryScheduleApplicationService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,5 +56,16 @@ public class SurgeryApplicationServiceConfiguration {
             SurgeryClockPort clock) {
         return new SurgeryConsentApplicationService(
                 cases, consents, schedules, reservations, receipts, clock);
+    }
+
+    @Bean
+    @ConditionalOnBean(OrganizationLookupPort.class)
+    PrepareSurgeryScheduleUseCase prepareSurgeryScheduleUseCase(
+            SurgeryCaseRepositoryPort cases,
+            SurgeryScheduleRepositoryPort schedules,
+            SurgeryCommandReceiptPort receipts,
+            OrganizationLookupPort organization,
+            SurgeryClockPort clock) {
+        return new SurgeryScheduleApplicationService(cases, schedules, receipts, organization, clock);
     }
 }

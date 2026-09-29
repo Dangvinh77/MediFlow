@@ -3,7 +3,10 @@ package com.mediflow.report.infrastructure.messaging.carefinance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +57,34 @@ class CareFinanceEnvelopeDecoderTest {
 
         assertThat(decoded.metadata().sourceId()).isEqualTo(UUID.fromString(SOURCE_ID));
         assertThat(decoded.payload()).containsEntry("refundTransactionId", SOURCE_ID);
+    }
+
+    @Test
+    void decode_clinicalProducerFixture_usesCanonicalRecordIdFromExactBytes() throws IOException {
+        byte[] producerBytes = readProducerFixture(
+                "backend/clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json");
+
+        var decoded = decoder.decode("medicalrecord.completed", producerBytes);
+
+        assertThat(decoded.metadata().producer()).isEqualTo("clinical-service");
+        assertThat(decoded.metadata().sourceField()).isEqualTo("recordId");
+        assertThat(decoded.metadata().sourceId())
+                .isEqualTo(UUID.fromString("00000000-0000-4000-8000-000000000003"));
+        assertThat(decoded.payload()).containsEntry("disposition", "ADMISSION");
+    }
+
+    @Test
+    void decode_labProducerFixture_usesCanonicalLabIdFromExactBytes() throws IOException {
+        byte[] producerBytes = readProducerFixture(
+                "backend/lab-service/src/test/resources/contracts/lab.result.created.v1.json");
+
+        var decoded = decoder.decode("lab.result.created", producerBytes);
+
+        assertThat(decoded.metadata().producer()).isEqualTo("lab-service");
+        assertThat(decoded.metadata().sourceField()).isEqualTo("labId");
+        assertThat(decoded.metadata().sourceId())
+                .isEqualTo(UUID.fromString("00000000-0000-4000-8000-000000000002"));
+        assertThat(decoded.payload()).containsEntry("resultVersion", 1);
     }
 
     @Test
@@ -118,6 +149,17 @@ class CareFinanceEnvelopeDecoderTest {
                  "producer":"%s","payload":{"%s":"%s"}}
                 """.formatted(EVENT_ID, eventType, version, producer, sourceField, sourceId);
         return body.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static byte[] readProducerFixture(String repositoryRelativePath) throws IOException {
+        Path current = Path.of("").toAbsolutePath();
+        while (current != null && !Files.exists(current.resolve("backend/report-service/pom.xml"))) {
+            current = current.getParent();
+        }
+        if (current == null) {
+            throw new IOException("Could not locate MediFlow repository root from the test working directory");
+        }
+        return Files.readAllBytes(current.resolve(repositoryRelativePath));
     }
 
     private record EventCase(String eventType, String producer, String sourceField) {

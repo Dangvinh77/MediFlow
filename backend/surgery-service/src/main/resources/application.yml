@@ -53,6 +53,11 @@ mediflow:
     messaging:
       producer:
         enabled: false
+        exchange: mediflow.events
+        poll-interval-ms: 1000
+        lease-seconds: 30
+        confirm-timeout-ms: 5000
+        batch-size: 20
       consumers:
         enabled: false
 

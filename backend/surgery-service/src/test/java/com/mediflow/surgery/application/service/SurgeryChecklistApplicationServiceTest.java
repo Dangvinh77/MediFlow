@@ -1,6 +1,7 @@
 package com.mediflow.surgery.application.service;
 
 import com.mediflow.surgery.application.port.in.UpdateChecklistItemUseCase;
+import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryChecklistRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
@@ -41,9 +42,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -111,6 +114,70 @@ class SurgeryChecklistApplicationServiceTest {
         assertThatThrownBy(() -> service.update(command))
                 .hasFieldOrPropertyWithValue("code", "SURGERY_NOT_APPLICABLE_POLICY_UNCONFIRMED");
         verifyNoInteractions(cases, checklists, receipts, schedules, reservations, clock);
+    }
+
+    @Test
+    void updateChecklistItem_systemActor_rejectsBeforeReceiptClaim() {
+        UpdateChecklistItemUseCase.Command command = new UpdateChecklistItemUseCase.Command(
+                UUID.randomUUID(), UUID.randomUUID(), 0, 0, 0,
+                SurgeryChecklistStatus.FAILED, null, null, "check-system",
+                SurgeryAuditActor.system("clinical-service"), CORRELATION_ID);
+
+        assertThatThrownBy(() -> service.update(command))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(cases, checklists, receipts, schedules, reservations, clock);
+    }
+
+    @Test
+    void updateChecklistItem_satisfiedWithoutEvidence_rejectsBeforeReceiptClaim() {
+        UpdateChecklistItemUseCase.Command command = new UpdateChecklistItemUseCase.Command(
+                UUID.randomUUID(), UUID.randomUUID(), 0, 0, 0,
+                SurgeryChecklistStatus.SATISFIED, null, null, "check-no-evidence",
+                SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID()), CORRELATION_ID);
+
+        assertThatThrownBy(() -> service.update(command))
+                .hasFieldOrPropertyWithValue("code", "SURGERY_CHECKLIST_EVIDENCE_REQUIRED");
+        verifyNoInteractions(cases, checklists, receipts, schedules, reservations, clock);
+    }
+
+    @Test
+    void updateChecklistItem_evidenceRevisionWithoutReference_rejectsBeforeReceiptClaim() {
+        UpdateChecklistItemUseCase.Command command = new UpdateChecklistItemUseCase.Command(
+                UUID.randomUUID(), UUID.randomUUID(), 0, 0, 0,
+                SurgeryChecklistStatus.FAILED, null, 4L, "check-orphan-revision",
+                SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID()), CORRELATION_ID);
+
+        assertThatThrownBy(() -> service.update(command))
+                .hasFieldOrPropertyWithValue("code", "SURGERY_CHECKLIST_EVIDENCE_REFERENCE_REQUIRED");
+        verifyNoInteractions(cases, checklists, receipts, schedules, reservations, clock);
+    }
+
+    @Test
+    void updateChecklistItem_staleSnapshotRevision_rejectsWithoutWritingHistoryOrReceipt() {
+        UUID caseId = UUID.randomUUID();
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = newCase(caseId, actor);
+        surgeryCase.beginPreop(actor, CORRELATION_ID, REQUESTED_AT.plusSeconds(1));
+        SurgeryChecklistSnapshot snapshot = new SurgeryChecklistTemplate(
+                UUID.randomUUID(), "PROC-001", 1,
+                List.of(new SurgeryChecklistItemDefinition(UUID.randomUUID(), "IDENTITY_CONFIRMED", true, 1)))
+                .snapshotForCase(UUID.randomUUID(), caseId);
+        SurgeryChecklistItem item = snapshot.items().getFirst();
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.NEW, UUID.randomUUID(), null, null));
+        when(cases.lockById(caseId)).thenReturn(Optional.of(surgeryCase));
+        when(checklists.findSnapshotByCaseId(caseId)).thenReturn(Optional.of(snapshot));
+
+        assertThatThrownBy(() -> service.update(new UpdateChecklistItemUseCase.Command(
+                caseId, item.checklistItemId(), 1, 1, 0, SurgeryChecklistStatus.FAILED,
+                null, null, "check-stale-snapshot", actor, CORRELATION_ID)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+
+        verify(checklists).findSnapshotByCaseId(caseId);
+        verify(checklists, never()).saveItemChange(any(), anyLong(), any());
+        verify(cases, never()).save(any(), anyLong());
+        verify(receipts, never()).complete(any(), any(), anyString(), any(), any());
+        verifyNoInteractions(clock, schedules, reservations);
     }
 
     @Test

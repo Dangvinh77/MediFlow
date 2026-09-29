@@ -4,6 +4,8 @@ import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
 import com.mediflow.surgery.application.port.out.SurgeryCommandReceiptPort;
+import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
+import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.domain.model.CareEpisode;
 import com.mediflow.surgery.domain.model.CareEpisodeType;
 import com.mediflow.surgery.domain.model.SurgeryAuditActor;
@@ -25,9 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -78,6 +82,73 @@ class SurgeryPreopApplicationServiceTest {
         assertThatThrownBy(() -> service.begin(command))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(cases, receipts, clock);
+    }
+
+    @Test
+    void beginPreop_appliedReceiptReplay_returnsOriginalOutcomeWithoutRelockingCase() {
+        UUID caseId = UUID.randomUUID();
+        UUID receiptId = UUID.randomUUID();
+        SurgeryCommandOutcome original = new SurgeryCommandOutcome("BEGIN_PREOP", caseId,
+                1, null, 0, SurgeryStatus.PREOP_IN_PROGRESS.name(), NOW, false);
+        ReceiptResponse response = new ReceiptResponse();
+        SurgeryCommandReceipts.complete(response, receiptId, original);
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.REPLAY, receiptId, "BEGIN_PREOP", response.response));
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+
+        var replay = service.begin(new BeginPreopUseCase.Command(
+                caseId, 0, "begin-replay", actor, CORRELATION_ID));
+
+        assertThat(replay).isEqualTo(original.asReplay());
+        verifyNoInteractions(cases, clock);
+    }
+
+    @Test
+    void beginPreop_staleCaseRevision_rejectsWithoutReadingClockOrCompletingReceipt() {
+        UUID caseId = UUID.randomUUID();
+        UUID receiptId = UUID.randomUUID();
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = newCase(caseId, actor);
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.NEW, receiptId, null, null));
+        when(cases.lockById(caseId)).thenReturn(Optional.of(surgeryCase));
+
+        assertThatThrownBy(() -> service.begin(new BeginPreopUseCase.Command(
+                caseId, 1, "begin-stale", actor, CORRELATION_ID)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+
+        verify(cases).lockById(caseId);
+        verify(cases, never()).save(any(), anyLong());
+        verify(receipts, never()).complete(any(), any(), anyString(), any(), any());
+        verifyNoInteractions(clock);
+    }
+
+    @Test
+    void beginPreop_conflictingIdempotencyReceipt_rejectsBeforeCaseLookup() {
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.CONFLICT, UUID.randomUUID(), null, null));
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> service.begin(new BeginPreopUseCase.Command(
+                UUID.randomUUID(), 0, "begin-conflict", actor, CORRELATION_ID)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+
+        verifyNoInteractions(cases, clock);
+    }
+
+    private static final class ReceiptResponse implements SurgeryCommandReceiptPort {
+        private byte[] response;
+
+        @Override
+        public Claim claim(Key key, String fingerprint) {
+            throw new UnsupportedOperationException("Only response encoding is used in this test");
+        }
+
+        @Override
+        public void complete(UUID receiptId, UUID caseId, String responseCode,
+                             byte[] response, Instant at) {
+            this.response = response.clone();
+        }
     }
 
     private static SurgeryCase newCase(UUID caseId, SurgeryAuditActor actor) {

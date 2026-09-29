@@ -27,14 +27,22 @@ class SurgeryArchitectureTest {
             .should().dependOnClassesThat().resideInAnyPackage(
                     "com.mediflow.surgery.infrastructure..",
                     "org.springframework.data..", "org.springframework.web..",
-                    "org.springframework.amqp..", "jakarta.persistence..");
+                    "org.springframework.amqp..", "jakarta.persistence..", "java.sql..");
 
     @ArchTest
-    static final ArchRule web_does_not_bypass_application = noClasses()
-            .that().resideInAPackage("..infrastructure.web..")
+    static final ArchRule driving_adapters_do_not_bypass_application = noClasses()
+            .that().resideInAnyPackage("..web..", "..messaging.consumer..")
             .should().dependOnClassesThat().resideInAnyPackage(
                     "..infrastructure.persistence..", "..infrastructure.client..",
                     "..infrastructure.messaging..", "com.mediflow.surgery.domain..");
+
+    @ArchTest
+    static final ArchRule surgery_does_not_dependOn_other_business_services = noClasses()
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "com.mediflow.organization..", "com.mediflow.patient..",
+                    "com.mediflow.clinical..", "com.mediflow.lab..",
+                    "com.mediflow.pharmacy..", "com.mediflow.billing..",
+                    "com.mediflow.inpatient..", "com.mediflow.report..");
 
     @ArchTest
     static final ArchRule no_layer_cycles = SlicesRuleDefinition.slices()

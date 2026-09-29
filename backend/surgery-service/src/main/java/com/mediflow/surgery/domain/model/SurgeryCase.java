@@ -301,9 +301,9 @@ public final class SurgeryCase {
         requireStatus(expected);
         SurgeryAuditActor validActor = required(actor, "SURGERY_ACTOR_REQUIRED");
         Instant changedAt = required(at, "SURGERY_TRANSITION_TIME_REQUIRED");
-        if (!statusHistory.isEmpty()
-                && changedAt.isBefore(statusHistory.get(statusHistory.size() - 1).occurredAt())) {
-            throw rule("SURGERY_INVALID_TIME", "Thời điểm chuyển trạng thái không được đi lùi");
+        if (!revisionHistory.isEmpty()
+                && changedAt.isBefore(revisionHistory.getLast().occurredAt())) {
+            throw rule("SURGERY_INVALID_TIME", "Thời điểm thay đổi dữ liệu không được đi lùi");
         }
         SurgeryStatus previous = status;
         SurgeryStateChange change = new SurgeryStateChange(
