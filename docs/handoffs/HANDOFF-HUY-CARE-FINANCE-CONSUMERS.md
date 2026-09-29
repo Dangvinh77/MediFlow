@@ -7,13 +7,16 @@
 
 ## Producer actions and Huy acceptance gates
 
-**Reassessed 2026-09-27 at `30e0296`:** [Pharmacy V2](../eproject_general_plan/backend-spec/care-finance-v2/05-pharmacy.md)
+**Reassessed 2026-09-29 at `d252492`:** [Pharmacy V2](../eproject_general_plan/backend-spec/care-finance-v2/05-pharmacy.md)
 and [Report V2](../eproject_general_plan/backend-spec/care-finance-v2/08-report.md) permit additive local
 implementation behind `mediflow.features.care-finance-v2=false`; this is not permission to activate
-unverified consumers. Code still uses legacy Pharmacy payment proof and invoice-keyed Report
-contributions. Billing has explicit legacy prescription/lab targets but no classified transaction,
-clearance or settlement producer; Inpatient has no business lifecycle producer yet. New target
-specs therefore reduce the decision backlog without establishing implementation or shared test success.
+unverified consumers. Pharmacy now has a guarded V1 care-context model, and Report has a guarded
+version-1 envelope decoder for Clinical/Lab/Inpatient facts. The live paths still use legacy Pharmacy
+payment proof and invoice-keyed Report contributions, and Huy's tests do not yet consume Vinh's
+canonical fixture bytes. Billing still has no classified transaction, clearance or settlement
+producer. Inpatient now publishes the approved start/discharge/close lifecycle facts, but not bed
+transfer/release/capacity facts. These additions reduce the local implementation gap without
+establishing cross-owner acceptance or permission to enable the flags.
 
 | Decision | Producer action needed | Huy consumer behavior after contract approval | Acceptance evidence |
 |---|---|---|---|
@@ -50,7 +53,7 @@ specs therefore reduce the decision backlog without establishing implementation 
 
 ## Vinh producer evidence — 2026-09-28
 
-Vinh's next producer slice supplies deterministic version-1 fixtures for Clinical
+Vinh's producer slice supplies deterministic version-1 fixtures for Clinical
 `admission.requested` and the currently approved Inpatient lifecycle events under each service's
 `src/test/resources/contracts/` directory. Producer tests serialize the real envelope/wire mapper;
 the Inpatient consumer test reads the same `admission.requested` shape. These fixtures are evidence
@@ -60,6 +63,11 @@ read the same bytes and the remaining acceptance paths pass.
 Still open: Pharmacy admission eligibility/freshness and late compensation, Report bed
 transfer/release/capacity facts and LOS semantics, and a durable replay/cutover policy. No new
 transfer, release, capacity or Surgery event may be inferred from the existing admission events.
+
+Huy's current Report envelope decoder recognizes `medicalrecord.completed`, `admission.started`,
+`admission.closed` and `lab.result.created`, but its decoder tests still use locally constructed
+samples. Huy should copy/read the canonical producer fixtures named below and add projection-level
+duplicate/out-of-order assertions before changing the feature flag or declaring D10/D11 accepted.
 
 ## Lab producer evidence — 2026-09-28
 

@@ -365,6 +365,6 @@ liability, deposits or settlement; those financial results belong to Billing.
 - `payment.completed` log-only behavior remains compatibility behavior and does not mutate patient
   profile or mean the complete care episode is settled.
 
-Mandatory handoff: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
-The current Clinical lookup remains tracked in
-[`HANDOFF-CLINICAL-PATIENT-LOOKUP`](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md).
+Mandatory contract: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+The former Clinical lookup handoff is complete: Patient owns the producer fixture and Clinical
+deserializes the same canonical envelope in its consumer contract test.

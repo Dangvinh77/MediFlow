@@ -1,10 +1,14 @@
 # HANDOFF — Surgery G0 decisions (H-01.2 / H-01.3)
 
-- **Status:** `OPEN` — Huy-delegated local defaults are recorded below; cross-owner contract confirmations and shared fixtures are still pending.
+- **Status:** `OPEN` — Huy-delegated local defaults now have domain/application/persistence test
+  coverage; cross-owner contract confirmations and shared fixtures are still pending.
 - **Coordinator / service owner:** Huy (`LQHuy0210`).
 - **Owners needed:** Vinh — Clinical/Inpatient; Lộc — Billing/Notification; Hoàng Anh — Organization/Patient/Gateway; Huy — Surgery policy and acceptance.
 - **Purpose:** close the episode/referral/event mapping and owner-policy gate for cross-service Surgery behavior. The local domain core and delegated defaults do not satisfy producer/consumer contract acceptance.
-- **Updated:** 2026-09-28, source audit at `6686f9e`; platform/domain and internal V1 schema/adapters exist, with no business API, published Surgery event or shared registration implied. Detailed executable task breakdown: [current Huy plan, Surgery backlog](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog).
+- **Updated:** 2026-09-29, source audit at `d252492`; platform/domain, V1 schema, persistence adapters,
+  pre-op/checklist/consent application services and their tests exist. There is still no Surgery
+  business controller, `surgery.requested` consumer, published Surgery event or shared runtime
+  registration. Detailed executable task breakdown: [current Huy plan, Surgery backlog](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog).
 - **Canonical sources:** [Care–Finance architecture](../architecture/mediflow-care-finance-redesign.html), [Surgery V2 candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md), [INPATIENT-SURGERY](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md), [IDENTITY-LOOKUP](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
 ## Gate status
@@ -49,7 +53,7 @@ Every event fixture must include the common envelope (`eventId`, `eventType`, `v
 
 ### D. Existing Inpatient consumer compatibility — source audit 2026-09-28
 
-Inpatient is **not** a scaffold-only dependency anymore. Its [event consumer](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/infrastructure/messaging/consumer/InpatientEventConsumer.java) decodes Surgery ready/completed/cancelled; [application handling](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/application/service/InpatientApplicationService.java) requires an existing external-order reference for the case/admission. This is code presence, not a shared Surgery fixture pass.
+Inpatient is **not** a scaffold-only dependency anymore. Its [event consumer](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/infrastructure/messaging/consumer/InpatientEventConsumer.java) decodes Surgery ready/completed/cancelled; [application handling](../../backend/inpatient-service/src/main/java/com/mediflow/inpatient/application/service/InpatientApplicationService.java) requires an existing external-order reference for the case/admission. The source audit confirms Huy's new Surgery slices do not yet publish those facts or provide the missing case/reference registration fact. This remains code presence on one side, not a shared Surgery fixture pass.
 
 | Gap / current behavior | Owner action and acceptance | Huy task |
 |---|---|---|
