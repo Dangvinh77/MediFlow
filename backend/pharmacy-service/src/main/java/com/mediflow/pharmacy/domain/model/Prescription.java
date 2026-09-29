@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 
 import lombok.Getter;
@@ -30,6 +31,7 @@ public class Prescription {
     private final UUID departmentId;
     private final LocalDate prescribedDate;
     private final BigDecimal totalAmount;
+    private final PrescriptionCareContext careContext;
     private final List<PrescriptionLine> lines;
     private PrescriptionStatus status;
     private Instant cancelledAt;
@@ -46,6 +48,7 @@ public class Prescription {
             UUID departmentId,
             LocalDate prescribedDate,
             BigDecimal totalAmount,
+            PrescriptionCareContext careContext,
             List<PrescriptionLine> lines,
             PrescriptionStatus status,
             Instant cancelledAt,
@@ -61,6 +64,7 @@ public class Prescription {
         this.departmentId = departmentId;
         this.prescribedDate = prescribedDate;
         this.totalAmount = totalAmount;
+        this.careContext = careContext;
         this.lines = List.copyOf(lines);
         this.status = status;
         this.cancelledAt = cancelledAt;
@@ -89,17 +93,33 @@ public class Prescription {
             LocalDate prescribedDate,
             List<PrescriptionLine> lines) {
 
+        return create(recordId, patientId, doctorId, departmentId, prescribedDate, lines,
+                PrescriptionCareContext.legacy());
+    }
+
+    /** Creates a prescription carrying explicit V2 care metadata without enabling its writer. */
+    public static Prescription create(
+            UUID recordId,
+            UUID patientId,
+            UUID doctorId,
+            UUID departmentId,
+            LocalDate prescribedDate,
+            List<PrescriptionLine> lines,
+            PrescriptionCareContext careContext) {
+
         if (lines == null || lines.isEmpty()) {
             throw new PrescriptionRuleException(
                     "PRESCRIPTION_EMPTY",
                     "Đơn thuốc phải có ít nhất 1 dòng");
         }
 
+        validateCareContext(recordId, careContext);
+
         validateUniqueDrugs(lines);
 
         return new Prescription(
                 null, recordId, patientId, doctorId, departmentId, prescribedDate,
-                computeTotalFrom(lines), lines, PrescriptionStatus.ACTIVE,
+                computeTotalFrom(lines), careContext, lines, PrescriptionStatus.ACTIVE,
                 null, null, null, null, null);
     }
 
@@ -138,9 +158,34 @@ public class Prescription {
             Instant createdAt,
             Instant updatedAt) {
 
+        return restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason,
+                createdAt, updatedAt, PrescriptionCareContext.legacy());
+    }
+
+    /** Restores an aggregate including its persisted care-contract metadata. */
+    public static Prescription restore(
+            UUID prescriptionId,
+            UUID recordId,
+            UUID patientId,
+            UUID doctorId,
+            UUID departmentId,
+            LocalDate prescribedDate,
+            BigDecimal totalAmount,
+            List<PrescriptionLine> lines,
+            PrescriptionStatus status,
+            Instant cancelledAt,
+            UUID cancelledBy,
+            String cancellationReason,
+            Instant createdAt,
+            Instant updatedAt,
+            PrescriptionCareContext careContext) {
+
+        validateCareContext(recordId, careContext);
+
         return new Prescription(
                 prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
-                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason,
+                totalAmount, careContext, lines, status, cancelledAt, cancelledBy, cancellationReason,
                 createdAt, updatedAt);
     }
 
@@ -242,6 +287,17 @@ public class Prescription {
                 .map(PrescriptionLine::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static void validateCareContext(UUID recordId, PrescriptionCareContext careContext) {
+        if (careContext == null) {
+            throw new PrescriptionRuleException(
+                    "PHARMACY_CARE_CONTEXT_INVALID", "Prescription care context is required");
+        }
+        if (careContext.contractVersion() == CareContractVersion.LEGACY && recordId == null) {
+            throw new PrescriptionRuleException(
+                    "PRESCRIPTION_RECORD_ID_REQUIRED", "Legacy prescriptions require a record ID");
+        }
     }
 
     private static void validateUniqueDrugs(List<PrescriptionLine> lines) {

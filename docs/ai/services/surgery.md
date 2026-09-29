@@ -88,14 +88,16 @@ The owner-authorized platform foundation and initial pure-Java domain core exist
 Spring Boot entry point, configuration, JWT authentication/default-deny authorization, correlation
 handling, feature flag (disabled by default), package skeleton and test sources. Huy-delegated local
 V1 defaults are recorded in the implementation-decision handoff; they guide internal Surgery work
-but do **not** approve the V2 candidate's still-open cross-service contracts. There is
-not yet a Surgery business endpoint, Rabbit event/queue binding, or Gateway route. The current domain
-slice contains exact episode identity and case lifecycle/readiness rules, checklist/consent/schedule/result
+but do **not** approve the V2 candidate's still-open cross-service contracts. There is no Surgery
+business endpoint, event-specific serializer, consumer binding, or Gateway route. A generic outbox
+dispatcher and Rabbit publisher transport now exist behind both the Surgery and producer flags; both
+remain false, and no business command currently creates approved event bytes. The current domain slice
+contains exact episode identity and case lifecycle/readiness rules, checklist/consent/schedule/result
 models, snapshot rehydration and business-revision audit. Surgery now has a V1 Flyway schema, case JPA
 mapping, checklist/consent/result persistence adapters, schedule-history readback, resource/reliability
-adapters and an Organization lookup port shape. The newest child persistence slices still need PostgreSQL
-verification; these are internal foundation, not an activated workflow. The module-local suite passed 67 tests before these additions, including PostgreSQL 16 Testcontainers migration,
-JPA, reliability and resource-race tests. Root-reactor, Rabbit and Gateway integration are not yet verified.
+adapters and an Organization lookup port shape. The module-local suite passed 128 tests on 2026-09-29,
+including PostgreSQL 16.14 persistence/race tests and RabbitMQ transport confirm/return tests. These are
+internal foundations, not an activated workflow. Root-reactor and Gateway integration are not verified.
 See the current Huy plan for the exact verification scope.
 
 ## Events
@@ -133,9 +135,10 @@ all H-01.2/H-01.3 rows to close first. Update the slice's local API/schema speci
 unconfirmed producer fields, clinical evidence/consent policies and Organization eligibility remain
 fail-closed. Wire adapters and real workflows require the corresponding canonical contract/fixtures,
 not just a local mock. V1 has no emergency override, post-start abort or result correction.
-The initial-domain implementation passed 30 tests; the current full module-local suite passed 67 tests
-with real PostgreSQL 16 migration/JPA/reliability/race verification on 2026-09-28. Root-reactor,
-Rabbit and Gateway integration are not yet verified. Shared root Maven registration,
+The initial-domain implementation passed 30 tests; the current full module-local suite passed 128 tests
+with PostgreSQL 16.14 migration/JPA/reliability/race and RabbitMQ publisher confirm/return verification
+on 2026-09-29. This Rabbit test covers generic transport only, not an approved Surgery event contract.
+Root-reactor and Gateway integration are not yet verified. Shared root Maven registration,
 database/Compose wiring and Gateway routing are tracked separately in the registered bootstrap
 handoff and must be done by their assigned owners. Add same-version producer/consumer fixtures and
 contract tests before enabling any integration. Status remains `DESIGN_READY` while any required

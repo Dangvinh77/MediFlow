@@ -53,10 +53,7 @@ public class SurgeryChecklistApplicationService implements UpdateChecklistItemUs
         if (command == null || command.actor().actorType() != SurgeryActorType.HUMAN) {
             throw new IllegalArgumentException("A human actor is required for checklist changes");
         }
-        if (command.status() == SurgeryChecklistStatus.NOT_APPLICABLE) {
-            throw new SurgeryRuleException("SURGERY_NOT_APPLICABLE_POLICY_UNCONFIRMED",
-                    "Chưa có chính sách lâm sàng cho phép đánh dấu mục không áp dụng");
-        }
+        validateEvidenceInput(command);
         String operation = COMMAND_CODE + ":" + command.surgeryCaseId();
         SurgeryCommandReceiptPort.Key key = new SurgeryCommandReceiptPort.Key(
                 command.actor().accountId().toString(), operation, command.idempotencyKey());
@@ -90,17 +87,6 @@ public class SurgeryChecklistApplicationService implements UpdateChecklistItemUs
         if (before.revision() != command.expectedItemRevision()) {
             throw new SurgeryRevisionConflictException();
         }
-        if (command.status() == SurgeryChecklistStatus.SATISFIED
-                && command.evidenceReferenceId() == null) {
-            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_REQUIRED",
-                    "Mục được xác nhận cần tham chiếu bằng chứng");
-        }
-        if (command.status() != SurgeryChecklistStatus.SATISFIED
-                && command.status() != SurgeryChecklistStatus.FAILED
-                && (command.evidenceReferenceId() != null || command.evidenceRevision() != null)) {
-            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_STATUS_MISMATCH",
-                    "Trạng thái checklist này không được mang bằng chứng xác nhận");
-        }
         Instant at = clock.now();
         SurgeryChecklistItem after = before.revise(command.status(),
                 command.evidenceReferenceId(), command.evidenceRevision());
@@ -121,5 +107,31 @@ public class SurgeryChecklistApplicationService implements UpdateChecklistItemUs
                 after.revision(), after.status().name(), at, false);
         SurgeryCommandReceipts.complete(receipts, claim.receiptId(), outcome);
         return outcome;
+    }
+
+    private static void validateEvidenceInput(UpdateChecklistItemUseCase.Command command) {
+        if (command.status() == SurgeryChecklistStatus.NOT_APPLICABLE) {
+            throw new SurgeryRuleException("SURGERY_NOT_APPLICABLE_POLICY_UNCONFIRMED",
+                    "Chưa có chính sách lâm sàng cho phép đánh dấu mục không áp dụng");
+        }
+        if (command.status() == SurgeryChecklistStatus.SATISFIED
+                && command.evidenceReferenceId() == null) {
+            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_REQUIRED",
+                    "Mục được xác nhận cần tham chiếu bằng chứng");
+        }
+        if (command.status() != SurgeryChecklistStatus.SATISFIED
+                && command.status() != SurgeryChecklistStatus.FAILED
+                && (command.evidenceReferenceId() != null || command.evidenceRevision() != null)) {
+            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_STATUS_MISMATCH",
+                    "Trạng thái checklist này không được mang bằng chứng xác nhận");
+        }
+        if (command.evidenceRevision() != null && command.evidenceReferenceId() == null) {
+            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_REFERENCE_REQUIRED",
+                    "Phiên bản bằng chứng cần có tham chiếu bằng chứng");
+        }
+        if (command.evidenceRevision() != null && command.evidenceRevision() < 0) {
+            throw new SurgeryRuleException("SURGERY_CHECKLIST_EVIDENCE_REVISION_INVALID",
+                    "Phiên bản bằng chứng không hợp lệ");
+        }
     }
 }

@@ -1,6 +1,8 @@
 package com.mediflow.pharmacy.infrastructure.persistence.jpaentity;
 
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
+import com.mediflow.pharmacy.domain.model.enums.CareEpisodeType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,8 +47,28 @@ public class PrescriptionJpaEntity {
     @Column(name = "prescription_id", updatable = false, nullable = false)
     private UUID prescriptionId;
 
-    @Column(name = "record_id", nullable = false)
+    @Column(name = "record_id")
     private UUID recordId;
+
+    @Column(name = "care_contract_version", nullable = false)
+    private Short careContractVersion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "care_context", length = 20, nullable = false)
+    private CareContext careContext;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "care_episode_type", length = 32)
+    private CareEpisodeType careEpisodeType;
+
+    @Column(name = "care_episode_id")
+    private UUID careEpisodeId;
+
+    @Column(name = "admission_id")
+    private UUID admissionId;
+
+    @Column(name = "price_code", length = 64)
+    private String priceCode;
 
     @Column(name = "patient_id", nullable = false)
     private UUID patientId;

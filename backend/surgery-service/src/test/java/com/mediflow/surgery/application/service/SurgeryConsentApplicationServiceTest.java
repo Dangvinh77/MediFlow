@@ -40,9 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,6 +100,42 @@ class SurgeryConsentApplicationServiceTest {
     }
 
     @Test
+    void signConsent_systemRecorder_rejectsBeforeReceiptClaim() {
+        ManageSurgeryConsentUseCase.SignCommand command = new ManageSurgeryConsentUseCase.SignCommand(
+                UUID.randomUUID(), 0, SurgeryConsentType.SURGERY, UUID.randomUUID(),
+                SurgeryConsentSignerType.PATIENT, null, "sign-system",
+                SurgeryAuditActor.system("clinical-service"), CORRELATION_ID);
+
+        assertThatThrownBy(() -> service.sign(command))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(cases, consents, schedules, reservations, receipts, clock);
+    }
+
+    @Test
+    void signConsent_duplicateActiveType_rejectsWithoutAppendingAnotherConsent() {
+        UUID caseId = UUID.randomUUID();
+        SurgeryAuditActor recorder = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = newPreopCase(caseId, recorder);
+        SurgeryConsentRecord active = SurgeryConsentRecord.sign(UUID.randomUUID(), caseId,
+                SurgeryConsentType.SURGERY, UUID.randomUUID(), SurgeryConsentSignerType.PATIENT,
+                null, recorder, REQUESTED_AT.plusSeconds(2), CORRELATION_ID);
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.NEW, UUID.randomUUID(), null, null));
+        when(cases.lockById(caseId)).thenReturn(Optional.of(surgeryCase));
+        when(consents.findByCaseId(caseId)).thenReturn(List.of(active));
+
+        assertThatThrownBy(() -> service.sign(new ManageSurgeryConsentUseCase.SignCommand(
+                caseId, 1, SurgeryConsentType.SURGERY, UUID.randomUUID(),
+                SurgeryConsentSignerType.PATIENT, null, "sign-duplicate", recorder, CORRELATION_ID)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+
+        verify(consents, never()).save(any());
+        verify(cases, never()).save(any(), anyLong());
+        verify(receipts, never()).complete(any(), any(), anyString(), any(), any());
+        verifyNoInteractions(clock, schedules, reservations);
+    }
+
+    @Test
     void revokeConsent_wrongCaseConsent_rejectsWithoutSavingAudit() {
         UUID caseId = UUID.randomUUID();
         SurgeryAuditActor recorder = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
@@ -116,6 +154,27 @@ class SurgeryConsentApplicationServiceTest {
                 .isInstanceOf(SurgeryRevisionConflictException.class);
 
         verify(consents).findById(foreignConsent.consentId());
+        verifyNoInteractions(clock, schedules, reservations);
+    }
+
+    @Test
+    void revokeConsent_afterStart_rejectsBeforeLoadingConsentOrReleasingResources() {
+        UUID caseId = UUID.randomUUID();
+        SurgeryAuditActor recorder = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        SurgeryCase surgeryCase = inProgressCase(caseId, recorder);
+        when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.NEW, UUID.randomUUID(), null, null));
+        when(cases.lockById(caseId)).thenReturn(Optional.of(surgeryCase));
+
+        assertThatThrownBy(() -> service.revoke(new ManageSurgeryConsentUseCase.RevokeCommand(
+                caseId, UUID.randomUUID(), surgeryCase.getRevision(), "withdrawn", "revoke-after-start",
+                recorder, CORRELATION_ID)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+
+        verify(consents, never()).findById(any());
+        verify(consents, never()).save(any());
+        verify(cases, never()).save(any(), anyLong());
+        verify(receipts, never()).complete(any(), any(), anyString(), any(), any());
         verifyNoInteractions(clock, schedules, reservations);
     }
 
@@ -160,6 +219,20 @@ class SurgeryConsentApplicationServiceTest {
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "PROC-001",
                 "Clinical indication", SurgeryPriority.ROUTINE, REQUESTED_AT, actor, CORRELATION_ID);
         surgeryCase.beginPreop(actor, CORRELATION_ID, REQUESTED_AT.plusSeconds(1));
+        return surgeryCase;
+    }
+
+    private static SurgeryCase inProgressCase(UUID caseId, SurgeryAuditActor actor) {
+        SurgeryCase surgeryCase = newPreopCase(caseId, actor);
+        Instant readyAt = REQUESTED_AT.plusSeconds(2);
+        ReadinessSnapshot readiness = ReadinessSnapshot.evaluate(UUID.randomUUID(), caseId,
+                true, true, true, true, true, true, true, readyAt,
+                java.util.Arrays.stream(SurgeryDependencyType.values())
+                        .map(type -> new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
+                null);
+        surgeryCase.markReady(readiness, actor, CORRELATION_ID);
+        surgeryCase.finalizeSchedule(actor, CORRELATION_ID, readyAt.plusSeconds(1));
+        surgeryCase.start(readiness, actor, CORRELATION_ID, readyAt.plusSeconds(2));
         return surgeryCase;
     }
 }

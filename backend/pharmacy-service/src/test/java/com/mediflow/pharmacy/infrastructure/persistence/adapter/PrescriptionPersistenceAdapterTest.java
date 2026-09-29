@@ -1,8 +1,12 @@
 package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
 import com.mediflow.pharmacy.domain.model.Drug;
+import com.mediflow.pharmacy.domain.model.CareEpisode;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.PrescriptionCareContext;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
+import com.mediflow.pharmacy.domain.model.enums.CareEpisodeType;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.StockReservationJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.StockReservationJpaRepository;
@@ -99,6 +103,49 @@ class PrescriptionPersistenceAdapterTest {
         assertThatThrownBy(() -> reservationRepository.saveAndFlush(reservationEntity(
                 prescription.getPrescriptionId(), drug.getDrugId(), 2)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void save_v1Prescription_roundTripsExactCareContextWithoutRecordId() {
+        Drug drug = drugAdapter.save(newDrug("Care-context drug", "1500.00"));
+        UUID visitId = UUID.randomUUID();
+        Prescription outpatient = Prescription.create(
+                null,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now(),
+                List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), "once")),
+                PrescriptionCareContext.v1(
+                        CareContext.OUTPATIENT,
+                        new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, visitId),
+                        null,
+                        "OUTPATIENT_RX"));
+
+        Prescription reloadedOutpatient = prescriptionAdapter.save(outpatient);
+        assertThat(reloadedOutpatient.getRecordId()).isNull();
+        assertThat(reloadedOutpatient.getCareContext().contractVersion().value()).isEqualTo(1);
+        assertThat(reloadedOutpatient.getCareContext().careContext()).isEqualTo(CareContext.OUTPATIENT);
+        assertThat(reloadedOutpatient.getCareContext().episode().id()).isEqualTo(visitId);
+
+        UUID admissionId = UUID.randomUUID();
+        Prescription admission = Prescription.create(
+                null,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now(),
+                List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), "once")),
+                PrescriptionCareContext.v1(
+                        CareContext.ADMISSION,
+                        new CareEpisode(CareEpisodeType.ADMISSION, admissionId),
+                        admissionId,
+                        "INPATIENT_RX"));
+
+        Prescription reloadedAdmission = prescriptionAdapter.save(admission);
+        assertThat(reloadedAdmission.getCareContext().careContext()).isEqualTo(CareContext.ADMISSION);
+        assertThat(reloadedAdmission.getCareContext().episode().id()).isEqualTo(admissionId);
+        assertThat(reloadedAdmission.getCareContext().admissionId()).isEqualTo(admissionId);
     }
 
     private Drug newDrug(String name, String price) {

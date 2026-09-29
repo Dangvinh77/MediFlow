@@ -1,10 +1,12 @@
 package com.mediflow.pharmacy.infrastructure.persistence.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -44,7 +46,7 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("13");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("14");
         assertThat(tableExists("PAYMENT_RECEIPT")).isTrue();
         assertThat(tableExists("PHARMACY_SCHEDULER_LEASE")).isTrue();
         assertThat(columnExists("PHARMACY_SCHEDULER_LEASE", "LEASE_TOKEN")).isTrue();
@@ -59,6 +61,11 @@ class PharmacyMigrationCompatibilityTest {
         assertThat(constraintExists("PHARMACY_EVENT_OUTBOX", "pharmacy_event_outbox_pkey")).isTrue();
         assertThat(columnExists("PHARMACY_EVENT_OUTBOX", "AGGREGATE_ID")).isTrue();
         assertThat(columnExists("DISPENSE_SLIP", "DISPENSED_ACTOR_TYPE")).isTrue();
+        assertThat(columnExists("PRESCRIPTION", "CARE_CONTRACT_VERSION")).isTrue();
+        assertThat(columnExists("PRESCRIPTION", "CARE_EPISODE_ID")).isTrue();
+        assertThat(constraintExists("PRESCRIPTION", "ck_prescription_care_metadata")).isTrue();
+        assertThat(indexExists("idx_prescription_episode")).isTrue();
+        assertThat(indexExists("idx_prescription_admission")).isTrue();
         assertThat(indexExists("idx_pharmacy_outbox_aggregate_order")).isTrue();
         assertThat(constraintExists("PAYMENT_RECEIPT", "payment_receipt_pkey")).isTrue();
         assertThat(foreignKeyExists("PRESCRIPTION_LINE", "prescription_id", "PRESCRIPTION", "prescription_id"))
@@ -96,6 +103,36 @@ class PharmacyMigrationCompatibilityTest {
                 + prescriptionId + "'")).isZero();
         assertThat(queryInt("SELECT count(*) FROM PRESCRIPTION_LINE WHERE prescription_id = '"
                 + prescriptionId + "'")).isEqualTo(1);
+        assertThat(queryString("SELECT care_contract_version::text FROM PRESCRIPTION WHERE prescription_id = '"
+                + prescriptionId + "'")).isEqualTo("0");
+        assertThat(queryString("SELECT care_context FROM PRESCRIPTION WHERE prescription_id = '"
+                + prescriptionId + "'")).isEqualTo("OUTPATIENT");
+        assertThat(queryInt("SELECT count(*) FROM PRESCRIPTION WHERE prescription_id = '"
+                + prescriptionId + "' AND care_episode_id IS NULL AND admission_id IS NULL"
+                + " AND price_code IS NULL")).isEqualTo(1);
+    }
+
+    /** V1 may omit the legacy record ID but must provide an exact valid episode tuple. */
+    @Test
+    void v13Schema_allowsExactV1ContextsAndRejectsNullCheckLoopholes() throws Exception {
+        flyway(MigrationVersion.fromVersion("13")).migrate();
+        flyway().migrate();
+        UUID outpatientEpisodeId = UUID.randomUUID();
+        UUID admissionId = UUID.randomUUID();
+
+        insertPrescription(UUID.randomUUID(), null, 1, "OUTPATIENT", "OUTPATIENT_VISIT",
+                outpatientEpisodeId, null, "OUTPATIENT_RX");
+        insertPrescription(UUID.randomUUID(), null, 1, "ADMISSION", "ADMISSION",
+                admissionId, admissionId, "INPATIENT_RX");
+
+        assertConstraintViolation(() -> insertPrescription(UUID.randomUUID(), null, 1,
+                "OUTPATIENT", "OUTPATIENT_VISIT", null, null, "OUTPATIENT_RX"), "23514");
+        assertConstraintViolation(() -> insertPrescription(UUID.randomUUID(), null, 1,
+                "ADMISSION", "ADMISSION", admissionId, UUID.randomUUID(), "INPATIENT_RX"), "23514");
+        assertConstraintViolation(() -> insertPrescription(UUID.randomUUID(), null, 1,
+                "OUTPATIENT", "OUTPATIENT_VISIT", outpatientEpisodeId, null, "  "), "23514");
+        assertConstraintViolation(() -> insertPrescription(UUID.randomUUID(), null, 0,
+                "OUTPATIENT", null, null, null, null), "23514");
     }
 
     /** A V5 outbox row keeps its event identity and payload while lease/quarantine columns are added. */
@@ -162,6 +199,37 @@ class PharmacyMigrationCompatibilityTest {
                     VALUES ('%s', 'prescription.created', '%s', now(), 0)
                     """.formatted(eventId, payload.replace("'", "''")));
         }
+    }
+
+    private void insertPrescription(
+            UUID prescriptionId,
+            UUID recordId,
+            int contractVersion,
+            String careContext,
+            String episodeType,
+            UUID episodeId,
+            UUID admissionId,
+            String priceCode) throws Exception {
+        String sql = """
+                INSERT INTO PRESCRIPTION (prescription_id, record_id, patient_id, doctor_id,
+                    department_id, prescribed_date, total_amount, status, care_contract_version,
+                    care_context, care_episode_type, care_episode_id, admission_id, price_code)
+                VALUES ('%s', %s, '%s', '%s', '%s', '%s', 0, 'ACTIVE', %d,
+                    '%s', %s, %s, %s, %s)
+                """.formatted(prescriptionId, sqlUuid(recordId), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), LocalDate.now(), contractVersion, careContext, sqlText(episodeType),
+                sqlUuid(episodeId), sqlUuid(admissionId), sqlText(priceCode));
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
+        }
+    }
+
+    private static String sqlUuid(UUID value) {
+        return value == null ? "NULL" : "'" + value + "'";
+    }
+
+    private static String sqlText(String value) {
+        return value == null ? "NULL" : "'" + value.replace("'", "''") + "'";
     }
 
     private void insertLegacyRows(UUID drugId, UUID prescriptionId) throws Exception {
@@ -312,5 +380,21 @@ class PharmacyMigrationCompatibilityTest {
             result.next();
             return result.getString(1);
         }
+    }
+
+    private void assertConstraintViolation(SqlCall call, String expectedSqlState) throws Exception {
+        try {
+            call.run();
+            fail("Expected SQL constraint violation");
+        } catch (SQLException expected) {
+            assertThat(expected.getSQLState()).isEqualTo(expectedSqlState);
+        } catch (Exception unexpected) {
+            throw new AssertionError("Unexpected failure while checking a SQL constraint", unexpected);
+        }
+    }
+
+    @FunctionalInterface
+    private interface SqlCall {
+        void run() throws Exception;
     }
 }
