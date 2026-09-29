@@ -4,7 +4,8 @@ import com.mediflow.patient.application.dto.response.PatientLookupDTO;
 
 import java.util.UUID;
 
-public interface LookupPatientUseCase {
+/** Service-only patient identity lookup port. */
+public interface ReadPatientIdentityUseCase {
 
     PatientLookupDTO exists(UUID patientId);
 }

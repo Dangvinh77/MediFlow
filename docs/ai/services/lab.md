@@ -55,5 +55,11 @@ contract with test codes and producer-generated order ID.
 - Existing explicit `labTestIds` compatibility behavior is implemented and recorded in
   `CONTRACT-CARE-BILLING-01` plus the Billing/Lab event fixtures until clearance v1 is implemented
   on both sides.
+- Lab publishes deterministic V1 producer fixtures at
+  `src/test/resources/contracts/lab.request.created.v1.json` and
+  `src/test/resources/contracts/lab.result.created.v1.json`. Producer tests serialize the real
+  envelope and assert one clock instant for both envelope and payload timestamps. The
+  `mediflow.features.care-finance-v2` flag remains disabled until every affected consumer proves it
+  can decode the same fixture bytes and the required failure paths pass.
 - Any change to `lab.request.created`, `lab.result.created`, or clearance fixtures must update Billing,
   Clinical, Notification and Report consumer fixtures in the same PR or mark those consumers blocked.

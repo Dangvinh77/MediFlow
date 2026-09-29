@@ -61,6 +61,32 @@ Still open: Pharmacy admission eligibility/freshness and late compensation, Repo
 transfer/release/capacity facts and LOS semantics, and a durable replay/cutover policy. No new
 transfer, release, capacity or Surgery event may be inferred from the existing admission events.
 
+## Lab producer evidence — 2026-09-28
+
+Lab now supplies deterministic version-1 producer fixtures for `lab.request.created` and
+`lab.result.created` under `backend/lab-service/src/test/resources/contracts/`. The fixture tests
+serialize the real event envelope, and application tests prove each event uses one clock instant
+for both the envelope and its payload timestamp. This gives Huy stable bytes for Report consumer
+tests and gives Billing a stable charge-trigger fixture.
+
+This evidence does not enable Report, Notification or Billing consumers and does not close
+D09–D11. Those owners still need same-byte decoder tests plus the classified finance,
+replay/cutover and failure-path acceptance evidence described above. The Lab care-finance feature
+flag remains disabled until those gates pass.
+
+## Clinical completion and admission-lab evidence — 2026-09-28
+
+Clinical now publishes a deterministic `medicalrecord.completed` version-1 fixture at
+`backend/clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json`, serialized
+from the real Clinical envelope and payload records. Huy can use these exact bytes to replace the
+Report decoder's handwritten sample before enabling that projection.
+
+Lab also publishes `lab.result.created.admission.v1.json` with an explicit
+`careEpisodeType=ADMISSION` and exact `careEpisodeId`. Inpatient reads its byte-identical copy in
+the real consumer test and maps the Lab, admission, patient and result-version identifiers without
+patient-based inference. Report still needs its own same-fixture decoder/projection acceptance test;
+this evidence does not enable any feature flag or close D10/D11.
+
 ## Close criteria
 
 For each row, record approval owner/date/link in the Huy plan, update the canonical care-finance contract and event catalog with the approved version, pass producer/consumer same-byte and failure-path tests, then remove the resolved row or this handoff from the active registry. A proposal, local decoder test or green build alone does not close a row.

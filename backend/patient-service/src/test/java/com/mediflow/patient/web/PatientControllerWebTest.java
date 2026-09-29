@@ -5,7 +5,7 @@ import com.mediflow.common.api.PageResult;
 import com.mediflow.patient.application.dto.response.PatientDTO;
 import com.mediflow.patient.application.dto.response.PatientLookupDTO;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
-import com.mediflow.patient.application.port.in.LookupPatientUseCase;
+import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.domain.model.Gender;
 import com.mediflow.patient.infrastructure.config.SecurityConfig;
 import com.mediflow.patient.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
@@ -28,7 +28,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -43,7 +45,7 @@ class PatientControllerWebTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean GetPatientUseCase patients;
-    @MockBean LookupPatientUseCase lookup;
+    @MockBean ReadPatientIdentityUseCase lookup;
 
     @Test
     void humanAccessCanReadPatientAndCorrelationIsPreserved() throws Exception {
@@ -92,6 +94,15 @@ class PatientControllerWebTest {
         mvc.perform(get("/api/v1/patients/{id}/exists", id)
                         .header("Authorization", bearer("access", "DOCTOR", UUID.randomUUID().toString())))
                 .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/patients/{id}/exists", id)
+                        .header("Authorization", bearer("refresh", "SYSTEM", "account-refresh")))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/patients/{id}/exists", id)
+                        .header("Authorization", bearer("service", "DOCTOR", "doctor-service")))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/patients/{id}/exists", id)
+                        .header("Authorization", bearer("access", "SYSTEM", UUID.randomUUID().toString())))
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/patients/{id}", id)
                         .header("Authorization", "Bearer not-a-jwt"))
                 .andExpect(status().isUnauthorized())
@@ -103,7 +114,7 @@ class PatientControllerWebTest {
     }
 
     @Test
-    void missingPatientIs404AndStoreFailureIs503() throws Exception {
+    void missingPatientIs404AndLookupFailureIs503() throws Exception {
         UUID id = UUID.randomUUID();
         when(patients.getById(id)).thenThrow(new com.mediflow.patient.domain.exception.PatientNotFoundException(id));
         mvc.perform(get("/api/v1/patients/{id}", id)
@@ -114,7 +125,24 @@ class PatientControllerWebTest {
         mvc.perform(get("/api/v1/patients/{id}/exists", id)
                         .header("Authorization", bearer("service", "SYSTEM", "patient-service")))
                 .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.error.code", is("PATIENT_STORE_UNAVAILABLE")));
+                .andExpect(jsonPath("$.error.code", is("PATIENT_LOOKUP_UNAVAILABLE")));
+    }
+
+    @Test
+    void serviceLookupGeneratesAndEchoesCorrelationWhenHeaderIsMissing() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(lookup.exists(id)).thenReturn(new PatientLookupDTO(true, id));
+
+        var result = mvc.perform(get("/api/v1/patients/{id}/exists", id)
+                        .header("Authorization", bearer("service", "SYSTEM", "patient-service")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Correlation-Id", matchesPattern(
+                        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")))
+                .andReturn();
+
+        String responseCorrelation = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("correlationId").asText();
+        assertThat(responseCorrelation).isEqualTo(result.getResponse().getHeader("X-Correlation-Id"));
     }
 
     private String bearer(String type, String role, String subject) {

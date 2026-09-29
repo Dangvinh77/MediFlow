@@ -16,6 +16,7 @@ import com.mediflow.inpatient.application.port.in.ReactToDepositTopupUseCase;
 import com.mediflow.inpatient.application.port.in.ReactToExternalOrderUseCase;
 import com.mediflow.inpatient.application.port.in.ReactToFinancialClearanceUseCase;
 import com.mediflow.inpatient.application.port.in.ReactToSettlementUseCase;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
@@ -97,8 +98,8 @@ class InpatientEventConsumerTest {
     }
 
     @Test
-    void inpatientLabResultUsesCanonicalLabAndCareEpisodeIdentifiers() {
-        consumer.receive(message(inpatientLabResultEnvelope()));
+    void inpatientLabResultUsesCanonicalLabFixtureAndCareEpisodeIdentifiers() throws IOException {
+        consumer.receive(message(readFixture("lab.result.created.admission.v1.json")));
 
         var command = org.mockito.ArgumentCaptor.forClass(ExternalOrderFactCommand.class);
         verify(externalOrders).onExternalOrderFact(command.capture());
@@ -203,6 +204,13 @@ class InpatientEventConsumerTest {
 
     private static Message message(String json) {
         return new Message(json.getBytes(StandardCharsets.UTF_8), new MessageProperties());
+    }
+
+    private String readFixture(String fixtureName) throws IOException {
+        try (var input = getClass().getResourceAsStream("/contracts/" + fixtureName)) {
+            assertThat(input).as("canonical %s fixture", fixtureName).isNotNull();
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private static String admissionRequestedEnvelope(String emergency) {

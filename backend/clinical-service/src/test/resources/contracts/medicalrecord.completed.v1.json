@@ -1,0 +1,17 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000011",
+  "eventType": "medicalrecord.completed",
+  "version": 1,
+  "occurredAt": "2026-09-28T03:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "clinical-service",
+  "payload": {
+    "recordId": "00000000-0000-4000-8000-000000000003",
+    "appointmentId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000004",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "disposition": "ADMISSION",
+    "admissionRequired": true,
+    "completedAt": "2026-09-28T03:00:00Z"
+  }
+}

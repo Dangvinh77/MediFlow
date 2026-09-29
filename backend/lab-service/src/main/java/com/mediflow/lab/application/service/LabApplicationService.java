@@ -1,10 +1,11 @@
 package com.mediflow.lab.application.service;
 
-import java.time.LocalDate;
-import java.time.Instant;
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,13 +61,15 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final LabEmergencyOverrideRepositoryPort overrides;
     private final AuthenticatedStaffContextPort authenticatedStaff;
     private final boolean careFinanceV2Enabled;
+    private final Clock clock;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
                                  LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
                                  LabEmergencyOverrideRepositoryPort overrides,
                                  AuthenticatedStaffContextPort authenticatedStaff,
-                                 boolean careFinanceV2Enabled) {
+                                  boolean careFinanceV2Enabled,
+                                  Clock clock) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
@@ -76,13 +79,14 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         this.overrides = overrides;
         this.authenticatedStaff = authenticatedStaff;
         this.careFinanceV2Enabled = careFinanceV2Enabled;
+        this.clock = clock;
     }
 
     /** Compatibility constructor retained for version-0 unit fixtures. */
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds) {
         this(tests, publisher, mapper, correlationIds, event -> { }, null, null,
-                OptionalStaffContextPort.INSTANCE, false);
+                OptionalStaffContextPort.INSTANCE, false, Clock.systemUTC());
     }
 
     @Override
@@ -131,12 +135,12 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     public LabTestDTO start(UUID id, StartLabTestRequest request) {
         LabTest test = locked(id);
         if (test.getCareContractVersion() == 0) {
-            test.start(null, null, Instant.now());
+            test.start(null, null, clock.instant());
             return mapper.toDto(tests.save(test));
         }
         requireV2Enabled();
 
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         LabEmergencyOverride override = toOverride(request == null ? null : request.emergencyOverride(), test, now);
         LabFinancialClearance clearance = clearances.findValidByTestId(id, now)
                 .orElseGet(() -> clearances.findLatestByTestId(id).orElse(null));
@@ -264,24 +268,26 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                 request.careEpisodeId(), request.labType(), request.priceCode(), request.requestedDate());
         LabTest saved = tests.save(created);
         String correlationId = correlationIds.currentOrCreate().toString();
+        Instant occurredAt = clock.instant();
         LabRequestV2Payload payload = new LabRequestV2Payload(saved.getTestId(), saved.getPatientId(),
                 saved.getRecordId(), saved.getRequestingDepartmentId(), saved.getCareEpisodeType(),
                 saved.getCareEpisodeId(), saved.getSourceOrderId(), "LAB_TEST", saved.getTestId(),
-                saved.getPriceCode(), saved.getLabType(), Instant.now(), saved.getEmergencyOverrideId());
+                saved.getPriceCode(), saved.getLabType(), occurredAt, saved.getEmergencyOverrideId());
         outbox.append(new DomainEventEnvelope<>(UUID.randomUUID(), "lab.request.created", 1,
-                Instant.now(), correlationId, "lab-service", payload));
+                occurredAt, correlationId, "lab-service", payload));
         return mapper.toDto(saved);
     }
 
     private void appendResultEvent(LabTest test, UUID verifiedBy) {
         String correlationId = correlationIds.currentOrCreate().toString();
+        Instant occurredAt = clock.instant();
         LabResultV2Payload payload = new LabResultV2Payload(test.getTestId(), test.getPatientId(),
                 test.getRecordId(), test.getRequestingDepartmentId(), test.getCareEpisodeType(),
                 test.getCareEpisodeId(), test.getLabType(), test.getResultVersion(),
                 test.getResults().stream().map(LabResultCreatedEvent.Result::from).toList(),
-                test.getConclusion(), verifiedBy, test.getPerformedDate(), Instant.now());
+                test.getConclusion(), verifiedBy, test.getPerformedDate(), occurredAt);
         outbox.append(new DomainEventEnvelope<>(UUID.randomUUID(), "lab.result.created", 1,
-                Instant.now(), correlationId, "lab-service", payload));
+                occurredAt, correlationId, "lab-service", payload));
     }
 
     private LabEmergencyOverride toOverride(EmergencyOverrideRequest request, LabTest test, Instant now) {
