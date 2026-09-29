@@ -67,11 +67,15 @@ approver and Billing policies are confirmed; it can never invent consent or team
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/surgery/cases` | ADMIN, DOCTOR | create from exact surgery request |
+| POST | `/api/v1/surgery/cases/{id}/preop` | ADMIN, DOCTOR | begin pre-op with expected revision and idempotency key |
 | GET | `/api/v1/surgery/cases/{id}` | ADMIN, MANAGER, DOCTOR, NURSE | read case/readiness |
 | GET | `/api/v1/surgery/cases` | ADMIN, MANAGER, DOCTOR, NURSE | filter schedule/status/department |
 | PUT | `/api/v1/surgery/cases/{id}/checklist` | ADMIN, DOCTOR, NURSE | confirm pre-op item |
 | POST | `/api/v1/surgery/cases/{id}/consents` | ADMIN, DOCTOR, NURSE | record consent |
+| POST | `/api/v1/surgery/cases/{id}/consents/{consentId}/revoke` | policy pending; do not expose | revoke exact consent with audit |
 | PUT | `/api/v1/surgery/cases/{id}/schedule` | ADMIN, MANAGER, DOCTOR | assign room/time/team |
+| POST | `/api/v1/surgery/cases/{id}/readiness/evaluate` | ADMIN, DOCTOR | evaluate all readiness guards; never accept caller-supplied READY |
+| POST | `/api/v1/surgery/cases/{id}/schedule/finalize` | ADMIN, MANAGER, DOCTOR | finalize an eligible schedule and reserve resources |
 | POST | `/api/v1/surgery/cases/{id}/start` | ADMIN, DOCTOR | start after readiness guard |
 | POST | `/api/v1/surgery/cases/{id}/complete` | ADMIN, DOCTOR | record result/performed items |
 | POST | `/api/v1/surgery/cases/{id}/cancel` | ADMIN, DOCTOR | cancel with stage/reason |
