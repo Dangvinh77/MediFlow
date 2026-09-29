@@ -12,8 +12,9 @@
 ## Current UI baseline
 
 `/patients` contains a paged keyword list UI and is gated to `ADMIN`, `DOCTOR`, and `NURSE`. Its
-TypeScript contract is spec-backed. At the current source baseline, Patient backend contains only
-`PatientServiceApplication.java` and `application.yml`; there is no live controller or response DTO.
+TypeScript contract now has a live Patient read/list controller and response DTO to verify against.
+The service-only existence lookup is also implemented and is consumed by Clinical; it is not a
+frontend endpoint.
 
 ## Owner queue
 
@@ -28,12 +29,11 @@ TypeScript contract is spec-backed. At the current source baseline, Patient back
 
 - Producer: Patient / Hoàng Anh. Consumers: Patient UI, Clinical, Lab, Billing, Notification.
   Acceptance: secured lookup/search responses and stable `patientId` semantics.
-- The missing list contract currently breaks the first page after a successful ADMIN login. Follow
-  [`../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md`](../../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md).
+- Reconcile the current frontend `PatientDTO` and paging assumptions with the live Patient
+  controller fixture, then verify populated, empty, unavailable and retry states through Gateway.
 - Patient self-service and “my notifications” require a documented patient identity mapping from
   Gateway and Patient. Do not decode or infer an undocumented token claim.
-- Until the live backend exists, do not add mutations, fake data, direct database access, or UI that
-  presents the spec-backed list as production-ready.
+- Do not add mutations, fake data or direct database access before the live write contract exists.
 
 ## Contract and verification gate
 

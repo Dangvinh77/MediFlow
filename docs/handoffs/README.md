@@ -8,12 +8,11 @@ wire contracts belong in the canonical contract documents under
 
 | Handoff | Status | Owner who must act | Unblocks |
 |---|---|---|---|
-| [Patient read/existence API](../../backend/patient-service/HANDOFF-CLINICAL-PATIENT-LOOKUP.md) | OPEN | Hoàng Anh | Clinical patient validation and frontend patient landing |
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | OPEN | Lộc | Clinical EXAM authorization and Lab exact-test clearance |
-| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | OPEN — Huy-local V1 defaults recorded; cross-owner fixtures pending | Vinh, Lộc, Hoàng Anh; Huy for joint mapping | episode/referral/charge/clearance, clinical/Organization policies; Inpatient reference registration + outpatient/late-event handling; provisional READY/invalidation semantics. Detailed code tasks in current Huy plan §6 |
-| [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) | OPEN | Shared-build integrator (confirm with Vinh), Hoàng Anh | register Surgery module/DB/Compose and route through Gateway after module/spec gates |
+| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | OPEN — Huy-local V1 core/application choices implemented; cross-owner wire fixtures pending | Vinh, Lộc, Hoàng Anh; Huy for joint mapping | episode/referral/charge/clearance, clinical/Organization policies; Inpatient reference registration + outpatient/late-event handling; provisional READY/invalidation semantics. Detailed code tasks in current Huy plan §6 |
+| [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) | OPEN — Surgery module/schema exist; shared reactor/DB/Compose/Gateway wiring pending | Shared-build integrator (confirm with Vinh), Hoàng Anh | register Surgery module/DB/Compose and route through Gateway after module/spec gates |
 | [Huy Pharmacy/Report care-finance contracts](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) | OPEN | Vinh, Lộc, Huy; Hoàng Anh for Gateway roles | V2 producer fixtures, remaining admission/finance/replay gaps and route roles; additive Huy local work can proceed behind disabled flags |
-| [Inpatient Gateway route](HANDOFF-INPATIENT-GATEWAY-ROUTE.md) | OPEN | Hoàng Anh | expose the future inpatient API through Gateway |
+| [Inpatient Gateway route](HANDOFF-INPATIENT-GATEWAY-ROUTE.md) | OPEN — local APIs exist; Gateway route absent | Hoàng Anh | expose the implemented Inpatient API through Gateway |
 
 ## Lifecycle rule
 

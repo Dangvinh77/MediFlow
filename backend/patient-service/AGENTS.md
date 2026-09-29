@@ -8,8 +8,6 @@ Root `AGENTS.md` rules continue to apply.
 - Other services are read-only unless the user explicitly grants a task-scoped override.
 - Do not infer cross-service identifiers, query another service's database, or edit its producer.
 - Subagents inherit this boundary and cannot bypass it.
-- **Required handoff:** before implementing patient read/existence APIs, read
-  [`HANDOFF-CLINICAL-PATIENT-LOOKUP.md`](HANDOFF-CLINICAL-PATIENT-LOOKUP.md).
 - **Integration gate:** before changing patient IDs, JWT claims, insurance/contact DTOs or lookup
   security, read the [care-finance registry](../../docs/handoffs/care-finance/README.md) and
   [IDENTITY-LOOKUP](../../docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).

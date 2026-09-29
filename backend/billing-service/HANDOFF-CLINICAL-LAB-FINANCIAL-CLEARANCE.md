@@ -1,6 +1,6 @@
 # HANDOFF — Purpose-scoped financial clearance for Clinical and Lab
 
-> **Status (2026-09-26): OPEN.** Billing currently publishes the compatibility
+> **Status (source audit 2026-09-29 at `d252492`): OPEN.** Billing currently publishes the compatibility
 > `payment.completed` event but does not publish `financial.clearance.granted`. Clinical therefore
 > cannot unlock an examination from an EXAM payment, and Lab cannot migrate its operational gate
 > from the compatibility `paid` projection to an exact LAB_TEST clearance.

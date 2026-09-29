@@ -1,9 +1,11 @@
 # HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP — Shared build, database and Gateway wiring
 
-- **Status:** OPEN — request prepared by Huy; no shared implementation or live-route claim.
+- **Status:** OPEN — Surgery now has a bootable module, V1 migration, persistence adapters and local
+  application tests. Root reactor/database/Compose registration and Gateway routing are still absent.
 - **Requester / Surgery owner:** Huy (`LQHuy0210`).
 - **Owners who must act:** repository/shared-build integrator (coordinate with Vinh) for root `pom.xml`, `scripts/init-databases.sql` and `docker-compose.yml`; Hoàng Anh for `backend/gateway/`. The shared integrator assignment needs explicit confirmation before editing shared production files.
-- **Producer:** planned `backend/surgery-service/` (`surgery-service`, port `8091`, database `mediflow_surgery`).
+- **Producer:** implemented local `backend/surgery-service/` foundation (`surgery-service`, port
+  `8091`, database `mediflow_surgery`), not yet registered in shared runtime wiring.
 - **Consumers:** Maven reactor, local PostgreSQL/Compose environment and Gateway clients.
 - **Sources:** [Surgery service contract](../ai/services/surgery.md), [Surgery backend-spec draft](../eproject_general_plan/backend-spec/10-surgery.md), [microservice blueprint](../ai/04-microservice-blueprint.md), [Gateway design](../ai/services/gateway.md).
 
@@ -18,8 +20,13 @@
 
 ## Integration sequence and boundary
 
-1. Huy supplies a blueprint-conformant module and validated implementation-ready schema/contracts; the [H-01d draft](../eproject_general_plan/backend-spec/10-surgery.md) currently covers only policy-independent design. A bootable process alone is not an exposed business API.
-2. The shared integrator and Gateway owner make their scoped changes in their own review path, with tests above. Huy does not edit these shared/Gateway production files through this handoff.
-3. Test local module, reactor, fresh/existing DB bootstrap, Compose/Eureka and Gateway route as distinct acceptance states. Route configuration is not called **live** until a real endpoint and end-to-end security/correlation smoke pass.
+1. Huy has supplied the blueprint-conformant module and V1 schema plus policy-independent
+   application/persistence slices. This satisfies the module prerequisite, not the unapproved
+   cross-service business contracts or a live business API.
+2. The shared integrator and Gateway owner make their scoped changes in their own review path, with
+   the tests above. Huy does not edit these shared/Gateway production files through this handoff.
+3. Test local module, reactor, fresh/existing DB bootstrap and Compose/Eureka first. Add the Gateway
+   route only with a real business endpoint and end-to-end security/correlation smoke; health alone
+   is not a live workflow claim.
 
 This handoff does not approve `surgery.requested` producer semantics, a new charge-source event, room reservation, clinical clearance or any business DTO. Those remain in [Surgery implementation decisions](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) and the relevant canonical care-finance contracts. Once the requested changes and evidence land, move lasting route/bootstrap facts to the service/Gateway docs and remove this active handoff per the registry lifecycle.
