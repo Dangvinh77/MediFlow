@@ -39,6 +39,7 @@ public class Prescription {
     private String cancellationReason;
     private final Instant createdAt;
     private Instant updatedAt;
+    private Instant lifecycleAt;
 
     private Prescription(
             UUID prescriptionId,
@@ -189,6 +190,17 @@ public class Prescription {
                 createdAt, updatedAt);
     }
 
+    /** Restores an explicit terminal business time, never inferred from a JPA update timestamp. */
+    public static Prescription restore(UUID prescriptionId, UUID recordId, UUID patientId, UUID doctorId,
+            UUID departmentId, LocalDate prescribedDate, BigDecimal totalAmount, List<PrescriptionLine> lines,
+            PrescriptionStatus status, Instant cancelledAt, UUID cancelledBy, String cancellationReason,
+            Instant createdAt, Instant updatedAt, PrescriptionCareContext careContext, Instant lifecycleAt) {
+        var prescription = restore(prescriptionId, recordId, patientId, doctorId, departmentId, prescribedDate,
+                totalAmount, lines, status, cancelledAt, cancelledBy, cancellationReason, createdAt, updatedAt, careContext);
+        prescription.lifecycleAt = lifecycleAt;
+        return prescription;
+    }
+
     /**
      * Tính lại tổng tiền từ các dòng hiện có.
      *
@@ -232,6 +244,7 @@ public class Prescription {
         cancelledBy = actorId;
         cancellationReason = normalizedReason;
         updatedAt = now;
+        lifecycleAt = now;
     }
 
     /**
@@ -241,8 +254,9 @@ public class Prescription {
      */
     public void markFulfilled(Instant now) {
         requireActive();
+        lifecycleAt = requireTimestamp(now);
         status = PrescriptionStatus.FULFILLED;
-        updatedAt = requireTimestamp(now);
+        updatedAt = lifecycleAt;
     }
 
     /**
@@ -252,8 +266,9 @@ public class Prescription {
      */
     public void markExpired(Instant now) {
         requireActive();
+        lifecycleAt = requireTimestamp(now);
         status = PrescriptionStatus.EXPIRED;
-        updatedAt = requireTimestamp(now);
+        updatedAt = lifecycleAt;
     }
 
     /**
@@ -263,8 +278,9 @@ public class Prescription {
      */
     public void markDispenseFailed(Instant now) {
         requireActive();
+        lifecycleAt = requireTimestamp(now);
         status = PrescriptionStatus.DISPENSE_FAILED;
-        updatedAt = requireTimestamp(now);
+        updatedAt = lifecycleAt;
     }
 
     /** @return {@code true} khi đơn còn có thể hủy, hết hạn hoặc xuất thuốc */

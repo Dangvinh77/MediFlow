@@ -23,6 +23,8 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
+import com.mediflow.pharmacy.domain.model.enums.CareEpisodeType;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.domain.model.enums.ReservationStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +79,31 @@ class PrescriptionApplicationServiceTest {
                 prescriptionDtoMapper,
                 Clock.systemUTC(),
                 Duration.ofHours(24));
+    }
+
+    @Test
+    void create_v1Request_failsClosedBeforeAnyStockOrEventSideEffect() {
+        CreatePrescriptionRequest request = new CreatePrescriptionRequest(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                LocalDate.now(),
+                List.of(new PrescriptionLineRequest(UUID.randomUUID(), 1, "Once daily")),
+                1,
+                CareContext.OUTPATIENT,
+                CareEpisodeType.OUTPATIENT_VISIT,
+                UUID.randomUUID(),
+                null,
+                "MEDICATION-PRICE-01");
+
+        assertThatThrownBy(() -> service.create(commandOf(request)))
+                .isInstanceOfSatisfying(PrescriptionRuleException.class,
+                        exception -> assertThat(exception.getCode())
+                                .isEqualTo("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE"));
+
+        verifyNoInteractions(drugRepo, prescriptionRepo, dispenseSlipRepo, reservationRepo,
+                eventPublisher);
     }
 
     @Test

@@ -16,6 +16,7 @@ public class PrescriptionLine {
     private final BigDecimal unitPrice;
     private final String dosage;
     private final BigDecimal lineTotal;
+    private final String drugNameSnapshot;
 
     private PrescriptionLine(
             UUID lineId,
@@ -23,13 +24,14 @@ public class PrescriptionLine {
             int quantity,
             BigDecimal unitPrice,
             String dosage,
-            BigDecimal lineTotal) {
+            BigDecimal lineTotal, String drugNameSnapshot) {
         this.lineId = lineId;
         this.drugId = drugId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.dosage = dosage;
         this.lineTotal = lineTotal;
+        this.drugNameSnapshot = drugNameSnapshot;
     }
 
     /**
@@ -49,7 +51,14 @@ public class PrescriptionLine {
         }
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity))
                 .setScale(2, RoundingMode.HALF_UP);
-        return new PrescriptionLine(null, drugId, quantity, unitPrice, dosage, lineTotal);
+        return new PrescriptionLine(null, drugId, quantity, unitPrice, dosage, lineTotal, null);
+    }
+
+    /** Captures a server-resolved catalogue name; never supplied by a client or backfilled historically. */
+    public static PrescriptionLine create(UUID drugId, int quantity, BigDecimal unitPrice, String dosage, String drugNameSnapshot) {
+        requireName(drugNameSnapshot);
+        var line = create(drugId, quantity, unitPrice, dosage);
+        return new PrescriptionLine(line.lineId, drugId, quantity, unitPrice, dosage, line.lineTotal, drugNameSnapshot);
     }
 
     /**
@@ -70,6 +79,18 @@ public class PrescriptionLine {
             BigDecimal unitPrice,
             String dosage,
             BigDecimal lineTotal) {
-        return new PrescriptionLine(lineId, drugId, quantity, unitPrice, dosage, lineTotal);
+        return restore(lineId, drugId, quantity, unitPrice, dosage, lineTotal, null);
+    }
+
+    public static PrescriptionLine restore(UUID lineId, UUID drugId, int quantity, BigDecimal unitPrice,
+            String dosage, BigDecimal lineTotal, String drugNameSnapshot) {
+        if (drugNameSnapshot != null) requireName(drugNameSnapshot);
+        return new PrescriptionLine(lineId, drugId, quantity, unitPrice, dosage, lineTotal, drugNameSnapshot);
+    }
+
+    private static void requireName(String name) {
+        if (name == null || name.isBlank() || name.length() > 150) {
+            throw new PrescriptionRuleException("PRESCRIPTION_DRUG_NAME_REQUIRED", "A bounded drug name snapshot is required");
+        }
     }
 }

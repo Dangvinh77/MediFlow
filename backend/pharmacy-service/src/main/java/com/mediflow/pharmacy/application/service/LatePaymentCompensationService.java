@@ -5,6 +5,8 @@ import com.mediflow.pharmacy.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.ProcessedEventPort;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
+import com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +49,10 @@ public class LatePaymentCompensationService {
      */
     @Transactional
     public boolean compensate(PaymentCompletedCommand command, Prescription prescription) {
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            throw new DispenseAuthorizationException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "V1 terminal prescriptions cannot enter legacy payment compensation");
+        }
         if (!processedEventPort.claimIfAbsent(command.eventId(), PAYMENT_COMPLETED_ROUTING_KEY)) {
             return false;
         }

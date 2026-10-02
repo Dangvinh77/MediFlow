@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -147,6 +148,25 @@ class DispenseApplicationServiceTest {
 
         verify(failure).record(
                 eq(prescriptionId), eq(actorId), eq(invoiceId), eq("manual-correlation"), any());
+    }
+
+    @Test
+    void manualDispense_authorizationDenied_doesNotReleaseStockOrCompensateInvoice() {
+        UUID prescriptionId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        var receipt = PaymentReceipt.receive(UUID.randomUUID(), UUID.randomUUID(), prescriptionId,
+                UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("100.00"), "CASH", Instant.now(), "corr", null);
+        when(paymentReceiptRepo.findByPrescriptionId(prescriptionId)).thenReturn(List.of(receipt));
+        var transaction = mock(DispenseTransactionService.class);
+        var failure = mock(RecordDispenseFailureService.class);
+        when(transaction.execute(prescriptionId, DispenseActor.staff(actorId), "corr"))
+                .thenThrow(new com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException(
+                        "PHARMACY_CARE_FINANCE_V2_UNAVAILABLE", "V1 writer unavailable"));
+        var orchestrator = new DispenseApplicationService(transaction, failure, paymentReceiptRepo);
+
+        assertThatThrownBy(() -> orchestrator.dispense(prescriptionId, actorId, "corr"))
+                .isInstanceOf(com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException.class);
+        verify(failure, never()).record(any(), any(), any(), any(), any());
     }
 
     /** The web-facing application port resolves a signed staff claim without exposing domain types in web. */

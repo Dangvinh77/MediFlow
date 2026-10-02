@@ -27,6 +27,7 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 
 
 /**
@@ -79,6 +80,11 @@ public class CancelPrescriptionService implements CancelPrescriptionUseCase {
                         "Không tìm thấy đơn thuốc id=" + command.prescriptionId()));
 
         authorize(command, prescription);
+
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            throw new PrescriptionRuleException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "V1 cancellation requires its own verified lifecycle/adjustment writer");
+        }
 
         if (prescription.isCancelled()) {
             return new CancelPrescriptionResult(

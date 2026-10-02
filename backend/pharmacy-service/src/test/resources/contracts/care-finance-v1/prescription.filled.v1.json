@@ -1,0 +1,18 @@
+{
+  "eventId": "10000000-0000-4000-8000-000000000012",
+  "eventType": "prescription.filled", "version": 1,
+  "occurredAt": "2026-10-01T08:10:00Z", "correlationId": "pharmacy-v1-proposal",
+  "producer": "pharmacy-service",
+  "payload": {
+    "prescriptionId": "10000000-0000-4000-8000-000000000001",
+    "admissionId": "10000000-0000-4000-8000-000000000004",
+    "patientId": "10000000-0000-4000-8000-000000000002",
+    "departmentId": "10000000-0000-4000-8000-000000000003",
+    "careContext": "ADMISSION", "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "10000000-0000-4000-8000-000000000004",
+    "sourceType": "PRESCRIPTION", "sourceId": "10000000-0000-4000-8000-000000000001",
+    "priceCode": "RX-DEFAULT",
+    "items": [{"drugId": "10000000-0000-4000-8000-000000000006", "drugName": "Paracetamol", "quantity": 2, "unitPrice": 1000.00}],
+    "totalAmount": 2000.00, "dispenseId": "10000000-0000-4000-8000-000000000005", "filledAt": "2026-10-01T08:10:00Z"
+  }
+}

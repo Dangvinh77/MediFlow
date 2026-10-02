@@ -39,6 +39,9 @@ public class PrescriptionLineJpaEntity {
     @Column(name = "drug_id", nullable = false)
     private UUID drugId;
 
+    @Column(name = "drug_name_snapshot", length = 150)
+    private String drugNameSnapshot;
+
     @Column(name = "quantity", nullable = false)
     private int quantity;
 

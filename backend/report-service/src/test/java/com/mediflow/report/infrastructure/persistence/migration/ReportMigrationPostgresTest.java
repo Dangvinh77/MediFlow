@@ -31,6 +31,48 @@ class ReportMigrationPostgresTest {
     }
 
     @Test
+    void v10Upgrade_preservesLegacyAndVerifiedGenerationButDoesNotInventCoverage() throws Exception {
+        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("classpath:db/migration").target("9").load().migrate();
+        UUID id = UUID.randomUUID();
+        execute("INSERT INTO operational_replay_generation(generation_id, status, completed_at) VALUES ('" + id + "', 'VERIFIED', now())");
+        execute("INSERT INTO daily_visit_report(report_id, report_date, visit_count) VALUES ('" + UUID.randomUUID() + "', DATE '2026-10-01', 7)");
+        flyway().migrate();
+        assertThat(queryInt("SELECT count(*) FROM operational_replay_generation")).isOne();
+        assertThat(queryInt("SELECT sum(visit_count) FROM daily_visit_report")).isEqualTo(7);
+        assertThat(queryInt("SELECT count(*) FROM operational_report_publication")).isZero();
+    }
+
+    @Test
+    void v9Upgrade_preservesLegacyDataAndAddsEmptyPendingEvidenceTables() throws Exception {
+        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("classpath:db/migration").target("8").load().migrate();
+        execute("INSERT INTO daily_visit_report(report_id, report_date, visit_count) VALUES ('" + UUID.randomUUID()
+                + "', DATE '2026-10-01', 7)");
+        flyway().migrate();
+        assertThat(queryInt("SELECT sum(visit_count) FROM daily_visit_report")).isEqualTo(7);
+        assertThat(queryInt("SELECT count(*) FROM report_admission_fact")).isZero();
+        assertThat(queryInt("SELECT count(*) FROM report_admission_delivery")).isZero();
+        assertThat(queryInt("SELECT count(*) FROM information_schema.columns WHERE table_schema = 'public' "
+                + "AND table_name = 'report_admission_fact' AND column_name = 'source_revision'")).isZero();
+    }
+
+    @Test
+    void v9Constraints_rejectMissingStartDimensionsAndAmbiguousCloseProof() throws Exception {
+        flyway().migrate();
+        UUID admissionId = UUID.randomUUID();
+        execute("INSERT INTO report_admission_target(admission_id) VALUES ('" + admissionId + "')");
+        String prefix = "INSERT INTO report_admission_fact(admission_id, fact_type, business_at, patient_id, business_at_iso, emergency, "
+                + "settlement_id, approved_override_id) VALUES ('" + admissionId + "', ";
+        assertConstraintViolation(() -> execute(prefix + "'STARTED', TIMESTAMPTZ '2026-10-01T01:00:00Z', '" + UUID.randomUUID()
+                + "', '2026-10-01T01:00:00Z', false, NULL, NULL)"), "23514");
+        assertConstraintViolation(() -> execute(prefix + "'CLOSED', TIMESTAMPTZ '2026-10-01T01:00:00Z', '" + UUID.randomUUID()
+                + "', '2026-10-01T01:00:00Z', false, '" + UUID.randomUUID() + "', '" + UUID.randomUUID() + "')"), "23514");
+        assertConstraintViolation(() -> execute(prefix + "'CLOSED', TIMESTAMPTZ '2026-10-01T01:00:00Z', '" + UUID.randomUUID()
+                + "', '2026-10-01T01:00:00Z', false, NULL, NULL)"), "23514");
+    }
+
+    @Test
     void freshDatabase_hasFiveTablesAndNullableScopeUniqueness() throws Exception {
         flyway().migrate();
 
@@ -97,6 +139,106 @@ class ReportMigrationPostgresTest {
                 + "(invoice_id, status, failed_event_id, department_id) VALUES ('"
                 + UUID.randomUUID() + "', 'PENDING_REVERSAL', '" + UUID.randomUUID() + "', '"
                 + UUID.randomUUID() + "')"), "23514");
+    }
+
+    @Test
+    void v6_businessOperationKeysDedupeNewEventIdsAndAllowExplicitRevisions() throws Exception {
+        flyway().migrate();
+
+        UUID financialSourceId = UUID.randomUUID();
+        insertFinancialContribution(UUID.randomUUID(), UUID.randomUUID(), financialSourceId, 1, null);
+        assertConstraintViolation(() -> insertFinancialContribution(
+                UUID.randomUUID(), UUID.randomUUID(), financialSourceId, 1, null), "23505");
+        insertFinancialContribution(UUID.randomUUID(), UUID.randomUUID(), financialSourceId, 2, null);
+        insertFinancialContribution(UUID.randomUUID(), UUID.randomUUID(), financialSourceId, 1,
+                UUID.fromString("00000000-0000-0000-0000-000000000000"));
+
+        UUID operationalSourceId = UUID.randomUUID();
+        insertOperationalContribution(UUID.randomUUID(), UUID.randomUUID(), operationalSourceId, 1, null);
+        assertConstraintViolation(() -> insertOperationalContribution(
+                UUID.randomUUID(), UUID.randomUUID(), operationalSourceId, 1, null), "23505");
+        insertOperationalContribution(UUID.randomUUID(), UUID.randomUUID(), operationalSourceId, 2, null);
+    }
+
+    @Test
+    void v6NullHospitalScopeDoesNotCollideWithZeroUuidDepartment() throws Exception {
+        flyway().migrate();
+        String reportDate = "DATE '2026-10-01'";
+        UUID zeroDepartmentId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
+        insertDailyFinancialReport(UUID.randomUUID(), reportDate, null);
+        insertDailyFinancialReport(UUID.randomUUID(), reportDate, zeroDepartmentId);
+        assertConstraintViolation(() -> insertDailyFinancialReport(UUID.randomUUID(), reportDate, null), "23505");
+        assertConstraintViolation(() -> insertDailyFinancialReport(
+                UUID.randomUUID(), reportDate, zeroDepartmentId), "23505");
+
+        insertDailyOperationalReport(UUID.randomUUID(), reportDate, null);
+        insertDailyOperationalReport(UUID.randomUUID(), reportDate, zeroDepartmentId);
+        assertConstraintViolation(() -> insertDailyOperationalReport(UUID.randomUUID(), reportDate, null), "23505");
+        assertConstraintViolation(() -> insertDailyOperationalReport(
+                UUID.randomUUID(), reportDate, zeroDepartmentId), "23505");
+    }
+
+    @Test
+    void v6_rejectsIncompleteEpisodeTupleAndNonPositiveSourceRevision() throws Exception {
+        flyway().migrate();
+
+        assertConstraintViolation(() -> execute("INSERT INTO operational_contribution "
+                + "(contribution_id, event_id, source_type, source_id, source_revision, metric_type, "
+                + "care_episode_id, metric_date, occurred_at) VALUES ('" + UUID.randomUUID() + "', '"
+                + UUID.randomUUID() + "', 'LAB_RESULT', '" + UUID.randomUUID() + "', 1, 'LAB_TEST', '"
+                + UUID.randomUUID() + "', DATE '2026-10-01', TIMESTAMPTZ '2026-10-01T08:00:00Z')"), "23514");
+
+        assertConstraintViolation(() -> execute("INSERT INTO operational_contribution "
+                + "(contribution_id, event_id, source_type, source_id, source_revision, metric_type, "
+                + "care_episode_type, metric_date, occurred_at) VALUES ('" + UUID.randomUUID() + "', '"
+                + UUID.randomUUID() + "', 'LAB_RESULT', '" + UUID.randomUUID() + "', 1, 'LAB_TEST', "
+                + "'ADMISSION', DATE '2026-10-01', TIMESTAMPTZ '2026-10-01T08:00:00Z')"), "23514");
+        assertConstraintViolation(() -> execute("INSERT INTO operational_contribution "
+                + "(contribution_id, event_id, source_type, source_id, source_revision, metric_type, "
+                + "metric_date, occurred_at) VALUES ('" + UUID.randomUUID() + "', '" + UUID.randomUUID()
+                + "', 'LAB_RESULT', '" + UUID.randomUUID() + "', 0, 'LAB_TEST', DATE '2026-10-01', "
+                + "TIMESTAMPTZ '2026-10-01T08:00:00Z')"), "23514");
+        assertConstraintViolation(() -> execute("INSERT INTO operational_contribution "
+                + "(contribution_id, event_id, source_type, source_id, metric_type, metric_date, occurred_at) "
+                + "VALUES ('" + UUID.randomUUID() + "', '" + UUID.randomUUID() + "', 'LAB_RESULT', '"
+                + UUID.randomUUID() + "', 'LAB_TEST', DATE '2026-10-01', "
+                + "TIMESTAMPTZ '2026-10-01T08:00:00Z')"), "23502");
+    }
+
+    private void insertFinancialContribution(UUID contributionId, UUID eventId, UUID sourceId,
+            int sourceRevision, UUID departmentId) throws SQLException {
+        String departmentValue = departmentId == null ? "NULL" : "'" + departmentId + "'";
+        execute("INSERT INTO financial_contribution "
+                + "(contribution_id, event_id, source_type, source_id, source_revision, account_id, patient_id, "
+                + "department_id, care_episode_type, care_episode_id, contribution_type, business_date, occurred_at) "
+                + "VALUES ('" + contributionId + "', '" + eventId + "', 'PAYMENT_TRANSACTION', '" + sourceId
+                + "', " + sourceRevision + ", '" + UUID.randomUUID() + "', '" + UUID.randomUUID() + "', "
+                + departmentValue + ", 'OUTPATIENT_VISIT', '" + UUID.randomUUID()
+                + "', 'PAYMENT', DATE '2026-10-01', TIMESTAMPTZ '2026-10-01T08:00:00Z')");
+    }
+
+    private void insertOperationalContribution(UUID contributionId, UUID eventId, UUID sourceId,
+            int sourceRevision, UUID departmentId) throws SQLException {
+        String departmentValue = departmentId == null ? "NULL" : "'" + departmentId + "'";
+        execute("INSERT INTO operational_contribution "
+                + "(contribution_id, event_id, source_type, source_id, source_revision, metric_type, department_id, "
+                + "care_episode_type, care_episode_id, metric_date, occurred_at) VALUES ('" + contributionId
+                + "', '" + eventId + "', 'LAB_RESULT', '" + sourceId + "', " + sourceRevision
+                + ", 'LAB_TEST', " + departmentValue + ", 'OUTPATIENT_VISIT', '" + UUID.randomUUID()
+                + "', DATE '2026-10-01', TIMESTAMPTZ '2026-10-01T08:00:00Z')");
+    }
+
+    private void insertDailyFinancialReport(UUID reportId, String reportDate, UUID departmentId) throws SQLException {
+        String departmentValue = departmentId == null ? "NULL" : "'" + departmentId + "'";
+        execute("INSERT INTO daily_financial_report(report_id, report_date, department_id) VALUES ('"
+                + reportId + "', " + reportDate + ", " + departmentValue + ")");
+    }
+
+    private void insertDailyOperationalReport(UUID reportId, String reportDate, UUID departmentId) throws SQLException {
+        String departmentValue = departmentId == null ? "NULL" : "'" + departmentId + "'";
+        execute("INSERT INTO daily_operational_report(report_id, report_date, department_id) VALUES ('"
+                + reportId + "', " + reportDate + ", " + departmentValue + ")");
     }
 
     private void execute(String sql) throws SQLException {

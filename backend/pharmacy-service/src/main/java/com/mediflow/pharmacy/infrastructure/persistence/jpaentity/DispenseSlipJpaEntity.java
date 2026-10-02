@@ -61,4 +61,7 @@ public class DispenseSlipJpaEntity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Column(name = "lifecycle_at_iso", length = 35)
+    private String lifecycleAtIso;
 }

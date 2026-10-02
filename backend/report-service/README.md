@@ -59,6 +59,58 @@ Topic exchange `mediflow.events`; see
 [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent
 (dedupe on `eventId`).
 
+## Care-finance V2 local shadow writer
+
+V6/V7 add separate contributions, aggregate scopes and an operational journal. The typed local
+kernel commits minimal accepted replay inputs, delivery claim, business contribution and both
+department/hospital updates in one transaction. Same event/different payload and same operation/
+changed department/time are conflicts; new event IDs cannot repeat the business effect. Batch
+metrics acquire locks in stable order. Corrections are rejected until replacement/reversal semantics
+are implemented; no source revision is guessed from envelope version.
+
+Journal snapshots contain metadata/accepted aggregate inputs, never full diagnosis/lab-result
+payloads. The full incoming normalized envelope is fingerprinted transiently for conflict checking.
+The journal only covers accepted post-activation inputs; pre-activation history needs an export.
+V8 adds an internal finite operational replay: start freezes the committed journal input set;
+bounded batches build isolated contributions/scopes and can resume after rollback/restart.
+Same-source deliveries dedupe within each generation; snapshot fingerprints and final fact/scope
+reconciliation protect the rebuild. VERIFIED is only relative to that manifest, not authorization
+to serve live reports. No live catch-up/read switch or V2 listener exists. Real PostgreSQL replay
+evidence is recorded in the current Huy plan; finite snapshot read routes below remain gated off.
+Existing five bindings, three APIs and financial compatibility projections remain unchanged.
+`mediflow.features.care-finance-v2` stays disabled. Classified Billing facts are still required.
+
+The offline `LabOperationalContributionMapper` uses actual Lab V1 bytes: `labId`, the explicit
+`resultVersion`, requesting `departmentId`, exact care episode and `completedAt`. Completion date is
+derived using the configured Report zone, not delivery time or `performedDate`. Missing source fields
+are rejected without record/episode or envelope-version fallbacks. Only source revision 1 is
+currently supported; the actual admission Lab fixture has revision 3 and is explicitly rejected
+until initial imported-result versus correction/replacement semantics are agreed. Consumer tests do
+not signify producer-owner approval or live activation.
+
+V9 adds offline minimal admission start/administrative-close evidence and a delivery fingerprint
+ledger. Close-before-start survives reload as PENDING_START; only the exact admission/patient start
+supplies department and completes the pair, never reopens it. Immutable time/department/proof conflicts
+roll back the claim; exact business timestamps retain nanoseconds. Actual Inpatient bytes are tested.
+No admission contribution, medical LOS, bed occupancy or V2 API/listener is enabled: the current
+producer lacks an accepted business revision and those metric/correction semantics remain open.
+PostgreSQL pending/reload/rollback/race/upgrade tests run with Docker; see the plan's latest evidence.
+
+V10 adds an **empty-by-default** accepted-coverage publication table for immutable operational replay
+snapshots. Two aggregate-only GET routes (`/operations/daily`, `/operations/surgery`) exist only with
+`care-finance-v2=true`; ADMIN/MANAGER/DOCTOR are permitted directly. Legacy finance roles and routes
+do not change. Invalid periods return 400 `REPORT_VALIDATION_ERROR`; unavailable coverage returns
+404 `REPORT_NOT_FOUND`, never invented zeros. Zero-fill is allowed only inside explicit accepted
+date/timezone/metric coverage for a VERIFIED generation. DTOs include generationId, reconciledAt,
+`snapshotOnly=true` and stable daily English camelCase counters, no clinical payload.
+
+Replay VERIFIED does not insert publication or establish historical completeness. There is no
+production publication writer/admin API. Do not insert publication manually or turn flags on after
+pulling: source acceptance, approved coverage, controlled publish/rollback, live catch-up, Gateway
+DOCTOR routing, inpatient-day/surgery-category/occupancy facts and classified finance remain gates.
+These routes are a local finite-snapshot slice, not the complete live operations/financial dashboard.
+Matching gated requests are in `report.http`.
+
 ## Tests
 
 ```bash

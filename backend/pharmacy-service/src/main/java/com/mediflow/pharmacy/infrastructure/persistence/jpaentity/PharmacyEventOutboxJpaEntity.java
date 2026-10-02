@@ -32,6 +32,15 @@ public class PharmacyEventOutboxJpaEntity {
     @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
+    @Column(name = "delivery_enabled", nullable = false)
+    private boolean deliveryEnabled = true;
+
+    @Column(name = "care_contract_version", nullable = false)
+    private short careContractVersion;
+
+    @Column(name = "care_lifecycle_order")
+    private Short careLifecycleOrder;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

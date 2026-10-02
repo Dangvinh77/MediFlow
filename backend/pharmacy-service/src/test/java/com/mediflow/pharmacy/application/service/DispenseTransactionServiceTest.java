@@ -130,4 +130,37 @@ class DispenseTransactionServiceTest {
         verify(drugRepo, never()).save(any());
         verify(eventPublisher, never()).publishPrescriptionFilled(any());
     }
+
+    @Test
+    void execute_versionOnePrescription_cannotUseLegacyExecutor() {
+        var grant = com.mediflow.pharmacy.support.ClearanceTestFixtures.grant();
+        var v1 = com.mediflow.pharmacy.support.ClearanceTestFixtures.prescription(grant);
+        when(prescriptionRepo.findByIdForUpdate(grant.prescriptionId())).thenReturn(Optional.of(v1));
+
+        assertThatThrownBy(() -> service.execute(grant.prescriptionId(), UUID.randomUUID(), "corr"))
+                .isInstanceOf(com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException.class);
+        verify(dispenseSlipRepo, never()).findByPrescriptionForUpdate(grant.prescriptionId());
+        verify(drugRepo, never()).save(any());
+        verify(eventPublisher, never()).publishPrescriptionFilled(any());
+    }
+
+    @Test
+    void execute_reservationExpiresDuringStockLock_deniesBeforeMutation() {
+        Clock movingClock = mock(Clock.class);
+        when(movingClock.instant()).thenReturn(NOW);
+        when(movingClock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(drugRepo.findByIdForUpdate(drugId)).thenAnswer(invocation -> {
+            when(movingClock.instant()).thenReturn(NOW.plusSeconds(3600));
+            return Optional.of(drug);
+        });
+        var executor = new DispenseTransactionService(prescriptionRepo, dispenseSlipRepo, drugRepo,
+                reservationRepo, eventPublisher, mapper, movingClock);
+
+        assertThatThrownBy(() -> executor.execute(prescriptionId, UUID.randomUUID(), "corr"))
+                .isInstanceOf(StockReservationRuleException.class).hasMessageContaining("hết hạn");
+        assertThat(drug.getStockQuantity()).isEqualTo(3);
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RESERVED);
+        verify(drugRepo, never()).save(any());
+        verify(eventPublisher, never()).publishPrescriptionFilled(any());
+    }
 }

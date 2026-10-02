@@ -13,4 +13,12 @@ public record CareFinanceEventMetadata(
         String producer,
         String sourceField,
         UUID sourceId) {
+    public CareFinanceEventMetadata {
+        if (eventId == null || eventType == null || eventType.isBlank() || version != 1
+                || occurredAt == null || correlationId == null || correlationId.isBlank()
+                || producer == null || producer.isBlank() || sourceField == null || sourceField.isBlank()
+                || sourceId == null) {
+            throw new IllegalArgumentException("Complete version-1 care-finance event metadata is required");
+        }
+    }
 }

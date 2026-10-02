@@ -58,3 +58,17 @@ X-Correlation-Id: report-unauthorized-example
 GET {{host}}/api/v1/reports/daily?date=2026-08-14
 Authorization: Bearer {{doctorToken}}
 X-Correlation-Id: report-forbidden-example
+
+### V2 operations daily snapshot — ADMIN/MANAGER/DOCTOR
+# Route exists ONLY with care-finance-v2=true (default false).
+# No publication is created by migration/replay: enabled without accepted coverage -> 404 REPORT_NOT_FOUND.
+# Hoang Anh still owns Gateway DOCTOR routing; do not enable flags or insert publication manually to bypass acceptance.
+GET {{host}}/api/v1/reports/operations/daily?from=2026-10-01&to=2026-10-02
+Authorization: Bearer {{token}}
+X-Correlation-Id: report-operations-daily
+
+### V2 surgery aggregate snapshot — ADMIN/MANAGER/DOCTOR
+# Bounded inclusive period; response is snapshotOnly, not a live catch-up claim.
+GET {{host}}/api/v1/reports/operations/surgery?from=2026-10-01&to=2026-10-02
+Authorization: Bearer {{token}}
+X-Correlation-Id: report-operations-surgery

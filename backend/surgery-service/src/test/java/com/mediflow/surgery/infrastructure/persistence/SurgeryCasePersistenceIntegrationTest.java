@@ -2,6 +2,7 @@ package com.mediflow.surgery.infrastructure.persistence;
 
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
+import com.mediflow.surgery.application.port.in.CancelSurgeryUseCase;
 import com.mediflow.surgery.application.port.in.ManageSurgeryConsentUseCase;
 import com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase;
 import com.mediflow.surgery.application.port.out.OrganizationLookupPort;
@@ -13,7 +14,9 @@ import com.mediflow.surgery.application.port.out.SurgeryResourceReservationPort;
 import com.mediflow.surgery.application.port.out.SurgeryResultRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryScheduleRepositoryPort;
 import com.mediflow.surgery.application.service.SurgeryScheduleApplicationService;
+import com.mediflow.surgery.application.service.SurgeryCancellationApplicationService;
 import com.mediflow.surgery.application.exception.SurgeryScheduleConflictException;
+import com.mediflow.surgery.application.dto.SurgeryActorIdentity;
 import com.mediflow.surgery.domain.model.CareEpisode;
 import com.mediflow.surgery.domain.model.CareEpisodeType;
 import com.mediflow.surgery.domain.model.ReadinessSnapshot;
@@ -634,6 +637,79 @@ class SurgeryCasePersistenceIntegrationTest {
     }
 
     @Test
+    void cancellingScheduledCase_releasesExactReservationAndRetainsReadinessHistory() {
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        ScheduledFixture fixture = persistScheduledCaseWithActiveConsent(actor, "cancel-scheduled-pg");
+        Instant cancelledAt = REQUESTED_AT.plusSeconds(310);
+        SurgeryCancellationApplicationService cancellation = new SurgeryCancellationApplicationService(
+                cases, schedules, resources, receipts, () -> cancelledAt);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+
+        var outcome = tx.execute(ignored -> cancellation.cancel(new CancelSurgeryUseCase.Command(
+                fixture.surgeryCase().getSurgeryCaseId(), fixture.surgeryCase().getRevision(),
+                "Patient request", "cancel-scheduled-pg-key",
+                new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()), "cancel-scheduled-pg")));
+
+        SurgeryCase cancelled = cases.findById(fixture.surgeryCase().getSurgeryCaseId()).orElseThrow();
+        assertThat(outcome.state()).isEqualTo(SurgeryStatus.CANCELLED.name());
+        assertThat(cancelled.getStatus()).isEqualTo(SurgeryStatus.CANCELLED);
+        assertThat(cancelled.getReadinessSnapshot()).isNull();
+        assertThat(cancelled.getReadyAt()).isNull();
+        assertThat(cancelled.getStatusHistory().getLast().previousStatus()).isEqualTo(SurgeryStatus.SCHEDULED);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_readiness_snapshot WHERE surgery_case_id = ?
+                """, Integer.class, cancelled.getSurgeryCaseId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_schedule WHERE schedule_id = ? AND revision = ?
+                """, String.class, fixture.schedule().scheduleId(), fixture.schedule().revision()))
+                .isEqualTo("RELEASED");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND schedule_id = ? AND schedule_revision = ? AND status = 'RELEASED'
+                """, Integer.class, cancelled.getSurgeryCaseId(),
+                fixture.schedule().scheduleId(), fixture.schedule().revision())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_command_receipt
+                WHERE idempotency_key = ? AND response_code = 'CANCEL_SURGERY' AND status = 'APPLIED'
+                """, Integer.class, "cancel-scheduled-pg-key")).isEqualTo(1);
+    }
+
+    @Test
+    void cancellationDomainFailureAfterRelease_rollsBackReservationCaseAndReceipt() {
+        SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        ScheduledFixture fixture = persistScheduledCaseWithActiveConsent(actor, "cancel-rollback-pg");
+        // Earlier than the persisted finalization audit: release runs first, then domain time guard fails.
+        Instant invalidAt = REQUESTED_AT.plusSeconds(305);
+        SurgeryCancellationApplicationService cancellation = new SurgeryCancellationApplicationService(
+                cases, schedules, resources, receipts, () -> invalidAt);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+
+        assertThatThrownBy(() -> tx.executeWithoutResult(ignored -> cancellation.cancel(
+                new CancelSurgeryUseCase.Command(fixture.surgeryCase().getSurgeryCaseId(),
+                        fixture.surgeryCase().getRevision(), "Patient request",
+                        "cancel-rollback-pg-key",
+                        new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()),
+                        "cancel-rollback-pg"))))
+                .isInstanceOf(RuntimeException.class);
+
+        SurgeryCase unchanged = cases.findById(fixture.surgeryCase().getSurgeryCaseId()).orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(SurgeryStatus.SCHEDULED);
+        assertThat(unchanged.getReadinessSnapshot()).isNotNull();
+        assertThat(jdbc.queryForObject("""
+                SELECT status FROM surgery_schedule WHERE schedule_id = ? AND revision = ?
+                """, String.class, fixture.schedule().scheduleId(), fixture.schedule().revision()))
+                .isEqualTo("FINALIZED");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_resource_reservation
+                WHERE surgery_case_id = ? AND schedule_id = ? AND schedule_revision = ? AND status = 'RESERVED'
+                """, Integer.class, unchanged.getSurgeryCaseId(),
+                fixture.schedule().scheduleId(), fixture.schedule().revision())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM surgery_command_receipt WHERE idempotency_key = ?
+                """, Integer.class, "cancel-rollback-pg-key")).isZero();
+    }
+
+    @Test
     void resultPersistence_roundTripsPerformedItemsAndRejectsReplacement() {
         SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
         SurgeryCase surgeryCase = persistInProgressCase(actor, "result-persistence-test");
@@ -717,7 +793,10 @@ class SurgeryCasePersistenceIntegrationTest {
         SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
         SurgeryCase surgeryCase = persistRequestedCase(actor, "begin-preop-pg");
         BeginPreopUseCase.Command command = new BeginPreopUseCase.Command(
-                surgeryCase.getSurgeryCaseId(), 0, "begin-preop-pg-key", actor, "begin-preop-pg-correlation");
+                surgeryCase.getSurgeryCaseId(), 0, "begin-preop-pg-key",
+                new com.mediflow.surgery.application.dto.SurgeryActorIdentity(
+                        actor.accountId(), actor.verifiedStaffId()),
+                "begin-preop-pg-correlation");
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
         assertThatThrownBy(() -> tx.executeWithoutResult(ignored -> {
@@ -817,7 +896,9 @@ class SurgeryCasePersistenceIntegrationTest {
         ReadinessSnapshot snapshot = ReadinessSnapshot.evaluate(UUID.randomUUID(),
                 surgeryCase.getSurgeryCaseId(), true, true, true, true, true, true, true,
                 evaluatedAt, Arrays.stream(SurgeryDependencyType.values())
-                        .map(type -> new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
+                        .map(type -> type == SurgeryDependencyType.SCHEDULE
+                                ? new SurgeryDependencyRevision(type, schedule.scheduleId(), schedule.revision())
+                                : new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
                 evaluatedAt.plusSeconds(3600));
         surgeryCase.markReady(snapshot, actor, correlationId);
         tx.executeWithoutResult(ignored -> cases.save(surgeryCase, 2));

@@ -2,11 +2,13 @@ package com.mediflow.pharmacy.infrastructure.persistence.adapter;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 
 import org.springframework.stereotype.Component;
 
 import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
+import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.infrastructure.persistence.jpaentity.DispenseSlipJpaEntity;
 import com.mediflow.pharmacy.infrastructure.persistence.repository.DispenseSlipJpaRepository;
 
@@ -48,10 +50,12 @@ public class DispenseSlipPersistenceAdapter implements DispenseSlipRepositoryPor
     // ---- map entity ↔ domain (thủ công) ----
 
     private DispenseSlip toDomain(DispenseSlipJpaEntity e) {
+        Instant lifecycleAt = e.getLifecycleAtIso() == null ? null : Instant.parse(e.getLifecycleAtIso());
         return DispenseSlip.restore(
                 e.getDispenseId(), e.getPrescriptionId(), e.getStatus(),
-                e.getDispensedAt(), e.getDispensedBy(), e.getDispensedActorType(), e.getFailureReason(),
-                e.getCreatedAt(), e.getUpdatedAt());
+                e.getStatus() == DispenseStatus.DISPENSED && lifecycleAt != null ? lifecycleAt : e.getDispensedAt(),
+                e.getDispensedBy(), e.getDispensedActorType(), e.getFailureReason(),
+                e.getCreatedAt(), e.getUpdatedAt(), lifecycleAt);
     }
 
     private DispenseSlipJpaEntity toEntity(DispenseSlip s) {
@@ -63,6 +67,7 @@ public class DispenseSlipPersistenceAdapter implements DispenseSlipRepositoryPor
                 .dispensedBy(s.getDispensedBy())
                 .dispensedActorType(s.getDispensedActorType())
                 .failureReason(s.getFailureReason())
+                .lifecycleAtIso(s.getLifecycleAt() == null ? null : s.getLifecycleAt().toString())
                 .build();
     }
 }

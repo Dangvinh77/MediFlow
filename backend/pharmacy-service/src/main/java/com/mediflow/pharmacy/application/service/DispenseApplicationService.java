@@ -6,6 +6,7 @@ import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.out.PaymentReceiptRepositoryPort;
 import com.mediflow.pharmacy.domain.exception.PaymentProofRequiredException;
+import com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException;
 import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.enums.PaymentReceiptStatus;
@@ -94,6 +95,10 @@ public class DispenseApplicationService implements DispensePrescriptionUseCase {
         try {
             return dispenseTransactionService.execute(
                     prescriptionId, actor, normalizedCorrelationId);
+        } catch (DispenseAuthorizationException exception) {
+            // Denied authorization leaves the prescription/reservations intact. It is not a
+            // stock failure and must not produce an invoice refund/compensation request.
+            throw exception;
         } catch (BusinessRuleException exception) {
             recordDispenseFailureService.record(
                     prescriptionId,

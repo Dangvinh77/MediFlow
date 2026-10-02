@@ -136,6 +136,25 @@ class SurgeryCaseTest {
         assertThat(surgeryCase.getCancelledByAccountId()).isEqualTo(ACTOR_ID);
         assertThat(surgeryCase.getCancellationReason()).isEqualTo("PATIENT_REQUEST");
         assertThat(surgeryCase.getStatusHistory()).hasSize(3);
+        assertThat(surgeryCase.getStatusHistory().getLast().previousStatus())
+                .isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
+        assertThat(surgeryCase.getReadinessSnapshot()).isNull();
+        assertThat(surgeryCase.getReadyAt()).isNull();
+    }
+
+    @Test
+    void cancel_scheduledCaseClearsActiveReadinessButPreservesCancellationStageInHistory() {
+        SurgeryCase surgeryCase = caseInPreop();
+        ReadinessSnapshot snapshot = readiness(surgeryCase, true, true);
+        surgeryCase.markReady(snapshot, ACTOR, CORRELATION_ID);
+        surgeryCase.finalizeSchedule(ACTOR, CORRELATION_ID, snapshot.evaluatedAt().plusSeconds(1));
+
+        surgeryCase.cancel(ACTOR, CORRELATION_ID, snapshot.evaluatedAt().plusSeconds(2), "PATIENT_REQUEST");
+
+        assertThat(surgeryCase.getStatus()).isEqualTo(SurgeryStatus.CANCELLED);
+        assertThat(surgeryCase.getStatusHistory().getLast().previousStatus()).isEqualTo(SurgeryStatus.SCHEDULED);
+        assertThat(surgeryCase.getReadinessSnapshot()).isNull();
+        assertThat(surgeryCase.getReadyAt()).isNull();
     }
 
     @Test
