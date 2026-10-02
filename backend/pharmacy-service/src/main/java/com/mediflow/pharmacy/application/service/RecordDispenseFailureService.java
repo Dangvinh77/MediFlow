@@ -11,6 +11,8 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
+import com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -82,6 +84,10 @@ public class RecordDispenseFailureService {
         Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId).orElse(null);
         if (prescription == null) {
             return;
+        }
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            throw new DispenseAuthorizationException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "V1 failure cannot use legacy invoice compensation");
         }
         DispenseSlip slip = dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId).orElse(null);
         if (slip == null || !slip.isPending() || !prescription.isActive()) {

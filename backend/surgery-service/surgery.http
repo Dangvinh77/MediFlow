@@ -1,0 +1,33 @@
+### MediFlow — Surgery service qua gateway :8080
+### Yêu cầu: Surgery feature flag bật trong môi trường local, và case đã tồn tại ở trạng thái REQUESTED, PREOP_IN_PROGRESS, READY hoặc SCHEDULED.
+
+@host = http://localhost:8080
+# @token = paste-access-token-here
+# @surgeryCaseId = paste-existing-case-id-here
+# @caseRevision = paste-current-case-revision-here
+# @idempotencyKey = cancel-unique-operation-key
+# @beginPreopIdempotencyKey = begin-preop-unique-operation-key
+# @correlationId = paste-correlation-uuid-here
+
+### Bắt đầu pre-op — ADMIN/DOCTOR; actor lấy từ access token đã xác thực
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/preop
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{beginPreopIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}}
+}
+
+### Hủy ca trước khi phẫu thuật bắt đầu — ADMIN/DOCTOR; replay cùng key trả lại kết quả gốc
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{idempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "reason": "Patient requested cancellation"
+}

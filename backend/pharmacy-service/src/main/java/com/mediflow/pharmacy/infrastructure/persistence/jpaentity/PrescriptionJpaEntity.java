@@ -111,6 +111,9 @@ public class PrescriptionJpaEntity {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "lifecycle_at_iso", length = 35)
+    private String lifecycleAtIso;
+
     /**
      * Thêm một dòng và đồng thời thiết lập phía sở hữu của quan hệ hai chiều.
      *

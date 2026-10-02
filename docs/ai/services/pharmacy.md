@@ -317,29 +317,64 @@ Chi tiết ánh xạ quy tắc → tầng test → tên test: xem mục 11 và 1
 
 ## 11. Code hiện tại: đã có gì, còn thiếu gì
 
-### Đã có (đối chiếu với cây thư mục thật)
+### Đã có (cập nhật 2026-10-01, thay cho scaffold checklist cũ)
 
-- `domain/model/`: `Drug`, `Prescription`, `PrescriptionLine`, `DispenseSlip`, `DispenseStatus` — quy tắc nằm ngay trong model (`Drug.dispenseStock` kiểm tra hết hàng/hết hạn, `DispenseSlip.markDispensed/markFailed` kiểm tra chuyển trạng thái hợp lệ).
-- `domain/exception/`: 6 exception kế thừa base của `common` (`ResourceNotFoundException` → 404, `BusinessRuleException` → 422).
-- `application/port/out/`: `DrugRepositoryPort` (4 phương thức).
-- `infrastructure/persistence/`: 5 JPA entity + 4 repository tương ứng.
-- `db/migration/V1__init.sql`: đủ 5 bảng theo spec.
-- `ArchitectureTest.java`: kiểm tra quy tắc kiến trúc (domain không dùng Spring/JPA, application không dùng Spring Data/AMQP/HTTP, không vòng lặp giữa các tầng).
+- Legacy create/dispense/payment, cancellation/expiry, reservation, actor audit, reconciliation,
+  outbox/scheduler retry/lease/fencing và role/security boundaries đã có code/test.
+- V14 persistence giữ nguyên V0 và bổ sung exact care-context cho V1; selected V1 request không được
+  silently downgrade. Legacy payment không unlock V1.
+- V15 + `AdmissionMedicationContext` + application port/service/JDBC adapter lưu STARTED/CLOSED
+  theo exact admission/patient; close-before-start tồn tại bền vững và late start không reopen.
+  Event fingerprint và business fingerprint riêng; same fact/new event không tăng context version,
+  payload/patient mismatch rollback cả claim. Row locks/version check, không JVM mutex.
+- `AdmissionLifecycleDecoder` offline dùng đúng Inpatient V1 fixture bytes; không bind queue mới.
+- `PrescriptionCareEventCodec`/V1 DTOs và 5 proposal fixtures serialize/deserialize đủ context,
+  priced items, exact timestamps, source IDs và filled dispenseId. Publisher V0 không đổi.
 
-### Còn thiếu (theo spec 05 — xem phần "Coding map" và "Definition of Done")
+### Còn phải làm trước khi chốt V2
 
-- 4 in-port + 4 out-port còn lại (`PrescriptionRepositoryPort`, `DispenseSlipRepositoryPort`, `ProcessedEventPort`, `PharmacyEventPublisherPort`).
-- `application/service/` thực hiện các in-port: kê đơn, xuất thuốc, phản ứng `payment.completed`.
-- DTO request/response + mapper (MapStruct).
-- `web/`: 2 controller cho 7 endpoint + `GlobalExceptionHandler`.
-- `messaging/consumer/`: consumer `payment.completed` (idempotent).
-- `infrastructure/messaging/`: publisher adapter + 4 payload event.
-- `infrastructure/config/` + `security/`: `RabbitConfig`, `SecurityConfig`, `JwtAuthFilter`, `JwtProperties`, `OpenApiConfig`.
-- Test đủ 5 tầng, phủ 12 quy tắc nghiệp vụ (danh sách test cụ thể ở spec 05 mục 13.5).
+V16 local clearance storage and lock-time expiry authorization now exist (2026-10-02): exact
+outpatient target/patient/episode, event and immutable clearance semantic dedupe, durable PENDING
+before prescription, exact source instants and caller-transaction-required verification. A grant
+authorizes only; no automatic dispense or payment receipt. No V1 listener/writer is enabled.
+The V0 executor rejects V1 and authorization denial bypasses the legacy stock failure/compensation
+writer. V0 reservation expiry is checked after all stock locks. Unit tests pass; V16 PostgreSQL
+verification remains OPEN because Docker fails to start (see latest plan evidence).
+
+Still required: Billing grant-time/expiry/revocation approval, medical-discharge/transfer/freshness eligibility,
+V1 create/dispense/lifecycle outbox wiring and its complete failure classification,
+producer/consumer same-byte approvals, Rabbit/E2E and rollout. Các kernel offline không đủ để bật
+V1 writer hoặc quyền xuất thuốc; xem P-02/P-03 và active Huy handoff.
+
+V17 bổ sung immutable historical name snapshot và explicit exact terminal business time trên Rx/slip
+(không lấy audit updated_at làm business time), pure V1 factory, mandatory-transaction capture hook
+và held writer trong outbox hiện có. Hook được internal V1 outpatient executor gọi trong stock
+transaction, không được public API/legacy workflow gọi. V1 rows có delivery
+hold được DB check cưỡng chế, một created/một terminal semantic key; dispatcher không claim,
+admin replay không mở hold và retention không xóa pending. Legacy V0 defaults/wire giữ nguyên.
+Cancel/failure/late-payment V0 chặn V1 trước effect; expiry V0 bỏ qua V1. Internal outpatient executor
+khóa Rx/slip → sorted drug/reservations → clearance; fresh time sau mọi authorization wait/write
+kiểm lại grant/TTL/drug expiry trên toàn bộ lines trước effect. Stock/reservation/Rx/slip/exact time/
+held filled/stock-low outbox cùng transaction; lỗi rollback, không V0 filled/receipt/refund.
+Retry chỉ trả matching Rx/slip và held filled proof. V1 create/admission/cancel/expiry/failure
+orchestration, public/live wiring, reviewed activation migration/cutover và PG verification vẫn OPEN.
 
 ## 12. Care-finance và nội trú — contract đích
 
 Prescription/dispense phải có `careContext = OUTPATIENT | ADMISSION`.
+
+The current create-request boundary keeps V0 requests unchanged and requires an explicit
+`careContractVersion=1` plus complete context/episode/price fields for V1; partial V1 metadata is
+rejected instead of being interpreted as V0. V1 requests currently fail closed before stock or
+outbox effects until authoritative contracts/public activation are approved; the internal held
+outpatient creation/stock/terminal writers now exist, but are not public adapters. The legacy
+`payment.completed` consumer only authorizes V0 prescriptions; it rejects V1 before claiming a
+payment receipt.
+
+Admission projection hiện là local/offline necessity check, không phải permission live. CLOSED
+được lưu ngay cả khi chưa có start; department chỉ đến từ exact matching start. Source timestamps
+được lưu thêm dạng ISO để domain giữ nanosecond khi PostgreSQL round microsecond. Medical discharge,
+transfer/freshness vẫn chưa có consumer policy/fixture được chấp thuận nên V1 fence tiếp tục giữ.
 
 - `OUTPATIENT`: giữ saga hiện tại — tạo đơn → Billing tạo phí/yêu cầu thanh toán → clearance hoặc
   compatibility `payment.completed` → cấp thuốc.
@@ -360,3 +395,22 @@ Contract bắt buộc trước khi đổi integration:
 Existing outpatient compatibility and the implemented `prescription.filled.recordId` projection
 remain specified by `CONTRACT-CARE-BILLING-01`, the event catalog, and the Billing/Clinical/Pharmacy
 fixtures.
+
+### Current internal V1 lifecycle slice — 2026-10-02
+
+V18 stores a local create-command fence/receipt; actor/intent fingerprint, prescription/reservations/
+slip and held CREATED commit together. DOCTOR must match signed staff identity, ADMIN delegation
+is explicit in the intent, and authorization is checked before receipt replay. Server drug locks,
+fresh expiry/availability and historical name/price snapshots are mandatory. Same command returns
+the original ID, changed intent conflicts. Public V1 creation stays fail-closed until patient/episode
+authority and producer/consumer acceptance; admission is rejected without approved eligibility.
+
+Internal cancellation requires prescribing DOCTOR/ADMIN, exact whole reservations and persisted
+terminal proof. Expiry evaluates the clock after all reservation locks, not stale batch time. Both
+append one held terminal fact atomically and retry cannot alter the original timestamp/actor/reason.
+Stock-failure recovery is a separate REQUIRES_NEW command after rollback, rechecking current locked
+shortage/expiry and exact clearance. Missing authorization/structure or infrastructure exceptions are
+not FAILED; healthy stock/terminal winner is not overwritten. No V0 receipt/refund, stock decrement
+on failure or fabricated invoice occurs. All five internal lifecycle paths have real PostgreSQL
+rollback/retry/race coverage; the latest clean module evidence is in the Huy plan. Bindings/public
+activation/held delivery remain OFF and cross-owner adjustment acceptance remains OPEN.

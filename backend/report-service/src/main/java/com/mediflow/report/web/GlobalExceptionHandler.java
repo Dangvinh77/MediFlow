@@ -25,6 +25,8 @@ import com.mediflow.common.api.ApiResponse.ApiError;
 import com.mediflow.common.api.ApiResponse.ErrorDetail;
 import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.report.application.exception.ReportDateRangeException;
+import com.mediflow.report.application.exception.ReportPeriodValidationException;
+import com.mediflow.report.application.exception.ReportProjectionUnavailableException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -34,6 +36,16 @@ import jakarta.validation.ConstraintViolationException;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(ReportPeriodValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> periodValidation(ReportPeriodValidationException exception, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(ReportProjectionUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> projectionUnavailable(ReportProjectionUnavailableException exception, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage(), request);
+    }
 
     @ExceptionHandler(ReportDateRangeException.class)
     public ResponseEntity<ApiResponse<Void>> dateRange(ReportDateRangeException exception,
@@ -117,7 +129,8 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ApiResponse<Void>> validationResponse(List<ErrorDetail> details,
                                                                  HttpServletRequest request) {
         return ResponseEntity.badRequest().body(ApiResponse.fail(
-                new ApiError("VALIDATION_ERROR", "Dữ liệu không hợp lệ", details),
+                new ApiError(request.getRequestURI().startsWith("/api/v1/reports/operations/")
+                        ? "REPORT_VALIDATION_ERROR" : "VALIDATION_ERROR", "Dữ liệu không hợp lệ", details),
                 correlationId(request)));
     }
 

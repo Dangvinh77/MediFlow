@@ -265,6 +265,9 @@ public final class SurgeryCase {
         String validReason = requiredText(reason, MAX_REASON_LENGTH, "SURGERY_CANCELLATION_REASON_REQUIRED");
         Instant cancelledAt = required(at, "SURGERY_CANCELLATION_TIME_REQUIRED");
         transition(status, SurgeryStatus.CANCELLED, actor, validReason, correlationId, cancelledAt);
+        // Keep the immutable snapshot row/history, but remove the case's active readiness pointer.
+        this.readinessSnapshot = null;
+        this.readyAt = null;
         this.cancelledBy = actor;
         this.cancellationReason = validReason;
         this.cancelledAt = cancelledAt;

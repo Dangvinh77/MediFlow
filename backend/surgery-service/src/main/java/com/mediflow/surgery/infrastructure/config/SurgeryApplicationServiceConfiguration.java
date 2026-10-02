@@ -1,6 +1,7 @@
 package com.mediflow.surgery.infrastructure.config;
 
 import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
+import com.mediflow.surgery.application.port.in.CancelSurgeryUseCase;
 import com.mediflow.surgery.application.port.in.ManageSurgeryConsentUseCase;
 import com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase;
 import com.mediflow.surgery.application.port.in.UpdateChecklistItemUseCase;
@@ -13,6 +14,7 @@ import com.mediflow.surgery.application.port.out.SurgeryConsentRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryResourceReservationPort;
 import com.mediflow.surgery.application.port.out.SurgeryScheduleRepositoryPort;
 import com.mediflow.surgery.application.service.SurgeryChecklistApplicationService;
+import com.mediflow.surgery.application.service.SurgeryCancellationApplicationService;
 import com.mediflow.surgery.application.service.SurgeryConsentApplicationService;
 import com.mediflow.surgery.application.service.SurgeryPreopApplicationService;
 import com.mediflow.surgery.application.service.SurgeryScheduleApplicationService;
@@ -32,6 +34,15 @@ public class SurgeryApplicationServiceConfiguration {
                                         SurgeryCommandReceiptPort receipts,
                                         SurgeryClockPort clock) {
         return new SurgeryPreopApplicationService(cases, receipts, clock);
+    }
+
+    @Bean
+    CancelSurgeryUseCase cancelSurgeryUseCase(SurgeryCaseRepositoryPort cases,
+                                               SurgeryScheduleRepositoryPort schedules,
+                                               SurgeryResourceReservationPort reservations,
+                                               SurgeryCommandReceiptPort receipts,
+                                               SurgeryClockPort clock) {
+        return new SurgeryCancellationApplicationService(cases, schedules, reservations, receipts, clock);
     }
 
     @Bean

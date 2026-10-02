@@ -14,6 +14,7 @@ import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.DispenseActor;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import java.time.Clock;
 import java.time.Instant;
@@ -147,6 +148,11 @@ public class PaymentApplicationService implements ReactToPaymentUseCase {
         Prescription prescription = prescriptionRepository.findById(command.prescriptionId())
                 .orElseThrow(() -> new PrescriptionNotFoundException(
                         "Không tìm thấy đơn thuốc id=" + command.prescriptionId()));
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            throw new PrescriptionRuleException(
+                    "PHARMACY_CARE_CONTEXT_INVALID",
+                    "payment.completed tương thích chỉ có thể xác nhận đơn thuốc contract version 0");
+        }
         if (!command.patientId().equals(prescription.getPatientId())
                 || !command.departmentId().equals(prescription.getDepartmentId())) {
             throw new PrescriptionRuleException(

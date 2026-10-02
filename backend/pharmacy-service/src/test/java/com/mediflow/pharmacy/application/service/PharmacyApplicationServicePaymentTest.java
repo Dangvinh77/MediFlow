@@ -39,8 +39,12 @@ import com.mediflow.pharmacy.domain.exception.PaymentReceiptRuleException;
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 import com.mediflow.pharmacy.domain.model.PaymentReceipt;
 import com.mediflow.pharmacy.domain.model.DispenseActor;
+import com.mediflow.pharmacy.domain.model.CareEpisode;
 import com.mediflow.pharmacy.domain.model.Prescription;
+import com.mediflow.pharmacy.domain.model.PrescriptionCareContext;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
+import com.mediflow.pharmacy.domain.model.enums.CareEpisodeType;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.DispenseActorType;
 
@@ -175,6 +179,59 @@ class PaymentApplicationServiceTest {
         verify(dispenseUseCase, org.mockito.Mockito.never()).dispenseWithPaymentProof(
                 org.mockito.ArgumentMatchers.eq(prescriptionId), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void onPaymentCompleted_v1Outpatient_rejectsLegacyAuthorizationBeforeReceiptClaim() {
+        assertV1PrescriptionCannotUseLegacyPayment(
+                PrescriptionCareContext.v1(
+                        CareContext.OUTPATIENT,
+                        new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID()),
+                        null,
+                        "MEDICATION-PRICE-01"));
+    }
+
+    @Test
+    void onPaymentCompleted_v1Admission_rejectsLegacyAuthorizationBeforeReceiptClaim() {
+        UUID admissionId = UUID.randomUUID();
+        assertV1PrescriptionCannotUseLegacyPayment(
+                PrescriptionCareContext.v1(
+                        CareContext.ADMISSION,
+                        new CareEpisode(CareEpisodeType.ADMISSION, admissionId),
+                        admissionId,
+                        "MEDICATION-PRICE-01"));
+    }
+
+    private void assertV1PrescriptionCannotUseLegacyPayment(PrescriptionCareContext careContext) {
+        UUID eventId = UUID.randomUUID();
+        UUID prescriptionId = UUID.randomUUID();
+        PaymentCompletedCommand command = command(eventId, prescriptionId);
+        Prescription legacyData = prescriptionFor(command);
+        Prescription v1Prescription = Prescription.restore(
+                prescriptionId,
+                legacyData.getRecordId(),
+                legacyData.getPatientId(),
+                legacyData.getDoctorId(),
+                legacyData.getDepartmentId(),
+                legacyData.getPrescribedDate(),
+                legacyData.getTotalAmount(),
+                legacyData.getLines(),
+                PrescriptionStatus.ACTIVE,
+                null,
+                null,
+                null,
+                Instant.now(),
+                Instant.now(),
+                careContext);
+        when(prescriptionRepo.findById(prescriptionId)).thenReturn(Optional.of(v1Prescription));
+
+        assertThatThrownBy(() -> service.onPaymentCompleted(command))
+                .isInstanceOfSatisfying(PrescriptionRuleException.class,
+                        exception -> assertThat(exception.getCode())
+                                .isEqualTo("PHARMACY_CARE_CONTEXT_INVALID"));
+
+        verifyNoInteractions(paymentReceiptRepo, processedEventPort, dispenseUseCase,
+                latePaymentCompensationService);
     }
 
     /** Payload xung đột cùng eventId phải dừng workflow, không được chạm vào tồn kho. */

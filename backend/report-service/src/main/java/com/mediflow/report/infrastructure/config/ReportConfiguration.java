@@ -6,10 +6,22 @@ import java.time.ZoneId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.mediflow.report.application.mapper.LabOperationalContributionMapper;
+import com.mediflow.report.application.mapper.AdmissionReportFactMapper;
 
 /** Infrastructure wiring for report-specific runtime configuration. */
 @Configuration
 public class ReportConfiguration {
+
+    @Bean
+    AdmissionReportFactMapper admissionReportFactMapper() {
+        return new AdmissionReportFactMapper();
+    }
+
+    @Bean
+    LabOperationalContributionMapper labOperationalContributionMapper(ZoneId reportZoneId) {
+        return new LabOperationalContributionMapper(reportZoneId);
+    }
 
     @Bean
     ZoneId reportZoneId(@Value("${mediflow.report.zone-id:Asia/Bangkok}") String configuredZone) {

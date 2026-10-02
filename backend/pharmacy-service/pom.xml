@@ -15,6 +15,11 @@
     <name>MediFlow Pharmacy Service</name>
     <description>Drugs, prescriptions, dispensing &amp; stock (THUOC, BAN_KE_CP, CHI_TIET_BAN_KE, PHIEU_XUAT). Saga participant.</description>
 
+    <!-- Align the owned Report module's Docker Desktop-compatible test runtime. -->
+    <properties>
+        <testcontainers.version>1.20.6</testcontainers.version>
+    </properties>
+
     <dependencies>
         <!-- Web / JPA / Validation -->
         <dependency>

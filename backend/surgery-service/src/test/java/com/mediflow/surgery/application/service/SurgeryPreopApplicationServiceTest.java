@@ -1,6 +1,7 @@
 package com.mediflow.surgery.application.service;
 
 import com.mediflow.surgery.application.port.in.BeginPreopUseCase;
+import com.mediflow.surgery.application.dto.SurgeryActorIdentity;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
 import com.mediflow.surgery.application.port.out.SurgeryCommandReceiptPort;
@@ -58,7 +59,8 @@ class SurgeryPreopApplicationServiceTest {
         when(clock.now()).thenReturn(NOW);
 
         var outcome = service.begin(new BeginPreopUseCase.Command(
-                caseId, 0, "begin-1", actor, CORRELATION_ID));
+                caseId, 0, "begin-1",
+                new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()), CORRELATION_ID));
 
         assertThat(outcome.commandCode()).isEqualTo("BEGIN_PREOP");
         assertThat(outcome.state()).isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS.name());
@@ -74,12 +76,9 @@ class SurgeryPreopApplicationServiceTest {
     }
 
     @Test
-    void beginPreop_systemActor_rejectsBeforeClaimingReceipt() {
-        BeginPreopUseCase.Command command = new BeginPreopUseCase.Command(
-                UUID.randomUUID(), 0, "begin-system", SurgeryAuditActor.system("clinical-service"),
-                CORRELATION_ID);
-
-        assertThatThrownBy(() -> service.begin(command))
+    void beginPreop_missingHumanIdentity_rejectsBeforeClaimingReceipt() {
+        assertThatThrownBy(() -> new BeginPreopUseCase.Command(
+                UUID.randomUUID(), 0, "begin-missing-actor", null, CORRELATION_ID))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(cases, receipts, clock);
     }
@@ -97,7 +96,8 @@ class SurgeryPreopApplicationServiceTest {
         SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
 
         var replay = service.begin(new BeginPreopUseCase.Command(
-                caseId, 0, "begin-replay", actor, CORRELATION_ID));
+                caseId, 0, "begin-replay",
+                new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()), CORRELATION_ID));
 
         assertThat(replay).isEqualTo(original.asReplay());
         verifyNoInteractions(cases, clock);
@@ -114,7 +114,8 @@ class SurgeryPreopApplicationServiceTest {
         when(cases.lockById(caseId)).thenReturn(Optional.of(surgeryCase));
 
         assertThatThrownBy(() -> service.begin(new BeginPreopUseCase.Command(
-                caseId, 1, "begin-stale", actor, CORRELATION_ID)))
+                caseId, 1, "begin-stale",
+                new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()), CORRELATION_ID)))
                 .isInstanceOf(SurgeryRevisionConflictException.class);
 
         verify(cases).lockById(caseId);
@@ -130,7 +131,8 @@ class SurgeryPreopApplicationServiceTest {
         SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
 
         assertThatThrownBy(() -> service.begin(new BeginPreopUseCase.Command(
-                UUID.randomUUID(), 0, "begin-conflict", actor, CORRELATION_ID)))
+                UUID.randomUUID(), 0, "begin-conflict",
+                new SurgeryActorIdentity(actor.accountId(), actor.verifiedStaffId()), CORRELATION_ID)))
                 .isInstanceOf(SurgeryRevisionConflictException.class);
 
         verifyNoInteractions(cases, clock);

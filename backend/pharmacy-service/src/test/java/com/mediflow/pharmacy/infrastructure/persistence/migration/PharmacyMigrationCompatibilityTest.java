@@ -46,7 +46,15 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("14");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("18");
+        assertThat(tableExists("CARE_PRESCRIPTION_CREATION")).isTrue();
+        assertThat(tableExists("PRESCRIPTION_CLEARANCE")).isTrue();
+        assertThat(tableExists("PRESCRIPTION_CLEARANCE_EVENT")).isTrue();
+        assertThat(tableExists("PRESCRIPTION_CLEARANCE_TARGET")).isTrue();
+        assertThat(constraintExists("PRESCRIPTION_CLEARANCE", "ck_clearance_source_times")).isTrue();
+        assertThat(tableExists("ADMISSION_MEDICATION_CONTEXT")).isTrue();
+        assertThat(tableExists("ADMISSION_MEDICATION_EVENT")).isTrue();
+        assertThat(constraintExists("ADMISSION_MEDICATION_CONTEXT", "ck_admission_medication_source_time")).isTrue();
         assertThat(tableExists("PAYMENT_RECEIPT")).isTrue();
         assertThat(tableExists("PHARMACY_SCHEDULER_LEASE")).isTrue();
         assertThat(columnExists("PHARMACY_SCHEDULER_LEASE", "LEASE_TOKEN")).isTrue();
@@ -360,7 +368,7 @@ class PharmacyMigrationCompatibilityTest {
                 + "AND tc.constraint_type = 'FOREIGN KEY' "
                 + "AND (ccu.table_schema <> 'public' OR ccu.table_name NOT IN "
                 + "('drug', 'prescription', 'prescription_line', 'dispense_slip',"
-                + " 'stock_reservation', 'stock_adjustment'))";
+                + " 'stock_reservation', 'stock_adjustment', 'prescription_clearance_target'))";
         return queryInt(sql);
     }
 

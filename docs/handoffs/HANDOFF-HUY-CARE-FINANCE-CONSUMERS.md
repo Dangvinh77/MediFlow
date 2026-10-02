@@ -12,8 +12,8 @@ and [Report V2](../eproject_general_plan/backend-spec/care-finance-v2/08-report.
 implementation behind `mediflow.features.care-finance-v2=false`; this is not permission to activate
 unverified consumers. Pharmacy now has a guarded V1 care-context model, and Report has a guarded
 version-1 envelope decoder for Clinical/Lab/Inpatient facts. The live paths still use legacy Pharmacy
-payment proof and invoice-keyed Report contributions, and Huy's tests do not yet consume Vinh's
-canonical fixture bytes. Billing still has no classified transaction, clearance or settlement
+payment proof and invoice-keyed Report contributions. Huy's offline tests now read exact Vinh
+fixture bytes; local projection/kernel evidence is detailed below. Billing still has no classified transaction, clearance or settlement
 producer. Inpatient now publishes the approved start/discharge/close lifecycle facts, but not bed
 transfer/release/capacity facts. These additions reduce the local implementation gap without
 establishing cross-owner acceptance or permission to enable the flags.
@@ -31,15 +31,19 @@ establishing cross-owner acceptance or permission to enable the flags.
   allocation/release, multi-department allocation or settlement revision/supersedes data required by
   Report's equations. Decide gross versus net cash and receivable balance versus daily movement;
   partial completed receipts need a fact even when they do not grant operational clearance.
-- Report's proposed uniqueness includes eventId and does not by itself prevent a repeated business
-  operation with a new eventId. Replay also needs a durable source and a processing ledger isolated
-  from the live inbox; do not truncate live projections to satisfy the rebuild requirement.
+- Report V6 now treats `eventId` as delivery provenance and has a local semantic-key shape
+  (`sourceType + sourceId + sourceRevision + contribution/metric type + department scope`) so a new
+  eventId cannot by itself reapply the same operation. Producers still need to identify which exact
+  authoritative IDs/revisions populate those fields, and correction/supersedes semantics remain
+  open. V2 has an offline operational writer/kernel, no active mapper/listener. Replay also needs a durable finite source and a processing
+  ledger isolated from the live inbox; do not truncate live projections to satisfy rebuild.
 - Admission started/closed do not provide bed transfer/release/capacity facts. Administrative close
   duration cannot silently become medical LOS or bed occupancy; missing close dimensions may only
   come from the exact stored admission source, never REST enrichment or patient inference.
-- Pharmacy V14 must reconcile CURRENT record_id NOT NULL with the nullable V2 request and preserve
-  the legacy prescribedDate contract. Pending early-clearance/close-before-start storage and V2
-  cancelled/expired payloads are not supplied by copying the target DDL/event table unchanged.
+- Pharmacy V14 already reconciles nullable V1 recordId with required V0 recordId and preserves
+  prescribedDate. V15 implements close-before-start storage; five V1 proposal DTO/fixtures now
+  include cancelled/expired payloads. Early clearance, medical discharge/transfer/freshness,
+  authorization fence and V1 writer/consumer approval remain open.
 - Surgery ready/completed/cancelled payloads must match Notification planned-time requirements,
   Inpatient clinical summary and Report dimensions/category requirements. Target operations Report
   permits DOCTOR; CURRENT Gateway reports route only permits ADMIN/MANAGER.
@@ -65,9 +69,13 @@ transfer/release/capacity facts and LOS semantics, and a durable replay/cutover 
 transfer, release, capacity or Surgery event may be inferred from the existing admission events.
 
 Huy's current Report envelope decoder recognizes `medicalrecord.completed`, `admission.started`,
-`admission.closed` and `lab.result.created`, but its decoder tests still use locally constructed
-samples. Huy should copy/read the canonical producer fixtures named below and add projection-level
-duplicate/out-of-order assertions before changing the feature flag or declaring D10/D11 accepted.
+`admission.closed` and `lab.result.created`. Decoder tests now read exact producer bytes for Clinical
+`medicalrecord.completed.v1`, Lab outpatient `lab.result.created.v1`, Lab admission
+`lab.result.created.admission.v1`, and Inpatient `admission.started.v1`/`admission.closed.v1`; the Lab
+admission case preserves its explicit `careEpisodeId` separately from `recordId`, and both Inpatient
+events preserve the exact `admissionId`. This is local decoder evidence only: no V2 Report
+listener/projector is active, and projection-level duplicate/out-of-order assertions plus owner
+fixture acceptance remain required before changing the feature flag or declaring D10/D11 accepted.
 
 ## Lab producer evidence — 2026-09-28
 
@@ -95,6 +103,116 @@ the real consumer test and maps the Lab, admission, patient and result-version i
 patient-based inference. Report still needs its own same-fixture decoder/projection acceptance test;
 this evidence does not enable any feature flag or close D10/D11.
 
+## Huy local implementation evidence — 2026-10-01
+
+- Pharmacy: `AdmissionLifecycleDecoder` consumes exact Inpatient started/closed fixture bytes.
+  Domain/application/V15 JDBC tests prove close-before-start survives restart, no late reopen,
+  exact patient/department checks, semantic duplicates, conflict rollback, concurrent start/close
+  and source nanosecond preservation. No queue binding or V1 dispense activation was added.
+- Pharmacy proposal fixtures: `backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/`
+  contains all five lifecycle shapes, including exact `dispenseId` and cancelled/expired reasons.
+  They round-trip through the real offline codec. Lộc/Vinh/Notification must confirm the same bytes,
+  context/source/adjustment rules and V0/V1 cutover; these are not live producer acceptance.
+- Report: V6/V7 and typed operational kernel run on PostgreSQL. Same event or source/new event has
+  one effect; changed department/time/payload conflicts; both scopes and journal roll back together;
+  concurrent first-scope upserts preserve totals. Correction revision is not blindly counted again.
+  No actual producer-to-metric mapper/listener/API was activated.
+- Huy chooses minimal accepted-input operational journal from activation as a local replay source.
+  It stores metadata and aggregate inputs, not clinical/results payloads; no automatic purge or
+  public read access. Pre-activation history still needs producer export. Isolated generations,
+  financial pending/reversals, catch-up/watermark and read cutover remain Huy implementation tasks,
+  not proof that D11 is accepted.
+- Full regression evidence and remaining local/contract task split are recorded in the Huy plan.
+
+## Huy local continuation — 2026-10-02
+
+- Pharmacy has consumer-local clearance storage (V16), immutable event/clearance dedupe and durable
+  PENDING grants arriving before the prescription. Huy chooses AUTHORIZE ONLY: no auto-dispense,
+  legacy receipt or invented financial compensation. The caller-transaction-only check matches exact
+  V1 outpatient prescription/patient/episode and uses time after authorization lock waits. The V0
+  executor rejects V1; authorization denial never enters its stock-failure compensation writer.
+  The V1 stock/lifecycle writer and Rabbit binding remain off.
+- **Lộc:** supply actual PRESCRIPTION clearance producer bytes and confirm immutable grant time
+  on republish (the current contract command uses envelope occurredAt), nullable/exclusive expiry,
+  revocation/replacement and adjustment semantics. Consumer inline tests are specification examples,
+  not a replacement Billing fixture. Wrong purpose/unrelated targets/episode/patient must fail with
+  no stock/receipt/refund effect. Amount remains a Billing snapshot, not equal-by-assumption to Rx total.
+- Report now has an offline Lab mapper using actual labId/resultVersion/requesting department,
+  episode and completedAt. Source revision 1 maps to LAB_TESTS once in department/hospital scopes;
+  missing fields fail without fallback. Completion date follows configured Report timezone, not
+  republish or performedDate. No queue binding or API is enabled.
+- **Vinh:** clarify initial imported completion versus correction/replacement for Lab source revisions.
+  The actual admission fixture carries resultVersion=3; it is currently rejected, not recast as
+  envelope version 1. Clinical/Pharmacy facts without accepted business revision still require an
+  explicit source-operation contract before their mapper is activated. Do not invent those fields.
+- New PostgreSQL tests are present for clearance pending/reload/rollback/race and actual Lab bytes
+  through both scopes. They have not run in this turn: Docker startup failed at dockerInference.
+  Current unit tests do not close real DB, producer-owner, replay or end-to-end acceptance gates.
+
+## Huy held lifecycle / finite replay continuation — 2026-10-02
+
+- Pharmacy V17 now has historical name snapshots, explicit exact terminal business times,
+  a pure five-event factory and a caller-transaction-required capture hook from locked prescription/
+  slip evidence. The internal V1 writer stores immutable bytes in the existing outbox, **held** by
+  DB constraint and dispatcher/lease guards. One creation and one terminal outcome are permitted;
+  replay never enables held bytes. Only the internal V1 outpatient stock executor now invokes the
+  hook; no public/legacy workflow or listener activates it. Legacy lifecycle
+  writers do not downgrade V1 to V0. This adds local implementation, not consumer acceptance.
+- Consumers still review the five proposal fixtures under Pharmacy `contracts/care-finance-v1/`.
+  Huy's hold is not a live publication promise or a finalized financial adjustment/refund contract.
+  Activation needs coordinated same-byte acceptance and a reviewed migration/cutover; do not enable
+  rows manually after pulling, or treat a rejected/held event as successfully consumed live V2.
+- Report V8 provides an internal finite operational rebuild from a frozen committed journal
+  manifest. Isolated generations, bounded resume, shared pure planner/snapshot codec and final
+  fact/scope reconciliation exist. VERIFIED means equality with that finite manifest only; it does
+  not prove pre-activation coverage, financial/pending projections, catch-up or live read readiness.
+  No read pointer, V2 API or listener changed. Those remaining local tasks are still Huy's work.
+- New PostgreSQL writer/replay/nanosecond-reload tests are present but VERIFY OPEN: Docker was
+  unavailable in this run. Unit/static/architecture regression is recorded in the plan. Producer
+  approvals, real DB/broker verification and E2E gates are still OPEN, not closed by the held writer.
+
+## Huy internal outpatient / admission pending continuation — 2026-10-02
+
+- Pharmacy now has an internal V1 outpatient transaction joining exact clearance, whole-stock/
+  reservation locks, fresh grant/TTL/drug expiry checks, Rx/slip exact business proof and held filled
+  bytes. Staff/account command is required; it never auto-dispenses or invokes V0 receipt/refund/
+  filled/failure compensation. Repeat command requires matching persisted AND held terminal proof.
+  Public API/payment/listener stays unchanged. Creation/admission/cancel/expiry/failure orchestration,
+  real PG rollback/race evidence and same-byte Billing/consumer approvals still gate live activation.
+- Report V9 stores minimal exact start/administrative-close evidence with atomic event claim and
+  admission row fence. Close-before-start is durable pending, then paired only by exact admission/
+  patient; department comes solely from that start. Exact source nanos are retained; changed
+  department/time/proof/patient or chronology conflicts cannot become additional operations.
+  This evidence does NOT emit admission counts, medical LOS or bed occupancy. No listener/API is on.
+- **Vinh:** the actual started/closed fixtures lack business source revision. Confirm authoritative
+  initial operation/revision plus correction/supersedes policy before Report metric mapping; envelope
+  `version=1` is not a business revision. Keep medical discharge distinct from administrative close;
+  approve metric/time/rounding semantics and transfer/capacity facts separately. The local pending
+  store does not close those contract requirements or require cross-service REST enrichment.
+- New stock/pending/upgrade tests are written, but PostgreSQL runtime verification remains OPEN
+  while Docker engine is unreachable. Latest unit/static/architecture counts are in the Huy plan.
+
 ## Close criteria
+
+### Current local completion slice — 2026-10-02
+
+- Huy now has V18 internal outpatient creation receipts and all five held lifecycle mutation paths
+  (create/filled/cancel/expire/definitive stock failure). Actor/intent replay, rollback and terminal
+  concurrency are tested on actual PostgreSQL. Public V1 creation/payment/listeners remain closed;
+  admission still needs authoritative eligibility. Lộc/Vinh/consumers must approve exact proposed
+  bytes/adjustments, grant time/revocation and patient/episode authority before public wiring/delivery.
+- Report adds V10 empty accepted finite-snapshot publication and two default-off aggregate operations
+  read routes. Period/zone/metric/generation coverage gates distinguish unavailable from covered zero.
+  VERIFIED replay does not create publication, cover pre-activation history or catch up live facts.
+  Do not insert publication or enable flags by hand. Counts/duration snapshot is not full target
+  medical LOS/occupancy/surgery categories/finance; no production publication writer is present.
+- Docker is available again; real local PostgreSQL/Rabbit regression evidence is now in the plan
+  and the linked completion assessment. Prior “Docker unavailable” entries are dated history, not
+  the current verification state. Passing module tests still does not close owner acceptance/E2E.
+- Vinh: source revisions/imported result/correction + medication medical-discharge/transfer/freshness
+  and discharge/LOS/capacity policy. Lộc: exact clearance + classified transactions/allocations/
+  recognition/refunds/settlement/expected finance totals. Hoàng Anh: route-specific Gateway DOCTOR
+  roles. Huy after those inputs: admission/source/finance wiring, controlled publication/live catch-up
+  and cross-service E2E. These remain real tasks, not automatically DONE when this handoff is pulled.
 
 For each row, record approval owner/date/link in the Huy plan, update the canonical care-finance contract and event catalog with the approved version, pass producer/consumer same-byte and failure-path tests, then remove the resolved row or this handoff from the active registry. A proposal, local decoder test or green build alone does not close a row.

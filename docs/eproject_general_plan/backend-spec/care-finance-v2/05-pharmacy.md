@@ -102,6 +102,75 @@ CREATE TABLE ADMISSION_MEDICATION_CONTEXT (
 
 The existing `PROCESSED_EVENT` and transactional `PHARMACY_EVENT_OUTBOX` remain the inbox/outbox.
 
+### Local migration specialization (2026-10-02)
+
+The implemented additive sequence is V14 prescription metadata, V15 admission lifecycle context,
+then V16 `prescription_clearance`, target fences and `prescription_clearance_event`. The clearance
+target references only a local fence, not the prescription table: authoritative grants can arrive
+before a prescription and persist as PENDING. Known prescriptions are matched before storage;
+pending grants must be re-matched under the prescription/authorization transaction before use.
+Clearance ID is immutable and unique for its singular prescription target; event ID separately
+deduplicates deliveries. Conflicting snapshots roll back the delivery claim. ISO source timestamps
+preserve exact nanoseconds independently of PostgreSQL timestamps.
+
+Huy's local choice is AUTHORIZE ONLY: consuming clearance never auto-dispenses or creates a legacy
+payment receipt. The canonical envelope `occurredAt` currently supplies grant time, and optional
+expiry is exclusive. Billing must confirm immutable grant time across republish, nullable expiry
+and any revocation/replacement policy before binding. The amount is a Billing snapshot, not an
+amount Pharmacy recalculates from the prescription. V16 PostgreSQL verification and the V1
+stock/lifecycle writer remain open; all V2 activation remains disabled.
+
+### Local held lifecycle writer (2026-10-02)
+
+V17 adds nullable historical `PRESCRIPTION_LINE.drug_name_snapshot` and nullable
+`lifecycle_at_iso` on prescription/slip. Names are captured server-side on new lines; legacy rows
+are not populated from today's catalogue. Terminal transitions preserve an explicit exact Instant
+independently of mutable `updated_at`; V1 events never substitute an audit timestamp for missing
+business evidence. The factory requires a persisted V1 prescription, matching lifecycle state,
+exact care tuple, stored name/price/items and its recorded business timestamp. Capture joins the
+caller's mutation transaction, locks prescription before slip, verifies terminal state/time/reason,
+and derives filled `dispenseId` from the stored slip, never a caller-supplied or generated source ID.
+
+The existing `PHARMACY_EVENT_OUTBOX` now holds separate version-1 rows. Their `delivery_enabled`
+is false and a DB check forbids enabling them in this schema. Legacy defaults stay version 0/enabled.
+`care_lifecycle_order=0` identifies creation; order 1 identifies exactly one terminal outcome;
+the partial unique key prevents two terminal facts for one prescription. Duplicate bytes/ID are
+idempotent; altered bytes, new ID for the same lifecycle and identity collisions are conflicts,
+not overwrites. A terminal write requires its creation already in the outbox. The dispatcher excludes
+held candidates but retains held critical predecessors as causal blockers. Admin replay cannot
+remove the hold; pending held rows are not removed by published-row retention.
+
+The internal outpatient `DispenseCarePrescriptionUseCase` now calls this hook in one transaction.
+It requires a staff/account command (never auto-dispenses on a grant), locks Rx/slip then every
+drug/reservation in sorted drug order, requires exact matching outpatient clearance and rechecks
+all grant/TTL/drug expiry guards after authorization waits/writes. All lines validate before effects.
+Stock, reservations, Rx/slip terminal proof, held filled bytes and existing stock-low outbox commit
+together; any error rolls back without V0 filled/payment receipt/refund. Retry requires matching
+persisted Rx/slip AND held filled proof and cannot decrement stock or mint another event ID.
+There is no public API, legacy workflow or listener invoking this internal transaction. V0 cancel/
+failure/late-payment reject V1; V0 expiry skips V1. Internal V1 outpatient create/cancel/expiry/stock
+failure now exists as described below. Admission/adjustment/public cutover remain open. Unit tests are not substitutes for
+V17 PostgreSQL compatibility, stock/outbox rollback/race, timestamp reload or owner acceptance.
+
+### Internal held lifecycle completion slice (2026-10-02)
+
+V18 persists a local command receipt/fence. Create validates trusted DOCTOR self/ADMIN delegation
+before replay, requires exact V1 outpatient intent, sorted drug locks, fresh expiry/availability and
+server price/name snapshots. Prescription, whole reservations, pending slip, held CREATED and receipt
+commit together. Duplicate/concurrent intent returns the original Rx; changed actor/intent conflicts;
+failed outbox capture rolls back the receipt too. The public create use case remains fail-closed.
+This internal API does not assert patient/episode authority or admission medication eligibility.
+
+Internal cancel and expiry release a whole order and store matching exact terminal business proof
+with held bytes atomically. Cancel requires the prescribing DOCTOR/ADMIN and bounded reason;
+retry actor/reason must match. Expiry reads the clock after locks and requires all TTLs expired.
+Stock-failure recovery runs in REQUIRES_NEW after rollback and rechecks current locked business
+stock/expiry plus exact clearance. Denial, malformed reservation evidence or infrastructure exception
+cannot become FAILED; healthy stock or a competing terminal outcome is not overwritten. No actual
+stock is incremented/decremented in terminal failure, and no V0 receipt/refund/invoice is created.
+Real PG lifecycle/receipt/concurrency/rollback tests run with Docker; latest evidence is in the plan.
+No listener/public scheduler/route activates these paths; held delivery and feature flag remain OFF.
+
 ## 4. Enums and invariants
 
 ```java

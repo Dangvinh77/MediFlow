@@ -88,6 +88,54 @@ class CareFinanceEnvelopeDecoderTest {
     }
 
     @Test
+    void decode_labAdmissionProducerFixture_preservesExactEpisodeFromProducerBytes() throws IOException {
+        byte[] producerBytes = readProducerFixture(
+                "backend/lab-service/src/test/resources/contracts/lab.result.created.admission.v1.json");
+
+        var decoded = decoder.decode("lab.result.created", producerBytes);
+
+        assertThat(decoded.metadata().producer()).isEqualTo("lab-service");
+        assertThat(decoded.metadata().sourceField()).isEqualTo("labId");
+        assertThat(decoded.metadata().sourceId())
+                .isEqualTo(UUID.fromString("00000000-0000-4000-8000-000000000007"));
+        assertThat(decoded.payload())
+                .containsEntry("careEpisodeType", "ADMISSION")
+                .containsEntry("careEpisodeId", "00000000-0000-4000-8000-000000000008")
+                .containsEntry("recordId", "00000000-0000-4000-8000-000000000003");
+        assertThat(decoded.payload().get("careEpisodeId"))
+                .isNotEqualTo(decoded.payload().get("recordId"));
+    }
+
+    @Test
+    void decode_inpatientLifecycleProducerFixtures_preserveAdmissionIdentityFromExactBytes() throws IOException {
+        byte[] startedBytes = readProducerFixture(
+                "backend/inpatient-service/src/test/resources/contracts/admission.started.v1.json");
+        byte[] closedBytes = readProducerFixture(
+                "backend/inpatient-service/src/test/resources/contracts/admission.closed.v1.json");
+
+        var started = decoder.decode("admission.started", startedBytes);
+        var closed = decoder.decode("admission.closed", closedBytes);
+
+        UUID expectedAdmissionId = UUID.fromString("00000000-0000-4000-8000-000000000021");
+        assertThat(started.metadata().producer()).isEqualTo("inpatient-service");
+        assertThat(started.metadata().sourceField()).isEqualTo("admissionId");
+        assertThat(started.metadata().sourceId()).isEqualTo(expectedAdmissionId);
+        assertThat(started.payload())
+                .containsEntry("admissionId", expectedAdmissionId.toString())
+                .containsEntry("patientId", "00000000-0000-4000-8000-000000000022")
+                .containsEntry("departmentId", "00000000-0000-4000-8000-000000000023")
+                .containsEntry("admittedAt", "2026-09-28T02:10:00Z");
+
+        assertThat(closed.metadata().producer()).isEqualTo("inpatient-service");
+        assertThat(closed.metadata().sourceField()).isEqualTo("admissionId");
+        assertThat(closed.metadata().sourceId()).isEqualTo(expectedAdmissionId);
+        assertThat(closed.payload())
+                .containsEntry("admissionId", expectedAdmissionId.toString())
+                .containsEntry("settlementId", "00000000-0000-4000-8000-000000000027")
+                .containsEntry("closedAt", "2026-10-01T11:00:00Z");
+    }
+
+    @Test
     void decode_unsupportedVersion_rejectsWithoutDowngrade() {
         assertThatThrownBy(() -> decoder.decode("payment.completed",
                 envelope("payment.completed", 2, "billing-service", "transactionId", SOURCE_ID)))

@@ -12,6 +12,7 @@ import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort
 import com.mediflow.pharmacy.domain.exception.DispenseNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DrugNotFoundException;
 import com.mediflow.pharmacy.domain.exception.DispenseRuleException;
+import com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException;
 import com.mediflow.pharmacy.domain.exception.StockReservationRuleException;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.DispenseActor;
@@ -20,6 +21,7 @@ import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -77,10 +79,15 @@ public class DispenseTransactionService {
      */
     @Transactional
     public DispenseDTO execute(UUID prescriptionId, DispenseActor actor, String correlationId) {
-        Instant now = Instant.now(clock);
         Prescription prescription = prescriptionRepo.findByIdForUpdate(prescriptionId)
                 .orElseThrow(() -> new com.mediflow.pharmacy.domain.exception.PrescriptionNotFoundException(
                         "Không tìm thấy đơn id=" + prescriptionId));
+        // This executor still writes flat V0 lifecycle events. Neither a legacy receipt nor a
+        // caller that bypasses the orchestrator may authorize V1 through this path.
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            throw new DispenseAuthorizationException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "V1 dispensing requires the versioned authorization and lifecycle writer");
+        }
         DispenseSlip slip = dispenseSlipRepo.findByPrescriptionForUpdate(prescriptionId)
                 .orElseThrow(() -> new DispenseNotFoundException(
                         "Không tìm thấy phiếu xuất của đơn id=" + prescriptionId));
@@ -113,6 +120,7 @@ public class DispenseTransactionService {
         }
 
         Map<UUID, Drug> lockedDrugs = new LinkedHashMap<>();
+        Map<UUID, StockReservation> lockedReservations = new LinkedHashMap<>();
         for (UUID drugId : sortedDrugIds) {
             Drug drug = drugRepo.findByIdForUpdate(drugId)
                     .orElseThrow(() -> new DrugNotFoundException("Không tìm thấy thuốc id=" + drugId));
@@ -130,18 +138,29 @@ public class DispenseTransactionService {
                 throw new StockReservationRuleException(
                         "RESERVATION_INVALID_TRANSITION", "Giữ chỗ không còn hiệu lực");
             }
-            if (reservation.isExpiredAt(now)) {
-                throw new StockReservationRuleException(
-                        "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + drugId + " đã hết hạn");
-            }
             if (reservation.getQuantity() != requestedQuantity) {
                 throw new StockReservationRuleException(
                         "RESERVATION_QUANTITY_MISMATCH", "Số lượng giữ chỗ không khớp với đơn thuốc");
             }
-            drug.dispenseStock(requestedQuantity, java.time.LocalDate.now(clock));
+            lockedDrugs.put(drugId, drug);
+            lockedReservations.put(drugId, reservation);
+        }
+
+        // A wait on any later stock row can cross an earlier reservation's expiry. Validate the
+        // entire locked set using one fresh timestamp before performing the first stock effect.
+        Instant now = clock.instant();
+        for (StockReservation reservation : lockedReservations.values()) {
+            if (reservation.isExpiredAt(now)) {
+                throw new StockReservationRuleException(
+                        "RESERVATION_EXPIRED", "Giữ chỗ của thuốc id=" + reservation.getDrugId() + " đã hết hạn");
+            }
+        }
+        for (UUID drugId : sortedDrugIds) {
+            var reservation = lockedReservations.get(drugId);
+            lockedDrugs.get(drugId).dispenseStock(reservation.getQuantity(),
+                    now.atZone(clock.getZone()).toLocalDate());
             reservation.markFulfilled(now);
             reservationRepo.save(reservation);
-            lockedDrugs.put(drugId, drug);
         }
 
         lockedDrugs.values().forEach(drugRepo::save);

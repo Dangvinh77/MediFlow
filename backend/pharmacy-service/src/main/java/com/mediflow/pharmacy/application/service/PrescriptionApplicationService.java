@@ -92,6 +92,16 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
     public PrescriptionDTO create(CreatePrescriptionCommand command) {
         CreatePrescriptionRequest request = command.request();
         validateCreator(command);
+        if (!request.isCareContractValid()) {
+            throw new PrescriptionRuleException(
+                    "PHARMACY_CARE_CONTEXT_INVALID",
+                    "Thông tin care context không hợp lệ hoặc thiếu field bắt buộc");
+        }
+        if (Integer.valueOf(1).equals(request.careContractVersion())) {
+            throw new PrescriptionRuleException(
+                    "PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "Prescription V1 chỉ được kích hoạt sau khi clearance/admission projection sẵn sàng");
+        }
         validateNoDuplicateDrugIds(request.lines());
 
         List<ResolvedPrescriptionLine> resolvedLines = request.lines().stream()
@@ -196,7 +206,7 @@ public class PrescriptionApplicationService implements CreatePrescriptionUseCase
         }
         return new ResolvedPrescriptionLine(
                 PrescriptionLine.create(
-                        request.drugId(), request.quantity(), drug.getPrice(), request.dosage()),
+                        request.drugId(), request.quantity(), drug.getPrice(), request.dosage(), drug.getDrugName()),
                 drug.getDrugName());
     }
 

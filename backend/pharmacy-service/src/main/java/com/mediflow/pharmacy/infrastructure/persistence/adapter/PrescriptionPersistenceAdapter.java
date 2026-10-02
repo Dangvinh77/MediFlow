@@ -82,12 +82,13 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 e.getPrescriptionId(), e.getRecordId(), e.getPatientId(), e.getDoctorId(),
                 e.getDepartmentId(), e.getPrescribedDate(), e.getTotalAmount(), lines,
                 e.getStatus(), e.getCancelledAt(), e.getCancelledBy(), e.getCancellationReason(),
-                e.getCreatedAt(), e.getUpdatedAt(), careContext);
+                e.getCreatedAt(), e.getUpdatedAt(), careContext,
+                e.getLifecycleAtIso() == null ? null : java.time.Instant.parse(e.getLifecycleAtIso()));
     }
 
     private PrescriptionLine toDomainLine(PrescriptionLineJpaEntity l) {
         return PrescriptionLine.restore(
-                l.getLineId(), l.getDrugId(), l.getQuantity(), l.getUnitPrice(), l.getDosage(), l.getLineTotal());
+                l.getLineId(), l.getDrugId(), l.getQuantity(), l.getUnitPrice(), l.getDosage(), l.getLineTotal(), l.getDrugNameSnapshot());
     }
 
     private PrescriptionJpaEntity toEntity(Prescription p) {
@@ -111,6 +112,8 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
                 .cancelledAt(p.getCancelledAt())
                 .cancelledBy(p.getCancelledBy())
                 .cancellationReason(p.getCancellationReason())
+                .lifecycleAtIso(p.getLifecycleAt() == null ? null : p.getLifecycleAt().toString())
+                .createdAt(p.getCreatedAt())
                 .build();
         p.getLines().forEach(line -> entity.addLine(toEntityLine(line)));
         return entity;
@@ -120,6 +123,7 @@ public class PrescriptionPersistenceAdapter implements PrescriptionRepositoryPor
         return PrescriptionLineJpaEntity.builder()
                 .lineId(l.getLineId())
                 .drugId(l.getDrugId())
+                .drugNameSnapshot(l.getDrugNameSnapshot())
                 .quantity(l.getQuantity())
                 .unitPrice(l.getUnitPrice())
                 .dosage(l.getDosage())

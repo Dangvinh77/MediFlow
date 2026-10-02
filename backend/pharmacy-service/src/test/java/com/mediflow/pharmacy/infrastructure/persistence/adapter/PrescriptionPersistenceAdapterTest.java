@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({DrugPersistenceAdapter.class, PrescriptionPersistenceAdapter.class})
+@Import({DrugPersistenceAdapter.class, PrescriptionPersistenceAdapter.class, DispenseSlipPersistenceAdapter.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers(disabledWithoutDocker = true)
 class PrescriptionPersistenceAdapterTest {
@@ -50,11 +50,41 @@ class PrescriptionPersistenceAdapterTest {
     @Autowired
     private StockReservationJpaRepository reservationRepository;
 
+    @Autowired private DispenseSlipPersistenceAdapter slipAdapter;
+    @Autowired private jakarta.persistence.EntityManager entityManager;
+
+    @Test
+    void persistedTerminalBusinessTime_survivesNanosAndAuditTimestampChanges() {
+        Drug drug = drugAdapter.save(newDrug("Paracetamol", "1000.00"));
+        var care = PrescriptionCareContext.v1(CareContext.OUTPATIENT,
+                new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID()), null, "RX");
+        var rx = prescriptionAdapter.save(Prescription.create(null, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), List.of(PrescriptionLine.create(drug.getDrugId(), 1, drug.getPrice(), null, drug.getDrugName())), care));
+        var slip = slipAdapter.save(com.mediflow.pharmacy.domain.model.DispenseSlip.createPending(rx.getPrescriptionId()));
+        Instant businessAt = Instant.now().plusSeconds(2).with(java.time.temporal.ChronoField.NANO_OF_SECOND, 123456789);
+        rx.markFulfilled(businessAt);
+        slip.markDispensed(UUID.randomUUID(), businessAt);
+        prescriptionAdapter.save(rx);
+        slipAdapter.save(slip);
+        entityManager.flush();
+        entityManager.clear();
+        var reloaded = prescriptionAdapter.findById(rx.getPrescriptionId()).orElseThrow();
+        var reloadedSlip = slipAdapter.findByPrescription(rx.getPrescriptionId()).orElseThrow();
+        assertThat(reloaded.getLifecycleAt()).isEqualTo(businessAt);
+        assertThat(reloadedSlip.getLifecycleAt()).isEqualTo(businessAt);
+        assertThat(reloadedSlip.getDispensedAt()).isEqualTo(businessAt);
+        assertThat(reloaded.getUpdatedAt()).isNotEqualTo(businessAt);
+        var event = com.mediflow.pharmacy.application.mapper.PrescriptionCareEventFactory.create(UUID.randomUUID(),
+                com.mediflow.pharmacy.application.event.carefinance.PrescriptionCareEvent.EventType.FILLED, "trace",
+                reloaded, reloadedSlip.getDispenseId(), null);
+        assertThat(event.payload().filledAt()).isEqualTo(businessAt);
+    }
+
     @Test
     void save_drugPriceChangesLater_preservesCapturedPrescriptionPrice() {
         Drug drug = drugAdapter.save(newDrug("Paracetamol", "1000.00"));
         PrescriptionLine line = PrescriptionLine.create(
-                drug.getDrugId(), 2, drug.getPrice(), "Ngày 2 lần");
+                drug.getDrugId(), 2, drug.getPrice(), "Ngày 2 lần", drug.getDrugName());
         Prescription prescription = prescriptionAdapter.save(Prescription.create(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -64,7 +94,7 @@ class PrescriptionPersistenceAdapterTest {
                 List.of(line)));
 
         drug.updateInfo(
-                drug.getDrugName(),
+                "Renamed catalogue entry",
                 drug.getActiveIngredient(),
                 drug.getUnit(),
                 new BigDecimal("2500.00"),
@@ -78,6 +108,7 @@ class PrescriptionPersistenceAdapterTest {
                 .orElseThrow();
 
         assertThat(reloaded.getCreatedAt()).isNotNull();
+        assertThat(reloaded.getLines().get(0).getDrugNameSnapshot()).isEqualTo("Paracetamol");
         assertThat(reloaded.getLines()).hasSize(1);
         assertThat(reloaded.getLines().get(0).getUnitPrice())
                 .isEqualByComparingTo("1000.00");

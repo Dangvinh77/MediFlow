@@ -20,6 +20,7 @@ import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
+import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,6 +54,8 @@ public class ExpirePrescriptionTransaction {
         if (prescription == null || !prescription.isActive()) {
             return 0;
         }
+        // Never expire an unsupported V1 prescription through a V0 event/adjustment path.
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) return 0;
 
         DispenseSlip slip = dispenseSlipRepository
                 .findByPrescriptionForUpdate(prescriptionId)

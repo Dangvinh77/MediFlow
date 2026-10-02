@@ -317,14 +317,70 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
 Report tiếp tục là read model thuần event. Nó không trở thành nguồn chuẩn của tiền, admission hay
 surgery và không gọi REST để bù dữ liệu thiếu trong event.
 
+**Trạng thái local 2026-10-01:** V6/V7 đã chạy trên PostgreSQL 16. Local typed operational kernel,
+port/service/JDBC adapter ghi journal, delivery claims, semantic contributions và hai scopes trong
+cùng transaction. Same source/new eventId không cộng lần hai; department/time thay đổi là conflict,
+không trở thành một operation mới. Multi-metric batches khóa theo stable scope order; lỗi scope thứ
+hai rollback toàn bộ. Corrections chưa có reversal contract bị reject thay vì cộng thêm.
+Không có listener/API V2 active; feature flag vẫn false. Offline decoder đọc đúng fixture bytes
+Clinical/Lab/Inpatient. Offline Lab mapper bổ sung ngày 2026-10-02 dùng exact labId/resultVersion,
+requesting department, episode và completedAt theo configured report zone. Không lấy event version
+làm source revision hoặc recordId làm episode; chỉ revision 1 có mapping hiện tại. Actual admission
+Lab fixture revision 3 bị từ chối cho tới khi owner xác nhận first imported completion/correction.
+Unit mapping và PostgreSQL effect tests đã chạy thật khi Docker bật lại; evidence mới nhất ở Huy plan.
+Local tests không thay cho producer mapping acceptance; Clinical/Pharmacy và admission metric
+mappers vẫn OPEN, không tự bổ sung revision thiếu trong wire.
+
+V9 thêm offline minimal admission history và delivery fingerprint ledger. Actual start/close bytes
+map thành immutable exact ID/patient/department/bed/business time/proof; không lưu clinical payload.
+Close-before-start pending được persist; late start chỉ ghép đúng admission/patient, không reopen.
+Row fence serialize concurrent start/close; altered time/department/proof rollback claim. Exact ISO
+time giữ nanos qua reload. Không ghi contributions/counts/medical LOS/occupancy vì source business
+revision và discharge/correction semantics chưa chốt. Unit/static và PG reload/rollback/race cùng
+V8→V9 upgrade/constraints đã được chạy thật; không admission metric/listener mới.
+
 Financial projection phải tách `cashReceived`, `depositLiability`, `earnedRevenue`, `refunds` và
 `outstandingReceivable`. `payment.completed` cho tạm ứng chỉ tăng cash/liability; earned revenue chỉ
 được ghi từ classification/settlement fact do Billing sở hữu. Refund/adjustment tham chiếu
 transaction/contribution gốc để đảo đúng kỳ và department.
 
 Target subscriptions bổ sung: `medicalrecord.completed`, `admission.started`, `admission.closed`,
-`surgery.completed`, `surgery.cancelled`, `payment.refunded`, `settlement.completed`. Mỗi contribution
-dedupe bằng event ID và source business ID; toàn bộ projection phải rebuild được bằng replay.
+`surgery.completed`, `surgery.cancelled`, `payment.refunded`, `settlement.completed`. Trong schema
+V2, `eventId` là delivery provenance; semantic uniqueness dùng `sourceType + sourceId + sourceRevision`
+cùng contribution/metric type và department scope cho financial allocation. Operational V7 còn có
+global source/revision/metric key: một operation không được đếm lại chỉ vì department thay đổi.
+Source IDs/revisions cụ thể, correction/supersedes
+và finance totals vẫn phải theo fixture/contract do producer owner xác nhận. Khóa revision là bắt
+buộc, không có default giả.
+
+Hospital scope dùng `department_id IS NULL` với PostgreSQL `NULLS NOT DISTINCT`, không dùng UUID
+sentinel. Huy chọn minimal accepted-input journal từ activation làm local durable source: chỉ metadata
+và aggregate input snapshots, không lưu full chẩn đoán/kết quả Lab. Không tự purge trước khi retention/
+export được chốt; không expose journal qua API. Lịch sử trước activation chưa rebuild được nếu thiếu
+export. V8 đã có internal finite operational replay vào generation riêng: manifest chốt tập committed
+journal inputs bằng một INSERT SELECT, bounded batch/DB generation lock và atomic progress/effects,
+shared pure planner/codec và đối soát cả fact set lẫn department/hospital scopes. VERIFIED chỉ bằng
+tập manifest, không thay live read pointer. Unit/static và PG snapshot/race/rollback/reconcile pass.
+Financial pending, historical coverage/live catch-up/controlled publication/read cutover vẫn còn
+R-01.4–.7; Rabbit ACK không phải archive. Admission evidence pending không phải admission metric.
+
+### Local accepted finite-snapshot queries — 2026-10-02
+
+V10 adds empty `operational_report_publication`: exact date range, timezone, required metric set,
+accepted-coverage reference and generation ID. VERIFIED replay never creates publication. No
+production publication writer/admin API exists; manual SQL is not an activation or approval path.
+Reader requires VERIFIED + all manifest inputs applied and exact accepted period/zone/metrics;
+missing coverage/failed/building snapshot is 404 REPORT_NOT_FOUND, not zero. A covered empty day
+may be zero-filled. Values come from immutable generation scopes, not changing live tables.
+
+Two gated aggregate snapshot routes follow target `/operations/daily` and `/operations/surgery`,
+ADMIN/MANAGER/DOCTOR directly, 1..366 inclusive days, years 2000..2100; invalid input returns 400
+REPORT_VALIDATION_ERROR. DTO includes generationId/reconciledAt/snapshotOnly=true and daily
+camelCase counters. No patient, contact, clinical narrative or consent payload crosses this API.
+Feature defaults false, existing five bindings/three legacy APIs and finance roles unchanged.
+Basic counts/duration are not complete inpatient-day/occupancy/surgical category/finance KPIs.
+Source acceptance, controlled publication/rollback/live catch-up and Gateway roles still gate the
+full target. `report.http`, unit/web/flag/PG coverage and latest clean suite evidence are in the plan.
 
 Mandatory handoff: [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 Không đổi current five-event projection sang semantics mới trước khi Billing/producer fixtures và

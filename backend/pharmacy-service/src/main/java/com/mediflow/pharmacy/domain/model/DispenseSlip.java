@@ -27,6 +27,7 @@ public class DispenseSlip {
     private String failureReason;
     private final Instant createdAt;
     private Instant updatedAt;
+    private Instant lifecycleAt;
 
     private DispenseSlip(
             UUID dispenseId,
@@ -91,6 +92,15 @@ public class DispenseSlip {
                 failureReason, createdAt, updatedAt);
     }
 
+    /** Restores explicit terminal business time independently of the persistence audit timestamp. */
+    public static DispenseSlip restore(UUID dispenseId, UUID prescriptionId, DispenseStatus status,
+            Instant dispensedAt, UUID dispensedBy, DispenseActorType actorType, String failureReason,
+            Instant createdAt, Instant updatedAt, Instant lifecycleAt) {
+        var slip = restore(dispenseId, prescriptionId, status, dispensedAt, dispensedBy, actorType, failureReason, createdAt, updatedAt);
+        slip.lifecycleAt = lifecycleAt;
+        return slip;
+    }
+
     /** Compatibility overload for legacy fixtures that have no actor type. */
     public static DispenseSlip restore(
             UUID dispenseId,
@@ -125,6 +135,7 @@ public class DispenseSlip {
         dispensedActorType = actor.type();
         dispensedAt = timestamp;
         updatedAt = timestamp;
+        lifecycleAt = timestamp;
     }
 
     /** Compatibility overload for call sites that supply an employee id. */
@@ -140,9 +151,10 @@ public class DispenseSlip {
      */
     public void markFailed(String reason, Instant timestamp) {
         requirePending();
+        lifecycleAt = requireTimestamp(timestamp);
         status = DispenseStatus.FAILED;
         failureReason = normalizeReason(reason, "Xuất thuốc thất bại");
-        updatedAt = requireTimestamp(timestamp);
+        updatedAt = lifecycleAt;
     }
 
     /**
@@ -153,9 +165,10 @@ public class DispenseSlip {
      */
     public void markCancelled(String reason, Instant timestamp) {
         requirePending();
+        lifecycleAt = requireTimestamp(timestamp);
         status = DispenseStatus.CANCELLED;
         failureReason = normalizeReason(reason, "Đơn thuốc đã bị hủy");
-        updatedAt = requireTimestamp(timestamp);
+        updatedAt = lifecycleAt;
     }
 
     /**
@@ -165,9 +178,10 @@ public class DispenseSlip {
      */
     public void markExpired(Instant timestamp) {
         requirePending();
+        lifecycleAt = requireTimestamp(timestamp);
         status = DispenseStatus.EXPIRED;
         failureReason = "Giữ chỗ tồn kho đã hết hạn";
-        updatedAt = requireTimestamp(timestamp);
+        updatedAt = lifecycleAt;
     }
 
     /** @return {@code true} khi phiếu còn có thể xuất, hủy hoặc hết hạn */

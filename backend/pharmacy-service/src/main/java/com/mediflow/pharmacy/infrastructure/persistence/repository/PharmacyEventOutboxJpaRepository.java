@@ -44,6 +44,7 @@ public interface PharmacyEventOutboxJpaRepository
             SELECT candidate.*
               FROM PHARMACY_EVENT_OUTBOX candidate
              WHERE candidate.published_at IS NULL
+               AND candidate.delivery_enabled = true
                AND candidate.quarantined_at IS NULL
                AND candidate.available_at <= :now
                AND (candidate.locked_at IS NULL OR candidate.locked_at < :leaseCutoff)
@@ -81,7 +82,7 @@ public interface PharmacyEventOutboxJpaRepository
             update PharmacyEventOutboxJpaEntity e
                set e.publishedAt = :publishedAt, e.lastError = null,
                    e.lockedAt = null, e.lockedBy = null
-             where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null
+             where e.eventId = :eventId and e.lockedBy = :owner and e.publishedAt is null and e.deliveryEnabled = true
             """)
     int markPublishedIfOwned(
             @Param("eventId") UUID eventId,
