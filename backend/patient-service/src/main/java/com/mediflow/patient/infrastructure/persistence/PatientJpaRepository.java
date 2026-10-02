@@ -10,9 +10,11 @@ import java.util.UUID;
 
 public interface PatientJpaRepository extends JpaRepository<PatientJpaEntity, UUID> {
 
+    boolean existsByIdentityNumber(String identityNumber);
+
     @Query("""
             select p from PatientJpaEntity p
-            where :keyword is null
+            where :keyword = ''
                or lower(p.fullName) like lower(concat('%', :keyword, '%'))
                or p.identityNumber like concat(:keyword, '%')
             """)

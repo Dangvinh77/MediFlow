@@ -1,6 +1,6 @@
 ### MediFlow — Patient service (qua gateway :8080) — read/lookup smoke tests
 ###
-### Read/lookup endpoints are live in Phase 3. Write requests remain examples until the write slice is implemented.
+### Read/lookup and CRUD endpoints are live in Phase 4.
 ###
 ### Trước khi chạy:
 ###  - eureka-server (8761) → gateway (8080) → patient-service (8081) đang chạy.
@@ -38,7 +38,7 @@ Authorization: Bearer {{token}}
 GET {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000/exists
 Authorization: Bearer {{serviceToken}}
 
-### Tạo bệnh nhân (future write slice — chưa triển khai)
+### Tạo bệnh nhân (ADMIN hoặc NURSE)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -54,7 +54,7 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Tạo trùng soCmnd (future write slice)
+### Tạo trùng soCmnd (mong đợi 409 PATIENT_CMND_DUPLICATE)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -70,7 +70,7 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Tạo sai Bean Validation (future write slice)
+### Tạo sai Bean Validation (mong đợi 400 VALIDATION_ERROR)
 POST {{host}}/api/v1/patients
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -81,7 +81,7 @@ Content-Type: application/json
   "gioiTinh": "M"
 }
 
-### Cập nhật bệnh nhân (future write slice)
+### Cập nhật bệnh nhân (ADMIN hoặc NURSE; soCmnd không được gửi vì bất biến)
 PUT {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -96,6 +96,6 @@ Content-Type: application/json
   "bhytSo": "01-12345678-9"
 }
 
-### Xoá bệnh nhân (future write slice)
+### Xoá bệnh nhân (ADMIN)
 DELETE {{host}}/api/v1/patients/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}

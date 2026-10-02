@@ -27,8 +27,13 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     }
 
     @Override
+    public Patient save(Patient patient) {
+        return mapper.toDomain(repository.save(mapper.toEntity(patient)));
+    }
+
+    @Override
     public PageResult<Patient> search(String keyword, PageQuery query) {
-        var page = repository.search(keyword == null || keyword.isBlank() ? null : keyword.trim(),
+        var page = repository.search(keyword == null || keyword.isBlank() ? "" : keyword.trim(),
                 PageRequest.of(query.page(), query.size()));
         return PageResult.of(page.getContent().stream().map(mapper::toDomain).toList(),
                 page.getTotalElements(), page.getNumber(), page.getSize());
@@ -37,5 +42,15 @@ public class PatientPersistenceAdapter implements PatientRepositoryPort {
     @Override
     public boolean existsById(UUID patientId) {
         return repository.existsById(patientId);
+    }
+
+    @Override
+    public boolean existsByIdentityNumber(String identityNumber) {
+        return repository.existsByIdentityNumber(identityNumber);
+    }
+
+    @Override
+    public void deleteById(UUID patientId) {
+        repository.deleteById(patientId);
     }
 }

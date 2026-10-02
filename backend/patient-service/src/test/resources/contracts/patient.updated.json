@@ -1,0 +1,10 @@
+{
+  "eventId": "20000000-0000-4000-8000-000000000002",
+  "occurredAt": "2026-09-28T10:05:00Z",
+  "correlationId": "10000000-0000-4000-8000-000000000001",
+  "patientId": "00000000-0000-4000-8000-000000000001",
+  "hoTen": "Nguyen Van A Updated",
+  "email": "a.updated@example.com",
+  "sdt": "0900000001",
+  "diaChi": "Ho Chi Minh City"
+}
