@@ -4,8 +4,9 @@ Master patient index (`PATIENT`) — the system's authoritative source for patie
 
 Reference: [`docs/ai/services/patient.md`](../docs/ai/services/patient.md) · design doc [`EProject/patient-service.html`](../docs/eproject_general_plan/patient-service.html) · implementation spec [`EProject/backend-spec/02-patient.md`](../docs/eproject_general_plan/backend-spec/02-patient.md).
 
-> **Implementation status:** Phase 3 read/lookup slice is implemented and tested. Patient write
-> operations, events and the remaining validation rules are still planned work.
+> **Implementation status:** Patient read/lookup and CRUD/event compatibility slices are implemented
+> and tested. Insurance summary and emergency contact remain intentionally out of scope until their
+> additive contract is approved.
 
 ## Target implementation patterns
 
@@ -546,26 +547,26 @@ human/service JWT authorization, correlation propagation, 404 handling and datas
 The Patient Service is complete when:
 
 - [x] `PATIENT` read schema and migration are implemented.
-- [ ] All database identifiers use English `snake_case`.
-- [ ] All Java/domain names use English terminology.
-- [ ] `Gender` contains exactly `M` and `F`.
-- [ ] DTO and API JSON fields use Vietnamese `camelCase`.
-- [ ] Patient CRUD endpoints are implemented.
-- [ ] `identity_number` uniqueness is enforced.
-- [ ] Email validation is implemented.
-- [ ] `health_insurance_number` validation is implemented.
-- [ ] `date_of_birth` cannot be in the future.
-- [ ] `phone_number` validation is implemented.
-- [ ] Domain invariants cannot be bypassed through setters.
-- [ ] DTO validation returns appropriate HTTP 400 responses.
-- [ ] Domain validation is preserved independently of DTO validation.
-- [ ] `patient.created` is published after transaction commit.
-- [ ] `patient.updated` is published after transaction commit.
-- [ ] `payment.completed` is consumed with log-only behavior.
-- [ ] `PatientRepositoryPort` contains no JPA or Spring Data types.
-- [ ] Pagination conversion is isolated inside `PatientPersistenceAdapter`.
-- [ ] Other services reference patients using bare `patient_id` UUIDs.
-- [ ] No cross-service database access exists.
+- [x] All database identifiers use English `snake_case`.
+- [x] All Java/domain names use English terminology.
+- [x] `Gender` contains exactly `M` and `F`.
+- [x] DTO and API JSON fields use Vietnamese `camelCase`.
+- [x] Patient CRUD endpoints are implemented.
+- [x] `identity_number` uniqueness is enforced.
+- [x] Email validation is implemented.
+- [x] `health_insurance_number` validation is implemented.
+- [x] `date_of_birth` cannot be in the future.
+- [x] `phone_number` validation is implemented.
+- [x] Domain invariants cannot be bypassed through setters.
+- [x] DTO validation returns appropriate HTTP 400 responses.
+- [x] Domain validation is preserved independently of DTO validation.
+- [x] `patient.created` is published after transaction commit.
+- [x] `patient.updated` is published after transaction commit.
+- [x] `payment.completed` is consumed with log-only behavior.
+- [x] `PatientRepositoryPort` contains no JPA or Spring Data types.
+- [x] Pagination conversion is isolated inside `PatientPersistenceAdapter`.
+- [x] Other services reference patients using bare `patient_id` UUIDs.
+- [x] No cross-service database access exists.
 - [x] Domain tests run without a Spring context.
 - [x] Read-slice unit, persistence and web/security tests pass.
 - [ ] Integration tests pass with Testcontainers.

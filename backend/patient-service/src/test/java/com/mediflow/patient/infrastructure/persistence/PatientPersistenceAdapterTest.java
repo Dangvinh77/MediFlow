@@ -2,6 +2,7 @@ package com.mediflow.patient.infrastructure.persistence;
 
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.patient.domain.model.Gender;
+import com.mediflow.patient.domain.model.Patient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -39,5 +40,18 @@ class PatientPersistenceAdapterTest {
         assertThat(adapter.existsById(id)).isTrue();
         assertThat(adapter.search("nguyen", new PageQuery(0, 20)).content()).hasSize(1);
         assertThat(adapter.search("missing", new PageQuery(0, 20)).content()).isEmpty();
+    }
+
+    @Test
+    void savesChecksIdentityAndDeletesPatient() {
+        Patient patient = Patient.create("Nguyen Van C", LocalDate.of(1988, 2, 2), Gender.M,
+                "456", "Hanoi", "0900000002", "c@example.com", null);
+
+        adapter.save(patient);
+
+        assertThat(adapter.existsByIdentityNumber("456")).isTrue();
+        assertThat(adapter.findById(patient.patientId())).isPresent();
+        adapter.deleteById(patient.patientId());
+        assertThat(adapter.findById(patient.patientId())).isEmpty();
     }
 }

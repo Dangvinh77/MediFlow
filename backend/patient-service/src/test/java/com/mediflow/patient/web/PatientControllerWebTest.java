@@ -6,6 +6,9 @@ import com.mediflow.patient.application.dto.response.PatientDTO;
 import com.mediflow.patient.application.dto.response.PatientLookupDTO;
 import com.mediflow.patient.application.port.in.GetPatientUseCase;
 import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
+import com.mediflow.patient.application.port.in.CreatePatientUseCase;
+import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
+import com.mediflow.patient.application.port.in.DeletePatientUseCase;
 import com.mediflow.patient.domain.model.Gender;
 import com.mediflow.patient.infrastructure.config.SecurityConfig;
 import com.mediflow.patient.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
@@ -32,8 +35,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PatientController.class)
@@ -46,6 +53,9 @@ class PatientControllerWebTest {
     @Autowired ObjectMapper objectMapper;
     @MockBean GetPatientUseCase patients;
     @MockBean ReadPatientIdentityUseCase lookup;
+    @MockBean CreatePatientUseCase createPatient;
+    @MockBean UpdatePatientUseCase updatePatient;
+    @MockBean DeletePatientUseCase deletePatient;
 
     @Test
     void humanAccessCanReadPatientAndCorrelationIsPreserved() throws Exception {
@@ -143,6 +153,49 @@ class PatientControllerWebTest {
         String responseCorrelation = objectMapper.readTree(result.getResponse().getContentAsString())
                 .path("correlationId").asText();
         assertThat(responseCorrelation).isEqualTo(result.getResponse().getHeader("X-Correlation-Id"));
+    }
+
+    @Test
+    void nurseCanCreatePatientAndReceivesCreated() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(createPatient.create(any())).thenReturn(dto(id));
+
+        mvc.perform(post("/api/v1/patients")
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "hoTen":"Nguyen Van A",
+                                  "ngaySinh":"1990-01-01",
+                                  "gioiTinh":"M",
+                                  "soCmnd":"001234567890",
+                                  "soDienThoai":"0900000000",
+                                  "email":"a@example.com",
+                                  "bhytSo":"01-12345678-9"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.maBenhNhan", is(id.toString())));
+    }
+
+    @Test
+    void createInvalidDtoReturns400WithFieldDetails() throws Exception {
+        mvc.perform(post("/api/v1/patients")
+                        .header("Authorization", bearer("access", "NURSE", UUID.randomUUID().toString()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"hoTen\":\"\",\"gioiTinh\":\"M\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code", is("VALIDATION_ERROR")))
+                .andExpect(jsonPath("$.error.details").isArray());
+    }
+
+    @Test
+    void adminCanDeletePatient() throws Exception {
+        UUID id = UUID.randomUUID();
+        mvc.perform(delete("/api/v1/patients/{id}", id)
+                        .header("Authorization", bearer("access", "ADMIN", UUID.randomUUID().toString())))
+                .andExpect(status().isNoContent());
+        verify(deletePatient).delete(id);
     }
 
     private String bearer(String type, String role, String subject) {

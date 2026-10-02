@@ -14,6 +14,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -42,6 +43,7 @@ public class OrganizationAuthClient {
     private final OrganizationAuthProperties properties;
     private final CircuitBreaker circuitBreaker;
 
+    @Autowired
     public OrganizationAuthClient(
             WebClient.Builder webClientBuilder,
             JwtTokenService jwt,

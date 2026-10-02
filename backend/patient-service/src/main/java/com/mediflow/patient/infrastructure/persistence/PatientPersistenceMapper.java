@@ -12,4 +12,19 @@ public class PatientPersistenceMapper {
                 entity.getPhoneNumber(), entity.getEmail(), entity.getHealthInsuranceNumber(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
+
+    public PatientJpaEntity toEntity(Patient patient) {
+        return new PatientJpaEntity(
+                patient.patientId(),
+                patient.fullName(),
+                patient.dateOfBirth(),
+                patient.gender(),
+                patient.identityNumber(),
+                patient.address(),
+                patient.phoneNumber(),
+                patient.email(),
+                patient.healthInsuranceNumber(),
+                patient.createdAt(),
+                patient.updatedAt());
+    }
 }

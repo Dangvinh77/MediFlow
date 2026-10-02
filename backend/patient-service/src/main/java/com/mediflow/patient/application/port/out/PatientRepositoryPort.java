@@ -9,9 +9,15 @@ import java.util.UUID;
 
 public interface PatientRepositoryPort {
 
+    Patient save(Patient patient);
+
     Optional<Patient> findById(UUID patientId);
 
     PageResult<Patient> search(String keyword, PageQuery page);
 
     boolean existsById(UUID patientId);
+
+    boolean existsByIdentityNumber(String identityNumber);
+
+    void deleteById(UUID patientId);
 }

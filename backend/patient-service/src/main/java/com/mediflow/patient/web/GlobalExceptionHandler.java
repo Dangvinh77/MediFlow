@@ -3,10 +3,13 @@ package com.mediflow.patient.web;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
 import com.mediflow.common.exception.ResourceNotFoundException;
+import com.mediflow.common.exception.BusinessRuleException;
+import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.patient.application.port.out.CorrelationIdProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,6 +18,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,6 +30,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<ApiResponse<Void>> notFound(ResourceNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    ResponseEntity<ApiResponse<Void>> duplicate(DuplicateResourceException ex) {
+        return build(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessRuleException.class)
+    ResponseEntity<ApiResponse<Void>> businessRule(BusinessRuleException ex) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<ApiResponse<Void>> integrity(DataIntegrityViolationException ex) {
+        return build(HttpStatus.CONFLICT, "PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ResponseEntity<ApiResponse<Void>> validation(MethodArgumentNotValidException ex) {
+        var details = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> new ApiResponse.ErrorDetail(error.getField(), error.getDefaultMessage()))
+                .toList();
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Dữ liệu request không hợp lệ", details);
     }
 
     @ExceptionHandler(DataAccessException.class)
@@ -53,7 +80,12 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message) {
-        return ResponseEntity.status(status).body(ApiResponse.fail(ApiError.of(code, message),
+        return build(status, code, message, java.util.List.of());
+    }
+
+    private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message,
+                                                    java.util.List<ApiResponse.ErrorDetail> details) {
+        return ResponseEntity.status(status).body(ApiResponse.fail(new ApiError(code, message, details),
                 correlationIds.currentOrCreate().toString()));
     }
 }
