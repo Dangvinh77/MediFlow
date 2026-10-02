@@ -198,11 +198,15 @@ class OperationalContributionPostgresTest {
     }
 
     @Test
-    void actualLabVersionThreeBytes_doNotClaimOrMutateUntilCorrectionContractExists() throws Exception {
+    void syntheticLabVersionThree_doNotClaimOrMutateUntilCorrectionContractExists() throws Exception {
         var decoder = new CareFinanceEnvelopeDecoder(new ObjectMapper());
         var mapper = new LabOperationalContributionMapper(ZoneId.of("Asia/Bangkok"));
         var event = decoder.decode("lab.result.created", labFixture("lab.result.created.admission.v1.json"));
-        assertThatThrownBy(() -> service.apply(mapper.map(event))).hasMessageContaining("corrections");
+        var payload = new LinkedHashMap<>(event.payload());
+        payload.put("resultVersion", 3);
+        var unsupportedCorrection = new DecodedCareFinanceEvent(event.metadata(), payload);
+        assertThatThrownBy(() -> service.apply(mapper.map(unsupportedCorrection)))
+                .hasMessageContaining("corrections");
         assertThat(count("operational_event_journal")).isZero();
         assertThat(count("operational_delivery")).isZero();
         assertThat(count("operational_contribution")).isZero();

@@ -39,6 +39,7 @@
 
     <!-- planned care contexts; preliminary foundation only -->
     <module>backend/inpatient-service</module>
+    <module>backend/surgery-service</module>
   </modules>
 
   <properties>
