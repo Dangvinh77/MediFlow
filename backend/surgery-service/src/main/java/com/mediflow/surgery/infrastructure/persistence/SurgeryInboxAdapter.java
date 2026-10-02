@@ -57,7 +57,7 @@ public class SurgeryInboxAdapter implements SurgeryInboxPort {
                 """, (rs, ignored) -> row(rs), event.semanticKey(), event.eventId());
         if (!applied.isEmpty()) {
             StoredEvent prior = applied.getFirst();
-            if (sameBusinessIdentity(prior, event)) {
+            if (sameEventContent(prior, event)) {
                 jdbc.update("""
                         UPDATE surgery_inbox SET status = 'APPLIED', applied_at = ?
                         WHERE event_id = ?

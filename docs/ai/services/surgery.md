@@ -1,9 +1,9 @@
 # Service: surgery
 
-**Status:** approved bounded context; platform foundation and initial internal domain core exist, cross-service contracts remain open
+**Status:** approved bounded context; shared runtime foundation and initial internal domain core exist, cross-service contracts remain open
 **Owner:** Huy (`LQHuy0210`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
-**Planned module:** `backend/surgery-service/` · **Port:** 8091 · **Database:** `mediflow_surgery` · **Base path:** `/api/v1/surgery`
+**Module:** `backend/surgery-service/` · **Port:** 8091 · **Database:** `mediflow_surgery` · **Base path:** `/api/v1/surgery`
 
 ## Bounded context
 
@@ -112,9 +112,12 @@ the local cancellation API slice on 2026-10-01, the module suite passed 141 test
 Docker-dependent tests skipped because no Docker daemon was available. After adding the pre-op API and
 business-route feature-gate test on 2026-10-01, the full suite passed 147 tests with 32 Docker-dependent
 tests skipped; focused pre-op application/API/security/architecture tests passed 24/24 and feature-gate
-test passed 1/1. These are internal foundations, not an activated workflow. PostgreSQL behavior for the
-new cancellation and pre-op command paths, root-reactor and Gateway integration are not verified.
-See the current Huy plan for the exact verification scope.
+test passed 1/1. On 2026-10-02, shared integration registered the module in the root reactor, provisioned
+`mediflow_surgery` for fresh environments, and added its Compose runtime. The full 147-test Surgery
+suite then passed with PostgreSQL and RabbitMQ available and no skipped tests. Compose verification
+confirmed health on `8091`, Flyway V1, Eureka `UP`, and connections only to the owned database. These
+are internal foundations, not an activated workflow. The Gateway route and cross-service business
+contracts remain open. See the current Huy plan for the exact verification scope.
 
 ## Events
 
@@ -154,8 +157,8 @@ not just a local mock. V1 has no emergency override, post-start abort or result 
 The initial-domain implementation passed 30 tests; the current full module-local suite passed 128 tests
 with PostgreSQL 16.14 migration/JPA/reliability/race and RabbitMQ publisher confirm/return verification
 on 2026-09-29. This Rabbit test covers generic transport only, not an approved Surgery event contract.
-Root-reactor and Gateway integration are not yet verified. Shared root Maven registration,
-database/Compose wiring and Gateway routing are tracked separately in the registered bootstrap
-handoff and must be done by their assigned owners. Add same-version producer/consumer fixtures and
+Root-reactor, fresh/existing database bootstrap and Compose/Eureka integration were verified on
+2026-10-02. Gateway routing remains tracked in the registered bootstrap handoff and must be done by
+its assigned owner. Add same-version producer/consumer fixtures and
 contract tests before enabling any integration. Status remains `DESIGN_READY` while any required
 producer/consumer is missing.

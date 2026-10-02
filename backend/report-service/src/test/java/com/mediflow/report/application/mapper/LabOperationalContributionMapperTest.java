@@ -39,11 +39,14 @@ class LabOperationalContributionMapperTest {
     }
 
     @Test
-    void map_actualAdmissionVersionThreeFixture_rejectsUntilCorrectionPolicyExists() throws IOException {
+    void map_syntheticResultVersionThree_rejectsUntilCorrectionPolicyExists() throws IOException {
         var event = fixture("lab.result.created.admission.v1.json");
         assertThat(event.metadata().version()).isOne();
-        assertThat(event.payload().get("resultVersion")).isEqualTo(3);
-        assertThatThrownBy(() -> mapper.map(event)).hasMessageContaining("corrections");
+        assertThat(event.payload().get("resultVersion")).isEqualTo(1);
+        var payload = new LinkedHashMap<>(event.payload());
+        payload.put("resultVersion", 3);
+        var unsupportedCorrection = new DecodedCareFinanceEvent(event.metadata(), payload);
+        assertThatThrownBy(() -> mapper.map(unsupportedCorrection)).hasMessageContaining("corrections");
     }
 
     @Test
