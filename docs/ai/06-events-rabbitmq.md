@@ -66,7 +66,7 @@ Publish an event whenever a service **changes its own state and other contexts m
 | `stock.low` | pharmacy | notification/ops | current |
 | `admission.deposit.requested` | inpatient | billing, notification | planned |
 | `admission.started` | inpatient | billing, notification, report | planned |
-| `discharge.medically.approved` | inpatient | billing | planned |
+| `discharge.medically.approved` | inpatient | billing, pharmacy | planned; ends normal admission medication eligibility but does not administratively close |
 | `admission.closed` | inpatient | notification, report | planned |
 | `surgery.requested` | clinical/inpatient | surgery, billing | planned |
 | `surgery.ready` | surgery | inpatient, notification | planned |

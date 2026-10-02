@@ -326,7 +326,8 @@ Không có listener/API V2 active; feature flag vẫn false. Offline decoder đ�
 Clinical/Lab/Inpatient. Offline Lab mapper bổ sung ngày 2026-10-02 dùng exact labId/resultVersion,
 requesting department, episode và completedAt theo configured report zone. Không lấy event version
 làm source revision hoặc recordId làm episode; chỉ revision 1 có mapping hiện tại. Actual admission
-Lab fixture revision 3 bị từ chối cho tới khi owner xác nhận first imported completion/correction.
+Lab fixture nay là first-completion revision 1 đúng với producer; imported completion/correction
+vẫn bị từ chối cho tới khi có contract riêng.
 Unit mapping và PostgreSQL effect tests đã chạy thật khi Docker bật lại; evidence mới nhất ở Huy plan.
 Local tests không thay cho producer mapping acceptance; Clinical/Pharmacy và admission metric
 mappers vẫn OPEN, không tự bổ sung revision thiếu trong wire.
@@ -335,8 +336,9 @@ V9 thêm offline minimal admission history và delivery fingerprint ledger. Actu
 map thành immutable exact ID/patient/department/bed/business time/proof; không lưu clinical payload.
 Close-before-start pending được persist; late start chỉ ghép đúng admission/patient, không reopen.
 Row fence serialize concurrent start/close; altered time/department/proof rollback claim. Exact ISO
-time giữ nanos qua reload. Không ghi contributions/counts/medical LOS/occupancy vì source business
-revision và discharge/correction semantics chưa chốt. Unit/static và PG reload/rollback/race cùng
+time giữ nanos qua reload. Canonical contract xem STARTED/CLOSED là singleton operations có implicit
+revision 1, độc lập envelope version. Chưa ghi contributions/counts/medical LOS/occupancy vì duration
+medical-discharge và transfer/release/capacity semantics chưa chốt. Unit/static và PG reload/rollback/race cùng
 V8→V9 upgrade/constraints đã được chạy thật; không admission metric/listener mới.
 
 Financial projection phải tách `cashReceived`, `depositLiability`, `earnedRevenue`, `refunds` và

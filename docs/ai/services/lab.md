@@ -26,7 +26,7 @@ Target migration adds `care_episode_type`, `care_episode_id` and emergency-overr
 | PUT | `/api/v1/lab/{id}/status` | ADMIN, LAB_TECH |
 
 ## Events
-- **Publish:** `lab.request.created` `{labId, patientId, recordId, departmentId, labType, requestedDate}`; `lab.result.created` `{labId, patientId, recordId, departmentId, labType, performedDate, results, conclusion}`.
+- **Publish:** `lab.request.created` `{labId, patientId, recordId, departmentId, labType, requestedDate}`; `lab.result.created` `{labId, patientId, recordId, departmentId, careEpisodeType, careEpisodeId, labType, resultVersion, performedDate, completedAt, results, conclusion, verifiedBy}`.
 - **Subscribe:** `financial.clearance.granted` with `purpose=LAB_TEST` and explicit `labTestIds`
   *(target)*; `payment.completed.labTestIds` remains the compatibility path during migration.
 
@@ -46,6 +46,10 @@ contract with test codes and producer-generated order ID.
    first charge in the target flow.
 7. Repeated clearance/payment events are idempotent by `eventId`; target IDs are never inferred from
    invoice, record or patient.
+8. `resultVersion` is the business result revision, while envelope `version` is schema version. A
+   new V2 test emits its first terminal completion at revision `1`. Compatibility/imported rows at
+   revision `0` are not V2 replay facts; correction/replacement publication remains blocked until an
+   explicit amendment contract exists.
 
 ## Care-finance integration gate
 
@@ -57,7 +61,9 @@ contract with test codes and producer-generated order ID.
   on both sides.
 - Lab publishes deterministic V1 producer fixtures at
   `src/test/resources/contracts/lab.request.created.v1.json` and
-  `src/test/resources/contracts/lab.result.created.v1.json`. Producer tests serialize the real
+  `src/test/resources/contracts/lab.result.created.v1.json`, plus the admission-context result at
+  `src/test/resources/contracts/lab.result.created.admission.v1.json`. Both result fixtures represent
+  the real currently supported first completion with `resultVersion=1`. Producer tests serialize the real
   envelope and assert one clock instant for both envelope and payload timestamps. The
   `mediflow.features.care-finance-v2` flag remains disabled until every affected consumer proves it
   can decode the same fixture bytes and the required failure paths pass.

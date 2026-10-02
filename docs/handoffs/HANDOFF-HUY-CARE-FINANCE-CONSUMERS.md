@@ -20,7 +20,7 @@ establishing cross-owner acceptance or permission to enable the flags.
 
 | Decision | Producer action needed | Huy consumer behavior after contract approval | Acceptance evidence |
 |---|---|---|---|
-| **D08 — admission medication** | V2 selects one slip per prescription, active admission with exact patient/department, and admission charging rather than outpatient prepayment. Vinh must supply lifecycle fixtures and resolve medical-discharge eligibility, transfers/freshness and close-before-start; Lộc supplies cancel/expiry/failure adjustment semantics. | Keep version-0 outpatient unchanged; version-1 outpatient uses exact clearance, admission uses exact eligible lifecycle projection. Never reinterpret `paymentConfirmed`, allow late start to reopen closed admission, or infer IDs. Multiple-dose/returns are outside this V1 target. | Same-byte lifecycle/clearance/prescription fixtures for wrong/closed admission, duplicates, out-of-order/restart, failed/expired/cancelled and late compensation; stock/authorization concurrency and Rabbit tests. |
+| **D08 — admission medication** | V2 selects one slip per prescription, exact patient/department and admission charging rather than outpatient prepayment. Vinh has supplied start/discharge/close fixtures: eligibility ends at medical discharge, and close-before-start never reopens. Vinh still owes transfer/release freshness and cross-department policy; Lộc supplies cancel/expiry/failure adjustment semantics. | Keep version-0 outpatient unchanged; version-1 outpatient uses exact clearance, admission uses exact eligible lifecycle projection. Never reinterpret `paymentConfirmed`, allow late start to reopen closed/medically discharged admission, or infer IDs. Multiple-dose/returns are outside this V1 target. | Same-byte start/discharge/close plus future transfer/release fixtures for wrong/closed/discharged admission, duplicates, out-of-order/restart, failed/expired/cancelled and late compensation; stock/authorization concurrency and Rabbit tests. |
 | **D09 — classified finance** | Lộc provides versioned completed receipt, deposit allocation/release, earned charge/recognition, completed refund and receivable/settlement facts. Specify transaction/allocation/reversal IDs, currency, signed delta versus replacement snapshot, effective period, account/episode and department allocation. | Report projects cash, liability, earned revenue, refund and receivable from explicit source facts. It does not treat an invoice total or deposit as earned revenue, or collapse legal partial transactions by invoice ID. Unknown classification/reference remains pending or rejected according to the agreed contract. | Billing producer and Report consumer decode the same fixture bytes; deposit→recognition→refund and two-partial-payment expected totals reconcile under replay, duplicates and reversed delivery. |
 | **D10 — inpatient/surgery reporting** | Vinh provides admission start/transfer/release/discharge/administrative-close facts and staffed/available-bed capacity if occupancy is wanted; Huy's future Surgery producer supplies completed/cancelled result operation/revision and actual times/items. Agree LOS and complication category semantics. | Report exposes only metrics backed by exact authoritative facts; active-admission count is not bed occupancy, `scheduledAt` is not actual start, and free-text is not a complication code. | Producer fixtures covering transfer across two departments, overnight stay, bed-capacity change, partial abort/correction and late delivery; Report totals and unavailable-vs-zero contract. |
 | **D11 — compatibility/replay** | All producers/consumers agree envelope versioning, field nullability, source business keys, cutover markers, correction revisions and legacy history retention/replay source. Identify which old events coexist with new classified facts. | Pharmacy retains committed legacy outbox bytes; Report retains five current bindings/queries until the cutover is proven. A new generation replays from a durable finite source without deleting live inbox or double-counting old/new finance facts. | Same-byte producer/consumer old/new fixtures, explicit source watermark, deterministic rebuild and live catch-up tests, retention limit and rollback runbook. |
@@ -33,17 +33,19 @@ establishing cross-owner acceptance or permission to enable the flags.
   partial completed receipts need a fact even when they do not grant operational clearance.
 - Report V6 now treats `eventId` as delivery provenance and has a local semantic-key shape
   (`sourceType + sourceId + sourceRevision + contribution/metric type + department scope`) so a new
-  eventId cannot by itself reapply the same operation. Producers still need to identify which exact
-  authoritative IDs/revisions populate those fields, and correction/supersedes semantics remain
-  open. V2 has an offline operational writer/kernel, no active mapper/listener. Replay also needs a durable finite source and a processing
+  eventId cannot by itself reapply the same operation. Lab now supplies `labId + resultVersion` and
+  Inpatient start/close use immutable singleton operation keys with implicit revision 1. Clinical,
+  Pharmacy, Surgery, finance and every future correction/supersedes chain remain open. V2 has an
+  offline operational writer/kernel, no active mapper/listener. Replay also needs a durable finite source and a processing
   ledger isolated from the live inbox; do not truncate live projections to satisfy rebuild.
 - Admission started/closed do not provide bed transfer/release/capacity facts. Administrative close
   duration cannot silently become medical LOS or bed occupancy; missing close dimensions may only
   come from the exact stored admission source, never REST enrichment or patient inference.
 - Pharmacy V14 already reconciles nullable V1 recordId with required V0 recordId and preserves
   prescribedDate. V15 implements close-before-start storage; five V1 proposal DTO/fixtures now
-  include cancelled/expired payloads. Early clearance, medical discharge/transfer/freshness,
-  authorization fence and V1 writer/consumer approval remain open.
+  include cancelled/expired payloads. Medical discharge now ends normal medication eligibility;
+  early clearance, transfer freshness/cross-department policy, authorization fence and V1 writer/
+  consumer approval remain open.
 - Surgery ready/completed/cancelled payloads must match Notification planned-time requirements,
   Inpatient clinical summary and Report dimensions/category requirements. Target operations Report
   permits DOCTOR; CURRENT Gateway reports route only permits ADMIN/MANAGER.
@@ -64,7 +66,7 @@ the Inpatient consumer test reads the same `admission.requested` shape. These fi
 for D08/D10/D11, but they do not enable any feature flag or close this handoff until Huy's consumers
 read the same bytes and the remaining acceptance paths pass.
 
-Still open: Pharmacy admission eligibility/freshness and late compensation, Report bed
+Still open: Pharmacy transfer freshness/cross-department eligibility and late compensation, Report bed
 transfer/release/capacity facts and LOS semantics, and a durable replay/cutover policy. No new
 transfer, release, capacity or Surgery event may be inferred from the existing admission events.
 
@@ -141,10 +143,11 @@ this evidence does not enable any feature flag or close D10/D11.
   episode and completedAt. Source revision 1 maps to LAB_TESTS once in department/hospital scopes;
   missing fields fail without fallback. Completion date follows configured Report timezone, not
   republish or performedDate. No queue binding or API is enabled.
-- **Vinh:** clarify initial imported completion versus correction/replacement for Lab source revisions.
-  The actual admission fixture carries resultVersion=3; it is currently rejected, not recast as
-  envelope version 1. Clinical/Pharmacy facts without accepted business revision still require an
-  explicit source-operation contract before their mapper is activated. Do not invent those fields.
+- **Vinh update:** the Lab aggregate and target spec establish `resultVersion` as the business source
+  revision. Both real first-completion fixtures now carry revision 1; envelope version 1 remains the
+  schema version. Imported result publication and correction/replacement revisions remain blocked
+  rather than being inferred. Clinical/Pharmacy facts without accepted business revision still
+  require an explicit source-operation contract before their mapper is activated.
 - New PostgreSQL tests are present for clearance pending/reload/rollback/race and actual Lab bytes
   through both scopes. They have not run in this turn: Docker startup failed at dockerInference.
   Current unit tests do not close real DB, producer-owner, replay or end-to-end acceptance gates.
@@ -184,13 +187,31 @@ this evidence does not enable any feature flag or close D10/D11.
   patient; department comes solely from that start. Exact source nanos are retained; changed
   department/time/proof/patient or chronology conflicts cannot become additional operations.
   This evidence does NOT emit admission counts, medical LOS or bed occupancy. No listener/API is on.
-- **Vinh:** the actual started/closed fixtures lack business source revision. Confirm authoritative
-  initial operation/revision plus correction/supersedes policy before Report metric mapping; envelope
-  `version=1` is not a business revision. Keep medical discharge distinct from administrative close;
-  approve metric/time/rounding semantics and transfer/capacity facts separately. The local pending
-  store does not close those contract requirements or require cross-service REST enrichment.
+- **Vinh update:** `admission.started` and `admission.closed` are immutable singleton operations keyed
+  by routing key plus exact admission ID, with implicit operation revision 1 independent of envelope
+  version. Close-before-start pending/pairing is therefore approved. Medical discharge remains
+  distinct from administrative close; LOS metric/time/rounding and transfer/release/capacity facts
+  remain blocked. The local pending store requires no cross-service REST enrichment.
 - New stock/pending/upgrade tests are written, but PostgreSQL runtime verification remains OPEN
   while Docker engine is unreachable. Latest unit/static/architecture counts are in the Huy plan.
+
+## Vinh producer/contract reassessment — 2026-10-02
+
+| Class | Gap | Authoritative basis and outcome |
+|---|---|---|
+| **A — IMPLEMENTABLE** | Lab first-completion revision | Lab V2 DDL/DTO and start-complete algorithm define aggregate `resultVersion`, `0 → 1`, terminal completion and row locking. Both outpatient/admission producer fixtures now use revision 1; envelope version remains schema-only. |
+| **A — IMPLEMENTABLE** | Pharmacy eligibility at medical discharge | Care-Billing freezes normal charges at `discharge.medically.approved`; Inpatient V1 already emits its real mapper fixture. Pharmacy eligibility ends at that exact fact, before administrative close. |
+| **A — IMPLEMENTABLE** | Start/close identity, revision and out-of-order delivery | Inpatient V1 allows each transition once and emits immutable outbox facts. Business identity is routing key + admission ID, implicit operation revision is 1, and close-before-start may stay pending without a late reopen. |
+| **B — BLOCKED** | Imported Lab completions and correction/replacement | Vinh, as Lab producer owner, must obtain the business decision and define whether imports publish, their initial revision, correction command, supersedes link and immutable snapshot storage. Acceptance requires real-mapper fixtures for an import plus revision-2 correction, and duplicate/stale/conflict tests. Runtime remains terminal-only. |
+| **B — BLOCKED** | Bed transfer/release and placement freshness | Vinh owns the producer decision/fixture; Huy owns Pharmacy/Report acceptance. They must decide whether transfers may cross departments and approve routing keys, source identity/revision, old/new assignment/bed/department and business times. Acceptance requires real producer fixtures for a two-department transfer and release, plus duplicate/reordered/conflict tests read by both consumers. |
+| **B — BLOCKED** | Capacity/occupancy | Vinh owns the capacity producer contract; Huy owns Report acceptance. They must define staffed versus physical capacity, available/out-of-service effects and snapshot-versus-delta semantics. Acceptance requires an approved capacity fixture and transfer/release/capacity sequence whose Report result distinguishes unavailable from zero. |
+| **B — BLOCKED** | LOS | Vinh owns the Inpatient business-time definition; Huy owns Report mapping/acceptance. They must choose medical (`admittedAt → approvedAt`) versus administrative (`admittedAt → closedAt`) duration, inclusivity, timezone/rounding and transfer/death handling. Acceptance requires one overnight fixture with distinct medical-discharge and close times and exact expected duration. |
+| **C — ALREADY COMPLETE** | Inpatient source lifecycle and separation | Producer code and real wire-mapper fixtures already cover start, medical discharge and administrative close; close requires discharge, settlement/override and released bed. No production rewrite is required. |
+| **C — ALREADY COMPLETE** | No invented placement facts | Transfer/release mutate only Inpatient-owned persistence and publish no unapproved routing key. Existing runtime stays unchanged until the category-B contracts are approved. |
+
+This closes Vinh's current Lab revision-1, medication medical-discharge, lifecycle singleton-revision
+and close-before-start decisions. It does not approve Lab amendment history, medical LOS, bed
+occupancy, transfer/release/capacity events or feature activation.
 
 ## Close criteria
 
@@ -209,8 +230,8 @@ this evidence does not enable any feature flag or close D10/D11.
 - Docker is available again; real local PostgreSQL/Rabbit regression evidence is now in the plan
   and the linked completion assessment. Prior “Docker unavailable” entries are dated history, not
   the current verification state. Passing module tests still does not close owner acceptance/E2E.
-- Vinh: source revisions/imported result/correction + medication medical-discharge/transfer/freshness
-  and discharge/LOS/capacity policy. Lộc: exact clearance + classified transactions/allocations/
+- Vinh: imported Lab result/correction, medication transfer freshness/cross-department policy and
+  discharge/LOS/transfer/release/capacity contracts. Lộc: exact clearance + classified transactions/allocations/
   recognition/refunds/settlement/expected finance totals. Hoàng Anh: route-specific Gateway DOCTOR
   roles. Huy after those inputs: admission/source/finance wiring, controlled publication/live catch-up
   and cross-service E2E. These remain real tasks, not automatically DONE when this handoff is pulled.

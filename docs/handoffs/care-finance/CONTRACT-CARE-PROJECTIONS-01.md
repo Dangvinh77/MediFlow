@@ -50,8 +50,8 @@ event includes a transaction/account/episode classification that lets Report dis
 | `medicalrecord.completed` | completed outpatient visits/disposition |
 | `lab.result.created` | completed lab tests by requesting department/date |
 | `prescription.filled` | dispensed prescriptions/items |
-| `admission.started` | admissions and bed occupancy start |
-| `admission.closed` | discharges and length of stay |
+| `admission.started` | admission count and immutable start evidence; not current-bed occupancy |
+| `admission.closed` | administrative-close count/evidence; not medical discharge or bed release |
 | `surgery.completed` | completed surgeries, duration, complications category |
 | `surgery.cancelled` | cancellation count/reason category |
 | `settlement.completed` | recognized totals, balance/refund outcome |
@@ -59,6 +59,34 @@ event includes a transaction/account/episode classification that lets Report dis
 Every contribution is keyed by the source business ID plus event ID so replay/redelivery does not
 double count. Reversal/adjustment events reference the original contribution instead of guessing its
 date or department.
+
+### Operational source identity and revision
+
+- For `lab.result.created`, `labId` is the source business ID and payload `resultVersion` is the
+  business result revision. Envelope `version` is only the wire-schema version. The current Lab V2
+  state machine starts at result revision `0`, emits its first and only supported completed snapshot
+  as revision `1`, and makes `COMPLETED` terminal. Legacy/imported rows remain revision `0` and are
+  not a V2 replay source. Import publication and result correction/replacement are not approved;
+  revisions above `1` must be rejected until that contract and producer fixture exist.
+- An exact redelivery or same `labId + resultVersion` snapshot is idempotent. The same business key
+  with different payload bytes is a contract conflict, not another result. A lower revision is stale
+  only after a future multi-revision contract defines the accepted correction chain; current V1 does
+  not silently apply, recast or reorder unsupported revisions.
+- `admission.started` and `admission.closed` are separate immutable singleton operations. Their
+  business identities are `(admission.started, admissionId)` and `(admission.closed, admissionId)`;
+  each has implicit operation revision `1` because Core V1 permits each transition once and exposes
+  no correction command. This revision is a contract constant, not envelope `version` and not a new
+  payload field. Exact semantic duplicates are idempotent; conflicting snapshots for the same
+  operation are contract errors.
+- `admittedAt`, `approvedAt` and `closedAt` are producer business times. Delivery may be reordered:
+  a close received before its exact start remains pending and may pair only with the same admission
+  and patient. The later start never reopens a closed admission. Medical discharge and administrative
+  close remain distinct facts.
+
+The current events do not define bed transfer, bed release, staffed/available capacity or medical
+LOS. Report must not turn the start bed into current occupancy, administrative `closedAt` into medical
+discharge time, or a missing dimension into zero. Those additions require approved producer events,
+business identity/revision, time/rounding rules and same-byte fixtures.
 
 ## Acceptance criteria
 

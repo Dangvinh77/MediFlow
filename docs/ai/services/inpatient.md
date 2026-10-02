@@ -75,6 +75,11 @@ implemented in the service controller.
 **Publish:** `admission.deposit.requested`, `admission.started`,
 `discharge.medically.approved`, `admission.closed`.
 
+Start, medical discharge and close are immutable singleton operations keyed by routing key plus
+`admissionId`; their implicit business operation revision is `1`. Envelope `version` is schema-only.
+`discharge.medically.approved` ends normal Pharmacy admission-medication eligibility, while
+`admission.closed` remains the later administrative fact.
+
 **Subscribe:** `admission.requested`, `financial.clearance.granted` for ADMISSION_DEPOSIT,
 `surgery.ready`, `surgery.completed`, `surgery.cancelled`, `settlement.completed`, and explicit
 Lab/Pharmacy completion facts needed for the admission timeline.
@@ -90,6 +95,9 @@ Lab/Pharmacy completion facts needed for the admission timeline.
 7. Administrative close requires `settlement.completed` for this admission or an approved debt/
    emergency override ID.
 8. External order/case IDs are never inferred from patient or “latest record”.
+9. `admission.started` carries the initial bed/department snapshot only. Transfer, release and
+   capacity have no approved wire fact, so consumers cannot use the start payload as current
+   placement after a transfer.
 
 ## Mandatory handoffs
 

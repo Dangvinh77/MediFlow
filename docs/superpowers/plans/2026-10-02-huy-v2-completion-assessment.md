@@ -80,18 +80,18 @@ thừa tài liệu, **không được re-certified bằng 639 tests của hai se
 |---|---|---|
 | P-01 | Legacy ổn định theo local regression | Không dùng legacy paid semantics cho V1 |
 | P-02 | Schema/DTO/codec/held lifecycle tốt, internal outpatient creation đã nối | Identity/episode authority, five-event owner approval, public wiring/hold-release rollout |
-| P-03 | Exact clearance và atomic outpatient lifecycle đã kiểm chứng | Admission medication eligibility/policy + live bindings + actual-wire race/DLQ/E2E |
+| P-03 | Exact clearance và atomic outpatient lifecycle đã kiểm chứng | Admission transfer freshness/cross-department policy + live bindings + actual-wire race/DLQ/E2E; medical discharge now ends eligibility |
 | R-01 | Operational journal/pending/replay/reconcile/read gate tốt | Financial/correction journal, export/retention/horizon, live catch-up/controlled publication/rollback |
 | R-02 | Legacy và local operations security pass | Financial controllers sau nguồn tiền đủ; Gateway DOCTOR route do Hoàng Anh |
 | R-03 | Chưa có classified financial business writer/API | Lộc cung cấp đủ transaction/allocation/recognition/refund/settlement amounts/IDs/revisions/equations |
-| R-04 | Lab revision-1 mapper, exact admission evidence, finite snapshot query pass | Accepted source revisions, medical/discharge duration/rounding, Surgery facts/categories, bed/capacity, full KPI wiring |
+| R-04 | Lab revision-1 mapper, exact admission evidence, finite snapshot query pass | Imported/correction revisions, medical/discharge duration/rounding, Surgery facts/categories, bed/capacity, full KPI wiring; first Lab completion and admission singleton revisions are now accepted |
 
 ## 5. Còn 28 leaf Pharmacy/Report: chia đúng trách nhiệm
 
 | Cụm | IDs còn mở | Input/gate | Việc Huy vẫn phải làm sau gate |
 |---|---|---|---|
 | Pharmacy identity/wire/clearance | P-02.2.4, P-02.5.5, P-03.2.3, P-03.5.5 | Lộc/Vinh/consumer owners: clearance immutable time/expiry/revoke, authority, adjustments, same bytes | Eligible/revoke persistence/policies nếu cần, public adapters/consumer/held release + compatibility rollout |
-| Pharmacy admission/runtime | P-03.1.3, P-03.3.2, P-03.4.4, P-03.6 | Vinh: medical discharge/transfer/freshness; G1 fixtures | Admission authorizer/create/dispense/terminal wiring, real producer/consumer races/restart/DLQ/E2E |
+| Pharmacy admission/runtime | P-03.1.3, P-03.3.2, P-03.4.4, P-03.6 | Vinh: transfer freshness/cross-department policy; discharge fixture/eligibility and close-before-start semantics are now defined; G1 consumer acceptance remains | Admission authorizer/create/dispense/terminal wiring, real producer/consumer races/restart/DLQ/E2E |
 | Report money/pending | R-01.2.3, R-01.3.2, R-01.5.3, R-01.6.2, R-03.1…7 | Lộc + producer acceptance: no guessed cash/liability/revenue/receivable equations | Classified writer, pending refund/reversal, financial replay, queries/API và totals/failure matrix |
 | Report history/cutover | R-01.4.2, R-01.7.3 | All producers: source horizon/export/retention/correction | Catch-up/final fence, controlled approved publication, read switch/rollback. V10 loader không làm thay |
 | Report permissions | R-02.3.2 | Hoàng Anh Gateway routes; finance projections | Direct finance role tests + Gateway acceptance với owner |

@@ -233,6 +233,13 @@ public record FinancialClearanceCommand(
 command produce one new immutable `resultVersion` snapshot. `verifiedBy` is taken from the
 authenticated `staffId` claim and never trusted from the request body.
 
+`resultVersion` is the Lab aggregate's business result revision. It is not the envelope schema
+`version`. A new V2 test starts at `0`; the supported completion command increments it to `1` and
+makes the test terminal. Existing compatibility/imported rows keep `0` and are not published as V2
+completion history. No import-publication, correction or replacement command is specified in this
+version; do not synthesize revision `1` for an imported result or emit revision `>1` until an
+approved amendment contract and migration define the source snapshot and supersession rules.
+
 ## 8. Application algorithms
 
 ### Create request
@@ -259,6 +266,8 @@ authenticated `staffId` claim and never trusted from the request body.
 4. Add results only in `IN_PROGRESS`; require `performedDate >= requestedDate`.
 5. Insert immutable result rows, increment `resultVersion`, set conclusion/status `COMPLETED`, and
    append `lab.result.created` in the same transaction.
+6. A second completion is rejected as `LAB_RESULT_FINALIZED`; current V1 does not publish a
+   correction/replacement event.
 
 ## 9. REST endpoints
 
@@ -282,6 +291,10 @@ roles with `@PreAuthorize`; default deny remains active.
 | `lab.request.created` | `labId`, `patientId`, `recordId`, `departmentId`, `careEpisodeType`, `careEpisodeId`, `sourceType=LAB_TEST`, `sourceId=labId`, `priceCode`, `labType`, `requestedAt`, `emergencyOverrideId?` |
 | `lab.result.created` | `labId`, `patientId`, `recordId`, `departmentId`, `careEpisodeType`, `careEpisodeId`, `labType`, `resultVersion`, `results[]`, `conclusion`, `verifiedBy`, `completedAt` |
 
+For `lab.result.created`, the business operation key is `labId + resultVersion`. Current producer
+fixtures therefore use `resultVersion=1` for both outpatient and admission first completions.
+Envelope `version=1` describes the JSON schema only.
+
 Subscribe to:
 
 - `financial.clearance.granted` — target flow;
@@ -294,6 +307,11 @@ Subscribe to:
 - Unique `source_order_id` prevents duplicate materialization of a producer order.
 - Unique inbox `event_id` prevents duplicate clearance/payment application.
 - Result addition locks the test row; concurrent second completion observes terminal status.
+- Outbox retries retain the original event ID and bytes. An exact semantic duplicate for the same
+  `labId + resultVersion` is idempotent; different bytes for that key are a contract conflict.
+- Current V1 has no valid stale/correction chain: consumers reject revision `0` and revisions above
+  `1` rather than treating envelope version as a fallback. Ordering semantics for future revisions
+  remain blocked on the amendment contract.
 - The outbox write shares the aggregate transaction. Publishing directly inside the transaction is
   not the target design.
 - Poison payloads retain `eventId` and `correlationId` in logs/DLQ metadata without patient PII.
@@ -310,6 +328,8 @@ Subscribe to:
 | emergency override is audited | `start_emergency_persistsOverrideWithoutMarkingPaid` |
 | result date is valid | `addResults_beforeRequestedDate_rejects` |
 | concurrent completion is single | `addResults_concurrent_singleResultVersion` |
+| first outpatient/admission completion is revision 1 | `labResultCreatedMatchesCanonicalV1Fixture`, `admissionLabResultCreatedMatchesCanonicalV1Fixture` |
+| finalized V2 result cannot be amended | `recordResults_v2TerminalSnapshot_returnsConflictCode` |
 | diagnosis does not auto-order Lab | `onMedicalRecordCreated_withoutOrder_createsNothing` |
 | compatibility IDs remain explicit | `onPaymentCompleted_explicitLabIds_marksOnlyThoseTests` |
 | role matrix enforced | `labV2Endpoints_roleMatrix` |
