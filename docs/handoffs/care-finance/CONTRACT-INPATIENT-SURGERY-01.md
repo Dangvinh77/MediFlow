@@ -29,12 +29,23 @@ admission.
 |---|---|---|
 | `admission.deposit.requested` | admissionId, patientId, episode fields, suggestedAmount, reason | Billing, Notification |
 | `admission.started` | admissionId, patientId, bedId, departmentId, admittedAt, emergency | Billing, Report, Notification |
-| `discharge.medically.approved` | admissionId, summaryId, approvedBy, approvedAt | Billing |
+| `discharge.medically.approved` | admissionId, patientId, summaryId, approvedBy, approvedAt | Billing, Pharmacy |
 | `admission.closed` | admissionId, settlementId or approved override ID, closedAt | Report, Notification |
 
 `admission.started` requires an active bed assignment and deposit clearance unless an audited
 emergency override exists. `admission.closed` requires medical discharge plus settlement/debt
 resolution.
+
+Core V1 permits each start, medical discharge and administrative close transition once. Start and
+close are immutable singleton operations keyed by routing key plus `admissionId`; their implicit
+business operation revision is `1`, independently of envelope schema `version`. A consumer may hold
+an out-of-order close until the exact matching start arrives, but a late start never reopens it.
+
+`discharge.medically.approved` ends normal admission medication eligibility: the care-finance design
+freezes normal charge intake at medical discharge, and Pharmacy must not create or dispense a new
+admission medication charge after the exact discharge fact. Administrative close remains later and
+separate. A future explicitly approved late clinical adjustment policy may add an exception; none is
+defined in V1.
 
 ## Surgery request and result
 
@@ -59,6 +70,12 @@ ADMISSION. Inpatient medication is posted to the admission account and may be di
 admission policy; it must not reuse the outpatient prescription clearance blindly. Pharmacy events
 retain `prescriptionId`, `patientId`, `departmentId`, item snapshots and correlation.
 
+The active medication window begins at the exact `admission.started` fact and ends at the exact
+`discharge.medically.approved` fact, not at administrative close. Bed transfer effects are not
+defined by these lifecycle events: the start bed/department is an immutable admission snapshot, not
+fresh placement authority. Cross-department transfer eligibility remains blocked until an approved
+transfer/release contract exists.
+
 ## Acceptance criteria
 
 - One referral creates at most one admission under redelivery/concurrency.
@@ -67,3 +84,5 @@ retain `prescriptionId`, `patientId`, `departmentId`, item snapshots and correla
 - Duplicate `surgery.completed` does not duplicate admission notes, charges or reports.
 - Pharmacy never chooses an admission by patient ID; inpatient prescriptions carry `admissionId`.
 - Medical discharge and administrative close remain separate states.
+- Medication creation/dispense after medical discharge is rejected unless a future approved late
+  adjustment contract explicitly permits it.

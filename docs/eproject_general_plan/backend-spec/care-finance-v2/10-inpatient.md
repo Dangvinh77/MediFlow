@@ -686,6 +686,16 @@ available, records actor/reason/time and moves the admission to `CANCELLED` in o
    - audited `DEBT_CLOSE|WAIVER_CLOSE` override.
 5. Set `CLOSED` and append `admission.closed` atomically.
 
+Medical discharge is the end of the normal treatment/charge window. Pharmacy may consume the
+existing `discharge.medically.approved` fact to end admission medication eligibility; it must not
+wait for administrative close. No late clinical charge exception exists in Core V1.
+
+Each start, medical discharge and close transition is an immutable singleton operation keyed by
+routing key plus `admissionId`. Its implicit business operation revision is `1`; envelope `version`
+remains the wire-schema version and is never a lifecycle revision. A consumer may receive close
+before start, retain it as pending, and pair it only with the exact admission/patient. The later
+start cannot reopen the closed admission.
+
 ## 12. REST endpoints
 
 | Method | Path | Request | Roles |
@@ -720,6 +730,10 @@ All events use the standard envelope and `version=1`.
 | `admission.started` | `admissionId`, `patientId`, `bedId`, `departmentId`, `admittedAt`, `emergency`, `emergencyOverrideId?` |
 | `discharge.medically.approved` | `admissionId`, `patientId`, `summaryId`, `approvedBy`, `approvedAt` |
 | `admission.closed` | `admissionId`, `patientId`, `settlementId?`, `approvedOverrideId?`, `closedAt` |
+
+`admission.started` is the admission-time bed/department snapshot. Core V1 does not publish current
+placement, transfer, release or capacity facts. Consumers must not treat its bed as fresh after a
+transfer or reinterpret administrative `closedAt` as medical-discharge time.
 
 Future `surgery.requested` is emitted only after the shared Surgery fixture exists. Core V1 may
 record a Surgery reference but does not invent Surgery payload fields outside the canonical contract.
@@ -776,6 +790,9 @@ not query other services merely to enrich an event.
 - Discharge summary is unique per admission. Settlement events form immutable history; only the
   accepted final settlement ID is copied onto the admission.
 - Outbox event IDs are stable across publisher retries.
+- `admission.started`, `discharge.medically.approved` and `admission.closed` each occur at most once
+  per admission. Same-operation/same-payload redelivery is idempotent; a changed snapshot for the
+  same singleton operation is a contract error, not revision `2`.
 - External status events cannot regress a completed/cancelled order.
 - No command uses “find active admission by patient” as an identifier-selection mechanism.
 
@@ -806,6 +823,9 @@ not query other services merely to enrich an event.
 - PostgreSQL Testcontainers prove partial unique indexes, checks and lock behavior.
 - RabbitMQ Testcontainers prove outbox publication, redelivery, retry and DLQ.
 - Contract fixtures prove Clinical referral, Billing clearance/settlement and external order facts.
+- Lifecycle fixtures prove one exact admission/patient across start, medical discharge and
+  administrative close, with business timestamps in that order; consumers may exercise reversed
+  delivery without changing those source times.
 - Docker E2E covers referral → bed → deposit clearance → admit → treatment → medical discharge →
   settlement → bed release → close.
 

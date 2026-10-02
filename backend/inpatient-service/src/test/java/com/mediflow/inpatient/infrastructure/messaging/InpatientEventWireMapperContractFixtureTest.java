@@ -67,6 +67,24 @@ class InpatientEventWireMapperContractFixtureTest {
         assertMatchesFixture("admission.closed.v1.json", event);
     }
 
+    @Test
+    void lifecycleFixturesKeepExactIdentityAndDistinctOrderedBusinessTimes() throws IOException {
+        JsonNode started = objectMapper.readTree(readFixture("admission.started.v1.json"));
+        JsonNode discharged = objectMapper.readTree(readFixture("discharge.medically.approved.v1.json"));
+        JsonNode closed = objectMapper.readTree(readFixture("admission.closed.v1.json"));
+
+        assertThat(discharged.at("/payload/admissionId")).isEqualTo(started.at("/payload/admissionId"));
+        assertThat(closed.at("/payload/admissionId")).isEqualTo(started.at("/payload/admissionId"));
+        assertThat(discharged.at("/payload/patientId")).isEqualTo(started.at("/payload/patientId"));
+        assertThat(closed.at("/payload/patientId")).isEqualTo(started.at("/payload/patientId"));
+
+        Instant admittedAt = Instant.parse(started.at("/payload/admittedAt").asText());
+        Instant approvedAt = Instant.parse(discharged.at("/payload/approvedAt").asText());
+        Instant closedAt = Instant.parse(closed.at("/payload/closedAt").asText());
+        assertThat(admittedAt).isBefore(approvedAt);
+        assertThat(approvedAt).isBefore(closedAt);
+    }
+
     private void assertMatchesFixture(String fixtureName, DomainEventEnvelope<?> event) throws IOException {
         byte[] serialized = objectMapper.writeValueAsBytes(mapper.toWireEnvelope(event));
         JsonNode actual = objectMapper.readTree(serialized);

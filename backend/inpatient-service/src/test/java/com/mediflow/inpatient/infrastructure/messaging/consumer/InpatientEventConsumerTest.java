@@ -110,7 +110,7 @@ class InpatientEventConsumerTest {
         assertThat(labResult.maYLenhBenNgoai()).isEqualTo(UUID.fromString(LAB_ID));
         assertThat(labResult.maDotNoiTru()).isEqualTo(UUID.fromString(ADMISSION_ID));
         assertThat(labResult.maBenhNhan()).isEqualTo(UUID.fromString(PATIENT_ID));
-        assertThat(labResult.phienBanKetQua()).isEqualTo(3);
+        assertThat(labResult.phienBanKetQua()).isEqualTo(1);
         assertThat(labResult.ketLuan()).isEqualTo("No acute finding");
     }
 
@@ -355,7 +355,7 @@ class InpatientEventConsumerTest {
                     "careEpisodeType": "%s",
                     "careEpisodeId": "%s",
                     "patientId": "%s",
-                    "resultVersion": 3,
+                    "resultVersion": 1,
                     "conclusion": "No acute finding"
                   }
                 }

@@ -156,10 +156,12 @@ version. No live mapper, subscriber or V2 query is enabled by this kernel.
 Local offline Lab mapping (2026-10-02) supplies source revision from `resultVersion`, source ID from
 `labId`, department/episode directly from the payload, and business time from `completedAt`. KPI
 date uses the configured Report timezone; it does not use republish time or `performedDate`.
-Revision 1 maps to one LAB_TESTS contribution. The real admission fixture's revision 3 is rejected
-until the producer clarifies first imported result versus replacement/correction semantics. No
-revision is defaulted for Clinical/Pharmacy facts lacking one; their source mapping remains open.
-This offline mapper does not enable a listener or close owner/rollout acceptance.
+Revision 1 maps to one LAB_TESTS contribution. Vinh's outpatient and admission first-completion
+fixtures now both carry the producer-supported revision 1; imported completions and future
+replacement/correction revisions remain unsupported until their own contract exists. No revision is
+defaulted for Clinical/Pharmacy facts lacking one; their source mapping remains open. This offline
+mapper does not enable a listener or close owner/rollout acceptance. Huy must update the former
+revision-3 rejection assertions to read the corrected producer fixture before owner acceptance.
 
 ## 4. Projection equations
 
@@ -308,9 +310,11 @@ administrative fact, not medical discharge. Close-before-start persists as PENDI
 exact matching start supplies department. Patient/chronology/immutable department/time/proof changes
 are conflicts; late start never reopens a closed admission. Local row fence, event claim and evidence
 effects join one transaction; ISO business times preserve source nanoseconds across reload. No full
-clinical payload is retained. No source revision is invented from envelope version and no metric
-contribution/count/LOS/occupancy is emitted until source business revision and correction/discharge
-semantics are accepted. Existing listener/API remains unchanged; real PG pending/reload/race/rollback
+clinical payload is retained. The canonical contract now defines STARTED and CLOSED as separate
+immutable singleton operations keyed by routing key plus `admissionId`, each with implicit operation
+revision 1 independent of envelope version. This evidence still emits no metric contribution/count/
+LOS/occupancy until medical-discharge duration and transfer/release/capacity semantics are accepted.
+Existing listener/API remains unchanged; real PG pending/reload/race/rollback
 and upgrade/shape tests remain VERIFY OPEN without Docker.
 
 ## 10. Required tests

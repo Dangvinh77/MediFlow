@@ -33,6 +33,7 @@ class LabCareFinanceV2DomainTest {
         assertThat(test.getCareEpisodeId()).isEqualTo(episodeId);
         assertThat(test.getSourceOrderId()).isEqualTo(sourceOrderId);
         assertThat(test.getPriceCode()).isEqualTo("LAB-CBC");
+        assertThat(test.getResultVersion()).isZero();
         assertThat(test.isPaid()).isFalse();
     }
 

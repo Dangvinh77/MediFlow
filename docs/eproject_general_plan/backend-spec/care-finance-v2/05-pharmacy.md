@@ -180,7 +180,9 @@ public enum ClearancePurpose { EXAM, LAB_TEST, PRESCRIPTION, ADMISSION_DEPOSIT, 
 ```
 
 - Every V2 prescription has exactly one episode.
-- ADMISSION requires `admissionId=careEpisodeId` and an active admission projection.
+- ADMISSION requires `admissionId=careEpisodeId` and a medication-eligible admission projection.
+  Eligibility begins at `admission.started` and ends at `discharge.medically.approved`, because
+  medical discharge freezes normal charge intake. Administrative close is a later separate fact.
 - OUTPATIENT dispense requires non-expired matching clearance; ADMISSION dispense does not pretend
   to be prepaid and records the charge against the admission account.
 - Stock reservation, stock decrement, dispense slip and outbox event commit atomically.
@@ -192,6 +194,7 @@ public enum ClearancePurpose { EXAM, LAB_TEST, PRESCRIPTION, ADMISSION_DEPOSIT, 
 public interface ReactToCareFinanceUseCase {
     void onFinancialClearance(FinancialClearanceCommand command);
     void onAdmissionStarted(AdmissionStartedCommand command);
+    void onMedicalDischargeApproved(MedicalDischargeApprovedCommand command);
     void onAdmissionClosed(AdmissionClosedCommand command);
 }
 
@@ -231,7 +234,8 @@ public record FinancialClearanceCommand(
 ### Create prescription
 
 1. Validate patient/staff and exact episode fields.
-2. For ADMISSION, require an active context whose patient and department match.
+2. For ADMISSION, require a medication-eligible context whose exact admission, patient and
+   department match and which has not received `discharge.medically.approved`.
 3. Lock drug rows in UUID order, validate quantities/expiry and reserve stock.
 4. Snapshot item prices and total; save prescription and reservations.
 5. Append `prescription.created` with exact context, episode, target and priced items.
@@ -246,7 +250,9 @@ public record FinancialClearanceCommand(
 ### Dispense
 
 1. Lock prescription, reservations and drug rows.
-2. OUTPATIENT requires valid clearance; ADMISSION requires active admission projection.
+2. OUTPATIENT requires valid clearance; ADMISSION requires a medication-eligible admission
+   projection. Receipt of the exact medical-discharge fact makes subsequent creation/dispense
+   ineligible even though administrative close may arrive later.
 3. Decrement stock and mark reservations fulfilled.
 4. Create/complete one dispense slip and append `prescription.filled` in the same transaction.
 5. On stock failure, release reservations and append `prescription.dispense.failed`; Billing decides
@@ -260,8 +266,15 @@ public record FinancialClearanceCommand(
 | `prescription.filled` | same identity/context plus `dispenseId`, `filledAt`, `items[]` |
 | `prescription.dispense.failed` | same identity/context plus `reason`, `failedAt` |
 
-Subscribe to `financial.clearance.granted`, `admission.started`, `admission.closed` and compatibility
-`payment.completed`. Compatibility payment accepts only its explicit `prescriptionId`.
+Subscribe to `financial.clearance.granted`, `admission.started`, `discharge.medically.approved`,
+`admission.closed` and compatibility `payment.completed`. Compatibility payment accepts only its
+explicit `prescriptionId`.
+
+Start, medical discharge and close are immutable singleton operations keyed by routing key plus
+`admissionId`; their implicit operation revision is `1` and envelope `version` remains schema-only.
+Close-before-start may be retained as pending evidence and paired only with the exact admission and
+patient; a late start never reopens a closed or medically discharged context. Transfer freshness is
+not inferred from the start snapshot and remains blocked until a transfer/release contract exists.
 
 ## 8. REST and roles
 
@@ -282,6 +295,8 @@ Key errors: `PHARMACY_CARE_CONTEXT_INVALID` (422), `PHARMACY_ADMISSION_INACTIVE`
 | admission never uses outpatient clearance | `onClearance_admissionPrescription_rejects` |
 | admission ID is exact | `create_admissionContextMismatch_rejects` |
 | closed admission cannot dispense | `dispense_closedAdmission_rejects` |
+| medically discharged admission cannot create or dispense | `admissionMedicalDischarge_exactContextEndsEligibility` |
+| close before start never reopens | `admissionCloseBeforeStart_lateStartStaysClosed` |
 | duplicate clearance applies once | `onClearance_duplicateEvent_appliesOnce` |
 | duplicate dispense decrements once | `dispense_repeatedCommand_singleStockEffect` |
 | stock and outbox atomic | `dispense_commitPersistsStockSlipAndOutbox` |

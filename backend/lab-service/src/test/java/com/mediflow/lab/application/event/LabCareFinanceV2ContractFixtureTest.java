@@ -50,13 +50,24 @@ class LabCareFinanceV2ContractFixtureTest {
     void admissionLabResultCreatedMatchesCanonicalV1Fixture() throws IOException {
         var result = new LabResultCreatedEvent.Result(id(9), "Hemoglobin", "13.5", "g/dL", "12-16");
         var payload = new LabResultV2Payload(id(7), id(4), id(3), id(5),
-                CareEpisodeType.ADMISSION, id(8), "CBC", 3, List.of(result),
+                CareEpisodeType.ADMISSION, id(8), "CBC", 1, List.of(result),
                 "No acute finding", id(6), LocalDate.parse("2026-09-27"),
                 Instant.parse("2026-09-27T04:00:00Z"));
         var event = new DomainEventEnvelope<>(id(1), "lab.result.created", 1,
                 Instant.parse("2026-09-27T04:00:00Z"), "correlation-123", "lab-service", payload);
 
         assertMatchesFixture("lab.result.created.admission.v1.json", event);
+    }
+
+    @Test
+    void resultFixturesUseBusinessRevisionOneIndependentlyOfSchemaVersion() throws IOException {
+        JsonNode outpatient = objectMapper.readTree(readFixture("lab.result.created.v1.json"));
+        JsonNode admission = objectMapper.readTree(readFixture("lab.result.created.admission.v1.json"));
+
+        assertThat(outpatient.path("version").asInt()).isEqualTo(1);
+        assertThat(admission.path("version").asInt()).isEqualTo(1);
+        assertThat(outpatient.at("/payload/resultVersion").asInt()).isEqualTo(1);
+        assertThat(admission.at("/payload/resultVersion").asInt()).isEqualTo(1);
     }
 
     private void assertMatchesFixture(String fixtureName, DomainEventEnvelope<?> event) throws IOException {
