@@ -3,6 +3,7 @@ package com.mediflow.organization.web.controller;
 import com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
+import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 import com.mediflow.organization.web.dto.request.ChangeStaffDepartmentRequest;
@@ -12,6 +13,7 @@ import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.dto.response.StaffLookupDTO;
+import com.mediflow.organization.application.dto.response.StaffIdentityLookupDTO;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.web.dto.request.UpdateStaffRequest;
 import com.mediflow.common.api.ApiResponse;
@@ -32,6 +34,7 @@ public class StaffController {
         private final ChangeStaffDepartmentUseCase changeStaffDepartmentUseCase;
         private final GetStaffUseCase getStaffUseCase;
         private final UpdateStaffUseCase updateStaffUseCase;
+        private final LookupStaffIdentityUseCase lookupStaffIdentityUseCase;
         private final CorrelationIdProvider correlationIds;
 
         public StaffController(
@@ -39,11 +42,13 @@ public class StaffController {
                         ChangeStaffDepartmentUseCase changeStaffDepartmentUseCase,
                         GetStaffUseCase getStaffUseCase,
                         UpdateStaffUseCase updateStaffUseCase,
+                        LookupStaffIdentityUseCase lookupStaffIdentityUseCase,
                         CorrelationIdProvider correlationIds) {
                 this.createStaffUseCase = createStaffUseCase;
                 this.changeStaffDepartmentUseCase = changeStaffDepartmentUseCase;
                 this.getStaffUseCase = getStaffUseCase;
                 this.updateStaffUseCase = updateStaffUseCase;
+                this.lookupStaffIdentityUseCase = lookupStaffIdentityUseCase;
                 this.correlationIds = correlationIds;
         }
 
@@ -134,6 +139,16 @@ public class StaffController {
                 return ResponseEntity.ok(ApiResponse.ok(
                         result,
                         correlationIds.currentOrCreate().toString()));
+        }
+
+        @GetMapping("/{id}/lookup")
+        @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
+        public ResponseEntity<ApiResponse<StaffIdentityLookupDTO>> lookupStaffIdentity(
+                        @PathVariable UUID id) {
+                StaffIdentityLookupDTO result = lookupStaffIdentityUseCase.lookup(id);
+                return ResponseEntity.ok(ApiResponse.ok(
+                                result,
+                                correlationIds.currentOrCreate().toString()));
         }
 
 }

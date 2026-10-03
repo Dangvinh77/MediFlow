@@ -16,6 +16,7 @@ import javax.crypto.SecretKey;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -26,9 +27,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.organization.application.dto.response.StaffLookupDTO;
+import com.mediflow.organization.application.dto.response.StaffIdentityLookupDTO;
 import com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
+import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
 import com.mediflow.organization.infrastructure.config.SecurityConfig;
 import com.mediflow.organization.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
@@ -59,6 +62,9 @@ class StaffControllerContractTest {
 
     @MockBean
     private GetStaffUseCase getStaffUseCase;
+
+    @MockBean
+    private LookupStaffIdentityUseCase lookupStaffIdentityUseCase;
 
     @MockBean
     private UpdateStaffUseCase updateStaffUseCase;
@@ -124,6 +130,84 @@ class StaffControllerContractTest {
     }
 
     @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void identityLookup_existingStaff_returnsActiveJobAndDepartment() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        when(lookupStaffIdentityUseCase.lookup(staffId))
+                .thenReturn(new StaffIdentityLookupDTO(true, true, "NURSE", departmentId));
+
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", staffId)
+                        .header(JwtClaims.HEADER_CORRELATION_ID,
+                                "11111111-1111-1111-1111-111111111111"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.exists").value(true))
+                .andExpect(jsonPath("$.data.active").value(true))
+                .andExpect(jsonPath("$.data.jobTitle").value("NURSE"))
+                .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()))
+                .andExpect(jsonPath("$.correlationId")
+                        .value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(header().string(JwtClaims.HEADER_CORRELATION_ID,
+                        "11111111-1111-1111-1111-111111111111"));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void identityLookup_missingStaff_returnsConfirmedAbsence() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        when(lookupStaffIdentityUseCase.lookup(staffId))
+                .thenReturn(StaffIdentityLookupDTO.missing());
+
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", staffId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.exists").value(false))
+                .andExpect(jsonPath("$.data.active").value(false));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void identityLookup_malformedUuid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/not-a-uuid/lookup"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("MALFORMED_UUID"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void identityLookup_humanTokenIsForbidden() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void identityLookup_nonSystemServiceTokenIsUnauthorized() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", UUID.randomUUID())
+                        .header("Authorization", "Bearer "
+                                + token("clinical-service", "DOCTOR", JwtClaims.SERVICE_TOKEN_TYPE)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void identityLookup_refreshTokenIsUnauthorized() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", UUID.randomUUID())
+                        .header("Authorization", "Bearer "
+                                + token("account-1", "ADMIN", JwtClaims.REFRESH_TOKEN_TYPE)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void identityLookup_persistenceFailure_returnsUnavailable() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        when(lookupStaffIdentityUseCase.lookup(staffId))
+                .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+        mockMvc.perform(get(BASE_PATH + "/{id}/lookup", staffId))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error.code").value("ORG_LOOKUP_UNAVAILABLE"));
+    }
+
+    @Test
     @WithMockUser(roles = "DOCTOR")
     void lookup_humanRole_returnsForbidden() throws Exception {
         mockMvc.perform(get(BASE_PATH + "/{id}/exists", UUID.randomUUID()))
@@ -163,10 +247,14 @@ class StaffControllerContractTest {
     }
 
     private String systemToken() {
+        return token("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE);
+    }
+
+    private String token(String subject, String role, String type) {
         return Jwts.builder()
-                .subject("clinical-service")
-                .claim(JwtClaims.ROLE, "SYSTEM")
-                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .subject(subject)
+                .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, type)
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
                 .expiration(Date.from(Instant.now().plusSeconds(300)))
                 .signWith(SIGNING_KEY)

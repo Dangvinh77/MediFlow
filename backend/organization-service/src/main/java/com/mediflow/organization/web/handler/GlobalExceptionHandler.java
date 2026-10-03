@@ -18,8 +18,10 @@ import com.mediflow.organization.domain.exception.StaffAlreadyInDepartmentExcept
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -55,6 +57,20 @@ public class GlobalExceptionHandler {
                 "VALIDATION_ERROR",
                 "Request validation failed",
                 details);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "MALFORMED_UUID", "Path parameter must be a valid UUID");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePersistenceFailure(
+            DataAccessException exception) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "ORG_LOOKUP_UNAVAILABLE", "Organization lookup hiện không khả dụng");
     }
 
     @ExceptionHandler(DoctorLicenseRequiredException.class)

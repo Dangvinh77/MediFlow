@@ -2,6 +2,8 @@ package com.mediflow.organization.web.controller;
 
 import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.GetDepartmentUseCase;
+import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+import com.mediflow.organization.application.dto.response.DepartmentLookupDTO;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.web.dto.request.CreateDepartmentRequest;
@@ -25,16 +27,19 @@ public class DepartmentController {
         private final CreateDepartmentUseCase createDepartmentUseCase;
         private final GetDepartmentUseCase getDepartmentUseCase;
         private final UpdateDepartmentUseCase updateDepartmentUseCase;
+        private final LookupDepartmentUseCase lookupDepartmentUseCase;
         private final CorrelationIdProvider correlationIds;
 
         public DepartmentController(
                         CreateDepartmentUseCase createDepartmentUseCase,
                         GetDepartmentUseCase getDepartmentUseCase,
                         UpdateDepartmentUseCase updateDepartmentUseCase,
+                        LookupDepartmentUseCase lookupDepartmentUseCase,
                         CorrelationIdProvider correlationIds) {
                 this.createDepartmentUseCase = createDepartmentUseCase;
                 this.getDepartmentUseCase = getDepartmentUseCase;
                 this.updateDepartmentUseCase = updateDepartmentUseCase;
+                this.lookupDepartmentUseCase = lookupDepartmentUseCase;
                 this.correlationIds = correlationIds;
         }
 
@@ -76,6 +81,16 @@ public class DepartmentController {
                 Department department = getDepartmentUseCase.getDepartmentById(id);
                 return ResponseEntity.ok(ApiResponse.ok(
                                 DepartmentResponse.from(department),
+                                correlationIds.currentOrCreate().toString()));
+        }
+
+        @GetMapping("/{id}/lookup")
+        @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
+        public ResponseEntity<ApiResponse<DepartmentLookupDTO>> lookupDepartment(
+                        @PathVariable UUID id) {
+                DepartmentLookupDTO result = lookupDepartmentUseCase.lookup(id);
+                return ResponseEntity.ok(ApiResponse.ok(
+                                result,
                                 correlationIds.currentOrCreate().toString()));
         }
 

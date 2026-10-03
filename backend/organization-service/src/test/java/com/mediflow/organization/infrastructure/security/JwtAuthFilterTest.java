@@ -69,6 +69,16 @@ class JwtAuthFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    @Test
+    void serviceTokenWithBlankSubject_isNotAccepted() throws Exception {
+        String token = createToken("   ", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE,
+                Instant.now().plusSeconds(300));
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
     private MockHttpServletRequest requestWithToken(String token) {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
