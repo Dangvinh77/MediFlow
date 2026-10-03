@@ -26,6 +26,7 @@ interface AppointmentRequest {
 }
 
 const detailRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE"];
+const createRoles: readonly Role[] = ["ADMIN", "NURSE"];
 const getServerRole = (): Role | null => null;
 
 function getRequestError(cause: unknown): RequestError {
@@ -42,6 +43,7 @@ export function AppointmentTable() {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const canViewDetail = role !== null && detailRoles.includes(role);
+  const canCreate = role !== null && createRoles.includes(role);
   const [appointments, setAppointments] = useState<AppointmentDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
@@ -133,6 +135,16 @@ export function AppointmentTable() {
 
   return (
     <section className="mt-6">
+      {canCreate ? (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href="/appointments/new"
+            className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Tạo lịch hẹn
+          </Link>
+        </div>
+      ) : null}
       <form onSubmit={onFilter} className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="appointment-department" className="mb-1 block text-sm font-medium">Mã khoa</label>
@@ -173,7 +185,7 @@ export function AppointmentTable() {
               </thead>
               <tbody>
                 {appointments.map((appointment) => {
-                  const status = appointmentStatusPresentation[appointment.status] ?? { label: "Không xác định", tone: "neutral" as const };
+                  const status = appointmentStatusPresentation[appointment.status];
                   return (
                     <tr key={appointment.appointmentId} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(appointment.appointmentDate)}</td>

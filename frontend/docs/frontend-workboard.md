@@ -1,7 +1,7 @@
 # Frontend Workboard
 
-> Current frontend routing and ownership view, checked 2026-09-29 against baseline
-> `origin/master` at `d252492`. Refresh the date and commit when route or contract state changes.
+> Current frontend routing and ownership view, checked 2026-10-03 against baseline
+> `origin/master` at `1e637d8`. Refresh the date and commit when route or contract state changes.
 > Ownership rules live in [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
 > Per-service scope, queue, and handoffs live in [`services/`](services/README.md).
 
@@ -27,11 +27,16 @@ next expansion must begin with a live backend contract audit. This board records
 state only; it does not assert endpoint or DTO details that have not been verified from the owner
 backend.
 
+Appointments now include the contract-aligned seven-status list/detail presentation, creation,
+pending-only schedule editing, and the two legacy generic status actions (`ARRIVED`, `CANCELLED`).
+Care-finance and examination states remain read-only in this frontend slice and are not exposed as
+generic status mutations.
+
 ## Owner queue
 
 | Task ID | Owner | Scope | Current state | Next action |
 |---|---|---|---|---|
-| `FE-VINH-01` | Vinh | appointments | List and role-gated detail route present | `IMPLEMENT`: select one appointment create/update/status vertical slice after its live request contract is checked. |
+| `FE-VINH-01` | Vinh | appointments | `DONE`: list/detail plus create, pending-only edit, lifecycle timestamps, and valid legacy status actions | Re-verify the live Clinical contract before adding any explicit care-finance or examination command. |
 | `FE-VINH-02` | Vinh | records | Base read route and feature present | `VERIFY-CONTRACT`: audit the live medical-record contract before adding mutations or detail flows. |
 | `FE-VINH-03` | Vinh | lab | Base read route and feature present | `VERIFY-CONTRACT`: audit the live lab request/result contract before adding mutations or detail flows. |
 | `FE-HUY-01` | Huy | pharmacy | Deeper workflows present | `VERIFY-CONTRACT`: recheck the current pharmacy controller/DTO/test contract before extending the workflow; use `HANDOFF` for missing producer behavior. |
