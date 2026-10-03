@@ -87,6 +87,16 @@ These are decisions delegated by Huy to the implementation agent on 2026-09-28, 
 
 ## Owner response checklist
 
+### Vinh scheduling update — 2026-10-03
+
+Vinh will handle the §D contract response locally before assigning Surgery integration code to
+Cloud: referral business identity/relationship proof, case-reference registration, outpatient
+not-applicable handling and durable late outcomes. Huy should provide actual producer fixture
+proposals for both episode types and reference-first/event-first/terminal-before-ready delivery.
+The existing Inpatient consumer still reads admissionId for Surgery events; no shared fixture
+acceptance or clinical-policy approval is asserted by this scheduling update. Checklist/consent
+policy remains an explicit decision, not an inferred medical/legal rule.
+
 Reply by editing this handoff (or link a canonical contract/spec PR) with the real owner, date and evidence. Do not check a row using a mock-only fixture or another service's database state.
 
 | Owner | Required response | Status / link / date |

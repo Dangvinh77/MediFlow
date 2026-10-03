@@ -34,6 +34,11 @@ generic status mutations.
 
 ## Owner queue
 
+Vinh's audited execution split and prepared Cloud task scopes are in the
+[2026-10-03 local/Cloud backlog](../../docs/architecture/2026-10-03-vinh-local-cloud-backlog.md).
+Records and Lab detail are the next bounded slices; Gateway role alignment is required before
+claiming the complete LAB_TECH workflow works.
+
 | Task ID | Owner | Scope | Current state | Next action |
 |---|---|---|---|---|
 | `FE-VINH-01` | Vinh | appointments | `DONE`: list/detail plus create, pending-only edit, lifecycle timestamps, and valid legacy status actions | Re-verify the live Clinical contract before adding any explicit care-finance or examination command. |

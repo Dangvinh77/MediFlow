@@ -18,12 +18,18 @@ Target migration adds `care_episode_type`, `care_episode_id` and emergency-overr
 ## Endpoints
 | Method | Path | Roles |
 |--------|------|-------|
-| GET | `/api/v1/lab/{id}` | ADMIN, DOCTOR, NURSE |
+| GET | `/api/v1/lab/{id}` | ADMIN, DOCTOR, NURSE, LAB_TECH |
 | GET | `/api/v1/lab/patient/{patientId}` | ADMIN, DOCTOR |
-| GET | `/api/v1/lab?departmentId&status&page&size` | ADMIN, MANAGER, LAB_TECH |
+| GET | `/api/v1/lab?departmentId&status&episodeType&episodeId&page&size` | ADMIN, MANAGER, DOCTOR, NURSE, LAB_TECH |
 | POST | `/api/v1/lab` | ADMIN, DOCTOR |
 | PUT | `/api/v1/lab/{id}/results` | ADMIN, LAB_TECH |
+| PUT | `/api/v1/lab/{id}/start` | ADMIN, LAB_TECH |
+| PUT | `/api/v1/lab/{id}/cancel` | ADMIN, DOCTOR, LAB_TECH |
 | PUT | `/api/v1/lab/{id}/status` | ADMIN, LAB_TECH |
+
+These are service-controller roles, verified 2026-10-03. Gateway parity is still tracked in
+[`HANDOFF-VINH-GATEWAY-CARE-ROLES`](../../handoffs/HANDOFF-VINH-GATEWAY-CARE-ROLES.md);
+do not assume every controller role currently passes Gateway.
 
 ## Events
 - **Publish:** `lab.request.created` `{labId, patientId, recordId, departmentId, labType, requestedDate}`; `lab.result.created` `{labId, patientId, recordId, departmentId, careEpisodeType, careEpisodeId, labType, resultVersion, performedDate, completedAt, results, conclusion, verifiedBy}`.

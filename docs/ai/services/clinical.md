@@ -95,8 +95,9 @@ Both are synchronous reads, so both must be resilient (timeout + circuit breaker
 
 Clinical's Patient consumer uses the locked service-only `GET /api/v1/patients/{id}/exists`
 contract, validates the `ApiResponse<PatientLookupDTO>` envelope and canonical returned ID, and
-distinguishes confirmed absence from outage/malformed responses. The producer endpoint remains an
-active Patient-owner handoff until it is implemented and fixture-tested end to end.
+distinguishes confirmed absence from outage/malformed responses. The Patient producer endpoint
+and exact-byte Clinical fixture test are implemented; the previous Patient lookup handoff was
+retired. This does not establish a patient-search selector or replace runtime authentication checks.
 
 ## Care-finance integration gate
 

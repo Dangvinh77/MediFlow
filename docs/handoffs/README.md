@@ -8,6 +8,7 @@ wire contracts belong in the canonical contract documents under
 
 | Handoff | Status | Owner who must act | Unblocks |
 |---|---|---|---|
+| [Clinical/Lab Gateway role alignment](HANDOFF-VINH-GATEWAY-CARE-ROLES.md) | OPEN — audited 2026-10-03 | Hoàng Anh | LAB_TECH detail, Doctor/Nurse lab queue, start/cancel and admission-referral access |
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | OPEN | Lộc | Clinical EXAM authorization and Lab exact-test clearance |
 | [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | OPEN — Huy-local V1 core/application choices implemented; cross-owner wire fixtures pending | Vinh, Lộc, Hoàng Anh; Huy for joint mapping | episode/referral/charge/clearance, clinical/Organization policies; Inpatient reference registration + outpatient/late-event handling; provisional READY/invalidation semantics. Detailed code tasks in current Huy plan §6 |
 | [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) | OPEN — shared reactor/DB/Compose complete; Gateway route pending | Hoàng Anh | route the registered Surgery service through Gateway after endpoint/spec gates |

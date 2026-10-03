@@ -43,8 +43,9 @@ department, Lab, Pharmacy, and Billing data remain external references.
 
 ## Handoffs and blockers
 
-- Patient search, display names, and existence-aware forms are blocked until Patient exposes a live
-  controller/DTO. Producer: Patient / Hoàng Anh. Acceptance: documented secured lookup response.
+- Patient existence lookup is implemented and fixture-tested for Clinical's service-only caller.
+  Patient search/display selectors still need a separate audit of the human-authorized list/read
+  contract; never call the service-only existence endpoint from the browser.
 - Doctor and department selectors require Organization contracts. Producer: Organization / Hoàng
   Anh. Do not infer staff/department relationships from UUIDs.
 - Lab results and Pharmacy dispense information must arrive through documented Clinical contracts;
