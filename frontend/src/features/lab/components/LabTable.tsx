@@ -1,17 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
+import type { Role } from "@/lib/roles";
 import { isUuid } from "@/lib/validation";
 import { labApi, type LabSearchParams } from "../api";
 import type { LabTestDTO, LabTestStatus } from "../types";
 
 const LAB_PAGE_SIZE = 20;
+const detailRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE"];
+const getServerRole = (): Role | null => null;
 const LAB_STATUSES: LabTestStatus[] = [
   "PENDING",
   "IN_PROGRESS",
@@ -55,6 +60,7 @@ function getRequestError(cause: unknown): RequestError {
 
 export function LabTable() {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [tests, setTests] = useState<LabTestDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
@@ -234,7 +240,16 @@ export function LabTable() {
                       className="border-b border-border align-top last:border-0"
                     >
                       <td className="px-4 py-3">{formatLocalDate(test.requestedDate)}</td>
-                      <td className="px-4 py-3 font-medium">{test.labType}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {role !== null && detailRoles.includes(role) ? (
+                          <Link
+                            href={`/lab/${test.testId}`}
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {test.labType}
+                          </Link>
+                        ) : test.labType}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs">{test.patientId}</td>
                       <td className="px-4 py-3 font-mono text-xs">{test.recordId}</td>
                       <td className="px-4 py-3">

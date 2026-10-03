@@ -10,6 +10,8 @@ export interface LabSearchParams {
 }
 
 export const labApi = {
+  getById: (testId: string) =>
+    api.get<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}`),
   search: (params: LabSearchParams = {}) => {
     const query = new URLSearchParams({
       page: String(params.page ?? 0),
