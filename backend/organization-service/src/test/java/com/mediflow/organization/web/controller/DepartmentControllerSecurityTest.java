@@ -2,6 +2,8 @@ package com.mediflow.organization.web.controller;
 
 import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.GetDepartmentUseCase;
+import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+import com.mediflow.organization.application.dto.response.DepartmentLookupDTO;
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.Department;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(DepartmentController.class)
 @Import({SecurityConfig.class, ThreadLocalCorrelationIdProvider.class, CorrelationIdFilter.class})
@@ -39,6 +42,9 @@ class DepartmentControllerSecurityTest {
 
     @MockBean
     private GetDepartmentUseCase getDepartmentUseCase;
+
+    @MockBean
+    private LookupDepartmentUseCase lookupDepartmentUseCase;
 
     @MockBean
     private UpdateDepartmentUseCase updateDepartmentUseCase;
@@ -99,5 +105,53 @@ class DepartmentControllerSecurityTest {
                                 }
                                 """))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void lookup_systemService_returnsDepartmentProjectionAndCorrelation() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        when(lookupDepartmentUseCase.lookup(departmentId)).thenReturn(
+                new DepartmentLookupDTO(true, true, departmentId, "Outpatient", "CLINICAL"));
+
+        mockMvc.perform(get("/api/v1/org/departments/{id}/lookup", departmentId)
+                        .header("X-Correlation-Id", "22222222-2222-2222-2222-222222222222"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.exists").value(true))
+                .andExpect(jsonPath("$.data.active").value(true))
+                .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()))
+                .andExpect(jsonPath("$.data.departmentName").value("Outpatient"))
+                .andExpect(jsonPath("$.data.departmentType").value("CLINICAL"))
+                .andExpect(jsonPath("$.correlationId")
+                        .value("22222222-2222-2222-2222-222222222222"));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void lookup_missingDepartment_echoesId() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        when(lookupDepartmentUseCase.lookup(departmentId))
+                .thenReturn(DepartmentLookupDTO.missing(departmentId));
+
+        mockMvc.perform(get("/api/v1/org/departments/{id}/lookup", departmentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.exists").value(false))
+                .andExpect(jsonPath("$.data.active").value(false))
+                .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void lookup_malformedUuid_returnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/org/departments/not-a-uuid/lookup"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("MALFORMED_UUID"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void lookup_humanRole_isForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/org/departments/{id}/lookup", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
     }
 }

@@ -8,6 +8,8 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
+import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.AccountRepository;
@@ -21,6 +23,8 @@ import com.mediflow.organization.application.service.CreateStaffService;
 import com.mediflow.organization.application.port.in.GetDepartmentUseCase;
 import com.mediflow.organization.application.service.GetDepartmentService;
 import com.mediflow.organization.application.service.GetStaffService;
+import com.mediflow.organization.application.service.LookupDepartmentService;
+import com.mediflow.organization.application.service.LookupStaffIdentityService;
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
@@ -88,6 +92,18 @@ public class ApplicationConfig {
 
                 return new GetStaffService(
                                 staffRepository);
+        }
+
+        @Bean
+        public LookupStaffIdentityUseCase lookupStaffIdentityUseCase(
+                        StaffRepository staffRepository) {
+                return new LookupStaffIdentityService(staffRepository);
+        }
+
+        @Bean
+        public LookupDepartmentUseCase lookupDepartmentUseCase(
+                        DepartmentRepository departmentRepository) {
+                return new LookupDepartmentService(departmentRepository);
         }
 
         @Bean

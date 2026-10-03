@@ -156,6 +156,8 @@ Swagger UI:
 | PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
 | PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
+| GET    | `/api/v1/org/staff/{id}/lookup`                     | SYSTEM service token         |
+| GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token         |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                         |
 | POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
 
@@ -165,6 +167,20 @@ and `size`.
 
 Create department/staff endpoints return the complete created DTO in `data` (not only an ID).
 Department transfer returns the updated `StaffResponse` with HTTP 200.
+
+### Service identity lookups
+
+The additive lookup endpoints are authenticated only with a short-lived JWT carrying
+`type=service`, `role=SYSTEM`, and a non-blank service subject. Human access tokens, refresh
+tokens, and non-SYSTEM service tokens are rejected. Both endpoints preserve `X-Correlation-Id`
+and return the common `ApiResponse` envelope.
+
+`GET /api/v1/org/staff/{id}/lookup` returns `{ exists, active, jobTitle, departmentId }`.
+`GET /api/v1/org/departments/{id}/lookup` returns
+`{ exists, active, departmentId, departmentName, departmentType }`.
+Missing records are confirmed absence with HTTP 200. Malformed UUIDs return HTTP 400; persistence
+failures return HTTP 503 with `ORG_LOOKUP_UNAVAILABLE`. The existing `/staff/{id}/exists`
+doctor-eligibility contract is unchanged.
 
 ### Department transfer
 

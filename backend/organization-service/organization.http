@@ -8,6 +8,8 @@
 ###   GET      /api/v1/org/staff/{id}
 ###   PUT      /api/v1/org/staff/{id}
 ###   GET      /api/v1/org/staff/{id}/exists
+###   GET      /api/v1/org/staff/{id}/lookup       (service token only)
+###   GET      /api/v1/org/departments/{id}/lookup (service token only)
 ###   PUT      /api/v1/org/staff/{id}/department
 ###   POST     /api/v1/org/accounts
 ###   PUT      /api/v1/org/accounts/{id}/status
@@ -131,6 +133,20 @@ Authorization: Bearer {{token}}
 ### data.exists=false, data.eligibleDoctor=false, data.departmentId=null when missing
 ### data.exists=true, data.eligibleDoctor=false, data.departmentId=null when not an eligible doctor
 ### data.exists=true, data.eligibleDoctor=true, data.departmentId=<authoritative department> for an active doctor
+
+### Internal lookup: general staff identity (SYSTEM service token only)
+GET {{host}}/api/v1/org/staff/00000000-0000-0000-0000-000000000000/lookup
+Authorization: Bearer {{token}}
+X-Correlation-Id: 11111111-1111-1111-1111-111111111111
+
+### Expected 200 data: exists, active, jobTitle and authoritative departmentId
+
+### Internal lookup: department identity (SYSTEM service token only)
+GET {{host}}/api/v1/org/departments/00000000-0000-0000-0000-000000000000/lookup
+Authorization: Bearer {{token}}
+X-Correlation-Id: 11111111-1111-1111-1111-111111111111
+
+### Expected 200 data: exists, active, departmentId, departmentName and departmentType
 
 ### Create an account (ADMIN only)
 POST {{host}}/api/v1/org/accounts
