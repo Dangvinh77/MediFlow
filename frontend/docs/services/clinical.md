@@ -19,6 +19,13 @@ department, Lab, Pharmacy, and Billing data remain external references.
 - `/appointments`: paged appointment list with department/date filters through
   `GET /v1/appointments`; UI roles `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`. ADMIN, DOCTOR, and NURSE
   can open `/appointments/{appointmentId}` backed by `GET /v1/appointments/{id}`.
+- `/appointments/new`: ADMIN and NURSE can create through `POST /v1/appointments` using UUID
+  references. Patient/doctor/department selectors remain blocked on their owner contracts.
+- `/appointments/{appointmentId}/edit`: ADMIN, DOCTOR, and NURSE can edit date, time, and reason
+  only while the fetched appointment is `PENDING`.
+- Appointment detail presents every live status and the available care-finance/examination
+  timestamps. Its generic status controls expose only `PENDING -> ARRIVED` and
+  `PENDING -> CANCELLED`; care-finance states are display-only here.
 - `/records`: explicit patient UUID lookup through `GET /v1/records/patient/{patientId}`; UI roles
   `ADMIN`, `DOCTOR`, `NURSE`.
 - Both flows use feature-local types/API modules, shared async states, and the gateway API wrapper.
@@ -27,8 +34,8 @@ department, Lab, Pharmacy, and Billing data remain external references.
 
 - `FE-CLINICAL-01` — `DONE`: appointment detail with UUID validation, role gate, loading,
   not-found, error/retry, and list navigation.
-- `FE-CLINICAL-02` — `VERIFY-CONTRACT`: add one appointment create/update/status vertical slice,
-  including exact role, validation, conflict, and retry behavior.
+- `FE-CLINICAL-02` — `DONE`: appointment create/update/status vertical slice aligned to the live
+  request, response, role, validation, conflict, correlation-ID, and transition contracts.
 - `FE-CLINICAL-03` — `VERIFY-CONTRACT`: add record detail, then one create/update/diagnosis slice
   supported by the live controller.
 - `FE-CLINICAL-04` — `IMPLEMENT`: add focused API/component tests after the shared test harness is

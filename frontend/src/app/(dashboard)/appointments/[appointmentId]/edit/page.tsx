@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
-import { AppointmentDetail } from "@/features/appointment/components/AppointmentDetail";
+import { EditAppointmentForm } from "@/features/appointment/components/EditAppointmentForm";
 import { isUuid } from "@/lib/validation";
 
-export const metadata: Metadata = { title: "Chi tiết lịch hẹn | MediFlow" };
+export const metadata: Metadata = { title: "Chỉnh sửa lịch hẹn | MediFlow" };
 
-interface AppointmentDetailPageProps {
+interface EditAppointmentPageProps {
   params: Promise<{ appointmentId: string }>;
 }
 
-export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
+export default async function EditAppointmentPage({ params }: EditAppointmentPageProps) {
   const { appointmentId } = await params;
   const id = appointmentId.trim();
 
   return (
     <PageShell
-      title="Chi tiết lịch hẹn"
-      description="Thông tin lịch khám, trạng thái và các mốc trong tiến trình khám."
+      title="Chỉnh sửa lịch hẹn"
+      description="Cập nhật ngày, giờ hoặc lý do cho lịch hẹn đang chờ tiếp nhận."
     >
       {!isUuid(id) ? (
         <section role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">
@@ -28,7 +28,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
-          <AppointmentDetail appointmentId={id} />
+          <EditAppointmentForm appointmentId={id} />
         </RoleGate>
       )}
     </PageShell>
