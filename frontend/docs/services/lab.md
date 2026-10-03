@@ -15,9 +15,14 @@
 clinical lifecycle status separately from payment state. UI roles are `ADMIN`, `MANAGER`, and
 `LAB_TECH`.
 
+`/lab/{testId}` renders the exact live detail DTO, including care episode, clearance, result
+revision, textual results and conclusion. Until Gateway role alignment lands, the UI exposes this
+detail only to `ADMIN`, `DOCTOR`, and `NURSE`; list links appear only for a role that can currently
+reach the detail route.
+
 ## Owner queue
 
-- `FE-LAB-01` — `VERIFY-CONTRACT`: add test detail with the exact live response DTO.
+- `FE-LAB-01` — `DONE`: test detail mirrors the exact live response DTO and keeps payment/lifecycle separate.
 - `FE-LAB-02` — `VERIFY-CONTRACT`: add one request-creation slice, including record/patient
   references and backend validation errors.
 - `FE-LAB-03` — `VERIFY-CONTRACT`: add one result-entry or lifecycle-transition slice supported by

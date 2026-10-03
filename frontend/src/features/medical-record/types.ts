@@ -5,6 +5,15 @@ export interface DiagnosisDTO {
   icdCode: string | null;
 }
 
+export type MedicalRecordStatus = "OPEN" | "COMPLETED";
+
+export type RecordDisposition =
+  | "OUTPATIENT_FOLLOW_UP"
+  | "PRESCRIPTION"
+  | "ADMISSION"
+  | "TRANSFER"
+  | "OTHER";
+
 export interface MedicalRecordDTO {
   recordId: string;
   patientId: string;
@@ -16,4 +25,8 @@ export interface MedicalRecordDTO {
   diagnoses: DiagnosisDTO[];
   createdAt: string;
   updatedAt: string;
+  status: MedicalRecordStatus;
+  disposition: RecordDisposition | null;
+  dispositionNote: string | null;
+  completedAt: string | null;
 }

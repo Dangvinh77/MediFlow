@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { ApiRequestError } from "@/lib/api";
@@ -96,7 +97,14 @@ export function MedicalRecordTable() {
               {records.map((record) => (
                 <tr key={record.recordId} className="border-b border-border align-top last:border-0">
                   <td className="px-4 py-3">{formatLocalDate(record.examinationDate)}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{record.recordId}</td>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    <Link
+                      href={`/records/${record.recordId}`}
+                      className="break-all text-primary underline-offset-4 hover:underline"
+                    >
+                      {record.recordId}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs">{record.doctorId}</td>
                   <td className="max-w-xs whitespace-normal px-4 py-3">{record.symptoms}</td>
                   <td className="max-w-md whitespace-normal px-4 py-3">

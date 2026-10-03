@@ -28,6 +28,8 @@ department, Lab, Pharmacy, and Billing data remain external references.
   `PENDING -> CANCELLED`; care-finance states are display-only here.
 - `/records`: explicit patient UUID lookup through `GET /v1/records/patient/{patientId}`; UI roles
   `ADMIN`, `DOCTOR`, `NURSE`.
+- `/records/{recordId}`: exact record detail through `GET /v1/records/{id}` with diagnoses,
+  status, disposition, completion fields and no cross-feature enrichment.
 - Both flows use feature-local types/API modules, shared async states, and the gateway API wrapper.
 
 ## Owner queue
@@ -36,15 +38,16 @@ department, Lab, Pharmacy, and Billing data remain external references.
   not-found, error/retry, and list navigation.
 - `FE-CLINICAL-02` — `DONE`: appointment create/update/status vertical slice aligned to the live
   request, response, role, validation, conflict, correlation-ID, and transition contracts.
-- `FE-CLINICAL-03` — `VERIFY-CONTRACT`: add record detail, then one create/update/diagnosis slice
-  supported by the live controller.
+- `FE-CLINICAL-03` — `PARTIAL`: record detail is complete; next verify and implement one
+  create/update/diagnosis command supported by the live controller.
 - `FE-CLINICAL-04` — `IMPLEMENT`: add focused API/component tests after the shared test harness is
   assigned.
 
 ## Handoffs and blockers
 
-- Patient search, display names, and existence-aware forms are blocked until Patient exposes a live
-  controller/DTO. Producer: Patient / Hoàng Anh. Acceptance: documented secured lookup response.
+- Patient existence lookup is implemented and fixture-tested for Clinical's service-only caller.
+  Patient search/display selectors still need a separate audit of the human-authorized list/read
+  contract; never call the service-only existence endpoint from the browser.
 - Doctor and department selectors require Organization contracts. Producer: Organization / Hoàng
   Anh. Do not infer staff/department relationships from UUIDs.
 - Lab results and Pharmacy dispense information must arrive through documented Clinical contracts;
