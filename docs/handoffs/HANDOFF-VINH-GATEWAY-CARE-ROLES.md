@@ -1,6 +1,6 @@
 # HANDOFF — Gateway alignment for Clinical/Lab
 
-- Status: OPEN; source audit 2026-10-03, baseline `3fa55c9`.
+- Status: OPEN; refreshed 2026-10-04, baseline `2e8f024`.
 - Owner: Hoàng Anh (Gateway). Consumers: Vinh's Clinical/Lab frontend and backend.
 - Evidence: `backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java`,
   Clinical `ClinicalCareFinanceController.java` and Lab `LabController.java`.
@@ -29,3 +29,6 @@ Test legacy `/status` separately; do not broaden all Lab writes or all record PO
 Vinh can build read detail for currently allowed roles while LAB_TECH detail acceptance waits.
 Close only after Gateway tests and downstream smoke pass; move lasting rules into service docs
 and remove this file and its registry row together.
+
+The Inpatient route/RBAC work in `262d610` was reviewed separately and does not change these
+Clinical/Lab mismatches. This handoff remains open in full.

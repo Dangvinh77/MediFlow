@@ -1,8 +1,8 @@
 # CONTRACT-IDENTITY-LOOKUP-01 — Stable identity, lookup and Gateway routing
 
-- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff lookup, Gateway account verification,
-  Patient existence/read and the Clinical Patient consumer are implemented. Planned-service Gateway
-  routes and several consumer claim migrations remain open.
+- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff/department lookup, Gateway account
+  verification, Patient existence/read, the Clinical Patient consumer and the Inpatient Gateway
+  route are implemented. Surgery routing and several consumer claim migrations remain open.
 - **Producer owners:** Organization, Patient, Gateway — Hoàng Anh
 - **Consumers:** Clinical, Lab, Pharmacy, Billing, Notification, Inpatient, Surgery
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -89,24 +89,25 @@ Implemented baseline:
   optional `staffId`, `departmentId` and `patientId` claims.
 - Pharmacy consumes the explicit `staffId` claim and never treats `sub` as a staff identity.
 
-Open work is listed only in the [active handoff registry](../README.md), including planned-service
-Gateway routes and consumer JWT claim migrations. The former Patient handoff was retired after the
+Open work is listed only in the [active handoff registry](../README.md), including Surgery routing
+and consumer JWT claim migrations. The former Patient handoff was retired after the
 producer endpoint, service auth, Gateway internal-only rule and Clinical same-fixture test landed.
 
-## Planned Inpatient/Surgery routing
+## Inpatient and planned Surgery routing
 
-Inpatient Core V1 now has business APIs and guarded integrations, while its Gateway route remains
-open in [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../HANDOFF-INPATIENT-GATEWAY-ROUTE.md).
+Inpatient Core V1 has business APIs and guarded integrations. Gateway now routes
+`/api/v1/inpatient/**` to `lb://inpatient-service`, applies the endpoint role matrix, preserves
+correlation and has route/authorization tests (`262d610`). This closes the former Inpatient route
+handoff; it does not enable any cross-service RabbitMQ flag.
 Surgery has a bootable foundation, V1 schema, persistence adapters and initial application services,
 but no business API or published/subscribed business events yet.
-Gateway routes for `/api/v1/inpatient/**` and
-`/api/v1/surgery/**` use service discovery and the same auth/correlation policies when implemented;
-neither route is live before health and authorization tests pass.
+The future `/api/v1/surgery/**` route must use service discovery and the same auth/correlation
+policies, but should land only after Huy supplies a real business endpoint and authorization matrix.
 
 ## Acceptance criteria
 
 - A service token missing `type=service` or `role=SYSTEM` is rejected.
 - A patient/staff lookup can distinguish absence from outage.
 - Consumers use returned canonical IDs and never search by name or infer from JWT subject.
-- Inpatient/Surgery route tests prove public role authorization and downstream service auth before
-  registry status changes to `IMPLEMENTED`.
+- Surgery route tests prove public role authorization and downstream service auth before its
+  routing status changes to `IMPLEMENTED`.
