@@ -6,6 +6,7 @@ import com.mediflow.gateway.security.JwtProperties;
 import com.mediflow.gateway.security.JwtTokenService;
 import com.mediflow.gateway.security.JwtTokenService.InvalidCredentialsException;
 import com.mediflow.gateway.security.JwtTokenService.UpstreamUnavailableException;
+import com.mediflow.common.security.JwtClaims;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -50,6 +51,36 @@ class AuthControllerTest {
                 JwtTokenService.DEPARTMENT_ID_CLAIM,
                 String.class))
                 .isEqualTo(departmentId.toString());
+    }
+
+    @Test
+    void patientLoginKeepsAccountSubjectSeparateFromPatientIdentity() {
+        JwtTokenService jwt = new JwtTokenService(new JwtProperties(SECRET, 30, 1440, 1));
+        OrganizationAuthClient organization = mock(OrganizationAuthClient.class);
+        UUID accountId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        String correlation = UUID.randomUUID().toString();
+        when(organization.verify("patient01", "password", correlation))
+                .thenReturn(Mono.just(new OrganizationAuthClient.VerifiedAccount(
+                        accountId, null, null, patientId, "PATIENT")));
+        AuthController controller = new AuthController(jwt, organization);
+
+        var response = controller.login(
+                        new LoginRequest("patient01", "password"), correlation)
+                .block();
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        LoginResponse body = (LoginResponse) response.getBody();
+        assertThat(body).isNotNull();
+
+        var access = jwt.parse(body.accessToken());
+        assertThat(access.getSubject()).isEqualTo(accountId.toString());
+        assertThat(access.get("type", String.class)).isEqualTo("access");
+        assertThat(access.get("role", String.class)).isEqualTo("PATIENT");
+        assertThat(access.get(JwtClaims.PATIENT_ID, String.class))
+                .isEqualTo(patientId.toString());
+        assertThat(access.get(JwtClaims.STAFF_ID, String.class)).isNull();
     }
 
     @Test

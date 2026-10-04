@@ -16,8 +16,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
+import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
+import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
+import com.mediflow.organization.domain.model.Role;
+import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaRepository;
 
@@ -59,6 +66,24 @@ class OrganizationServiceIntegrationTest {
     private CreateStaffUseCase createStaffUseCase;
 
     @Autowired
+    private CreateAccountUseCase createAccountUseCase;
+
+    @Autowired
+    private VerifyCredentialsUseCase verifyCredentialsUseCase;
+
+    @Autowired
+    private LookupStaffIdentityUseCase lookupStaffIdentityUseCase;
+
+    @Autowired
+    private LookupDepartmentUseCase lookupDepartmentUseCase;
+
+    @Autowired
+    private StaffRepository staffStore;
+
+    @Autowired
+    private DepartmentRepository departmentStore;
+
+    @Autowired
     private DepartmentJpaRepository departmentRepository;
 
     @Autowired
@@ -94,5 +119,58 @@ class OrganizationServiceIntegrationTest {
 
         // Keep the assertion tied to the UUID contract, not an entity relation.
         assertThat(staff.getStaffId()).isInstanceOf(UUID.class);
+
+        var staffLookup = lookupStaffIdentityUseCase.lookup(staff.getStaffId());
+        assertThat(staffLookup.exists()).isTrue();
+        assertThat(staffLookup.active()).isTrue();
+        assertThat(staffLookup.departmentId()).isEqualTo(department.getDepartmentId());
+        assertThat(staffLookup.jobTitle()).isEqualTo(JobTitle.DOCTOR.name());
+
+        var departmentLookup = lookupDepartmentUseCase.lookup(department.getDepartmentId());
+        assertThat(departmentLookup.exists()).isTrue();
+        assertThat(departmentLookup.active()).isTrue();
+        assertThat(departmentLookup.departmentId()).isEqualTo(department.getDepartmentId());
+        assertThat(departmentLookup.departmentName()).isEqualTo("Integration Cardiology");
+
+        UUID missingStaffId = UUID.randomUUID();
+        assertThat(lookupStaffIdentityUseCase.lookup(missingStaffId))
+                .satisfies(result -> {
+                    assertThat(result.exists()).isFalse();
+                    assertThat(result.active()).isFalse();
+                    assertThat(result.departmentId()).isNull();
+                });
+        UUID missingDepartmentId = UUID.randomUUID();
+        assertThat(lookupDepartmentUseCase.lookup(missingDepartmentId))
+                .satisfies(result -> {
+                    assertThat(result.exists()).isFalse();
+                    assertThat(result.active()).isFalse();
+                    assertThat(result.departmentId()).isEqualTo(missingDepartmentId);
+                });
+
+        var reconstitutedStaff = staffStore.findById(staff.getStaffId()).orElseThrow();
+        reconstitutedStaff.deactivate();
+        staffStore.save(reconstitutedStaff);
+        assertThat(lookupStaffIdentityUseCase.lookup(staff.getStaffId()).active()).isFalse();
+
+        var reconstitutedDepartment = departmentStore.findById(department.getDepartmentId())
+                .orElseThrow();
+        reconstitutedDepartment.deactivate(false);
+        departmentStore.save(reconstitutedDepartment);
+        assertThat(lookupDepartmentUseCase.lookup(department.getDepartmentId()).active())
+                .isFalse();
+
+        UUID patientId = UUID.randomUUID();
+        var patientAccount = createAccountUseCase.execute(
+                "patient." + UUID.randomUUID().toString().substring(0, 12),
+                "Patient123!",
+                null,
+                patientId,
+                Role.PATIENT);
+        var verified = verifyCredentialsUseCase.execute(
+                patientAccount.getUsername(), "Patient123!");
+        assertThat(verified.accountId()).isEqualTo(patientAccount.getAccountId());
+        assertThat(verified.role()).isEqualTo(Role.PATIENT);
+        assertThat(verified.patientId()).isEqualTo(patientId);
+        assertThat(verified.staffId()).isNull();
     }
 }

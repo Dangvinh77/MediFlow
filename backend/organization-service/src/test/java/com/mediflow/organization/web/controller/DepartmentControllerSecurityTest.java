@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -138,6 +139,18 @@ class DepartmentControllerSecurityTest {
                 .andExpect(jsonPath("$.data.exists").value(false))
                 .andExpect(jsonPath("$.data.active").value(false))
                 .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
+    void lookup_persistenceFailure_returnsUnavailable() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        when(lookupDepartmentUseCase.lookup(departmentId))
+                .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+        mockMvc.perform(get("/api/v1/org/departments/{id}/lookup", departmentId))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error.code").value("ORG_LOOKUP_UNAVAILABLE"));
     }
 
     @Test
