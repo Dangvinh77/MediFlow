@@ -115,6 +115,13 @@ reservations, pending slip, held creation and receipt commit together. Same comm
 return the original Rx; changed actor/intent conflicts; failed writes roll back the fence too. This
 port is not connected to the public API. Patient/episode authority approval still gates activation.
 
+V19 stores the exact `discharge.medically.approved` singleton separately from administrative
+`admission.closed`. The offline Inpatient decoder reads the producer fixture; a discharge arriving
+before start is retained, and a late start never restores medication eligibility. Existing V18
+admission rows upgrade with no fabricated discharge. This is a local projection only: no new Rabbit
+binding or public admission create/dispense path is enabled until transfer/freshness and cross-owner
+acceptance are complete.
+
 `CancelCarePrescriptionUseCase` and `ExpireCarePrescriptionUseCase` terminate whole reserved orders
 with matching Rx/slip/held proof; cancellation is restricted to the prescribing doctor or ADMIN,
 expiry uses time after lock waits. Retry does not release twice or change the original exact time.

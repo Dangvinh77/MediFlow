@@ -86,13 +86,13 @@ class SurgeryScheduleApplicationServiceTest {
     }
 
     private void stubActiveLookups() {
-        when(organization.findDepartment(surgeryCase.getDepartmentId())).thenReturn(active(
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
-        when(organization.findRoom(roomId)).thenReturn(active(
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        when(organization.findStaff(surgeonId)).thenReturn(active(
+        when(organization.findStaff(surgeonId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.STAFF, surgeonId));
-        when(organization.findStaff(nurseId)).thenReturn(active(
+        when(organization.findStaff(nurseId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.STAFF, nurseId));
     }
 
@@ -136,11 +136,11 @@ class SurgeryScheduleApplicationServiceTest {
     @Test
     void prepare_inactiveStaff_rejectsBeforeCaseLockOrScheduleMutation() {
         stubNewReceipt();
-        when(organization.findDepartment(surgeryCase.getDepartmentId())).thenReturn(active(
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
-        when(organization.findRoom(roomId)).thenReturn(active(
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        when(organization.findStaff(surgeonId)).thenReturn(inactive(
+        when(organization.findStaff(surgeonId, CORRELATION_ID)).thenReturn(inactive(
                 OrganizationLookupPort.ReferenceKind.STAFF, surgeonId));
 
         assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)))
@@ -156,9 +156,9 @@ class SurgeryScheduleApplicationServiceTest {
     @Test
     void prepare_unknownRoomState_failsClosedAsUpstreamUnavailable() {
         stubNewReceipt();
-        when(organization.findDepartment(surgeryCase.getDepartmentId())).thenReturn(active(
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
-        when(organization.findRoom(roomId)).thenReturn(unknown(
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(unknown(
                 OrganizationLookupPort.ReferenceKind.ROOM, roomId));
 
         assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)))
@@ -172,9 +172,9 @@ class SurgeryScheduleApplicationServiceTest {
     @Test
     void prepare_lookupEchoMismatch_failsClosedBeforeLockingCase() {
         stubNewReceipt();
-        when(organization.findDepartment(surgeryCase.getDepartmentId())).thenReturn(active(
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
-        when(organization.findRoom(roomId)).thenReturn(active(
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.ROOM, UUID.randomUUID()));
 
         assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)))
@@ -248,9 +248,9 @@ class SurgeryScheduleApplicationServiceTest {
         service.prepare(command(surgeryCase, actor, 1, 0));
 
         InOrder order = inOrder(organization, cases);
-        order.verify(organization).findDepartment(surgeryCase.getDepartmentId());
-        order.verify(organization).findRoom(roomId);
-        order.verify(organization, times(2)).findStaff(any());
+        order.verify(organization).findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID);
+        order.verify(organization).findRoom(roomId, CORRELATION_ID);
+        order.verify(organization, times(2)).findStaff(any(), eq(CORRELATION_ID));
         order.verify(cases).lockById(surgeryCase.getSurgeryCaseId());
     }
 

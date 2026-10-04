@@ -487,12 +487,12 @@ class SurgeryCasePersistenceIntegrationTest {
         UUID roomId = UUID.randomUUID();
         UUID staffId = UUID.randomUUID();
         OrganizationLookupPort organization = org.mockito.Mockito.mock(OrganizationLookupPort.class);
-        org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId()))
+        org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId(), "schedule-prepare-pg"))
                 .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
                         surgeryCase.getDepartmentId()));
-        org.mockito.Mockito.when(organization.findRoom(roomId))
+        org.mockito.Mockito.when(organization.findRoom(roomId, "schedule-prepare-pg"))
                 .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        org.mockito.Mockito.when(organization.findStaff(staffId))
+        org.mockito.Mockito.when(organization.findStaff(staffId, "schedule-prepare-pg"))
                 .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
         SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
                 cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
@@ -556,12 +556,12 @@ class SurgeryCasePersistenceIntegrationTest {
             UUID roomId = UUID.randomUUID();
             UUID staffId = UUID.randomUUID();
             OrganizationLookupPort organization = org.mockito.Mockito.mock(OrganizationLookupPort.class);
-            org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId()))
+            org.mockito.Mockito.when(organization.findDepartment(surgeryCase.getDepartmentId(), "schedule-prepare-rollback-pg"))
                     .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
                             surgeryCase.getDepartmentId()));
-            org.mockito.Mockito.when(organization.findRoom(roomId))
+            org.mockito.Mockito.when(organization.findRoom(roomId, "schedule-prepare-rollback-pg"))
                     .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-            org.mockito.Mockito.when(organization.findStaff(staffId))
+            org.mockito.Mockito.when(organization.findStaff(staffId, "schedule-prepare-rollback-pg"))
                     .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
             SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
                     cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
