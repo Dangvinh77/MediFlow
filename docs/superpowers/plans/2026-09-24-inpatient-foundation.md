@@ -57,7 +57,8 @@
 - Modify: `docs/ai/services/inpatient.md`
 - Create: `backend/inpatient-service/AGENTS.md`
 - Create: `backend/inpatient-service/README.md`
-- Create: `docs/handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md`
+- Create: `docs/handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md` (historical step; retired after
+  Gateway route/RBAC/tests landed in `262d610`)
 - Modify: `docs/handoffs/README.md`
 
 - [x] Add the empty dedicated database and Compose service on port 8090 with healthy PostgreSQL, RabbitMQ, and Eureka dependencies and the development JWT secret matching the existing Compose pattern.

@@ -1,106 +1,89 @@
-# Vinh — local / Cloud backlog
+# Vinh — three-service completion audit
 
-Audit date: 2026-10-03. Source baseline: `3fa55c9` (master matched origin/master after fetch).
-Owner: Dangvinh77 / Harori. This is a task queue, not approval to enable V2 integration.
+Audit refresh: 2026-10-04. Source baseline: `2e8f024` (master matched origin/master before this
+documentation branch). Owner: Dangvinh77 / Harori. Scope: Clinical, Lab and Inpatient plus their
+owned frontend features. This queue does not authorize editing another owner's production code or
+enabling an integration before shared fixtures pass.
 
 ## Evidence and current state
 
-- Full codebase-memory-mcp 0.11.0 index: 19,078 nodes, 85,796 edges; 128 deliberately
-  excluded files, 40 partial parses, 12 unusable parses. Graph queries plus direct Java/config
-  reads support this audit; this is not an exhaustive business-rule or SQL correctness review.
-- Clinical: legacy APIs plus check-in/start-exam/complete/admission-referral commands exist.
-  Appointment frontend list/detail/create/edit is implemented. Medical-record frontend exposes
-  only patient lookup (`frontend/src/features/medical-record/api.ts`).
-- Lab: list/detail/create/results/start/cancel/status APIs exist (`LabController`). Frontend
-  exposes list search only (`frontend/src/features/lab/api.ts`). Payment and clinical status must
-  stay separate. Gateway role mismatches are a concrete blocker, not a missing Lab detail API.
-- Inpatient: admission/bed/treatment/discharge core, lifecycle fixtures and guarded consumers
-  exist. Gateway route is absent. Surgery consumer still requires admissionId for Surgery facts;
-  outpatient/late-event/reference-registration behavior awaits the shared Surgery contract.
-- Billing: V2 domain model `FinancialClearance` exists. Current `BillingEventPublisherAdapter`
-  still enqueues invoice-created/payment-completed/payment-failed only. Domain progress is not
-  a clearance or settlement producer implementation.
-- Existing five handoffs remain active in part. Do not delete whole handoffs merely because
-  one local slice or same-byte decoder test is complete. Surgery shared runtime is already done.
-- Docker daemon was unavailable during audit (Linux engine named pipe absent). No new Docker,
-  browser E2E or regression-suite pass is claimed by this document.
+- Fresh codebase-memory-mcp index: 19,226 nodes and 86,526 edges; 128 files excluded by design,
+  40 partial parses and 12 unusable diagram/document parses. Graph evidence was checked against
+  controllers, event consumers, Gateway rules and active handoffs.
+- **Clinical:** legacy APIs and V2 check-in/start-exam/complete/admission-referral commands exist.
+  Appointment list/detail/create/edit and medical-record detail exist in the frontend. The backend
+  still cannot truthfully activate EXAM clearance because Billing does not publish it.
+- **Lab:** list/detail/create/results/start/cancel/status APIs and list/detail frontend pages exist.
+  Billing's explicit `labTestIds` compatibility path remains valid. Exact V2 clearance is absent,
+  and current Gateway rules still deny valid downstream roles/methods.
+- **Inpatient:** Core V1 admission/bed/treatment/discharge APIs, persistence, outbox, guarded event
+  consumers and tests exist. Gateway route/RBAC/tests landed in `262d610`. Billing still does not
+  publish ADMISSION_DEPOSIT clearance, top-up or settlement facts. Surgery reference/outcome
+  behavior remains a joint contract gate.
+- **Organization update:** service-only staff and department lookup endpoints landed in `cffdbf5`.
+  They unblock Huy's Surgery adapter for those two lookups. The room lookup and authoritative
+  job-title-to-team-role mapping remain open.
+- Owned Maven regression passed on this branch: Clinical 216 tests (13 skipped), Lab 168 (11
+  skipped), Inpatient 82 (8 skipped), with zero failures/errors. Testcontainers could not connect
+  to Docker, so the skipped integration tests and real browser/Gateway smoke remain required before
+  calling the workflow complete.
 
-## Work local first
+## What Vinh can implement now
 
-| ID | Work | Scope / gate | Done when |
+### P0 — finish before taking speculative integration work
+
+| ID | Work | Scope | Done when |
 |---|---|---|---|
-| LOCAL-01 | Refresh graph, source/contract audit, correct stale docs, route-role handoff | Documentation only | Completed in this audit; no application behavior changed |
-| LOCAL-02 | Start Docker when available; verify login → appointments → records → lab with seeded test accounts | Existing Compose/config; no shared production edits | Record commit, role, request/path, expected/actual status and correlation ID; distinguish 401/403, disabled V2, unavailable service and real defect |
-| LOCAL-03 | Run Vinh persistence/Rabbit regression; preserve data volumes | Clinical/Lab/Inpatient | `mvn -q -pl backend/clinical-service,backend/lab-service,backend/inpatient-service -am test`; failures and skips explicitly reported, not treated as success |
-| LOCAL-04 | Prepare Surgery contract response from Vinh | Canonical contract docs + existing Surgery handoff | Referral path/business key, exact episode proof, external-order registration, outpatient/late delivery and clinical-policy decisions recorded; no invented medical/legal policy or new wire event |
-| LOCAL-05 | Integrate Cloud PRs one at a time and smoke through Gateway | Owned frontend paths; shared fixes require assignment | Typecheck/lint/build and allowed/denied-role browser evidence on merged source |
+| VINH-P0-01 | Complete integration regression and Gateway smoke for current routes | Clinical/Lab/Inpatient; no foreign edits | Unit/web suites already pass; start Docker, run the 32 skipped integration cases, then record login and allowed/denied Clinical, Lab and Inpatient requests with correlation IDs |
+| VINH-P0-02 | Clinical record mutations, one command per commit | `frontend/src/features/medical-record/**`, `frontend/src/app/(dashboard)/records/**` | Create, update and diagnosis actions mirror live DTO validation/state rules; ADMIN/DOCTOR only; 400/403/404/409 and retry are handled |
+| VINH-P0-03 | Lab request creation | `frontend/src/features/lab/**`, `frontend/src/app/(dashboard)/lab/**` | ADMIN/DOCTOR can create from exact backend DTO; success links to detail; no local payment inference |
+| VINH-P0-04 | Resolve Vinh-owned Surgery contract decisions | canonical contract/spec docs + existing Surgery handoff | Stable referral identity/path, external-order registration, outpatient not-applicable behavior and late-event policy are explicit and fixture-ready |
 
-Keep runtime checks local because they need Docker, actual account/role configuration and the
-current multi-service environment. Do not launch the whole stack merely to render a read-only UI.
-LOCAL-02/03 are pending runtime availability, not completed by static inspection.
+P0-02 and P0-03 are independent. Lab result/start/cancel UI must wait for the Gateway role/method
+matrix to align so the page does not promise a workflow that the public route rejects.
 
-## Cloud tasks to run later
+### P1 — start only after the named gate
 
-These are prepared assignments, not launched Cloud tasks. Each task branches from the latest
-merged master, reads AGENTS.md and the live controller/DTO, and stops at missing contracts.
+| ID | Work | Gate | Vinh implementation |
+|---|---|---|---|
+| VINH-P1-01 | Clinical EXAM clearance | Lộc publishes canonical EXAM fixture through outbox | Consumer/command/state transition plus duplicate/mismatch/DLQ tests; then activate by explicit rollout |
+| VINH-P1-02 | Lab exact-test clearance | Lộc publishes canonical LAB_TEST fixture; Hoàng Anh aligns Gateway roles | Purpose/episode/test-ID consumer tests, then result/start/cancel frontend actions |
+| VINH-P1-03 | Inpatient deposit/top-up/settlement integration | Lộc publishes all canonical fixtures | Same-byte consumer tests, real Rabbit smoke and explicit close-command validation; consuming settlement never auto-closes |
+| VINH-P1-04 | Inpatient ↔ Surgery outcomes | Vinh/Huy approve registration and delivery semantics; Huy publishes fixtures | Reference registration and durable event-first/late/duplicate handling without reopening a closed admission |
+| VINH-P1-05 | Inpatient frontend base | `docs/ai/15-frontend-ownership.md` assigns canonical route/feature paths | Read/list/detail/bed status first through Gateway; mutation slices follow exact roles and live APIs |
 
-### CLOUD-01 — Medical-record detail (ready, small)
+### P2 — intentionally deferred
 
-Writable: `frontend/src/features/medical-record/**`, `frontend/src/app/(dashboard)/records/**`.
-Add `getById` and `/records/[recordId]` using existing `GET /api/v1/records/{id}`;
-link from the patient-record list. ADMIN/DOCTOR/NURSE only. Mirror the current DTO, diagnoses
-and available attachments without fetching other features. Reuse appointment detail conventions
-for UUID validation, loading, 404, denied role, retry and correlation ID. No record mutation yet.
-Acceptance: typecheck/lint/build, invalid UUID/no-request, empty attachments, 404 and role checks.
-Backend/Gateway/shared auth/components/package files are read-only. No new dependency or harness.
+- Bed transfer/release/capacity events have no approved wire contract. Keep placement truth inside
+  Inpatient until consumers and fields are agreed.
+- Emergency deposit override, Surgery post-start abort and debt/waiver policy need explicit
+  clinical/financial authority. Do not invent approvers or legal policy.
+- Do not add Patient/Organization lookups merely because endpoints exist. Admission referrals
+  already carry producer-validated IDs; use synchronous lookup only when a command needs current
+  eligibility, and distinguish absence from outage.
 
-### CLOUD-02 — Lab detail (ready with role limitation, small)
+## Other developer actions
 
-Writable: `frontend/src/features/lab/**`, `frontend/src/app/(dashboard)/lab/**`.
-Add detail API and `/lab/[testId]`, matching live `LabTestDTO`; display results, conclusion,
-episode context and payment separately. Preserve missing values; never infer normal/abnormal
-from COMPLETED. MANAGER has list permission only; currently ADMIN/DOCTOR/NURSE can use Gateway
-detail, while LAB_TECH is blocked by the registered Gateway handoff. Do not advertise LAB_TECH
-detail as working until that fix lands. Acceptance: typecheck/lint/build, invalid UUID, 404,
-empty results, retry and denied role. No start/cancel/result writes in this slice.
+| Owner | Must deliver | Unblocks Vinh | Active handoff |
+|---|---|---|---|
+| Lộc — Billing | EXAM/LAB_TEST clearance producer fixtures; ADMISSION_DEPOSIT, top-up and settlement producer/outbox/replay behavior | Clinical exam gate, Lab exact authorization, Inpatient admit/close workflow | [Clinical/Lab clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md), [Inpatient deposit/settlement](../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md) |
+| Hoàng Anh — Gateway | Clinical/Lab method/role parity | LAB_TECH detail/write workflow, Doctor/Nurse Lab queue, admission-referral public access | [Gateway care roles](../handoffs/HANDOFF-VINH-GATEWAY-CARE-ROLES.md) |
+| Huy — Surgery | Business API/consumer/publisher, staff/department lookup adapter, exact outpatient/admission and delivery-order fixtures | Inpatient reference/outcome integration | [Surgery decisions](../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md), [foundation bootstrap](../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) |
+| Hoàng Anh — Organization | Room lookup and authoritative job-title values/eligibility semantics | Huy's scheduling/team validation and later Inpatient Surgery E2E | [Surgery decisions](../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) |
+| Huy + Lộc | Pharmacy/Report admission and finance projections with same-byte fixtures | Full admission medication/reporting acceptance | [Huy care-finance consumers](../handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) |
 
-### CLOUD-03 — Record create / diagnosis (after CLOUD-01, medium)
+The former Inpatient Gateway route handoff is retired because `262d610` satisfies it. It must not
+be reopened to represent unrelated Billing or Surgery blockers.
 
-Same ownership as CLOUD-01. First inspect create/update/diagnosis DTO validation and application
-rules under the active feature flag. Implement one mutation per commit, ADMIN/DOCTOR only;
-handle validation/conflict and refresh detail. Keep exact UUID inputs until selector contracts
-are accepted. Do not expose V2 complete/referral/exam actions as a workaround for missing finance.
-Acceptance: current role/validation/state contract, safe retries and deterministic frontend checks.
+## Completion definition for Vinh's three services
 
-### CLOUD-04 — Lab request / result entry (after CLOUD-02 and route gates, medium)
+1. Owned module tests pass, with duplicate/mismatch/out-of-order cases for each active event.
+2. Gateway role/path behavior matches downstream `@PreAuthorize` rules and real smoke evidence.
+3. Every enabled producer/consumer pair shares exact versioned fixture bytes and a rollout flag.
+4. Clinical and Lab never infer payment; Inpatient never infers settlement or external order IDs.
+5. Frontend calls same-origin `/api/*` through `src/lib/api.ts` and exposes only accepted roles.
+6. Active handoffs are deleted only when their acceptance evidence lands and lasting rules move to
+   canonical contracts/service docs.
 
-Same ownership as CLOUD-02. Split request creation from result entry. Confirm active legacy/V2
-behavior and exact create/results/start/cancel request DTOs first. Respect the backend payment
-gate; never set paid locally. Gate LAB_TECH workflow on the Gateway fix. Result submission must
-handle stale state/409, missing clearance and backend validation without claiming success.
-No cross-feature imports, new billing assumptions or automatic activation of feature flags.
-
-## Work still blocked / owner action
-
-| Owner | Needed | Vinh work unlocked |
-|---|---|---|
-| Lộc | Actual EXAM/LAB_TEST/ADMISSION_DEPOSIT clearance fixtures + transactional producer, settlement facts and replay semantics | Real payment-to-exam/test/admission and administrative-close integration |
-| Hoàng Anh | Inpatient Gateway route; Clinical/Lab method/role parity; Organization room/staff authority for Surgery | Inpatient frontend and complete Lab/Clinical end-to-end access |
-| Huy with Vinh | Surgery referral-to-case/reference contract, actual context-specific outcome fixtures and late/out-of-order semantics | Inpatient Surgery consumer integration |
-| Vinh with Huy | Approved transfer/release/capacity and source-operation contracts; clinical checklist/consent policy input | Pharmacy admission eligibility and Report metrics beyond existing immutable lifecycle facts |
-| Huy with Lộc | Pharmacy held V1 lifecycle acceptance, classified finance and replay/cutover | Safe activation, not another speculative consumer implementation |
-
-Use the [active handoff registry](../handoffs/README.md). Existing exact producer fixtures are
-evidence, not a substitute for receiver tests or an activation approval. Bed occupancy and medical
-LOS must not be derived from administrative-close or initial-bed snapshots.
-
-## Execution / quota / merge policy
-
-Run CLOUD-01 and CLOUD-02 independently only on disjoint paths; sequence 03 after 01 and 04 after
-02. Local owns shared workboard/contract updates so Cloud branches do not fight over them.
-Use one Sol high planning pass, Luna for bounded implementation (max only for hard reasoning),
-then deterministic checks and one Astra low review per finished slice; avoid three full audits
-of unchanged files. Revalidate model availability when dispatching; no quota percentage estimate.
-Each task returns changed paths, commands/results, unresolved gates and a focused commit/PR.
-Use the configured allowed human identity; no co-author trailers. Never edit another service,
-toggle integration flags, force-push, merge or create additional tasks implicitly from a task prompt.
+Use focused commits and PRs per service. Keep the configured Vinh identity and never add AI/coauthor
+trailers.

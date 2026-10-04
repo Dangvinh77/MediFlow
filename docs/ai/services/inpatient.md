@@ -3,15 +3,15 @@
 **Status:** Core V1 implemented; cross-service activation remains integration-gated
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
-**Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Base path:** `/api/v1/inpatient` (Gateway route is not live)
+**Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Base path:** `/api/v1/inpatient` (Gateway route live)
 
 Core V1 now contains the implementation-ready DDL, admission/bed/treatment/discharge APIs, domain
 state machine, outbox publisher and guarded consumers from
 [`10-inpatient.md`](../../eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md).
 Producer and consumer activation remain off until the named service owners pass the canonical
-same-byte fixtures. The Gateway route is still tracked separately. Inpatient business contracts
-therefore remain `DESIGN_READY`; the shared identity contract retains its separately tracked
-`PARTIAL` status.
+same-byte fixtures. Gateway route, coarse RBAC and route tests landed in `262d610`; that transport
+progress does not activate the disabled RabbitMQ integrations. Inpatient business contracts remain
+`DESIGN_READY`; the shared identity contract retains its separately tracked `PARTIAL` status.
 
 ## Bounded context
 
@@ -106,12 +106,13 @@ Lab/Pharmacy completion facts needed for the admission timeline.
 - [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
-- [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../../handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md)
+- [`HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT`](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md)
 
 ## Integration activation gate
 
 Core business DDL, APIs, events and tests are implemented. Keep Inpatient RabbitMQ producer and
 consumer flags disabled until dependent producers and consumers share passing fixtures. Do not add
 bed-transfer/release/capacity or Surgery wire events before their canonical fields and routing keys
-are approved. The Gateway route remains tracked by the active handoff above. Contract status stays
-`DESIGN_READY` until the integration gates pass.
+are approved. The public route is available, but financial and Surgery event activation still wait
+for the active handoffs above. Contract status stays `DESIGN_READY` until those integration gates
+pass.

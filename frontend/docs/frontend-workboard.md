@@ -1,7 +1,7 @@
 # Frontend Workboard
 
-> Current frontend routing and ownership view, checked 2026-10-03 against baseline
-> `origin/master` at `3fa55c9`. Refresh the date and commit when route or contract state changes.
+> Current frontend routing and ownership view, checked 2026-10-04 against baseline
+> `origin/master` at `2e8f024`. Refresh the date and commit when route or contract state changes.
 > Ownership rules live in [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
 > Per-service scope, queue, and handoffs live in [`services/`](services/README.md).
 
@@ -36,14 +36,16 @@ generic status mutations.
 
 Vinh's audited execution split and prepared Cloud task scopes are in the
 [2026-10-03 local/Cloud backlog](../../docs/architecture/2026-10-03-vinh-local-cloud-backlog.md).
-Records and Lab detail are the next bounded slices; Gateway role alignment is required before
-claiming the complete LAB_TECH workflow works.
+Records and Lab detail are complete. Record mutations and Lab request creation are the next bounded
+slices; Gateway role alignment is still required before result/start/cancel can be presented as a
+complete LAB_TECH workflow. Inpatient frontend paths are not yet assigned in the canonical
+ownership matrix, even though its backend Gateway route is live.
 
 | Task ID | Owner | Scope | Current state | Next action |
 |---|---|---|---|---|
 | `FE-VINH-01` | Vinh | appointments | `DONE`: list/detail plus create, pending-only edit, lifecycle timestamps, and valid legacy status actions | Re-verify the live Clinical contract before adding any explicit care-finance or examination command. |
 | `FE-VINH-02` | Vinh | records | `DONE`: patient lookup plus contract-aligned record detail with diagnosis/disposition states | `VERIFY-CONTRACT`: add create/update/diagnosis mutations one bounded command at a time. |
-| `FE-VINH-03` | Vinh | lab | `DONE`: queue plus contract-aligned test/result detail; payment and lifecycle remain separate | `VERIFY-CONTRACT`: add request/result mutations after Gateway method/role alignment. |
+| `FE-VINH-03` | Vinh | lab | `DONE`: queue plus contract-aligned test/result detail; payment and lifecycle remain separate | `VERIFY-CONTRACT`: request creation can proceed; result/start/cancel wait for Gateway method/role alignment. |
 | `FE-HUY-01` | Huy | pharmacy | Deeper workflows present | `VERIFY-CONTRACT`: recheck the current pharmacy controller/DTO/test contract before extending the workflow; use `HANDOFF` for missing producer behavior. |
 | `FE-HUY-02` | Huy | reports | Base read route and feature present | `VERIFY-CONTRACT`: audit the report DTO, filters, roles, and empty/error behavior before adding drill-downs. |
 | `FE-HOANGANH-01` | Hoàng Anh | organization | Base read route and feature present | `VERIFY-CONTRACT`: audit the live organization contract before adding staff/department mutations or cross-context composition. |

@@ -6,20 +6,29 @@ import java.util.UUID;
 
 import com.mediflow.pharmacy.domain.exception.PrescriptionRuleException;
 
-/** CLOSED is absorbing, including when its event arrives before STARTED. */
+/** Medical discharge and administrative close are absorbing, even before STARTED arrives. */
 public record AdmissionMedicationContext(
         UUID admissionId, UUID patientId, UUID departmentId,
         Instant startedAt, String startedFingerprint,
+        Instant medicallyDischargedAt, String medicalDischargeFingerprint,
         Instant closedAt, String closedFingerprint, long version) {
 
     public AdmissionMedicationContext {
         if (admissionId == null || patientId == null || version < 0
                 || (startedAt == null) != (startedFingerprint == null)
                 || (startedAt == null) != (departmentId == null)
+                || (medicallyDischargedAt == null) != (medicalDischargeFingerprint == null)
                 || (closedAt == null) != (closedFingerprint == null)
                 || (startedFingerprint != null && !startedFingerprint.matches("[a-f0-9]{64}"))
+                || (medicalDischargeFingerprint != null && !medicalDischargeFingerprint.matches("[a-f0-9]{64}"))
                 || (closedFingerprint != null && !closedFingerprint.matches("[a-f0-9]{64}"))) {
             throw invalid("Incomplete admission context");
+        }
+        if (startedAt != null && medicallyDischargedAt != null && medicallyDischargedAt.isBefore(startedAt)) {
+            throw invalid("Medical discharge precedes admission start");
+        }
+        if (medicallyDischargedAt != null && closedAt != null && closedAt.isBefore(medicallyDischargedAt)) {
+            throw invalid("Admission close precedes medical discharge");
         }
         if (startedAt != null && closedAt != null && closedAt.isBefore(startedAt)) {
             throw invalid("Admission close precedes its start");
@@ -27,7 +36,8 @@ public record AdmissionMedicationContext(
     }
 
     public static AdmissionMedicationContext empty(UUID admissionId, UUID patientId) {
-        return new AdmissionMedicationContext(admissionId, patientId, null, null, null, null, null, 0);
+        return new AdmissionMedicationContext(admissionId, patientId, null, null, null,
+                null, null, null, null, 0);
     }
 
     public AdmissionMedicationContext apply(AdmissionLifecycleFact fact) {
@@ -42,7 +52,19 @@ public record AdmissionMedicationContext(
                 return this;
             }
             return new AdmissionMedicationContext(admissionId, patientId, fact.departmentId(),
-                    fact.effectiveAt(), fact.fingerprint(), closedAt, closedFingerprint, version + 1);
+                    fact.effectiveAt(), fact.fingerprint(), medicallyDischargedAt,
+                    medicalDischargeFingerprint, closedAt, closedFingerprint, version + 1);
+        }
+        if (fact.kind() == AdmissionLifecycleFact.Kind.MEDICALLY_DISCHARGED) {
+            if (medicalDischargeFingerprint != null) {
+                if (!medicalDischargeFingerprint.equals(fact.fingerprint())) {
+                    throw conflict("Medical discharge fact changed without a correction contract");
+                }
+                return this;
+            }
+            return new AdmissionMedicationContext(admissionId, patientId, departmentId,
+                    startedAt, startedFingerprint, fact.effectiveAt(), fact.fingerprint(),
+                    closedAt, closedFingerprint, version + 1);
         }
         if (closedFingerprint != null) {
             if (!closedFingerprint.equals(fact.fingerprint())) {
@@ -51,7 +73,8 @@ public record AdmissionMedicationContext(
             return this;
         }
         return new AdmissionMedicationContext(admissionId, patientId, departmentId,
-                startedAt, startedFingerprint, fact.effectiveAt(), fact.fingerprint(), version + 1);
+                startedAt, startedFingerprint, medicallyDischargedAt, medicalDischargeFingerprint,
+                fact.effectiveAt(), fact.fingerprint(), version + 1);
     }
 
     /** This local fact check is necessary, not sufficient: transfer/freshness approval is still gated. */
@@ -60,7 +83,7 @@ public record AdmissionMedicationContext(
                 || !Objects.equals(departmentId, expectedDepartmentId)) {
             throw new PrescriptionRuleException("ADMISSION_CONTEXT_MISMATCH", "Admission patient/department mismatch");
         }
-        if (startedAt == null || closedAt != null) {
+        if (startedAt == null || medicallyDischargedAt != null || closedAt != null) {
             throw new PrescriptionRuleException("ADMISSION_NOT_ACTIVE", "Admission is not active");
         }
     }

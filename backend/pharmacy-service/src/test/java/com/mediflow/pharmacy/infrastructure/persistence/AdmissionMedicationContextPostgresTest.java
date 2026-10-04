@@ -67,6 +67,35 @@ class AdmissionMedicationContextPostgresTest {
     }
 
     @Test
+    void medicalDischargeBeforeStart_survivesReloadAndBlocksMedicationBeforeClose() {
+        service.project(discharge());
+        service.project(start());
+        var stored = reload();
+        assertThat(stored.startedAt()).isEqualTo(startedAt);
+        assertThat(stored.medicallyDischargedAt()).isEqualTo(startedAt.plusSeconds(50));
+        assertThat(stored.closedAt()).isNull();
+        assertThat(stored.version()).isEqualTo(2);
+        assertThatThrownBy(() -> stored.requireActive(patientId, departmentId))
+                .hasMessageContaining("not active");
+        service.project(close());
+        assertThat(reload().version()).isEqualTo(3);
+    }
+
+    @Test
+    void conflictingMedicalDischarge_rollsBackDeliveryClaimAndLeavesOriginalFact() {
+        service.project(start());
+        var original = discharge();
+        service.project(original);
+        var changed = new AdmissionLifecycleCommand(UUID.randomUUID(), "d".repeat(64),
+                new AdmissionLifecycleFact(AdmissionLifecycleFact.Kind.MEDICALLY_DISCHARGED,
+                        admissionId, patientId, null, startedAt.plusSeconds(60), "d".repeat(64)));
+        assertThatThrownBy(() -> service.project(changed)).hasMessageContaining("changed");
+        assertThat(reload().medicallyDischargedAt()).isEqualTo(original.fact().effectiveAt());
+        assertThat(reload().version()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM admission_medication_event", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
     void sameEventDifferentPayloadAndWrongPatient_rollBackClaimsAndState() {
         var command = start();
         service.project(command);
@@ -114,6 +143,15 @@ class AdmissionMedicationContextPostgresTest {
                 """, admissionId, patientId, departmentId)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
+    @Test
+    void partialMedicalDischargeTuple_isRejectedByDatabase() {
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO admission_medication_context(admission_id, patient_id, medically_discharged_at)
+                VALUES (?, ?, ?)
+                """, admissionId, patientId, java.sql.Timestamp.from(startedAt.plusSeconds(50))))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
     private AdmissionMedicationContext reload() {
         return new TransactionTemplate(transactions).execute(status -> contexts.lockOrCreate(admissionId, patientId));
     }
@@ -128,6 +166,12 @@ class AdmissionMedicationContextPostgresTest {
         return new AdmissionLifecycleCommand(UUID.randomUUID(), "b".repeat(64),
                 new AdmissionLifecycleFact(AdmissionLifecycleFact.Kind.CLOSED, admissionId, patientId,
                         null, startedAt.plusSeconds(100), "b".repeat(64)));
+    }
+
+    private AdmissionLifecycleCommand discharge() {
+        return new AdmissionLifecycleCommand(UUID.randomUUID(), "c".repeat(64),
+                new AdmissionLifecycleFact(AdmissionLifecycleFact.Kind.MEDICALLY_DISCHARGED,
+                        admissionId, patientId, null, startedAt.plusSeconds(50), "c".repeat(64)));
     }
 
     private static void await(CountDownLatch ready, CountDownLatch go) {

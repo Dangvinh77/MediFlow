@@ -48,7 +48,8 @@ public class AdmissionMedicationContextPersistenceAdapter implements AdmissionMe
                 (row, index) -> new AdmissionMedicationContext(
                         row.getObject("admission_id", UUID.class), row.getObject("patient_id", UUID.class),
                         row.getObject("department_id", UUID.class), instant(row.getString("source_started_at")),
-                        row.getString("started_fingerprint"), instant(row.getString("source_closed_at")),
+                        row.getString("started_fingerprint"), instant(row.getString("source_medically_discharged_at")),
+                        row.getString("medical_discharge_fingerprint"), instant(row.getString("source_closed_at")),
                         row.getString("closed_fingerprint"), row.getLong("version")), admissionId);
     }
 
@@ -56,9 +57,13 @@ public class AdmissionMedicationContextPersistenceAdapter implements AdmissionMe
     public void save(AdmissionMedicationContext context) {
         int changed = jdbc.update("""
                 UPDATE admission_medication_context SET department_id = ?, started_at = ?, source_started_at = ?,
-                    started_fingerprint = ?, closed_at = ?, source_closed_at = ?, closed_fingerprint = ?, version = ?
+                    started_fingerprint = ?, medically_discharged_at = ?, source_medically_discharged_at = ?,
+                    medical_discharge_fingerprint = ?, closed_at = ?, source_closed_at = ?,
+                    closed_fingerprint = ?, version = ?
                 WHERE admission_id = ? AND patient_id = ? AND version = ?
-                """, context.departmentId(), timestamp(context.startedAt()), sourceInstant(context.startedAt()), context.startedFingerprint(),
+                """, context.departmentId(), timestamp(context.startedAt()), sourceInstant(context.startedAt()),
+                context.startedFingerprint(), timestamp(context.medicallyDischargedAt()),
+                sourceInstant(context.medicallyDischargedAt()), context.medicalDischargeFingerprint(),
                 timestamp(context.closedAt()), sourceInstant(context.closedAt()), context.closedFingerprint(), context.version(),
                 context.admissionId(), context.patientId(), context.version() - 1);
         if (changed != 1) {

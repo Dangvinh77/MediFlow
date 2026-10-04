@@ -18,6 +18,16 @@ producer. Inpatient now publishes the approved start/discharge/close lifecycle f
 transfer/release/capacity facts. These additions reduce the local implementation gap without
 establishing cross-owner acceptance or permission to enable the flags.
 
+**Huy consumer update — 2026-10-04:** Pharmacy V19 now persists the exact Inpatient
+`discharge.medically.approved` singleton separately from administrative close. The offline decoder
+reads the producer's checked-in fixture bytes; domain and PostgreSQL tests cover discharge before
+start, late start, conflict rollback and medication-eligibility denial before close. This closes
+only the local medical-discharge projection slice. Transfer/release freshness, live Rabbit binding,
+admission create/dispense authorization and shared activation acceptance remain OPEN. Patient
+service-only existence is already implemented; it is not a remaining producer-endpoint blocker.
+Organization staff/department lookup is likewise implemented, while Surgery room/job-title and
+Gateway Surgery/Report route-role work remain in their registered handoffs.
+
 | Decision | Producer action needed | Huy consumer behavior after contract approval | Acceptance evidence |
 |---|---|---|---|
 | **D08 — admission medication** | V2 selects one slip per prescription, exact patient/department and admission charging rather than outpatient prepayment. Vinh has supplied start/discharge/close fixtures: eligibility ends at medical discharge, and close-before-start never reopens. Vinh still owes transfer/release freshness and cross-department policy; Lộc supplies cancel/expiry/failure adjustment semantics. | Keep version-0 outpatient unchanged; version-1 outpatient uses exact clearance, admission uses exact eligible lifecycle projection. Never reinterpret `paymentConfirmed`, allow late start to reopen closed/medically discharged admission, or infer IDs. Multiple-dose/returns are outside this V1 target. | Same-byte start/discharge/close plus future transfer/release fixtures for wrong/closed/discharged admission, duplicates, out-of-order/restart, failed/expired/cancelled and late compensation; stock/authorization concurrency and Rabbit tests. |

@@ -69,6 +69,11 @@ public class AdmissionLifecycleDecoder {
                 if (settlementId == null && overrideId == null) {
                     throw new IllegalArgumentException("Admission closure requires settlement or override");
                 }
+            } else if ("discharge.medically.approved".equals(routingKey)) {
+                kind = Kind.MEDICALLY_DISCHARGED;
+                uuid(payload, "summaryId");
+                uuid(payload, "approvedBy");
+                effectiveAt = Instant.parse(text(payload, "approvedAt"));
             } else {
                 throw new IllegalArgumentException("Unsupported admission lifecycle type");
             }

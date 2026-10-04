@@ -46,7 +46,7 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("18");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("19");
         assertThat(tableExists("CARE_PRESCRIPTION_CREATION")).isTrue();
         assertThat(tableExists("PRESCRIPTION_CLEARANCE")).isTrue();
         assertThat(tableExists("PRESCRIPTION_CLEARANCE_EVENT")).isTrue();
@@ -55,6 +55,9 @@ class PharmacyMigrationCompatibilityTest {
         assertThat(tableExists("ADMISSION_MEDICATION_CONTEXT")).isTrue();
         assertThat(tableExists("ADMISSION_MEDICATION_EVENT")).isTrue();
         assertThat(constraintExists("ADMISSION_MEDICATION_CONTEXT", "ck_admission_medication_source_time")).isTrue();
+        assertThat(columnExists("ADMISSION_MEDICATION_CONTEXT", "MEDICALLY_DISCHARGED_AT")).isTrue();
+        assertThat(constraintExists("ADMISSION_MEDICATION_CONTEXT",
+                "ck_admission_medication_medical_discharge_order")).isTrue();
         assertThat(tableExists("PAYMENT_RECEIPT")).isTrue();
         assertThat(tableExists("PHARMACY_SCHEDULER_LEASE")).isTrue();
         assertThat(columnExists("PHARMACY_SCHEDULER_LEASE", "LEASE_TOKEN")).isTrue();
@@ -118,6 +121,31 @@ class PharmacyMigrationCompatibilityTest {
         assertThat(queryInt("SELECT count(*) FROM PRESCRIPTION WHERE prescription_id = '"
                 + prescriptionId + "' AND care_episode_id IS NULL AND admission_id IS NULL"
                 + " AND price_code IS NULL")).isEqualTo(1);
+    }
+
+    @Test
+    void v18AdmissionContext_upgradesToV19WithoutInventingMedicalDischarge() throws Exception {
+        flyway(MigrationVersion.fromVersion("18")).migrate();
+        UUID admissionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    INSERT INTO admission_medication_context(admission_id, patient_id, department_id,
+                        started_at, source_started_at, started_fingerprint, version)
+                    VALUES ('%s', '%s', '%s', '2026-09-28T02:10:00Z', '2026-09-28T02:10:00Z', '%s', 1)
+                    """.formatted(admissionId, patientId, departmentId, "a".repeat(64)));
+        }
+
+        flyway().migrate();
+
+        assertThat(queryString("SELECT department_id::text FROM admission_medication_context WHERE admission_id = '"
+                + admissionId + "'")).isEqualTo(departmentId.toString());
+        assertThat(queryInt("SELECT version FROM admission_medication_context WHERE admission_id = '"
+                + admissionId + "'")).isOne();
+        assertThat(queryInt("SELECT count(*) FROM admission_medication_context WHERE admission_id = '"
+                + admissionId + "' AND medically_discharged_at IS NULL AND medical_discharge_fingerprint IS NULL"))
+                .isOne();
     }
 
     /** V1 may omit the legacy record ID but must provide an exact valid episode tuple. */
