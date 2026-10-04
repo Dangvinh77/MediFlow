@@ -93,6 +93,56 @@ class GatewayWebTest {
     }
 
     @Test
+    void inpatientRoute_getUsesCoarseClinicalRoleMatrix() {
+        String doctorToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
+        String correlationId = UUID.randomUUID().toString();
+
+        webTestClient.get()
+                .uri("/api/v1/inpatient/admissions")
+                .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
+                .header("X-Correlation-Id", correlationId)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectHeader().valueEquals("X-Correlation-Id", correlationId)
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+    }
+
+    @Test
+    void inpatientRoute_postAndPutFollowDownstreamRoleMatrix() {
+        String doctorToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
+        String nurseToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.NURSE);
+
+        webTestClient.post()
+                .uri("/api/v1/inpatient/admissions")
+                .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+
+        webTestClient.post()
+                .uri("/api/v1/inpatient/admissions")
+                .header(HttpHeaders.AUTHORIZATION, bearer(nurseToken))
+                .exchange()
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_FORBIDDEN");
+
+        webTestClient.put()
+                .uri("/api/v1/inpatient/admissions/{id}/bed", UUID.randomUUID())
+                .header(HttpHeaders.AUTHORIZATION, bearer(nurseToken))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+
+        webTestClient.put()
+                .uri("/api/v1/inpatient/admissions/{id}/bed", UUID.randomUUID())
+                .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
+                .exchange()
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_FORBIDDEN");
+    }
+
+    @Test
     void correlationId_isKeptWhenValidAndGeneratedWhenMissing() {
         String requested = UUID.randomUUID().toString();
         webTestClient.get()
