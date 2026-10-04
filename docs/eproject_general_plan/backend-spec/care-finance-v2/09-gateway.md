@@ -6,13 +6,14 @@
 
 **Base path:** `/api/v1`
 
-**Status:** implementation-ready route target; Surgery route remains disabled until service health passes
+**Status:** Inpatient route implemented; Surgery route remains gated by a real business API,
+authorization matrix and health
 
 ## 1. Sources and boundary
 
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
-- [`HANDOFF-INPATIENT-GATEWAY-ROUTE`](../../../handoffs/HANDOFF-INPATIENT-GATEWAY-ROUTE.md)
+- [Active handoff registry](../../../handoffs/README.md)
 - [CURRENT Gateway spec](../09-gateway.md)
 
 Gateway authenticates, authorizes, routes and propagates identity/correlation. It does not calculate

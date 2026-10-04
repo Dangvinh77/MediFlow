@@ -6,8 +6,9 @@ V2 `FinancialClearance` domain model and ledger migration now exist. The current
 `BillingEventPublisherAdapter` still publishes only invoice-created/payment-completed/payment-failed;
 this progress does not close the clearance producer gate. Lộc's next slice is the application +
 transactional outbox path and canonical EXAM/LAB_TEST producer fixtures below. Coordinate
-ADMISSION_DEPOSIT and settlement producer fixtures with Inpatient as well; do not enable consumers
-on domain-model evidence alone. Baseline: `3fa55c9`.
+ADMISSION_DEPOSIT, top-up and settlement through the separate
+[Inpatient handoff](HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md); do not enable consumers on domain-model
+evidence alone. Refreshed baseline: `2e8f024`.
 
 > **Status (source audit 2026-09-29 at `d252492`): OPEN.** Billing currently publishes the compatibility
 > `payment.completed` event but does not publish `financial.clearance.granted`. Clinical therefore
