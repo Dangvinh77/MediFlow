@@ -323,11 +323,14 @@ Chi tiết ánh xạ quy tắc → tầng test → tên test: xem mục 11 và 1
   outbox/scheduler retry/lease/fencing và role/security boundaries đã có code/test.
 - V14 persistence giữ nguyên V0 và bổ sung exact care-context cho V1; selected V1 request không được
   silently downgrade. Legacy payment không unlock V1.
-- V15 + `AdmissionMedicationContext` + application port/service/JDBC adapter lưu STARTED/CLOSED
-  theo exact admission/patient; close-before-start tồn tại bền vững và late start không reopen.
+- V15/V19 + `AdmissionMedicationContext` + application port/service/JDBC adapter lưu
+  STARTED/MEDICALLY_DISCHARGED/CLOSED theo exact admission/patient; discharge/close-before-start
+  tồn tại bền vững và late start không reopen. Medical discharge dừng normal medication eligibility
+  trước administrative close; transfer/freshness vẫn chưa có fact chấp thuận.
   Event fingerprint và business fingerprint riêng; same fact/new event không tăng context version,
   payload/patient mismatch rollback cả claim. Row locks/version check, không JVM mutex.
-- `AdmissionLifecycleDecoder` offline dùng đúng Inpatient V1 fixture bytes; không bind queue mới.
+- `AdmissionLifecycleDecoder` offline dùng đúng Inpatient V1 fixture bytes, gồm
+  `discharge.medically.approved`; không bind queue mới.
 - `PrescriptionCareEventCodec`/V1 DTOs và 5 proposal fixtures serialize/deserialize đủ context,
   priced items, exact timestamps, source IDs và filled dispenseId. Publisher V0 không đổi.
 
@@ -341,7 +344,7 @@ The V0 executor rejects V1 and authorization denial bypasses the legacy stock fa
 writer. V0 reservation expiry is checked after all stock locks. Unit tests pass; V16 PostgreSQL
 verification remains OPEN because Docker fails to start (see latest plan evidence).
 
-Still required: Billing grant-time/expiry/revocation approval, medical-discharge/transfer/freshness eligibility,
+Still required: Billing grant-time/expiry/revocation approval, transfer/freshness eligibility,
 V1 create/dispense/lifecycle outbox wiring and its complete failure classification,
 producer/consumer same-byte approvals, Rabbit/E2E and rollout. Các kernel offline không đủ để bật
 V1 writer hoặc quyền xuất thuốc; xem P-02/P-03 và active Huy handoff.
@@ -371,10 +374,11 @@ outpatient creation/stock/terminal writers now exist, but are not public adapter
 `payment.completed` consumer only authorizes V0 prescriptions; it rejects V1 before claiming a
 payment receipt.
 
-Admission projection hiện là local/offline necessity check, không phải permission live. CLOSED
-được lưu ngay cả khi chưa có start; department chỉ đến từ exact matching start. Source timestamps
-được lưu thêm dạng ISO để domain giữ nanosecond khi PostgreSQL round microsecond. Medical discharge,
-transfer/freshness vẫn chưa có consumer policy/fixture được chấp thuận nên V1 fence tiếp tục giữ.
+Admission projection hiện là local/offline necessity check, không phải permission live.
+MEDICALLY_DISCHARGED/CLOSED được lưu ngay cả khi chưa có start; department chỉ đến từ exact matching
+start. Source timestamps được lưu thêm dạng ISO để domain giữ nanosecond khi PostgreSQL round
+microsecond. Inpatient producer fixture đã chứng minh medical discharge kết thúc normal eligibility;
+transfer/freshness vẫn chưa có contract nên V1 fence tiếp tục giữ.
 
 - `OUTPATIENT`: giữ saga hiện tại — tạo đơn → Billing tạo phí/yêu cầu thanh toán → clearance hoặc
   compatibility `payment.completed` → cấp thuốc.

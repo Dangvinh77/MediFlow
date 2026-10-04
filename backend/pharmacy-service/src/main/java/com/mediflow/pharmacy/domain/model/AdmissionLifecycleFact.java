@@ -10,13 +10,13 @@ public record AdmissionLifecycleFact(
         Kind kind, UUID admissionId, UUID patientId, UUID departmentId,
         Instant effectiveAt, String fingerprint) {
 
-    public enum Kind { STARTED, CLOSED }
+    public enum Kind { STARTED, MEDICALLY_DISCHARGED, CLOSED }
 
     public AdmissionLifecycleFact {
         if (kind == null || admissionId == null || patientId == null || effectiveAt == null
                 || fingerprint == null || !fingerprint.matches("[a-f0-9]{64}")
                 || (kind == Kind.STARTED && departmentId == null)
-                || (kind == Kind.CLOSED && departmentId != null)) {
+                || (kind != Kind.STARTED && departmentId != null)) {
             throw new PrescriptionRuleException("ADMISSION_FACT_INVALID", "Incomplete admission lifecycle fact");
         }
     }

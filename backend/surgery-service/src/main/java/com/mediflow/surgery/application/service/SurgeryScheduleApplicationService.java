@@ -62,13 +62,13 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
             throw new SurgeryRevisionConflictException();
         }
         requirePreop(observed);
-        verifyReference(organization.findDepartment(observed.getDepartmentId()),
+        verifyReference(organization.findDepartment(observed.getDepartmentId(), command.correlationId()),
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, observed.getDepartmentId(), "DEPARTMENT");
-        verifyReference(organization.findRoom(command.roomId()),
+        verifyReference(organization.findRoom(command.roomId(), command.correlationId()),
                 OrganizationLookupPort.ReferenceKind.ROOM, command.roomId(), "ROOM");
         for (PrepareSurgeryScheduleUseCase.TeamMember member : command.team().stream()
                 .sorted(Comparator.comparing(value -> value.staffId().toString())).toList()) {
-            verifyReference(organization.findStaff(member.staffId()),
+            verifyReference(organization.findStaff(member.staffId(), command.correlationId()),
                     OrganizationLookupPort.ReferenceKind.STAFF, member.staffId(), "STAFF");
         }
 

@@ -38,6 +38,35 @@ class AdmissionLifecycleDecoderTest {
     }
 
     @Test
+    void actualMedicalDischargeFixture_endsMedicationEligibilityBeforeAdministrativeClose() throws Exception {
+        var started = decoder.decode("admission.started", fixture("admission.started.v1.json"));
+        var discharged = decoder.decode("discharge.medically.approved",
+                fixture("discharge.medically.approved.v1.json"));
+        var closed = decoder.decode("admission.closed", fixture("admission.closed.v1.json"));
+        var seed = AdmissionMedicationContext.empty(started.fact().admissionId(), started.fact().patientId());
+        var context = seed.apply(discharged.fact()).apply(started.fact());
+        assertThat(context.medicallyDischargedAt()).isEqualTo(discharged.fact().effectiveAt());
+        assertThat(context.closedAt()).isNull();
+        assertThatThrownBy(() -> context.requireActive(started.fact().patientId(),
+                started.fact().departmentId())).hasMessageContaining("not active");
+        assertThat(context.apply(closed.fact())).isEqualTo(
+                seed.apply(started.fact()).apply(discharged.fact()).apply(closed.fact()));
+    }
+
+    @Test
+    void medicalDischargeMissingAuthorityOrWrongRouting_isRejected() throws Exception {
+        var root = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(
+                fixture("discharge.medically.approved.v1.json"));
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) root.get("payload");
+        payload.remove("approvedBy");
+        assertThatThrownBy(() -> decoder.decode("discharge.medically.approved", mapper.writeValueAsBytes(root)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> decoder.decode("admission.closed",
+                fixture("discharge.medically.approved.v1.json")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void wrongVersionProducerRoutingAndMissingDepartmentAreRejected() throws Exception {
         String json = new String(fixture("admission.started.v1.json"), java.nio.charset.StandardCharsets.UTF_8);
         assertThatThrownBy(() -> decoder.decode("admission.started", json.replace("\"version\": 1", "\"version\": 2").getBytes()))
