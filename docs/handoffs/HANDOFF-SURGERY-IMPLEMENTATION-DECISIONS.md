@@ -24,8 +24,9 @@ Hoàng Anh now exposes service-only staff and department lookups with active-sta
 implemented the Surgery consumer against those exact endpoints; canonical producer fixtures still
 need to be copied into consumer tests once supplied. This does not close the Organization gate:
 no operating-room lookup exists,
-and the allowed `jobTitle` values/mapping for Surgery team roles are still not canonical. The
-Gateway route should wait for Huy's real business endpoint and authorization matrix.
+and the allowed `jobTitle` values/mapping for Surgery team roles are still not canonical. Huy's
+pre-op and cancellation endpoints now provide an initial ADMIN/DOCTOR route matrix, so Hoàng Anh
+can add the Gateway route for those exact paths without pre-authorizing future Surgery APIs.
 
 **Huy consumer update:** Surgery now calls both exact service-only paths with a short-lived service
 JWT and correlation ID, validates response envelope/header and authoritative department identity,
