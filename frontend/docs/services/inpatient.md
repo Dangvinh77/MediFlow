@@ -1,7 +1,7 @@
 # Frontend Service: Inpatient
 
-**Owner:** Vinh (`Dangvinh77` / `Harori`)  
-**Backend:** `backend/inpatient-service/**`  
+**Owner:** Vinh (`Dangvinh77` / `Harori`)
+**Backend:** `backend/inpatient-service/**`
 **Contract context:** [`docs/ai/services/inpatient.md`](../../../docs/ai/services/inpatient.md)
 
 ## Writable frontend scope
