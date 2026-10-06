@@ -170,6 +170,74 @@ class GatewayWebTest {
     }
 
     @Test
+    void inpatientTreatmentCorrection_matchesOnlyTheDeclaredPathAndRoles() {
+        String admissionId = UUID.randomUUID().toString();
+        String entryId = UUID.randomUUID().toString();
+        String correctionPath = "/api/v1/inpatient/admissions/" + admissionId
+                + "/treatments/" + entryId + "/corrections";
+
+        expectDownstreamUnavailable(HttpMethod.POST, correctionPath, Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.POST, correctionPath, Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.POST, correctionPath, Roles.NURSE);
+
+        expectForbidden(HttpMethod.POST, correctionPath, Roles.CASHIER);
+        expectForbidden(HttpMethod.POST, correctionPath, Roles.MANAGER);
+        expectForbidden(HttpMethod.POST, correctionPath, Roles.LAB_TECH);
+
+        expectForbidden(HttpMethod.GET, correctionPath, Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/inpatient/admissions/" + admissionId + "/treatments/corrections",
+                Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/inpatient/admissions/" + admissionId + "/extra/treatments/"
+                        + entryId + "/corrections",
+                Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST, correctionPath + "/extra", Roles.DOCTOR);
+    }
+
+    @Test
+    void surgeryActions_areLimitedToAdminAndDoctor() {
+        UUID caseId = UUID.randomUUID();
+        String preopPath = "/api/v1/surgery/cases/" + caseId + "/preop";
+        String correlationId = UUID.randomUUID().toString();
+
+        webTestClient.post()
+                .uri(preopPath)
+                .header(HttpHeaders.AUTHORIZATION,
+                        bearer(jwt.issueAccessToken(UUID.randomUUID(), Roles.ADMIN)))
+                .header("X-Correlation-Id", correlationId)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectHeader().valueEquals("X-Correlation-Id", correlationId)
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+        expectDownstreamUnavailable(HttpMethod.POST,
+                preopPath, Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.DOCTOR);
+
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.NURSE);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.MANAGER);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.PATIENT);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.NURSE);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.MANAGER);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/cancel", Roles.PATIENT);
+
+        expectForbidden(HttpMethod.GET,
+                "/api/v1/surgery/cases/" + caseId + "/preop", Roles.ADMIN);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/surgery/cases/" + caseId + "/schedule", Roles.ADMIN);
+    }
+
+    @Test
     void clinicalRoutes_followDownstreamRoleMatrix() {
         UUID appointmentId = UUID.randomUUID();
         UUID recordId = UUID.randomUUID();
@@ -331,7 +399,9 @@ class GatewayWebTest {
     }
 
     private WebTestClient.ResponseSpec request(HttpMethod method, String path, String role) {
-        String token = jwt.issueAccessToken(UUID.randomUUID(), role);
+        String token = Roles.PATIENT.equals(role)
+                ? jwt.issueAccessToken(UUID.randomUUID(), role, null, null, UUID.randomUUID())
+                : jwt.issueAccessToken(UUID.randomUUID(), role);
         return webTestClient.method(method)
                 .uri(path)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))

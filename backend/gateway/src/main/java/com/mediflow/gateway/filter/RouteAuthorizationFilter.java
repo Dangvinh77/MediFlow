@@ -7,6 +7,8 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +20,7 @@ import java.util.Set;
 public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
     public static final String ROLE_ATTRIBUTE = RouteAuthorizationFilter.class.getName() + ".role";
+    private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private static final List<RouteRule> RULES = List.of(
             rule("/api/v1/org/departments", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
@@ -40,7 +43,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/appointments", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
-            rule("/api/v1/appointments/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/*", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments/**/status", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments/**/check-in", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/appointments/**/start-exam", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
@@ -53,7 +56,9 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             // Inpatient routes mirror the downstream controller's method-level guards.
             rule("/api/v1/inpatient/admissions", HttpMethod.GET,
                     Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE, Roles.CASHIER),
-            rule("/api/v1/inpatient/admissions/**", HttpMethod.GET,
+            // Keep this to the controller's single-resource endpoint. A broad /** GET rule
+            // would also authorize unsupported action paths such as treatment corrections.
+            rule("/api/v1/inpatient/admissions/*", HttpMethod.GET,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.CASHIER),
             rule("/api/v1/inpatient/beds", HttpMethod.GET,
                     Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
@@ -63,7 +68,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/inpatient/admissions/**/treatments", HttpMethod.POST,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
-            rule("/api/v1/inpatient/admissions/**/treatments/*/corrections", HttpMethod.POST,
+            rule("/api/v1/inpatient/admissions/*/treatments/*/corrections", HttpMethod.POST,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/inpatient/admissions/**/order-references", HttpMethod.POST,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
@@ -84,9 +89,15 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/inpatient/beds/**", HttpMethod.PUT,
                     Roles.ADMIN, Roles.MANAGER),
 
+            // Only the currently implemented, feature-gated Surgery actions are exposed.
+            rule("/api/v1/surgery/cases/*/preop", HttpMethod.POST,
+                    Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/surgery/cases/*/cancel", HttpMethod.POST,
+                    Roles.ADMIN, Roles.DOCTOR),
+
             rule("/api/v1/lab", HttpMethod.GET,
                     Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE, Roles.LAB_TECH),
-            rule("/api/v1/lab/{id}", HttpMethod.GET,
+            rule("/api/v1/lab/*", HttpMethod.GET,
                     Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.LAB_TECH),
             rule("/api/v1/lab/patient/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/lab", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
@@ -169,20 +180,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
     private record RouteRule(String pattern, HttpMethod method, Set<String> roles) {
         private boolean matches(String path) {
-            if (pattern.endsWith("/**")) {
-                return path.startsWith(pattern.substring(0, pattern.length() - 3));
-            }
-            if (pattern.contains("{id}")) {
-                String prefix = pattern.substring(0, pattern.indexOf("{id}"));
-                return path.startsWith(prefix) && path.substring(prefix.length()).matches("[^/]+$");
-            }
-            if (pattern.contains("**")) {
-                int wildcard = pattern.indexOf("**");
-                String prefix = pattern.substring(0, wildcard);
-                String suffix = pattern.substring(wildcard + 2);
-                return path.startsWith(prefix) && path.endsWith(suffix);
-            }
-            return pattern.equals(path);
+            return PATH_MATCHER.match(pattern, path);
         }
     }
 
