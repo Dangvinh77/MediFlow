@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { medicalRecordApi } from "../api";
-import type { MedicalRecordDTO, RecordDisposition } from "../types";
+import type { DiagnosisDTO, MedicalRecordDTO, RecordDisposition } from "../types";
+import { AddDiagnosisForm } from "./AddDiagnosisForm";
 
 interface MedicalRecordDetailProps {
   recordId: string;
+  notice?: "created" | "updated";
 }
 
 interface RequestError {
@@ -52,14 +55,29 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function MedicalRecordDetail({ recordId }: MedicalRecordDetailProps) {
+const getServerRole = () => null;
+
+export function MedicalRecordDetail({ recordId, notice }: MedicalRecordDetailProps) {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
   const requestKey = `${recordId}\u0000${retryToken}`;
   const loading = state.key !== requestKey;
 
   const retry = useCallback(() => setRetryToken((value) => value + 1), []);
+
+  function addCreatedDiagnosis(diagnosis: DiagnosisDTO) {
+    setState((current) => current.status === "success"
+      ? {
+          ...current,
+          record: {
+            ...current.record,
+            diagnoses: [...current.record.diagnoses, diagnosis],
+          },
+        }
+      : current);
+  }
 
   useEffect(() => {
     let active = true;
@@ -103,8 +121,14 @@ export function MedicalRecordDetail({ recordId }: MedicalRecordDetailProps) {
   if (state.status !== "success") return <AsyncState kind="empty" message="Không có dữ liệu hồ sơ khám." />;
 
   const record = state.record;
+  const canMutate = role === "ADMIN" || role === "DOCTOR";
   return (
     <section className="mt-6 space-y-6">
+      {notice ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          {notice === "created" ? "Đã tạo hồ sơ khám thành công." : "Đã cập nhật hồ sơ khám thành công."}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">Mã hồ sơ</p>
@@ -129,7 +153,7 @@ export function MedicalRecordDetail({ recordId }: MedicalRecordDetailProps) {
       <section className="rounded-xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold">Nội dung khám</h2>
         <dl className="mt-4 grid gap-5 sm:grid-cols-2">
-          <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Triệu chứng</dt><dd className="mt-1 whitespace-pre-wrap text-sm">{record.symptoms}</dd></div>
+          <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Triệu chứng</dt><dd className="mt-1 whitespace-pre-wrap text-sm">{record.symptoms ?? "—"}</dd></div>
           <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Hướng xử trí</dt><dd className="mt-1 text-sm">{record.disposition ? dispositionLabels[record.disposition] : "—"}</dd>{record.dispositionNote ? <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{record.dispositionNote}</p> : null}</div>
         </dl>
       </section>
@@ -148,7 +172,16 @@ export function MedicalRecordDetail({ recordId }: MedicalRecordDetailProps) {
         )}
       </section>
 
-      <Link href="/records" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại tra cứu</Link>
+      {canMutate && record.status === "OPEN" ? (
+        <AddDiagnosisForm recordId={record.recordId} onCreated={addCreatedDiagnosis} />
+      ) : null}
+
+      <div className="flex flex-wrap gap-3">
+        {canMutate && record.status === "OPEN" ? (
+          <Link href={`/records/${record.recordId}/edit`} className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Sửa triệu chứng</Link>
+        ) : null}
+        <Link href="/records" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại tra cứu</Link>
+      </div>
     </section>
   );
 }

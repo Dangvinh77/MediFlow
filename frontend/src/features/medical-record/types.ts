@@ -20,13 +20,33 @@ export interface MedicalRecordDTO {
   doctorId: string;
   departmentId: string;
   examinationDate: string;
-  symptoms: string;
+  symptoms: string | null;
   appointmentId: string | null;
   diagnoses: DiagnosisDTO[];
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
   status: MedicalRecordStatus;
   disposition: RecordDisposition | null;
   dispositionNote: string | null;
   completedAt: string | null;
+}
+
+export interface AddDiagnosisRequest {
+  diagnosisName: string;
+  description: string | null;
+  icdCode: string | null;
+}
+
+export interface CreateMedicalRecordRequest {
+  patientId: string;
+  doctorId: string;
+  departmentId: string;
+  examinationDate: string;
+  symptoms: string | null;
+  appointmentId: string | null;
+  diagnoses: AddDiagnosisRequest[];
+}
+
+export interface UpdateMedicalRecordRequest {
+  symptoms: string | null;
 }
