@@ -11,20 +11,23 @@
 
 ## Current UI baseline
 
-`/lab` renders a paged queue from `GET /v1/lab` with department and status filters. It displays
-clinical lifecycle status separately from payment state. UI roles are `ADMIN`, `MANAGER`, and
-`LAB_TECH`.
+`/lab` renders a paged queue from `GET /v1/lab` with department, status and exact episode filters.
+It displays all six live lifecycle states separately from payment state. UI roles mirror the
+controller and corrected Gateway matrix: `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`, and `LAB_TECH`.
 
 `/lab/{testId}` renders the exact live detail DTO, including care episode, clearance, result
-revision, textual results and conclusion. Until Gateway role alignment lands, the UI exposes this
-detail only to `ADMIN`, `DOCTOR`, and `NURSE`; list links appear only for a role that can currently
-reach the detail route.
+revision, textual results and conclusion. It is available to `ADMIN`, `DOCTOR`, `NURSE`, and
+`LAB_TECH`, matching the implemented Gateway role code; real deployment smoke remains open.
+
+`/lab/new` lets `ADMIN` and `DOCTOR` create the current version-0 compatibility request using the
+required record, patient, department, type and requested date fields. It intentionally omits V2
+episode/price identity while activation is held and never infers financial clearance in the browser.
 
 ## Owner queue
 
 - `FE-LAB-01` — `DONE`: test detail mirrors the exact live response DTO and keeps payment/lifecycle separate.
-- `FE-LAB-02` — `VERIFY-CONTRACT`: add one request-creation slice, including record/patient
-  references and backend validation errors.
+- `FE-LAB-02` — `DONE`: request creation mirrors the live compatibility DTO, roles, validation,
+  success navigation, and 400/403/404/409/business-rule handling.
 - `FE-LAB-03` — `VERIFY-CONTRACT`: add one result-entry or lifecycle-transition slice supported by
   the live controller; keep abnormal-result semantics explicit.
 - `FE-LAB-04` — `IMPLEMENT`: cover filters, pagination, payment/clinical status separation, and

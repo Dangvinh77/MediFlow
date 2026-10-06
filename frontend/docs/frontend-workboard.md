@@ -1,7 +1,7 @@
 # Frontend Workboard
 
-> Current frontend routing and ownership view, checked 2026-10-05 against baseline
-> `origin/master` at `3103fa1`. Refresh the date and commit when route or contract state changes.
+> Current frontend routing and ownership view, checked 2026-10-06 against baseline
+> `origin/master` at `a283b30`. Refresh the date and commit when route or contract state changes.
 > Ownership rules live in [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
 > Per-service scope, queue, and handoffs live in [`services/`](services/README.md).
 
@@ -37,16 +37,17 @@ generic status mutations.
 
 Vinh's audited execution split and prepared Cloud task scopes are in the
 [2026-10-03 local/Cloud backlog](../../docs/architecture/2026-10-03-vinh-local-cloud-backlog.md).
-Records and Lab detail are complete. Record mutations and Lab request creation are the next bounded
-slices; Gateway role alignment is still required before result/start/cancel can be presented as a
-complete LAB_TECH workflow. Inpatient read pages can now start within the canonical Vinh scope;
-financial and Surgery composition remains blocked by the active contracts.
+Records now include create/update/diagnosis mutations, and Lab request creation is present. Gateway
+role/method code parity is implemented, but deployment smoke is still required before
+result/start/cancel can be presented as a complete LAB_TECH workflow. Inpatient read pages can now
+start within the canonical Vinh scope; financial and Surgery composition remains blocked by the
+active contracts.
 
 | Task ID | Owner | Scope | Current state | Next action |
 |---|---|---|---|---|
 | `FE-VINH-01` | Vinh | appointments | `DONE`: list/detail plus create, pending-only edit, lifecycle timestamps, and valid legacy status actions | Re-verify the live Clinical contract before adding any explicit care-finance or examination command. |
-| `FE-VINH-02` | Vinh | records | `DONE`: patient lookup plus contract-aligned record detail with diagnosis/disposition states | `VERIFY-CONTRACT`: add create/update/diagnosis mutations one bounded command at a time. |
-| `FE-VINH-03` | Vinh | lab | `DONE`: queue plus contract-aligned test/result detail; payment and lifecycle remain separate | `VERIFY-CONTRACT`: request creation can proceed; result/start/cancel wait for Gateway method/role alignment. |
+| `FE-VINH-02` | Vinh | records | `DONE`: patient lookup, record detail, create, update and add-diagnosis flows mirror the live controller roles and DTOs | Re-verify the live Clinical contract before adding care-finance completion/admission commands. |
+| `FE-VINH-03` | Vinh | lab | `DONE`: queue/detail reflect all live statuses and episode filters; compatibility request creation is available to ADMIN/DOCTOR without browser payment inference | Result/start/cancel remain integration-blocked until real Gateway-to-Lab deployment smoke passes. |
 | `FE-VINH-04` | Vinh | inpatient | Backend Core V1 and Gateway route exist; frontend not started | `IMPLEMENT`: admission list/detail and bed list first; keep finance/Surgery integration blocked. |
 | `FE-HUY-01` | Huy | pharmacy | Deeper workflows present | `VERIFY-CONTRACT`: recheck the current pharmacy controller/DTO/test contract before extending the workflow; use `HANDOFF` for missing producer behavior. |
 | `FE-HUY-02` | Huy | reports | Base read route and feature present | `VERIFY-CONTRACT`: audit the report DTO, filters, roles, and empty/error behavior before adding drill-downs. |
