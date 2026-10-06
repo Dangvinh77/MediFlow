@@ -30,6 +30,10 @@ department, Lab, Pharmacy, and Billing data remain external references.
   `ADMIN`, `DOCTOR`, `NURSE`.
 - `/records/{recordId}`: exact record detail through `GET /v1/records/{id}` with diagnoses,
   status, disposition, completion fields and no cross-feature enrichment.
+- `/records/new`: ADMIN/DOCTOR create from the exact Clinical request DTO with one required initial
+  diagnosis, UUID/date/length/ICD validation, backend field errors, and 403/409/business-rule states.
+- `/records/{recordId}/edit`: ADMIN/DOCTOR update symptoms on an open record; completed records are
+  presented as immutable. The detail page also supports adding a diagnosis with an inline success state.
 - Both flows use feature-local types/API modules, shared async states, and the gateway API wrapper.
 
 ## Owner queue
@@ -38,8 +42,8 @@ department, Lab, Pharmacy, and Billing data remain external references.
   not-found, error/retry, and list navigation.
 - `FE-CLINICAL-02` — `DONE`: appointment create/update/status vertical slice aligned to the live
   request, response, role, validation, conflict, correlation-ID, and transition contracts.
-- `FE-CLINICAL-03` — `PARTIAL`: record detail is complete; next verify and implement one
-  create/update/diagnosis command supported by the live controller.
+- `FE-CLINICAL-03` — `DONE`: record detail, create, update and add-diagnosis commands mirror the
+  live controller DTOs, roles, validation and error states.
 - `FE-CLINICAL-04` — `IMPLEMENT`: add focused API/component tests after the shared test harness is
   assigned.
 

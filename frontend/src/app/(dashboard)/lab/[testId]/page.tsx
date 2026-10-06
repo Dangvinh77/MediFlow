@@ -8,10 +8,12 @@ export const metadata: Metadata = { title: "Chi tiết xét nghiệm | MediFlow"
 
 interface LabDetailPageProps {
   params: Promise<{ testId: string }>;
+  searchParams: Promise<{ notice?: string }>;
 }
 
-export default async function LabDetailPage({ params }: LabDetailPageProps) {
+export default async function LabDetailPage({ params, searchParams }: LabDetailPageProps) {
   const { testId } = await params;
+  const { notice } = await searchParams;
   const id = testId.trim();
 
   return (
@@ -22,8 +24,8 @@ export default async function LabDetailPage({ params }: LabDetailPageProps) {
           <p className="mt-2 break-all">Giá trị <code>{id}</code> không phải UUID nên chưa gọi API.</p>
         </section>
       ) : (
-        <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
-          <LabDetail testId={id} />
+        <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE", "LAB_TECH"]}>
+          <LabDetail testId={id} notice={notice === "created" ? "created" : undefined} />
         </RoleGate>
       )}
     </PageShell>

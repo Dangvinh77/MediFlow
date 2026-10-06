@@ -12,6 +12,7 @@ import type { LabTestDTO, LabTestStatus } from "../types";
 
 interface LabDetailProps {
   testId: string;
+  notice?: "created";
 }
 
 interface RequestError {
@@ -27,6 +28,8 @@ type DetailState =
 
 const statusPresentation: Record<LabTestStatus, { label: string; tone: StatusTone }> = {
   PENDING: { label: "Chờ xử lý", tone: "warning" },
+  AWAITING_PAYMENT: { label: "Chờ quyền tài chính", tone: "warning" },
+  READY: { label: "Sẵn sàng", tone: "info" },
   IN_PROGRESS: { label: "Đang thực hiện", tone: "info" },
   COMPLETED: { label: "Đã hoàn tất", tone: "success" },
   CANCELLED: { label: "Đã hủy", tone: "neutral" },
@@ -51,7 +54,7 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function LabDetail({ testId }: LabDetailProps) {
+export function LabDetail({ testId, notice }: LabDetailProps) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -106,6 +109,11 @@ export function LabDetail({ testId }: LabDetailProps) {
 
   return (
     <section className="mt-6 space-y-6">
+      {notice === "created" ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          Đã tạo yêu cầu xét nghiệm thành công.
+        </p>
+      ) : null}
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{test.labType}</p>

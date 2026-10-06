@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useCallback, useState } from "react";
+import { FormEvent, useCallback, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { medicalRecordApi } from "../api";
@@ -27,6 +28,7 @@ function getRequestError(cause: unknown): RequestError {
 
 export function MedicalRecordTable() {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [patientId, setPatientId] = useState("");
   const [activePatientId, setActivePatientId] = useState("");
   const [records, setRecords] = useState<MedicalRecordDTO[]>([]);
@@ -66,6 +68,13 @@ export function MedicalRecordTable() {
 
   return (
     <section className="mt-6">
+      {role === "ADMIN" || role === "DOCTOR" ? (
+        <div className="mb-5 flex justify-end">
+          <Link href="/records/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+            Tạo hồ sơ khám
+          </Link>
+        </div>
+      ) : null}
       <form onSubmit={onSearch} className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="record-patient-id" className="mb-1 block text-sm font-medium">Mã bệnh nhân</label>
