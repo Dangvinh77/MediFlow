@@ -8,6 +8,13 @@
 
 **Status:** implementation-ready consumer target; enable per producer fixture
 
+**Implemented slice (2026-10-05):** V2 migration adds durable receipt source/template/privacy/hash
+metadata and held delivery outbox. Existing queue reader multiplexes V0 flat payloads and strictly
+gated V1 classified Billing receipts. IN_APP delivery commits inbox + private readable history + held
+sent fact atomically, with no external side effect. Every installment is a receipt, not a fully paid
+invoice; admission-deposit receipts have their own wording. External sender workers and other V2
+events remain unfinished. `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED` defaults to false.
+
 ## 1. Sources and boundary
 
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)

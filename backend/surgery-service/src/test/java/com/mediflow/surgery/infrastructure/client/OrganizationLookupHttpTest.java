@@ -141,10 +141,10 @@ class OrganizationLookupHttpTest {
     }
 
     @Test
-    void findRoom_withoutApprovedProducerContract_failsClosed() {
+    void findRoom_withoutDeployedProducerEndpoint_failsClosedInsteadOfConfirmedAbsence() {
         assertThatThrownBy(() -> lookups.findRoom(UUID.randomUUID(), UUID.randomUUID().toString()))
                 .isInstanceOf(UpstreamUnavailableException.class)
-                .hasMessageContaining("operating-room lookup is not contracted");
+                .hasMessageContaining("room lookup is unavailable");
     }
 
     private static void reply(HttpExchange exchange, Reply mode, boolean staff) throws IOException {

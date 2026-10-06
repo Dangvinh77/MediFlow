@@ -1,5 +1,6 @@
 ### MediFlow — Surgery service qua gateway :8080
-### Yêu cầu: Surgery feature flag bật trong môi trường local, và case đã tồn tại ở trạng thái REQUESTED, PREOP_IN_PROGRESS, READY hoặc SCHEDULED.
+### Yêu cầu: bật Surgery business gate và Gateway Surgery route trong môi trường test/local; case đã tồn tại.
+### MEDIFLOW_FEATURES_SURGERY_ENABLED=true và MEDIFLOW_GATEWAY_SURGERY_ENABLED=true; messaging vẫn off.
 
 @host = http://localhost:8080
 # @token = paste-access-token-here
@@ -8,6 +9,41 @@
 # @idempotencyKey = cancel-unique-operation-key
 # @beginPreopIdempotencyKey = begin-preop-unique-operation-key
 # @correlationId = paste-correlation-uuid-here
+# @scheduleRevision = paste-current-schedule-revision-or-0-here
+# @roomId = paste-authoritative-active-operating-room-id-here
+# @surgeonId = paste-explicitly-qualified-staff-id-here
+# @scheduleIdempotencyKey = unique-schedule-operation-key
+
+### Chuẩn bị/đổi lịch nháp — ADMIN/MANAGER/DOCTOR; không reserve, không READY
+### Đổi ca READY/SCHEDULED sẽ invalidate về PREOP và release booking cũ, phải đánh giá/chốt lại
+PUT {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/schedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{scheduleIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedScheduleRevision": {{scheduleRevision}},
+  "roomId": "{{roomId}}",
+  "startsAt": "2026-10-06T08:00:00Z",
+  "endsAt": "2026-10-06T10:00:00Z",
+  "team": [{"staffId": "{{surgeonId}}", "role": "PRIMARY_SURGEON"}]
+}
+
+### Chi tiết ca — ADMIN/MANAGER toàn khoa; DOCTOR/NURSE khoa hiện tại từ Organization
+GET {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+
+### Board — không có narrative/chữ ký/evidence, page 0; size tối đa 100
+GET {{host}}/api/v1/surgery/cases?page=0&size=20&status=PREOP_IN_PROGRESS
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+
+### Khoảng requested UTC [from,until); planned period lọc overlap, không chứng minh đã đặt phòng
+GET {{host}}/api/v1/surgery/cases?requestedFrom=2026-10-05T00:00:00Z&requestedUntil=2026-10-06T00:00:00Z
+Authorization: Bearer {{token}}
 
 ### Bắt đầu pre-op — ADMIN/DOCTOR; actor lấy từ access token đã xác thực
 POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/preop

@@ -173,6 +173,16 @@ No listener/public scheduler/route activates these paths; held delivery and feat
 
 ## 4. Enums and invariants
 
+### Current gated grant transport — 2026-10-05
+
+An authorization-only Rabbit listener now exists with default-off care-finance-v2 AND a separate
+pharmacy.clearance-consumer.enabled gate. It decodes actual Billing producer bytes, commits
+VERIFIED/PENDING plus delivery claim before ACK, distinguishes validated other-purpose from poison
+input and uses bounded retry/durable DLQ. No auto-dispense, receipt, refund or held-row release occurs.
+Real PG/Rabbit duplicate, wrong-target, rollback/DLQ/replay tests supplement the earlier offline
+storage tests. Canonical topology and recovery rules are in CONTRACT-CARE-BILLING-01; revoke/
+supersession and complete public/stock/cutover acceptance remain open.
+
 ```java
 public enum CareContext { OUTPATIENT, ADMISSION }
 public enum CareEpisodeType { OUTPATIENT_VISIT, ADMISSION }

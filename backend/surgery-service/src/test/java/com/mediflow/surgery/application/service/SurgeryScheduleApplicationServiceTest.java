@@ -59,6 +59,7 @@ class SurgeryScheduleApplicationServiceTest {
     @Mock private SurgeryResourceReservationPort reservations;
     @Mock private SurgeryCommandReceiptPort receipts;
     @Mock private OrganizationLookupPort organization;
+    @Mock private com.mediflow.surgery.application.port.out.AdmissionLookupPort admissions;
     @Mock private SurgeryClockPort clock;
     @InjectMocks private SurgeryScheduleApplicationService service;
 
@@ -90,10 +91,12 @@ class SurgeryScheduleApplicationServiceTest {
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
         when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        when(organization.findStaff(surgeonId, CORRELATION_ID)).thenReturn(active(
-                OrganizationLookupPort.ReferenceKind.STAFF, surgeonId));
-        when(organization.findStaff(nurseId, CORRELATION_ID)).thenReturn(active(
-                OrganizationLookupPort.ReferenceKind.STAFF, nurseId));
+        when(organization.findSurgicalEligibility(eq(surgeonId), eq(SurgeryTeamRole.PRIMARY_SURGEON),
+                any(), any(), eq(CORRELATION_ID))).thenReturn(eligibility(surgeonId,
+                SurgeryTeamRole.PRIMARY_SURGEON, OrganizationLookupPort.ReferenceState.ACTIVE));
+        when(organization.findSurgicalEligibility(eq(nurseId), eq(SurgeryTeamRole.OR_NURSE),
+                any(), any(), eq(CORRELATION_ID))).thenReturn(eligibility(nurseId,
+                SurgeryTeamRole.OR_NURSE, OrganizationLookupPort.ReferenceState.ACTIVE));
     }
 
     private void stubCaseLock() {
@@ -103,6 +106,67 @@ class SurgeryScheduleApplicationServiceTest {
     private void stubDraftSave() {
         when(schedules.findByCaseId(surgeryCase.getSurgeryCaseId())).thenReturn(Optional.empty());
         when(clock.now()).thenReturn(NOW);
+    }
+
+    @Test
+    void prepare_scheduledCase_invalidatesAndReleasesOnlyOldRevisionBeforeNewDraft() {
+        SurgerySchedule previous = new SurgerySchedule(UUID.randomUUID(),surgeryCase.getSurgeryCaseId(),1,
+                UUID.randomUUID(),NOW.plusSeconds(3600),NOW.plusSeconds(5400),List.of(
+                new SurgeryTeamAssignment(surgeonId,SurgeryTeamRole.PRIMARY_SURGEON)));
+        var snapshot = com.mediflow.surgery.domain.model.ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                surgeryCase.getSurgeryCaseId(),true,true,true,true,true,true,true,NOW.minusSeconds(10),
+                java.util.Arrays.stream(com.mediflow.surgery.domain.model.SurgeryDependencyType.values())
+                        .map(type -> new com.mediflow.surgery.domain.model.SurgeryDependencyRevision(type,
+                                type == com.mediflow.surgery.domain.model.SurgeryDependencyType.SCHEDULE
+                                        ? previous.scheduleId() : UUID.randomUUID(),1)).toList(),NOW.plusSeconds(60));
+        surgeryCase.markReady(snapshot,actor,CORRELATION_ID);
+        surgeryCase.finalizeSchedule(actor,CORRELATION_ID,NOW.minusSeconds(5));
+        stubNewReceipt(); stubActiveLookups(); stubCaseLock();
+        when(schedules.findByCaseId(surgeryCase.getSurgeryCaseId())).thenReturn(Optional.of(previous));
+        when(clock.now()).thenReturn(NOW);
+        var outcome = service.prepare(command(surgeryCase,actor,3,1));
+        assertThat(outcome.caseRevision()).isEqualTo(5);
+        assertThat(surgeryCase.getStatus()).isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
+        assertThat(surgeryCase.getReadinessSnapshot()).isNull();
+        var order = inOrder(reservations,schedules,cases);
+        order.verify(reservations).release(surgeryCase.getSurgeryCaseId(),previous.scheduleId(),1,NOW);
+        order.verify(cases).save(surgeryCase,3);
+        order.verify(schedules).saveDraft(any(),eq(1L),eq(NOW));
+        order.verify(cases).save(surgeryCase,4);
+        verify(reservations,never()).reserve(any(),any());
+    }
+
+    @Test
+    void prepare_authorityExpiresWhileWaitingForCaseLock_doesNotMutate() {
+        stubNewReceipt(); stubActiveLookups(); stubCaseLock();
+        when(schedules.findByCaseId(surgeryCase.getSurgeryCaseId())).thenReturn(Optional.empty());
+        when(clock.now()).thenReturn(NOW.plusSeconds(31));
+        assertThatThrownBy(() -> service.prepare(command(surgeryCase,actor,1,0)))
+                .isInstanceOf(UpstreamUnavailableException.class);
+        verify(schedules,never()).saveDraft(any(),anyLong(),any());
+        verify(cases,never()).save(any(),anyLong());
+        verifyNoInteractions(reservations);
+    }
+
+    @Test
+    void prepare_unknownReadinessScheduleCannotReleaseAnotherRevision() {
+        SurgerySchedule previous = new SurgerySchedule(UUID.randomUUID(),surgeryCase.getSurgeryCaseId(),2,
+                UUID.randomUUID(),NOW.plusSeconds(3600),NOW.plusSeconds(5400),List.of(
+                new SurgeryTeamAssignment(surgeonId,SurgeryTeamRole.PRIMARY_SURGEON)));
+        var snapshot = com.mediflow.surgery.domain.model.ReadinessSnapshot.evaluate(UUID.randomUUID(),
+                surgeryCase.getSurgeryCaseId(),true,true,true,true,true,true,true,NOW.minusSeconds(10),
+                java.util.Arrays.stream(com.mediflow.surgery.domain.model.SurgeryDependencyType.values())
+                        .map(type -> new com.mediflow.surgery.domain.model.SurgeryDependencyRevision(type,
+                                type == com.mediflow.surgery.domain.model.SurgeryDependencyType.SCHEDULE
+                                        ? previous.scheduleId() : UUID.randomUUID(),1)).toList(),NOW.plusSeconds(60));
+        surgeryCase.markReady(snapshot,actor,CORRELATION_ID);
+        stubNewReceipt(); stubActiveLookups(); stubCaseLock();
+        when(schedules.findByCaseId(surgeryCase.getSurgeryCaseId())).thenReturn(Optional.of(previous));
+        when(clock.now()).thenReturn(NOW);
+        assertThatThrownBy(() -> service.prepare(command(surgeryCase,actor,2,2)))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+        verifyNoInteractions(reservations);
+        verify(cases,never()).save(any(),anyLong());
     }
 
     @Test
@@ -140,8 +204,9 @@ class SurgeryScheduleApplicationServiceTest {
                 OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
         when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
                 OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        when(organization.findStaff(surgeonId, CORRELATION_ID)).thenReturn(inactive(
-                OrganizationLookupPort.ReferenceKind.STAFF, surgeonId));
+        when(organization.findSurgicalEligibility(eq(surgeonId), eq(SurgeryTeamRole.PRIMARY_SURGEON),
+                any(), any(), eq(CORRELATION_ID))).thenReturn(eligibility(surgeonId,
+                SurgeryTeamRole.PRIMARY_SURGEON, OrganizationLookupPort.ReferenceState.INACTIVE));
 
         assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)))
                 .isInstanceOf(SurgeryRuleException.class)
@@ -167,6 +232,59 @@ class SurgeryScheduleApplicationServiceTest {
         verify(cases, never()).lockById(any());
         verify(schedules, never()).saveDraft(any(), anyLong(), any());
         verifyNoInteractions(reservations, clock);
+    }
+
+    @Test
+    void prepare_roomInAnotherDepartment_rejectsBeforeLockOrMutation() {
+        rejectRoomDepartment(UUID.randomUUID(), "SURGERY_ROOM_DEPARTMENT_MISMATCH");
+    }
+
+    @Test
+    void prepare_roomDepartmentMissing_failsClosedBeforeLockOrMutation() {
+        rejectRoomDepartment(null, null);
+    }
+
+    private void rejectRoomDepartment(UUID departmentId, String rule) {
+        stubNewReceipt();
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
+                OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(
+                new OrganizationLookupPort.OrganizationLookupSnapshot(OrganizationLookupPort.ReferenceKind.ROOM,
+                        roomId, OrganizationLookupPort.ReferenceState.ACTIVE, NOW, "1", null, null, departmentId));
+        var rejection = assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)));
+        if (rule == null) rejection.isInstanceOf(UpstreamUnavailableException.class);
+        else rejection.isInstanceOf(SurgeryRuleException.class).hasFieldOrPropertyWithValue("code", rule);
+        verify(cases, never()).lockById(any());
+        verify(cases, never()).save(any(), anyLong());
+        verifyNoInteractions(schedules, reservations, clock);
+    }
+
+    @Test
+    void prepare_staffInAnotherDepartment_rejectsBeforeLockOrMutation() {
+        rejectStaffDepartment(UUID.randomUUID(), "SURGERY_STAFF_DEPARTMENT_MISMATCH");
+    }
+
+    @Test
+    void prepare_staffDepartmentMissing_failsClosedBeforeLockOrMutation() {
+        rejectStaffDepartment(null, null);
+    }
+
+    private void rejectStaffDepartment(UUID departmentId, String rule) {
+        stubNewReceipt();
+        when(organization.findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID)).thenReturn(active(
+                OrganizationLookupPort.ReferenceKind.DEPARTMENT, surgeryCase.getDepartmentId()));
+        when(organization.findRoom(roomId, CORRELATION_ID)).thenReturn(active(
+                OrganizationLookupPort.ReferenceKind.ROOM, roomId));
+        when(organization.findSurgicalEligibility(eq(surgeonId), eq(SurgeryTeamRole.PRIMARY_SURGEON),
+                any(), any(), eq(CORRELATION_ID))).thenReturn(new OrganizationLookupPort.SurgicalEligibilitySnapshot(
+                surgeonId, SurgeryTeamRole.PRIMARY_SURGEON, OrganizationLookupPort.ReferenceState.ACTIVE,
+                departmentId, NOW, "1", NOW.plusSeconds(3600), NOW.plusSeconds(5400)));
+        var rejection = assertThatThrownBy(() -> service.prepare(command(surgeryCase, actor, 1, 0)));
+        if (rule == null) rejection.isInstanceOf(UpstreamUnavailableException.class);
+        else rejection.isInstanceOf(SurgeryRuleException.class).hasFieldOrPropertyWithValue("code", rule);
+        verify(cases, never()).lockById(any());
+        verify(cases, never()).save(any(), anyLong());
+        verifyNoInteractions(schedules, reservations, clock);
     }
 
     @Test
@@ -250,7 +368,7 @@ class SurgeryScheduleApplicationServiceTest {
         InOrder order = inOrder(organization, cases);
         order.verify(organization).findDepartment(surgeryCase.getDepartmentId(), CORRELATION_ID);
         order.verify(organization).findRoom(roomId, CORRELATION_ID);
-        order.verify(organization, times(2)).findStaff(any(), eq(CORRELATION_ID));
+        order.verify(organization, times(2)).findSurgicalEligibility(any(), any(), any(), any(), eq(CORRELATION_ID));
         order.verify(cases).lockById(surgeryCase.getSurgeryCaseId());
     }
 
@@ -276,6 +394,51 @@ class SurgeryScheduleApplicationServiceTest {
     }
 
     @Test
+    void prepare_admissionWrongPatientOrDepartment_rejectsBeforeOrganizationOrCaseLock() {
+        UUID admissionId=UUID.randomUUID();
+        surgeryCase=SurgeryCase.create(UUID.randomUUID(),UUID.randomUUID(),
+                new CareEpisode(CareEpisodeType.ADMISSION,admissionId,admissionId,null),
+                UUID.randomUUID(),UUID.randomUUID(),actor.verifiedStaffId(),"PROC-001","Indication",
+                SurgeryPriority.ROUTINE,REQUESTED_AT,actor,CORRELATION_ID);
+        surgeryCase.beginPreop(actor,CORRELATION_ID,REQUESTED_AT.plusSeconds(1));
+        stubNewReceipt();
+        when(admissions.findAdmission(admissionId,CORRELATION_ID)).thenReturn(
+                new com.mediflow.surgery.application.port.out.AdmissionLookupPort.AdmissionSnapshot(admissionId,
+                        UUID.randomUUID(),surgeryCase.getDepartmentId(),UUID.randomUUID(),"ADMITTED",
+                        OrganizationLookupPort.ReferenceState.ACTIVE,"1",NOW));
+        assertThatThrownBy(()->service.prepare(command(surgeryCase,actor,1,0)))
+                .isInstanceOf(SurgeryRuleException.class)
+                .hasFieldOrPropertyWithValue("code","SURGERY_ADMISSION_RELATIONSHIP_MISMATCH");
+        when(admissions.findAdmission(admissionId,CORRELATION_ID)).thenReturn(
+                new com.mediflow.surgery.application.port.out.AdmissionLookupPort.AdmissionSnapshot(admissionId,
+                        surgeryCase.getPatientId(),UUID.randomUUID(),UUID.randomUUID(),"ADMITTED",
+                        OrganizationLookupPort.ReferenceState.ACTIVE,"1",NOW));
+        assertThatThrownBy(()->service.prepare(command(surgeryCase,actor,1,0)))
+                .hasFieldOrPropertyWithValue("code","SURGERY_ADMISSION_RELATIONSHIP_MISMATCH");
+        verifyNoInteractions(organization,schedules);
+        verify(cases,never()).lockById(any());
+    }
+
+    @Test
+    void prepare_medicallyDischargedAdmission_rejectsWithoutDraftMutation() {
+        UUID admissionId=UUID.randomUUID();
+        surgeryCase=SurgeryCase.create(UUID.randomUUID(),UUID.randomUUID(),
+                new CareEpisode(CareEpisodeType.ADMISSION,admissionId,admissionId,null),
+                UUID.randomUUID(),UUID.randomUUID(),actor.verifiedStaffId(),"PROC-001","Indication",
+                SurgeryPriority.ROUTINE,REQUESTED_AT,actor,CORRELATION_ID);
+        surgeryCase.beginPreop(actor,CORRELATION_ID,REQUESTED_AT.plusSeconds(1));
+        stubNewReceipt();
+        when(admissions.findAdmission(admissionId,CORRELATION_ID)).thenReturn(
+                new com.mediflow.surgery.application.port.out.AdmissionLookupPort.AdmissionSnapshot(admissionId,
+                        surgeryCase.getPatientId(),surgeryCase.getDepartmentId(),UUID.randomUUID(),"MEDICALLY_DISCHARGED",
+                        OrganizationLookupPort.ReferenceState.INACTIVE,"2",NOW));
+        assertThatThrownBy(()->service.prepare(command(surgeryCase,actor,1,0)))
+                .hasFieldOrPropertyWithValue("code","SURGERY_ADMISSION_INELIGIBLE");
+        verifyNoInteractions(organization,schedules);
+        verify(cases,never()).lockById(any());
+    }
+
+    @Test
     void prepare_receiptPayloadConflict_rejectsBeforeOrganizationLookup() {
         when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(
                 SurgeryCommandReceiptPort.State.CONFLICT, receiptId, null, null));
@@ -297,11 +460,18 @@ class SurgeryScheduleApplicationServiceTest {
                 "prepare-" + scheduleRevision, commandActor, CORRELATION_ID);
     }
 
-    private static OrganizationLookupPort.OrganizationLookupSnapshot active(
+    private OrganizationLookupPort.OrganizationLookupSnapshot active(
             OrganizationLookupPort.ReferenceKind kind, UUID id) {
         return new OrganizationLookupPort.OrganizationLookupSnapshot(kind, id,
                 OrganizationLookupPort.ReferenceState.ACTIVE, NOW, "org-rev-1",
-                kind == OrganizationLookupPort.ReferenceKind.STAFF ? "UNMAPPED_JOB_TITLE" : null);
+                kind == OrganizationLookupPort.ReferenceKind.STAFF ? "UNMAPPED_JOB_TITLE" : null,
+                null, kind == OrganizationLookupPort.ReferenceKind.ROOM ? surgeryCase.getDepartmentId() : null);
+    }
+
+    private OrganizationLookupPort.SurgicalEligibilitySnapshot eligibility(UUID staffId,
+            SurgeryTeamRole role, OrganizationLookupPort.ReferenceState state) {
+        return new OrganizationLookupPort.SurgicalEligibilitySnapshot(staffId, role, state,
+                surgeryCase.getDepartmentId(), NOW, "1", NOW.plusSeconds(3600), NOW.plusSeconds(5400));
     }
 
     private static OrganizationLookupPort.OrganizationLookupSnapshot inactive(

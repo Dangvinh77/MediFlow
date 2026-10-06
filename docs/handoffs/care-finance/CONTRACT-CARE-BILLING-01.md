@@ -125,6 +125,77 @@ Billing opens/updates the receivable. The override does not forge a paid transac
 
 ## Acceptance criteria
 
+### Implemented payment/clearance slice — 2026-10-05
+
+Task-scoped cross-owner implementation is authorized by Huy. Billing now has a transactional
+ledger payment command for **existing authoritative** `PAYMENT_REQUEST`/selected `CHARGE` rows,
+an additive persisted target table, account/key locking, immutable completed transactions,
+bounded charge allocation and held V1 receipt/clearance outbox rows. No endpoint lets a caller
+invent an account, charge, price or source relationship.
+
+- `POST /api/v1/billing/payment-requests/{id}/payments`, ADMIN/CASHIER, access token only;
+  `idempotencyKey`, positive two-decimal `amount`, `currency`, `paymentMethod`, optional
+  `providerReference`. Actor is the signed account subject; correlation is preserved/generated.
+  `MEDIFLOW_BILLING_LEDGER_ENABLED=false` by default. CASH/TRANSFER are recorded cashier receipts;
+  INSURANCE is not silently turned into a cash receipt. Provider capture/callback is not implemented.
+- Every completed installment emits a held `payment.completed` V1 receipt for that installment's
+  amount. An incomplete payment never grants clearance. Only the full exact payment request grants
+  one clearance; the clearance amount is the total request amount, not the last installment.
+- `SERVICE_PAYMENT`, `ADMISSION_DEPOSIT`, `SETTLEMENT_PAYMENT` are explicit receipt classifications.
+  A deposit is unallocated cash/liability, not earned revenue. Allocation never exceeds selected
+  posted charges in this account; target source IDs must match those charges. A settlement installment
+  receipt is **not** `settlement.completed`.
+- EXAM may carry appointment plus record context; its selected outpatient episode is the appointment,
+  otherwise the walk-in record. LAB_TEST may carry record context plus exact unique test IDs.
+  PRESCRIPTION has only its prescription target; ADMISSION_DEPOSIT binds the admission episode;
+  SURGERY binds case plus admission when inpatient. Other target fields are null/empty.
+- Grant time is envelope `occurredAt`; nullable grant expiry is the authoritative request's expiry.
+  Reusing an idempotency key with another request, actor, amount, method, currency or provider reference
+  conflicts. Matching retry returns the original immutable receipt even after request expiry/payment.
+- Billing fixtures at `backend/billing-service/src/test/resources/contracts/ledger-v1/` are verified
+  against the actual producer service. Clinical, Lab, Inpatient, Pharmacy and Surgery read these files
+  directly in their tests. No copied/aliased consumer wire format is accepted.
+- V5/V6 reuse `BILLING_EVENT_OUTBOX`: `publication_enabled=false`, `contract_version=1` and a DB
+  constraint hold V1 events. Legacy dispatch/admin replay cannot release them. Legacy producers keep
+  contract version 0 and their original flat bytes. Release requires a reviewed migration/cutover.
+
+Still open: authoritative event→account/charge/request issuance and versioned catalogue, refunds and
+grant revocation/supersession, deposit top-up, final settlement/recognition, Report projections,
+live consumers and actual broker/Gateway multi-service E2E. This slice does not close the whole
+contract or approve operational activation.
+
+### Opt-in Surgery and Pharmacy grant intake — 2026-10-05
+
+Both consumers decode the actual Billing `ledger-v1/clearance-*.json` producer fixtures, not copied
+wire definitions. A fully validated grant for another purpose is NOT_APPLICABLE; unknown producer/
+version, malformed targets, duplicate JSON keys, conflicting identities and short/noncanonical UUIDs
+cannot be acknowledged as unrelated input. Grant time remains immutable envelope occurredAt; expiry
+is exclusive. This is grant-only evidence; no revocation/supersession or cash refund is inferred.
+
+- Surgery: BOTH `mediflow.features.surgery.enabled` and
+  `mediflow.surgery.messaging.consumers.enabled` enable `surgery.financial-clearance.q` and its
+  dedicated durable DLQ. Early exact grants commit a PENDING inbox entry before ACK. A bounded durable
+  worker retries due rows, 20 per 5-second poll, with 60-second deferral after missing case/failure;
+  failed-processing backoff has an independent transaction and never reopens an applied/quarantined
+  winner. New matching evidence can invalidate pre-start readiness and exact old booking atomically;
+  no grant automatically transitions READY/START.
+- Pharmacy: BOTH `mediflow.features.care-finance-v2` and
+  `mediflow.pharmacy.clearance-consumer.enabled` enable `pharmacy.financial-clearance.q` and its
+  dedicated durable DLQ. Clearance delivery claim and VERIFIED/PENDING proof commit before ACK.
+  Pending proofs need no in-memory callback: the explicit stock authorizer rechecks them against the
+  exact late prescription under its existing transaction. Intake never invokes dispensing or creates
+  a payment receipt/refund/outbox fact. Known wrong patient/episode/version or immutable identity
+  conflict rolls back the claim and goes to DLQ.
+- Both queue families bind `financial.clearance.granted` on `mediflow.events`; DLQ routing uses the
+  respective DLQ name on `mediflow.events.dlx`. Three bounded attempts handle infrastructure errors,
+  permanent invalid/conflicting input is rejected. Original bytes remain in durable DLQ; operator
+  replay is deliberate only after correction, not an automatic loop. No clinical/token payload log.
+
+All intake defaults remain disabled; enabling a queue does not release Billing's held V1 outbox or
+Pharmacy's held lifecycle bytes/public V1 create/dispense fence. Actual PostgreSQL/RabbitMQ tests now
+cover duplicate, early proof, wrong-purpose/malformed/conflict, rollback and retained-message replay.
+This does not complete whole-care E2E, request issuance, revoke or reviewed cutover acceptance.
+
 - Two episodes for one patient never share a billing account or invoice by accident.
 - Duplicate charge facts create exactly one charge.
 - An EXAM clearance cannot unlock a LAB_TEST or PRESCRIPTION.

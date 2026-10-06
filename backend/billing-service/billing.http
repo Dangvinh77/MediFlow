@@ -20,6 +20,18 @@
 ###               / BILLING_DEPT_REQUIRED / BILLING_INVALID_SAGA_TRANSITION (422)
 
 @host = http://localhost:8080
+
+### LIVE internal-only: exact current SURGERY clearance (not exposed through Gateway)
+# Requires MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED=true.
+# serviceToken: short-lived type=service, role=SYSTEM, sub=surgery-service, iat/exp <=60 seconds.
+# Keep credentials in the private HTTP environment; never use a human access token here.
+@billingInternal = http://localhost:8086
+GET {{billingInternal}}/api/v1/billing/financial-clearances/00000000-0000-0000-0000-000000000046/lookup
+Authorization: Bearer {{serviceToken}}
+X-Correlation-Id: 00000000-0000-0000-0000-000000000009
+
+# 200: exact context + eligible true/false. Missing row: exists=false, eligible=false, null context.
+# 401: invalid/human/refresh/service scope. 503: financial authority unavailable; never absence.
 # @token = paste-access-token-here
 
 # ============ HÓA ĐƠN /api/v1/billing ============

@@ -14,6 +14,9 @@ public interface SurgeryInboxPort {
 
     void quarantine(UUID eventId, String reason);
 
+    /** Read-only bounded selection. Concurrent workers are fenced by begin and the case row lock. */
+    java.util.List<IncomingEvent> findDue(String eventType, Instant now, int limit);
+
     enum Decision { NEW, RETRY_PENDING, ALREADY_APPLIED, CONFLICT, QUARANTINED }
 
     record IncomingEvent(UUID eventId, String eventType, int version, String producer,

@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "active": true,
+    "roomId": "01000000-0000-0000-0000-000000000001",
+    "departmentId": "03000000-0000-0000-0000-000000000001",
+    "sourceRevision": "1",
+    "observedAt": "2026-10-05T02:00:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-05T02:00:00Z",
+  "correlationId": "04000000-0000-0000-0000-000000000001"
+}

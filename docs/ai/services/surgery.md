@@ -1,6 +1,6 @@
 # Service: surgery
 
-**Status:** approved bounded context; shared runtime foundation and initial internal domain core exist, cross-service contracts remain open
+**Status:** approved bounded context; runtime foundation and internal lifecycle core exist, production authority/wire/API contracts remain open
 **Owner:** Huy (`LQHuy0210`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 **Module:** `backend/surgery-service/` · **Port:** 8091 · **Database:** `mediflow_surgery` · **Base path:** `/api/v1/surgery`
@@ -35,10 +35,9 @@ camelCase (see `docs/ai/08-persistence-naming.md`). The initial internal schema 
 `surgery_outbox`. Its case identity is `surgeryCaseId` / `surgery_case_id`; the exact
 episode fields are `episodeType`, `episodeId`, `admissionId`, and `medicalRecordId`.
 Patient's lookup response remains the Patient-owned English `exists`/`patientId` contract.
-The feature-gated pre-start cancellation route and begin-preop route are the only Surgery business
-endpoints so far; neither publishes Surgery events, so remaining planned names do not constitute a
-breaking change to a live wire. Future producer/consumer DTOs must be tested against the registered
-handoffs before enabling integrations.
+Implemented feature-gated routes are detail/list, begin-preop, pre-start cancellation and draft
+schedule replacement. None publishes Surgery outcome events. Future producer/consumer DTOs must
+pass the registered contract tests before enabling integrations.
 
 ## State machine
 
@@ -62,6 +61,19 @@ AND matching SURGERY financial clearance
 
 Emergency override is disabled in V1. A later version may only bypass the financial guard after the
 approver and Billing policies are confirmed; it can never invent consent or team assignment.
+
+## Internal expiry recovery (2026-10-05)
+
+The opt-in expiry worker requires both the business flag and
+`mediflow.surgery.readiness.expiry.enabled=true`; both default off. It reads at most 100 due
+READY/SCHEDULED candidates (default 20), then locks each case and re-checks the active snapshot ID,
+explicit `validUntil` and Clock in a separate 5-second transaction. At the exclusive validity
+boundary it atomically returns to PREOP, clears only the active readiness pointer, appends SYSTEM
+`READINESS_EXPIRED` audit and releases only the snapshot-pinned schedule revision. Snapshot/history
+remain immutable. START/terminal/replacement winners are no-ops, never a release of IN_USE.
+Flyway V4 retry metadata backs failed candidates off 5..300 seconds and is revalidated under the
+case lock. The job invents no clinical TTL or new outbound event key. It is internal, not a public
+state setter or completed READY/START/notification workflow; these integration gates remain open.
 
 ## Planned endpoints
 
@@ -92,7 +104,33 @@ and `replayed`. Both routes are behind `mediflow.features.surgery.enabled`, whic
 default. Neither publishes business events. Billing/Inpatient event identity and acceptance fixtures
 remain open; other endpoints still require their own implementation-ready DTO/contract slices.
 
-## Current implementation state
+## Current implementation state — 2026-10-05
+
+Detail/list and draft-schedule PUT have application ports, immutable redacted DTOs, MapStruct,
+real persistence queries, direct API role tests and exact Gateway authorization. ADMIN/MANAGER read
+all departments; DOCTOR/NURSE require signed staff identity and fresh active Organization authority
+for its current department. Foreign detail is opaque 404; foreign department filter is empty.
+List has no narrative, signatures, evidence IDs or histories and no per-row REST lookups.
+Filters use UTC half-open request intervals or planned-time overlap, page 0/20/max 100, stable
+requestedAt descending/caseId ascending. `snapshotValidNow` describes stored evidence only, never
+new readiness/start authority. Planned schedule/procedure and actual performed result stay separate.
+
+PUT schedule requires expected case/schedule revision and Idempotency-Key. Exact room/department,
+whole-interval staff capability and inpatient medical-window lookups precede locks; freshness is
+rechecked after waits. Room and capability departments must both equal the case department;
+missing relationships fail 503 and foreign departments fail 422 before any mutation.
+Replacement from READY/SCHEDULED invalidates to PREOP, releases only the
+old exact revision, saves a new draft/history/receipt atomically, and requires re-READY/finalize.
+Actual PostgreSQL covers success, injected-write rollback, replay and competing replacements.
+Shared invalidation for checklist, consent, clearance and reschedule verifies the exact case,
+schedule ID and schedule revision pinned by readiness before releasing anything; stale or foreign
+schedule data returns conflict without clearing the snapshot or releasing a replacement booking.
+Optimistic lock failure is typed 409, not generic 500 or lost update. Mutation DTOs reject unknown
+authority fields; 400/401/403/404/409/422/503 and redacted 500 envelopes preserve correlation.
+README/.http/Dockerfile describe only real routes. The explicit runtime-acceptance Failsafe profile
+runs packaged apps, not an HTTP stub. Full workflow/referral/create/readiness/START/COMPLETE is open.
+
+### Foundation verification history (not current endpoint inventory)
 
 The owner-authorized platform foundation and initial pure-Java domain core exist in `backend/surgery-service/`: Maven module POM,
 Spring Boot entry point, configuration, JWT authentication/default-deny authorization, correlation
@@ -121,7 +159,84 @@ contracts remain open. See the current Huy plan for the exact verification scope
 
 ## Events
 
-**Publish:** `surgery.ready`, `surgery.completed`, `surgery.cancelled`.
+### Current financial grant slice — 2026-10-05
+
+`SurgeryClearanceDecoder` accepts exact Billing V1 SURGERY grants and reads the same producer
+fixture as Billing's serializer tests. An opt-in Rabbit listener now requires BOTH business and
+consumer gates; neither defaults on. Fully validated other purposes are not-applicable, malformed/
+conflicting grants use a dedicated durable DLQ and infrastructure failure has bounded retry.
+Consumer registration and producer dispatch are independently tested across all eight flag combinations.
+V2 migration stores immutable grant identity/episode/patient/case and exact ISO instants alongside
+PostgreSQL timestamps. The transactional application consumer uses the existing inbox: early grants
+remain PENDING until the exact case appears; a bounded durable worker retries due rows after restart;
+mismatches/conflicts quarantine; duplicates do not repeat
+an effect. Matching grants only store financial evidence, never auto-READY or START. A new proof
+invalidates pre-start readiness/reservations through the existing audited protocol when applicable.
+Expiry is exclusive and grant-time validity keeps nanoseconds. Revocation/supersession and full
+readiness/START authority require their next slice; no live financial gate is enabled by this change.
+New grant evidence invalidates a pre-start READY/SCHEDULED decision, with exact schedule/revision
+resource release in the same inbox/proof/case transaction. An unchanged grant under a new event ID
+does not invalidate again; late grants do not roll back started/terminal clinical states. Scheduled
+invalidation and injected-finalization rollback are verified with PostgreSQL, alongside the 6-case
+application branch suite. Full Surgery module rerun: 188 tests, zero failure/error/skip (2026-10-05).
+Business/messaging flags remain off. Actual PostgreSQL/RabbitMQ tests cover duplicate intake,
+early/pending-worker recovery, wrong purpose and DLQ. This does not release Billing's held V1 rows
+or close revocation/supersession/readiness/START acceptance.
+
+### Organization authority invalidation slice — 2026-10-06
+
+The gated consumer accepts Organization's existing V1 `organization.surgery.authority.changed`
+wire as an invalidation hint only. Producer-owned event serialization fixtures are shared with the
+strict Surgery decoder; no Java event class is imported across modules. Intake atomically stores
+raw inbox bytes, immutable `(referenceKind, referenceId, teamRole, revision)` source evidence and
+durable jobs pinned to current pre-start snapshots/schedules. Exact replay and semantic new-event
+replay are no-effect; contradictory source revisions quarantine/DLQ. A case-locked, bounded worker
+rechecks pins and atomically invalidates READY/SCHEDULED with SYSTEM audit/exact release/completion.
+Started, terminal and replacement winners remain unchanged; failures use durable 5..300s backoff.
+
+V5 is additive, Surgery-owned only. Queue/listener/worker require business + global consumers +
+`mediflow.surgery.messaging.organization-authority.enabled`, all defaults false. Malformed facts
+do not retry; transient intake has three attempts before dedicated DLQ. ACK certifies durable
+capture, not that all affected cases have already changed. No permission grant or clinical policy
+is inferred. Full READY/finalize/START must reconcile current source revisions after waits; this
+foundation does not close that distributed race window or approve notification wire/live rollout.
+Current verification evidence is recorded in the [execution ledger](../../superpowers/plans/2026-10-05-huy-50-task-execution.md).
+
+### Internal lifecycle slice — 2026-10-06
+
+Evaluate/finalize/START/COMPLETE now have internal in-ports and transactional orchestration, but
+no production lifecycle bean, authority adapter or public mapping. The business flag alone cannot
+activate them. Seven independently verified proofs carry exact case/patient/department/episode,
+case/schedule revisions and explicit observation/validity. Versioned checklist/consent/team policy
+models have no seeded clinical or legal defaults. Actual authority integration remains open.
+
+The 2026-10-06 financial lookup slice now also mandates a live Billing read before READY,
+finalize and START mutation locks. Exact grant, patient, case, invoice, account and episode must
+match. Revoked/refunded/expired clearance denies even when the local historical grant remains.
+Billing failure never falls back to a stored positive grant. The financial observation is capped
+by a 30-second freshness check and the true grant expiry, rechecked after resource-lock wait.
+Read freshness is not the business expiry of a READY/SCHEDULED case; START obtains a new read.
+No financial source revision
+or distributed lock is fabricated. Production transaction separation and cross-service race fence
+remain implementation tasks, not requests for another owner to write this lookup.
+See [SURGERY-BILLING](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
+
+Commands recheck owned checklist, typed consents and immutable grant after case/sorted resource
+locks, obtain Clock after waiting, and require exact pinned dependencies. Failed START/finalize
+commits a denial with PREOP/audit/exact release; it is not a successful transition. START rejects
+foreign IN_USE resources and mismatched booking sets. COMPLETE stores result/items/history/receipt,
+exact release and a held intent atomically, with original-result replay and no implicit correction.
+
+Additive V6 `surgery_lifecycle_intent` is a PRIVATE HELD-only journal: no event routing, dispatcher
+or approved consumer may treat its bytes as a domain event. Production publishing gates do not
+release it. V6 readiness ISO precision preserves new snapshot nanoseconds without rewriting older
+evidence. Preflight remote I/O currently precedes mutation locks but remains inside the transaction;
+production wiring must move it outside the transaction and implement the local revision fence.
+Full failure matrix, approved producer/consumer bytes, clinical policies and live HTTP authorization
+remain open. See the execution ledger for actual tests; do not promote local mock acceptance to
+joint contract approval.
+
+**Planned publish contracts (not delivered by held intents):** `surgery.ready`, `surgery.completed`, `surgery.cancelled`.
 
 **Subscribe:** `surgery.requested`, `financial.clearance.granted` with `purpose=SURGERY`, and explicit
 pre-op Lab/Pharmacy facts chosen by the future contract. A general Lab result does not automatically
@@ -158,7 +273,10 @@ The initial-domain implementation passed 30 tests; the current full module-local
 with PostgreSQL 16.14 migration/JPA/reliability/race and RabbitMQ publisher confirm/return verification
 on 2026-09-29. This Rabbit test covers generic transport only, not an approved Surgery event contract.
 Root-reactor, fresh/existing database bootstrap and Compose/Eureka integration were verified on
-2026-10-02. Gateway routing remains tracked in the registered bootstrap handoff and must be done by
-its assigned owner. Add same-version producer/consumer fixtures and
+2026-10-02. On 2026-10-05 actual packaged Eureka/Gateway/Surgery/Organization acceptance passed
+three Failsafe scenarios, including both security boundaries, correlation, scoped read/draft and
+capability revocation denial. The bootstrap handoff was retired after this evidence. Shared DB init
+runs only on a fresh volume; check/create the missing owned database on existing environments,
+never remove a user volume to replay initialization. Add same-version producer/consumer fixtures and
 contract tests before enabling any integration. Status remains `DESIGN_READY` while any required
 producer/consumer is missing.

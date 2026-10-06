@@ -1,6 +1,8 @@
 package com.mediflow.inpatient.infrastructure.config;
 
 import com.mediflow.inpatient.application.mapper.InpatientDtoMapper;
+import com.mediflow.inpatient.application.port.in.LookupAdmissionAuthorityUseCase;
+import com.mediflow.inpatient.application.port.out.AdmissionAuthorityRepositoryPort;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedRepositoryPort;
@@ -12,16 +14,21 @@ import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.service.InpatientApplicationService;
+import com.mediflow.inpatient.application.service.LookupAdmissionAuthorityService;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Bean;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(DepositSuggestionProperties.class)
 public class InpatientApplicationConfiguration {
+    @Bean
+    LookupAdmissionAuthorityUseCase lookupAdmissionAuthorityUseCase(
+            AdmissionAuthorityRepositoryPort admissions, Clock clock) {
+        return new LookupAdmissionAuthorityService(admissions, clock);
+    }
     @Bean
     @ConditionalOnMissingBean(Clock.class)
     Clock inpatientClock() {

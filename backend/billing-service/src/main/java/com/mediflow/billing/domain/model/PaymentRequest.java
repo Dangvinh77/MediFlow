@@ -104,7 +104,8 @@ public class PaymentRequest {
                     || to == PaymentRequestStatus.PAID
                     || to == PaymentRequestStatus.EXPIRED
                     || to == PaymentRequestStatus.CANCELLED;
-            case PARTIALLY_PAID -> to == PaymentRequestStatus.PAID || to == PaymentRequestStatus.EXPIRED;
+            case PARTIALLY_PAID -> to == PaymentRequestStatus.PARTIALLY_PAID
+                    || to == PaymentRequestStatus.PAID || to == PaymentRequestStatus.EXPIRED;
             case PAID, EXPIRED, CANCELLED -> false;
         };
     }

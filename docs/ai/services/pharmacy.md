@@ -364,6 +364,20 @@ orchestration, public/live wiring, reviewed activation migration/cutover và PG 
 
 ## 12. Care-finance và nội trú — contract đích
 
+### Current opt-in clearance intake — 2026-10-05
+
+The exact Billing producer fixture now feeds a real authorization-only consumer, separately gated
+by care-finance-v2 AND pharmacy.clearance-consumer.enabled (both default false). Its dedicated
+queue/DLQ, bounded retry and strict valid-other-purpose classification are specified in
+CONTRACT-CARE-BILLING-01. A transaction commits the delivery claim plus pending/verified proof before
+ACK; wrong known target rolls back every claim. Early proof remains durable and the existing stock
+authorizer re-matches it under its caller transaction after restart, never an in-memory callback.
+Actual PostgreSQL/RabbitMQ tests cover duplicates, early grants, malformed/wrong patient DLQ and
+DB-write failure/exhaustion followed by retained-byte replay. Intake does not invoke stock, legacy
+receipt/compensation or outbox writes, and does not remove the public V1 or held-delivery fences.
+Prior offline-only statements are dated history; revoke/supersede, admission freshness/transfer,
+authoritative create relationships and reviewed live cutover still remain open.
+
 Prescription/dispense phải có `careContext = OUTPATIENT | ADMISSION`.
 
 The current create-request boundary keeps V0 requests unchanged and requires an explicit

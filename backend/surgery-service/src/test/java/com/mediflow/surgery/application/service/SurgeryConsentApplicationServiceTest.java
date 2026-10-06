@@ -184,14 +184,16 @@ class SurgeryConsentApplicationServiceTest {
         UUID receiptId = UUID.randomUUID();
         SurgeryAuditActor recorder = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
         SurgeryCase surgeryCase = newPreopCase(caseId, recorder);
+        UUID scheduleId = UUID.randomUUID();
         ReadinessSnapshot readiness = ReadinessSnapshot.evaluate(UUID.randomUUID(), caseId,
                 true, true, true, true, true, true, true, REQUESTED_AT.plusSeconds(2),
                 java.util.Arrays.stream(SurgeryDependencyType.values())
-                        .map(type -> new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
+                        .map(type -> new SurgeryDependencyRevision(type,
+                                type == SurgeryDependencyType.SCHEDULE ? scheduleId : UUID.randomUUID(),
+                                type == SurgeryDependencyType.SCHEDULE ? 4 : 1)).toList(),
                 null);
         surgeryCase.markReady(readiness, recorder, CORRELATION_ID);
         surgeryCase.finalizeSchedule(recorder, CORRELATION_ID, REQUESTED_AT.plusSeconds(3));
-        UUID scheduleId = UUID.randomUUID();
         SurgerySchedule schedule = new SurgerySchedule(scheduleId, caseId, 4, UUID.randomUUID(),
                 NOW.plusSeconds(3600), NOW.plusSeconds(5400), List.of(new SurgeryTeamAssignment(
                 UUID.randomUUID(), SurgeryTeamRole.PRIMARY_SURGEON)));

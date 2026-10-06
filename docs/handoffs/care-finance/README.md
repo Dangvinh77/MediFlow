@@ -11,7 +11,7 @@ không copy một bản contract khác.
 |---|---|---|---|
 | [`CONTRACT-CARE-BILLING-01`](CONTRACT-CARE-BILLING-01.md) | DESIGN_READY; current outpatient contracts partially implemented | Vinh + Lộc + Huy | care episode, charge, purpose-scoped clearance, deposit, settlement |
 | [`CONTRACT-INPATIENT-SURGERY-01`](CONTRACT-INPATIENT-SURGERY-01.md) | DESIGN_READY; blocked by new modules | Vinh + Huy | admission referral, surgery workflow, inpatient medication |
-| [`CONTRACT-SURGERY-BILLING-01`](CONTRACT-SURGERY-BILLING-01.md) | DESIGN_READY; blocked by new modules/ledger | Huy + Lộc | procedure charge, surgery clearance, cancellation/refund |
+| [`CONTRACT-SURGERY-BILLING-01`](CONTRACT-SURGERY-BILLING-01.md) | PARTIAL_IMPLEMENTATION; payments/grants/current lookup implemented, issuance/reconciliation/refund writers open | Huy + Lộc | procedure charge, current surgery clearance, cancellation/refund |
 | [`CONTRACT-IDENTITY-LOOKUP-01`](CONTRACT-IDENTITY-LOOKUP-01.md) | PRODUCER-READY / CONSUMER-FIXTURES-PENDING | Hoàng Anh + all consumers | patient/staff/department/room identity, job-title team-role projection, JWT service auth, Gateway routes |
 | [`CONTRACT-PATIENT-NOTIFICATION-01`](CONTRACT-PATIENT-NOTIFICATION-01.md) | COMPATIBILITY_LOCKED | Hoàng Anh + Lộc | flat `patient.created` payload and versioned-envelope migration gate |
 | [`CONTRACT-CARE-PROJECTIONS-01`](CONTRACT-CARE-PROJECTIONS-01.md) | DESIGN_READY | Lộc + Huy + event producers | Notification templates and Report projections |

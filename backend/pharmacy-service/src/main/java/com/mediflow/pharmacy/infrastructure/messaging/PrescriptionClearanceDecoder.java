@@ -18,9 +18,9 @@ import com.mediflow.pharmacy.domain.model.CareEpisode;
 import com.mediflow.pharmacy.domain.model.PrescriptionClearance;
 import com.mediflow.pharmacy.domain.model.enums.CareEpisodeType;
 
-/** Consumer-side contract harness only: no listener, binding or fake Billing fixture. */
+/** Strict Billing wire boundary; malformed input is never classified as not applicable. */
 @Component
-public class PrescriptionClearanceDecoder {
+public class PrescriptionClearanceDecoder implements com.mediflow.pharmacy.application.port.out.PrescriptionClearanceWirePort {
     public static final String EVENT_TYPE = "financial.clearance.granted";
     private final ObjectMapper mapper;
 
@@ -33,7 +33,15 @@ public class PrescriptionClearanceDecoder {
     }
 
     public PrescriptionClearanceCommand decode(String routingKey, byte[] body) {
+        return decodeApplicable(routingKey, body)
+                .orElseThrow(() -> new IllegalArgumentException("Clearance is not applicable to Pharmacy"));
+    }
+
+    @Override
+    public java.util.Optional<PrescriptionClearanceCommand> decodeApplicable(String routingKey, byte[] body) {
         try {
+            if (body == null || body.length == 0 || body.length > 1_048_576)
+                throw new IllegalArgumentException("Invalid clearance body size");
             JsonNode root = mapper.readTree(body);
             if (root == null || !root.isObject() || !EVENT_TYPE.equals(routingKey)
                     || !EVENT_TYPE.equals(text(root, "eventType"))
@@ -47,11 +55,15 @@ public class PrescriptionClearanceDecoder {
             }
             UUID eventId = uuid(root, "eventId");
             Instant grantedAt = Instant.parse(text(root, "occurredAt"));
-            text(root, "correlationId");
+            if (text(root, "correlationId").length() > 128)
+                throw new IllegalArgumentException("Correlation too long");
             JsonNode payload = root.get("payload");
-            if (payload == null || !payload.isObject()
-                    || !"PRESCRIPTION".equals(text(payload, "purpose"))) {
-                throw new IllegalArgumentException("Only PRESCRIPTION clearance is accepted");
+            if (payload == null || !payload.isObject()) throw new IllegalArgumentException("Payload required");
+            if (!java.util.Set.of("CASH", "TRANSFER").contains(text(payload, "paymentMethod")))
+                throw new IllegalArgumentException("Unsupported Billing payment method");
+            if (!"PRESCRIPTION".equals(text(payload, "purpose"))) {
+                validateOtherPurpose(payload, grantedAt);
+                return java.util.Optional.empty();
             }
             // No EXAM, LAB, admission or emergency target may be used as a fallback permission.
             for (String field : new String[]{"appointmentId", "recordId", "admissionId", "surgeryCaseId"}) {
@@ -79,10 +91,48 @@ public class PrescriptionClearanceDecoder {
                     amount.decimalValue(), text(payload, "currency"), text(payload, "paymentMethod"),
                     grantedAt, expiry == null || expiry.isNull() ? null : Instant.parse(text(payload, "expiresAt")),
                     hash(payload));
-            return new PrescriptionClearanceCommand(eventId, hash(root), grant);
+            return java.util.Optional.of(new PrescriptionClearanceCommand(eventId, hash(root), grant));
         } catch (Exception exception) {
             throw new IllegalArgumentException("Invalid prescription clearance event", exception);
         }
+    }
+
+    private static void validateOtherPurpose(JsonNode payload, Instant grantedAt) {
+        for (String field : new String[]{"clearanceId", "invoiceId", "accountId", "patientId"}) uuid(payload, field);
+        UUID episode = uuid(payload, "careEpisodeId"), appointment = optionalUuid(payload, "appointmentId"),
+                record = optionalUuid(payload, "recordId"), prescription = optionalUuid(payload, "prescriptionId"),
+                admission = optionalUuid(payload, "admissionId"), surgery = optionalUuid(payload, "surgeryCaseId");
+        var episodeType = CareEpisodeType.valueOf(text(payload, "careEpisodeType"));
+        if (!payload.path("labTestIds").isArray()) throw new IllegalArgumentException("Lab target array required");
+        java.util.Set<UUID> labs = new java.util.HashSet<>();
+        for (var item : payload.path("labTestIds")) {
+            if (!item.isTextual() || !labs.add(parseUuid(item.textValue())))
+                throw new IllegalArgumentException("Invalid lab target");
+        }
+        boolean valid = switch (text(payload, "purpose")) {
+            case "EXAM" -> episodeType == CareEpisodeType.OUTPATIENT_VISIT && (appointment != null || record != null)
+                    && episode.equals(appointment == null ? record : appointment) && labs.isEmpty()
+                    && prescription == null && admission == null && surgery == null;
+            case "LAB_TEST" -> episodeType == CareEpisodeType.OUTPATIENT_VISIT && !labs.isEmpty()
+                    && appointment == null && prescription == null && admission == null && surgery == null;
+            case "ADMISSION_DEPOSIT" -> episodeType == CareEpisodeType.ADMISSION && episode.equals(admission)
+                    && appointment == null && record == null && labs.isEmpty() && prescription == null && surgery == null;
+            case "SURGERY" -> surgery != null && prescription == null && appointment == null && record == null && labs.isEmpty()
+                    && (episodeType == CareEpisodeType.ADMISSION ? episode.equals(admission) : admission == null);
+            default -> false;
+        };
+        if (!valid || !payload.path("emergencyOverride").isBoolean() || payload.path("emergencyOverride").booleanValue()
+                || !payload.path("amount").isNumber() || payload.path("amount").decimalValue().signum() < 0
+                || payload.path("amount").decimalValue().scale() > 2 || payload.path("amount").decimalValue().precision() > 19
+                || !"VND".equals(text(payload, "currency"))
+                || !java.util.Set.of("CASH", "TRANSFER").contains(text(payload, "paymentMethod"))
+                || payload.hasNonNull("expiresAt") && !Instant.parse(text(payload, "expiresAt")).isAfter(grantedAt)) {
+            throw new IllegalArgumentException("Malformed non-prescription clearance");
+        }
+    }
+
+    private static UUID optionalUuid(JsonNode node, String field) {
+        return node.hasNonNull(field) ? uuid(node, field) : null;
     }
 
     private String hash(JsonNode value) throws Exception {
@@ -99,6 +149,12 @@ public class PrescriptionClearanceDecoder {
     }
 
     private static UUID uuid(JsonNode node, String field) {
-        return UUID.fromString(text(node, field));
+        return parseUuid(text(node, field));
+    }
+
+    private static UUID parseUuid(String value) {
+        if (!value.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+            throw new IllegalArgumentException("Canonical UUID required");
+        return UUID.fromString(value);
     }
 }

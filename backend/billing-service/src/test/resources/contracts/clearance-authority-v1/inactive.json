@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "clearanceId": "00000000-0000-0000-0000-000000000046",
+    "eligible": false,
+    "invoiceId": "00000000-0000-0000-0000-000000000005",
+    "accountId": "00000000-0000-0000-0000-000000000001",
+    "patientId": "00000000-0000-0000-0000-000000000002",
+    "purpose": "SURGERY",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-0000-0000-000000000003",
+    "admissionId": "00000000-0000-0000-0000-000000000003",
+    "surgeryCaseId": "00000000-0000-0000-0000-000000000004",
+    "grantedAt": "2026-10-05T08:00:00Z",
+    "expiresAt": null,
+    "observedAt": "2026-10-06T08:00:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-06T08:00:00Z",
+  "correlationId": "00000000-0000-0000-0000-000000000009"
+}

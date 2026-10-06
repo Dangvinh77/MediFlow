@@ -1,5 +1,20 @@
 # HANDOFF — Purpose-scoped financial clearance for Clinical and Lab
 
+## Implementation update — 2026-10-05
+
+**PARTIAL, not live.** Huy implemented Billing's gated ledger payment command, atomic held
+`payment.completed`/`financial.clearance.granted` V1 outbox writes and producer fixtures for EXAM,
+LAB_TEST, PRESCRIPTION, ADMISSION_DEPOSIT and SURGERY. Clinical and Lab tests read the exact
+Billing EXAM/LAB_TEST fixture files. Full payment of an exact, persisted request is required for
+a grant; installment receipts alone never authorize care. V5 adds exact request targets; V6
+prevents V1 publication even through the legacy replay command. Legacy V0 delivery is unchanged.
+
+Authoritative request/charge issuance, catalogue pricing, revocation, live consumer rollout and
+real producer-to-consumer broker E2E remain unfinished. Neither this update nor passing fixture
+tests enables the flags. Huy may implement these dependencies under the user's task-scoped
+override; Lộc/Vinh remain the long-term owners. The source refresh below is historical, not the
+current claim that all clearance producer code is absent.
+
 ## Source refresh — 2026-10-03
 
 V2 `FinancialClearance` domain model and ledger migration now exist. The current

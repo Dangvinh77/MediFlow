@@ -14,6 +14,10 @@
 ###   POST     /api/v1/org/accounts
 ###   PUT      /api/v1/org/accounts/{id}/status
 ###   POST     /api/v1/org/accounts/verify
+###   POST/PUT /api/v1/org/operating-rooms/{id} (ADMIN authority decisions)
+###   PUT      /api/v1/org/staff/{id}/surgery-roles/{teamRole} (ADMIN)
+###   GET      /api/v1/org/operating-rooms/{id}/lookup (service token only)
+###   GET      /api/v1/org/staff/{id}/surgery-eligibility (service token only)
 ###
 ### Credential verification is implemented and called by the Gateway.
 ### Start order: Eureka (8761) -> gateway (8080) -> organization-service (8089).

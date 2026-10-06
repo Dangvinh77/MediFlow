@@ -70,6 +70,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .getPayload();
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
+            boolean lookup = "GET".equals(request.getMethod()) && request.getRequestURI().matches(
+                    "/api/v1/billing/financial-clearances/[0-9a-fA-F-]{36}/lookup");
+            boolean serviceToken = JwtClaims.SERVICE_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class));
+            if (lookup || serviceToken || "SYSTEM".equals(role)) {
+                var issued = claims.getIssuedAt();
+                var expires = claims.getExpiration();
+                var now = java.time.Instant.now();
+                if (!lookup || !serviceToken || !"SYSTEM".equals(role) || !"surgery-service".equals(subject)
+                        || issued == null || expires == null || !expires.after(issued)
+                        || expires.toInstant().isAfter(issued.toInstant().plusSeconds(60))
+                        || issued.toInstant().isAfter(now.plusSeconds(5))) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+            }
+            if (request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")) {
+                if (!StringUtils.hasText(subject)
+                        || !JwtClaims.ACCESS_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class))
+                        || claims.getExpiration() == null) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+                java.util.UUID.fromString(subject);
+            }
             if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
                 SecurityContextHolder.clearContext();
                 return;

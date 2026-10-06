@@ -36,6 +36,9 @@ eureka:
 
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
+  notification:
+    care-v1:
+      enabled: ${MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 

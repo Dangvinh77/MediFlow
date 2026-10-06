@@ -769,8 +769,28 @@ The Gateway is complete when:
 
 ## Care-finance route alignment
 
+### Implemented role correction — 2026-10-05
+
+The Gateway now mirrors current Clinical/Lab controllers: Lab list permits ADMIN/MANAGER/DOCTOR/
+NURSE/LAB_TECH; detail excludes MANAGER; start is ADMIN/LAB_TECH; cancel is ADMIN/DOCTOR/LAB_TECH.
+Admission referral POST is ADMIN/DOCTOR. Appointment check-in PUT is ADMIN/NURSE and start-exam
+PUT is ADMIN/DOCTOR; legacy update/status keep ADMIN/DOCTOR/NURSE. These four exact appointment
+paths replace a broad PUT rule whose role union could bypass the narrower care restrictions.
+Exact Lab results/status retain ADMIN/LAB_TECH. Default deny, identity/correlation and downstream
+guards remain in place. New gated ledger-payment POST is exact ADMIN/CASHIER; no arbitrary
+payment-request creation route is exposed. Route permission alone does not enable any feature.
+
 Gateway remains an infrastructure boundary: it authenticates, authorizes, routes and propagates
 identity/correlation, but never calculates clearance, settlement, admission or surgery readiness.
+
+Implemented Surgery role matrix: exact GET `/api/v1/surgery/cases` and `/cases/{id}` permit
+ADMIN/MANAGER/DOCTOR/NURSE; PUT `/cases/{id}/schedule` permits ADMIN/MANAGER/DOCTOR;
+POST `/cases/{id}/preop` and `/cancel` permit ADMIN/DOCTOR. Unknown nested paths/methods remain
+denied. Discovery route is `lb://surgery-service`, preserves the path and defaults off via
+`MEDIFLOW_GATEWAY_SURGERY_ENABLED`. Surgery's business gate is independent. Actual packaged-app
+Eureka/Gateway/Surgery acceptance has passed route, both authentication boundaries and correlation;
+full care workflow activation is not implied. The explicit Surgery runtime-acceptance profile and
+current execution ledger record reproducible verification rather than claiming HTTP stubs are E2E.
 
 Current routes for the eight implemented contexts stay unchanged. When the new modules are
 scaffolded, add discovery routes for `/api/v1/inpatient/**` → `inpatient-service` and

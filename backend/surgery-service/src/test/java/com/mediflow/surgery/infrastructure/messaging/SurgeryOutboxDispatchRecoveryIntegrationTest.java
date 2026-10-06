@@ -35,8 +35,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.DockerClientFactory;
+import static org.awaitility.Awaitility.await;
 
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 class SurgeryOutboxDispatchRecoveryIntegrationTest {
 
     private static final Instant INITIAL_TIME = Instant.parse("2026-09-29T07:00:00Z");
@@ -75,11 +77,13 @@ class SurgeryOutboxDispatchRecoveryIntegrationTest {
 
     @BeforeEach
     void configureRabbit() {
-        connectionFactory = new CachingConnectionFactory(RABBIT.getHost(), RABBIT.getAmqpPort());
+        jdbc.execute("TRUNCATE surgery_case CASCADE");
+        connectionFactory = new CachingConnectionFactory(RABBIT.getHost(), currentRabbitPort());
         connectionFactory.setUsername(RABBIT.getAdminUsername());
         connectionFactory.setPassword(RABBIT.getAdminPassword());
         connectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
         connectionFactory.setPublisherReturns(true);
+        connectionFactory.setConnectionTimeout(1000);
         rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMandatory(true);
 
@@ -87,14 +91,17 @@ class SurgeryOutboxDispatchRecoveryIntegrationTest {
         TopicExchange exchange = new TopicExchange(EXCHANGE, true, false);
         RabbitAdmin admin = new RabbitAdmin(rabbitTemplate);
         admin.declareExchange(exchange);
-        admin.declareQueue(new Queue(queueName, false, false, true));
-        admin.declareBinding(BindingBuilder.bind(new Queue(queueName, false, false, true))
+        admin.declareQueue(new Queue(queueName, true, false, false));
+        admin.declareBinding(BindingBuilder.bind(new Queue(queueName, true, false, false))
                 .to(exchange).with(ROUTING_KEY));
     }
 
     @AfterEach
     void closeRabbitConnectionFactory() {
-        if (connectionFactory != null) connectionFactory.destroy();
+        if (connectionFactory != null) {
+            try { new RabbitAdmin(rabbitTemplate).deleteQueue(queueName); }
+            finally { connectionFactory.destroy(); }
+        }
     }
 
     @Test
@@ -151,6 +158,78 @@ class SurgeryOutboxDispatchRecoveryIntegrationTest {
             SurgeryEventPublisherPort publisher, SurgeryClockPort clock) {
         return new SurgeryOutboxDispatcher(
                 transactions, outbox, publisher, clock, Duration.ofSeconds(30), 10);
+    }
+
+    @Test
+    void stoppedBrokerContainer_retainsPendingBytesAndRecoversAfterActualRestart() throws Exception {
+        UUID eventId = UUID.randomUUID();
+        byte[] payload = "{\"transport\":\"broker-restart\",\"version\":1}".getBytes(StandardCharsets.UTF_8);
+        append(eventId, payload);
+        AtomicReference<Instant> now = new AtomicReference<>(INITIAL_TIME);
+        var publisher = new RabbitSurgeryEventPublisherAdapter(rabbitTemplate, EXCHANGE, 1000);
+        var docker = DockerClientFactory.instance().client();
+        // Only this test's isolated Testcontainers broker is stopped; no user-owned broker is touched.
+        docker.stopContainerCmd(RABBIT.getContainerId()).withTimeout(2).exec();
+        try {
+            assertThat(dispatcher(publisher, now::get).dispatchOne()).isTrue();
+            assertThat(outboxRow(eventId)).containsEntry("status", "PENDING").containsEntry("attempt_count", 1);
+            assertThat(jdbc.queryForObject("SELECT payload FROM surgery_outbox WHERE event_id = ?", byte[].class, eventId))
+                    .containsExactly(payload);
+        } finally {
+            docker.startContainerCmd(RABBIT.getContainerId()).exec();
+            await().atMost(Duration.ofSeconds(45)).pollInterval(Duration.ofSeconds(1)).ignoreExceptions()
+                    .until(() -> RABBIT.execInContainer("rabbitmq-diagnostics", "-q", "check_running").getExitCode() == 0);
+            connectionFactory.resetConnection();
+            // Docker can allocate a new random host port for the same restarted test container.
+            connectionFactory.setPort(currentRabbitPort());
+            await().atMost(Duration.ofSeconds(20)).pollInterval(Duration.ofMillis(200)).ignoreExceptions()
+                    .untilAsserted(() -> assertThat(new RabbitAdmin(rabbitTemplate).getQueueProperties(queueName)).isNotNull());
+        }
+        now.set(INITIAL_TIME.plusSeconds(3));
+        assertThat(dispatcher(publisher, now::get).dispatchOne()).isTrue();
+        Message delivered = rabbitTemplate.receive(queueName, 5000);
+        assertThat(delivered).isNotNull();
+        assertThat(delivered.getBody()).containsExactly(payload);
+        assertThat(delivered.getMessageProperties().getMessageId()).isEqualTo(eventId.toString());
+        assertThat(outboxRow(eventId)).containsEntry("status", "PUBLISHED").containsEntry("attempt_count", 2);
+    }
+
+    @Test
+    void brokerConfirmedBeforeWorkerCrash_leaseReplayKeepsIdentityAndFencesOldAttempt() {
+        UUID eventId = UUID.randomUUID();
+        byte[] payload = "{ \"transport\" : \"confirmed-before-crash\" }".getBytes(StandardCharsets.UTF_8);
+        append(eventId, payload);
+        var original = transactions.execute(ignored -> outbox.claimNext(INITIAL_TIME, Duration.ofSeconds(30)).orElseThrow());
+        var publisher = new RabbitSurgeryEventPublisherAdapter(rabbitTemplate, EXCHANGE, 5000);
+        publisher.publish(new SurgeryEventPublisherPort.OutgoingMessage(original.eventId(), original.eventType(),
+                original.eventVersion(), original.correlationId(), original.payload()));
+        // Broker has confirmed, but the process dies before marking PUBLISHED in a separate DB transaction.
+        assertThat(outboxRow(eventId)).containsEntry("status", "CLAIMED");
+        var restartTime = INITIAL_TIME.plusSeconds(31);
+        assertThat(dispatcher(publisher, () -> restartTime).dispatchOne()).isTrue();
+        Boolean staleCompletion = transactions.execute(ignored -> outbox.markPublished(eventId, original.attemptToken(), restartTime));
+        assertThat(staleCompletion).isFalse();
+        for (int copy = 0; copy < 2; copy++) {
+            Message delivered = rabbitTemplate.receive(queueName, 5000);
+            assertThat(delivered).isNotNull();
+            assertThat(delivered.getBody()).containsExactly(payload);
+            assertThat(delivered.getMessageProperties().getMessageId()).isEqualTo(eventId.toString());
+        }
+        assertThat(rabbitTemplate.receive(queueName, 200)).isNull();
+        assertThat(outboxRow(eventId)).containsEntry("status", "PUBLISHED").containsEntry("attempt_count", 2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_outbox WHERE event_id = ?", Integer.class, eventId)).isEqualTo(1);
+    }
+
+    private static void append(UUID eventId, byte[] payload) {
+        UUID caseId = insertCase();
+        transactions.executeWithoutResult(ignored -> outbox.append(new SurgeryOutboxPort.OutgoingEvent(
+                eventId, caseId, 1, 0, ROUTING_KEY, 1, "recovery-correlation", payload, INITIAL_TIME)));
+    }
+
+    private static int currentRabbitPort() {
+        var bindings = DockerClientFactory.instance().client().inspectContainerCmd(RABBIT.getContainerId()).exec()
+                .getNetworkSettings().getPorts().getBindings().get(com.github.dockerjava.api.model.ExposedPort.tcp(5672));
+        return Integer.parseInt(bindings[0].getHostPortSpec());
     }
 
     private static java.util.Map<String, Object> outboxRow(UUID eventId) {

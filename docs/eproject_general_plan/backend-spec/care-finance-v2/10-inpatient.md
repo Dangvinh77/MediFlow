@@ -36,6 +36,18 @@ outpatient records, Lab tests, prescriptions, surgery cases, charges, payments o
 Core V1 records exact external IDs and consumes their facts. Surgery internals, Lab execution,
 Pharmacy stock and Billing ledger behavior remain in their owner services.
 
+### Additive admission authority read (2026-10-05)
+
+`GET /api/v1/inpatient/admissions/{id}/lookup` is a service-only, English DTO projection of the
+existing admission row. It returns exact patient/department/source-record identity, admission
+status/medical-care eligibility, existing optimistic row version and observation time; it does
+not expose the human admission DTO or prove bed placement, referral or medication authorization.
+Wire/absence/freshness rules and producer fixture locations are canonical in
+[`CONTRACT-INPATIENT-SURGERY-01`](../../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md).
+No migration or invented source revision is required. Signed short-lived service tokens have only
+`ROLE_SYSTEM_SERVICE`, never human command roles. Surgery currently uses this for non-reserving
+draft preparation; other workflow activation remains separately gated.
+
 ## 2. Package map
 
 ```text

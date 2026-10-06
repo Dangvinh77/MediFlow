@@ -27,6 +27,13 @@ class GatewayRouteDefinitionTest {
     private RouteLocator routeLocator;
 
     @Test
+    void surgeryRoute_defaultFlag_hasNoRoute() {
+        assertThat(routeLocator.getRoutes()
+                .filter(candidate -> "surgery-service".equals(candidate.getId()))
+                .collectList().block()).isEmpty();
+    }
+
+    @Test
     void inpatientRoute_hasStableIdEurekaUriAndPathPredicate() {
         Route route = routeLocator.getRoutes()
                 .filter(candidate -> "inpatient-service".equals(candidate.getId()))
