@@ -1,13 +1,13 @@
 # Vinh — three-service completion audit
 
-Audit refresh: 2026-10-04. Source baseline: `2e8f024` (master matched origin/master before this
+Audit refresh: 2026-10-05. Source baseline: `3103fa1` (master matched origin/master before this
 documentation branch). Owner: Dangvinh77 / Harori. Scope: Clinical, Lab and Inpatient plus their
 owned frontend features. This queue does not authorize editing another owner's production code or
 enabling an integration before shared fixtures pass.
 
 ## Evidence and current state
 
-- Fresh codebase-memory-mcp index: 19,226 nodes and 86,526 edges; 128 files excluded by design,
+- Fresh codebase-memory-mcp index: 19,342 nodes and 87,308 edges; 128 files excluded by design,
   40 partial parses and 12 unusable diagram/document parses. Graph evidence was checked against
   controllers, event consumers, Gateway rules and active handoffs.
 - **Clinical:** legacy APIs and V2 check-in/start-exam/complete/admission-referral commands exist.
@@ -20,13 +20,16 @@ enabling an integration before shared fixtures pass.
   consumers and tests exist. Gateway route/RBAC/tests landed in `262d610`. Billing still does not
   publish ADMISSION_DEPOSIT clearance, top-up or settlement facts. Surgery reference/outcome
   behavior remains a joint contract gate.
-- **Organization update:** service-only staff and department lookup endpoints landed in `cffdbf5`.
-  They unblock Huy's Surgery adapter for those two lookups. The room lookup and authoritative
-  job-title-to-team-role mapping remain open.
-- Owned Maven regression passed on this branch: Clinical 216 tests (13 skipped), Lab 168 (11
-  skipped), Inpatient 82 (8 skipped), with zero failures/errors. Testcontainers could not connect
-  to Docker, so the skipped integration tests and real browser/Gateway smoke remain required before
-  calling the workflow complete.
+- **Organization/Surgery update:** Huy's Surgery service now uses Hoàng Anh's service-only staff and
+  department lookups with service JWT, correlation and absence-versus-outage coverage. Room lookup
+  still fails closed because no contract exists, and the authoritative job-title-to-team-role
+  mapping remains open.
+- **Pharmacy update:** medical discharge is now projected separately from administrative close,
+  with local late/conflict/eligibility coverage. Transfer/release freshness and cross-department
+  medication policy still have no approved wire contract.
+- PR `#285` passed the full service-integration workflow, including the container-backed checks.
+  A live browser login and allowed/denied Gateway smoke with correlation evidence remain the final
+  runtime verification before calling the user workflow complete.
 
 ## What Vinh can implement now
 
@@ -34,10 +37,12 @@ enabling an integration before shared fixtures pass.
 
 | ID | Work | Scope | Done when |
 |---|---|---|---|
-| VINH-P0-01 | Complete integration regression and Gateway smoke for current routes | Clinical/Lab/Inpatient; no foreign edits | Unit/web suites already pass; start Docker, run the 32 skipped integration cases, then record login and allowed/denied Clinical, Lab and Inpatient requests with correlation IDs |
+| VINH-P0-01 | Complete live Gateway/browser smoke for current routes | Clinical/Lab/Inpatient; no foreign edits | Full container-backed CI already passes; record login and allowed/denied Clinical, Lab and Inpatient requests with correlation IDs against the composed runtime |
 | VINH-P0-02 | Clinical record mutations, one command per commit | `frontend/src/features/medical-record/**`, `frontend/src/app/(dashboard)/records/**` | Create, update and diagnosis actions mirror live DTO validation/state rules; ADMIN/DOCTOR only; 400/403/404/409 and retry are handled |
 | VINH-P0-03 | Lab request creation | `frontend/src/features/lab/**`, `frontend/src/app/(dashboard)/lab/**` | ADMIN/DOCTOR can create from exact backend DTO; success links to detail; no local payment inference |
-| VINH-P0-04 | Resolve Vinh-owned Surgery contract decisions | canonical contract/spec docs + existing Surgery handoff | Stable referral identity/path, external-order registration, outpatient not-applicable behavior and late-event policy are explicit and fixture-ready |
+| VINH-P0-04 | Inpatient frontend base | `frontend/src/features/inpatient/**`, `frontend/src/app/(dashboard)/inpatient/**` | Admission list/detail and bed list mirror the live Gateway contract; no local finance or Surgery inference |
+| VINH-P0-05 | Resolve Vinh-owned Surgery contract decisions | canonical contract/spec docs + existing Surgery handoff | Stable referral identity/path, external-order registration, outpatient not-applicable behavior and late-event policy are explicit and fixture-ready |
+| VINH-P0-06 | Agree transfer/release/current-placement facts with Huy | canonical contract/spec docs + Huy care-finance handoff | Event names, fields, ordering, replay and cross-department medication/capacity semantics are fixture-ready before either owner writes producer/consumer code |
 
 P0-02 and P0-03 are independent. Lab result/start/cancel UI must wait for the Gateway role/method
 matrix to align so the page does not promise a workflow that the public route rejects.
@@ -50,7 +55,6 @@ matrix to align so the page does not promise a workflow that the public route re
 | VINH-P1-02 | Lab exact-test clearance | Lộc publishes canonical LAB_TEST fixture; Hoàng Anh aligns Gateway roles | Purpose/episode/test-ID consumer tests, then result/start/cancel frontend actions |
 | VINH-P1-03 | Inpatient deposit/top-up/settlement integration | Lộc publishes all canonical fixtures | Same-byte consumer tests, real Rabbit smoke and explicit close-command validation; consuming settlement never auto-closes |
 | VINH-P1-04 | Inpatient ↔ Surgery outcomes | Vinh/Huy approve registration and delivery semantics; Huy publishes fixtures | Reference registration and durable event-first/late/duplicate handling without reopening a closed admission |
-| VINH-P1-05 | Inpatient frontend base | `docs/ai/15-frontend-ownership.md` assigns canonical route/feature paths | Read/list/detail/bed status first through Gateway; mutation slices follow exact roles and live APIs |
 
 ### P2 — intentionally deferred
 
@@ -67,8 +71,8 @@ matrix to align so the page does not promise a workflow that the public route re
 | Owner | Must deliver | Unblocks Vinh | Active handoff |
 |---|---|---|---|
 | Lộc — Billing | EXAM/LAB_TEST clearance producer fixtures; ADMISSION_DEPOSIT, top-up and settlement producer/outbox/replay behavior | Clinical exam gate, Lab exact authorization, Inpatient admit/close workflow | [Clinical/Lab clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md), [Inpatient deposit/settlement](../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md) |
-| Hoàng Anh — Gateway | Clinical/Lab method/role parity | LAB_TECH detail/write workflow, Doctor/Nurse Lab queue, admission-referral public access | [Gateway care roles](../handoffs/HANDOFF-VINH-GATEWAY-CARE-ROLES.md) |
-| Huy — Surgery | Business API/consumer/publisher, staff/department lookup adapter, exact outpatient/admission and delivery-order fixtures | Inpatient reference/outcome integration | [Surgery decisions](../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md), [foundation bootstrap](../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) |
+| Hoàng Anh — Gateway | Clinical/Lab method/role parity; Surgery route and explicit ADMIN/DOCTOR rules for the implemented pre-op/cancel endpoints | LAB_TECH detail/write workflow, Doctor/Nurse Lab queue, admission-referral public access and initial Surgery access | [Gateway care roles](../handoffs/HANDOFF-VINH-GATEWAY-CARE-ROLES.md), [Surgery foundation](../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) |
+| Huy — Surgery | Request consumer, outcome publishers, remaining business APIs and exact outpatient/admission/delivery-order fixtures | Inpatient reference/outcome integration | [Surgery decisions](../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) |
 | Hoàng Anh — Organization | Room lookup and authoritative job-title values/eligibility semantics | Huy's scheduling/team validation and later Inpatient Surgery E2E | [Surgery decisions](../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) |
 | Huy + Lộc | Pharmacy/Report admission and finance projections with same-byte fixtures | Full admission medication/reporting acceptance | [Huy care-finance consumers](../handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) |
 

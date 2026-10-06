@@ -10,8 +10,9 @@ handoffs. Backend controllers and DTOs remain the wire-contract authority.
 
 | Service | Owner | Current frontend baseline | Guide |
 |---|---|---|---|
-| Clinical | Vinh (`Dangvinh77` / `Harori`) | Appointment list and medical-record lookup | [clinical.md](clinical.md) |
-| Lab | Vinh (`Dangvinh77` / `Harori`) | Lab queue/list | [lab.md](lab.md) |
+| Clinical | Vinh (`Dangvinh77` / `Harori`) | Appointment workflow and medical-record detail | [clinical.md](clinical.md) |
+| Lab | Vinh (`Dangvinh77` / `Harori`) | Lab queue and detail | [lab.md](lab.md) |
+| Inpatient | Vinh (`Dangvinh77` / `Harori`) | Backend/Gateway ready; frontend not started | [inpatient.md](inpatient.md) |
 | Pharmacy | Huy (`LQHuy0210`) | Drug and prescription workflows | [pharmacy.md](pharmacy.md) |
 | Report | Huy (`LQHuy0210`) | Daily report | [report.md](report.md) |
 | Organization | Hoàng Anh (`TranHoangAnh94`) | Department and staff reads | [organization.md](organization.md) |

@@ -48,6 +48,7 @@ frontend/
     │       ├── appointments/page.tsx
     │       ├── records/page.tsx
     │       ├── lab/page.tsx
+    │       ├── inpatient/page.tsx
     │       ├── pharmacy/page.tsx
     │       ├── billing/page.tsx
     │       ├── notifications/page.tsx
@@ -62,6 +63,7 @@ frontend/
     │   ├── appointment/
     │   ├── medical-record/
     │   ├── lab/
+    │   ├── inpatient/
     │   ├── pharmacy/
     │   ├── billing/
     │   ├── notification/
