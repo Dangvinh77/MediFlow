@@ -1,4 +1,10 @@
-export type LabTestStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type LabTestStatus =
+  | "PENDING"
+  | "AWAITING_PAYMENT"
+  | "READY"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
 export type LabCareEpisodeType = "OUTPATIENT_VISIT" | "ADMISSION";
 
 export interface LabResultDTO {
@@ -31,4 +37,16 @@ export interface LabTestDTO {
   clearanceId: string | null;
   emergencyOverrideId: string | null;
   resultVersion: number;
+}
+
+export interface CreateLabRequest {
+  recordId: string;
+  patientId: string;
+  requestingDepartmentId: string;
+  labType: string;
+  requestedDate: string;
+  sourceOrderId?: string | null;
+  careEpisodeType?: LabCareEpisodeType | null;
+  careEpisodeId?: string | null;
+  priceCode?: string | null;
 }

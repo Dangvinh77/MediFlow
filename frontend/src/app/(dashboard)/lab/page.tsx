@@ -9,9 +9,9 @@ export default function LabPage() {
   return (
     <PageShell
       title="Xét nghiệm"
-      description="Danh sách 20 yêu cầu xét nghiệm gần nhất."
+      description="Hàng đợi xét nghiệm theo khoa, trạng thái và đợt chăm sóc."
     >
-      <RoleGate allowed={["ADMIN", "MANAGER", "LAB_TECH"]}>
+      <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"]}>
         <LabTable />
       </RoleGate>
     </PageShell>
