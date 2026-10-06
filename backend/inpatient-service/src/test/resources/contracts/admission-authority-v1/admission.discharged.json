@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "admissionId": "05000000-0000-0000-0000-000000000001",
+    "patientId": "06000000-0000-0000-0000-000000000001",
+    "departmentId": "03000000-0000-0000-0000-000000000001",
+    "sourceRecordId": "07000000-0000-0000-0000-000000000001",
+    "status": "MEDICALLY_DISCHARGED",
+    "eligible": false,
+    "sourceRevision": "2",
+    "observedAt": "2026-10-05T02:00:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-05T02:00:00Z",
+  "correlationId": "04000000-0000-0000-0000-000000000001"
+}

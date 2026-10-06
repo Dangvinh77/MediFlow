@@ -103,6 +103,88 @@ class SurgeryCasePersistenceIntegrationTest {
     @Autowired private SurgeryCommandReceiptPort receipts;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private com.mediflow.surgery.application.port.out.SurgeryCaseQueryPort board;
+    @Autowired private com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase queries;
+
+    @Test
+    void boardUsesStableProjectionPagingAndDoesNotExposeOtherDepartments() {
+        UUID department = UUID.randomUUID();
+        var first = boardCase(department, REQUESTED_AT, "00000000-0000-0000-0000-000000000011");
+        var second = boardCase(department, REQUESTED_AT, "00000000-0000-0000-0000-000000000012");
+        var older = boardCase(department, REQUESTED_AT.minusSeconds(1), null);
+        boardCase(UUID.randomUUID(), REQUESTED_AT, null);
+        var filter = new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Filter(
+                department, null, null, null, null, null, new com.mediflow.common.api.PageQuery(0,2));
+        var page = board.search(filter);
+        assertThat(page.content()).extracting(com.mediflow.surgery.application.dto.response.SurgeryCaseBoardItem::surgeryCaseId)
+                .containsExactly(first.getSurgeryCaseId(), second.getSurgeryCaseId());
+        assertThat(page.totalElements()).isEqualTo(3);
+        assertThat(page.totalPages()).isEqualTo(2);
+        var next = board.search(new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Filter(
+                department, null, null, null, null, null, new com.mediflow.common.api.PageQuery(1,2)));
+        assertThat(next.content()).extracting(com.mediflow.surgery.application.dto.response.SurgeryCaseBoardItem::surgeryCaseId)
+                .containsExactly(older.getSurgeryCaseId());
+    }
+
+    @Test
+    void boardRequestedPeriodIsInclusiveStartExclusiveEndAndFiltersStatus() {
+        UUID department = UUID.randomUUID();
+        var included = boardCase(department, REQUESTED_AT, null);
+        boardCase(department, REQUESTED_AT.plusSeconds(60), null);
+        boardCase(department, REQUESTED_AT.minusSeconds(1), null);
+        var page = board.search(new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Filter(
+                department, SurgeryStatus.REQUESTED, REQUESTED_AT, REQUESTED_AT.plusSeconds(60),
+                null,null,com.mediflow.common.api.PageQuery.of(0,20)));
+        assertThat(page.content()).extracting(com.mediflow.surgery.application.dto.response.SurgeryCaseBoardItem::surgeryCaseId)
+                .containsExactly(included.getSurgeryCaseId());
+    }
+
+    @Test
+    void boardPlannedPeriodUsesHalfOpenOverlapAndIncludesNoUnscheduledCase() {
+        UUID department = UUID.randomUUID();
+        var planned = boardCase(department, REQUESTED_AT, null);
+        boardCase(department, REQUESTED_AT, null);
+        var tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> {
+            planned.beginPreop(SurgeryAuditActor.human(UUID.randomUUID(),UUID.randomUUID()),
+                    "board-test",REQUESTED_AT.plusSeconds(1));
+            cases.save(planned,0);
+            schedules.saveDraft(new SurgerySchedule(UUID.randomUUID(), planned.getSurgeryCaseId(),1,
+                    UUID.randomUUID(),REQUESTED_AT.plusSeconds(100),REQUESTED_AT.plusSeconds(200),
+                    List.of(new SurgeryTeamAssignment(UUID.randomUUID(),SurgeryTeamRole.PRIMARY_SURGEON))),
+                    0,REQUESTED_AT.plusSeconds(2));
+        });
+        var overlaps = new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Filter(
+                department,null,null,null,REQUESTED_AT.plusSeconds(150),REQUESTED_AT.plusSeconds(250),
+                com.mediflow.common.api.PageQuery.of(0,20));
+        assertThat(board.search(overlaps).content()).hasSize(1);
+        var adjacent = new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Filter(
+                department,null,null,null,REQUESTED_AT.plusSeconds(200),REQUESTED_AT.plusSeconds(300),
+                com.mediflow.common.api.PageQuery.of(0,20));
+        assertThat(board.search(adjacent).content()).isEmpty();
+    }
+
+    @Test
+    void actualDetailReadHasNoWriteAndNoEvidenceOrNarrativeInDto() {
+        var value = boardCase(UUID.randomUUID(),REQUESTED_AT,null);
+        var detail = queries.detail(value.getSurgeryCaseId(),
+                new com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.Viewer(
+                        UUID.randomUUID(),null,
+                        com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.ReadRole.ADMIN), "board-test");
+        assertThat(detail.caseDetails().surgeryCaseId()).isEqualTo(value.getSurgeryCaseId());
+        assertThat(detail.readiness().blockingReasons()).containsExactly("READINESS_NOT_EVALUATED");
+        assertThat(detail.toString()).doesNotContain("Private indication");
+        assertThat(cases.findById(value.getSurgeryCaseId()).orElseThrow().getRevision()).isZero();
+    }
+
+    private SurgeryCase boardCase(UUID department, Instant requested, String id) {
+        var value = SurgeryCase.create(id == null ? UUID.randomUUID() : UUID.fromString(id), UUID.randomUUID(),
+                new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(),null,UUID.randomUUID()),
+                UUID.randomUUID(), department, UUID.randomUUID(),"BOARD-TEST","Private indication",
+                SurgeryPriority.ROUTINE,requested,SurgeryAuditActor.human(UUID.randomUUID(),UUID.randomUUID()),"board-test");
+        new TransactionTemplate(transactionManager).executeWithoutResult(ignored -> cases.save(value,-1));
+        return value;
+    }
 
     @Test
     void migrationValidatesJpaAndRoundTripsCaseWithAppendOnlyHistory() {
@@ -491,11 +573,20 @@ class SurgeryCasePersistenceIntegrationTest {
                 .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
                         surgeryCase.getDepartmentId()));
         org.mockito.Mockito.when(organization.findRoom(roomId, "schedule-prepare-pg"))
-                .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-        org.mockito.Mockito.when(organization.findStaff(staffId, "schedule-prepare-pg"))
-                .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
+                .thenReturn(new OrganizationLookupPort.OrganizationLookupSnapshot(
+                        OrganizationLookupPort.ReferenceKind.ROOM, roomId,
+                        OrganizationLookupPort.ReferenceState.ACTIVE, REQUESTED_AT.plusSeconds(302),
+                        "1", null, null, surgeryCase.getDepartmentId()));
+        org.mockito.Mockito.when(organization.findSurgicalEligibility(org.mockito.ArgumentMatchers.eq(staffId),
+                org.mockito.ArgumentMatchers.eq(SurgeryTeamRole.PRIMARY_SURGEON), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("schedule-prepare-pg")))
+                .thenReturn(new OrganizationLookupPort.SurgicalEligibilitySnapshot(staffId,
+                        SurgeryTeamRole.PRIMARY_SURGEON, OrganizationLookupPort.ReferenceState.ACTIVE,
+                        surgeryCase.getDepartmentId(), REQUESTED_AT.plusSeconds(303), "1",
+                        REQUESTED_AT.plusSeconds(86400), REQUESTED_AT.plusSeconds(88200)));
         SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
-                cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
+                cases, schedules, receipts, organization, org.mockito.Mockito.mock(
+                        com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303));
         Instant startsAt = REQUESTED_AT.plusSeconds(86400);
         PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
                 surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
@@ -560,11 +651,20 @@ class SurgeryCasePersistenceIntegrationTest {
                     .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
                             surgeryCase.getDepartmentId()));
             org.mockito.Mockito.when(organization.findRoom(roomId, "schedule-prepare-rollback-pg"))
-                    .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.ROOM, roomId));
-            org.mockito.Mockito.when(organization.findStaff(staffId, "schedule-prepare-rollback-pg"))
-                    .thenReturn(activeLookup(OrganizationLookupPort.ReferenceKind.STAFF, staffId));
+                    .thenReturn(new OrganizationLookupPort.OrganizationLookupSnapshot(
+                            OrganizationLookupPort.ReferenceKind.ROOM, roomId,
+                            OrganizationLookupPort.ReferenceState.ACTIVE, REQUESTED_AT.plusSeconds(302),
+                            "1", null, null, surgeryCase.getDepartmentId()));
+            org.mockito.Mockito.when(organization.findSurgicalEligibility(org.mockito.ArgumentMatchers.eq(staffId),
+                    org.mockito.ArgumentMatchers.eq(SurgeryTeamRole.PRIMARY_SURGEON), org.mockito.ArgumentMatchers.any(),
+                    org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("schedule-prepare-rollback-pg")))
+                    .thenReturn(new OrganizationLookupPort.SurgicalEligibilitySnapshot(staffId,
+                            SurgeryTeamRole.PRIMARY_SURGEON, OrganizationLookupPort.ReferenceState.ACTIVE,
+                            surgeryCase.getDepartmentId(), REQUESTED_AT.plusSeconds(303), "1",
+                            REQUESTED_AT.plusSeconds(86400), REQUESTED_AT.plusSeconds(88200)));
             SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
-                    cases, schedules, receipts, organization, () -> REQUESTED_AT.plusSeconds(303));
+                    cases, schedules, receipts, organization, org.mockito.Mockito.mock(
+                            com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303));
             Instant startsAt = REQUESTED_AT.plusSeconds(86400);
             PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
                     surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
@@ -910,6 +1010,112 @@ class SurgeryCasePersistenceIntegrationTest {
 
     private record ScheduledFixture(SurgeryCase surgeryCase, SurgerySchedule schedule,
                                     SurgeryConsentRecord consent) { }
+
+    @Test
+    void rescheduleAtomicallyReleasesOldBookingInvalidatesAndPreservesBothHistories() {
+        var actor = SurgeryAuditActor.human(UUID.randomUUID(),UUID.randomUUID());
+        var fixture = persistScheduledCaseWithActiveConsent(actor,"reschedule-pg");
+        var command = replacementCommand(fixture,actor,"reschedule-pg-key");
+        var service = replacementService(command,fixture.surgeryCase().getDepartmentId());
+        var tx = new TransactionTemplate(transactionManager);
+        var outcome = tx.execute(ignored -> service.prepare(command));
+        assertThat(outcome.caseRevision()).isEqualTo(6);
+        assertThat(outcome.subjectRevision()).isEqualTo(2);
+        var stored = cases.findById(command.surgeryCaseId()).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
+        assertThat(stored.getReadinessSnapshot()).isNull();
+        assertThat(schedules.findRevision(command.surgeryCaseId(),1)).contains(fixture.schedule());
+        assertThat(schedules.findRevision(command.surgeryCaseId(),2).orElseThrow().roomId()).isEqualTo(command.roomId());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_resource_reservation WHERE surgery_case_id = ? AND status='RELEASED'",
+                Integer.class,command.surgeryCaseId())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_resource_reservation WHERE surgery_case_id = ? AND status IN ('RESERVED','IN_USE')",
+                Integer.class,command.surgeryCaseId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_readiness_snapshot WHERE surgery_case_id = ?",
+                Integer.class,command.surgeryCaseId())).isEqualTo(1);
+        var replay = tx.execute(ignored -> service.prepare(command));
+        assertThat(replay.replayed()).isTrue();
+        assertThat(replay.occurredAt()).isEqualTo(outcome.occurredAt());
+        assertThat(cases.findById(command.surgeryCaseId()).orElseThrow().getRevision()).isEqualTo(6);
+    }
+
+    @Test
+    void rescheduleHistoryFailureRollsBackReleaseCaseSnapshotAndReceiptThenRetryRecovers() {
+        var actor = SurgeryAuditActor.human(UUID.randomUUID(),UUID.randomUUID());
+        var fixture = persistScheduledCaseWithActiveConsent(actor,"reschedule-rollback-pg");
+        var command = replacementCommand(fixture,actor,"reschedule-rollback-pg-key");
+        var service = replacementService(command,fixture.surgeryCase().getDepartmentId());
+        var tx = new TransactionTemplate(transactionManager);
+        jdbc.execute("CREATE FUNCTION reject_reschedule_history() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.revision = 2 THEN RAISE EXCEPTION 'test rollback'; END IF; RETURN NEW; END $$");
+        jdbc.execute("CREATE TRIGGER reject_reschedule_history BEFORE INSERT ON surgery_schedule_history FOR EACH ROW EXECUTE FUNCTION reject_reschedule_history()");
+        try {
+            assertThatThrownBy(() -> tx.execute(ignored -> service.prepare(command))).isInstanceOf(DataAccessException.class);
+        } finally {
+            jdbc.execute("DROP TRIGGER reject_reschedule_history ON surgery_schedule_history");
+            jdbc.execute("DROP FUNCTION reject_reschedule_history()");
+        }
+        var stored = cases.findById(command.surgeryCaseId()).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(SurgeryStatus.SCHEDULED);
+        assertThat(stored.getRevision()).isEqualTo(4);
+        assertThat(stored.getReadinessSnapshot()).isEqualTo(fixture.surgeryCase().getReadinessSnapshot());
+        assertThat(schedules.findByCaseId(command.surgeryCaseId())).contains(fixture.schedule());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_resource_reservation WHERE surgery_case_id = ? AND status='RESERVED'",
+                Integer.class,command.surgeryCaseId())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_command_receipt WHERE idempotency_key = ?",
+                Integer.class,command.idempotencyKey())).isZero();
+        assertThat(tx.execute(ignored -> service.prepare(command)).state()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void concurrentReplacementDraftsHaveOneWinnerAndNoPartialOrNewBooking() throws Exception {
+        var actor = SurgeryAuditActor.human(UUID.randomUUID(),UUID.randomUUID());
+        var fixture = persistScheduledCaseWithActiveConsent(actor,"reschedule-race-pg");
+        var a = replacementCommand(fixture,actor,"reschedule-race-a");
+        var b = replacementCommand(fixture,actor,"reschedule-race-b");
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            Callable<Boolean> attemptA = () -> replacementAfterBarrier(a,fixture.surgeryCase().getDepartmentId(),start);
+            Callable<Boolean> attemptB = () -> replacementAfterBarrier(b,fixture.surgeryCase().getDepartmentId(),start);
+            var first = workers.submit(attemptA); var second = workers.submit(attemptB); start.countDown();
+            assertThat(List.of(first.get(15,TimeUnit.SECONDS),second.get(15,TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true,false);
+        }
+        assertThat(cases.findById(a.surgeryCaseId()).orElseThrow().getRevision()).isEqualTo(6);
+        assertThat(schedules.findByCaseId(a.surgeryCaseId()).orElseThrow().revision()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_resource_reservation WHERE surgery_case_id = ? AND status IN ('RESERVED','IN_USE')",
+                Integer.class,a.surgeryCaseId())).isZero();
+    }
+
+    private boolean replacementAfterBarrier(PrepareSurgeryScheduleUseCase.Command command, UUID department,
+            java.util.concurrent.CountDownLatch start) throws Exception {
+        var service = replacementService(command,department);
+        start.await();
+        try { new TransactionTemplate(transactionManager).execute(ignored -> service.prepare(command)); return true; }
+        catch (SurgeryRevisionConflictException expected) { return false; }
+    }
+
+    private PrepareSurgeryScheduleUseCase.Command replacementCommand(ScheduledFixture fixture,
+            SurgeryAuditActor actor, String key) {
+        return new PrepareSurgeryScheduleUseCase.Command(fixture.surgeryCase().getSurgeryCaseId(),4,1,
+                UUID.randomUUID(),fixture.schedule().startsAt().plusSeconds(3600),fixture.schedule().endsAt().plusSeconds(3600),
+                List.of(new PrepareSurgeryScheduleUseCase.TeamMember(actor.verifiedStaffId(),SurgeryTeamRole.PRIMARY_SURGEON)),
+                key,actor,"reschedule-pg");
+    }
+    private SurgeryScheduleApplicationService replacementService(PrepareSurgeryScheduleUseCase.Command command, UUID department) {
+        var organization = org.mockito.Mockito.mock(OrganizationLookupPort.class);
+        Instant at = REQUESTED_AT.plusSeconds(350);
+        org.mockito.Mockito.when(organization.findDepartment(department,command.correlationId())).thenReturn(
+                new OrganizationLookupPort.OrganizationLookupSnapshot(OrganizationLookupPort.ReferenceKind.DEPARTMENT,
+                        department,OrganizationLookupPort.ReferenceState.ACTIVE,at,null,null));
+        org.mockito.Mockito.when(organization.findRoom(command.roomId(),command.correlationId())).thenReturn(
+                new OrganizationLookupPort.OrganizationLookupSnapshot(OrganizationLookupPort.ReferenceKind.ROOM,
+                        command.roomId(),OrganizationLookupPort.ReferenceState.ACTIVE,at,"1",null,null,department));
+        for (var member : command.team()) org.mockito.Mockito.when(organization.findSurgicalEligibility(member.staffId(),
+                member.role(),command.startsAt(),command.endsAt(),command.correlationId())).thenReturn(
+                new OrganizationLookupPort.SurgicalEligibilitySnapshot(member.staffId(),member.role(),
+                        OrganizationLookupPort.ReferenceState.ACTIVE,department,at,"1",command.startsAt(),command.endsAt()));
+        return new SurgeryScheduleApplicationService(cases,schedules,receipts,organization,
+                org.mockito.Mockito.mock(com.mediflow.surgery.application.port.out.AdmissionLookupPort.class),resources,() -> at);
+    }
 
     private boolean reserveAfterBarrier(SurgerySchedule schedule, CyclicBarrier barrier) throws Exception {
         barrier.await(20, TimeUnit.SECONDS);

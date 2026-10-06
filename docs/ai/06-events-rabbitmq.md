@@ -50,6 +50,7 @@ Publish an event whenever a service **changes its own state and other contexts m
 | `department.created` | organization | — | current |
 | `staff.created` | organization | — | current |
 | `staff.department.changed` | organization | report | current when staffing projection exists |
+| `organization.surgery.authority.changed` | organization | surgery (gated invalidation consumer) | V1 producer fixtures and durable Surgery intake/job worker implemented; producer and three consumer gates default OFF. Invalidation hint only, never a permission grant; full pre-start reconciliation/notification/live rollout remain open. See identity lookup contract and execution ledger for verification. |
 | `patient.created` | patient | notification | current |
 | `patient.updated` | patient | — | current |
 | `appointment.created` | clinical | notification | current |
@@ -73,13 +74,13 @@ Publish an event whenever a service **changes its own state and other contexts m
 | `surgery.completed` | surgery | inpatient, billing, report | planned |
 | `surgery.cancelled` | surgery | inpatient, billing, notification, report | planned |
 | `invoice.created` | billing | notification | current compatibility event/payment request notice |
-| `payment.completed` | billing | pharmacy, lab, patient(log), notification, report | financial fact; do not unlock unrelated targets |
-| `financial.clearance.granted` | billing | clinical, lab, pharmacy, inpatient, surgery | planned purpose/target-specific authorization |
+| `payment.completed` | billing | pharmacy, lab, patient(log), notification, report | V0 compatibility remains live; V1 classified installment/deposit producer implemented but DB-held. Notification private receipt intake defaults OFF; Report V1 financial projector pending. Never unlock care from a receipt. |
+| `financial.clearance.granted` | billing | clinical, lab, pharmacy, inpatient, surgery | V1 exact-purpose/target producer and same-byte consumer tests implemented; outbox DB-held, request issuance/revocation/live cutover pending. Surgery grant projection is offline only. |
 | `deposit.topup.required` | billing | inpatient, notification | planned |
 | `payment.refunded` | billing | notification, report | planned immutable refund fact |
 | `settlement.completed` | billing | inpatient, notification, report | planned final reconciliation |
 | `payment.failed` | billing | notification (+ current pharmacy saga compensation) | current compatibility event |
-| `notification.sent` | notification | — | current |
+| `notification.sent` | notification | — | current compatibility; V1 private receipt delivery fact is transactionally stored but DB-held, no V1 dispatcher/cutover yet |
 
 **Operational events carry `departmentId`.** `appointment.created`, `medicalrecord.created`,
 `lab.result.created`, `prescription.created` and the billing events all include the originating

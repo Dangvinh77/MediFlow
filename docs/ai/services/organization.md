@@ -174,8 +174,9 @@ short-lived service JWT (`type=service`, `role=SYSTEM`):
 For active staff, the locked V1 job-title mapping is `DOCTOR` →
 `PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`; `NURSE` → `OR_NURSE`; all other
 current job titles → `[]`. Inactive or missing staff always returns `eligibleTeamRoles: []`.
-Surgery/Clinical consumers must use this explicit projection and fail closed on unknown or
-unavailable data.
+Identity consumers may use this projection and must fail closed on unknown or unavailable data.
+It describes job-title compatibility, not an explicit surgical credential. Surgery scheduling
+continues to require the interval-scoped authority in the additive contract below.
 
 The existing `/api/v1/org/staff/{id}/exists` doctor-eligibility response remains unchanged for
 Clinical compatibility.
@@ -294,6 +295,15 @@ Payload:
 ```
 
 This event represents a staff transfer between departments.
+
+#### `organization.surgery.authority.changed`
+
+V1 envelope with immutable decision identity and explicit room/capability revision. Published through
+the additive durable outbox; dispatcher defaults OFF. Payload, delivery and revision semantics are in
+[`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+This is an invalidation hint, not clinical permission; Surgery must re-read the authority before
+using it. Surgery has a separately gated durable invalidation consumer verified locally;
+distributed rollout remains disabled and full pre-start authority reconciliation is still open.
 
 ### Subscribed Events
 
@@ -580,3 +590,23 @@ and department membership. It does not own beds, admissions, surgery cases, paym
 Mandatory contract: [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
 Clinical staff lookup and Gateway account verification are implemented baselines. Their lasting
 wire rules and acceptance gates live in that canonical contract and the Organization/Gateway tests.
+
+### Additive Surgery authority
+
+Organization also owns the **operating-room reference catalog** and explicit, time-bounded staff
+surgical-capability decisions. Surgery still owns room/time reservation and team assignment; this
+does not create beds, clinical policy or presumed qualifications in Organization.
+
+- V4 adds `operating_room`, `surgical_capability` and durable `surgery_authority_outbox`; no seed.
+  Master's V3 generic `room` lookup is retained unchanged. Its job-title projection is descriptive,
+  not a substitute for the explicit interval-scoped authority used by Surgery scheduling.
+- ADMIN room create/update and capability decisions require expected revision, verified account
+  actor and reason. Revocation is allowed even after staff inactivity. Mutation and audit/outbox
+  are atomic; the gated dispatcher retains pending rows on timeout/nack/mandatory return.
+- Service-only room/eligibility endpoints, exact fields/interval rules, source revision scope and
+  event envelope are canonical in the identity contract's **Additive Surgery authority V1** section.
+- Clinical/Inpatient generic identity lookup compatibility is unchanged. A login role/job title
+  never automatically grants surgical qualification; department transfer invalidates the old grant.
+- No human read permission is granted to internal lookups; new authority lookups require a service
+  token with issuedAt/expiry and at most 60 seconds lifetime. Delivery defaults OFF until a durable
+  consumer route exists. The HTTP examples are in `surgery-authority.http`.

@@ -65,6 +65,35 @@ from a payment event alone.
 
 ## Inpatient medication
 
+### Additive exact-admission authority lookup V1 (2026-10-05)
+
+`GET /api/v1/inpatient/admissions/{id}/lookup` is service-only, requiring a signed short-lived
+`type=service`, `role=SYSTEM` credential and correlation propagation. Human access/refresh tokens
+cannot read it, and a service token cannot call existing human care commands. Gateway blocks the
+lookup publicly. Existing Vietnamese human DTOs are unchanged; the minimal internal projection
+uses the shared English care-finance identity vocabulary.
+
+Payload: `{exists, admissionId, patientId, departmentId, sourceRecordId, status, eligible,
+sourceRevision, observedAt}`. Absence is 200 with echoed admissionId, exists/eligible false and
+remaining business fields null. Eligible requires status ADMITTED and no medical discharge/close/
+cancellation timestamp; REQUESTED/READY are not medication or surgery eligibility. Persistence
+failure is 503 `INPATIENT_LOOKUP_UNAVAILABLE`, never absence.
+
+`sourceRevision` is the decimal string of the existing admission row's optimistic-lock `version`
+(including initial 0), not an event envelope version or reconstructed history. It versions admission
+state only, **not bed placement or clinical order references**. `departmentId` is the admission's
+owning department, not the department of the most recent bed. Cross-department placement is not
+authorized by this lookup. `sourceRecordId` is the admission referral's exact source record, not a
+substitute for any Surgery request. Consumers compare exact admission/patient/department IDs and
+may not claim that this proves the independently missing surgery-referral relationship.
+
+Fresh request-time REST is not a distributed lease: Surgery/Pharmacy must revalidate at their own
+mutation boundary and retain local revision/audit fences. A draft lookup cannot authorize a future
+start/dispense. Surgery accepts observations at most 30 seconds old with at most 5 seconds future
+clock skew; stale/malformed responses or an older producer's 404 fail as upstream unavailable.
+No asynchronous start projection alone can authorize medication. Shared fixtures cover active,
+medically discharged and missing states; runtime admission/medication activation remains off.
+
 Pharmacy adds `careContext = OUTPATIENT | ADMISSION` and an exact `admissionId` when the context is
 ADMISSION. Inpatient medication is posted to the admission account and may be dispensed under the
 admission policy; it must not reuse the outpatient prescription clearance blindly. Pharmacy events

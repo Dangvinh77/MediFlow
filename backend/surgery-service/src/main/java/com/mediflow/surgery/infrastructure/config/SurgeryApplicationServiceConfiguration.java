@@ -28,6 +28,47 @@ import org.springframework.context.annotation.Profile;
 @Profile("!test")
 @ConditionalOnProperty(prefix = "mediflow.features.surgery", name = "enabled", havingValue = "true")
 public class SurgeryApplicationServiceConfiguration {
+    @Bean
+    com.mediflow.surgery.application.port.in.QueryExpiredSurgeryReadinessUseCase queryExpiredSurgeryReadinessUseCase(
+            com.mediflow.surgery.application.port.out.SurgeryReadinessExpiryPort expiry, SurgeryClockPort clock) {
+        return new com.mediflow.surgery.application.service.ExpiredSurgeryReadinessQueryService(expiry, clock);
+    }
+
+    @Bean
+    com.mediflow.surgery.application.port.in.ExpireSurgeryReadinessUseCase expireSurgeryReadinessUseCase(
+            SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
+            SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
+        return new com.mediflow.surgery.application.service.SurgeryReadinessExpiryService(cases, schedules, reservations, clock);
+    }
+
+    @Bean
+    com.mediflow.surgery.application.port.in.RecordSurgeryReadinessExpiryRetryUseCase recordSurgeryReadinessExpiryRetryUseCase(
+            com.mediflow.surgery.application.port.out.SurgeryReadinessExpiryPort expiry, SurgeryClockPort clock) {
+        return new com.mediflow.surgery.application.service.SurgeryReadinessExpiryRetryService(expiry, clock);
+    }
+
+    @Bean
+    com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase querySurgeryCasesUseCase(
+            SurgeryCaseRepositoryPort cases,
+            com.mediflow.surgery.application.port.out.SurgeryCaseQueryPort board,
+            SurgeryChecklistRepositoryPort checklists, SurgeryConsentRepositoryPort consents,
+            SurgeryScheduleRepositoryPort schedules,
+            com.mediflow.surgery.application.port.out.SurgeryResultRepositoryPort results,
+            OrganizationLookupPort organization, SurgeryClockPort clock,
+            com.mediflow.surgery.application.mapper.SurgeryReadMapper mapper) {
+        return new com.mediflow.surgery.application.service.SurgeryQueryApplicationService(
+                cases, board, checklists, consents, schedules, results, organization, clock, mapper);
+    }
+
+    @Bean
+    com.mediflow.surgery.application.port.in.ReactToSurgeryClearanceUseCase surgeryFinancialClearanceUseCase(
+            SurgeryCaseRepositoryPort cases,
+            com.mediflow.surgery.application.port.out.SurgeryFinancialClearanceRepositoryPort clearances,
+            com.mediflow.surgery.application.port.out.SurgeryInboxPort inbox,
+            SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
+        return new com.mediflow.surgery.application.service.SurgeryFinancialClearanceService(
+                cases, clearances, inbox, schedules, reservations, clock);
+    }
 
     @Bean
     BeginPreopUseCase beginPreopUseCase(SurgeryCaseRepositoryPort cases,
@@ -76,7 +117,9 @@ public class SurgeryApplicationServiceConfiguration {
             SurgeryScheduleRepositoryPort schedules,
             SurgeryCommandReceiptPort receipts,
             OrganizationLookupPort organization,
+            com.mediflow.surgery.application.port.out.AdmissionLookupPort admissions,
+            SurgeryResourceReservationPort reservations,
             SurgeryClockPort clock) {
-        return new SurgeryScheduleApplicationService(cases, schedules, receipts, organization, clock);
+        return new SurgeryScheduleApplicationService(cases, schedules, receipts, organization, admissions, reservations, clock);
     }
 }

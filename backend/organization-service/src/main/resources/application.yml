@@ -28,6 +28,8 @@ spring:
     port: 5672
     username: ${MEDIFLOW_RABBIT_USER:guest}
     password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
 
 eureka:
   client:
@@ -36,6 +38,9 @@ eureka:
 
 # Shared HS256 secret — MUST match the gateway. Provide via env in every environment.
 mediflow:
+  organization:
+    surgery-authority:
+      outbox-enabled: ${MEDIFLOW_ORGANIZATION_SURGERY_AUTHORITY_OUTBOX_ENABLED:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
 

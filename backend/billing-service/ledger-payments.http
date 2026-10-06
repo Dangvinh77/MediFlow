@@ -1,0 +1,26 @@
+### Billing V1 ledger payment — implemented, opt-in, NOT live by default
+### Requires MEDIFLOW_BILLING_LEDGER_ENABLED=true and an existing authoritative V4 payment
+### request, V5 exact target row and matching charges. This file does not create or seed them.
+### Replace paymentRequestId with an actual request ID. Use a signed ADMIN/CASHIER access token.
+### New V1 receipts/grants stay DB-held by V6 even when the API is enabled. Legacy invoice pay
+### endpoints are unchanged. INSURANCE is not a cash receipt method on this new endpoint.
+
+@host = http://localhost:8080
+@paymentRequestId = replace-with-authoritative-payment-request-uuid
+# @token = paste-access-token-here
+
+### Record an installment (200); retry with the SAME key and business fields for safe replay.
+### Change the key only for another real installment. Amount must not exceed the remainder.
+### Wrong actor/key reuse -> 409; expired/closed/wrong target/currency -> 422; absent request -> 404.
+POST {{host}}/api/v1/billing/payment-requests/{{paymentRequestId}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-ID: 9e6c524e-a2e0-4ca9-ac20-6c61f93ae091
+
+{
+  "idempotencyKey": "replace-with-real-cashier-operation-key",
+  "amount": 100.00,
+  "currency": "VND",
+  "paymentMethod": "CASH",
+  "providerReference": null
+}

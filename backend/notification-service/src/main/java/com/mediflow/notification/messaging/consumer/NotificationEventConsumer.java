@@ -47,18 +47,33 @@ public class NotificationEventConsumer {
     private final SendNotificationUseCase sendNotificationUseCase;
     private final NotificationTemplates templates;
     private final ObjectMapper objectMapper;
+    private final CarePaymentReceiptWireHandler careReceipts;
 
     public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
                                      ObjectMapper objectMapper) {
+        this(sendNotificationUseCase, templates, objectMapper, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
+                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts) {
         this.sendNotificationUseCase = sendNotificationUseCase;
         this.templates = templates;
         this.objectMapper = objectMapper;
+        this.careReceipts = careReceipts;
     }
 
     @RabbitListener(queues = RabbitConfig.QUEUE)
     public void onMessage(Message message) throws IOException {
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         byte[] body = message.getBody();
+
+        var root = objectMapper.readTree(body);
+        if (root != null && (root.has("version") || root.has("payload") || root.has("eventType"))) {
+            if (careReceipts == null) throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("V1 intake unavailable");
+            careReceipts.receive(routingKey, body);
+            return;
+        }
 
         switch (routingKey) {
             case RabbitConfig.RK_PATIENT_CREATED -> handlePatientCreated(read(body, PatientCreatedPayload.class));

@@ -24,6 +24,21 @@ public class SurgeryInboxAdapter implements SurgeryInboxPort {
     }
 
     @Override
+    public List<IncomingEvent> findDue(String eventType, Instant now, int limit) {
+        if (eventType == null || now == null || limit < 1 || limit > 100) throw new IllegalArgumentException("Invalid inbox query");
+        return jdbc.query("""
+                SELECT event_id, event_type, event_version, system_producer, fingerprint,
+                       semantic_key, payload, received_at
+                FROM surgery_inbox
+                WHERE status = 'PENDING' AND event_type = ? AND next_attempt_at <= ?
+                ORDER BY next_attempt_at, received_at, event_id LIMIT ?
+                """, (rs, row) -> new IncomingEvent(rs.getObject("event_id",UUID.class),
+                rs.getString("event_type"), rs.getInt("event_version"),rs.getString("system_producer"),
+                rs.getString("fingerprint"),rs.getString("semantic_key"),rs.getBytes("payload"),
+                rs.getTimestamp("received_at").toInstant()), eventType,Timestamp.from(now),limit);
+    }
+
+    @Override
     public Decision begin(IncomingEvent event) {
         requireTransaction();
         if (event == null) throw new IllegalArgumentException("Inbox event không được null");

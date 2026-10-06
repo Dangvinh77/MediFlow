@@ -15,6 +15,34 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /** These inline examples test the consumer specification, NOT Billing producer approval. */
 class PrescriptionClearanceDecoderTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"exam", "lab", "admission", "surgery"})
+    void decodeApplicable_validOtherPurposeProducerBytes_areNotApplicable(String purpose) throws Exception {
+        var bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-" + purpose + ".json"));
+        assertThat(decoder.decodeApplicable(PrescriptionClearanceDecoder.EVENT_TYPE, bytes)).isEmpty();
+    }
+
+    @Test
+    void decodeApplicable_malformedOtherPurpose_isNotSilentlyAcknowledged() throws Exception {
+        var bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-surgery.json"));
+        var root = (ObjectNode) mapper.readTree(bytes);
+        ((ObjectNode) root.get("payload")).remove("surgeryCaseId");
+        assertThatThrownBy(() -> decoder.decodeApplicable(PrescriptionClearanceDecoder.EVENT_TYPE,
+                mapper.writeValueAsBytes(root))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> decoder.decodeApplicable(PrescriptionClearanceDecoder.EVENT_TYPE, new byte[1_048_577]))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+    @Test
+    void decode_billingProducerBytes_matchesExactPrescriptionAndGrantTime() throws Exception {
+        byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-prescription.json"));
+        var command = decoder.decode(PrescriptionClearanceDecoder.EVENT_TYPE, bytes);
+        assertThat(command.clearance().prescriptionId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000004"));
+        assertThat(command.clearance().grantedAt()).isEqualTo(java.time.Instant.parse("2026-10-05T08:00:00Z"));
+        assertThat(command.clearance().expiresAt()).isNull();
+    }
     private final ObjectMapper mapper = new ObjectMapper();
     private final PrescriptionClearanceDecoder decoder = new PrescriptionClearanceDecoder(mapper);
 
@@ -67,6 +95,15 @@ class PrescriptionClearanceDecoderTest {
         String ambiguous = valid.replace("\"version\":1", "\"version\":0,\"version\":1");
         assertThatThrownBy(() -> decoder.decode(PrescriptionClearanceDecoder.EVENT_TYPE,
                 ambiguous.getBytes(java.nio.charset.StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test void decode_abbreviatedUuidAndUnsupportedPaymentMethod_rejectWithoutFallback() throws Exception {
+        var root = example();
+        ((ObjectNode) root.get("payload")).put("prescriptionId", "0-0-0-0-4");
+        reject(root);
+        root = example();
+        ((ObjectNode) root.get("payload")).put("paymentMethod", "INSURANCE");
+        reject(root);
     }
 
     @Test

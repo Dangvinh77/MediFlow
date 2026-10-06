@@ -187,10 +187,13 @@ class SurgeryChecklistApplicationServiceTest {
         SurgeryAuditActor actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
         SurgeryCase surgeryCase = newCase(caseId, actor);
         surgeryCase.beginPreop(actor, CORRELATION_ID, REQUESTED_AT.plusSeconds(1));
+        UUID scheduleId = UUID.randomUUID();
         ReadinessSnapshot readiness = ReadinessSnapshot.evaluate(UUID.randomUUID(), caseId,
                 true, true, true, true, true, true, true, REQUESTED_AT.plusSeconds(2),
                 Arrays.stream(SurgeryDependencyType.values())
-                        .map(type -> new SurgeryDependencyRevision(type, UUID.randomUUID(), 1)).toList(),
+                        .map(type -> new SurgeryDependencyRevision(type,
+                                type == SurgeryDependencyType.SCHEDULE ? scheduleId : UUID.randomUUID(),
+                                type == SurgeryDependencyType.SCHEDULE ? 7 : 1)).toList(),
                 REQUESTED_AT.plusSeconds(3600));
         surgeryCase.markReady(readiness, actor, CORRELATION_ID);
         surgeryCase.finalizeSchedule(actor, CORRELATION_ID, REQUESTED_AT.plusSeconds(3));
@@ -200,7 +203,7 @@ class SurgeryChecklistApplicationServiceTest {
                 List.of(new SurgeryChecklistItemDefinition(UUID.randomUUID(), "IDENTITY_CONFIRMED", true, 1)))
                 .snapshotForCase(UUID.randomUUID(), caseId);
         SurgeryChecklistItem item = snapshot.items().getFirst();
-        SurgerySchedule schedule = new SurgerySchedule(UUID.randomUUID(), caseId, 7, UUID.randomUUID(),
+        SurgerySchedule schedule = new SurgerySchedule(scheduleId, caseId, 7, UUID.randomUUID(),
                 NOW.plusSeconds(3600), NOW.plusSeconds(5400), List.of(new SurgeryTeamAssignment(
                 actor.verifiedStaffId(), SurgeryTeamRole.PRIMARY_SURGEON)));
         when(receipts.claim(any(), anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(

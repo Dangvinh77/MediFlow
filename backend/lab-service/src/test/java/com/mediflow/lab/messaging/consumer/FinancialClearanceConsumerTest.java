@@ -22,6 +22,16 @@ import com.mediflow.lab.messaging.consumer.payload.FinancialClearanceEnvelope;
 import com.mediflow.lab.messaging.consumer.payload.FinancialClearancePayload;
 
 class FinancialClearanceConsumerTest {
+    @Test
+    void consume_billingProducerBytes_preservesExplicitLabIdsAndEpisode() throws Exception {
+        byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-lab.json"));
+        consumer.consume(objectMapper.readValue(bytes, FinancialClearanceEnvelope.class));
+        var command = ArgumentCaptor.forClass(FinancialClearanceCommand.class);
+        verify(useCase).onFinancialClearance(command.capture());
+        assertThat(command.getValue().labTestIds()).containsExactly(UUID.fromString("00000000-0000-0000-0000-000000000010"));
+        assertThat(command.getValue().careEpisodeId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+    }
 
     private final ReactToFinancialClearanceUseCase useCase = mock(ReactToFinancialClearanceUseCase.class);
     private final FinancialClearanceConsumer consumer = new FinancialClearanceConsumer(useCase);

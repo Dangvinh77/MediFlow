@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "exists": false,
+    "admissionId": "05000000-0000-0000-0000-000000000001",
+    "patientId": null,
+    "departmentId": null,
+    "sourceRecordId": null,
+    "status": null,
+    "eligible": false,
+    "sourceRevision": null,
+    "observedAt": "2026-10-05T02:00:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-05T02:00:00Z",
+  "correlationId": "04000000-0000-0000-0000-000000000001"
+}

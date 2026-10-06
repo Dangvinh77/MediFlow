@@ -1,6 +1,6 @@
 # HANDOFF — Inpatient deposit, top-up and settlement facts
 
-- **Status:** `OPEN`; source audit 2026-10-04 at `2e8f024`.
+- **Status:** `PARTIAL`; implementation update 2026-10-05, working tree based on `3103fa1`.
 - **Producer / owner:** Billing — Lộc (`locgit-89`).
 - **Consumer:** Inpatient — Vinh (`Dangvinh77` / `Harori`).
 - **Canonical contract:**
@@ -8,10 +8,17 @@
 - **Blocked behavior:** normal admission authorization, deposit top-up visibility and
   administrative close after final settlement.
 
-Billing contains the V2 ledger, `FinancialClearance` and `Settlement` domain models, but the source
-does not yet publish `financial.clearance.granted`, `deposit.topup.required` or
-`settlement.completed`. Inpatient already has guarded consumers and application rules for these
-facts. Domain tables/classes alone therefore do not close this integration.
+Billing now records immutable classified deposit receipts and an exact ADMISSION_DEPOSIT grant
+after full payment of a persisted request, atomically with held V1 outbox rows. Inpatient tests
+read Billing's actual producer fixture. Deposit cash is not allocated to service charges or
+treated as earned revenue. Notification records the private deposit receipt without claiming
+final settlement. Huy implemented this slice under the user-authorized dependency override;
+permanent ownership is unchanged.
+
+`deposit.topup.required` and `settlement.completed` producers, authoritative request issuance,
+catalogue/expected-total reconciliation and actual broker E2E remain absent. Billing V1 rows are
+DB-fenced from publication; all new intake/API flags default OFF. A deposit grant alone does not
+close this integration or authorize administrative admission close.
 
 ## Required producer contracts
 

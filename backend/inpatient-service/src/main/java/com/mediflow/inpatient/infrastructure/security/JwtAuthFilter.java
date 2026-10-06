@@ -68,6 +68,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
+            if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
+                // Service privilege never carries a human ADMIN/DOCTOR role or staff identity.
+                if (!Roles.SYSTEM.equals(role) || !StringUtils.hasText(subject)
+                        || claims.getIssuedAt() == null || claims.getExpiration() == null
+                        || claims.getExpiration().toInstant().isAfter(claims.getIssuedAt().toInstant().plusSeconds(60))
+                        || claims.getIssuedAt().toInstant().isAfter(java.time.Instant.now().plusSeconds(5))) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                        subject, null, List.of(new SimpleGrantedAuthority("ROLE_SYSTEM_SERVICE"))));
+                return;
+            }
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
                     || !StringUtils.hasText(subject)
                     || !StringUtils.hasText(role)

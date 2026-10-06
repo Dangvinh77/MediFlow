@@ -1,0 +1,16 @@
+{
+  "eventId": "05000000-0000-0000-0000-000000000001",
+  "eventType": "organization.surgery.authority.changed",
+  "version": 1,
+  "occurredAt": "2026-10-05T02:00:00Z",
+  "correlationId": "04000000-0000-0000-0000-000000000001",
+  "producer": "organization-service",
+  "payload": {
+    "referenceKind": "ROOM",
+    "referenceId": "01000000-0000-0000-0000-000000000001",
+    "teamRole": null,
+    "revision": 2,
+    "actorAccountId": "06000000-0000-0000-0000-000000000001",
+    "reason": "Room maintenance decision"
+  }
+}

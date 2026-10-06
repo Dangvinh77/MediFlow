@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "data": {
+    "exists": false,
+    "clearanceId": "00000000-0000-0000-0000-000000000046",
+    "eligible": false,
+    "invoiceId": null,
+    "accountId": null,
+    "patientId": null,
+    "purpose": null,
+    "careEpisodeType": null,
+    "careEpisodeId": null,
+    "admissionId": null,
+    "surgeryCaseId": null,
+    "grantedAt": null,
+    "expiresAt": null,
+    "observedAt": "2026-10-06T08:00:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-06T08:00:00Z",
+  "correlationId": "00000000-0000-0000-0000-000000000009"
+}

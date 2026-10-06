@@ -69,6 +69,23 @@ class JwtAuthFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"valid","missing-iat","missing-exp","future-iat","expired","long-ttl","wrong-subject","wrong-method","wrong-path"})
+    void serviceLookup_shortLivedCredentialIsRestrictedToExactReadRoute(String scenario) throws Exception {
+        Instant now=Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        var builder=Jwts.builder().subject(scenario.equals("wrong-subject")?"billing-service":"surgery-service")
+                .claim(JwtClaims.ROLE,"SYSTEM").claim(JwtClaims.TYPE,JwtClaims.SERVICE_TOKEN_TYPE);
+        Instant issued=scenario.equals("future-iat")?now.plusSeconds(6):now;
+        if(!scenario.equals("missing-iat")) builder.issuedAt(Date.from(issued));
+        if(!scenario.equals("missing-exp")) builder.expiration(Date.from(scenario.equals("expired")?now.minusSeconds(1):issued.plusSeconds(scenario.equals("long-ttl")?61:60)));
+        var request=requestWithToken(builder.signWith(SIGNING_KEY).compact());
+        request.setMethod(scenario.equals("wrong-method")?"POST":"GET");
+        request.setRequestURI(scenario.equals("wrong-path")?"/api/v1/billing/invoices":
+                "/api/v1/billing/financial-clearances/00000000-0000-0000-0000-000000000046/lookup");
+        filter.doFilter(request,new MockHttpServletResponse(),new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()!=null).isEqualTo(scenario.equals("valid"));
+    }
+
     private MockHttpServletRequest requestWithToken(String token) {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);

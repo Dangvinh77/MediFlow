@@ -25,6 +25,14 @@ public interface PrepareSurgeryScheduleUseCase {
     record Command(UUID surgeryCaseId, long expectedCaseRevision, long expectedScheduleRevision,
                    UUID roomId, Instant startsAt, Instant endsAt, List<TeamMember> team,
                    String idempotencyKey, SurgeryAuditActor actor, String correlationId) {
+        public static Command fromRequest(UUID caseId,
+                com.mediflow.surgery.application.dto.request.PrepareSurgeryScheduleRequest request,
+                String key, com.mediflow.surgery.application.dto.SurgeryActorIdentity identity, String correlation) {
+            return new Command(caseId,request.expectedCaseRevision(),request.expectedScheduleRevision(),
+                    request.roomId(),request.startsAt(),request.endsAt(),request.team().stream()
+                    .map(member -> new TeamMember(member.staffId(),member.role())).toList(),key,
+                    SurgeryAuditActor.human(identity.accountId(),identity.verifiedStaffId()),correlation);
+        }
         public Command {
             if (surgeryCaseId == null || expectedCaseRevision < 0 || expectedScheduleRevision < 0
                     || roomId == null || startsAt == null || endsAt == null || !endsAt.isAfter(startsAt)

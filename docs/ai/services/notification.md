@@ -45,6 +45,21 @@ Consume event → create `NOTIFICATION` (PENDING) → send email/SMS (integratio
 
 ## Care-finance integration gate
 
+### Current V1 classified receipt slice (2026-10-05)
+
+The existing single `notification.q` reader detects versioned envelopes and routes them to the
+strict Billing receipt handler instead of the flat legacy DTO. There is no competing listener or
+new unproven binding. `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED=false` by default; disabled/invalid
+V1 intake rejects rather than downgrades. Database outages remain retriable, identity conflicts poison.
+
+V2 migration adds source/template/correlation/privacy metadata and a payload hash to the existing
+processed-event table. Claim, private IN_APP history delivery and immutable held `notification.sent`
+outbox commit atomically. Service and deposit receipts have different templates; partial payments do
+not promise a paid-in-full invoice. IN_APP delivery means the committed authenticated history row,
+not an email/SMS provider call. Existing signed patientId ownership checks remain intact.
+Producer fixture tests read Billing files directly. External delivery workers, refund/top-up/settlement
+and Surgery templates remain unfinished; this is not completion of Notification V2.
+
 - Read [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
   before changing event bindings/templates and
   [`CONTRACT-IDENTITY-LOOKUP-01`](../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md) before

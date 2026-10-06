@@ -16,8 +16,10 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.time.Instant;
+import com.mediflow.surgery.domain.model.SurgeryTeamRole;
 
-/** Projects the two approved Organization lookups without inventing room or role policy. */
+/** Fresh authoritative lookups; missing deployment, malformed data and outages fail closed. */
 @Component
 public final class OrganizationLookupAdapter implements OrganizationLookupPort {
 
@@ -36,7 +38,60 @@ public final class OrganizationLookupAdapter implements OrganizationLookupPort {
     @Override
     public OrganizationLookupSnapshot findRoom(UUID roomId, String correlationId) {
         requireLookupIdentity(roomId, correlationId);
-        throw new UpstreamUnavailableException("Organization operating-room lookup is not contracted");
+        try {
+            var data = verifiedData(client.lookupRoom(roomId, tokens.bearerToken(), correlationId), correlationId);
+            if (data.exists() == null || data.active() == null || !roomId.equals(data.roomId())) throw invalidResponse();
+            requireFresh(data.observedAt());
+            if (!data.exists()) {
+                if (data.active() || data.departmentId() != null || data.sourceRevision() != null) throw invalidResponse();
+            } else if (data.departmentId() == null || !validRevision(data.sourceRevision())) throw invalidResponse();
+            return new OrganizationLookupSnapshot(ReferenceKind.ROOM, roomId,
+                    !data.exists() ? ReferenceState.NOT_FOUND : data.active() ? ReferenceState.ACTIVE : ReferenceState.INACTIVE,
+                    data.observedAt(), data.sourceRevision(), null, null, data.departmentId());
+        } catch (UpstreamUnavailableException failure) { throw failure; }
+        catch (RuntimeException failure) {
+            // This additive endpoint returns 200 for absence. A 404 may mean an older producer.
+            throw new UpstreamUnavailableException("organization-service room lookup is unavailable", failure);
+        }
+    }
+
+    @Override
+    public SurgicalEligibilitySnapshot findSurgicalEligibility(UUID staffId, SurgeryTeamRole role,
+            Instant startsAt, Instant endsAt, String correlationId) {
+        requireLookupIdentity(staffId, correlationId);
+        if (role == null || startsAt == null || endsAt == null || !endsAt.isAfter(startsAt)) {
+            throw new IllegalArgumentException("Surgical eligibility role and interval are required");
+        }
+        try {
+            var data = verifiedData(client.lookupSurgicalEligibility(staffId, role.name(), startsAt, endsAt,
+                    tokens.bearerToken(), correlationId), correlationId);
+            if (data.exists() == null || data.eligible() == null || !staffId.equals(data.staffId())
+                    || !role.name().equals(data.teamRole()) || !startsAt.equals(data.startsAt())
+                    || !endsAt.equals(data.endsAt())) throw invalidResponse();
+            requireFresh(data.observedAt());
+            if (!data.exists()) {
+                if (data.eligible() || data.departmentId() != null || data.sourceRevision() != null) throw invalidResponse();
+            } else if (data.departmentId() == null
+                    || data.sourceRevision() != null && !validRevision(data.sourceRevision())
+                    || data.eligible() && data.sourceRevision() == null) throw invalidResponse();
+            return new SurgicalEligibilitySnapshot(staffId, role,
+                    !data.exists() ? ReferenceState.NOT_FOUND : data.eligible() ? ReferenceState.ACTIVE : ReferenceState.INACTIVE,
+                    data.departmentId(), data.observedAt(), data.sourceRevision(), startsAt, endsAt);
+        } catch (UpstreamUnavailableException failure) { throw failure; }
+        catch (RuntimeException failure) {
+            throw new UpstreamUnavailableException("organization-service surgical eligibility lookup is unavailable", failure);
+        }
+    }
+
+    private void requireFresh(Instant observedAt) {
+        Instant now = clock.now();
+        if (observedAt == null || observedAt.isBefore(now.minusSeconds(30))
+                || observedAt.isAfter(now.plusSeconds(5))) throw invalidResponse();
+    }
+
+    private static boolean validRevision(String revision) {
+        try { return revision != null && revision.matches("[1-9][0-9]*") && Long.parseLong(revision) > 0; }
+        catch (NumberFormatException invalid) { return false; }
     }
 
     @Override

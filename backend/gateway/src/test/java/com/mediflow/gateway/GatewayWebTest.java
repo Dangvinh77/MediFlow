@@ -38,6 +38,56 @@ import static org.mockito.Mockito.when;
         })
 @AutoConfigureWebTestClient
 class GatewayWebTest {
+    @Test
+    void careCommandsEnforceSpecificSignedRolesWithoutBroadAppointmentFallback() {
+        String nurse = jwt.issueAccessToken(UUID.randomUUID(), Roles.NURSE);
+        String doctor = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
+        String technician = jwt.issueAccessToken(UUID.randomUUID(), Roles.LAB_TECH);
+        String manager = jwt.issueAccessToken(UUID.randomUUID(), Roles.MANAGER);
+        String id = UUID.randomUUID().toString();
+        webTestClient.put().uri("/api/v1/appointments/" + id + "/start-exam")
+                .header(HttpHeaders.AUTHORIZATION, bearer(nurse)).exchange().expectStatus().isForbidden();
+        webTestClient.put().uri("/api/v1/appointments/" + id + "/check-in")
+                .header(HttpHeaders.AUTHORIZATION, bearer(doctor)).exchange().expectStatus().isForbidden();
+        webTestClient.get().uri("/api/v1/lab/" + id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(manager)).exchange().expectStatus().isForbidden();
+        webTestClient.get().uri("/api/v1/lab/" + id)
+                .header(HttpHeaders.AUTHORIZATION, bearer(technician)).exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        webTestClient.get().uri("/api/v1/lab")
+                .header(HttpHeaders.AUTHORIZATION, bearer(nurse)).exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        webTestClient.post().uri("/api/v1/records/" + id + "/admission-referrals")
+                .header(HttpHeaders.AUTHORIZATION, bearer(doctor)).exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        webTestClient.post().uri("/api/v1/records/" + id + "/admission-referrals")
+                .header(HttpHeaders.AUTHORIZATION, bearer(nurse)).exchange().expectStatus().isForbidden();
+    }
+
+    @Test
+    void ledgerPaymentRouteAllowsOnlyExactCashierCommand() {
+        String path = "/api/v1/billing/payment-requests/" + UUID.randomUUID() + "/payments";
+        String doctor = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
+        webTestClient.post().uri(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + doctor)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden();
+        String cashier = jwt.issueAccessToken(UUID.randomUUID(), Roles.CASHIER);
+        webTestClient.post().uri(path + "/unexpected").header(HttpHeaders.AUTHORIZATION, "Bearer " + cashier)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden();
+        webTestClient.get().uri(path).header(HttpHeaders.AUTHORIZATION, "Bearer " + cashier)
+                .exchange().expectStatus().isForbidden();
+    }
+
+    @Test
+    void authorityLookups_neverExposeOrganizationOrInpatientInternalsPublicly() {
+        String access=jwt.issueAccessToken(UUID.randomUUID(),Roles.ADMIN);
+        for(String path:new String[]{"/api/v1/org/operating-rooms/"+UUID.randomUUID()+"/lookup",
+                "/api/v1/org/staff/"+UUID.randomUUID()+"/surgery-eligibility",
+                "/api/v1/inpatient/admissions/"+UUID.randomUUID()+"/lookup"}) {
+            webTestClient.get().uri(path).header(HttpHeaders.AUTHORIZATION,"Bearer "+access)
+                    .exchange().expectStatus().isForbidden();
+            webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();
+        }
+    }
 
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
 
@@ -133,6 +183,33 @@ class GatewayWebTest {
                 .expectHeader().valueEquals("X-Correlation-Id", correlationId)
                 .expectBody()
                 .jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+    }
+
+    @Test
+    void reportOperations_doctorCanRouteButLegacyRevenueRemainsForbidden() {
+        String doctorToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
+        for (String path : new String[] {"/api/v1/reports/operations/daily",
+                "/api/v1/reports/operations/surgery"}) {
+            webTestClient.get().uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
+                    .exchange().expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                    .expectBody().jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+        }
+        for (String path : new String[] {"/api/v1/reports/daily", "/api/v1/reports/monthly",
+                "/api/v1/reports/top-medicines", "/api/v1/reports/operations/daily/private"}) {
+            webTestClient.get().uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(doctorToken))
+                    .exchange().expectStatus().isForbidden();
+        }
+    }
+
+    @Test
+    void reportOperations_patientCannotRoute() {
+        String token = jwt.issueAccessToken(UUID.randomUUID(), Roles.PATIENT,
+                null, null, UUID.randomUUID());
+        webTestClient.get().uri("/api/v1/reports/operations/daily")
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .exchange().expectStatus().isForbidden();
     }
 
     @Test

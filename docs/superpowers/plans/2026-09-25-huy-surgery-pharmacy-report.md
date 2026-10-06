@@ -1,14 +1,14 @@
 # Kế hoạch code của Huy — Surgery, Pharmacy, Report theo Care–Finance V2
 
-**Cập nhật:** 2026-10-04 · **Owner:** Huy (LQHuy0210).
-**Baseline hiện tại:** nhánh Huy, HEAD `d8209d1` + working tree Surgery chưa commit. Baseline `6686f9e` và Surgery 128-test run ngày 2026-09-29 là lịch sử ở §10, không chứng nhận code hiện tại.
-**Phạm vi lượt hiện tại:** Surgery Organization staff/department consumer + tài liệu; giữ nguyên shared/producer của owner khác. Báo cáo đánh giá Pharmacy/Report: [V2 completion assessment](2026-10-02-huy-v2-completion-assessment.md).
+**Cập nhật:** 2026-10-06 · **Owner:** Huy (LQHuy0210).
+**Baseline hiện tại:** nhánh Huy, HEAD `ea60ea4` sau đồng bộ master + working tree dependency liên service và lifecycle Surgery chưa commit. Baseline `3103fa1`/`6686f9e`/`7121330` và các test runs cũ là lịch sử ở §10, không chứng nhận code hiện tại.
+**Phạm vi lượt hiện tại:** user đã giao task-scoped override để Huy thực hiện dependency thiếu ở service khác. Hai lát cắt hiện tại: Gateway/Organization/Inpatient authority và Billing payment/clearance + Notification receipt + Surgery grant projection; shared root/Common/Compose không đổi. Xem [cross-service execution/evidence](2026-10-05-huy-cross-service-dependencies.md). Báo cáo đánh giá Pharmacy/Report: [V2 completion assessment](2026-10-02-huy-v2-completion-assessment.md).
 **CURRENT:** Pharmacy có V14–V18, admission/clearance offline, held writer và các internal outpatient create/dispense/cancel/expiry/stock-failure transactions. Report có V6–V10 operational kernel/journal, finite replay, pending admission evidence và gated aggregate snapshot API/read coverage. Public V1 Pharmacy vẫn fail-closed; live V2 listeners/flags/held delivery đều OFF. Financial V2, admission eligibility/metrics và live catch-up/cutover chưa hoàn tất. Không đánh đồng code/module PASS với G1/G3 hoặc V2 production DONE.
-Surgery đã nối consumer HTTP staff/department theo Organization phase-1 contract; room authority, job-title mapping và same-byte fixture liên owner vẫn mở, business feature mặc định OFF.
+Surgery đã có generic identity adapters, Organization room/explicit surgical-capability authority, Inpatient exact-admission lookup và offline exact financial-grant projection (V2 migration). Billing có held V1 producer cho 5 clearance purposes và classified receipts; Notification có gated private IN_APP receipt transaction. Canonical fixtures dùng chung producer/consumer. Required team composition, referral relationship, revoke/supersede/READY/START guards, financial issuance/reconciliation và full workflow vẫn mở; business/intake/publication mặc định OFF.
 
 ## 1. Phạm vi, nguồn chuẩn và thay đổi so với plan cũ
 
-Huy triển khai trong backend/pharmacy-service, backend/report-service và service mới backend/surgery-service. Clinical, Inpatient, Lab, Billing, Notification, Organization, Patient và Gateway chỉ đọc để kiểm tra hợp đồng. Root pom.xml, docker-compose.yml, scripts/init-databases.sql, Common, Eureka và CI là phần shared, chưa được giao lại cho Huy sau yêu cầu “chỉ nhiệm vụ của Huy”. Không sửa hộ producer hoặc thêm endpoint giả để vượt phụ thuộc.
+Phạm vi mặc định của Huy là backend/pharmacy-service, backend/report-service và backend/surgery-service. Ngày 2026-10-05 user cho phép triển khai luôn các dependency thiếu trong Clinical, Inpatient, Lab, Billing, Notification, Organization, Patient và Gateway liên quan plan này; ownership lâu dài không đổi. Root pom.xml, docker-compose.yml, scripts/init-databases.sql, Common, Eureka và CI vẫn là shared chưa giao trong lượt này. Không thêm endpoint giả, truy cập DB xuyên service hoặc đoán reference để vượt phụ thuộc.
 
 Mục tiêu là các lát cắt nghiệp vụ chạy được, có migration, transaction, bảo mật, fixture và test; không đánh dấu xong bằng việc tạo đủ entity/controller. FE/mobile, commit/push và triển khai production không thuộc lượt làm lại plan này.
 
@@ -43,7 +43,7 @@ Giữ 16 mã task cha H-01, S-01…07, P-01…03, R-01…04, X-01. Subtask mới
 | [Service-doc alignment 2026-09-24](2026-09-24-care-finance-service-doc-alignment.md) | Theo dõi căn chỉnh docs/contracts; tick không chứng minh API/event đã chạy. |
 | [Architecture HTML plan 2026-09-22](2026-09-22-mediflow-care-finance-architecture-html.md) | Nguồn kiến trúc/quy trình và phân công, không thay test acceptance của code. |
 
-Đối chiếu thêm cả [working draft Surgery](../../eproject_general_plan/backend-spec/10-surgery.md), [V2 candidate](../../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [bounded-context rules](../../ai/services/surgery.md), [decision handoff](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) và [bootstrap handoff](../../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). Nếu candidate khác quyết định Huy đã ghi, áp dụng quyết định **chỉ trong phạm vi local**; wire contract phải được cập nhật cùng owner trước G1.
+Đối chiếu thêm cả [working draft Surgery](../../eproject_general_plan/backend-spec/10-surgery.md), [V2 candidate](../../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [bounded-context rules](../../ai/services/surgery.md), [decision handoff](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) và [canonical runtime verification](../../ai/services/surgery.md). Nếu candidate khác quyết định Huy đã ghi, áp dụng quyết định **chỉ trong phạm vi local**; wire contract phải được cập nhật cùng owner trước G1.
 
 ### 1.2. Nhãn lấy việc
 
@@ -102,7 +102,7 @@ SPEC_CHOICE = spec mới đã chọn hướng nhưng không tự chứng minh ap
 | D09 | Billing target có transactionId/refund original/account/classification, settlement totals; Report có 5 nhóm chỉ tiêu riêng. | E06/E08: legacy invoice/compensation, chưa ledger V2. | PARTIAL: payload thiếu allocated earned/deposit-release/split department và settlement version/supersedes; cash gross/net, period và receivable stock/delta chưa thống nhất. H-01.5, R-03. |
 | D10 | Inpatient tách medical discharge và CLOSED; Report target dùng admission.closed cho discharge/LOS, Surgery có actual times/category. | E02 đã có admission facts; Report chưa KPI này, Surgery chưa persisted outcomes. | PARTIAL: chốt tên administrative duration vs medical LOS, close thiếu department phải lấy exact start snapshot; thiếu contract bed transfer/release/capacity cho Report. R-04 không công bố occupancy bằng active admission count. |
 | D11 | SPEC_CHOICE: legacy v0 giữ nguyên, nested envelope v1, feature flag false, projections mới chạy riêng và đối soát trước cutover. | Pharmacy offline V1 codec; Report typed operational shadow kernel + durable minimal journal/claims có PG evidence. Chưa live source mapper/replay hoặc Surgery messaging. | Còn producer mapping/corrections, source horizon/retention/watermark, isolated generation/pending/catch-up và read cutover. H-01.4–5, P-02.5, R-01. |
-| D12 | Exact purpose/target/patient/episode; expiresAt; active admission projection đã có trong target. | Clinical/Lab có clearance consumers; Surgery chưa exact clearance/relationship adapter, Billing chưa Surgery producer. Patient exists đã có. | PARTIAL: grant/revoke/freshness, early delivery, missing dependency, admission close-before-start/transfer. Patient exists không chứng minh admission thuộc patient. P-03.1–3, S-03.2/S-05.3. |
+| D12 | Exact purpose/target/patient/episode; expiresAt; active admission projection đã có trong target. | Billing held SURGERY/PRESCRIPTION grant producer + same-byte dual-gated consumers/PG/MQ; Surgery exact admission/Organization authority đã có. | PARTIAL: grant-only không thay revoke/supersede/freshness authority tại READY/START; referral/care relationship, transfer và full workflow race vẫn OPEN. P-03.1–3, S-03.2/S-05.3. |
 
 Tại baseline: chưa có shared V1 fixtures cho các flow mới, không có E2E V2 được ghi nhận. Không ghi tên/ngày owner “đã duyệt” chỉ vì spec đã merge. Khi có quyết định, thêm link canonical/PR xác nhận, producer/consumer fixture hash và test run vào §10.
 
@@ -144,7 +144,7 @@ Domain thuần Java; application chứa in/out-ports, DTO records, policies và 
 | G2 — local correctness | Unit/web/architecture + migration/PG/MQ/concurrency/recovery tương ứng thực sự chạy. | Container test skip không phải G2. |
 | G3 — integration/enablement | Producer runtime, Gateway role, Docker vertical slice, reconciliation/replay/rollback và handoff liên quan. | Không yêu cầu chờ mọi Dxx của tính năng khác. |
 
-Surgery đã bind ba flag mặc định false: `mediflow.features.surgery.enabled`, `mediflow.surgery.messaging.producer.enabled`, `mediflow.surgery.messaging.consumers.enabled`. S-01.6.1 chứng minh generic producer scheduler/publisher không được tạo nếu thiếu một trong hai gate business+producer; S-01.6.2 xác nhận controller pre-op/cancel không được tạo khi business gate off. Consumer listener/business event writer chưa tồn tại nên consumer gate chưa có adapter để bảo vệ. Flag không ngăn Flyway chạy. Không bind rồi ACK mất event khi consumer bị tắt; producer-off phải giữ outbox chưa gửi, không đánh dấu published.
+Surgery có ba flag mặc định false: `mediflow.features.surgery.enabled`, `mediflow.surgery.messaging.producer.enabled`, `mediflow.surgery.messaging.consumers.enabled`. Tất cả controller hiện hữu require business gate; publisher/dispatcher require business+producer, clearance listener/queue/durable worker require business+consumer. Context tests phủ đủ 8 tổ hợp mỗi messaging gate, không bind rồi ACK mất event khi disabled và không mark outbox published khi producer off. Business outcome writer chưa được mở. Flag không ngăn Flyway chạy. Actual runtime verification và tiến độ batch 50 ở [execution ledger](2026-10-05-huy-50-task-execution.md), không thay full workflow G3.
 
 ## 5. H-01 — thu hẹp quyết định, khóa hợp đồng đúng phần còn thiếu
 
@@ -190,7 +190,7 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 | Create/query + checklist/consent + draft schedule | S-04, S-05.1/.2, S-06.2 sau nền lưu trữ; test bằng port doubles | Referral/relationship proof, catalogue y khoa, quyền consent và Organization eligibility trước khi bật các command tương ứng. |
 | READY + finalize + START | Engine/revision/transaction/race có thể code LOCAL sau models | Exact clearance, evidence freshness, role matrix và active room/staff lookup phải đạt G1 trước workflow thực. |
 | COMPLETE/CANCEL + event delivery | Local outcome/audit/resource-release tests sau S-07 prerequisites | Wire outcome/charge, Inpatient reference, Billing reconciliation, Notification/Report fixtures trước delivery thật. |
-| Root/Compose/Gateway và bật tích hợp | Huy cung cấp cấu hình, requests, test evidence | S-01.4/X-01 do shared owners; không chặn module-local implementation. |
+| Root/Compose/Gateway và bật tích hợp | Gateway được giao trong task-scoped override 2026-10-05; route/roles và HTTP transport test đã có | Root/Compose hiện hữu không sửa; health/discovery và actual-service E2E S-01.4/X-01 vẫn cần kiểm chứng riêng. |
 
 **Quyết định kỹ thuật local cho backlog này — chưa phải implementation:**
 
@@ -208,12 +208,12 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 - [x] **S-01.1 · DONE/LOCAL:** module/POM kế thừa dependency versions, package blueprint, port 8091/DB `mediflow_surgery`; không endpoint placeholder.
 - [x] **S-01.2 · DONE/LOCAL:** DB/Rabbit/Eureka/JWT/correlation/config properties và test profile foundation đã có.
 - [x] **S-01.3 · DONE/LOCAL:** JWT human access-token, account UUID tách staff identity, authentication/default-deny và error handling foundation. Chưa có business controller nên chưa chứng minh role từng command.
-- [ ] **S-01.4 · OWNER:** [bootstrap handoff](../../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) cho root module, DB, Compose, Gateway. Acceptance: root reactor có module, DB riêng, health/service discovery, route + role từng endpoint; Huy chỉ đóng khi có evidence owner. Không tự sửa bốn phạm vi shared này.
-- [x] **S-01.5 · DONE/LOCAL:** suite module pass 151/151 tests (0 failure/error/skip; 2026-10-04), gồm PostgreSQL và RabbitMQ Testcontainers. Root reactor cũng pass 1.635/1.635; đây chưa phải Gateway route/G3 evidence.
-- [ ] **S-01.6 · PARTIAL/LOCAL cùng S-04/S-03/S-02.5:** nối ba flag vào business adapters/command activation, listener registration và outbox dispatcher. Khi surgery disabled không mở mutation; consumer disabled không nhận rồi ACK bỏ event; producer disabled giữ outbox pending. Test context cho tổ hợp flag, không tự bật bằng profile production/dev mặc định.
+- [x] **S-01.4 · DONE/ACTUAL RUNTIME (2026-10-05):** shared reactor/DB/Compose foundation giữ nguyên; Gateway discovery route và exact roles đã được kiểm bằng packaged Eureka/Gateway/Surgery/Organization, hai DB riêng + Rabbit thật. 3 Failsafe cases pass: health/discovery/path/correlation, 401/403/404 cả Gateway/downstream, non-root Surgery container, scoped read + prepare draft + revoked capability denial. Bootstrap handoff đã retire; [quy tắc lâu dài](../../ai/services/gateway.md) và [lệnh chạy/evidence](2026-10-05-huy-50-task-execution.md). Không suy thành toàn bộ workflow G3.
+- [x] **S-01.5 · DONE/VERIFY:** Surgery 166/166 tests (0 failure/error/skip; 2026-10-05), gồm PostgreSQL/RabbitMQ thật. Root reactor pass 1.696/1.696 trước lần rà soát Organization cuối; đây chưa phải actual-service Gateway/G3 evidence.
+- [x] **S-01.6 · DONE/ACTIVATION GUARDS (2026-10-05):** toàn bộ controller hiện hữu require business gate; clearance queue/listener/durable worker chỉ được tạo khi business+consumer true; dispatcher/publisher require business+producer. Tất cả 8 tổ hợp consumer và 8 tổ hợp producer có context tests; disabled consumer không đăng ký rồi ACK mất event, producer-off không đánh dấu outbox đã gửi. Defaults false; không tự bật cutover hay release held Billing rows. Mọi adapter mới phải giữ cùng gate.
   - [x] **S-01.6.1 · LOCAL (2026-09-29):** dispatcher, Rabbit publisher và scheduler chỉ được tạo khi đồng thời `features.surgery.enabled=true` và `messaging.producer.enabled=true`; mặc định cả hai false. Context tests xác nhận thiếu một trong hai gate thì không có dispatcher. Chưa có listener/business event writer nên consumer gate chưa có adapter để bảo vệ; chưa bật writer.
-  - [x] **S-01.6.2 · LOCAL (2026-10-01):** `SurgeryBusinessFeatureGateTest` xác nhận pre-op và cancellation controller không được tạo khi flag thiếu/mặc định off; cả hai chỉ xuất hiện khi `mediflow.features.surgery.enabled=true`. Consumer gate vẫn chưa có listener để bảo vệ và không được tick hoàn tất khi consumer adapter chưa tồn tại.
-- [ ] **S-01.7 · PARTIAL/LOCAL sau từng slice:** ArchUnit chặn domain → application/infrastructure/I/O, application → adapter/JPA/web/messaging và layer cycles; PostgreSQL 16 Testcontainers đã có schema/JPA/reliability/race tests. Còn Rabbit fixture, reuse fixture, module Dockerfile và README/.http **chỉ khi** có API thật; không phụ thuộc root registration để chạy suite module.
+  - [x] **S-01.6.2 · LOCAL (2026-10-01; mở rộng 2026-10-05):** business feature tests bảo vệ pre-op/cancel/query/schedule controller khi business gate off. Consumer registration + producer dispatch đã có riêng 8 context cases mỗi gate; xem parent S-01.6 đã kiểm chứng, không suy từ property binding.
+- [x] **S-01.7 · DONE/HARNESS (2026-10-05):** blueprint/5 ArchUnit rules, real PostgreSQL 16/RabbitMQ tests, reusable canonical Billing/Organization fixtures, module Dockerfile non-root, README và .http khớp 5 route thật. Full Surgery 291 tests, 0 failure/error/skip; explicit Failsafe runtime profile có 3 actual multi-service tests pass. Harness không thay full lifecycle/producer contract acceptance.
   - [x] **S-01.7.1 · LOCAL ARCHITECTURE+DOCS PASS (2026-09-29):** ArchUnit kiểm tra domain purity, application không chạm adapter/SQL, driving adapters không bypass application, không phụ thuộc service nghiệp vụ khác và không có package-layer cycle (5 rules). README phản ánh đúng trạng thái Rabbit transport generic đang gate-off, không có event-specific publisher/consumer/API. Focused ArchitectureTest 5/5 và full module 124/124 pass; `.http`/Dockerfile API chưa tạo vì chưa có endpoint thật.
 
 ### S-02 — domain, schema và reliability foundation
@@ -225,6 +225,7 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
   - [x] **S-02.1.1 · DONE/LOCAL:** CareEpisode exact admission identity, initial lifecycle, boolean readiness AND, START recheck, invalidation, pre-start cancel; 13 domain tests. Chưa có readiness evidence/persistence/result invariant.
   - [x] **S-02.1.2 · DONE/LOCAL (2026-09-28):** `SurgeryChecklistTemplate/ItemDefinition/Snapshot/Item` immutable; template revision được chụp vào case, empty template/snapshot không hợp lệ, NOT_APPLICABLE không thỏa mục bắt buộc, không seed catalogue y khoa. `SurgeryConsentRecord` giữ hai loại consent và append-only sign/revoke audit; signer category chỉ là dữ liệu, chưa xác minh thẩm quyền. `SurgerySchedule/TeamAssignment` giữ room UUID, revision, `[start,end)`, duplicate staff bị từ chối và slot liền kề không overlap. Tests `SurgeryLocalModelsTest`; không có Organization lookup/reservation DB.
   - [ ] **S-02.1.3 · CONTRACT D12 — clearance value object:** sau S-03.2.1 khóa tuple/version/expiry, giữ source grant/revision và validity, phân biệt absent/pending/expired/revoked. Kiểm tra wrong target/episode/patient và out-of-order grant; không coi payment.completed hoặc boolean paid là clearance. Engine có thể test với port double trước khi decoder live tồn tại.
+    - [x] **S-02.1.3a · CODE/LOCAL TEST:** immutable `SurgeryFinancialClearance` giữ exact case/patient/episode/admission/grant tuple, amount/currency và grant/expiry Instant; expiry exclusive, precision nanosecond. Đây là grant validity, chưa là tổng hợp quyền sau revoke/supersede.
   - [x] **S-02.1.4 · DONE/LOCAL (2026-09-28):** `SurgeryCase.restore` khôi phục state, mốc thời gian, readiness, status history, business revision và append-only revision audit; validate chuỗi transition/revision/status để từ chối DB snapshot không nhất quán, không sinh lại history khi restore. `recordBusinessMutation` tăng business revision và audit khi application đổi child. Tách business revision khỏi technical JPA `@Version` (chưa có adapter). `ReadinessSnapshot` giữ dependency IDs/revisions, validUntil và lý do thiếu guard; expiry đúng boundary làm snapshot hết hiệu lực. `SurgeryAuditActor` tách account UUID, staff UUID đã được adapter xác thực, hoặc producer hệ thống; transition/consent audit mang correlationId, không tạo UUID giả. Tests round-trip, revision child mutation, corrupted history, dependency/reason/expiry.
   - [x] **S-02.1.5 · DONE/LOCAL (2026-09-28):** `SurgeryPerformedItem/SurgeryResult` bất biến; actual end phải sau start và thời điểm ghi nhận không trước khi kết thúc; procedure/method/outcome/category là code string, số lượng dương, line ID duy nhất. Không có amount hoặc chức năng correction/partial-abort. Kết quả mang actor/correlation audit. Tests invalid quantity/time/duplicate line; unique result/case còn cần unique constraint ở S-02.2.
 - [x] **S-02.2 · DONE/LOCAL (2026-09-28) — core migration:** V1 đã có case/history, checklist/consent, schedule/team/resource mutex/reservation, readiness/result, receipt/inbox/outbox và mapping JPA English camelCase ↔ SQL English snake_case theo ngoại lệ Huy trong `docs/ai/08`. Fresh PostgreSQL 16 migrate + Hibernate validate + constraint tests pass, gồm cancelled actor/reason, active consent, result uniqueness/quantity, schedule interval. Không seed cross-service master/paid facts. Clearance-specific schema chỉ thêm migration mới sau contract; không sửa V1 khi đã phát hành.
@@ -234,11 +235,11 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
   - [x] **S-02.3.3 · LOCAL PG PASS (2026-09-29):** immutable result + performed-item adapter; chỉ create khi IN_PROGRESS, lưu actual times/actor/correlation/items cùng transaction, identical replay trả lại kết quả, payload thay thế bị conflict. PostgreSQL test xác nhận hai performed items được đọc lại. COMPLETE/outbox orchestration vẫn ở S-07.2.1.
   - [x] **S-02.3.4 · LOCAL PG PASS (2026-09-29):** đọc từng schedule revision cùng đúng staff assignments từ history; integration test xác nhận revision cũ/mới giữ team riêng và reservation cũ vẫn RELEASED. Cross-command lock/release orchestration còn ở S-06.4/6.5.
   - [x] **S-02.3.5 · LOCAL UNIT+PG PASS (2026-09-29):** fingerprint SHA-256 length-prefixed, versioned binary receipt codec, replay identity checks; begin-preop claim/mutation/status history/case save/receipt cùng transaction. PostgreSQL test chứng minh rollback cả case và receipt khi lỗi trước outer commit, rồi commit + same-key replay chỉ có một receipt APPLIED. Race giữa concurrent claim và các failure points khác vẫn cần kiểm chứng.
-- [ ] **S-02.4 · PARTIAL/LOCAL sau S-02.2 — inbox và command receipts:** durable adapter, fingerprint/bytes + semantic dedupe/quarantine, pending defer và receipt replay/conflict đã có PostgreSQL tests. Còn business consumer/authorization trước replay, early event→case creation→reprocess, consumer race/ACK và crash matrix. Không xóa pending vì quá hạn retry mà không quarantine/audit.
+- [ ] **S-02.4 · PARTIAL/PG+MQ (2026-10-05):** inbox/receipt durable có fingerprint, semantic dedupe/quarantine và replay/conflict. Clearance listener ACK chỉ sau committed APPLIED/REPLAYED/DEFERRED; early grant giữ PostgreSQL PENDING, bounded worker đọc lại raw bytes sau restart, lỗi xử lý defer 60s và không reopen terminal winner. Actual Rabbit/PostgreSQL tests phủ duplicate/early/wrong target/DLQ. Referral→create→pending recovery và full command/crash matrix vẫn OPEN; không xóa pending hay tự mổ từ grant.
 - [ ] **S-02.5 · PARTIAL/LOCAL sau S-02.2 — outbox:** lưu serialized bytes, claim lease + attempt fencing, causal order, bounded backoff/quarantine, expired-lease recovery và returned retry đã có PostgreSQL tests. Gated generic dispatcher đã tách claim/network/result thành transaction riêng; Rabbit adapter dùng correlated confirm + mandatory return, không rewrite payload. Còn approved G1 wire bytes, producer command/outbox append cho event cụ thể và end-to-end dispatch/restart evidence. Không gọi Rabbit trong case DB transaction hoặc import code Pharmacy xuyên module.
   - [x] **S-02.5.1 · LOCAL Rabbit PASS (2026-09-29):** dispatcher success/nack/return unit cases; RabbitMQ Testcontainers xác nhận publisher ACK nhận được, nguyên byte JSON tới queue không đổi, correlation/version headers được set, và unroutable mandatory message được phân loại RETURNED. Scheduler/adapter vẫn off theo feature gates; đây không phải producer/consumer contract pass.
   - [x] **S-02.5.2 · LOCAL FAILURE-CLASSIFICATION PASS (2026-09-29):** publisher chuyển confirm timeout và Rabbit `AmqpException` (ví dụ broker không kết nối) thành retryable `SurgeryEventPublishException` với thông điệp an toàn; dispatcher gọi outbox retry, không mark PUBLISHED. Mock publisher tests pass; actual broker outage/process restart replay vẫn là VERIFY mở ở S-02.6.
-- [ ] **S-02.6 · PARTIAL/VERIFY theo từng adapter — PG/MQ failure matrix:** đã pass fresh schema + ORM restore, receipt/outbox rollback, inbox replay và lease cũ, child checklist/consent/result rows + audit rollback cùng transaction, two-worker same-room và reversed-team-order races, adjacent/contained slot, IN_USE overrun, Rabbit ACK/mandatory return và retry từ Rabbit endpoint unreachable qua dispatcher mới. Còn stop/restart broker container + process restart, concurrent first-referral insert, cancel/reschedule terminal races và bounded deadlock retry; không suy suite subset là hoàn tất task.
+- [ ] **S-02.6 · PARTIAL/VERIFY theo từng adapter — PG/MQ failure matrix:** đã pass fresh schema + ORM restore, receipt/outbox rollback, inbox replay và lease cũ, child checklist/consent/result rows + audit rollback cùng transaction, two-worker same-room và reversed-team-order races, adjacent/contained slot, IN_USE overrun, Rabbit ACK/mandatory return và retry từ Rabbit endpoint unreachable qua dispatcher mới. Bổ sung 2026-10-05: dừng/khởi động lại đúng broker container Testcontainers, pending bytes recovery sau confirm, crash sau confirm/trước DB mark với same-event replay và stale-token fence; PG expiry timeout/rollback/two-worker/cancel race. Còn crash bằng JVM process riêng, concurrent first-referral insert, full finalize/START/cancel/reschedule matrix và bounded deadlock retry toàn workflow; không suy suite subset là hoàn tất task.
   - [x] **S-02.6.1 · LOCAL PG+Rabbit RECOVERY PASS (2026-09-29):** Testcontainers nối PostgreSQL outbox thật với RabbitMQ thật: lượt đầu gửi tới TCP endpoint Rabbit unreachable/connection-refused, xác nhận publisher phân loại transient failure và row vẫn PENDING với backoff/attempt; dựng dispatcher instance mới trỏ tới RabbitMQ thật, retry sau backoff, nhận đúng persisted bytes và chỉ chuyển PUBLISHED sau confirm. Đây là worker-instance recovery sau endpoint outage, chưa mô phỏng dừng/khởi động lại broker container hoặc JVM process.
 
 ### S-03 — identity lookup, referral, clearance và event contracts
@@ -249,15 +250,16 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 - [ ] **S-03.1 · CONTRACT D01/D02 — referral và charge bridge:** khóa producer/path, selected episode, stable surgeryRequestId, requester authority, planned codes/quantities và fingerprint clinical intent. HTTP/event cùng gọi create in-port; delivery timestamp/correlation không làm đổi intent. Referral khác post-case charge fact; không tự đặt event name/routing key hoặc để hai producer cùng tạo charge. Acceptance: outpatient appointment/walk-in/admission, same intent từ hai paths, mismatch và duplicate fixture; ghi version/producer/consumers.
 - [ ] **S-03.2 · LOCAL + CONTRACT D12 — clearance:** hai bước riêng:
   - [ ] **S-03.2.1 · CONTRACT Lộc/Vinh:** khóa `purpose=SURGERY`, exact target/episode/admission/patient, grant ID/revision, validity interval, revoke/supersede và freshness semantics. Chưa có revoke producer không tự tạo subscription/routing key. Đưa policy expiry/revoke/late grant và test bytes vào canonical contract.
-  - [ ] **S-03.2.2 · LOCAL sau S-03.2.1/S-02.4:** decoder reject sai type/producer/version; purpose khác được classified not-applicable, SURGERY thiếu target là invalid. Early valid target → durable pending; mismatch không chuyển sang latest case. Old grant không hồi sinh quyền sau revoke/new revision; expiry theo Clock tại READY/START. Test absence, before/at/after expiry, out-of-order và replay.
+  - [ ] **S-03.2.2 · PARTIAL/LIVE-ADAPTER GATED (2026-10-05):** strict Billing V1 decoder + dual-gated queue/listener/worker đã có. Validate full tuple của mọi purpose trước phân loại not-applicable; malformed/canonical UUID/version/producer sai → dedicated DLQ, transient failures bounded retry. Early SURGERY grant lưu durable pending, duplicate không lặp proof/invalidation; kiểm thử thật PostgreSQL/RabbitMQ. Grant-only chưa chứng minh revoke/supersede hay READY/START; flags default false, held Billing rows không được mở.
+    - [x] **S-03.2.2a · CODE/FIXTURE/LOCAL TEST:** offline Surgery-only decoder đọc trực tiếp Billing `clearance-surgery.json`, strict V1/producer/target/numeric money/grant time; early event lưu PENDING, wrong patient quarantine, concurrent replay/immutable clearance-ID conflict có PG tests. Chưa bind queue; classification other-purpose, worker retry, revoke/supersede và READY/START giữ mở ở task cha.
 - [ ] **S-03.3 · LOCAL + CONTRACT — REST adapters có resilience, không DB join:**
   - [x] **S-03.3.1 · DONE/LOCAL (2026-09-28) — Patient:** adapter dùng contract thật `/patients/{id}/exists`, service JWT ngắn hạn `type=service`/`role=SYSTEM`, correlation và Feign timeouts. Validate envelope/echo patientId; false/404 phân biệt với timeout/5xx/malformed/mismatch. Unit + HTTP stub tests pass; chưa gọi qua Gateway/prod deployment.
-- [ ] **S-03.3.2 · LOCAL staff/department adapter; CONTRACT room/policy — Organization:** port trả typed room/staff/department lookup state + source/time/revision nếu contract có. Tách inactive/absent/unknown/outage; không map doctor-only `eligibleDoctor` thành quyền mọi ê-kíp. Hoàng Anh đã cung cấp generic staff/department lookup; room authority và job-title values vẫn mở, Vinh còn chốt required role/cardinality và assignment policy. Không triển khai lookup giả trong module khác.
+- [x] **S-03.3.2 · DONE/IDENTITY AUTHORITY (2026-10-05):** Surgery dùng service JWT ngắn hạn/correlation với generic staff/department và exact operating-room/capability endpoints. Giữ source IDs/revision/observation, validate envelope/echo/freshness/interval; room và capability phải đúng case department. Missing/outage/old-producer 404 → 503; inactive/revoked hoặc foreign department → denial không mutation. Canonical producer fixtures đọc cùng bytes; actual packaged Organization→Surgery Feign/Eureka + Gateway read/draft/revoke test pass. Required clinical composition/cardinality là task riêng S-06.1.2, không được suy từ job title.
     - [x] **S-03.3.2.1 · LOCAL UNIT PASS (2026-09-29; live lookup tiếp nối ở .2):** Surgery-local `OrganizationLookupPort` và typed snapshot cho ROOM/STAFF/DEPARTMENT (ACTIVE/INACTIVE/NOT_FOUND/UNKNOWN, observedAt, optional source revision/job-title code); tests xác nhận mọi state hợp lệ, normalization metadata và fail-fast cho identity/observation/job-title sai. Tại thời điểm này chưa có HTTP path, producer fields hay live adapter; xem .2 cho hợp đồng đã được bổ sung.
     - [x] **S-03.3.2.2 · LOCAL HTTP CONSUMER PASS / JOINT FIXTURE OPEN (2026-10-04):** `OrganizationLookupAdapter` gọi đúng hai endpoint service-only đã khóa, ký service JWT và truyền correlation, kiểm tra envelope/header/echo, phân biệt active/inactive/`exists=false`/404 với 5xx/phản hồi sai, giữ `jobTitle` và `staffDepartmentId` từ producer. Room lookup dừng an toàn vì chưa có contract; chưa quyết định role↔jobTitle. HTTP stub Surgery-local và application tests pass; không tự nhận là shared producer/consumer fixture hoặc live E2E. Parent S-03.3.2 vẫn OPEN.
-  - [ ] **S-03.3.3 · CONTRACT Vinh — care relationship:** exact referral/admission belongs-to patient/department và eligibility state/freshness từ producer-authoritative fact hoặc service-auth lookup được thống nhất. Patient exists/human GET admission không thay được proof này. Unit/contract tests sai patient/khoa/context, closed/discharged admission và upstream outage; không tìm admission qua patientId.
+  - [ ] **S-03.3.3 · PARTIAL CODE/FIXTURE — care relationship:** Inpatient đã có service-only exact admission lookup với patient/khoa/source-record/status/eligibility/row revision/observedAt. Surgery draft kiểm exact patient/khoa và medical window trước lock/mutation. Không dùng human GET hay tìm admission qua patientId. Outpatient/referral relationship, surgery request registration và bed placement vẫn chưa được chứng minh bởi lookup admission này; task giữ mở.
 - [ ] **S-03.4 · CONTRACT D02/D07/D11 — outbound manifest:** mỗi charge/ready/completed/cancelled fact ghi schema, source/semantic key/revision, consumer matrix và SHA-256 fixture. READY mang immutable planned-time/schedule revision nhưng **chưa phải reserved SCHEDULED**; chốt với Notification cách biểu diễn provisional, invalidation/re-ready/reschedule. Completed tách controlled category khỏi clinical summary; aggregate Report không persist/log narrative. Nếu cần hạn chế transport summary, chốt version/channel cùng owner trước publish, không tự fork payload cùng version. Cancelled đủ department/episode/stage/operation identity; V1 không phát override/partial-abort/correction facts.
-- [ ] **S-03.5 · VERIFY từng contract:** producer serialization và consumer decode cùng raw bytes/hash/commit; fixtures valid/missing/null/wrong IDs/producer/unknown version, semantic duplicate có eventId mới, early/late/order reversal. Invalid/unsupported được classified, bounded retry/quarantine/DLQ; transient outage retry khác permanent malformed. Log correlation + safe source IDs, không payload lâm sàng/token. Không tick G1 bằng fixture tự viết hoặc decoder test đơn phía Huy.
+- [ ] **S-03.5 · PARTIAL/VERIFY từng contract:** Organization authority V1 đã có actual producer serialization + cùng raw fixture decoder/PG/Rabbit intake/job/worker/retry/DLQ pass (2026-10-06); các contract khác vẫn cần proof riêng. Producer serialization và consumer decode cùng raw bytes/hash/commit; fixtures valid/missing/null/wrong IDs/producer/unknown version, semantic duplicate có eventId mới, early/late/order reversal. Invalid/unsupported được classified, bounded retry/quarantine/DLQ; transient outage retry khác permanent malformed. Log correlation + safe source IDs, không payload lâm sàng/token. Không tick G1 bằng fixture tự viết hoặc decoder test đơn phía Huy.
 - [ ] **S-03.6 · CONTRACT/OWNER Vinh — nối với consumer Inpatient đã có:** thống nhất đường đăng ký external-order reference `SURGERY ↔ surgeryCaseId ↔ admissionId ↔ surgeryRequestId` trước ready/completed/cancelled. Current consumer bắt buộc admissionId/reference; cần fixture OUTPATIENT → not-applicable thay vì malformed, late fact sau discharge, duplicate/out-of-order terminal và reference chưa tới. Vinh sửa consumer/reference path; Huy cung cấp source fixture/negative tests trong [handoff G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). Không tạo thêm event “case-created” tự phát hoặc ghi vào DB Inpatient.
 
 ### S-04 — create/referral, query và bắt đầu pre-op
@@ -267,11 +269,11 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 
 - [ ] **S-04.1 · LOCAL + CONTRACT — input/authorization boundary:** phân biệt HTTP actor từ trusted access-token và system referral producer từ envelope; account UUID không phải staff UUID. ADMIN delegation phải explicit/audited, DOCTOR requester theo policy/claim; không body-supplied actor/role. Validate selected episode và procedure/template revision, planned items codes/positive quantities, authority proofs qua S-03.3. Appointment-backed giữ appointment episode ngay cả khi record xuất hiện. Lookup ngoài lock, commit kiểm tra lại local revision/freshness; upstream unavailable không success.
 - [ ] **S-04.2 · LOCAL sau S-04.1 — transactional create:** claim stable surgeryRequestId, fingerprint business intent, tạo case REQUESTED + pinned checklist snapshot + creation history + receipt và approved charge outbox intent trong một transaction. Hai channel/replica đồng thời cùng intent trả cùng case; khác intent → conflict. Chưa khóa charge wire thì chỉ kiểm thử local domain intent, **không bật create thật với nhánh âm thầm bỏ charge**. Sau commit kích pending-event retry qua durable worker, không in-memory callback làm nguồn duy nhất. Acceptance: rollback mọi record khi một append thất bại.
-- [ ] **S-04.3 · LOCAL sau S-04.2 — read/query:** chốt và test object/department visibility matrix trong API spec, áp dụng cùng policy cho detail/list; không suy quyền sở hữu case chỉ từ filter hoặc department claim. Detail trả IDs/context/state/revision, thiếu readiness gì, planned khác actual, consent/checklist summary, result theo quyền; không trả chữ ký/raw evidence/narrative ở list. Filter explicit khoa/status/requested-period hoặc scheduled-period, UTC inclusive start/exclusive end, page 0/size 20/max 100; stable sort requestedAt + caseId. Repository projection/pagination không REST fan-out hay N+1 load full histories; read không mutate, empty list không phải upstream error. Test cross-department/ID tampering không lộ case trái scope đã chọn.
+- [x] **S-04.3 · DONE/READ+QUERY (2026-10-05):** list/detail ports + immutable redacted DTO/MapStruct/persistence projections, repeatable-read coherent response. ADMIN/MANAGER đọc toàn khoa; DOCTOR/NURSE dùng signed staffId + fresh current Organization department, không tin filter/department claim. Foreign detail opaque 404, filter ngoại khoa empty; outage/stale authority 503. UTC half-open filters, planned overlap, page0/20/max100 và stable requestedAt DESC/caseId ASC; không per-row REST/history N+1. Planned tách actual items; snapshotValidNow chỉ cached evidence. Unit/web/PG và actual Organization/Gateway read tests pass.
 - [ ] **S-04.4 · VERIFY — create/read/web:** same key same/different payload; event/HTTP first-insert race; same patient khác episode; wrong association; template chưa được phê duyệt; failure outbox rollback. Web tests success/envelope/validation, unauthenticated/forbidden/not-found/conflict và upstream unavailable theo API conventions; assert 401/403 không chạy use case. Idempotent replay vẫn kiểm tra quyền và không gọi lại lookups/charge producer.
 - [x] **S-04.5 · DONE/LOCAL — begin-preop command/API:** `REQUESTED→PREOP_IN_PROGRESS` yêu cầu verified human actor, expected case revision và idempotency receipt; chuyển đổi + status history + receipt cùng transaction. Thêm `POST /api/v1/surgery/cases/{id}/preop` cho ADMIN/DOCTOR, request chỉ nhận revision, actor lấy từ access token, response dùng envelope; `.http` khớp route. Test direct API/authorization/validation và application pass 24/24; missing case trả 404 `SURGERY_CASE_NOT_FOUND`. Feature flag vẫn mặc định false; Gateway/root chưa route. PostgreSQL regression sau DTO/API change đã chạy trong full Surgery suite 2026-10-04.
   - [x] **S-04.5.1 · POSTGRES PASS (2026-10-04):** `beginPreopPersistence_commitsCaseAndReceiptTogetherAndReplaysAfterCommit` và rollback case chạy trên PostgreSQL 16 Testcontainers sau đổi command actor DTO; full Surgery suite 151/151, 0 fail/error/skip với `-Dapi.version=1.44`.
-- [ ] **S-04.6 · LOCAL sau S-04.3/.5 — command API conventions:** chuẩn hóa Idempotency-Key/expected revision, conflict vs invalid transition vs upstream unavailable; immutable request/response DTO với English camelCase trên Java và wire theo `docs/ai/08`. Missing resource không thành success/null; retry cùng key trả cùng domain outcome. Chốt status/envelope và cập nhật .http đúng API đã chạy; không expose state setters/JPA entities hoặc nhận ready=true.
+- [x] **S-04.6 · DONE/CURRENT API CONVENTIONS (2026-10-05):** 3 mutation routes dùng trusted actor, English immutable DTO, reject unknown actor/ready/amount, Idempotency-Key<=160 và expected revisions. Original matching receipt replay; changed intent/revision 409, illegal transition422, missing404, unavailable503, typed auth401/403, invalid400 và generic redacted500 giữ correlation. .http/Gateway roles khớp runtime; không setter/JPA entity/free-form READY. API chưa triển khai phải kế thừa conventions, không được xem mục này là đã có create/START/COMPLETE.
 
 ### S-05 — pre-op checklist, consent, clearance và readiness thật
 
@@ -284,14 +286,16 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 - [ ] **S-05.2 · LOCAL + CONTRACT — typed consents:**
   - [x] **S-05.2.1 · CODE COMPLETE/VERIFY OPEN (2026-09-28):** thêm application sign/revoke commands theo SURGERY/ANESTHESIA, actor recorder tách signer, same-key replay và payload conflict; active unique index vẫn là hàng rào; revoke append audit. READY/SCHEDULED consent change invalidates snapshot và release đúng schedule revision trong transaction. Unit tests xác nhận typed signer/recorder, từ chối sai case và giải phóng đúng schedule revision khi SCHEDULED; signer authority/revoke authorization vẫn fail-closed ở API gate đến S-05.2.2.
   - [ ] **S-05.2.2 · CONTRACT Vinh:** chốt signer/guardian/witness, document/evidence reference, expiry, ai được attestation/revoke và xử lý audit sau START. Coarse controller role không thay quyền ký hoặc quan hệ người giám hộ. Missing/unverifiable authority fail-closed; test forged actor/role, signer không hợp lệ, cross-case revoke, inactive/expired consent. Không suy đồng ý từ clinical note hoặc một consent dùng cho hai type.
-- [ ] **S-05.3 · LOCAL sau S-03.2/S-02.1.3 — clearance projection/policy:** lưu exact source grant/target tuple/revision và effective/expiry; grant/revoke/expire invalidates readiness đúng case theo policy. Guard dùng Clock tại evaluation và START, không chỉ lúc nhận event. Pending early grant không đủ quyền mổ, grant cũ không revive superseded/revoked one. V1 không financial override. Recheck freshness theo contract; local DB lock **không** hứa khóa trạng thái Billing ở service khác.
+- [ ] **S-05.3 · PARTIAL/BOTH-SIDES IMPLEMENTED (2026-10-06) — clearance projection/policy:** Billing đã có gated current-clearance lookup (net payments/refunds, exact ledger target, revoked/expiry); Surgery có strict service Feign adapter và mandatory lookup trước internal READY/finalize/START mutation locks, recheck freshness sau lock wait. Không chờ Lộc code lookup. Còn revoke/supersede event writer, production transaction separation/race fence và full lifecycle authority/API integration. Pending early grant không đủ quyền mổ, V1 không financial override; local DB lock **không** hứa khóa trạng thái Billing. Bằng chứng mới tại [execution ledger](2026-10-05-huy-50-task-execution.md#financial-authority-both-sides).
+  - [x] **S-05.3a · CODE/LOCAL TEST:** V2 additive table + inbox/proof transaction, exact-case lock, same-grant replay không thêm proof, immutable grant conflict quarantine, inbox-finalize failure rollback/retry và exact nanosecond round-trip. Không tự READY/START; full revocation/readiness policy ở task cha chưa đóng.
+  - [x] **S-05.3b · CODE/LOCAL TEST:** grant mới invalidates READY/SCHEDULED về PREOP, chỉ release đúng schedule/revision; unchanged grant không invalidate lần nữa, late grant không rollback IN_PROGRESS/terminal. 6 application tests + 2 PG scheduled/rollback tests; audit dùng `FINANCIAL_CLEARANCE_CHANGED` trong giới hạn 64 ký tự. Proof/inbox/case/resources commit hoặc rollback cùng nhau.
 - [ ] **S-05.4 · LOCAL — evaluate/invalidate:** engine độc lập; READY transaction cần S-05.1–3/S-06.2. Shared invalidation helper được gọi từ checklist/consent; application test xác nhận checklist mutation khi SCHEDULED trả case về PREOP, xóa active snapshot và nhả đúng schedule revision; PostgreSQL integration mới xác nhận consent revoke cũng commit invalidation, consent audit, receipt và release chính xác reservation trong cùng luồng. Invalidation race/rollback tích hợp với mọi writer vẫn mở. Invalidation helper .3 có thể làm ngay sau core persistence/resource locks, không đợi READY evaluator, nên draft schedule không tạo vòng dependency.
   - [ ] **S-05.4.1 · LOCAL engine — sáu nhóm guard:** chỉ định hợp lệ, mandatory checklist, cả hai typed consents, eligible team, room/time schedule hợp lệ, exact finance đều đạt (bảy boolean hiện tại vì consent tách hai loại). Build reason codes + dependency revisions, validUntil=min expiry có nghĩa, không TTL tự nghĩ cho dữ liệu không có contract. External eligibility snapshots lấy trước transaction; lock/re-read local dependencies để loại stale evaluation. Không public API “set READY”.
     - [x] **S-05.4.1.1 · LOCAL DOMAIN UNIT PASS (2026-09-29):** readiness model tests từng guard false độc lập (indication, checklist, hai consent, team, schedule, finance), exact blocking reason và `isReady=false`; test snapshot expiry/dependency revisions cũng có. Chưa đóng application evidence aggregation, external freshness policy hoặc transactional READY.
   - [ ] **S-05.4.2 · LOCAL persistence; CONTRACT event — READY:** PREOP_IN_PROGRESS→READY, immutable snapshot + time/history/receipt + ready fact cùng transaction sau khi đủ guards. Cùng dependencies/evaluation retry không phát lại; readiness revision mới sau invalidation là fact mới theo S-03.4. Thiếu guards trả structured not-ready reasons, không làm case READY một phần.
-  - [ ] **S-05.4.3 · PARTIAL/LOCAL sau S-02.3/S-06.3 — invalidation dùng chung:** checklist và consent revoke khi SCHEDULED đã có kiểm thử application/PostgreSQL đưa case về PREOP, giữ snapshot lịch sử nhưng clear active snapshot, nhả đúng `scheduleId + revision`, append consent audit và hoàn tất receipt atomically. Clearance/team/room/time writers, expiry worker bounded batch, cạnh tranh với finalize/START và rollback matrix còn mở. READY/START vẫn phải tự check Clock; IN_PROGRESS không hồi quy PREOP hoặc tự thả tài nguyên. Invalidation notification wire vẫn theo S-03.4, không tự đặt event key.
+  - [ ] **S-05.4.3 · PARTIAL/LOCAL sau S-02.3/S-06.3 — invalidation dùng chung:** checklist/consent/clearance/reschedule đã có shared protocol kiểm exact case/schedule/revision snapshot rồi đưa READY/SCHEDULED về PREOP, giữ history và nhả đúng booking trong cùng transaction. Bổ sung 2026-10-05: expiry worker riêng default OFF, bounded 1..100, Clock sau case lock, exact snapshot/validUntil, 5s transaction timeout; audit + release + case rollback cùng nhau, durable retry 5..300s và stale/replacement/started/terminal fences. 33 expiry tests gồm 11 PG thật pass. Bổ sung 2026-10-06: Organization room/capability hint qua strict V1 decoder + atomic inbox/source/V5 jobs, worker pin snapshot/schedule, three-gated Rabbit/DLQ, semantic replay/conflict và retry bounded; 19 actual PG/Rabbit cases pass. Full finalize/START fresh-authority/source-revision reconciliation, other external changes và invalidation notification wire tại S-03.4 vẫn OPEN; không tự đặt event key hoặc clinical TTL, không tự nhả IN_USE. READY/START vẫn phải tự check Clock.
     - [x] **S-05.4.3.1 · LOCAL UNIT+PG PASS:** checklist mutation và consent sign/revoke gọi cùng `SurgeryReadinessInvalidation`; ở SCHEDULED, clear active snapshot và release chính xác `scheduleId + revision`, giữ snapshot/history cũ; case/schedule/reservation/receipt và consent audit cùng transaction. Unit evidence: `updateChecklistItem_whenScheduled_invalidatesAndReleasesExactScheduleRevision`, `signConsent_whileScheduled_invalidatesReadinessAndReleasesExactScheduleRevision`; PostgreSQL evidence: `revokingConsentFromScheduledCase_invalidatesReadinessAndReleasesExactReservation` (đã chạy 2026-09-29). Các writer còn lại, multi-writer race và rollback matrix vẫn OPEN.
-- [ ] **S-05.5 · VERIFY — truth table + races:** mỗi boolean false riêng (đặc biệt thiếu ANESTHESIA consent), nhiều missing reasons, foreign-case snapshot, exact expiry boundary, stale dependency revision, repeated evaluation. PG race evaluate↔checklist/revoke/reschedule, START↔revoke/expiry, invalidation↔finalize; assert state/snapshot/history/booking/outbox cùng một kết quả hợp lệ. External source không có revision/freshness contract thì ghi integration gate chưa đạt, không gọi local race test là distributed guarantee.
+- [ ] **S-05.5 · PARTIAL/VERIFY — truth table + races:** truth table domain và expiry boundary/stale snapshot đã có. Bổ sung 2026-10-05: PG exact deadline/no TTL, two expiry workers, cancel↔expiry race, committed START/cancellation winner, snapshot replacement, audit rollback/resource retention và lock timeout/recovery. Còn PG race evaluate↔checklist/revoke/reschedule, real START command↔revoke/expiry và invalidation↔finalize; state/snapshot/history/booking/outbox phải cùng một kết quả hợp lệ. External source không có revision/freshness contract thì ghi integration gate chưa đạt, không gọi local race test là distributed guarantee.
 
 ### S-06 — draft schedule, resource locks và finalized booking
 
@@ -300,16 +304,16 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
 
 - [ ] **S-06.1 · PARTIAL — LOCAL defaults PASS / CONTRACT eligibility OPEN:** các mặc định thời gian/reservation ở child 6.1.1 đã được implement và test; chưa bật finalize/API hoặc suy eligibility khi role↔jobTitle/required cardinality/room authority chưa được owner xác nhận.
   - [x] **S-06.1.1 · LOCAL UNIT+PG PASS:** dùng `Instant` UTC và khoảng half-open `[start,end)` (`endsAt > startsAt`), không thêm buffer ngầm; chỉ reserve từ case READY với schedule DRAFT khớp revision/nội dung và chuyển reservation + schedule FINALIZED trong một transaction; không có TTL job tự giải phóng booking, IN_USE vẫn chặn dù planned end đã qua. Bằng chứng: `SurgeryLocalModelsTest.schedule_usesHalfOpenIntervalsAndRejectsDuplicateStaff` và PostgreSQL `adjacentSlotIsAllowedButInUseOverrunBlocksFollowingSlot` (đã chạy 2026-09-29).
-  - [ ] **S-06.1.2 · CONTRACT — Organization/Clinical eligibility:** room UUID/active-state authority, staff role↔jobTitle mapping, required role cardinality và cho phép nhiều assignment cùng role cần Vinh/Hoàng Anh xác nhận. Không dùng ADMIN/DOCTOR login role để suy chuyên môn; unknown mapping/room state tiếp tục fail-closed.
-- [ ] **S-06.2 · PARTIAL/LOCAL sau S-02.1.2/S-04.5 — prepare schedule:** draft revision/room/time/team + append history persistence và application command đã có PostgreSQL/unit evidence; chỉ PREOP, không reserve khi save. Command đọc Department/Room/Staff trước case lock, fail-closed khi lookup không khớp/UNKNOWN, từ chối NOT_FOUND/INACTIVE, dùng receipt/fingerprint, kiểm tra case/schedule revision và ghi draft + history/audit + receipt atomically. Organization staff/department HTTP adapter có local tests nhưng room lookup vẫn fail-closed; còn staff role↔job-title/required-role policy và PUT/API/HTTP contract tests, module chưa expose endpoint prepare.
+  - [ ] **S-06.1.2 · PARTIAL CODE/FIXTURE — Organization/Clinical eligibility:** room UUID/active-state authority và staff explicit capability đã có producer/consumer; doctor role cần DOCTOR + license, OR_NURSE cần NURSE nhưng không đủ nếu chưa có explicit grant. Required cardinality/multiple assignments/clinical team composition chưa được tự suy từ generic job title; finalize/START tiếp tục gated.
+- [ ] **S-06.2 · PARTIAL/API+AUTHORITY (2026-10-05):** PUT draft đã có exact roles, DTO/receipt/revision/validation/error tests và transactional save/history/audit. Department/room/capability/admission lookups trước locks; room và từng capability phải đúng case department, full interval, active và fresh cả sau lock wait. Draft/replacement không reserve hoặc tự READY. Required-role/cardinality policy tại S-06.1.2 vẫn OPEN; lịch nháp không chứng minh đã đủ đội mổ.
   - [x] **S-06.2.1 · LOCAL PG PASS / CONTRACT OPEN:** schedule adapter cho phép ghi revision draft mới sau `RELEASED`, giữ nguyên history schedule/team và không tái sử dụng reservation cũ. PostgreSQL integration xác nhận row lịch trở về `DRAFT`, team-history của các revision được giữ nguyên, reservation revision cũ vẫn RELEASED và revision mới chưa reserve; chưa có finalize/API vì Organization room/job-title/eligibility contract còn OPEN.
   - [x] **S-06.2.2 · LOCAL UNIT+PG PASS (2026-09-29):** `PrepareSurgeryScheduleUseCase` + application service tạo/revise DRAFT với idempotent receipt, expected case/schedule revisions, active Department/Room/Staff snapshots, audit/revision và transaction PostgreSQL; 10 unit cases phủ success, stale revisions, receipt replay/payload conflict, lookup mismatch/unavailable/inactive và đảm bảo lookup trước row lock. PostgreSQL commit test xác nhận DRAFT/team/revision/history/receipt cùng commit, case vẫn PREOP và không có reservation; fault-injection test xác nhận audit failure rollback schedule/history/case revision/pending receipt. Chưa có controller/API/live Organization adapter; role/job-title mapping và finalization vẫn blocked theo contract.
 - [ ] **S-06.3 · LOCAL sau S-02.2 — database resource-lock engine:**
-  - [ ] **S-06.3.1 · PARTIAL/LOCAL — schema/lock protocol:** mutex unique ROOM/STAFF + sorted union old/new keys, case row lock trước resource lock đã có trong adapter và schema. Reservation mang `scheduleId + revision`; stale release bị chặn, không thả booking mới. PostgreSQL two-worker test mới gửi cùng hai staff theo thứ tự đầu vào ngược nhau; chỉ một case thắng và nhận đủ ba reservation. Còn áp dụng protocol này ở mọi finalize/reschedule/invalidate/cancel/complete/start command; reference UUID không external FK hoặc room master.
+  - [x] **S-06.3.1 · LOCAL LOCK PROTOCOL DONE (2026-10-06):** mutex unique ROOM/STAFF + sorted union old/new keys, case row lock trước resource lock; reservation mang `scheduleId + revision`, stale release không thả booking mới. Tất cả production reservation writes nằm trong một adapter; internal finalize/START/COMPLETE mới và reschedule/invalidate/cancel hiện hữu cùng dùng protocol này. START so exact set phòng/toàn ê-kíp, không chỉ count, và chặn foreign IN_USE. PG tests phủ reverse-team-order/same-room winner, lifecycle đầy đủ, adjacent overrun, forged booking set và rollback COMPLETE. Đây chỉ đóng schema/lock protocol LOCAL, không đóng clinical authority, public lifecycle, bounded deadlock retry/full distributed race matrix ở S-06.3.2/S-02.6; reference UUID vẫn không external FK hoặc duplicate room master.
   - [ ] **S-06.3.2 · PARTIAL/LOCAL — overlap + active use:** query half-open overlap cho room + từng staff, IN_USE overrun chặn ca kế dù planned end đã qua; PostgreSQL tests cho same-room race, cross-room same-staff, adjacent, fully contained room interval, overrun và lịch nhiều staff có một người trùng trong interval bị chứa hoàn toàn (booking thua không để lại partial reservation). Còn race matrix đa tổ hợp, bounded retry lock timeout/deadlock và command receipt trong finalize orchestration.
 - [ ] **S-06.4 · LOCAL sau S-05.4/S-06.3 — finalize/reschedule/release:**
   - [ ] **S-06.4.1 · LOCAL — finalize:** explicit command chỉ READY + exact schedule/readiness/dependency revisions. Revalidate eligible/fresh và slot dưới locks; tạo reservations cho room + toàn team, READY→SCHEDULED + audit/receipt atomic. Cạnh tranh thua không để partial team booking. Không gọi ready event thành bằng chứng đã reserve.
-  - [ ] **S-06.4.2 · LOCAL — reschedule:** verify replacement draft/authority trước commit; khi thành công, invalidate về PREOP, release old bookings và lưu new draft revision atomically, phải READY/finalize lại. Đây **không** phải đổi booking ngay rồi vẫn giữ SCHEDULED. Bất kỳ validation/DB failure giữ nguyên schedule/snapshot/booking cũ. Cancel/invalidation chỉ release đúng case+schedule revision, không xóa lịch sử hoặc reservation của case khác.
+  - [x] **S-06.4.2 · DONE/RESCHEDULE (2026-10-05):** replacement authority và expected case/schedule revision được kiểm trước mutation, freshness rechecked sau case lock. READY/SCHEDULED invalidate về PREOP, release exact old booked revision, persist replacement DRAFT/history/case audit/receipt atomic; không giữ SCHEDULED hay reserve lịch mới. Replay original; stale readiness dependency/foreign schedule conflict không release. Unit + actual PostgreSQL success/audit-write rollback/replay/two-replacement race pass, không lost update/partial booking. Cần re-READY/finalize qua task riêng.
 - [ ] **S-06.5 · VERIFY — real PostgreSQL two-worker tests:** same room cùng/partial/contained interval, khác room cùng staff, adjacent allowed, nhiều staff reverse order, concurrent first mutex insert, finalize↔cancel, reschedule↔finalize và rollback. Một winner với full resources, không partial booking; no deadlock không giới hạn; stale release không đụng new revision. START next case bị chặn khi previous case overrun; chỉ COMPLETE release IN_USE trong V1.
 
 ### S-07 — start, complete, pre-start cancel; không override V1
@@ -422,7 +426,8 @@ Acceptance local: dữ liệu cũ không bị đổi ngữ nghĩa, context inval
 - [ ] **P-03.2 · PARTIAL/LOCAL/CONTRACT D12:** clearance domain/decoder/transaction storage/pending và local authorization primitive đã code và pass PostgreSQL. Huy chọn AUTHORIZE ONLY (không auto-dispense/PaymentReceipt). Immutable grant time/expiry/revocation producer approval và live writer/binding còn OPEN.
   - [x] **P-03.2.1 · LOCAL UNIT PASS (2026-10-02):** exact purpose/target/patient/episode, V0/admission reject, immutable grant IDs/snapshot, expiry-exclusive/future grant, numeric money precision, strict duplicate-key/trailing JSON, early pending, duplicate delivery và terminal-prescription denial. 25 domain/application/decoder cases pass; inline consumer examples không phải fixture Billing đã duyệt.
   - [x] **P-03.2.2 · LOCAL POSTGRES PASS (2026-10-02):** pending→late exact match, expiry/patient mismatch, delivery/semantic/nanos conflicts, concurrency, rollback/retry và mandatory transaction chạy thật. Inline grants không phải Billing producer fixture.
-  - [ ] **P-03.2.3 · CONTRACT/BINDING:** Lộc cung cấp actual PRESCRIPTION clearance bytes, immutable grant time/expiry/revocation/cutover; Huy nối live consumer/denial/DLQ sau approval.
+  - [ ] **P-03.2.3 · PARTIAL/GATED ACTUAL MQ (2026-10-05):** Pharmacy đã đọc cùng raw PRESCRIPTION bytes của Billing, dual-gated listener (care-finance-v2 + clearance-consumer), strict routing/type/producer/full other-purpose tuple, canonical UUID/payment method và dedicated durable DLQ. PostgreSQL/Rabbit tests phủ duplicate early PENDING, other-purpose no-effect, mismatch rollback/DLQ, storage failure bounded retry và retained-byte replay. Không auto-dispense, không mở held outbox. Request issuance/revoke/cutover và public V1 writer acceptance vẫn OPEN.
+    - [x] **P-03.2.3a · PRODUCER/FIXTURE/LOCAL TEST (override):** Billing payment transaction sinh exact PRESCRIPTION clearance sau full payment và held V1 outbox; Pharmacy decoder đọc cùng producer fixture. Request issuance, revoke, live intake/denial/DLQ/cutover ở task cha vẫn mở.
 - [ ] **P-03.3 · LOCAL/CONTRACT D08/D12:** `admission.started`, `discharge.medically.approved` và `admission.closed` projection bằng exact admissionId; duplicates/out-of-order/late-start không reopen. Khóa patient và department relation; medical discharge chấm dứt eligibility theo fact producer, còn transfer/freshness chưa có fact nên live admission authority vẫn fail-closed. Pending event đã lưu khác applied marker.
   - [x] **P-03.3.1 · LOCAL DOMAIN/DECODER/STORE PASS (2026-10-01):** 15 tests domain/application/actual Inpatient fixture/PG chứng minh exact tuple, duplicate/conflict, close-before-start/reload và start+close concurrent kết thúc CLOSED. Closure được persist như tombstone, không phải claimed-then-dropped pending. Chưa mở queue/authorization; medical-discharge/transfer/freshness vẫn OPEN.
   - [ ] **P-03.3.2 · CONTRACT/LOCAL POLICY:** medical discharge đã khóa và projection local ở .3; Vinh còn chốt transfer/freshness/reconciliation, Huy còn live consumer và close/discharge↔dispense race, không active=true vô thời hạn.
@@ -477,14 +482,14 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
 
 ### R-02 — security hiện có, bổ sung đúng role của endpoint V2
 
-**Trạng thái:** strict JWT và hai gated operations snapshot endpoint đã có; financial/Gateway/live activation còn mở.
+**Trạng thái:** strict JWT và hai gated operations snapshot endpoint đã có; Gateway exact operations DOCTOR rules/tests được bổ sung 2026-10-05. Financial source/API và live activation còn mở.
 **Files:** JwtAuthFilter/SecurityConfig, report controllers/web tests, report.http.
 
 - [x] **R-02.1 · ĐÃ CÓ:** human type=access strict, refresh/service/missing type bị reject; legacy daily/monthly/top-medicines ADMIN/MANAGER.
 - [x] **R-02.2 · DONE/VERIFY:** Report JwtAuthFilterTest chạy 4/4, 0 skip/fail/error trong full suite; không sửa filter, Common hay Gateway.
-- [ ] **R-02.3 · LOCAL/OWNER:** financial mới ADMIN/MANAGER; operations mới ADMIN/MANAGER/DOCTOR theo target, không mở DOCTOR cho legacy revenue. Gateway rule cần Hoàng Anh sửa route cụ thể; kiểm thử direct-service và Gateway riêng.
+- [ ] **R-02.3 · PARTIAL:** operations mới ADMIN/MANAGER/DOCTOR được kiểm thử direct-service và Gateway; legacy revenue vẫn ADMIN/MANAGER. Financial ADMIN/MANAGER API còn chờ source/projection equations, không đóng parent theo Gateway subset.
   - [x] **R-02.3.1 · LOCAL DIRECT-SERVICE API/AUTH:** gated operations daily/surgery, ADMIN/MANAGER/DOCTOR; all-other-role/unauthenticated deny trước use case; period 400 REPORT_VALIDATION_ERROR, missing coverage 404 REPORT_NOT_FOUND; correlation + aggregate-only DTO + report.http. Không mở DOCTOR cho legacy revenue.
-  - [ ] **R-02.3.2 · OWNER/LOCAL sau finance source:** Hoàng Anh Gateway DOCTOR route-specific roles/tests; Huy financial ADMIN/MANAGER APIs khi source/projection equations đủ dữ liệu.
+  - [ ] **R-02.3.2 · PARTIAL (2026-10-05 override):** Gateway DOCTOR chỉ được GET hai endpoint `/operations/daily` và `/operations/surgery`, tests giữ deny legacy revenue. Financial ADMIN/MANAGER APIs vẫn mở khi source/projection equations chưa đủ dữ liệu.
 
 ### R-03 — projection tài chính theo fact đủ dữ liệu
 
@@ -531,13 +536,18 @@ Ví dụ nghiệm thu cần Billing xác nhận bằng fact: nhận deposit 100,
 
 ## 9. Handoff, thứ tự triển khai và nghiệm thu liên service
 
-### 9.1. Đầu việc owner khác — không phải quyền production của Huy
+### 9.1. Dependency liên service — task-scoped override 2026-10-05
+
+User đã giao Huy xử lý dependency còn thiếu tại các service này. Owner dài hạn giữ nguyên;
+không tiếp tục chặn code chỉ vì khác owner. Bảng dưới ghi dependency/acceptance, không thay
+ủy quyền bằng yêu cầu xin phép lại. [Báo cáo triển khai](2026-10-05-huy-cross-service-dependencies.md)
+phân biệt phần đã code/test với luồng chưa hoàn tất.
 
 | Owner | Đầu ra đang cần | Task Huy được mở | Handoff/acceptance |
 |---|---|---|---|
 | Vinh: Clinical/Inpatient/Lab | Exact episode/referral, lifecycle/version/freshness/relationship, medical discharge/transfer policy, exact pre-op evidence, completed/closed/result consumers | S-03–07, P-03, R-04 | [Surgery decisions](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md), [Huy consumers](../../handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md); shared fixtures + mismatch/out-of-order tests |
 | Lộc: Billing/Notification | Post-case charge bridge, V1 clearance, transaction/allocation/refund/settlement data, cancel/expiry compensation, ready display/notification dedupe | S-03/07, P-02/03, R-03 | Hai handoff trên; expected finance totals và producer/consumer tests cùng bytes |
-| Hoàng Anh: Organization/Patient/Gateway | Generic staff/department lookup, eligibility/room authority, route-specific roles; Patient endpoint đã có, cần reuse/test | S-01/03/06, R-02/04, X-01 | [Bootstrap](../../handoffs/HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md); service auth, absent/outage và Gateway smoke |
+| Hoàng Anh: Organization/Patient/Gateway | Generic staff/department lookup, eligibility/room authority, route-specific roles; Patient endpoint đã có, cần reuse/test | S-01/03/06, R-02/04, X-01 | [Runtime verification](../../ai/services/surgery.md); service auth, absent/outage và Gateway smoke |
 | Shared integrator được giao | Surgery root registration, DB/Compose/CI/runtime wiring | S-01 và X-01 | Bootstrap handoff; reactor build, health/discovery, repeatable environment, không sửa Common nếu không thực sự cần |
 
 Không tạo handoff trùng cho gap đã có; cập nhật requirement còn thiếu vào handoff hiện hữu và giữ [registry](../../handoffs/README.md) nhất quán. Handoff Patient vẫn OPEN trong registry dù E10 đã có code: chỉ retirement sau kiểm chứng hai phía, không tiếp tục ghi “producer endpoint chưa tồn tại”.
@@ -551,7 +561,7 @@ Không tạo handoff trùng cho gap đã có; cập nhật requirement còn thi�
 | 3 — Report | V6/V7/decoder/typed operational kernel/minimal journal đã có. Tiếp actual source mappers/pending → isolated replay → financial facts/queries → availability-aware API. | Không gọi journal/contribution kernel là live V2/rebuild. Source revision/correction/finance/LOS/cutover cần đúng contract. |
 | 4 — integration riêng | Billing clearance → outpatient V1; Inpatient lifecycle → admission thuốc; Billing finance → Report finance; Surgery outcomes → Report surgery | Mỗi slice đạt G1/G2/G3 riêng, không chờ cả 12 D cùng đóng. |
 
-Execution order hiện tại: chốt Pharmacy/Report V2, không đổi Surgery production. Lượt 2026-10-02 bổ sung clearance V16/local authorization và offline Lab source mapper; unit pass nhưng Docker startup failure khiến PG/Rabbit VERIFY OPEN (không dùng evidence 274/163 lịch sử để chứng nhận code mới). Tiếp kiểm V16/real effects → V1 lifecycle writer/atomic authorization; Report source pairing/pending → isolated replay → queries/API. Contracts thiếu có active handoff riêng; V2 flags/bindings/API chưa bật.
+Execution order từ 2026-10-05: thực hiện dependency thiếu theo override, nối consumer Huy và kiểm chứng từng vertical slice trước activation. Gateway/Organization/Inpatient + Surgery draft là slice mới đầu tiên; Billing finance/clearance, referral/placement và full workflow còn mở. Lịch sử 2026-10-02 bổ sung clearance V16/local authorization và offline Lab source mapper; failure Docker lúc đó đã được kiểm lại bằng PG/Rabbit baseline 2026-10-04. V2 flags/bindings/API chưa bật.
 
 Continuation mới nhất 2026-10-02: V17 held writer/capture đã nối internal outpatient stock transaction;
 V9 Report lưu/ghép admission evidence bền vững trước metric mapping. V8 finite replay giữ nguyên.
@@ -563,9 +573,9 @@ retention/export/live catch-up/controlled publication và đủ target KPI. Khô
 
 ### X-01 — kiểm thử hệ thống, rollout và báo cáo bằng chứng
 
-**Files Huy:** tests/resources/contracts, module .http/README, plan/evidence/handoff. Shared runtime do owner thực hiện.
+**Files:** tests/resources/contracts, module .http/README, plan/evidence/handoff; Gateway/Organization/Inpatient thuộc task-scoped override 2026-10-05. Shared root/Compose/Common không sửa.
 
-- [x] **X-01.1 · MODULE + REACTOR REGRESSION PASS (2026-10-04):** Pharmacy 404/404, Surgery 151/151 và Report 244/244 full suites trên PostgreSQL/RabbitMQ Testcontainers; Maven root reactor `test` pass **1.635/1.635**, 0 failure/error/skip. Gateway route thực tế và E2E liên service vẫn theo X-01.3/.4 và S-01.4, không suy từ module Gateway tests.
+- [x] **X-01.1 · MODULE + REACTOR REGRESSION PASS (2026-10-05):** Pharmacy 404/404, Surgery 166/166, Report 244/244, Gateway 32/32, Inpatient 97/97 và Organization 107/107 trong root `test` pass **1.696/1.696**, 0 failure/error/skip (305 suites). Organization được chạy lại riêng sau rà soát cuối; không cộng hai lượt thành số test một reactor. Actual-service Gateway và E2E vẫn theo X-01.3/.4/S-01.4; [bằng chứng](2026-10-05-huy-cross-service-dependencies.md).
   - [x] **X-01.1.1 · PHARMACY/REPORT FULL REGRESSION PASS (2026-10-04):** 404/244 tests, 0 failure/error/skip với PostgreSQL/RabbitMQ thật. Root reactor 1.635/1.635 pass; chưa có G3/E2E V2.
 - [ ] **X-01.2 · CONTRACT/VERIFY:** manifest mỗi event có canonical ID/version, producer/consumer paths, SHA-256 và command/test output; valid/duplicate/new-eventId-same-operation/poison/missing target/unsupported version đều có case.
 - [ ] **X-01.3 · VERIFY:** Docker outpatient legacy + outpatient V1 exact clearance, admission started→prescribe→dispense→charge→close; duplicate authorization/close race và failures không phá stock/ledger. Không giả producer bằng DB inserts rồi gọi đó E2E.
@@ -602,7 +612,7 @@ retention/export/live catch-up/controlled publication và đủ target KPI. Khô
 - Report giữ nguyên năm routing bindings và ba API; V2 flag vẫn false, không tạo live listener, projector, migration hoặc endpoint.
 - Build scope chỉ Pharmacy/Report cùng dependencies trong Maven reactor; không sửa Common/Gateway hay producer ngoài scope. git diff --check sạch.
 - **H-01.4/5 audit 2026-09-28:** xác nhận actual Pharmacy legacy event shapes/consumer bindings và đối chiếu offline V1 decoder/source key; đồng thời ghi rõ Report metric/replay source gaps. Chỉ các subtask `.1/.2` nêu trên được DONE/LOCAL; chưa có V1 producer bytes, owner approval hoặc shared expected-totals fixture, nên parent H-01.4/5 vẫn OPEN.
-- **H-01.2/3 + domain core 2026-09-28:** [handoff Surgery G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) ghi mapping proposals, tám Huy-local V1 decisions theo ủy quyền, residual owners và evidence cần cung cấp. H-01.3.2 và S-02.1.1 DONE/LOCAL; H-01.2.2/H-01.3.3 vẫn OPEN cho owner fixtures/contract updates. S-02.1.1 ban đầu có 13 domain tests; các model/revision/restore tests mới được ghi riêng bên dưới. Shared registration vẫn ở bootstrap handoff.
+- **H-01.2/3 + domain core 2026-09-28:** [handoff Surgery G0](../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) ghi mapping proposals, tám Huy-local V1 decisions theo ủy quyền, residual owners và evidence cần cung cấp. H-01.3.2 và S-02.1.1 DONE/LOCAL; H-01.2.2/H-01.3.3 vẫn OPEN cho owner fixtures/contract updates. S-02.1.1 ban đầu có 13 domain tests; các model/revision/restore tests mới được ghi riêng bên dưới. Bootstrap handoff đã retire 2026-10-05 sau actual runtime acceptance; facts ở canonical Surgery/Gateway docs, không còn owner blocker này.
 
 **Evidence lượt làm chi tiết plan 2026-09-28**, baseline `6686f9e`:
 
@@ -923,13 +933,50 @@ retention/export/live catch-up/controlled publication và đủ target KPI. Khô
   Testcontainers chạy thật ở các module tích hợp. Gateway 25 tests xanh, nhưng chưa có
   Surgery route/role smoke hoặc V2 cross-service G3; X-01.1 chỉ là regression baseline.
 
+**Evidence dependency override — 2026-10-05 (baseline `7121330`, chưa commit/push):**
+
+- Đã thực hiện lát cắt Gateway/Organization/Inpatient và Surgery consumer theo ủy quyền user;
+  không phải đóng toàn bộ dependency hoặc 50 task. Room/grant là authority thật, không seed/
+  suy luận qualification; admission lookup không thay referral/placement. Main leaves S-03.3.2,
+  S-03.3.3, S-06.1.2 và R-02.3.2 giữ PARTIAL cho acceptance còn thiếu.
+- Root reactor 1.696/1.696 pass, zero failure/error/skip; real PG16.14/Rabbit3.13.
+  Producer fixtures dùng trực tiếp trong Surgery consumer HTTP tests; Gateway transport test
+  dùng HTTP stub, không gắn nhãn actual-service E2E. Organization được kiểm lại riêng sau
+  deactivation/mapping review cuối: **109/109**, zero failure/error/skip, exit 0. Manifest, flags, migration/rollback/race và residual backlog
+  ở [báo cáo dependency](2026-10-05-huy-cross-service-dependencies.md).
+
+**Evidence dependency override, batch 2 — 2026-10-05 (baseline `3103fa1`, chưa commit/push):**
+
+- Billing đã có gated payment command thật cho persisted request, receipts từng installment,
+  bounded allocations, exact full-payment grant và immutable held outbox (V5/V6). 7 producer
+  fixtures được đọc trực tiếp ở Clinical/Lab/Inpatient/Pharmacy/Surgery/Notification; không
+  gọi generic `payment.completed` là clearance. Notification có IN_APP receipt/inbox/outbox
+  transaction và signed-patient history privacy; V2 migration, intake/publication OFF.
+- Surgery có immutable exact grant value object, decoder/inbox/proof transaction (V2), pending
+  early delivery, mismatch/conflict quarantine và nanosecond expiry. Đóng các local leaves
+  S-02.1.3a/S-03.2.2a/S-05.3a/P-03.2.3a; task cha giữ mở cho revoke/READY/START/live/cutover.
+- Root reactor sau đồng bộ master: **1.759 tests / 313 suites**, exit 0, zero failure/error/skip,
+  PG16.14/Rabbit3.13 thật. Đây là lượt trước bổ sung Gateway role correction cuối và kiểm thử
+  Surgery invalidation bổ sung; không cộng những lượt chồng nhau để gọi là một root reactor.
+- Gateway role correction cuối đã kiểm lại full module: **135/135**, exit 0, zero failure/error/
+  skip. Clinical/Lab queue/detail/start/cancel/referral và appointment check-in/start-exam đã
+  khớp controller, legacy update/status không đổi quyền. Real-service deployment smoke vẫn mở;
+  route được cho qua tới discovery rồi 503 không phải actual-service E2E.
+- Surgery đã kiểm lại full module sau invalidation review: **188 tests / 34 suites**, exit 0,
+  zero failure/error/skip, PG/Rabbit thật. Sửa mã audit vượt 64 ký tự, thêm 6 application cases
+  và 2 PG cases chứng minh release resources + invalidate + inbox/proof cùng transaction.
+  Không coi đây là revoke/supersede hoặc live READY/START authority đã hoàn tất.
+- Request/charge issuer, catalogue/reconciliation, revoke/refund/top-up/settlement, referral/
+  placement, clinical policy authority, Report financial projector và actual-service E2E còn
+  là backlog triển khai trong phạm vi override, **không chờ owner viết code**. Các flags OFF.
+
 - [ ] Ghi subtask ID, source commit, files đã sửa, rule/contract version; phân biệt code với design.
 - [ ] Unit/domain/application + web/security/architecture liên quan pass; import layers, DTO boundary, actor identity đúng.
 - [ ] Nếu có DB/broker: fresh/upgrade/concurrency/rollback/retry Testcontainers chạy thật, không skip critical cases.
 - [ ] Producer và consumer dùng cùng fixture khi có wire change; thiếu owner ghi CONTRACT/OWNER, không đóng bằng mock.
 - [ ] Migration additive, legacy API/outbox rows đọc được; flag false không tạo V2 effects hoặc ACK mất facts.
 - [ ] Nếu ghi E2E_PASS: có Gateway + producers/consumers thật, dữ liệu expected/actual, reconciliation và rollback.
-- [ ] git diff --check; link docs/fixture/task IDs hợp lệ; scope chỉ Huy + docs đã giao, không sửa production của owner khác.
+- [ ] git diff --check; link docs/fixture/task IDs hợp lệ; scope Huy + docs + dependency liên service được user giao 2026-10-05, không đổi quyền owner dài hạn hoặc sửa shared root/Common/Compose ngoài scope.
 - [ ] Cập nhật checkbox, trạng thái SPEC/CODE/FIXTURE/TEST/E2E, handoff còn mở và bước kế tiếp.
 
 **Slices đã đóng trong lượt 2026-09-28:** P-01.3, P-02.1, R-02.2, R-01.1 — CODE=LOCAL, TEST=PASS cho test chạy được; E2E=NOT_RUN do Docker unreachable. V2 producer/consumer contract không được đánh dấu IMPLEMENTED.
@@ -949,3 +996,128 @@ Blocker / owner / next task:
 ~~~
 
 Khi triển khai, đánh dấu ngay subtask tương ứng, không tick toàn task cha vì một slice chuẩn bị xong. Chưa có việc code V2 nào được đánh dấu hoàn thành bởi lần làm lại plan này.
+
+### Execution update — 2026-10-05, requested batch of 50
+
+Selection/implementation/test evidence lives in [the fixed 50-item ledger](2026-10-05-huy-50-task-execution.md).
+**7 of those 50 are accepted; 43 remain open**, including partial adapters. Main backlog has
+**74 non-overlapping unfinished items** after these completions (105 checked / 211 coded entries;
+106 unchecked entries include parent/child overlap). This is not a claim that all 50 were completed.
+
+Accepted: S-01.4, S-01.6, S-01.7, S-03.3.2, S-04.3, S-04.6, S-06.4.2.
+Surgery module at 2026-10-05: 326 tests, zero failures/errors/skips; actual packaged runtime profile:
+3 passed. Gateway and Pharmacy root regression: 162 and 423 respectively. Root test passed before
+the final Surgery-only fences; the entire Surgery suite and fresh packaged runtime were then rerun,
+including the expiry/reliability follow-up below. The full root reactor was not rerun in this follow-up.
+Do not add multiple runs together or substitute these counts for full clinical lifecycle acceptance.
+
+Partial progress: strict gated Surgery/Pharmacy grant intake, early durable recovery, bounded
+retry/DLQ/rollback and source authority. Missing referral/charge/revoke/supersede/clinical policy,
+full readiness/finalization/START/COMPLETE and remaining workflow contracts stay open. Production
+flags default off, held outputs remain held, no fabricated medical rules/prices/owner approval.
+Bootstrap handoff retired after actual service acceptance; durable facts moved to canonical docs,
+all incoming links updated. No commit/push in this batch; existing uncommitted work preserved.
+
+### Follow-up — readiness expiry/reliability, 2026-10-05
+
+- S-05.4.3/S-05.5: triển khai 3 expiry in-ports/services, driven JDBC port/adapter, worker riêng
+  dual-gated và Flyway V4 additive. Candidate exact case/snapshot, Clock sau case lock, exclusive
+  validUntil; không tự đoán clinical TTL. PREOP + SYSTEM audit + exact booking release atomic.
+  Stale/replacement/started/terminal winners không bị sửa; IN_USE không tự thả vì thời gian.
+- Operational retry durable 5..300s, bounded batch 1..100 và transaction timeout 5s. Thêm 33 tests,
+  trong đó 11 PG thật: deadline/no validity, audit rollback, two-worker winner, cancellation race,
+  committed START/cancel winner, replacement fence, lock timeout/recovery và failed-case backoff
+  không chặn healthy case. Đây không phải full READY/finalize/START command hoặc clinical policy pass.
+- S-02.6/S-06.5 reliability evidence: thêm 2 PG/Rabbit tests dừng/khởi động lại broker container thật
+  và crash-after-confirm-before-DB-mark simulation. Same event ID/bytes được retry sau lease, stale
+  token không thể mark winner. At-least-once có duplicate là đúng, không tuyên bố exactly-once hay
+  crash JVM riêng. Test harness đọc lại cổng Docker sau restart và chờ AMQP thực sự sẵn sàng.
+- Full Surgery/common test run exit 0: **326 Surgery tests, 0 failure/error/skip**; fresh packaged
+  runtime profile **3/3**, 0 failure/error/skip. 35 tests mới đã nằm trong 326, không cộng các lượt rerun.
+  `git diff --check` sạch. README/service doc/V2 spec/50-item ledger đã cập nhật.
+- Không tick thêm task cha: **7/50 accepted, 43 selected open; main plan 74 non-overlapping open**.
+  Full invalidation outbound, referral/charge/revoke/clinical-policy và lifecycle acceptance vẫn mở.
+  Flags default OFF; held outputs giữ nguyên. Không sửa shared paths, commit hoặc push trong lượt này.
+
+### Follow-up — Organization authority invalidation, 2026-10-06
+
+- Hoàn thiện lát cắt của S-03.5/S-05.4.3: 4 in-ports/services, domain hint + strict wire decoder,
+  V5 immutable source evidence + durable jobs, exact case/snapshot/schedule fences và worker/retry.
+  Intake ACK chỉ sau inbox/evidence/jobs commit; mutation riêng kiểm tra lại dưới case lock rồi
+  PREOP + SYSTEM audit + exact booking release + job completion cùng transaction.
+- Organization chỉ thêm 2 producer event fixtures và serializer tests trong phạm vi dependency
+  được user giao; không đổi production wire hoặc ownership. Surgery đọc đúng các raw fixture đó.
+  Event replay và new-event semantic replay không lặp effect; contradictory source revision dùng
+  quarantine/DLQ. Queue/listener/worker có 3 gates đều default OFF; batch 1..100, timeout 5s,
+  operational backoff 5..300s; không grant quyền hoặc tự READY/START.
+- Full Surgery/common reactor **416 Surgery tests, 0 failure/error/skip**, gồm **90 tests mới**
+  (19 PG/Rabbit thật). Full Organization **112/112**, gồm 2 producer tests mới. Không cộng rerun
+  hoặc historical 326/408 vào tổng. Bộ PG/Rabbit phủ duplicate/order reversal, exact targeting,
+  rollback intake/audit/final marker, hai worker, stale snapshot/schedule, START winner giữ IN_USE,
+  transient failure đúng 3 attempts rồi DLQ/replay, durable retry cap và completed-work fence.
+- Đây chưa phải actual producer→consumer multi-service event E2E hay existing-volume migration
+  acceptance. READY/finalize/START vẫn cần fresh authority/source-revision reconciliation, clinical
+  policies và approved notification wire. Không tick các task cha theo subset.
+- Sau đóng gói lại current apps, runtime acceptance thật qua Eureka/Gateway/Organization/Surgery
+  với owned PG/Rabbit biệt lập đạt **3/3, 0 failure/error/skip**. Chỉ read/draft/revoke/security và
+  correlation được chứng minh; không gọi đây là clinical/event lifecycle E2E. Không rerun root.
+- [50-item ledger](2026-10-05-huy-50-task-execution.md) cập nhật; **7/50 accepted, 43 selected open**,
+  main plan vẫn **74 non-overlapping open**. Không commit/push, không đổi shared paths/held output.
+
+### Follow-up — migration dữ liệu cũ và authority event runtime, 2026-10-06 — VERIFY PENDING
+
+- Bổ sung verification cho **S-02.6/S-03.5/S-05.4.3**, không tick hoàn tất task cha. Test nâng cấp
+  PostgreSQL từ từng V1/V2/V3/V4 lên V5 đối chiếu mọi row trước nâng cấp: case SCHEDULED,
+  snapshot/history, reservation RESERVED, receipt và pending inbox/outbox bytes, attempts/backoff;
+  financial/expiry rows nếu version đã có. Flyway validate và migrate lần hai không đổi dữ liệu;
+  không tự tạo authority evidence hoặc invalidation jobs.
+- Runtime profile có thêm 3 tình huống bằng current packaged app JVMs: Organization đổi phòng chỉ
+  invalidates đúng ca; revoke exact staff-role + replay không lặp effect; Surgery JVM dừng trước
+  producer event rồi khởi động lại xử lý message durable. Seed chỉ là Surgery-owned test prerequisite,
+  không thay readiness/clinical/referral workflow. Không đọc DB service khác hoặc bật production flags.
+- Test sources **compile PASS**; 9 suite không cần Docker **100/100 PASS, 0 failure/error/skip**.
+  Docker engine chưa chạy, lần test upgrade lỗi trước khi body thực thi: **4 upgrade cases và
+  runtime profile 6 scenarios chưa được xác minh**. Không dùng kết quả 3/3 lịch sử để chốt chúng.
+  Khi Docker chạy, thực hiện focused upgrade → full Surgery → package current dependencies →
+  explicit runtime acceptance theo README; sửa lỗi nếu xuất hiện rồi mới ghi DB/runtime PASS.
+- Chi tiết ở [50-item execution ledger](2026-10-05-huy-50-task-execution.md).
+  **7/50 accepted, 43 selected open; main plan 74 non-overlapping open** chưa đổi tại thời điểm journal này.
+
+### Follow-up — 15 Surgery IDs, 2026-10-06
+
+Đã triển khai lát cắt local cho **S-02.3, S-02.6, S-03.5, S-05.1.2, S-05.2.2,
+S-05.4.1, S-05.4.2, S-05.5, S-06.1.2, S-06.3.1, S-06.3.2, S-06.4.1,
+S-07.1, S-07.2.1, S-07.3**. Trạng thái/đầu ra/điều kiện còn lại của từng ID nằm ở
+[bảng 15 mục trong execution ledger](2026-10-05-huy-50-task-execution.md#surgery-15-follow-up).
+
+- Ba policy thuần domain cần cấu hình có phiên bản: checklist evidence (source/exact context,
+  correction/expiry/manual/N/A), consent authority theo type (recorder khác signer,
+  witness/document/guardian/revoke), team cardinality theo procedure. Không tự điền clinical/legal
+  rules, không lấy login role hoặc generic job title làm năng lực mổ.
+- Engine readiness kiểm 7 guard độc lập; thiếu/unverifiable/stale/expired evidence không đạt.
+  Exact case/patient/department/episode/schedule/source business revision; validUntil là min explicit
+  expiry và bị chặn bởi grant thật, giữ nanosecond qua V6 precision shadow mà không rewrite dữ liệu cũ.
+- Bốn command nội bộ evaluate/finalize/START/COMPLETE có case-first/sorted resource locks, local
+  dependency re-read và Clock sau waits. Failed START/finalize commit denial + PREOP/audit/exact
+  release, không throw làm rollback audit. START so exact booking set và foreign IN_USE; COMPLETE
+  giữ line IDs riêng, immutable result, replay original ID/time, result/items/history/release/receipt
+  cùng transaction. External preflight ngoài locks nhưng vẫn trong transaction; còn phải tách pha
+  trước production wiring. Không có production lifecycle bean, authority adapter hoặc endpoint mới.
+- V6 `surgery_lifecycle_intent` chỉ HELD, private payload, không dispatcher/routing domain event.
+  READY/COMPLETED local intent không thay approved outbound bytes; production producer gate không
+  phát bảng này. Approval/translation phải là thay đổi riêng sau cùng fixture/consumer acceptance.
+- **S-06.3.1 đã đóng LOCAL** vì mọi reservation writer hiện đi qua cùng case-first/sorted mutex
+  protocol và được PG kiểm chứng. 14 ID còn lại là PARTIAL với acceptance cụ thể, không tick giả.
+  **8/50 accepted, 42 selected open; main plan 73 non-overlapping open** (không cộng parent/child).
+- Final Surgery regression **506/506 PASS**, 57 reports mới, zero failure/error/skip; gồm 90 tests
+  mới so với baseline 416 (29 engine + 28 policy + 17 application + 10 PG lifecycle + 5 migration
+  upgrade + 1 registration-boundary smoke). First run 498 PASS trước 8 test bổ sung; không cộng
+  rerun. Intermediate run lỗi 5 migration cases do concurrent Maven compilation thay class fixture;
+  full Surefire chạy lại từ compiled output hiện tại đã exit 0, không còn report stale/error.
+  Packaged runtime **6/6 PASS**,
+  zero failure/error/skip: current jars, actual Eureka/Gateway/Organization/Surgery, PG/Rabbit riêng,
+  room-targeting/staff-replay/consumer-JVM restart và read/draft/security. Không chứng nhận full
+  clinical lifecycle mới. V1–V5→V6 existing-data upgrade 5/5 PASS, checksum/rows/bytes giữ nguyên,
+  không backfill và migrate lần hai no-op. Kết quả/lệnh chạy và giới hạn nằm trong ledger.
+  Không đổi shared production paths, không bật live workflow, không commit/push; giữ toàn bộ
+  code chưa commit trước lượt này. Handoff decision chung được cập nhật, không tạo handoff trùng.

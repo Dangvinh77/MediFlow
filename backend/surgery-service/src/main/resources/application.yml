@@ -50,7 +50,16 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   surgery:
+    readiness:
+      expiry:
+        enabled: false
+        poll-interval-ms: 5000
+        batch-size: 20
     messaging:
+      organization-authority:
+        enabled: false
+        poll-interval-ms: 5000
+        batch-size: 20
       producer:
         enabled: false
         exchange: mediflow.events

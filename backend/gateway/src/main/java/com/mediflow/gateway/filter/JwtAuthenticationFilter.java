@@ -107,7 +107,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 || path.matches("/api/v1/org/staff/[^/]+/(exists|lookup)")
                 || path.matches("/api/v1/org/departments/[^/]+/lookup")
                 || path.matches("/api/v1/org/rooms/[^/]+/lookup")
-                || path.matches("/api/v1/patients/[^/]+/exists");
+                || path.matches("/api/v1/org/operating-rooms/[^/]+/lookup")
+                || path.matches("/api/v1/org/staff/[^/]+/surgery-eligibility")
+                || path.matches("/api/v1/patients/[^/]+/exists")
+                || path.matches("/api/v1/inpatient/admissions/[^/]+/lookup");
     }
 
     private boolean isValidServiceToken(Claims claims) {
