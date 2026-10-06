@@ -46,8 +46,23 @@ class GatewayRouteDefinitionTest {
         assertThat(Mono.from(route.getPredicate().apply(MockServerWebExchange.from(
                 MockServerHttpRequest.get("/api/v1/inpatient/admissions").build()))).block())
                 .isTrue();
+    }
+
+    @Test
+    void surgeryRoute_hasStableIdEurekaUriAndPreservesPath() {
+        Route route = routeLocator.getRoutes()
+                .filter(candidate -> "surgery-service".equals(candidate.getId()))
+                .next()
+                .block();
+
+        assertThat(route).isNotNull();
+        assertThat(route.getUri()).isEqualTo(URI.create("lb://surgery-service"));
+        assertThat(route.getFilters()).isEmpty();
         assertThat(Mono.from(route.getPredicate().apply(MockServerWebExchange.from(
-                MockServerHttpRequest.get("/api/v1/surgery/cases").build()))).block())
-                .isFalse();
+                MockServerHttpRequest.post("/api/v1/surgery/cases/1/preop").build()))).block())
+                .isTrue();
+        assertThat(Mono.from(route.getPredicate().apply(MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/surgery/cases/1/preop").build()))).block())
+                .isTrue();
     }
 }
