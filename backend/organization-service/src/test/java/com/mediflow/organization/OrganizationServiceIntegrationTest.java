@@ -19,6 +19,7 @@ import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
+import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
@@ -27,6 +28,9 @@ import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaRepository;
+import com.mediflow.organization.infrastructure.persistence.repository.RoomJpaRepository;
+import com.mediflow.organization.infrastructure.persistence.entity.RoomEntity;
+import java.time.Instant;
 
 /**
  * Verifies the real Flyway schema, JPA mappings, transaction boundary, and
@@ -78,6 +82,9 @@ class OrganizationServiceIntegrationTest {
     private LookupDepartmentUseCase lookupDepartmentUseCase;
 
     @Autowired
+    private LookupRoomUseCase lookupRoomUseCase;
+
+    @Autowired
     private StaffRepository staffStore;
 
     @Autowired
@@ -88,6 +95,9 @@ class OrganizationServiceIntegrationTest {
 
     @Autowired
     private StaffJpaRepository staffRepository;
+
+    @Autowired
+    private RoomJpaRepository roomRepository;
 
     @Test
     void createsDepartmentAndStaffAgainstFlywaySchema() {
@@ -125,6 +135,8 @@ class OrganizationServiceIntegrationTest {
         assertThat(staffLookup.active()).isTrue();
         assertThat(staffLookup.departmentId()).isEqualTo(department.getDepartmentId());
         assertThat(staffLookup.jobTitle()).isEqualTo(JobTitle.DOCTOR.name());
+        assertThat(staffLookup.eligibleTeamRoles()).containsExactly(
+                "PRIMARY_SURGEON", "ASSISTANT_SURGEON", "ANESTHESIOLOGIST");
 
         var departmentLookup = lookupDepartmentUseCase.lookup(department.getDepartmentId());
         assertThat(departmentLookup.exists()).isTrue();
@@ -158,6 +170,29 @@ class OrganizationServiceIntegrationTest {
         departmentStore.save(reconstitutedDepartment);
         assertThat(lookupDepartmentUseCase.lookup(department.getDepartmentId()).active())
                 .isFalse();
+
+        UUID roomId = UUID.randomUUID();
+        roomRepository.save(new RoomEntity(
+                roomId,
+                department.getDepartmentId(),
+                "OR-INT-01",
+                "OPERATING_ROOM",
+                true,
+                Instant.now(),
+                Instant.now()));
+        var roomLookup = lookupRoomUseCase.lookup(roomId);
+        assertThat(roomLookup.exists()).isTrue();
+        assertThat(roomLookup.active()).isTrue();
+        assertThat(roomLookup.roomId()).isEqualTo(roomId);
+        assertThat(roomLookup.departmentId()).isEqualTo(department.getDepartmentId());
+        assertThat(roomLookup.roomType()).isEqualTo("OPERATING_ROOM");
+
+        UUID missingRoomId = UUID.randomUUID();
+        assertThat(lookupRoomUseCase.lookup(missingRoomId))
+                .satisfies(result -> {
+                    assertThat(result.exists()).isFalse();
+                    assertThat(result.roomId()).isEqualTo(missingRoomId);
+                });
 
         UUID patientId = UUID.randomUUID();
         var patientAccount = createAccountUseCase.execute(

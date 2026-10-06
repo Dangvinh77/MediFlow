@@ -148,6 +148,19 @@ X-Correlation-Id: 11111111-1111-1111-1111-111111111111
 
 ### Expected 200 data: exists, active, departmentId, departmentName and departmentType
 
+### Internal lookup: room identity (SYSTEM service token only)
+GET {{host}}/api/v1/org/rooms/00000000-0000-0000-0000-000000000000/lookup
+Authorization: Bearer {{token}}
+X-Correlation-Id: 11111111-1111-1111-1111-111111111111
+
+### Expected 200 data: exists, active, roomId, departmentId, roomName and roomType
+### A missing room is confirmed absence: exists=false and roomId echoes the requested UUID
+
+### Staff identity additive projection
+### data.eligibleTeamRoles is [] for missing/inactive staff;
+### DOCTOR => PRIMARY_SURGEON, ASSISTANT_SURGEON, ANESTHESIOLOGIST;
+### NURSE => OR_NURSE; other current job titles => []
+
 ### Create an account (ADMIN only)
 POST {{host}}/api/v1/org/accounts
 Authorization: Bearer {{token}}

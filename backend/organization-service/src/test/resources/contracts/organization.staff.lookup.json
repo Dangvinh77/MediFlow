@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "active": true,
+    "jobTitle": "DOCTOR",
+    "departmentId": "22222222-2222-2222-2222-222222222222",
+    "eligibleTeamRoles": [
+      "PRIMARY_SURGEON",
+      "ASSISTANT_SURGEON",
+      "ANESTHESIOLOGIST"
+    ]
+  },
+  "error": null,
+  "timestamp": "2026-10-05T00:00:00Z",
+  "correlationId": "33333333-3333-3333-3333-333333333333"
+}

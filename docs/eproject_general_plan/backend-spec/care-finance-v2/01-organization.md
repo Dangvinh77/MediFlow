@@ -6,7 +6,7 @@
 
 **Base paths:** `/api/v1/org`, `/api/v1/auth`
 
-**Status:** phase-1 identity lookup implementation-ready; additive to CURRENT CRUD/auth contracts
+**Status:** producer-ready additive identity/room lookup; consumer fixtures pending
 
 ## 1. Sources and boundary
 
@@ -14,14 +14,17 @@
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
 - [CURRENT Organization spec](../01-organization.md)
 
-Organization remains the authority for account, staff and department identity. It validates active
-membership and job eligibility for Clinical, Inpatient and Surgery. It does not own patient data,
-beds, care episodes, surgery cases or money.
+Organization remains the authority for account, staff, department and room identity. It exposes an
+explicit, versioned job-title-to-team-role projection for care consumers. It does not own patient
+data, beds, care episodes, surgery cases or money.
 
 ## 2. Migration boundary
 
-No V2 business table is required. Reuse authoritative `staff`, `department` and `account` rows.
-Add only indexes required by measured lookup plans; never duplicate identity into a V2 table.
+The additive room lookup uses the Organization-owned `room` table (`room_id`, `department_id`,
+`room_name`, `room_type`, `is_active`, audit timestamps). It is a master/reference table, not a
+Surgery scheduling table; Surgery stores only the opaque room UUID and must fail closed when the
+room is absent, inactive or unavailable. Reuse authoritative `staff`, `department` and `account`
+rows; never duplicate staff/department identity into a V2 table.
 Existing `/exists` doctor compatibility remains unchanged. The new generic `/lookup` endpoints are
 service-only and distinguish confirmed absence from producer failure.
 
@@ -32,7 +35,17 @@ public record StaffIdentityLookupDTO(
     boolean exists,
     boolean active,
     String jobTitle,
-    UUID departmentId
+    UUID departmentId,
+    List<String> eligibleTeamRoles
+) {}
+
+public record RoomLookupDTO(
+    boolean exists,
+    boolean active,
+    UUID roomId,
+    UUID departmentId,
+    String roomName,
+    String roomType
 ) {}
 
 public record DepartmentLookupDTO(
@@ -46,11 +59,17 @@ public record DepartmentLookupDTO(
 public interface ReadOrganizationIdentityUseCase {
     StaffIdentityLookupDTO lookupStaff(UUID staffId);
     DepartmentLookupDTO lookupDepartment(UUID departmentId);
+    RoomLookupDTO lookupRoom(UUID roomId);
 }
 ```
 
 An absent UUID returns `200 ApiResponse` with `exists=false` and nullable descriptive fields. An
 unexpected persistence failure returns the normal `5xx` envelope; it must not be mapped to absence.
+
+`eligibleTeamRoles` is an additive array projection. V1 maps active `DOCTOR` to
+`PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`, active `NURSE` to `OR_NURSE`, and
+all other current job titles to an empty array. Inactive and missing staff always return an empty
+array. Consumers must not infer a role from a login role or a free-text title.
 
 ## 4. Endpoints and authorization
 
@@ -58,6 +77,7 @@ unexpected persistence failure returns the normal `5xx` envelope; it must not be
 |---|---|---|---|
 | GET | `/api/v1/org/staff/{id}/lookup` | `type=service`, `role=SYSTEM` | `StaffIdentityLookupDTO` |
 | GET | `/api/v1/org/departments/{id}/lookup` | `type=service`, `role=SYSTEM` | `DepartmentLookupDTO` |
+| GET | `/api/v1/org/rooms/{id}/lookup` | `type=service`, `role=SYSTEM` | `RoomLookupDTO` |
 | GET | `/api/v1/org/staff/{id}/exists` | compatibility service callers | existing doctor lookup |
 
 The security filter requires a signed short-lived JWT, `type=service`, `role=SYSTEM`, non-empty
@@ -73,6 +93,14 @@ use `@PreAuthorize("hasRole('SYSTEM')")`; default deny remains active.
 3. If absent, return `exists=false`.
 4. Return `active=true` only when the staff status is active; do not infer eligibility from job title.
 5. Preserve `X-Correlation-Id` in response and logs without personal payload logging.
+
+### Room lookup
+
+1. Validate UUID and service principal.
+2. Read the Organization-owned room row once.
+3. Return `exists=false` with the requested `roomId` for confirmed absence.
+4. Return `exists=true` with `active`, department and room metadata for an existing row.
+5. Map repository failure to `ORG_LOOKUP_UNAVAILABLE`; never return `exists=false` for an outage.
 
 ### Department lookup
 
@@ -101,6 +129,8 @@ Confirmed absence is a successful lookup, not an error.
 | inactive staff remains distinguishable | `lookupStaff_inactive_returnsExistsButInactive` |
 | missing staff is not outage | `lookupStaff_missing_returnsExistsFalse` |
 | lookup failure is not absence | `lookupStaff_repositoryFailure_returns503` |
+| room lookup projects the authoritative row | `lookupRoom_existing_returnsRoomProjection` |
+| missing room echoes the requested ID | `lookupRoom_missing_returnsExistsFalse` |
 | human access token rejected | `lookup_accessToken_returns403` |
 | service token must be SYSTEM | `lookup_nonSystemService_returns403` |
 | correlation preserved | `lookup_preservesCorrelationId` |

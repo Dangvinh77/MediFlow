@@ -1,8 +1,10 @@
 # CONTRACT-IDENTITY-LOOKUP-01 — Stable identity, lookup and Gateway routing
 
-- **Status:** `PARTIAL / PHASE-1-LOCKED`; Organization staff/department lookup, Gateway account
+- **Status:** `PRODUCER-READY / CONSUMER-FIXTURES-PENDING`; Organization staff/department/room
+  lookup and the additive job-title projection are implemented and contract-tested. Gateway account
   verification, Patient existence/read, the Clinical Patient consumer and the Inpatient Gateway
-  route are implemented. Surgery routing and several consumer claim migrations remain open.
+  route are implemented. Surgery/Clinical consumer fixture adoption, Surgery routing and several
+  consumer claim migrations remain open.
 - **Producer owners:** Organization, Patient, Gateway — Hoàng Anh
 - **Consumers:** Clinical, Lab, Pharmacy, Billing, Notification, Inpatient, Surgery
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -46,12 +48,32 @@ the request correlation ID. Human access/refresh tokens are not accepted.
 ### Organization
 
 - `GET /api/v1/org/staff/{id}/lookup` returns
-  `ApiResponse<StaffIdentityLookupDTO>` with `{ exists, active, jobTitle, departmentId }`.
+  `ApiResponse<StaffIdentityLookupDTO>` with
+  `{ exists, active, jobTitle, departmentId, eligibleTeamRoles }`.
+  `eligibleTeamRoles` is additive and is always an array. For an absent or inactive staff row it is
+  empty. For an active row the V1 mapping is:
+
+  | Organization `jobTitle` | `eligibleTeamRoles` |
+  |---|---|
+  | `DOCTOR` | `PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST` |
+  | `NURSE` | `OR_NURSE` |
+  | `TECHNICIAN`, `PHARMACIST`, `CASHIER`, `MANAGER`, `ADMINISTRATIVE` | empty |
+
+- `GET /api/v1/org/rooms/{id}/lookup` returns
+  `ApiResponse<RoomLookupDTO>` with
+  `{ exists, active, roomId, departmentId, roomName, roomType }`.
+  `roomId` always echoes the requested UUID, including confirmed absence. `roomType` is an
+  Organization-owned string; the first locked value is `OPERATING_ROOM`. A missing row is
+  `exists=false`; an inactive row is `exists=true, active=false`; persistence/dependency failure
+  is `503 ORG_LOOKUP_UNAVAILABLE` and must not be converted to absence.
 - `GET /api/v1/org/departments/{id}/lookup` returns
   `ApiResponse<DepartmentLookupDTO>` with `{ exists, active, departmentId, departmentName,
   departmentType }`.
 - Existing `GET /api/v1/org/staff/{id}/exists` is retained unchanged for Clinical compatibility; it
   remains the doctor-eligibility contract and is not reinterpreted as the generic staff lookup.
+  Clinical must continue using this compatibility shape until Vinh's consumer fixture explicitly
+  adopts `eligibleTeamRoles`; the additive field must not silently change the existing Clinical
+  decoder or doctor-eligibility semantics.
 
 All lookup responses use the shared `ApiResponse` envelope and preserve `X-Correlation-Id`.
 Gateway must treat the `/lookup` and `/exists` paths above as internal-only and must not expose them
@@ -88,6 +110,12 @@ Implemented baseline:
 - Gateway verifies accounts through Organization, issues typed access/refresh tokens and carries
   optional `staffId`, `departmentId` and `patientId` claims.
 - Pharmacy consumes the explicit `staffId` claim and never treats `sub` as a staff identity.
+
+Organization producer evidence for this additive slice is in
+`backend/organization-service/src/test/resources/contracts/organization.room.lookup.json` and
+`organization.staff.lookup.json`; the Organization contract tests deserialize those exact
+envelopes. Surgery and Clinical owners must copy the fixtures into their consumer tests and
+confirm role semantics before this contract can move to `IMPLEMENTED`.
 
 Open work is listed only in the [active handoff registry](../README.md), including Surgery routing
 and consumer JWT claim migrations. The former Patient handoff was retired after the

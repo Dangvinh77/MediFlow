@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -93,6 +94,32 @@ class GatewayWebTest {
     }
 
     @Test
+    void organizationRoomLookup_isServiceOnlyAndPreservesCorrelation() {
+        UUID roomId = UUID.randomUUID();
+        String correlationId = UUID.randomUUID().toString();
+        String serviceToken = jwt.issueServiceToken("gateway-test", Roles.SYSTEM, correlationId);
+
+        webTestClient.get()
+                .uri("/api/v1/org/rooms/{id}/lookup", roomId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(serviceToken))
+                .header("X-Correlation-Id", correlationId)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectHeader().valueEquals("X-Correlation-Id", correlationId)
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+
+        String humanToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.ADMIN);
+        webTestClient.get()
+                .uri("/api/v1/org/rooms/{id}/lookup", roomId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(humanToken))
+                .exchange()
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_FORBIDDEN");
+    }
+
+    @Test
     void inpatientRoute_getUsesCoarseClinicalRoleMatrix() {
         String doctorToken = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
         String correlationId = UUID.randomUUID().toString();
@@ -140,6 +167,69 @@ class GatewayWebTest {
                 .expectStatus().isForbidden()
                 .expectBody()
                 .jsonPath("$.error.code").isEqualTo("AUTH_FORBIDDEN");
+    }
+
+    @Test
+    void clinicalRoutes_followDownstreamRoleMatrix() {
+        UUID appointmentId = UUID.randomUUID();
+        UUID recordId = UUID.randomUUID();
+
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/appointments/" + appointmentId + "/check-in", Roles.NURSE);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/appointments/" + appointmentId + "/check-in", Roles.DOCTOR);
+
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/appointments/" + appointmentId + "/start-exam", Roles.DOCTOR);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/appointments/" + appointmentId + "/start-exam", Roles.NURSE);
+
+        expectDownstreamUnavailable(HttpMethod.POST,
+                "/api/v1/records/" + recordId + "/admission-referrals", Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST,
+                "/api/v1/records/" + recordId + "/admission-referrals", Roles.NURSE);
+    }
+
+    @Test
+    void labRoutes_followDownstreamRoleMatrix() {
+        UUID testId = UUID.randomUUID();
+
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.NURSE);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab", Roles.LAB_TECH);
+
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.NURSE);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.LAB_TECH);
+        expectForbidden(HttpMethod.GET, "/api/v1/lab/" + testId, Roles.MANAGER);
+
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/start", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/start", Roles.LAB_TECH);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/start", Roles.DOCTOR);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/start", Roles.MANAGER);
+
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/cancel", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/cancel", Roles.DOCTOR);
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/cancel", Roles.LAB_TECH);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/cancel", Roles.NURSE);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/cancel", Roles.MANAGER);
+
+        expectDownstreamUnavailable(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/status", Roles.LAB_TECH);
+        expectForbidden(HttpMethod.PUT,
+                "/api/v1/lab/" + testId + "/status", Roles.DOCTOR);
     }
 
     @Test
@@ -223,6 +313,29 @@ class GatewayWebTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
                 .jsonPath("$.error.code").isEqualTo("AUTH_UNAUTHORIZED");
+    }
+
+    private void expectDownstreamUnavailable(HttpMethod method, String path, String role) {
+        request(method, path, role)
+                .expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("GATEWAY_UPSTREAM_UNAVAILABLE");
+    }
+
+    private void expectForbidden(HttpMethod method, String path, String role) {
+        request(method, path, role)
+                .expectStatus().isForbidden()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error.code").isEqualTo("AUTH_FORBIDDEN");
+    }
+
+    private WebTestClient.ResponseSpec request(HttpMethod method, String path, String role) {
+        String token = jwt.issueAccessToken(UUID.randomUUID(), role);
+        return webTestClient.method(method)
+                .uri(path)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .exchange();
     }
 
     private String bearer(String token) {

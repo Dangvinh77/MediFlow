@@ -5,12 +5,12 @@
 - **Coordinator / service owner:** Huy (`LQHuy0210`).
 - **Owners needed:** Vinh — Clinical/Inpatient; Lộc — Billing/Notification; Hoàng Anh — Organization/Patient/Gateway; Huy — Surgery policy and acceptance.
 - **Purpose:** close the episode/referral/event mapping and owner-policy gate for cross-service Surgery behavior. The local domain core and delegated defaults do not satisfy producer/consumer contract acceptance.
-- **Updated:** 2026-10-04, source audit at `d8209d1` plus Huy working tree; platform/domain, V1 schema, persistence adapters,
+- **Updated:** 2026-10-05, source audit at `d8209d1` plus Huy working tree; platform/domain, V1 schema, persistence adapters,
   pre-op/checklist/consent application services and tests exist. Shared runtime registration is
-  complete. Organization service-only staff and department lookups landed in `cffdbf5` and
-  Surgery now has their local HTTP consumer adapter. Room lookup, team-role mapping, shared
-  producer/consumer fixtures, `surgery.requested` consumer and published Surgery business events
-  remain open. Detailed executable task breakdown:
+  complete. Organization service-only staff, department and room lookups plus the additive
+  job-title/team-role projection are producer-ready in the Organization working tree. Surgery
+  still needs to copy the canonical producer fixtures into its consumer tests; the `surgery.requested`
+  consumer and published Surgery business events remain open. Detailed executable task breakdown:
   [current Huy plan, Surgery backlog](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog).
 - **Canonical sources:** [Care–Finance architecture](../architecture/mediflow-care-finance-redesign.html), [Surgery V2 candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md), [INPATIENT-SURGERY](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md), [IDENTITY-LOOKUP](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
@@ -18,15 +18,17 @@
 
 The V2 candidate has enough detail to review, but remains a **candidate**, not an approved cross-service implementation contract. On 2026-09-28 Huy explicitly delegated selection of Surgery-owned V1 defaults; those local choices are recorded in the decision table below and guide Huy-owned domain work. They do not approve another owner's API/job-title/clinical evidence/catalog behavior, nor the wire contracts. Shared root/Gateway/DB/Compose registration remains separately assigned in the bootstrap handoff.
 
-### Source update — 2026-10-04
+### Source update — 2026-10-05
 
-Hoàng Anh now exposes service-only staff and department lookups with active-state data. Huy has
-implemented the Surgery consumer against those exact endpoints; canonical producer fixtures still
-need to be copied into consumer tests once supplied. This does not close the Organization gate:
-no operating-room lookup exists,
-and the allowed `jobTitle` values/mapping for Surgery team roles are still not canonical. Huy's
-pre-op and cancellation endpoints now provide an initial ADMIN/DOCTOR route matrix, so Hoàng Anh
-can add the Gateway route for those exact paths without pre-authorizing future Surgery APIs.
+Hoàng Anh exposes service-only staff, department and room lookups with active-state data. The room
+contract is `GET /api/v1/org/rooms/{id}/lookup` and returns
+`{exists, active, roomId, departmentId, roomName, roomType}`; absence echoes `roomId`, inactive is
+distinct from absence, and persistence failure is `503 ORG_LOOKUP_UNAVAILABLE`. The staff lookup
+additively returns `eligibleTeamRoles`; the locked V1 mapping is active `DOCTOR` to
+`PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`, active `NURSE` to `OR_NURSE`, and
+empty for other current titles or inactive/missing staff. Canonical producer fixtures are checked
+into the Organization test resources. Huy still needs to copy those bytes into Surgery consumer
+tests; this does not close the cross-owner handoff.
 
 **Huy consumer update:** Surgery now calls both exact service-only paths with a short-lived service
 JWT and correlation ID, validates response envelope/header and authoritative department identity,
@@ -93,8 +95,8 @@ The eight rows below are the candidate's explicit decision gate. The local V1 se
 | 1 | Episode mapping | **Huy choice:** outpatient selects `appointmentId` when present, otherwise `recordId`; keep a distinct `recordId` as clinical context only. Admission selects exact `admissionId`; never infer by patient/latest record. | Huy choice recorded; Vinh + Lộc still confirm producer fields and provide outpatient/admission + mismatch fixtures. | HUY-DECIDED; JOINT CONTRACT OPEN |
 | 2 | Mandatory checklist catalogue source | **Huy choice:** Surgery owns immutable, versioned templates keyed by procedure; cases snapshot template revision/items and template edits never rewrite existing cases. | Vinh must confirm medical mandatory set, exact codes and acceptable evidence sources; versioned sample + complete/missing/stale/mismatch fixtures. | HUY-DECIDED; CLINICAL INPUT OPEN |
 | 3 | Consent types and signers | **Huy choice:** V1 models distinct `SURGERY` and `ANESTHESIA` consents with append-only signing/revocation audit; both must be active for READY. JWT-derived actor is the recorder; request body cannot assert actor/role. Guardian authority, witness and who may attest remain fail-closed until clinical/legal policy is confirmed. | Vinh confirms signer/guardian/witness and revocation authority; provide sign/revoke/expiry authorization fixtures. | HUY-DECIDED; CLINICAL POLICY OPEN |
-| 4 | Operating-room reference authority | **Huy choice:** do not create a duplicate room master. Store an opaque stable room UUID; require the authoritative owner lookup to confirm room is active before schedule finalization. Failure/unavailable is not treated as active. Surgery owns overlap prevention. | Department lookup exists, but Hoàng Anh must still confirm room source/API, identifiers and inactive/absent/unavailable semantics; same-room concurrency fixture. | HUY-DECIDED; ROOM CONTRACT OPEN |
-| 5 | Team-role eligibility | **Huy choice:** V1 roles are `PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`, `OR_NURSE`; login role never proves clinical eligibility. Require active staff lookup plus approved job-title mapping; unknown/inactive/unavailable fails closed. | Staff lookup and Huy HTTP consumer adapter exist. Hoàng Anh supplies canonical job-title values/producer fixture and Vinh confirms clinical role meaning; eligible/ineligible shared fixtures. | LOCAL LOOKUP PASS; MAPPING/JOINT FIXTURE OPEN |
+| 4 | Operating-room reference authority | **Huy choice:** do not create a duplicate room master. Store an opaque stable room UUID; require the authoritative owner lookup to confirm room is active before schedule finalization. Failure/unavailable is not treated as active. Surgery owns overlap prevention. | Organization now provides `GET /api/v1/org/rooms/{id}/lookup`, the `ROOM` master migration and producer security/contract tests. Huy must add the exact fixture to the consumer and provide the same-room concurrency fixture. | PRODUCER READY; CONSUMER FIXTURE OPEN |
+| 5 | Team-role eligibility | **Huy choice:** V1 roles are `PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`, `OR_NURSE`; login role never proves clinical eligibility. Require active staff lookup plus approved job-title mapping; unknown/inactive/unavailable fails closed. | Organization publishes the exact active job-title mapping and fixture. Huy must consume `eligibleTeamRoles`; Vinh confirms clinical role meaning and provides eligible/ineligible shared fixtures. | PRODUCER READY; JOINT FIXTURE/CLINICAL CONFIRMATION OPEN |
 | 6 | Emergency override | **Huy choice:** disable override in V1; no override endpoint or state transition is exposed. If enabled in a later version, it may bypass only financial clearance and must never bypass clinical/readiness guards. | Vinh + Lộc confirm any future approver-role, self-approval and receivable behavior before a later-version implementation. | HUY-DECIDED; FUTURE CONTRACT OPEN |
 | 7 | Cancellation stage / partial abort | **Huy choice:** V1 permits cancellation only before `IN_PROGRESS`; derive stage from persisted state and audit the actor/reason. No `IN_PROGRESS_ABORTED` path in V1; do not call adjustment a refund. | Vinh + Lộc confirm clinical outcome and Billing adjustment/refund semantics before any post-start abort version. | HUY-DECIDED; FUTURE CONTRACT OPEN |
 | 8 | Planned/performed item catalogue | **Huy choice:** Surgery persists procedure/item/price codes and positive quantities only; never accepts/calculates amount. Billing owns catalog validity and all prices. | Lộc confirms accepted codes, catalog validation and planned/performed reconciliation; Vinh confirms clinical procedure coding. Same-version catalog fixture required before charge integration. | HUY-DECIDED; BILLING/CLINICAL CONTRACT OPEN |
@@ -123,7 +125,7 @@ Reply by editing this handoff (or link a canonical contract/spec PR) with the re
 |---|---|---|
 | Vinh — Clinical/Inpatient | Confirm referral ownership/stable identity, relationship proof, external-order registration and outpatient/late-event handling (§D); provide checklist/consent/clinical result policies. Post-start abort is deferred from V1. | `OPEN` — fill in after review |
 | Lộc — Billing/Notification | Confirm distinct post-case charge fact, item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `OPEN` — fill in after review |
-| Hoàng Anh — Organization | Staff/department endpoints landed in `cffdbf5`. Still provide room lookup plus authoritative job-title values for team-role mapping. Gateway action remains tracked in [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). | `PARTIAL — staff/department lookup available; room/job-title mapping OPEN (2026-10-04)` |
+| Hoàng Anh — Organization | Staff/department/room endpoints, the additive `eligibleTeamRoles` mapping, producer fixtures and Organization tests are ready. Gateway action remains tracked in [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). | `PRODUCER READY — consumer fixture adoption and Vinh role confirmation OPEN (2026-10-05)` |
 | Huy — Surgery | Staff/department adapter and local HTTP tests implemented; next supply joint fixtures, room/policy-backed scheduling, business API, `surgery.requested` consumer and producer fixtures; preserve delegated V1 defaults. | `STAFF/DEPARTMENT LOCAL CONSUMER PASS; OTHER IMPLEMENTATION/FIXTURES OPEN` |
 
 ## Implementation boundaries and close criteria

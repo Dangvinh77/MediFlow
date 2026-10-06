@@ -2,7 +2,7 @@
 
 **Module:** `backend/organization-service/`  
 **Base path:** `/api/v1/org`  
-**Database tables:** `DEPARTMENT`, `STAFF`, `ACCOUNT`
+**Database tables:** `DEPARTMENT`, `STAFF`, `ACCOUNT`, `ROOM`
 
 **Source of truth:** `docs/eproject_general_plan/organization-service.html`
 
@@ -53,6 +53,21 @@ A staff member such as a doctor, nurse, technician, pharmacist, cashier, manager
 | `status`         | ENUM         | `ACTIVE`, `INACTIVE`                            |
 | `created_at`     | TIMESTAMPTZ  | Creation timestamp                              |
 | `updated_at`     | TIMESTAMPTZ  | Last update timestamp                           |
+
+### `ROOM`
+
+An Organization-owned room/reference master used by scheduling consumers. Organization does not
+own appointments or room reservations.
+
+| Column | Type | Constraints / Description |
+| --- | --- | --- |
+| `room_id` | UUID | Primary key |
+| `department_id` | UUID | Owning department |
+| `room_name` | VARCHAR(100) | Display/name identifier |
+| `room_type` | VARCHAR(30) | First locked value: `OPERATING_ROOM`; additive values require contract review |
+| `is_active` | BOOLEAN | Whether consumers may use the room |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | Last update timestamp |
 
 ### `ACCOUNT`
 
@@ -141,6 +156,7 @@ Every endpoint returns the shared `ApiResponse<T>` envelope. The staff list uses
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM _(internal lookup used by other services)_ |
 | GET    | `/api/v1/org/staff/{id}/lookup`                     | SYSTEM service token _(additive identity lookup)_ |
 | GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token _(additive department lookup)_ |
+| GET    | `/api/v1/org/rooms/{id}/lookup`                      | SYSTEM service token _(additive room lookup)_ |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                                             |
 | PUT    | `/api/v1/org/accounts/{id}/status`                  | ADMIN                                             |
 | POST   | `/api/v1/org/accounts/verify`                       | SYSTEM _(gateway only — never exposed publicly)_  |
@@ -148,9 +164,18 @@ Every endpoint returns the shared `ApiResponse<T>` envelope. The staff list uses
 The additive internal lookup endpoints use the English Organization wire contract and accept only a
 short-lived service JWT (`type=service`, `role=SYSTEM`):
 
-- `/api/v1/org/staff/{id}/lookup` → `{ exists, active, jobTitle, departmentId }`.
+- `/api/v1/org/staff/{id}/lookup` →
+  `{ exists, active, jobTitle, departmentId, eligibleTeamRoles }`.
 - `/api/v1/org/departments/{id}/lookup` →
   `{ exists, active, departmentId, departmentName, departmentType }`.
+- `/api/v1/org/rooms/{id}/lookup` →
+  `{ exists, active, roomId, departmentId, roomName, roomType }`.
+
+For active staff, the locked V1 job-title mapping is `DOCTOR` →
+`PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`; `NURSE` → `OR_NURSE`; all other
+current job titles → `[]`. Inactive or missing staff always returns `eligibleTeamRoles: []`.
+Surgery/Clinical consumers must use this explicit projection and fail closed on unknown or
+unavailable data.
 
 The existing `/api/v1/org/staff/{id}/exists` doctor-eligibility response remains unchanged for
 Clinical compatibility.
