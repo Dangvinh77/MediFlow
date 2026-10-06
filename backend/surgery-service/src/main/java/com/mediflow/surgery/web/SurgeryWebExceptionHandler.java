@@ -23,6 +23,52 @@ import java.util.UUID;
 /** Keeps cancellation validation and domain failures in the shared API envelope. */
 @RestControllerAdvice
 public class SurgeryWebExceptionHandler {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SurgeryWebExceptionHandler.class);
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> accessDenied(Exception exception, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "This operation is not permitted", request);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> unexpected(Exception exception, HttpServletRequest request) {
+        String correlation = correlationId(request);
+        if (exception instanceof org.springframework.web.ErrorResponse framework
+                && framework.getStatusCode().is4xxClientError()) {
+            String code = switch (framework.getStatusCode().value()) {
+                case 400 -> "INVALID_REQUEST";
+                case 404 -> "NOT_FOUND";
+                case 405 -> "METHOD_NOT_ALLOWED";
+                case 415 -> "UNSUPPORTED_MEDIA_TYPE";
+                default -> "HTTP_ERROR";
+            };
+            return ResponseEntity.status(framework.getStatusCode()).body(ApiResponse.fail(
+                    ApiResponse.ApiError.of(code, "Request cannot be processed"), correlation));
+        }
+        // Do not print exception messages, SQL, clinical input, tokens or payloads.
+        LOGGER.error("Surgery request failed correlationId={} exceptionType={}",
+                correlation, exception.getClass().getSimpleName());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.fail(
+                ApiResponse.ApiError.of("INTERNAL_ERROR", "The operation could not be completed"), correlation));
+    }
+
+    @ExceptionHandler(com.mediflow.surgery.application.exception.UpstreamUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> upstreamUnavailable(Exception exception, HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "SURGERY_UPSTREAM_UNAVAILABLE",
+                "Authoritative dependency is temporarily unavailable", request);
+    }
+
+    @ExceptionHandler(com.mediflow.surgery.application.exception.SurgeryReadAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> readDenied(
+            com.mediflow.surgery.application.exception.SurgeryReadAccessDeniedException exception,
+            HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidParameter(Exception exception, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Query or path parameter is invalid", request);
+    }
 
     @ExceptionHandler(SurgeryRevisionConflictException.class)
     public ResponseEntity<ApiResponse<Void>> revisionConflict(

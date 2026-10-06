@@ -3,22 +3,36 @@
 - **Status:** `OPEN` — Huy-delegated local defaults now have domain/application/persistence test
   coverage; cross-owner contract confirmations and shared fixtures are still pending.
 - **Coordinator / service owner:** Huy (`LQHuy0210`).
+- **2026-10-05 task override:** user authorized Huy to implement missing producer dependencies
+  directly. Organization real room/explicit capability authority and Inpatient exact-admission
+  lookup are now coded with shared fixtures consumed by Surgery; generic identity compatibility
+  stays unchanged. This supersedes the old read-only ownership blocker for this task, not clinical
+  policy, referral/charge/clearance acceptance or runtime activation. Evidence/backlog:
+  [cross-service execution](../superpowers/plans/2026-10-05-huy-cross-service-dependencies.md).
 - **Owners needed:** Vinh — Clinical/Inpatient; Lộc — Billing/Notification; Hoàng Anh — Organization/Patient/Gateway; Huy — Surgery policy and acceptance.
+- **2026-10-06 override reiterated:** implement missing dependencies in the named services as
+  well as Huy's modules; do not defer engineering contracts/runtime tests to their owners.
+  Billing current-clearance lookup and Surgery's live financial client/internal lifecycle guard
+  now exist with canonical fixtures and actual producer HTTP/PG tests. The dedicated packaged
+  Billing + real Surgery client runtime slice also passed. Freshness is distinct from the
+  business grant expiry. Refund/source-fence/issuance code remains assigned work, not an owner
+  permission blocker. See [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md).
 - **Purpose:** close the episode/referral/event mapping and owner-policy gate for cross-service Surgery behavior. The local domain core and delegated defaults do not satisfy producer/consumer contract acceptance.
-- **Updated:** 2026-10-05, source audit at `d8209d1` plus Huy working tree; platform/domain, V1 schema, persistence adapters,
+- **Updated:** 2026-10-06, master `ea60ea4` plus preserved task-scoped override working tree; platform/domain, V1 schema, persistence adapters,
   pre-op/checklist/consent application services and tests exist. Shared runtime registration is
-  complete. Organization service-only staff, department and room lookups plus the additive
-  job-title/team-role projection are producer-ready in the Organization working tree. Surgery
-  still needs to copy the canonical producer fixtures into its consumer tests; the `surgery.requested`
-  consumer and published Surgery business events remain open. Detailed executable task breakdown:
+  complete. Organization service-only staff and department lookups landed in `cffdbf5` and
+  Surgery now has their HTTP consumer adapters. Organization room/explicit capability and exact
+  Inpatient admission lookup now have producer fixtures consumed directly by Surgery tests.
+  Referral/placement proof, clinical policy/catalogues, `surgery.requested` consumer and published
+  Surgery business events remain open. Detailed executable task breakdown:
   [current Huy plan, Surgery backlog](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog).
 - **Canonical sources:** [Care–Finance architecture](../architecture/mediflow-care-finance-redesign.html), [Surgery V2 candidate](../eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md), [CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md), [INPATIENT-SURGERY](care-finance/CONTRACT-INPATIENT-SURGERY-01.md), [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md), [IDENTITY-LOOKUP](care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
 ## Gate status
 
-The V2 candidate has enough detail to review, but remains a **candidate**, not an approved cross-service implementation contract. On 2026-09-28 Huy explicitly delegated selection of Surgery-owned V1 defaults; those local choices are recorded in the decision table below and guide Huy-owned domain work. They do not approve another owner's API/job-title/clinical evidence/catalog behavior, nor the wire contracts. Shared root/Gateway/DB/Compose registration remains separately assigned in the bootstrap handoff.
+The V2 candidate has enough detail to review, but remains a **candidate**, not proof of a complete integrated workflow. On 2026-09-28 Huy delegated Surgery-owned V1 defaults; on 2026-10-05 the user additionally authorized implementation of missing dependencies in other services. Ownership-only blockers and requests for permission to implement those dependencies are superseded. Actual clinical authority, exact source identity, producer/consumer compatibility and runtime acceptance still require evidence; code/test status is recorded separately. Gateway is in this override, while unrelated root/Common/DB/Compose changes are not assigned.
 
-### Source update — 2026-10-05
+### Master source update — 2026-10-05 (integrated locally 2026-10-06)
 
 Hoàng Anh exposes service-only staff, department and room lookups with active-state data. The room
 contract is `GET /api/v1/org/rooms/{id}/lookup` and returns
@@ -84,7 +98,11 @@ Inpatient is **not** a scaffold-only dependency anymore. Its [event consumer](..
 | Completed/cancelled treatment-entry handling expects an ADMITTED admission; delivery can be late or out of order. | Vinh + Huy: define late outcome after discharge/close and READY after terminal outcome, including revision/semantic dedupe. Test no lost durable fact, no reopened admission and no repeated treatment entry. | S-03.6, S-07.5 |
 | Human-authorized admission GET exists, but does not by itself establish a service-auth relationship lookup. | Vinh: specify authoritative referral proof or service-only lookup and freshness for exact patient/department/admission eligibility. No assumption that Patient exists proves this relationship. | S-03.3.3, S-04.1 |
 
-These are additional acceptance details in the existing handoff, not authorization for Huy to edit Inpatient. All four rows remain **OPEN** until owner contract changes and shared tests exist.
+These are acceptance details, not an ownership blocker after the 2026-10-05 user override.
+The service-only admission lookup row is now partially implemented and tested for exact identity
+and medical-care window. It does not prove referral or current placement. The other lifecycle,
+outcome/revision and full relationship acceptance remain OPEN; do not close the combined task
+from the lookup subset.
 
 ## H-01.3 — Huy-delegated local decisions and remaining owner policy inputs
 
@@ -125,13 +143,19 @@ Reply by editing this handoff (or link a canonical contract/spec PR) with the re
 |---|---|---|
 | Vinh — Clinical/Inpatient | Confirm referral ownership/stable identity, relationship proof, external-order registration and outpatient/late-event handling (§D); provide checklist/consent/clinical result policies. Post-start abort is deferred from V1. | `OPEN` — fill in after review |
 | Lộc — Billing/Notification | Confirm distinct post-case charge fact, item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `OPEN` — fill in after review |
-| Hoàng Anh — Organization | Staff/department/room endpoints, the additive `eligibleTeamRoles` mapping, producer fixtures and Organization tests are ready. Gateway action remains tracked in [Surgery foundation bootstrap](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md). | `PRODUCER READY — consumer fixture adoption and Vinh role confirmation OPEN (2026-10-05)` |
-| Huy — Surgery | Staff/department adapter and local HTTP tests implemented; next supply joint fixtures, room/policy-backed scheduling, business API, `surgery.requested` consumer and producer fixtures; preserve delegated V1 defaults. | `STAFF/DEPARTMENT LOCAL CONSUMER PASS; OTHER IMPLEMENTATION/FIXTURES OPEN` |
+| Hoàng Anh — Organization | Master's generic room lookup and additive `eligibleTeamRoles` producer fixtures retained. Local revisioned operating-room and explicit interval-scoped capability authority remain separate; Surgery consumes their canonical fixtures and packaged runtime tests pass read/draft/revoke. Gated V1 authority-change intake/durable invalidation has same producer event fixtures and PG/Rabbit evidence. Generic job-title roles must not substitute for explicit grants. Fresh-authority READY/finalize/START reconciliation, generic fixture adoption, clinical policy and multi-service event rollout remain open. [Runtime verification](../ai/services/surgery.md). | `GENERIC PRODUCER READY; EXPLICIT AUTHORITY/LOCAL INVALIDATION VERIFIED; FULL LIFECYCLE OPEN` |
+| Huy — Surgery | Staff/department/room/capability adapters and gated authority invalidation exist. Internal seven-guard readiness, explicit configured checklist/consent/team policies and evaluate/finalize/START/COMPLETE orchestration implemented on 2026-10-06; case/resource locks, committed denial/release, immutable result and replay are covered by local tests. V6 stores private HELD intents only, not approved READY/COMPLETED wire. Still supply real policy/source adapters, preflight outside write transaction, shared producer fixtures, referral consumer and live HTTP acceptance. | `INTERNAL LIFECYCLE IMPLEMENTED; PRODUCTION AUTHORITY/WIRE/ACCEPTANCE OPEN` |
 
 ## Implementation boundaries and close criteria
 
 - This is the single active cross-owner handoff for H-01.2/H-01.3; the existing registry entry points here. Do not create a second handoff for the same Surgery decision set.
-- While open, Huy may implement internal behavior covered by the delegated local decisions above. Do not enable or invent unconfirmed producer payloads, event names/routing keys, price codes, Organization identifiers/job-title mappings or clinical evidence rules. Keep cross-service adapters/integration disabled until the named owners supply canonical contracts and fixtures. Do not edit producer-owned modules, query another service database, or modify root/shared/Gateway production files.
-- The separate [Surgery foundation bootstrap handoff](HANDOFF-SURGERY-FOUNDATION-BOOTSTRAP.md) tracks explicit shared-build and Gateway ownership; H-01.2/3 approval does not grant Huy authority over those files.
+- The historical producer read-only restriction is superseded for this task: Huy may implement
+  the named producer/consumer dependency modules and their canonical engineering contracts,
+  fixtures and runtime tests in one change. Do not wait for another owner to write that code.
+  Do not fabricate clinical/legal evidence, clinical qualifications, prices or source identifiers;
+  never query another service database from production code. Root/Common/Compose/CI scope is
+  unchanged; Gateway dependency scope remains the user's separate override. Activation remains
+  gated by actual contract/security/runtime evidence, not mock-only success.
+- Shared-build ownership is unchanged. The user separately assigned Gateway dependency implementation; actual packaged deployment/role/correlation acceptance passed 2026-10-05 and the bootstrap handoff was retired. Durable facts are in [Surgery](../ai/services/surgery.md) and [Gateway](../ai/services/gateway.md). This does not assign Root/Common/Compose work or approve clinical rules.
 - Close H-01.2/3 only after: (1) all applicable rows above have real owner decisions in canonical contract/spec docs, (2) Huy-local choices are recorded and remaining cross-owner policy fields are confirmed, (3) same-version producer/consumer fixtures and required mismatch/duplicate tests are linked, and (4) this file and the registry are retired/updated in the same change that moves lasting rules to canonical docs.
 - D08 Pharmacy admission and D09 Report finance remain tracked in [Huy care-finance consumers](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md); they are not prerequisites for starting Surgery G0, except where their exact event fields directly participate in a Surgery contract row above.

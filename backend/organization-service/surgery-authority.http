@@ -1,0 +1,63 @@
+### Explicit reference provisioning; no guessed/seeded qualification.
+@gateway = http://localhost:8080
+@organization = http://localhost:8089
+# @adminToken = typed ADMIN access token from Gateway
+# @serviceToken = short-lived type=service, role=SYSTEM token (max 60 seconds)
+# @departmentId = real Organization CLINICAL department ID
+# @roomId = room ID returned by create
+# @staffId = real Organization staff ID
+@correlationId = 04000000-0000-0000-0000-000000000001
+
+### Create a real room — ADMIN; returned Location contains roomId
+POST {{gateway}}/api/v1/org/operating-rooms
+Authorization: Bearer {{adminToken}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "expectedRevision": 0,
+  "roomCode": "OR-01",
+  "roomName": "Operating Room 01",
+  "departmentId": "{{departmentId}}",
+  "active": true,
+  "reason": "Approved operating-room catalog decision reference"
+}
+
+### Revise/deactivate a real room — ADMIN; stale revision returns 409
+PUT {{gateway}}/api/v1/org/operating-rooms/{{roomId}}
+Authorization: Bearer {{adminToken}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "expectedRevision": 1,
+  "roomCode": "OR-01",
+  "roomName": "Operating Room 01",
+  "departmentId": "{{departmentId}}",
+  "active": false,
+  "reason": "Approved temporary deactivation reference"
+}
+
+### Explicit staff capability — ADMIN; do not run without a real qualification decision
+PUT {{gateway}}/api/v1/org/staff/{{staffId}}/surgery-roles/PRIMARY_SURGEON
+Authorization: Bearer {{adminToken}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "expectedRevision": 0,
+  "active": true,
+  "validFrom": "2026-10-05T00:00:00Z",
+  "validUntil": "2026-11-05T00:00:00Z",
+  "reason": "Verified administrative qualification decision reference"
+}
+
+### Service-only room lookup; human token must be rejected
+GET {{organization}}/api/v1/org/operating-rooms/{{roomId}}/lookup
+Authorization: Bearer {{serviceToken}}
+X-Correlation-Id: {{correlationId}}
+
+### Service-only exact staff role and full requested time interval
+GET {{organization}}/api/v1/org/staff/{{staffId}}/surgery-eligibility?teamRole=PRIMARY_SURGEON&startsAt=2026-10-06T02:00:00Z&endsAt=2026-10-06T03:00:00Z
+Authorization: Bearer {{serviceToken}}
+X-Correlation-Id: {{correlationId}}

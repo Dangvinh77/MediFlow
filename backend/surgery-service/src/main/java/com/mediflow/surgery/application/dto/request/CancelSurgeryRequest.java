@@ -9,4 +9,8 @@ import jakarta.validation.constraints.Size;
 public record CancelSurgeryRequest(
         @NotNull @PositiveOrZero Long expectedCaseRevision,
         @NotBlank @Size(max = 1_000) String reason) {
+    @com.fasterxml.jackson.annotation.JsonAnySetter
+    public void rejectUnknownField(String name, Object value) {
+        throw new IllegalArgumentException("Unexpected Surgery command field");
+    }
 }

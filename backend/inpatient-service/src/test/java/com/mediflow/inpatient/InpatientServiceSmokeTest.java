@@ -72,6 +72,7 @@ class InpatientServiceSmokeTest {
     private ObjectMapper objectMapper;
 
     @MockBean private AdmissionRepositoryPort admissions;
+    @MockBean private com.mediflow.inpatient.application.port.out.AdmissionAuthorityRepositoryPort admissionAuthority;
     @MockBean private BedRepositoryPort beds;
     @MockBean private BedAssignmentRepositoryPort assignments;
     @MockBean private TreatmentEntryRepositoryPort treatments;
@@ -222,6 +223,23 @@ class InpatientServiceSmokeTest {
 
     private String validToken(String role) {
         return validToken(role, null);
+    }
+
+    @Test
+    void serviceToken_cannotReadOrMutateHumanAdmissionRoutes() throws Exception {
+        Instant now=Instant.now();
+        String token=Jwts.builder().subject("surgery-service").claim(JwtClaims.ROLE,"SYSTEM")
+                .claim(JwtClaims.TYPE,JwtClaims.SERVICE_TOKEN_TYPE).issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(60))).signWith(SIGNING_KEY).compact();
+        mockMvc.perform(get("/api/v1/inpatient/admissions/{id}",UUID.randomUUID())
+                .header("Authorization","Bearer "+token)).andExpect(status().isForbidden());
+        CreateAdmissionRequest request=new CreateAdmissionRequest(UUID.randomUUID(),UUID.randomUUID(),
+                UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),"Test",AdmissionPriority.ROUTINE,false,now);
+        mockMvc.perform(post("/api/v1/inpatient/admissions").contentType("application/json")
+                .content(objectMapper.writeValueAsString(request))
+                .header("Authorization","Bearer "+token)).andExpect(status().isForbidden());
+        verify(admissions,never()).findById(any());
+        verify(admissions,never()).findByAdmissionRequestId(any());
     }
 
     private String validToken(String role, UUID staffId) {

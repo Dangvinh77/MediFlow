@@ -77,6 +77,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.clearContext();
                     return;
                 }
+                String path = request.getRequestURI();
+                boolean surgeryAuthorityLookup = path.matches("/api/v1/org/operating-rooms/[^/]+/lookup")
+                        || path.matches("/api/v1/org/staff/[^/]+/surgery-eligibility");
+                if (surgeryAuthorityLookup && (claims.getIssuedAt() == null || claims.getExpiration() == null
+                        || claims.getExpiration().toInstant().isAfter(claims.getIssuedAt().toInstant().plusSeconds(60))
+                        || claims.getIssuedAt().toInstant().isAfter(java.time.Instant.now().plusSeconds(5)))) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
                 var authentication = new UsernamePasswordAuthenticationToken(
                         subject,
                         null,

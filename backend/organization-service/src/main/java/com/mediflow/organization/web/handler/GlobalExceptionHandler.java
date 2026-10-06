@@ -37,6 +37,23 @@ public class GlobalExceptionHandler {
         this.correlationIds = correlationIds;
     }
 
+    @ExceptionHandler(com.mediflow.common.exception.BusinessRuleException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthorityRule(
+            com.mediflow.common.exception.BusinessRuleException exception) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidArgument(IllegalArgumentException exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "ORG_VALIDATION_ERROR", exception.getMessage());
+    }
+
+    @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.http.converter.HttpMessageNotReadableException.class})
+    public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "ORG_VALIDATION_ERROR", "Malformed request");
+    }
+
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(
             DuplicateResourceException exception) {

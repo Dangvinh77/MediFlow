@@ -29,7 +29,8 @@ import java.util.UUID;
 /** JPA case row plus append-only JDBC histories in the caller's single transaction. */
 @Repository
 @Profile("!test")
-public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort {
+public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort,
+        com.mediflow.surgery.application.port.out.SurgeryReadinessSnapshotPort {
 
     private final SurgeryCaseJpaRepository cases;
     private final SurgeryCasePersistenceMapper mapper;
@@ -65,7 +66,13 @@ public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort 
     @Override
     public Optional<SurgeryCase> lockById(UUID caseId) {
         requireTransaction();
-        return cases.lockById(caseId).map(this::toDomain);
+        try {
+            return cases.lockById(caseId).map(this::toDomain);
+        } catch (org.springframework.dao.OptimisticLockingFailureException stale) {
+            // A prior read in this persistence context can become stale while the row lock waits.
+            // Do not hide a programming/DB failure as a revision conflict; only optimistic conflicts map here.
+            throw new SurgeryRevisionConflictException();
+        }
     }
 
     @Override
@@ -122,6 +129,19 @@ public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort 
         return mapper.toDomain(row, readiness, states, audit);
     }
 
+    @Override
+    public void store(ReadinessSnapshot snapshot) {
+        requireTransaction();
+        saveSnapshot(snapshot);
+    }
+
+    @Override
+    public Optional<ReadinessSnapshot> findSnapshot(UUID snapshotId) {
+        Integer count = jdbc.queryForObject("SELECT count(*) FROM surgery_readiness_snapshot WHERE readiness_snapshot_id=?",
+                Integer.class, snapshotId);
+        return count != null && count == 1 ? Optional.of(loadSnapshot(snapshotId)) : Optional.empty();
+    }
+
     private void saveSnapshot(ReadinessSnapshot snapshot) {
         Integer existing = jdbc.queryForObject("""
                 SELECT count(*) FROM surgery_readiness_snapshot WHERE readiness_snapshot_id = ?
@@ -145,6 +165,10 @@ public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort 
                 snapshot.teamEligible(), snapshot.scheduleConfirmed(),
                 snapshot.financialClearanceValid(), Timestamp.from(snapshot.evaluatedAt()),
                 timestamp(snapshot.validUntil()));
+        jdbc.update("""
+                INSERT INTO surgery_readiness_precision(readiness_snapshot_id,evaluated_at_iso,valid_until_iso)
+                VALUES (?,?,?)
+                """,snapshot.snapshotId(),snapshot.evaluatedAt().toString(),snapshot.validUntil() == null ? null : snapshot.validUntil().toString());
         for (int index = 0; index < snapshot.dependencyRevisions().size(); index++) {
             SurgeryDependencyRevision dependency = snapshot.dependencyRevisions().get(index);
             jdbc.update("""
@@ -174,7 +198,8 @@ public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort 
                 WHERE readiness_snapshot_id = ? ORDER BY sequence_no
                 """, (rs, ignored) -> rs.getString("reason_code"), snapshotId);
         return jdbc.queryForObject("""
-                SELECT * FROM surgery_readiness_snapshot WHERE readiness_snapshot_id = ?
+                SELECT s.*,p.evaluated_at_iso,p.valid_until_iso FROM surgery_readiness_snapshot s
+                LEFT JOIN surgery_readiness_precision p USING(readiness_snapshot_id) WHERE s.readiness_snapshot_id = ?
                 """, (rs, ignored) -> new ReadinessSnapshot(
                 rs.getObject("readiness_snapshot_id", UUID.class),
                 rs.getObject("surgery_case_id", UUID.class),
@@ -183,7 +208,12 @@ public class SurgeryCasePersistenceAdapter implements SurgeryCaseRepositoryPort 
                 rs.getBoolean("team_eligible"),
                 rs.getBoolean("schedule_confirmed"),
                 rs.getBoolean("financial_clearance_valid"),
-                time(rs, "evaluated_at"), dependencies, time(rs, "valid_until"), reasons), snapshotId);
+                exactSnapshotTime(rs,"evaluated_at"), dependencies, exactSnapshotTime(rs,"valid_until"), reasons), snapshotId);
+    }
+
+    private static Instant exactSnapshotTime(ResultSet rs,String column) throws SQLException {
+        String iso = rs.getString(column+"_iso");
+        return iso == null ? time(rs,column) : Instant.parse(iso);
     }
 
     private void appendState(UUID caseId, int index, SurgeryStateChange change) {

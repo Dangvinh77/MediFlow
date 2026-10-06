@@ -49,11 +49,30 @@ class SurgeryServiceSmokeTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    @Test
+    void unapprovedLifecycle_noCommandBeansOrPublicMappingsEvenWhenBusinessFlagIsTrue() {
+        assertThat(applicationContext.getBeanNamesForType(com.mediflow.surgery.application.service.SurgeryLifecycleApplicationService.class)).isEmpty();
+        assertThat(applicationContext.getBeanNamesForType(com.mediflow.surgery.application.port.out.SurgeryReadinessAuthorityPort.class)).isEmpty();
+        var mappings = applicationContext.getBean("requestMappingHandlerMapping",org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping.class);
+        var paths = mappings.getHandlerMethods().keySet().stream().flatMap(mapping -> mapping.getPatternValues().stream()).toList();
+        assertThat(paths).noneMatch(path -> path.endsWith("/readiness/evaluate") || path.endsWith("/schedule/finalize")
+                || path.endsWith("/start") || path.endsWith("/complete"));
+    }
+
     @MockBean
     private CancelSurgeryUseCase cancellation;
 
     @MockBean
     private BeginPreopUseCase beginPreop;
+
+    @MockBean
+    private com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase queries;
+
+    @MockBean
+    private com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase scheduling;
 
     @Test
     void health_isPublic() throws Exception {
@@ -78,10 +97,13 @@ class SurgeryServiceSmokeTest {
     }
 
     @Test
-    void noBusinessPlaceholder_returnsNotFoundEvenForAuthenticatedCaller() throws Exception {
+    void implementedBoard_returnsPageEnvelopeForAuthenticatedReader() throws Exception {
+        when(queries.list(any(), any(), any())).thenReturn(
+                com.mediflow.common.api.PageResult.empty(com.mediflow.common.api.PageQuery.of(0, 20)));
         mockMvc.perform(get("/api/v1/surgery/cases")
                         .header("Authorization", "Bearer " + validAccessToken("DOCTOR")))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     @Test

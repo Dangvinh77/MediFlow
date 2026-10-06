@@ -25,6 +25,11 @@ The additive room lookup uses the Organization-owned `room` table (`room_id`, `d
 Surgery scheduling table; Surgery stores only the opaque room UUID and must fail closed when the
 room is absent, inactive or unavailable. Reuse authoritative `staff`, `department` and `account`
 rows; never duplicate staff/department identity into a V2 table.
+The local additive Surgery authority extension adds revisioned operating-room references and
+explicit staff capabilities through V4, after master's V3 generic room lookup. It is not a
+duplicate staff/department identity. Its DTOs, decisions, audit/outbox and interval rules are locked
+in CONTRACT-IDENTITY-LOOKUP-01 and `docs/ai/services/organization.md`; generic lookup stays unchanged.
+Add only indexes required by measured lookup plans; never duplicate identity into a V2 table.
 Existing `/exists` doctor compatibility remains unchanged. The new generic `/lookup` endpoints are
 service-only and distinguish confirmed absence from producer failure.
 

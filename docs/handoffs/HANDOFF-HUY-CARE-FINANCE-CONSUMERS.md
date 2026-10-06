@@ -1,11 +1,31 @@
 # HANDOFF — Huy-owned Pharmacy and Report care/finance contracts
 
-- **Status:** `OPEN` — V2 target specs now exist; missing producer facts/fixtures and compatibility evidence still block enablement.
+- **Status:** `PARTIAL` — Billing grant/classified receipt fixtures now exist; remaining source facts, financial projection and runtime compatibility still block enablement.
 - **Consumer owner:** Huy (`LQHuy0210`) — Pharmacy and Report.
+- **2026-10-05 task override:** Huy may implement the missing producer/consumer dependencies in
+  other services under the user's explicit scope exception. Gateway now has DOCTOR access only
+  for the two existing operations GET routes; legacy finance roles are unchanged. Inpatient's new
+  service-only authority lookup supplies exact medical-window identity/revision, but is not yet
+  Pharmacy's admission dispense fence or fresh bed-placement source. Finance, transfer/metrics,
+  hold-release and runtime acceptance remain open; do not enable existing V2 flags after pull.
 - **Producers to act:** Inpatient/Clinical — Vinh; Billing/Notification — Lộc; Surgery — Huy for its future result facts.
 - **Source:** [Huy plan D08–D11](../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#31-decision-backlog) and [independent preparation](../superpowers/plans/2026-09-26-huy-independent-slices.md).
 
 ## Producer actions and Huy acceptance gates
+
+**Dependency implementation update — 2026-10-05:** Billing now has an opt-in real ledger payment
+command for already-authoritative requests, partial-payment receipts, bounded charge allocations,
+and full-payment purpose/target-specific grants. Its immutable V1 outbox rows stay held by a DB
+constraint. Producer fixtures cover all five clearance purposes plus service/deposit receipts.
+Clinical/Lab/Inpatient/Pharmacy/Surgery/Notification tests read the appropriate exact Billing
+files. Notification additionally persists private IN_APP receipts with transactional dedupe and
+a held `notification.sent` fact; deposits are explicitly not final settlement or earned revenue.
+
+This does **not** implement Report's financial decoder/projector, earned recognition, refunds,
+settlement/top-up producers, a live Pharmacy admission fence, transfer/capacity metrics, or
+cutover/E2E. The earlier dated audit below remains historical. Remaining implementation is within
+Huy's task-scoped authority, not waiting for another owner's write permission. All new flags and
+V1 publication remain OFF.
 
 **Reassessed 2026-09-29 at `d252492`:** [Pharmacy V2](../eproject_general_plan/backend-spec/care-finance-v2/05-pharmacy.md)
 and [Report V2](../eproject_general_plan/backend-spec/care-finance-v2/08-report.md) permit additive local
@@ -224,6 +244,16 @@ and close-before-start decisions. It does not approve Lab amendment history, med
 occupancy, transfer/release/capacity events or feature activation.
 
 ## Close criteria
+
+### User-assigned dependency implementation / intake progress — 2026-10-05
+
+The user assigned implementation of missing dependency code for this batch; earlier ownership-only
+blockers do not require waiting for another member to write it. Permanent service owners and clinical/
+financial data authority remain unchanged; no team approval is fabricated. Pharmacy now has actual
+producer-byte grant intake with dual default-off gates, committed pending/verified evidence, bounded
+retry/durable DLQ and real PG/Rabbit duplicate/rollback/retained-message replay tests. No dispense/
+receipt/refund is triggered and no held rows/public V1 flow are released. Revoke/supersession,
+admission transfer/freshness, authority relationships, adjustments and reviewed cutover remain open.
 
 ### Current local completion slice — 2026-10-02
 

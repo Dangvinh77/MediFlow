@@ -54,6 +54,20 @@ purpose and target IDs.
 
 ## Care-finance integration gate
 
+### Current clearance lookup (2026-10-06)
+
+The additive internal `GET /api/v1/billing/financial-clearances/{id}/lookup` implements current
+SURGERY financial eligibility, not a generic human invoice API. It requires a <=60-second signed
+`surgery-service`/`SYSTEM` service credential and exact correlation, and is independently gated by
+`MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED=false`. No Gateway route is allowed. Lookup uses one
+Billing-owned PostgreSQL snapshot to verify exact grant/request/account/selected charges and
+completed net payments, including revocation and exclusive expiry. A historical PAID status alone
+is not enough after refunds or voided charges. No medical information or amount is returned.
+The exact fields, absence/503 semantics, producer fixtures and bounded observation/race limitation
+are authoritative in [SURGERY-BILLING](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md#current-financial-authority--additive-rest-contract-2026-10-06).
+This user-scoped implementation is performed on both sides, not deferred to Lộc. Other charge,
+refund and settlement writers remain implementation tasks; lookup does not claim them delivered.
+
 - Mandatory: [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md),
   [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md) and
   [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
@@ -64,6 +78,17 @@ purpose and target IDs.
   owner cannot update in the same PR, keep the registry status blocked and retain compatibility.
 
 ## Acceptance gates
+
+### Current additive ledger payment slice (2026-10-05)
+
+Existing authoritative ledger requests can be paid through the gated ADMIN/CASHIER endpoint
+`POST /api/v1/billing/payment-requests/{id}/payments`. V5 persists exact request targets/actor audit;
+V6 enforces held V1 delivery in the existing outbox. Domain/application/JDBC transaction wiring covers
+installments, idempotency, concurrent account locking, allocation and full-purpose clearance.
+Every installment has a classified receipt; partial payments have no clearance. Deposits never create
+earned allocations. The endpoint is off by default (`MEDIFLOW_BILLING_LEDGER_ENABLED=false`), and
+there is no public arbitrary charge/account/price creation. The precise slice and open issuance,
+catalogue/refund/revocation/settlement/recognition/cutover work are recorded in CARE-BILLING-01.
 
 - Same patient, two episodes: charges and payments never mix.
 - Duplicate source event: one charge and one processed marker.

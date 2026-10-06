@@ -48,6 +48,12 @@ the need for a bed assignment unless the future spec defines an emergency holdin
 
 ## Core V1 endpoints
 
+Additive internal authority: `GET /api/v1/inpatient/admissions/{id}/lookup` uses only a short-lived
+SYSTEM service credential (max 60s), preserves correlation and returns minimal exact admission
+identity/status/revision. It is not the human admission DTO or bed-placement/referral authority.
+The precise fields and absence/outage/eligibility rules live in CONTRACT-INPATIENT-SURGERY-01.
+Accepting a service credential grants no human care-command role. Runtime event flags stay off.
+
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/inpatient/admissions` | ADMIN, DOCTOR | create from exact admission request/referral |

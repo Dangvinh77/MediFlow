@@ -31,6 +31,7 @@ public interface BillingEventOutboxJpaRepository
             SELECT candidate.*
               FROM BILLING_EVENT_OUTBOX candidate
              WHERE candidate.published_at IS NULL
+               AND candidate.publication_enabled = TRUE
                AND candidate.quarantined_at IS NULL
                AND candidate.available_at <= :now
                AND (candidate.locked_at IS NULL OR candidate.locked_at < :leaseCutoff)
@@ -38,6 +39,7 @@ public interface BillingEventOutboxJpaRepository
                     SELECT 1
                       FROM BILLING_EVENT_OUTBOX predecessor
                      WHERE predecessor.aggregate_id = candidate.aggregate_id
+                       AND predecessor.publication_enabled = TRUE
                        AND predecessor.published_at IS NULL
                        AND (
                             predecessor.created_at < candidate.created_at

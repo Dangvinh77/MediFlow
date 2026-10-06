@@ -2,13 +2,34 @@
 
 **Owner:** Huy (`LQHuy0210`)
 
-**Module:** `backend/surgery-service` — platform and initial pure-Java domain exist; business persistence/API/messaging are not implemented yet.
+**Module:** `backend/surgery-service` — domain/persistence/reliability, scoped read/preop/cancel/draft APIs and gated grant intake exist. Internal readiness/finalize/START/COMPLETE orchestration now exists without production wiring; the full referral/authority/wire/API workflow remains open.
+
+**Local implementation update — 2026-10-06:** explicit versioned checklist evidence, consent
+authority and team-cardinality policies; seven-guard readiness engine; internal lifecycle commands
+with receipt/revision fencing, sorted resource locks, local dependency re-read, committed denial
+invalidation and immutable completion/result/release. These are not public APIs or approved
+clinical defaults. The authority port has no production adapter. Remote preflight is before mutation
+locks but currently inside the transaction; live wiring must separate preflight from the write
+transaction and provide source-revision reconciliation. Additive V6 holds private READY/COMPLETED
+intents with HELD-only database status and no broker dispatcher, plus exact ISO readiness timestamps
+for new evidence. It does not approve outbound wire or backfill/rewrite historic data.
 
 **Package / port / database:** `com.mediflow.surgery` / `8091` / `mediflow_surgery`
 
+**Current financial authority implementation — 2026-10-06:** Billing's gated service-only current
+clearance producer and Surgery's strict Feign adapter now exist. Internal READY/finalize/START
+requires a fresh exact-context read before mutation locks, rechecks observation age after resource
+waits and denies revoked/refunded/expired authority despite a historical grant. Observation freshness
+does not create a 30-second schedule expiry; persisted business validity uses actual grant expiry.
+The combined clinical/policy authority adapter, preflight transaction separation and distributed
+race fence remain implementation tasks. No new approval from another code owner is required for
+those engineering dependencies under the current user override; clinical/legal catalogue data is
+still not invented. Canonical contract and verification: [SURGERY-BILLING](../../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md),
+[execution ledger](../../../superpowers/plans/2026-10-05-huy-50-task-execution.md#financial-authority-both-sides).
+
 **Base path:** `/api/v1/surgery`
 
-**Status (2026-09-28):** cross-service implementation candidate. Huy-delegated local V1 decisions permit internal code; unresolved wire/clinical/identity inputs still require owner acceptance. The executable backlog is [Huy plan §6](../../../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog), with decisions in the [active handoff](../../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). Do not scaffold the module again or treat all §14 rows as blockers for local persistence/tests.
+**Status (2026-10-05):** partially implemented cross-service candidate, not a live clinical workflow. Huy-delegated local V1 decisions permit internal code; unresolved wire/clinical/identity inputs still require owner acceptance. The executable backlog is [Huy plan §6](../../../superpowers/plans/2026-09-25-huy-surgery-pharmacy-report.md#surgery-backlog), with decisions in the [active handoff](../../../handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md). Do not scaffold the module again or treat all §14 rows as blockers for local persistence/tests.
 
 **Example maturity:** SQL/DTO snippets below remain candidate illustrations, not copy-ready migrations or approved wire contracts. They omit revision/receipt/resource-lock details added to the current plan, use naming requiring correction, and retain future override shapes. Local V1 has **no override implementation/table/endpoint**. S-02/S-03/S-04 must finalize each affected schema/API/contract before implementing that slice; no shared contract is approved by this plan update.
 
@@ -33,6 +54,14 @@ aggregates or Billing amounts.
 - Patient and department must match the request forever; no lookup by latest admission/record.
 
 ## 3. Database — `V1__surgery_core.sql`
+
+**Implemented grant-only slice (2026-10-05):** live V1 remains unchanged. Additive
+`V2__surgery_financial_authority.sql` stores the actual Billing V1 grant fields in
+`surgery_financial_clearance`, with case FK, exact episode/patient and immutable grant fingerprint.
+Grant/expiry ISO instants preserve nanoseconds. Envelope event dedupe uses the existing Surgery inbox;
+immutable clearance identity is separately checked. Early grants remain durable pending; wrong target
+quarantines. This is grant evidence only: no override, revocation/supersession assumption or automatic
+READY/START. Full activation still requires the next authority/readiness/lifecycle slices.
 
 Surgery-owned database identifiers follow English snake_case; Java/HTTP DTO and Surgery-owned event payload fields follow English camelCase under the Huy-scoped exception in `docs/ai/08`. Class names/URLs remain English. Cross-service keys produced by another owner follow their accepted canonical version and must not be silently translated. This is a V2 target candidate, not the exact already-implemented V1 schema: compare each proposed field/table against the live Surgery migration and contract gate before implementation. S-02.2 has completed the V1 mapping; S-04.6 must preserve these English wire names when business endpoints are added.
 
@@ -265,6 +294,34 @@ public enum CancellationStage { BEFORE_PREOP, AFTER_PREOP, BEFORE_START, IN_PROG
 
 ## 5. Ports and DTOs
 
+Organization authority invalidation slice (2026-10-06): `ReceiveSurgeryAuthorityChangeUseCase`,
+`QuerySurgeryAuthorityInvalidationsUseCase`, `ApplySurgeryAuthorityInvalidationUseCase` and
+`RecordSurgeryAuthorityInvalidationRetryUseCase` consume the existing canonical V1 event through
+`SurgeryAuthorityChangeWirePort`. `SurgeryAuthorityInvalidationPort` captures immutable hints and
+jobs in the inbox transaction. Additive V5 pins event/case/readinessSnapshot/schedule/revision;
+semantic replay creates no new work, same-revision changed content conflicts. Case lock precedes
+job lock; a worker re-reads pins and only pre-start states may use shared invalidation/exact release.
+Case/audit/release/job completion are atomic; retry is separate and cannot reopen a completed job.
+Batch 20 (1..100), 5-second transaction timeout, durable 5..300-second backoff, three independently
+disabled business/global-consumer/Organization-consumer gates. No REST under resource locks,
+eligibility grant, inferred clinical policy, auto-READY/START or invented notification wire.
+Future READY/finalize/START still must reconcile current source revisions/fresh authority after
+waits; this job protocol alone is not a distributed authorization fence. Verification and exact
+open acceptance are in the [execution ledger](../../../superpowers/plans/2026-10-05-huy-50-task-execution.md).
+
+Implemented internal expiry slice (2026-10-05): `QueryExpiredSurgeryReadinessUseCase`,
+`ExpireSurgeryReadinessUseCase`, `RecordSurgeryReadinessExpiryRetryUseCase`, and the driven
+`SurgeryReadinessExpiryPort` use an exact `(surgeryCaseId, readinessSnapshotId)` candidate.
+Query is read-only, bounded 1..100; each mutation/retry is independently committed with a 5-second
+transaction timeout. Worker registration requires both business and explicit expiry gates;
+defaults are false. Only persisted, non-null `validUntil` is considered, with `now >= validUntil`.
+After case lock, re-read snapshot identity/state/Clock: READY/SCHEDULED becomes PREOP with immutable
+history and exact pinned booking release in the same transaction. Started, terminal and replaced
+winners remain unchanged. Additive V4 stores retry count, next attempt, safe failure code and time;
+5..300-second backoff is operational recovery, not clinical validity policy. Stale retries cannot
+delay a new snapshot. No expiry HTTP state setter or guessed notification event is added. Full
+invalidation outbound acceptance and real READY/finalize/START orchestration remain open.
+
 ```java
 public interface ManageSurgeryCaseUseCase {
     SurgeryCaseDTO create(CreateSurgeryCaseRequest request);
@@ -402,10 +459,21 @@ Key codes: `SURGERY_CASE_NOT_FOUND` (404), `SURGERY_DUPLICATE_REQUEST` (409),
 
 The module, nested `AGENTS.md`, security/correlation and configuration already exist. Follow the
 standard blueprint for remaining models/application/driving adapters/driven adapters. Huy implements
-local Flyway/reliability/contracts/tests; root module, DB/Compose and Gateway wiring are assigned
-separately through the bootstrap handoff, not silently included in Huy's production scope.
+local Flyway/reliability/contracts/tests. Root module and DB/Compose bootstrap were integrated by
+their shared owner. Gateway dependency implementation was separately user-assigned; packaged runtime
+acceptance passed 2026-10-05 and the bootstrap handoff was retired. This does not expand shared scope.
 
 ## 12. Rollout
+
+Current additive slice (2026-10-05): GET detail/list and PUT draft schedule are implemented with
+exact Gateway roles, authoritative departmental read scope, redacted immutable views, UTC bounded
+pagination and transactional reschedule invalidation/old-booking release. GET snapshot validity is
+cached evidence, not a new READY/START decision. Mutation DTOs reject unknown actor/ready/amount
+fields. Grant intake now has a dual-gated listener, durable pending worker and dedicated DLQ using
+Billing's actual fixtures. No referral/create, approved Surgery outcome delivery, clinical policy,
+required team composition or finalization/START/COMPLETE is silently enabled. README documents the
+module Dockerfile and explicit packaged-app runtime-acceptance profile. Exact current evidence is
+in the fixed 50-item execution ledger; historical local test counts do not imply whole-flow acceptance.
 
 Keep existing `mediflow.features.surgery.enabled`, `mediflow.surgery.messaging.producer.enabled`
 and `mediflow.surgery.messaging.consumers.enabled` false by default. Implement core persistence and

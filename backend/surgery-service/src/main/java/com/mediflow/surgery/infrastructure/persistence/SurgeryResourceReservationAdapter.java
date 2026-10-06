@@ -38,6 +38,15 @@ public class SurgeryResourceReservationAdapter implements SurgeryResourceReserva
     }
 
     @Override
+    public void lockForMutation(SurgerySchedule schedule) {
+        requireTransaction();
+        if (schedule == null) throw new IllegalArgumentException("Schedule required");
+        lockCase(schedule.surgeryCaseId());
+        requireSchedule(schedule.surgeryCaseId(), schedule.scheduleId(), schedule.revision(), null);
+        lockResources(union(activeResources(schedule.surgeryCaseId()), keys(schedule)));
+    }
+
+    @Override
     public void reserve(SurgerySchedule schedule, Instant at) {
         requireTransaction();
         if (schedule == null || at == null) throw new IllegalArgumentException("Schedule/time bắt buộc");
@@ -116,6 +125,19 @@ public class SurgeryResourceReservationAdapter implements SurgeryResourceReserva
                 """, Integer.class, scheduleId);
         if (reserved.size() != (teamCount == null ? 0 : teamCount) + 1) {
             throw new SurgeryScheduleConflictException();
+        }
+        UUID room = jdbc.queryForObject("SELECT room_id FROM surgery_schedule WHERE schedule_id=?",UUID.class,scheduleId);
+        var expected = new HashSet<ResourceKey>();
+        expected.add(new ResourceKey("ROOM",room));
+        jdbc.queryForList("SELECT staff_id FROM surgery_team_assignment WHERE schedule_id=?",UUID.class,scheduleId)
+                .forEach(staff -> expected.add(new ResourceKey("STAFF",staff)));
+        if (!expected.equals(new HashSet<>(reserved))) throw new SurgeryScheduleConflictException();
+        for (var key : reserved) {
+            Integer inUse = jdbc.queryForObject("""
+                    SELECT count(*) FROM surgery_resource_reservation WHERE resource_type=? AND resource_id=?
+                        AND surgery_case_id <> ? AND status='IN_USE'
+                    """,Integer.class,key.kind(),key.id(),caseId);
+            if (inUse == null || inUse > 0) throw new SurgeryScheduleConflictException();
         }
         int changed = jdbc.update("""
                 UPDATE surgery_resource_reservation

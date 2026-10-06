@@ -2,10 +2,11 @@ package com.mediflow.surgery.application.port.out;
 
 import java.time.Instant;
 import java.util.UUID;
+import com.mediflow.surgery.domain.model.SurgeryTeamRole;
 
 /**
  * Local port for authoritative Organization lookups. Staff and department have
- * phase-1 wire contracts; room authority and team-role eligibility remain gated.
+ * phase-1 identity and additive V1 room/capability contracts. Snapshots are not leases.
  */
 public interface OrganizationLookupPort {
 
@@ -14,6 +15,19 @@ public interface OrganizationLookupPort {
     OrganizationLookupSnapshot findStaff(UUID staffId, String correlationId);
 
     OrganizationLookupSnapshot findDepartment(UUID departmentId, String correlationId);
+
+    SurgicalEligibilitySnapshot findSurgicalEligibility(UUID staffId, SurgeryTeamRole role,
+            Instant startsAt, Instant endsAt, String correlationId);
+
+    record SurgicalEligibilitySnapshot(UUID staffId, SurgeryTeamRole teamRole, ReferenceState state,
+            UUID departmentId, Instant observedAt, String sourceRevision, Instant startsAt, Instant endsAt) {
+        public SurgicalEligibilitySnapshot {
+            if (staffId == null || teamRole == null || state == null || observedAt == null
+                    || startsAt == null || endsAt == null || !endsAt.isAfter(startsAt)) {
+                throw new IllegalArgumentException("Surgical eligibility identity/interval is required");
+            }
+        }
+    }
 
     enum ReferenceKind {
         ROOM,
@@ -35,7 +49,15 @@ public interface OrganizationLookupPort {
             Instant observedAt,
             String sourceRevision,
             String jobTitleCode,
-            UUID staffDepartmentId) {
+            UUID staffDepartmentId,
+            UUID roomDepartmentId) {
+
+        public OrganizationLookupSnapshot(ReferenceKind kind, UUID referenceId,
+                                          ReferenceState state, Instant observedAt,
+                                          String sourceRevision, String jobTitleCode,
+                                          UUID staffDepartmentId) {
+            this(kind, referenceId, state, observedAt, sourceRevision, jobTitleCode, staffDepartmentId, null);
+        }
 
         public OrganizationLookupSnapshot(ReferenceKind kind, UUID referenceId,
                                           ReferenceState state, Instant observedAt,
@@ -58,6 +80,9 @@ public interface OrganizationLookupPort {
             }
             if (staffDepartmentId != null && kind != ReferenceKind.STAFF) {
                 throw new IllegalArgumentException("Staff department applies only to a staff lookup");
+            }
+            if (roomDepartmentId != null && kind != ReferenceKind.ROOM) {
+                throw new IllegalArgumentException("Room department applies only to a room lookup");
             }
             sourceRevision = sourceRevision == null ? null : sourceRevision.trim();
             jobTitleCode = jobTitleCode == null ? null : jobTitleCode.trim();

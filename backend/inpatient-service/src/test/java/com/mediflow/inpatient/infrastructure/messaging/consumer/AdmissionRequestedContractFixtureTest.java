@@ -22,6 +22,20 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 class AdmissionRequestedContractFixtureTest {
+    @Test
+    void consumesBillingDepositProducerBytesWithoutAlternateFieldAliases() throws Exception {
+        byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-admission.json"));
+        var properties = new MessageProperties();
+        properties.setReceivedRoutingKey("financial.clearance.granted");
+        consumer.receive(new Message(bytes, properties));
+        var command = ArgumentCaptor.forClass(com.mediflow.inpatient.application.dto.command.FinancialClearanceCommand.class);
+        verify(clearances).onFinancialClearance(command.capture());
+        assertThat(command.getValue().maDotNoiTru()).isEqualTo(command.getValue().maTapNoiTru());
+        assertThat(command.getValue().maBenhNhan()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        assertThat(command.getValue().capCuuNgoaiLe()).isFalse();
+        verifyNoInteractions(referrals, settlements, topups, externalOrders);
+    }
 
     private static final String FIXTURE = "/contracts/admission.requested.v1.json";
 

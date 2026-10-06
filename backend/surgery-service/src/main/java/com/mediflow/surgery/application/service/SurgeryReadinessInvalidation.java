@@ -23,6 +23,14 @@ final class SurgeryReadinessInvalidation {
         if (status != SurgeryStatus.READY && status != SurgeryStatus.SCHEDULED) return;
         SurgerySchedule schedule = schedules.findByCaseId(surgeryCase.getSurgeryCaseId())
                 .orElseThrow(SurgeryRevisionConflictException::new);
+        if (!surgeryCase.getSurgeryCaseId().equals(schedule.surgeryCaseId())
+                || surgeryCase.getReadinessSnapshot() == null
+                || surgeryCase.getReadinessSnapshot().dependencyRevisions().stream().noneMatch(dependency ->
+                dependency.dependencyType() == com.mediflow.surgery.domain.model.SurgeryDependencyType.SCHEDULE
+                        && schedule.scheduleId().equals(dependency.sourceId())
+                        && schedule.revision() == dependency.revision())) {
+            throw new SurgeryRevisionConflictException();
+        }
         if (status == SurgeryStatus.SCHEDULED) {
             reservations.release(surgeryCase.getSurgeryCaseId(), schedule.scheduleId(),
                     schedule.revision(), at);

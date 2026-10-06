@@ -8,7 +8,23 @@
 
 **Status:** implementation-ready ledger target; P1 prerequisite for operational gates
 
+**Implemented additive payment slice (2026-10-05):** real migration numbers are V4 ledger,
+V5 request targets/actor/held outbox and V6 strict delivery fence. The existing selected-charge request
+payment command creates a classified receipt for **each installment**, and one purpose-specific
+clearance only when fully paid. This clarifies the algorithm below: partial receipts must not be
+omitted. SQL IDs/targets come only from authoritative persisted requests/charges. Endpoint and outbox
+remain disabled/held; event→account/charge/request issuer, price catalogue, refund/revocation, top-up,
+settlement/recognition and live cutover remain unimplemented. See CARE-BILLING-01 for exact behavior.
+
 ## 1. Sources and boundary
+
+**Implemented current-clearance lookup (2026-10-06):** independently gated service-only SURGERY
+lookup verifies current ledger/net payment/charge/target context, revocation and exclusive expiry.
+Surgery supplies the matching strict Feign consumer and internal lifecycle integration. The additive
+REST shape, scoped service JWT, shared fixtures, safe absence/503 and freshness-vs-business-expiry
+semantics are canonical in [SURGERY-BILLING](../../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
+This is both-side code under the user override, not an owner-wait gate; it does not implement refund,
+request issuance or settlement writers and does not release held V1 events.
 
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-CARE-BILLING-01`](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)

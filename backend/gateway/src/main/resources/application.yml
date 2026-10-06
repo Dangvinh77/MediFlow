@@ -62,6 +62,9 @@ eureka:
 
 # JWT — the same externally supplied secret must be configured for Gateway and Organization.
 mediflow:
+  routes:
+    surgery:
+      enabled: ${MEDIFLOW_GATEWAY_SURGERY_ENABLED:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
     access-token-minutes: 30

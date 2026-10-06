@@ -22,18 +22,31 @@ class SurgeryBusinessFeatureGateTest {
         contextRunner.run(context -> {
             assertThat(context).doesNotHaveBean(SurgeryPreopController.class);
             assertThat(context).doesNotHaveBean(SurgeryCancellationController.class);
+            assertThat(context).doesNotHaveBean(com.mediflow.surgery.web.SurgeryQueryController.class);
+            assertThat(context).doesNotHaveBean(com.mediflow.surgery.web.SurgeryScheduleController.class);
         });
 
         contextRunner.withPropertyValues("mediflow.features.surgery.enabled=true")
                 .run(context -> {
                     assertThat(context).hasSingleBean(SurgeryPreopController.class);
                     assertThat(context).hasSingleBean(SurgeryCancellationController.class);
+                    assertThat(context).hasSingleBean(com.mediflow.surgery.web.SurgeryQueryController.class);
+                    assertThat(context).hasSingleBean(com.mediflow.surgery.web.SurgeryScheduleController.class);
                 });
     }
 
     @Configuration(proxyBeanMethods = false)
-    @Import({SurgeryPreopController.class, SurgeryCancellationController.class})
+    @Import({SurgeryPreopController.class, SurgeryCancellationController.class,
+            com.mediflow.surgery.web.SurgeryQueryController.class, com.mediflow.surgery.web.SurgeryScheduleController.class})
     static class ControllerConfiguration {
+
+        @Bean
+        com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase scheduling() { return command -> null; }
+
+        @Bean
+        com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase querySurgeryCasesUseCase() {
+            return org.mockito.Mockito.mock(com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase.class);
+        }
 
         @Bean
         BeginPreopUseCase beginPreopUseCase() {

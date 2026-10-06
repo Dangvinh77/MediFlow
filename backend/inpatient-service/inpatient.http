@@ -8,6 +8,13 @@
 @bedId = 22222222-2222-4222-8222-222222222222
 @entryId = 33333333-3333-4333-8333-333333333333
 @staffId = 44444444-4444-4444-8444-444444444444
+@inpatientInternal = http://localhost:8090
+# @serviceToken = signed type=service, role=SYSTEM token, issuedAt/expiry, max 60 seconds
+
+### Exact admission authority — service-only; cannot authorize a human command
+GET {{inpatientInternal}}/api/v1/inpatient/admissions/{{admissionId}}/lookup
+Authorization: Bearer {{serviceToken}}
+X-Correlation-Id: 04000000-0000-0000-0000-000000000001
 
 ### POST /admissions — ADMIN, DOCTOR
 POST {{host}}/api/v1/inpatient/admissions

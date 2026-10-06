@@ -8,7 +8,7 @@ import com.mediflow.pharmacy.application.port.in.ProjectPrescriptionClearanceUse
 import com.mediflow.pharmacy.application.port.out.PrescriptionClearancePort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 
-/** Offline projection until producer fixtures and consumer activation are approved. */
+/** Transactional authorization-only projection; opt-in intake never activates public V1 dispensing. */
 @Service
 public class PrescriptionClearanceApplicationService implements ProjectPrescriptionClearanceUseCase {
     private final PrescriptionRepositoryPort prescriptions;

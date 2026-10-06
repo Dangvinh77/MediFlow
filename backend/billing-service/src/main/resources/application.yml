@@ -43,6 +43,10 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
   billing:
+    clearance-lookup:
+      enabled: ${MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED:false}
+    ledger:
+      enabled: ${MEDIFLOW_BILLING_LEDGER_ENABLED:false}
     rabbit:
       retry:
         max-attempts: ${MEDIFLOW_BILLING_RABBIT_RETRY_MAX_ATTEMPTS:3}

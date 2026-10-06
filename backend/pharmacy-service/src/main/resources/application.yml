@@ -50,6 +50,8 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:
+    clearance-consumer:
+      enabled: ${MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED:false}
     business-zone: ${MEDIFLOW_PHARMACY_BUSINESS_ZONE:Asia/Ho_Chi_Minh}
     reservation:
       batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}
