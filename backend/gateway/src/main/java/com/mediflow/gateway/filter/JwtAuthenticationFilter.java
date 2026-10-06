@@ -106,6 +106,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return "/api/v1/org/accounts/verify".equals(path)
                 || path.matches("/api/v1/org/staff/[^/]+/(exists|lookup)")
                 || path.matches("/api/v1/org/departments/[^/]+/lookup")
+                || path.matches("/api/v1/org/rooms/[^/]+/lookup")
                 || path.matches("/api/v1/patients/[^/]+/exists");
     }
 

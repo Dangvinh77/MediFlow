@@ -1,11 +1,11 @@
 # organization-service
 
-Departments, staff and accounts — the organisational backbone the rest of the system references.
+Departments, staff, rooms and accounts — the organisational backbone the rest of the system references.
 
 Reference: [`docs/ai/services/organization.md`](../docs/ai/services/organization.md) · design doc [`EProject/organization-service.html`](../docs/eproject_general_plan/organization-service.html).
 
 - **Port:** 8089 · **Base path:** `/api/v1/org` · **DB:** `mediflow_organization` (PostgreSQL)
-- **Owns tables:** `DEPARTMENT`, `STAFF`, `ACCOUNT`
+- **Owns tables:** `DEPARTMENT`, `STAFF`, `ROOM`, `ACCOUNT`
 - **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`.
 
 ## Why it exists
@@ -15,6 +15,8 @@ It owns the three things every other service points at:
 1. **Departments** — `DEPARTMENT`, and the `department_id` carried by every operational table and every domain event. This is the dimension that makes the system _departmental_ rather than merely modular.
 2. **Staff** — `STAFF` provides the `staff_id` referenced from `APPOINTMENT`, `MEDICAL_RECORD` and `PRESCRIPTION`, three bounded contexts that must not own staff identity themselves.
 3. **Accounts** — `ACCOUNT` is what the gateway checks before issuing a JWT. The gateway holds no user data of its own.
+4. **Rooms** — `ROOM` is the authoritative room/reference master. Scheduling services store only a
+   room UUID and own reservation/overlap rules themselves.
 
 ## Data ownership
 
@@ -64,6 +66,18 @@ The Organization Service owns:
 | `last_login_at` | TIMESTAMPTZ  | Nullable                                                                                        |
 | `created_at`    | TIMESTAMPTZ  | Creation timestamp                                                                              |
 | `updated_at`    | TIMESTAMPTZ  | Last update timestamp                                                                           |
+
+### `ROOM`
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `room_id` | UUID | Primary key |
+| `department_id` | UUID | Owning department UUID |
+| `room_name` | VARCHAR(100) | Room display/name identifier |
+| `room_type` | VARCHAR(30) | First locked value: `OPERATING_ROOM` |
+| `is_active` | BOOLEAN | Whether consumers may use the room |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | Last update timestamp |
 
 ## Enum definitions
 
@@ -158,6 +172,7 @@ Swagger UI:
 | GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
 | GET    | `/api/v1/org/staff/{id}/lookup`                     | SYSTEM service token         |
 | GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token         |
+| GET    | `/api/v1/org/rooms/{id}/lookup`                      | SYSTEM service token         |
 | POST   | `/api/v1/org/accounts`                              | ADMIN                         |
 | POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
 
@@ -172,15 +187,22 @@ Department transfer returns the updated `StaffResponse` with HTTP 200.
 
 The additive lookup endpoints are authenticated only with a short-lived JWT carrying
 `type=service`, `role=SYSTEM`, and a non-blank service subject. Human access tokens, refresh
-tokens, and non-SYSTEM service tokens are rejected. Both endpoints preserve `X-Correlation-Id`
+tokens, and non-SYSTEM service tokens are rejected. All three lookup endpoints preserve `X-Correlation-Id`
 and return the common `ApiResponse` envelope.
 
-`GET /api/v1/org/staff/{id}/lookup` returns `{ exists, active, jobTitle, departmentId }`.
+`GET /api/v1/org/staff/{id}/lookup` returns
+`{ exists, active, jobTitle, departmentId, eligibleTeamRoles }`.
 `GET /api/v1/org/departments/{id}/lookup` returns
 `{ exists, active, departmentId, departmentName, departmentType }`.
+`GET /api/v1/org/rooms/{id}/lookup` returns
+`{ exists, active, roomId, departmentId, roomName, roomType }`.
 Missing records are confirmed absence with HTTP 200. Malformed UUIDs return HTTP 400; persistence
 failures return HTTP 503 with `ORG_LOOKUP_UNAVAILABLE`. The existing `/staff/{id}/exists`
 doctor-eligibility contract is unchanged.
+
+For active staff, the locked V1 team-role mapping is `DOCTOR` →
+`PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`; `NURSE` → `OR_NURSE`; all other
+current job titles → `[]`. Inactive and missing staff always return `eligibleTeamRoles: []`.
 
 ### Department transfer
 

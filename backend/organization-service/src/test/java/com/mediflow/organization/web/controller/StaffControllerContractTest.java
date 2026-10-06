@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.crypto.SecretKey;
@@ -135,7 +136,8 @@ class StaffControllerContractTest {
         UUID staffId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
         when(lookupStaffIdentityUseCase.lookup(staffId))
-                .thenReturn(new StaffIdentityLookupDTO(true, true, "NURSE", departmentId));
+                .thenReturn(new StaffIdentityLookupDTO(true, true, "NURSE", departmentId,
+                        List.of("OR_NURSE")));
 
         mockMvc.perform(get(BASE_PATH + "/{id}/lookup", staffId)
                         .header(JwtClaims.HEADER_CORRELATION_ID,
@@ -145,6 +147,7 @@ class StaffControllerContractTest {
                 .andExpect(jsonPath("$.data.active").value(true))
                 .andExpect(jsonPath("$.data.jobTitle").value("NURSE"))
                 .andExpect(jsonPath("$.data.departmentId").value(departmentId.toString()))
+                .andExpect(jsonPath("$.data.eligibleTeamRoles[0]").value("OR_NURSE"))
                 .andExpect(jsonPath("$.correlationId")
                         .value("11111111-1111-1111-1111-111111111111"))
                 .andExpect(header().string(JwtClaims.HEADER_CORRELATION_ID,

@@ -4,6 +4,7 @@ import com.mediflow.organization.application.dto.response.StaffIdentityLookupDTO
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.model.Staff;
+import com.mediflow.organization.domain.model.JobTitleTeamRoleMapping;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -30,6 +31,9 @@ public class LookupStaffIdentityService implements LookupStaffIdentityUseCase {
                 true,
                 staff.isActive(),
                 staff.getJobTitle().name(),
-                staff.getDepartmentId());
+                staff.getDepartmentId(),
+                staff.isActive()
+                        ? JobTitleTeamRoleMapping.rolesFor(staff.getJobTitle())
+                        : java.util.List.of());
     }
 }

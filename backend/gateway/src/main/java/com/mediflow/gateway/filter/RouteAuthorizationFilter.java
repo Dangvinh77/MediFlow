@@ -40,11 +40,15 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/appointments", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
-            rule("/api/v1/appointments/**", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/**/status", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/**/check-in", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/appointments/**/start-exam", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/records", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/**", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/**/diagnoses", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/records/**/admission-referrals", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
 
             // Inpatient routes mirror the downstream controller's method-level guards.
             rule("/api/v1/inpatient/admissions", HttpMethod.GET,
@@ -80,11 +84,15 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/inpatient/beds/**", HttpMethod.PUT,
                     Roles.ADMIN, Roles.MANAGER),
 
-            rule("/api/v1/lab", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.LAB_TECH),
-            rule("/api/v1/lab/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/lab", HttpMethod.GET,
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE, Roles.LAB_TECH),
+            rule("/api/v1/lab/{id}", HttpMethod.GET,
+                    Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.LAB_TECH),
             rule("/api/v1/lab/patient/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/lab", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/lab/**/results", HttpMethod.PUT, Roles.ADMIN, Roles.LAB_TECH),
+            rule("/api/v1/lab/**/start", HttpMethod.PUT, Roles.ADMIN, Roles.LAB_TECH),
+            rule("/api/v1/lab/**/cancel", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.LAB_TECH),
             rule("/api/v1/lab/**/status", HttpMethod.PUT, Roles.ADMIN, Roles.LAB_TECH),
 
             rule("/api/v1/pharmacy/drugs", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST),
@@ -151,6 +159,7 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
         return "/api/v1/org/accounts/verify".equals(path)
                 || path.matches("/api/v1/org/staff/[^/]+/(exists|lookup)")
                 || path.matches("/api/v1/org/departments/[^/]+/lookup")
+                || path.matches("/api/v1/org/rooms/[^/]+/lookup")
                 || path.matches("/api/v1/patients/[^/]+/exists");
     }
 

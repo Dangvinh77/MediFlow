@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,8 @@ class LookupStaffIdentityServiceTest {
         when(repository.findById(staff.getStaffId())).thenReturn(Optional.of(staff));
 
         assertThat(service.lookup(staff.getStaffId()))
-                .isEqualTo(new StaffIdentityLookupDTO(true, true, "NURSE", departmentId));
+                .isEqualTo(new StaffIdentityLookupDTO(true, true, "NURSE", departmentId,
+                        List.of("OR_NURSE")));
         verify(repository).findById(staff.getStaffId());
     }
 

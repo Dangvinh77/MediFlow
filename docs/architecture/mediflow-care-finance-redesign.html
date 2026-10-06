@@ -194,7 +194,7 @@ settlementStatus  = SETTLED khi outstanding = 0 hoặc có approved waiver/debt 
 <tr><td>SURGERY_CASE</td><td>Gắn admissionId/patientId và procedure code; không copy hồ sơ nội trú.</td></tr>
 <tr><td>PREOP_CHECK_ITEM</td><td>Mỗi mục có trạng thái, người xác nhận và thời gian; mục bắt buộc chưa xong thì không READY.</td></tr>
 <tr><td>CONSENT</td><td>Lưu loại consent, người ký, người chứng kiến, signedAt và trạng thái thu hồi.</td></tr>
-<tr><td>SURGERY_TEAM / SCHEDULE</td><td>Staff ID và room ID là reference; xung đột lịch được Surgery kiểm soát.</td></tr>
+<tr><td>SURGERY_TEAM / SCHEDULE</td><td>Staff ID và room ID là reference; Organization xác thực room qua service-only lookup và phát projection job-title → team role; xung đột lịch được Surgery kiểm soát.</td></tr>
 <tr><td>SURGERY_RESULT</td><td>Ghi phương pháp, kết quả, biến chứng và kết luận; không chứa ảnh y khoa.</td></tr>
 </tbody></table>
 </section>

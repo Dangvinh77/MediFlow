@@ -9,6 +9,7 @@ import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
 import com.mediflow.organization.application.port.in.GetStaffUseCase;
 import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+import com.mediflow.organization.application.port.in.LookupRoomUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
@@ -16,6 +17,7 @@ import com.mediflow.organization.application.port.out.AccountRepository;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.application.port.out.RoomRepository;
 import com.mediflow.organization.application.service.ChangeStaffDepartmentService;
 import com.mediflow.organization.application.service.CreateAccountService;
 import com.mediflow.organization.application.service.CreateDepartmentService;
@@ -24,6 +26,7 @@ import com.mediflow.organization.application.port.in.GetDepartmentUseCase;
 import com.mediflow.organization.application.service.GetDepartmentService;
 import com.mediflow.organization.application.service.GetStaffService;
 import com.mediflow.organization.application.service.LookupDepartmentService;
+import com.mediflow.organization.application.service.LookupRoomService;
 import com.mediflow.organization.application.service.LookupStaffIdentityService;
 import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
@@ -104,6 +107,11 @@ public class ApplicationConfig {
         public LookupDepartmentUseCase lookupDepartmentUseCase(
                         DepartmentRepository departmentRepository) {
                 return new LookupDepartmentService(departmentRepository);
+        }
+
+        @Bean
+        public LookupRoomUseCase lookupRoomUseCase(RoomRepository roomRepository) {
+                return new LookupRoomService(roomRepository);
         }
 
         @Bean

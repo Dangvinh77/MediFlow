@@ -45,6 +45,7 @@ class StaffLookupContractTest {
                     "exists": true,
                     "eligibleDoctor": true,
                     "departmentId": "%s",
+                    "eligibleTeamRoles": ["PRIMARY_SURGEON"],
                     "futureField": "additive"
                   },
                   "error": null,
