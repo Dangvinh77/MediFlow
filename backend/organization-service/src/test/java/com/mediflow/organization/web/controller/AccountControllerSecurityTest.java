@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,5 +95,33 @@ class AccountControllerSecurityTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
                         .jsonPath("$.error.code").value("AUTH_INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void create_duplicateUsername_returnsStableConflictCode() throws Exception {
+        when(createAccountUseCase.execute(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new DataIntegrityViolationException(
+                        "duplicate key violates uk_account_username"));
+
+        mockMvc.perform(post("/api/v1/org/accounts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "username": "admin",
+                                  "password": "password",
+                                  "role": "ADMIN"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.error.code").value("ACCOUNT_USERNAME_DUPLICATE"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.error.message").value("Account username already exists"));
     }
 }
