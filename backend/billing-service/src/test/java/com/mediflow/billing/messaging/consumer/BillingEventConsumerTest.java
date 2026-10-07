@@ -17,8 +17,12 @@ import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
+import com.mediflow.billing.application.event.SurgeryCancelledEvent;
+import com.mediflow.billing.application.event.SurgeryCaseCreatedEvent;
+import com.mediflow.billing.application.event.SurgeryCompletedEvent;
 import com.mediflow.billing.application.port.in.AccrueFeeUseCase;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
+import com.mediflow.billing.application.port.in.SurgeryChargeUseCase;
 import com.mediflow.billing.infrastructure.config.RabbitConfig;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -37,8 +41,9 @@ class BillingEventConsumerTest {
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private final AccrueFeeUseCase accrueFeeUseCase = mock(AccrueFeeUseCase.class);
     private final SagaCompensationUseCase sagaCompensationUseCase = mock(SagaCompensationUseCase.class);
+    private final SurgeryChargeUseCase surgeryChargeUseCase = mock(SurgeryChargeUseCase.class);
     private final BillingEventConsumer consumer =
-            new BillingEventConsumer(accrueFeeUseCase, sagaCompensationUseCase, objectMapper);
+            new BillingEventConsumer(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper);
 
     @Test
     void medicalRecordCreated_routesToAccrueFeeUseCase() throws Exception {
@@ -127,6 +132,40 @@ class BillingEventConsumerTest {
         consumer.onMessage(messageFor(RabbitConfig.RK_PRESCRIPTION_EXPIRED, event));
 
         verify(sagaCompensationUseCase).onPrescriptionExpired(eq(event));
+    }
+
+    @Test
+    void surgeryCaseCreated_routesToSurgeryChargeUseCase() throws Exception {
+        var payload = new SurgeryCaseCreatedEvent.Payload(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), "ADMISSION", UUID.randomUUID(), UUID.randomUUID(), null, java.util.List.of(), Instant.now());
+        SurgeryCaseCreatedEvent event = new SurgeryCaseCreatedEvent(UUID.randomUUID(), Instant.now(), "cid", payload);
+
+        consumer.onMessage(messageFor(RabbitConfig.RK_SURGERY_CASE_CREATED, event));
+
+        verify(surgeryChargeUseCase).onSurgeryCaseCreated(eq(event));
+        verifyNoInteractions(accrueFeeUseCase, sagaCompensationUseCase);
+    }
+
+    @Test
+    void surgeryCompleted_routesToSurgeryChargeUseCase() throws Exception {
+        var payload = new SurgeryCompletedEvent.Payload(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), null, UUID.randomUUID(), java.util.List.of(), Instant.now(), Instant.now(), Instant.now());
+        SurgeryCompletedEvent event = new SurgeryCompletedEvent(UUID.randomUUID(), Instant.now(), "cid", payload);
+
+        consumer.onMessage(messageFor(RabbitConfig.RK_SURGERY_COMPLETED, event));
+
+        verify(surgeryChargeUseCase).onSurgeryCompleted(eq(event));
+    }
+
+    @Test
+    void surgeryCancelled_routesToSurgeryChargeUseCase() throws Exception {
+        var payload = new SurgeryCancelledEvent.Payload(UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID(),
+                "BEFORE_START", "Patient request", UUID.randomUUID(), Instant.now());
+        SurgeryCancelledEvent event = new SurgeryCancelledEvent(UUID.randomUUID(), Instant.now(), "cid", payload);
+
+        consumer.onMessage(messageFor(RabbitConfig.RK_SURGERY_CANCELLED, event));
+
+        verify(surgeryChargeUseCase).onSurgeryCancelled(eq(event));
     }
 
     @Test

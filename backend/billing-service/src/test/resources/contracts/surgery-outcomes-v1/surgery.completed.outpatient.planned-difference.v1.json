@@ -1,0 +1,43 @@
+{
+  "eventId": "4138517b-f379-3283-a516-adc0e05eb3be",
+  "eventType": "surgery.completed",
+  "version": 1,
+  "occurredAt": "2026-10-07T01:11:00Z",
+  "correlationId": "surgery-contract-outpatient",
+  "producer": "surgery-service",
+  "payload": {
+    "surgeryCaseId": "00000000-0000-4000-8000-000000000101",
+    "surgeryRequestId": "00000000-0000-4000-8000-000000000102",
+    "patientId": "00000000-0000-4000-8000-000000000103",
+    "departmentId": "00000000-0000-4000-8000-000000000104",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000110",
+    "admissionId": null,
+    "recordId": "00000000-0000-4000-8000-000000000109",
+    "caseRevision": 5,
+    "resultId": "00000000-0000-4000-8000-000000000114",
+    "sourceRevision": 1,
+    "procedureCode": "PROC",
+    "methodCode": "METHOD",
+    "outcomeCode": "COMPLETE",
+    "complicationsCategory": null,
+    "complicationsSummary": null,
+    "performedItems": [
+      {
+        "performedItemId": "00000000-0000-4000-8000-000000000115",
+        "itemCode": "ITEM",
+        "priceCode": "PRICE",
+        "quantity": 2
+      },
+      {
+        "performedItemId": "00000000-0000-4000-8000-000000000116",
+        "itemCode": "EXTRA_ITEM",
+        "priceCode": "EXTRA_PRICE",
+        "quantity": 0.5
+      }
+    ],
+    "startedAt": "2026-10-07T01:04:00Z",
+    "completedAt": "2026-10-07T01:10:30Z",
+    "recordedAt": "2026-10-07T01:11:00Z"
+  }
+}
