@@ -67,7 +67,8 @@ class SurgeryAuthorityControllerTest {
         String body="{\"expectedRevision\":0,\"roomCode\":\"OR-1\",\"roomName\":\"Room\",\"departmentId\":\""+dept+"\",\"active\":true,\"reason\":\"Reviewed\"}";
         for(String role:new String[]{"DOCTOR","NURSE","MANAGER","PATIENT"}) {
             mvc.perform(post("/api/v1/org/operating-rooms").contentType("application/json").content(body)
-                    .header("Authorization",token("access",role,actor.toString())))
+                    .header("Authorization", token("access", role, actor.toString(),
+                            "PATIENT".equals(role) ? UUID.randomUUID().toString() : null)))
                     .andExpect(status().isForbidden());
         }
         when(authority.saveRoom(any(),any(),eq(actor))).thenAnswer(invocation ->
@@ -92,8 +93,16 @@ class SurgeryAuthorityControllerTest {
     }
 
     private static String token(String type,String role,String subject) {
+        return token(type, role, subject, null);
+    }
+
+    private static String token(String type,String role,String subject,String patientId) {
         Instant now=Instant.now();
-        return "Bearer "+Jwts.builder().subject(subject).claim("type",type).claim("role",role)
+        var builder=Jwts.builder().subject(subject).claim("type",type).claim("role",role);
+        if (patientId != null) {
+            builder.claim("patientId", patientId);
+        }
+        return "Bearer "+builder
                 .issuedAt(Date.from(now)).expiration(Date.from(now.plusSeconds(60)))
                 .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
     }

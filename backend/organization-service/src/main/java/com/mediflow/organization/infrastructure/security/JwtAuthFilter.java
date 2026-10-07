@@ -3,6 +3,8 @@ package com.mediflow.organization.infrastructure.security;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -15,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.mediflow.common.security.JwtClaims;
+import com.mediflow.common.security.Roles;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -30,6 +33,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String ROLE_PREFIX = "ROLE_";
+    private static final Set<String> HUMAN_ROLES = Set.of(
+            Roles.ADMIN,
+            Roles.DOCTOR,
+            Roles.NURSE,
+            Roles.PHARMACIST,
+            Roles.CASHIER,
+            Roles.LAB_TECH,
+            Roles.MANAGER,
+            Roles.PATIENT);
+    private static final Set<String> HUMAN_IDENTITY_CLAIMS = Set.of(
+            JwtClaims.STAFF_ID,
+            JwtClaims.DEPARTMENT_ID,
+            JwtClaims.PATIENT_ID);
 
     private final SecretKey signingKey;
 
@@ -65,15 +81,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String subject = claims.getSubject();
             String role = claims.get(JwtClaims.ROLE, String.class);
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
-            if (!StringUtils.hasText(subject)
-                    || !StringUtils.hasText(role)
-                    || !StringUtils.hasText(tokenType)) {
+            if (!StringUtils.hasText(role) || !StringUtils.hasText(tokenType)) {
                 SecurityContextHolder.clearContext();
                 return;
             }
 
             if (JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)) {
-                if (!"SYSTEM".equals(role)) {
+                if (!StringUtils.hasText(subject)
+                        || !Roles.SYSTEM.equals(role)
+                        || containsHumanIdentityClaim(claims)) {
                     SecurityContextHolder.clearContext();
                     return;
                 }
@@ -99,7 +115,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
-                    || "SYSTEM".equals(role)) {
+                    || !isValidHumanIdentity(claims, subject, role)) {
                 SecurityContextHolder.clearContext();
                 return;
             }
@@ -113,6 +129,44 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
+        }
+    }
+
+    private static boolean isValidHumanIdentity(Claims claims, String subject, String role) {
+        if (!StringUtils.hasText(subject)
+                || !isUuid(subject)
+                || !HUMAN_ROLES.contains(role)
+                || !hasValidOptionalUuidClaims(claims)) {
+            return false;
+        }
+
+        boolean hasPatientId = claims.containsKey(JwtClaims.PATIENT_ID);
+        boolean hasStaffId = claims.containsKey(JwtClaims.STAFF_ID);
+        if (Roles.PATIENT.equals(role)) {
+            return hasPatientId && !hasStaffId;
+        }
+        return !hasPatientId;
+    }
+
+    private static boolean hasValidOptionalUuidClaims(Claims claims) {
+        return HUMAN_IDENTITY_CLAIMS.stream()
+                .filter(claims::containsKey)
+                .allMatch(claim -> isUuid(claims.get(claim, String.class)));
+    }
+
+    private static boolean containsHumanIdentityClaim(Claims claims) {
+        return HUMAN_IDENTITY_CLAIMS.stream().anyMatch(claims::containsKey);
+    }
+
+    private static boolean isUuid(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        try {
+            UUID parsed = UUID.fromString(value);
+            return parsed.toString().equalsIgnoreCase(value);
+        } catch (IllegalArgumentException exception) {
+            return false;
         }
     }
 }
