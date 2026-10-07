@@ -29,8 +29,8 @@ không copy một bản contract khác.
 | Billing | CARE-BILLING, SURGERY-BILLING, CARE-PROJECTIONS |
 | Notification | CARE-PROJECTIONS, IDENTITY-LOOKUP, [active Notification projection handoff](../HANDOFF-NOTIFICATION-CARE-PROJECTIONS.md) |
 | Report | CARE-PROJECTIONS |
-| Inpatient (planned) | all five contracts |
-| Surgery (planned) | all five contracts except outpatient-only parts of CARE-BILLING |
+| Inpatient | all five contracts |
+| Surgery | all five contracts except outpatient-only parts of CARE-BILLING |
 
 ## Implementation blockers
 
@@ -43,3 +43,4 @@ và service docs; không giữ file handoff lịch sử làm tài liệu bắt b
 Một PR đổi contract phải cập nhật registry status, canonical handoff, producer fixture/test và consumer
 fixture/test. Nếu không có quyền sửa consumer, PR giữ status chưa `IMPLEMENTED`, ghi blocker và tag
 đúng owner trong registry active; không dùng default field hoặc suy luận ID để “cho chạy trước”.
+
