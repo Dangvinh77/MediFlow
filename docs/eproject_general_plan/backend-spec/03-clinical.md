@@ -661,4 +661,3 @@ producer fixtures and deserialize them with Billing, Inpatient, Report and Notif
 
 Done means state transitions, role tests, duplicate delivery, target mismatch, upstream failure,
 outbox publication and the system acceptance tests all pass without cross-service DB access.
-

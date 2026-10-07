@@ -562,4 +562,3 @@ must prove the version-1 check constraint, source-order uniqueness and atomic ev
 
 Done means every state transition, target mismatch, duplicate, concurrency path, DLQ path and role
 is tested, with no cross-service DB access or identifier inference.
-
