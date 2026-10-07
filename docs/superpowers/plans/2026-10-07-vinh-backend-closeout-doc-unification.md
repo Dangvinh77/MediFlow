@@ -297,4 +297,3 @@ git commit -m "docs(vinh): finalize backend closeout guidance"
 ```
 
 Skip this commit when verification requires no content fix.
-

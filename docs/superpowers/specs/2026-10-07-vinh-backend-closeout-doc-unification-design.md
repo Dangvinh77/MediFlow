@@ -1,7 +1,7 @@
 # Vinh backend closeout and specification unification design
 
-**Date:** 2026-10-07  
-**Owner:** Vinh (`Dangvinh77` / `Harori`)  
+**Date:** 2026-10-07
+**Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Scope:** documentation and cross-service handoff cleanup for Clinical, Lab and Inpatient
 
 ## Objective
