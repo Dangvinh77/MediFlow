@@ -1,5 +1,9 @@
 # Service: lab
 
+**Implementation status:** locally complete; Care-Finance runtime integration is feature-gated and
+externally blocked. The single implementation authority is
+[`backend-spec/04-lab.md`](../../eproject_general_plan/backend-spec/04-lab.md).
+
 **Source of truth:** `docs/eproject_general_plan/lab-service.html` plus the approved
 [`care-finance redesign`](../../architecture/mediflow-care-finance-redesign.html) for request-time
 charging and financial clearance.
@@ -75,3 +79,5 @@ contract with test codes and producer-generated order ID.
   can decode the same fixture bytes and the required failure paths pass.
 - Any change to `lab.request.created`, `lab.result.created`, or clearance fixtures must update Billing,
   Clinical, Notification and Report consumer fixtures in the same PR or mark those consumers blocked.
+- Keep `mediflow.features.care-finance-v2=false` until Billing publishes live LAB_TEST clearance for
+  explicit test IDs and the broker-backed request → payment → execution Docker slice passes.
