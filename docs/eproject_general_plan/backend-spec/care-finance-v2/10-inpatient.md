@@ -314,6 +314,13 @@ ALTER TABLE dot_noi_tru
         FOREIGN KEY (close_override_id) REFERENCES phe_duyet_ngoai_le_noi_tru(override_id);
 ```
 
+`V2__surgery_event_receipts.sql` adds `tiep_nhan_su_kien_phau_thuat`. It stores the producer
+`eventId`, semantic `(eventType, operationId)`, canonical payload fingerprint, exact
+case/request/admission/patient/department identity, case/source revisions, target status and optional
+timeline effect. `appliedAt` stays null while an outcome is waiting for `surgery.case.created`.
+The semantic key is unique, and pending rows are indexed by `surgeryCaseId` and source occurrence
+time for deterministic replay.
+
 ## 4. Enums
 
 ```java
@@ -371,6 +378,8 @@ Every transition inserts `lich_su_trang_thai_noi_tru` in the aggregate transacti
 - Treatment entries are append-only. Corrections create a new entry pointing to the original.
 - An external order reference is unique by `(orderType, externalOrderId)` and must match the same
   admission on all subsequent events.
+- Surgery receipts are additionally unique by `(eventType, operationId)`. Same semantic operation
+  and same canonical payload is idempotent; changed payload is a contract conflict.
 - External IDs are never found by patient, latest record or timestamp proximity.
 - Medical and financial close remain separate operations.
 - Money values received from Billing are projections only; Inpatient never recalculates them.
@@ -392,6 +401,7 @@ Every transition inserts `lich_su_trang_thai_noi_tru` in the aggregate transacti
 | `INPATIENT_SETTLEMENT_REQUIRED` | 422 | close lacks acceptable settlement/override |
 | `INPATIENT_ACTIVE_BED_MUST_BE_RELEASED` | 422 | administrative close with active assignment |
 | `INPATIENT_EXTERNAL_ORDER_MISMATCH` | 422 | external event references another admission |
+| `INPATIENT_SURGERY_CONTRACT_CONFLICT` | 422 | same Surgery operation changes payload or terminal outcome |
 | `INPATIENT_UPSTREAM_UNAVAILABLE` | 503 | required identity lookup unavailable |
 
 ## 8. Application ports
@@ -691,6 +701,11 @@ available, records actor/reason/time and moves the admission to `CANCELLED` in o
 2. Correction verifies the original belongs to the admission and inserts a new `CORRECTION` row.
 3. External facts claim event ID, require exact admission/order IDs and upsert only forward status
    according to each external contract. Duplicate or older event versions do not append notes twice.
+4. `surgery.case.created` registers the exact case reference. A valid admission outcome arriving
+   first is retained durably and replayed after that reference exists. Replay requires the exact
+   `surgeryRequestId`, case, admission, patient and department identity captured by `case.created`.
+5. Outpatient Surgery facts are classified as not applicable before requiring `admissionId`.
+   Terminal outcomes dominate late READY; completion and cancellation cannot replace each other.
 
 ### Medical discharge and close
 
@@ -764,6 +779,7 @@ record a Surgery reference but does not invent Surgery payload fields outside th
 | `settlement.completed` | store exact Billing settlement projection |
 | `lab.result.created` | update exact Lab reference when `careEpisodeType=ADMISSION` |
 | `prescription.filled` | update exact prescription reference with explicit `admissionId` |
+| `surgery.case.created` | register the exact Surgery case reference and replay retained outcomes |
 | `surgery.ready` | update exact Surgery reference |
 | `surgery.completed` | update reference and append one treatment timeline entry |
 | `surgery.cancelled` | mark exact reference cancelled and append one timeline entry |

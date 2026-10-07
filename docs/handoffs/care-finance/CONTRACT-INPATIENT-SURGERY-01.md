@@ -92,10 +92,13 @@ modules). Every outcome includes `surgeryCaseId`, `surgeryRequestId`, `patientId
   READINESS_EXPIRED, ORGANIZATION_AUTHORITY_CHANGED, FINANCIAL_CLEARANCE_CHANGED, CONSENT_CHANGED,
   CONSENT_REVOKED, CHECKLIST_CHANGED, SCHEDULE_REPLACED and READINESS_RECHECK_FAILED.
 
-Consumer acceptance is tracked separately. Inpatient must classify valid outpatient outcomes
-before requiring admission IDs, and must register the exact case reference before applying
-admission outcomes (or retain early outcomes durably). Existing consumer code alone does not
-prove event-first/late/terminal ordering acceptance. Held producer rows do not activate this flow.
+Inpatient now consumes the checked-in producer bytes for `surgery.case.created`, READY and terminal
+facts. It classifies valid outpatient outcomes before requiring admission IDs, registers the exact
+case reference, retains event-first outcomes durably, detects semantic duplicate/conflict and keeps
+terminal state dominant over late READY. It persists `surgeryRequestId` with the case receipt and
+rejects any outcome whose case/request/admission/patient/department identity differs. Broker-backed
+Docker acceptance is still required, and
+held producer rows do not activate this flow.
 
 ### Additive exact-admission authority lookup V1 (2026-10-05)
 
