@@ -43,6 +43,63 @@ Report must separate:
 current outpatient invoice revenue can continue under the existing contribution model, while every
 event includes a transaction/account/episode classification that lets Report distinguish deposit.
 
+### Report offline gross receipt evidence — 2026-10-07
+
+Report now reads Billing's actual `ledger-v1/payment-service.json` and `payment-deposit.json`.
+The accepted **local cash-only** input is `payment.completed` V1 with `transactionId`, optional
+`invoiceId`, required `paymentRequestId/accountId/patientId/departmentId/careEpisodeType/careEpisodeId`,
+explicit classification, positive exact NUMERIC(19,2) `totalAmount`, currency, CASH/TRANSFER and
+business `completedAt`. The transaction is an immutable PENDING → COMPLETED singleton in Billing;
+Report keys it by `transactionId`, not invoice/request or delivery ID. No business revision is
+invented from envelope version. Correction/replacement markers and unsupported classifications,
+including SETTLEMENT_PAYMENT without a same-byte producer fixture, remain rejected.
+
+V12 isolates minimal receipt evidence, delivery/source fingerprints and gross receipt aggregates
+from all legacy/V6 financial tables. Exact delivery or same transaction/new event has one effect;
+changed business/payload/date/zone evidence conflicts. Two distinct transactions on one invoice
+are independent receipts. Currency, report timezone and SERVICE_PAYMENT/ADMISSION_DEPOSIT remain
+separate aggregate dimensions. Department here means the **receipt's Billing account department**,
+not a charge allocation or earned-revenue department; hospital is null scope. Both scope updates
+and source/delivery evidence commit together, including under PostgreSQL concurrency/rollback.
+Financial JSON amounts stay BigDecimal from parsing; existing operational V11 normalization is
+unchanged. Persisted completion ISO text retains nanoseconds without retaining raw payloads.
+
+Gross receipts are completed cash inflows **before any refunds**, not net cash or a liability
+balance. This local input/kernel does not resolve the full financial dashboard equations: no
+allocated-earned amount, unallocated deposit amount, release, refund, settlement, currency
+conversion or department split is inferred. Those metrics remain unavailable, not zero. No live
+binding, HTTP financial API, accepted publication, history backfill or financial replay/cutover is
+enabled. Producer/consumer runtime and financial expected-totals acceptance remain OPEN.
+
+### Report internal finite gross receipt rebuild — 2026-10-07
+
+V13 adds an **internal/offline cash-only rebuild** from the V12 accepted minimal receipt store.
+One `INSERT ... SELECT` freezes the statement-visible committed receipt set, copying exact typed
+inputs, transaction identity, first delivery ID and source/fact/envelope fingerprints. A missing
+first-delivery proof aborts freeze; it is not silently excluded. A delivery hash is retained
+provenance, not a reconstructed/verified raw Billing envelope. There is no purge/backfill/export
+approval claim, and no event predating this local source can be recovered without owner export.
+
+Snapshot version 1 and projector version 1 are Report-local formats, not Billing source revisions.
+The strict codec retains exact monetary decimals and completed-at nanoseconds and preserves V12
+hash bytes. Replay and receipt writing share the pure gross-cash scope planner. Generations own
+their frozen manifest, semantic receipt keys and currency/classification/timezone/scoped totals;
+no live inbox/projection reset, Billing REST enrichment or republished command is involved.
+
+Bounded 1..500 input batches hold a DB generation lock and commit receipt dedupe, both scopes,
+applied markers and progress together. Failure rolls the whole batch back so it is resumable;
+malformed/unknown-version/corrupt snapshots reject before any effect. An exhausted manifest with
+progress drift goes to reconciliation, not a perpetual BUILDING loop. Final bidirectional checks
+compare complete fact/provenance sets, all scope dimensions, amounts, receipt counts and progress
+against the frozen manifest, never advancing live totals. Equality yields VERIFIED, mismatch FAILED.
+Terminal retry is no-effect, and separate generations do not share dedupe.
+
+VERIFIED proves only equality with that finite accepted receipt manifest. It does not certify
+historical completeness, earned revenue/deposit liability/refund/settlement, clinical clearance,
+owner approval, live catch-up or a financial read publication. No listener, financial API, accepted
+read switch or held producer delivery is enabled. The ten local implementation subtasks and real
+verification are recorded in the [Huy cash replay batch](../../superpowers/plans/2026-10-07-report-cash-replay-batch.md).
+
 ## Report operational projections
 
 | Event | KPI |

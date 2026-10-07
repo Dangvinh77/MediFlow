@@ -13,6 +13,26 @@
 
 ## Producer actions and Huy acceptance gates
 
+**Huy internal cash replay update — 2026-10-07:** Report V13 now rebuilds gross receipts into
+isolated finite generations from accepted V12 minimal source evidence. Exact V12 hash/time
+compatibility, MVCC-visible freeze, bounded DB-locked resume and bidirectional reconciliation are
+implemented. This supersedes the dated absence of local financial replay **only for gross cash
+receipts**, not recognition/deposit release/refund/settlement/correction pending or full financial
+coverage. VERIFIED does not publish a read model, prove owner acceptance/historical completeness
+or release held events. The [ten local subtasks](../superpowers/plans/2026-10-07-report-cash-replay-batch.md)
+record the implementation and tests. Existing missing producer contracts and activation gates stay open.
+
+**Huy cash-only input update — 2026-10-07:** Report now maps the actual Billing service/deposit
+receipt fixture bytes and has V12 transaction-keyed gross receipt evidence/scopes with atomic
+dedupe, both-scope rollback and currency isolation. This supersedes the dated "no financial
+decoder/projector" gap only for these completed cash receipts. Gross receipt department is the
+Billing account department, not a charge allocation. Missing allocated-earned/unallocated-deposit,
+release/refund/settlement facts still block their metrics; there is no financial listener/API,
+accepted publication, financial replay/backfill or live acceptance. See the canonical
+[cash-only boundary](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-offline-gross-receipt-evidence--2026-10-07).
+Gateway remains Hoàng Anh's scope; earlier dated dependency overrides do not authorize Huy to
+change it in this continuation.
+
 **Huy outbound/Report update — 2026-10-07:** Surgery now supplies typed outcome/creation/invalidation
 contracts and actual serializer fixtures, held atomically by new V7 capture. Report has offline
 Clinical completion, Pharmacy fill and Surgery outcome mappers, with explicit immutable V1 operation

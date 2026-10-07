@@ -294,6 +294,24 @@ public enum CancellationStage { BEFORE_PREOP, AFTER_PREOP, BEFORE_START, IN_PROG
 
 ## 5. Ports and DTOs
 
+Implemented local lifecycle boundary (2026-10-07): `SurgeryUnitOfWorkPort` separates read/preflight
+and atomic write phases without application imports of adapter transaction machinery. Remote readiness
+observation, live Billing and result-code verification execute with any calling transaction suspended.
+Committed receipts are probed before external I/O without inserting PENDING; claim/conflict/replay is
+checked again inside the write. Owned dependencies and Clock are rechecked after case/sorted resource
+locks. Three fresh transactions at most retry only real PostgreSQL `55P03`/`40P01`, each with a one-second
+lock timeout and five-second transaction timeout. Exhaustion is `SURGERY_COMMAND_BUSY` (409).
+Receipt V2 adds structured reasons, preserving V1 decoding and original timestamps/identities.
+
+POST `/api/v1/surgery/cases/{id}/readiness/evaluate`, `/schedule/finalize`, `/start`, `/complete` have
+strict English DTOs, expected case/schedule revisions, mandatory idempotency and JWT-derived actor.
+ADMIN/DOCTOR are allowed clinical commands; MANAGER additionally may finalize. Unknown authority,
+override or amount fields are rejected. No V1 financial bypass is introduced. HTTP registration needs
+both business and `mediflow.surgery.lifecycle.api.enabled` flags, both false, plus explicit real use-case
+beans. The implementation does NOT install positive policy doubles or activate missing clinical,
+legal, source-fence or downstream contracts. HELD V7 bytes remain unreleased. Verification and local
+close criteria are in [the ten-ID ledger](../../../superpowers/plans/2026-10-07-surgery-closeable-batch.md).
+
 Organization authority invalidation slice (2026-10-06): `ReceiveSurgeryAuthorityChangeUseCase`,
 `QuerySurgeryAuthorityInvalidationsUseCase`, `ApplySurgeryAuthorityInvalidationUseCase` and
 `RecordSurgeryAuthorityInvalidationRetryUseCase` consume the existing canonical V1 event through
@@ -368,6 +386,18 @@ codes. Actor IDs come from verified claims, not request bodies where the acting 
 ## 6. Application algorithms
 
 ### Create from request
+
+**Internal LOCAL creation core — 2026-10-07:** channel-neutral `CreateSurgeryCaseUseCase` now has
+mandatory creation authority authorization/observation ports, without a production provider or
+public/referral driving adapter. V8 globally fences request UUID + deterministic clinical-intent
+fingerprint; no actor/channel/delivery identity splits one business request into multiple cases.
+Replay reauthorizes and returns original IDs/nanosecond time without repeating lookups or charge
+capture. External preflight suspends caller transactions; bounded fresh writes serialize the request,
+check proof validity after waiting, re-read exact approved template and atomically create case,
+PENDING checklist snapshot/items, initial histories, canonical V7 HELD charge bytes and receipt.
+Unknown historical cases are not automatically adopted/charged. No catalogue/legal policy/default
+permission is fabricated; actual referral/requester/source-fence/API/consumer acceptance stays open.
+See [ten execution checks and evidence](../../../superpowers/plans/2026-10-07-surgery-creation-batch.md).
 
 1. Claim `surgery.requested` event or command idempotency key.
 2. Validate one exact episode mapping, patient, department and requester eligibility.

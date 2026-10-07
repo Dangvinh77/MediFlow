@@ -43,6 +43,21 @@ class ReportMigrationPostgresTest {
         assertThat(queryInt("SELECT count(*) FROM operational_report_publication")).isZero();
     }
 
+    @Test
+    void v12Upgrade_preservesExistingReportsAndCreatesEmptyCashEvidenceWithoutInventingHistory() throws Exception {
+        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("classpath:db/migration").target("11").load().migrate();
+        execute("INSERT INTO daily_visit_report(report_id,report_date,visit_count,revenue) VALUES ('"
+                + UUID.randomUUID() + "',DATE '2026-10-01',7,100)");
+        flyway().migrate();
+        assertThat(queryInt("SELECT sum(visit_count) FROM daily_visit_report")).isEqualTo(7);
+        assertThat(queryInt("SELECT sum(revenue)::integer FROM daily_visit_report")).isEqualTo(100);
+        assertThat(queryInt("SELECT count(*) FROM report_cash_receipt")).isZero();
+        assertThat(queryInt("SELECT count(*) FROM report_cash_delivery")).isZero();
+        assertThat(queryInt("SELECT count(*) FROM report_gross_cash_daily")).isZero();
+        assertThat(queryInt("SELECT count(*) FROM operational_report_publication")).isZero();
+    }
+
     @Test void v11Upgrade_preservesCountersAndMarksUnrecoverableOldSourceWithoutInventingPayload() throws Exception {
         Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration").target("10").load().migrate();

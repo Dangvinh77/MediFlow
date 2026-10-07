@@ -7,7 +7,17 @@ Scope: all 42 outstanding non-overlapping Surgery items and 8 Pharmacy items. Pa
 
 Completion rule: implementation, required producer/consumer compatibility, actual discovered tests, and evidence in the active plan. Flags remain off by default. Module tests and HTTP stubs are not actual multi-service acceptance. Clinical/legal qualifications and prices are authoritative configured data, never guessed or seeded in production.
 
-## Fixed selection — 8/50 accepted, 42 remaining
+## Fixed selection — 18/50 accepted locally, 32 remaining
+
+Latest creation follow-up 2026-10-07: S-04.2 now meets LOCAL atomic creation/replay/race/rollback/
+durable pending-recovery criteria; full Surgery 665/665 pass, zero fail/error/skip. Nine other
+existing IDs advanced but stay open; no ten-ID closure is claimed for this batch. Main backlog
+has 62 non-overlapping open IDs, not this fixed selection's 32. [Evidence](2026-10-07-surgery-creation-batch.md).
+
+Previous update 2026-10-07: nine existing Surgery IDs below now meet their LOCAL criteria; X-01.8
+also closed in the main plan but is outside this fixed 50-item selection. Details and remaining
+production/contract gates: [ten-ID closure ledger](2026-10-07-surgery-closeable-batch.md).
+Historical counts in the dated evidence journal remain snapshots, not the current total.
 
 - [x] **S-01.4** — Actual packaged Eureka/Gateway/Surgery/Organization runtime: 3 Failsafe tests pass; bootstrap handoff retired.
 - [x] **S-01.6** — Business/consumer/producer activation enforced; all 8 combinations for each messaging gate tested; defaults off.
@@ -26,28 +36,28 @@ Completion rule: implementation, required producer/consumer compatibility, actua
 - [ ] **S-03.5** — acceptance remains open.
 - [ ] **S-03.6** — acceptance remains open.
 - [ ] **S-04.1** — acceptance remains open.
-- [ ] **S-04.2** — acceptance remains open.
+- [x] **S-04.2** — LOCAL PASS 2026-10-07; global creation receipt, pinned children/history + mandatory V7 HELD fact atomic, PG race/rollback/restart/pending recovery and full 665/665 Surgery suite. Production referral/authority/API/consumer acceptance remains open at its separate IDs.
 - [x] **S-04.3** — Scoped, redacted detail/board; bounded UTC pagination; no per-row REST/history loading; real PG and runtime acceptance.
 - [ ] **S-04.4** — acceptance remains open.
 - [x] **S-04.6** — Current mutation DTO/replay/revision/auth/error conventions; reject caller authority; safe envelopes and matching examples.
 - [ ] **S-05.1.2** — acceptance remains open.
 - [ ] **S-05.2.2** — acceptance remains open.
 - [ ] **S-05.3** — acceptance remains open.
-- [ ] **S-05.4.1** — acceptance remains open.
-- [ ] **S-05.4.2** — acceptance remains open.
+- [x] **S-05.4.1** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
+- [x] **S-05.4.2** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
 - [ ] **S-05.4.3** — acceptance remains open.
-- [ ] **S-05.5** — acceptance remains open.
+- [x] **S-05.5** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
 - [ ] **S-06.1.2** — acceptance remains open.
 - [ ] **S-06.2** — acceptance remains open.
 - [x] **S-06.3.1** — LOCAL schema/lock protocol applied to every reservation writer, including internal finalize/START/COMPLETE; actual PG lifecycle, exact-set/overrun, rollback and concurrency pass. Clinical activation and full race/retry acceptance are separate tasks.
-- [ ] **S-06.3.2** — acceptance remains open.
-- [ ] **S-06.4.1** — acceptance remains open.
+- [x] **S-06.3.2** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
+- [x] **S-06.4.1** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
 - [x] **S-06.4.2** — Atomic reschedule invalidation/exact old release/new DRAFT/receipt; real PG rollback and concurrent replacements.
-- [ ] **S-06.5** — acceptance remains open.
-- [ ] **S-07.1** — acceptance remains open.
-- [ ] **S-07.2.1** — acceptance remains open.
+- [x] **S-06.5** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
+- [x] **S-07.1** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
+- [x] **S-07.2.1** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
 - [ ] **S-07.2.2** — acceptance remains open.
-- [ ] **S-07.3** — acceptance remains open.
+- [x] **S-07.3** — LOCAL PASS 2026-10-07; 623/623 full Surgery suite, real PG/MQ, scoped criteria/evidence in the ten-ID ledger. Production authority/clinical/downstream activation remains separately gated.
 - [ ] **S-07.4.2** — acceptance remains open.
 - [ ] **S-07.5** — acceptance remains open.
 - [ ] **S-07.6** — acceptance remains open.

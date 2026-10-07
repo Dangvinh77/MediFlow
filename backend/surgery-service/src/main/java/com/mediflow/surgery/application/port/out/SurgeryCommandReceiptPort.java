@@ -2,9 +2,13 @@ package com.mediflow.surgery.application.port.out;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Optional;
 
 /** Caller verifies authorization before claim/replay and remains in one DB transaction. */
 public interface SurgeryCommandReceiptPort {
+
+    /** Non-locking committed receipt probe. Never creates a PENDING receipt during remote preflight. */
+    Optional<Claim> find(Key key, String fingerprint);
 
     Claim claim(Key key, String fingerprint);
 

@@ -11,6 +11,29 @@ import org.junit.jupiter.api.Test;
 class ReportMigrationSchemaTest {
 
     @Test
+    void v14_indexesOnlyNeverModifiesEvidenceOrPublication() throws IOException {
+        try (InputStream stream = getClass().getResourceAsStream("/db/migration/V14__report_telemetry_indexes.sql")) {
+            assertThat(stream).isNotNull();
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toLowerCase();
+            assertThat(sql).contains("ix_report_pending_close_observed", "ix_operational_replay_telemetry",
+                    "ix_cash_replay_telemetry", "ix_operational_legacy_unverified");
+            assertThat(sql).doesNotContain("create table", "update ", "insert into", "delete from", "truncate ", "drop ");
+        }
+    }
+
+    @Test
+    void v13_isolatesCashReplayAndNeverBackfillsPublishesOrClearsLiveData() throws IOException {
+        try (InputStream stream = getClass().getResourceAsStream("/db/migration/V13__isolated_cash_receipt_replay.sql")) {
+            assertThat(stream).isNotNull();
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8).toLowerCase();
+            assertThat(sql).contains("cash_replay_generation", "cash_replay_input", "cash_replay_receipt", "cash_replay_scope",
+                    "first_envelope_fingerprint", "snapshot_version", "projector_version", "nulls not distinct");
+            assertThat(sql).doesNotContain("truncate ", "drop table", "delete from", "insert into report_cash",
+                    "insert into financial_contribution", "insert into operational_report_publication", "active_generation");
+        }
+    }
+
+    @Test
     void v9_retainsMinimalPendingEvidenceWithoutFakeRevisionOrMetricEffects() throws IOException {
         try (InputStream stream = getClass().getResourceAsStream("/db/migration/V9__pending_admission_report_evidence.sql")) {
             assertThat(stream).isNotNull();

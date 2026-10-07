@@ -28,7 +28,8 @@ All routes require verified human access tokens and the business gate. Mutation 
 expected revisions and business input only; actors come from signed identity. Unknown fields such as
 `ready`, `actorId` or amounts are rejected. Mutations require `Idempotency-Key` (maximum 160 characters).
 Matching replay returns the original outcome; different intent conflicts. Account IDs are not staff
-IDs. Gateway mirrors exact roles/methods and denies other Surgery paths. Examples: [surgery.http](surgery.http).
+IDs. Gateway enforcement is a separate Hoàng Anh-owned acceptance gate, not certified by these local
+controller tests. Examples: [surgery.http](surgery.http).
 
 ADMIN/MANAGER read across departments. DOCTOR/NURSE require signed `staffId` and fresh active
 Organization authority; scope is its current department, not a filter or JWT department. Foreign
@@ -55,6 +56,28 @@ pinned in the snapshot before releasing resources. Stale/foreign schedule data c
 Errors use the shared envelope/correlation: 400 malformed input, 401 missing authentication,
 403 forbidden, 404 missing/out-of-scope, 409 receipt/revision conflict, 422 business denial,
 503 unavailable authority and redacted 500 for unexpected failures.
+
+## Internal creation kernel (not a public route)
+
+`CreateSurgeryCaseUseCase` is channel-neutral and has no production bean/authority provider or
+HTTP/referral adapter. V8 fences `surgeryRequestId` globally with a deterministic clinical-intent
+fingerprint; actor/correlation/channel do not create a second business request. Authorization runs
+before every replay. Requester staff/episode/template authority must be supplied by a real provider,
+never an inferred identity or positive default. After outside-transaction preflight, the bounded
+write locks the request, checks Clock/proof/template pins and atomically stores REQUESTED case,
+PENDING checklist, histories, mandatory V7 HELD charge bytes and original creation receipt.
+Failures roll everything back; replay preserves original IDs/time and cannot reopen a cancelled
+case. Existing durable pending recovery can observe the new committed case on a later poll without
+an in-memory callback. Old cases are not automatically adopted, receipts backfilled or events released.
+
+Focused real-PostgreSQL creation/replay/race/rollback and V1–V7→V8 verification:
+
+```powershell
+mvn -pl backend/surgery-service -am '-Dapi.version=1.44' '-Dtest=SurgeryCreationApplicationServiceTest,SurgeryCreationPostgresTest,SurgeryMigrationUpgradeIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+Latest evidence and remaining integration gates:
+[creation execution batch](../../docs/superpowers/plans/2026-10-07-surgery-creation-batch.md).
 
 ## Clearance intake and feature gates
 
@@ -84,8 +107,10 @@ Billing V1 output stays held. The gated listener is **not** live cutover or a co
 ## Internal lifecycle foundation — 2026-10-06
 
 Four internal in-ports implement evaluate readiness, finalize schedule, START and COMPLETE.
-`SurgeryLifecycleApplicationService` has **no production bean or public controller**, even when
-the business flag is enabled. Its authority port has no production/default-allow adapter.
+`SurgeryLifecycleApplicationService` has **no production bean**, even when the business flag is enabled.
+Its strict HTTP boundary exists but also requires `mediflow.surgery.lifecycle.api.enabled=true`,
+which defaults false. Both flags without explicit real use-case beans fail startup. Its authority port
+has no production/default-allow adapter.
 Test-only wiring verifies orchestration, not approval of the clinical/legal/financial contracts.
 
 Readiness checks seven independent guards, exact patient/department/episode/case/schedule
@@ -99,13 +124,24 @@ invented. Optional N/A requires the permitted policy and exact stored attestatio
 Authority lookup precedes case/resource locks. Commands then lock case and sorted resource keys,
 recheck local checklist/consent/grant and schedule pins, and obtain Clock after lock waits.
 The future authority adapter must reconcile captured source revisions locally, with no remote call
-under these locks. These internal methods currently start their transaction before lookup; moving
-remote preflight outside the transaction remains a production-wiring requirement.
+under these locks. `SurgeryUnitOfWorkPort` now suspends any calling transaction for remote preflight,
+uses separate read-only reads and a fresh atomic write. PostgreSQL lock timeout is one second;
+transaction timeout five seconds. Only genuine `55P03`/`40P01` retry, at most three fresh attempts.
+Exhaustion is `SURGERY_COMMAND_BUSY` (409). No PENDING receipt is created before remote I/O; a
+non-locking committed probe and a second atomic claim preserve replay. Receipt V2 includes denial
+reasons/nanoseconds and reads V1 unchanged.
 Failed finalize/START guards commit an audited PREOP invalidation, exact booking release and a
 durable **denial** outcome, rather than throw an exception that undoes invalidation. START checks
 the exact room/staff booking set and rejects other cases still IN_USE despite planned end time.
 COMPLETE stores one immutable result, distinct performed lines, history, receipt and exact
 resource release in one transaction. Same-key replay keeps the original result/time.
+
+Gated POST paths: `/{id}/readiness/evaluate`, `/{id}/schedule/finalize`, `/{id}/start`, `/{id}/complete`
+under `/api/v1/surgery/cases`. ADMIN/DOCTOR may use clinical commands; finalize also permits MANAGER.
+Requests require expected case/schedule revisions and `Idempotency-Key`. JWT supplies actor identity.
+Unknown `ready`, clearance, financial/emergency override, actor, role and amount fields are rejected,
+including for ADMIN. Guard denial returns explicit state and `blockingReasons`, not a clinical success.
+Authority/clinical policies and cross-service activation remain separate open tasks.
 
 Additive V6 stores **private held lifecycle intents**, not approved `surgery.ready` or
 `surgery.completed` wire. Database status permits HELD only; the broker dispatcher does not read
@@ -169,8 +205,9 @@ authorize readiness. Revoked, refunded and expired grants deny. Observation age 
 30 seconds, including resource-lock waits; business validity uses both local/producer grant expiry.
 The freshness window does not invent a 30-second READY/SCHEDULED expiry; START obtains a new read.
 The read is not a
-distributed lock: the race fence and preflight-outside-transaction work remain open. The internal
-lifecycle is still deliberately not registered as a production bean/public API.
+distributed lock: the cross-service race fence remains open, while preflight now runs outside all
+transactions. Lifecycle is still not registered as a production bean, and the independent HTTP gate
+remains OFF. See the [ten-ID closure ledger](../../docs/superpowers/plans/2026-10-07-surgery-closeable-batch.md).
 
 Billing-side switch `MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED` defaults false. Existing Surgery
 business/consumer/publication switches and held V1 rows are unchanged. The REST contract and
@@ -193,12 +230,13 @@ Critical PostgreSQL/RabbitMQ tests require Docker; skipped tests are not accepta
 mvn -f backend/surgery-service/pom.xml '-Dapi.version=1.44' test
 ```
 
-`SurgeryMigrationUpgradeIntegrationTest` starts each prior Flyway version V1/V2/V3/V4/V5/V6 in
+`SurgeryMigrationUpgradeIntegrationTest` starts each prior Flyway version V1/V2/V3/V4/V5/V6/V7 in
 its own isolated PostgreSQL schema, inserts an existing SCHEDULED case with snapshot/history,
-reservations, receipt and pending inbox/outbox bytes, then upgrades to V7. It compares every
+reservations, receipt and pending inbox/outbox bytes, then upgrades to V8. It compares every
 pre-existing table row, verifies retry/financial evidence where present, validates checksums and
 requires a second migration to do no work. Migration must not fabricate authority hints, jobs
-or lifecycle intents, and does not backfill public events into the new HELD-only V7 table.
+or lifecycle intents, and does not backfill public events or creation receipts. Existing V7 HELD
+bytes remain byte-identical and held after upgrade. The new V8 creation receipt table starts empty.
 This test fails if Docker is unavailable; compilation alone is not migration acceptance.
 
 ```powershell

@@ -139,6 +139,7 @@ class SurgeryPreopApplicationServiceTest {
     }
 
     private static final class ReceiptResponse implements SurgeryCommandReceiptPort {
+        public java.util.Optional<Claim> find(Key key, String fingerprint) { return java.util.Optional.empty(); }
         private byte[] response;
 
         @Override

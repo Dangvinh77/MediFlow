@@ -43,6 +43,14 @@ conflict rather than silently revise the charge request. Billing owns price look
 The internal capture requires the same caller transaction as case creation. It is not a new
 public case-creation API and does not bypass the separately missing referral authority.
 
+The internal caller now exists in Surgery's LOCAL creation kernel (2026-10-07): case, pinned
+checklist, histories, V7 HELD canonical charge bytes and V8 global request receipt commit together.
+Outbox append is mandatory; write failure rolls every creation effect back. Same request/intent
+across channels/replicas replays the original case without a second charge; changed intent conflicts.
+Trusted actor authorization is required even on replay, with no production positive-authority
+fallback. This changes no wire version/fixture and does not activate referral/HTTP delivery,
+Billing pricing/issuance/reconciliation or Inpatient reference registration.
+
 Producer fixtures live in Surgery's `src/test/resources/contracts/surgery-outcomes-v1/`.
 Delivery stays HELD until Billing creates/reconciles charges and Inpatient registers exact case
 references with durable early-event handling. A held row is NOT consumer acceptance.
@@ -90,8 +98,10 @@ consumer; these engineering dependencies are **not waiting for Lộc to write co
 - This is a **bounded observation, not a distributed financial lock**. No financial business revision
   is fabricated from event version/time. The existing proof revision still identifies the stored
   immutable grant; it is not a refund-ledger revision. Refund-after-read race/fence remains a
-  separately tracked readiness production task. Internal lifecycle still has no production bean/API
-  until the other authority/policy/fence work is implemented.
+  separately tracked readiness production task. Lifecycle still has no production authority-backed
+  bean until other authority/policy/fence work is implemented. Its HTTP boundary is implemented but
+  independently gated OFF; remote preflight now runs outside all transactions. No DB locks are held
+  while Billing is queried, and committed local proof/Clock checks follow mutation-lock waits.
 - Billing owns `src/test/resources/contracts/clearance-authority-v1/{active,inactive,missing}.json`.
   Producer use-case tests verify these fixtures; Surgery real Feign tests read these same files,
   changing only per-request correlation. PostgreSQL/HTTP producer tests exercise actual ledger payments.

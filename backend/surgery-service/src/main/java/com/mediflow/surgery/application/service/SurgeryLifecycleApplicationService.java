@@ -24,6 +24,7 @@ import com.mediflow.surgery.application.port.out.SurgeryReadinessSnapshotPort;
 import com.mediflow.surgery.application.port.out.SurgeryResourceReservationPort;
 import com.mediflow.surgery.application.port.out.SurgeryResultRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryScheduleRepositoryPort;
+import com.mediflow.surgery.application.port.out.SurgeryUnitOfWorkPort;
 import com.mediflow.surgery.domain.exception.SurgeryCaseNotFoundException;
 import com.mediflow.surgery.domain.exception.SurgeryRuleException;
 import com.mediflow.surgery.domain.model.ReadinessSnapshot;
@@ -38,9 +39,8 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
-/** Internal-only lifecycle. No production bean or public route until authority/wire gates are met. */
+/** Authority-backed lifecycle; production wiring remains gated independently from its HTTP boundary. */
 public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadinessUseCase,
         FinalizeSurgeryScheduleUseCase, StartSurgeryUseCase, CompleteSurgeryUseCase {
     private final SurgeryCaseRepositoryPort cases;
@@ -58,6 +58,7 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
     private final SurgeryClockPort clock;
     private final SurgeryCareEventCapturePort events;
     private final SurgeryReadinessEngine engine;
+    private final SurgeryUnitOfWorkPort unitOfWork;
 
     public SurgeryLifecycleApplicationService(SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
             SurgeryCommandReceiptPort receipts, SurgeryReadinessSnapshotPort snapshots,
@@ -65,7 +66,9 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
             SurgeryFinancialClearanceRepositoryPort clearances, SurgeryResourceReservationPort resources,
             SurgeryResultRepositoryPort results, SurgeryReadinessAuthorityPort authority,
             SurgeryLifecycleIntentPort intents, SurgeryClockPort clock, SurgeryReadinessEngine engine,
-            FinancialClearanceLookupPort financialAuthority, SurgeryCareEventCapturePort events) {
+            FinancialClearanceLookupPort financialAuthority, SurgeryCareEventCapturePort events,
+            SurgeryUnitOfWorkPort unitOfWork) {
+        this.unitOfWork = java.util.Objects.requireNonNull(unitOfWork);
         this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases; this.schedules = schedules; this.receipts = receipts; this.snapshots = snapshots;
         this.checklists = checklists; this.consents = consents; this.clearances = clearances; this.resources = resources;
@@ -73,31 +76,51 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
         this.financialAuthority = java.util.Objects.requireNonNull(financialAuthority);
     }
 
-    @Override @Transactional(timeout = 5)
+    @Override
     public SurgeryCommandOutcome evaluate(SurgeryLifecycleCommand command) {
         return decide("EVALUATE_READINESS",command,SurgeryStatus.PREOP_IN_PROGRESS);
     }
 
-    @Override @Transactional(timeout = 5)
+    @Override
     public SurgeryCommandOutcome finalizeSchedule(SurgeryLifecycleCommand command) {
         return decide("FINALIZE_SCHEDULE",command,SurgeryStatus.READY);
     }
 
-    @Override @Transactional(timeout = 5)
+    @Override
     public SurgeryCommandOutcome start(SurgeryLifecycleCommand command) {
         return decide("START_SURGERY",command,SurgeryStatus.SCHEDULED);
     }
 
     private SurgeryCommandOutcome decide(String operation, SurgeryLifecycleCommand command, SurgeryStatus required) {
-        var claim = claim(operation,command,fingerprint(operation,command));
+        String fingerprint = fingerprint(operation,command);
+        return unitOfWork.outside(() -> {
+            authority.authorize(command.actor(),operation,command.surgeryCaseId());
+            var replay = probe(operation,command,fingerprint);
+            if (replay != null) return replay;
+            Preflight observed;
+            try {
+                observed = unitOfWork.read(() -> {
+                    var value = find(command);
+                    requireStatus(value,required);
+                    return new Preflight(value,schedule(command));
+                });
+            } catch (SurgeryRevisionConflictException | SurgeryRuleException failure) {
+                // Another identical caller may commit between the first probe and preflight read.
+                var committed = probe(operation,command,fingerprint);
+                if (committed != null) return committed;
+                throw failure;
+            }
+            var evidence = authority.observe(observed.value(),observed.schedule(),command.correlationId());
+            if (evidence == null) throw new UpstreamUnavailableException("Required readiness authority is unavailable");
+            var verified = observeFinancialAuthority(observed.value(), evidence, command.correlationId());
+            return unitOfWork.write(() -> decideAtomically(operation,command,required,fingerprint,observed.schedule(),verified));
+        });
+    }
+
+    private SurgeryCommandOutcome decideAtomically(String operation, SurgeryLifecycleCommand command,
+            SurgeryStatus required, String fingerprint, SurgerySchedule planned, SurgeryReadinessEvidence evidence) {
+        var claim = claim(operation,command,fingerprint);
         if (claim.isReplay()) return claim.replay();
-        var observed = find(command);
-        requireStatus(observed,required);
-        var planned = schedule(command);
-        // All external I/O precedes mutation locks; no proof supplied in the command itself.
-        var evidence = authority.observe(observed,planned,command.correlationId());
-        if (evidence == null) throw new UpstreamUnavailableException("Required readiness authority is unavailable");
-        evidence = observeFinancialAuthority(observed, evidence, command.correlationId());
         var value = lock(command);
         requireStatus(value,required);
         var current = schedule(command);
@@ -119,7 +142,13 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
             }
             // Return a committed denial, not an exception that rolls back the invalidation/audit.
             String denial = priorExpired ? "READINESS_EXPIRED" : !snapshot.isReady() ? "NOT_READY" : "READINESS_CHANGED";
-            return finish(operation,command,claim,value,snapshot.snapshotId(),0,denial,at);
+            var reasons = new java.util.ArrayList<>(snapshot.blockingReasons());
+            if (priorExpired) reasons.add("READINESS_EXPIRED");
+            if (changed) reasons.add("READINESS_CHANGED");
+            var outcome = new SurgeryCommandOutcome(operation,value.getSurgeryCaseId(),value.getRevision(),
+                    snapshot.snapshotId(),0,denial,at,false,reasons);
+            SurgeryCommandReceipts.complete(receipts,claim.receiptId(),outcome);
+            return outcome;
         }
         switch (required) {
             case PREOP_IN_PROGRESS -> {
@@ -139,10 +168,12 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
             }
             default -> throw new IllegalStateException("Unsupported lifecycle decision");
         }
-        return finish(operation,command,claim,value,current.scheduleId(),current.revision(),value.getStatus().name(),at);
+        return required == SurgeryStatus.PREOP_IN_PROGRESS
+                ? finish(operation,command,claim,value,snapshot.snapshotId(),0,value.getStatus().name(),at)
+                : finish(operation,command,claim,value,current.scheduleId(),current.revision(),value.getStatus().name(),at);
     }
 
-    @Override @Transactional(timeout = 5)
+    @Override
     public SurgeryCommandOutcome complete(CompleteSurgeryUseCase.Command command) {
         if (command == null) throw new IllegalArgumentException("Completion required");
         var identity = command.identity();
@@ -154,23 +185,43 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
         String fingerprint = SurgeryCommandReceipts.fingerprint(fingerprint("COMPLETE_SURGERY",identity),
                 command.procedureCode(),command.methodCode(),command.outcomeCode(),command.complicationGroupCode(),
                 String.valueOf(command.actualStartAt()),String.valueOf(command.actualEndAt()),itemFingerprint);
+        return unitOfWork.outside(() -> {
+            authority.authorize(identity.actor(),"COMPLETE_SURGERY",identity.surgeryCaseId());
+            var replay = probe("COMPLETE_SURGERY",identity,fingerprint);
+            if (replay != null) return replay;
+            SurgeryCase observed;
+            try {
+                observed = unitOfWork.read(() -> {
+                    var value = find(identity);
+                    requireStatus(value,SurgeryStatus.IN_PROGRESS);
+                    return value;
+                });
+            } catch (SurgeryRevisionConflictException | SurgeryRuleException failure) {
+                var committed = probe("COMPLETE_SURGERY",identity,fingerprint);
+                if (committed != null) return committed;
+                throw failure;
+            }
+            var result = new SurgeryResult(UUID.randomUUID(),identity.surgeryCaseId(),command.procedureCode(),command.methodCode(),
+                    command.outcomeCode(),command.complicationGroupCode(),command.actualStartAt(),command.actualEndAt(),
+                    command.performedItems(),clock.now(),actor(identity),identity.correlationId());
+            authority.verifyResult(observed,result,identity.correlationId());
+            return unitOfWork.write(() -> completeAtomically(command,fingerprint,result));
+        });
+    }
+
+    private SurgeryCommandOutcome completeAtomically(CompleteSurgeryUseCase.Command command, String fingerprint, SurgeryResult verified) {
+        var identity = command.identity();
         var claim = claim("COMPLETE_SURGERY",identity,fingerprint);
         if (claim.isReplay()) return claim.replay();
-        var observed = find(identity);
-        requireStatus(observed,SurgeryStatus.IN_PROGRESS);
-        var result = new SurgeryResult(UUID.randomUUID(),identity.surgeryCaseId(),command.procedureCode(),command.methodCode(),
-                command.outcomeCode(),command.complicationGroupCode(),command.actualStartAt(),command.actualEndAt(),
-                command.performedItems(),clock.now(),actor(identity),identity.correlationId());
-        authority.verifyResult(observed,result,identity.correlationId());
         var value = lock(identity);
         requireStatus(value,SurgeryStatus.IN_PROGRESS);
         var current = schedule(identity);
         requirePinnedSchedule(value,current);
         resources.lockForMutation(current);
         Instant at = clock.now();
-        result = new SurgeryResult(result.resultId(),result.surgeryCaseId(),result.procedureCode(),result.methodCode(),
-                result.treatmentOutcomeCode(),result.complicationGroupCode(),result.actualStartAt(),result.actualEndAt(),
-                result.performedItems(),at,result.recordedBy(),result.correlationId());
+        var result = new SurgeryResult(verified.resultId(),verified.surgeryCaseId(),verified.procedureCode(),verified.methodCode(),
+                verified.treatmentOutcomeCode(),verified.complicationGroupCode(),verified.actualStartAt(),verified.actualEndAt(),
+                verified.performedItems(),at,verified.recordedBy(),verified.correlationId());
         if (results.findByCaseId(value.getSurgeryCaseId()).isPresent()) throw new SurgeryRevisionConflictException();
         results.create(result); // Adapter verifies persisted IN_PROGRESS before transition.
         resources.release(value.getSurgeryCaseId(),current.scheduleId(),current.revision(),at);
@@ -183,7 +234,7 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
     private SurgeryReadinessEvidence observeFinancialAuthority(SurgeryCase value, SurgeryReadinessEvidence evidence, String correlation) {
         var proofs = evidence.proofs().stream().map(proof -> {
             if (proof.type() != SurgeryDependencyType.FINANCIAL_CLEARANCE) return proof;
-            var grant = clearances.findById(proof.sourceId()).orElse(null);
+            var grant = unitOfWork.read(() -> clearances.findById(proof.sourceId()).orElse(null));
             if (grant == null || !grant.matches(value)) return new SurgeryReadinessEvidence.Proof(proof.type(),proof.sourceId(),
                     proof.revision(),SurgeryReadinessEvidence.Decision.UNSATISFIED,proof.observedAt(),proof.validFrom(),proof.validUntil());
             var current = financialAuthority.observe(grant,correlation); // Mandatory live Billing read, before mutation locks.
@@ -236,10 +287,17 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
 
     private SurgeryCommandReceipts.ClaimResult claim(String operation, SurgeryLifecycleCommand command, String fingerprint) {
         if (command == null) throw new IllegalArgumentException("Command required");
-        authority.authorize(command.actor(),operation,command.surgeryCaseId());
         return SurgeryCommandReceipts.claim(receipts,new SurgeryCommandReceiptPort.Key(command.actor().accountId().toString(),
                 operation+":"+command.surgeryCaseId(),command.idempotencyKey()),fingerprint,operation,command.surgeryCaseId());
     }
+
+    private SurgeryCommandOutcome probe(String operation, SurgeryLifecycleCommand command, String fingerprint) {
+        return unitOfWork.read(() -> receipts.find(new SurgeryCommandReceiptPort.Key(command.actor().accountId().toString(),
+                operation+":"+command.surgeryCaseId(),command.idempotencyKey()),fingerprint)
+                .map(found -> SurgeryCommandReceipts.resolve(found,operation,command.surgeryCaseId()).replay()).orElse(null));
+    }
+
+    private record Preflight(SurgeryCase value, SurgerySchedule schedule) { }
     private SurgeryCase find(SurgeryLifecycleCommand command) {
         var value = cases.findById(command.surgeryCaseId()).orElseThrow(() -> new SurgeryCaseNotFoundException(command.surgeryCaseId()));
         requireRevision(value,command); return value;

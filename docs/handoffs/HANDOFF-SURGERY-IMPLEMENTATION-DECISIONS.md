@@ -140,6 +140,15 @@ These are decisions delegated by Huy to the implementation agent on 2026-09-28, 
 
 ## Owner response checklist
 
+**Huy LOCAL creation update — 2026-10-07:** the previously missing internal creation caller now
+exists: global request/intent fence, mandatory authority seam, pinned checklist and canonical HELD
+charge fact/receipt are atomic. Replay reauthorizes, two replicas share one case, failed writes roll
+back, and the existing durable pending worker remains independent of callbacks. No production
+referral/requester/template authority provider, HTTP/referral adapter or consumer approval is added.
+Source/referral/reference/clinical/legal decisions above stay OPEN; this is not live creation.
+Detailed ten existing-ID execution checks and test evidence:
+[Surgery creation batch](../superpowers/plans/2026-10-07-surgery-creation-batch.md).
+
 ### Vinh scheduling update — 2026-10-04
 
 Vinh will handle the §D contract response locally before assigning Surgery integration code to
@@ -157,7 +166,7 @@ Reply by editing this handoff (or link a canonical contract/spec PR) with the re
 | Vinh — Clinical/Inpatient | Confirm referral ownership/stable identity, relationship proof, external-order registration and outpatient/late-event handling (§D); provide checklist/consent/clinical result policies. Post-start abort is deferred from V1. | `OPEN` — fill in after review |
 | Lộc — Billing/Notification | Use the fixed Surgery V1 names and actual producer fixtures in SURGERY-BILLING; implement/verify item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `HUY EVENT NAMING/FIXTURE READY LOCALLY (2026-10-07); BILLING/NOTIFICATION ACCEPTANCE OPEN` |
 | Hoàng Anh — Organization | Master's generic room lookup and additive `eligibleTeamRoles` producer fixtures retained. Local revisioned operating-room and explicit interval-scoped capability authority remain separate; Surgery consumes their canonical fixtures and packaged runtime tests pass read/draft/revoke. Gated V1 authority-change intake/durable invalidation has same producer event fixtures and PG/Rabbit evidence. Generic job-title roles must not substitute for explicit grants. Fresh-authority READY/finalize/START reconciliation, generic fixture adoption, clinical policy and multi-service event rollout remain open. [Runtime verification](../ai/services/surgery.md). | `GENERIC PRODUCER READY; EXPLICIT AUTHORITY/LOCAL INVALIDATION VERIFIED; FULL LIFECYCLE OPEN` |
-| Huy — Surgery | Staff/department/room/capability adapters and gated authority invalidation exist. Internal seven-guard readiness, explicit configured checklist/consent/team policies and evaluate/finalize/START/COMPLETE orchestration implemented on 2026-10-06; case/resource locks, committed denial/release, immutable result and replay are covered by local tests. V6 stores private HELD intents only, not approved READY/COMPLETED wire. Still supply real policy/source adapters, preflight outside write transaction, shared producer fixtures, referral consumer and live HTTP acceptance. | `INTERNAL LIFECYCLE IMPLEMENTED; PRODUCTION AUTHORITY/WIRE/ACCEPTANCE OPEN` |
+| Huy — Surgery | Staff/department/room/capability adapters and gated authority invalidation exist. Seven-guard local lifecycle, case/resource locks, committed denial/release, immutable result and replay are implemented. On 2026-10-07 remote preflight was moved outside transactions; bounded real SQL lock retries and strict default-off HTTP authorization boundaries were added. V6 remains private HELD intents; V7 captures canonical V1 READY/COMPLETE bytes atomically but never dispatches them. Real policy/source providers, referral consumer, distributed authority/financial fences and downstream/live acceptance still remain open; no clinical/legal decisions are fabricated. [Ten-ID evidence](../superpowers/plans/2026-10-07-surgery-closeable-batch.md). | `LOCAL LIFECYCLE IMPLEMENTED; PRODUCTION AUTHORITY/ACTIVATION OPEN` |
 
 ## Implementation boundaries and close criteria
 

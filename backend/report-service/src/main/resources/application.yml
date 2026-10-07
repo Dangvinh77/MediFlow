@@ -43,6 +43,12 @@ mediflow:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   report:
     zone-id: ${MEDIFLOW_REPORT_ZONE_ID:Asia/Bangkok}
+    telemetry:
+      enabled: ${MEDIFLOW_REPORT_TELEMETRY_ENABLED:false}
+      sample-interval-ms: ${MEDIFLOW_REPORT_TELEMETRY_SAMPLE_INTERVAL_MS:30000}
+      pending-age-seconds: ${MEDIFLOW_REPORT_TELEMETRY_PENDING_AGE_SECONDS:900}
+      replay-age-seconds: ${MEDIFLOW_REPORT_TELEMETRY_REPLAY_AGE_SECONDS:3600}
+      stale-after-seconds: ${MEDIFLOW_REPORT_TELEMETRY_STALE_AFTER_SECONDS:180}
     rabbit:
       retry:
         max-attempts: ${MEDIFLOW_REPORT_RABBIT_RETRY_MAX_ATTEMPTS:3}

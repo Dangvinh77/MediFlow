@@ -204,9 +204,10 @@ Current verification evidence is recorded in the [execution ledger](../../superp
 
 ### Internal lifecycle slice — 2026-10-06
 
-Evaluate/finalize/START/COMPLETE now have internal in-ports and transactional orchestration, but
-no production lifecycle bean, authority adapter or public mapping. The business flag alone cannot
-activate them. Seven independently verified proofs carry exact case/patient/department/episode,
+Evaluate/finalize/START/COMPLETE have in-ports and atomic orchestration. Since 2026-10-07 a
+default-off HTTP boundary also exists; it requires BOTH business and lifecycle API gates and explicit
+authority-backed use-case beans. No production lifecycle bean or dummy authority provider is installed.
+The business flag alone cannot activate them. Seven verified proofs carry exact case/patient/department/episode,
 case/schedule revisions and explicit observation/validity. Versioned checklist/consent/team policy
 models have no seeded clinical or legal defaults. Actual authority integration remains open.
 
@@ -217,8 +218,8 @@ Billing failure never falls back to a stored positive grant. The financial obser
 by a 30-second freshness check and the true grant expiry, rechecked after resource-lock wait.
 Read freshness is not the business expiry of a READY/SCHEDULED case; START obtains a new read.
 No financial source revision
-or distributed lock is fabricated. Production transaction separation and cross-service race fence
-remain implementation tasks, not requests for another owner to write this lookup.
+or distributed lock is fabricated. Transaction separation is implemented through the Surgery unit-of-work
+port; the cross-service race fence remains a separate task, not a request to invent a financial revision.
 See [SURGERY-BILLING](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
 
 Commands recheck owned checklist, typed consents and immutable grant after case/sorted resource
@@ -230,11 +231,25 @@ exact release and a held intent atomically, with original-result replay and no i
 Additive V6 `surgery_lifecycle_intent` is a PRIVATE HELD-only journal: no event routing, dispatcher
 or approved consumer may treat its bytes as a domain event. Production publishing gates do not
 release it. V6 readiness ISO precision preserves new snapshot nanoseconds without rewriting older
-evidence. Preflight remote I/O currently precedes mutation locks but remains inside the transaction;
-production wiring must move it outside the transaction and implement the local revision fence.
-Full failure matrix, approved producer/consumer bytes, clinical policies and live HTTP authorization
+evidence. Remote observation, live Billing lookup and result-code verification now execute outside
+transactions, including when a calling transaction must be suspended. A non-locking committed receipt
+probe preserves original replay without making a PENDING receipt before preflight. The atomic write
+claims again, locks case/resources and re-reads owned evidence. Each fresh write transaction has a
+five-second timeout and one-second PostgreSQL lock timeout; at most three attempts retry genuine
+deadlock/lock-timeout SQL states only. Exhaustion returns `SURGERY_COMMAND_BUSY` (409), other failures
+are not retried. Receipt V2 persists blocking reasons/nanoseconds and still reads V1 without rewriting it.
+Clinical policies, genuine authority aggregation/fences, downstream acceptance and live activation
 remain open. See the execution ledger for actual tests; do not promote local mock acceptance to
 joint contract approval.
+
+The gated endpoints are POST `/{caseId}/readiness/evaluate`, `/schedule/finalize`, `/start`, `/complete`
+under `/api/v1/surgery/cases`. READY/START/COMPLETE require ADMIN/DOCTOR; finalize also permits MANAGER.
+JWT supplies the actor; unknown actor/role/READY/clearance/emergency/amount fields are rejected, even
+for ADMIN. Expected case/schedule revisions and `Idempotency-Key` are mandatory. A committed guard
+denial returns an explicit state plus `blockingReasons`, never a successful clinical transition.
+Evaluate returns the immutable readiness snapshot as `subjectId`; finalize/START identify the pinned
+schedule and COMPLETE identifies the immutable result. Both feature gates remain false. Enabling both
+without real use-case beans fails startup. These local HTTP tests do not certify Gateway integration.
 
 **2026-10-07 local outbound boundary:** typed V1 `surgery.case.created`, `surgery.ready`,
 `surgery.readiness.invalidated`, `surgery.completed` and `surgery.cancelled` have actual serializer
@@ -247,6 +262,18 @@ Canonical payloads/consumer gates remain in [care contract](../../handoffs/care-
 and [charge contract](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
 Inpatient verifies actual admission bytes at its adapter; outpatient/reference/late acceptance,
 Billing reconciliation, Notification reminder handling, policy sources and live rollout stay OPEN.
+
+**2026-10-07 internal creation core:** a channel-neutral create in-port now atomically persists
+REQUESTED case, pinned PENDING checklist/items, initial histories, canonical V7 HELD charge bytes
+and V8 immutable creation receipt. A global request UUID/fingerprint fence serializes replicas;
+changed clinical intent conflicts, replay preserves original IDs/time and still reauthorizes without
+repeating external lookups or charge capture. Preflight suspends caller transactions; Clock/proof
+validity and exact approved template are checked after lock waits. The existing durable pending
+clearance worker can recover after creation commits, independently of any in-memory callback.
+There is no production creation-authority provider, HTTP/referral adapter or permissive fallback.
+The internal caller is not live referral/creation acceptance, a source lease or clinical approval.
+V1–V7 are unchanged; V8 neither backfills/adopts old cases nor releases held events. Local verification
+and the ten selected backlog edges: [creation batch](../../superpowers/plans/2026-10-07-surgery-creation-batch.md).
 
 **Subscribe:** `surgery.requested`, `financial.clearance.granted` with `purpose=SURGERY`, and explicit
 pre-op Lab/Pharmacy facts chosen by the future contract. A general Lab result does not automatically

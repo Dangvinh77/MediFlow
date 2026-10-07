@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.report.application.dto.command.carefinance.CareFinanceEventMetadata;
 import com.mediflow.report.application.dto.command.carefinance.DecodedCareFinanceEvent;
@@ -48,7 +49,15 @@ public class CareFinanceEnvelopeDecoder {
 
     public DecodedCareFinanceEvent decode(String routingKey, byte[] body) {
         try {
-            JsonNode root = objectMapper.readTree(body);
+            // Financial values must never pass through double. Keep the existing operational
+            // representation stable: V11 hashes historical normalized payloads, not raw bytes.
+            boolean financial = "payment.completed".equals(routingKey) || "payment.refunded".equals(routingKey)
+                    || "settlement.completed".equals(routingKey);
+            var treeReader = objectMapper.reader();
+            if (financial) {
+                treeReader = treeReader.with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+            }
+            JsonNode root = treeReader.readTree(body);
             if (root == null || !root.isObject()) {
                 throw invalid("Care-finance envelope must be a JSON object");
             }
@@ -82,7 +91,13 @@ public class CareFinanceEnvelopeDecoder {
             }
             UUID sourceId = requiredUuid(payloadNode, sourceContract.sourceField());
 
-            Map<String, Object> payload = objectMapper.convertValue(payloadNode, PAYLOAD_TYPE);
+            Map<String, Object> payload;
+            if (financial) {
+                payload = objectMapper.readerFor(PAYLOAD_TYPE)
+                        .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).readValue(payloadNode);
+            } else {
+                payload = objectMapper.convertValue(payloadNode, PAYLOAD_TYPE);
+            }
             CareFinanceEventMetadata metadata = new CareFinanceEventMetadata(
                     eventId, eventType, 1, occurredAt, correlationId, producer,
                     sourceContract.sourceField(), sourceId);

@@ -76,6 +76,11 @@ public class SurgeryWebExceptionHandler {
         return build(HttpStatus.CONFLICT, "SURGERY_REVISION_CONFLICT", exception.getMessage(), request);
     }
 
+    @ExceptionHandler(com.mediflow.surgery.application.exception.SurgeryCommandBusyException.class)
+    public ResponseEntity<ApiResponse<Void>> commandBusy(Exception exception, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "SURGERY_COMMAND_BUSY", "Resource is busy; retry the same command later", request);
+    }
+
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiResponse<Void>> businessRule(
             BusinessRuleException exception, HttpServletRequest request) {

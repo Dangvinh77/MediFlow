@@ -12,9 +12,15 @@ wire contracts belong in the canonical contract documents under
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | PARTIAL — Billing held grant producer and same-byte EXAM/LAB_TEST consumer tests added; request issuance/live rollout remain open | Huy (user-authorized dependency scope); Lộc/Vinh retain long-term ownership | Clinical EXAM authorization and Lab exact-test clearance |
 | [Inpatient deposit and settlement](../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md) | PARTIAL — held ADMISSION_DEPOSIT grant/receipt producer and exact consumer fixture added; top-up/settlement absent | Huy (user-authorized dependency scope); Lộc/Vinh retain long-term ownership | deposit request issuance, top-up projection and administrative close after settlement |
 | [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | PARTIAL — local Surgery V1 wire/HELD capture + producer fixtures added; clinical/referral/finance/runtime gaps remain | Huy has user-authorized dependency implementation scope; original owners retain long-term ownership | episode/referral/charge/clearance and clinical policies; Inpatient reference registration + outpatient/late-event handling; full READY/finalize/START authority wiring and downstream invalidation-reminder acceptance |
-| [Huy Pharmacy/Report care-finance contracts](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) | PARTIAL — medical discharge plus Billing clearance/receipt fixtures added; transfer/live admission, financial projector and reversal/settlement remain open | Huy has user-authorized dependency scope; original owners retain long-term ownership | remaining admission/finance/replay gaps; additive local work proceeds behind disabled flags |
+| [Huy Pharmacy/Report care-finance contracts](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) | PARTIAL — medical discharge, Billing fixtures and Report gross receipt kernel/finite replay added; transfer/live admission, recognition/reversal/settlement remain open | Huy for Pharmacy/Report; producer owners retain their scopes; Gateway remains Hoàng Anh's scope | remaining admission/finance/coverage/catch-up gaps; additive local work proceeds without live activation |
 
 ## Lifecycle rule
+
+**Huy internal creation follow-up 2026-10-07:** Surgery now has a LOCAL channel-neutral caller
+which atomically creates case/checklist/history/HELD charge bytes and V8 request receipt. No
+production referral authority or live create adapter is installed. The same Surgery handoff remains
+registered for referral/reference/clinical/source-fence and downstream acceptance; no duplicate or
+retired handoff is invented. [Execution evidence](../superpowers/plans/2026-10-07-surgery-creation-batch.md).
 
 **Huy update 2026-10-07:** the Surgery handoff's missing outbound shapes are implemented locally:
 five typed V1 facts, ten actual producer fixtures and atomic HELD capture. Report supplies offline

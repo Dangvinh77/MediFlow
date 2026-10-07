@@ -72,3 +72,15 @@ X-Correlation-Id: report-operations-daily
 GET {{host}}/api/v1/reports/operations/surgery?from=2026-10-01&to=2026-10-02
 Authorization: Bearer {{token}}
 X-Correlation-Id: report-operations-surgery
+
+### Private management diagnostic — ADMIN/MANAGER access token only, NOT a Gateway API
+# Default unavailable: telemetry=false and web exposure is health,info.
+# Explicit telemetry opt-in PLUS private metrics exposure is required. Never expose this to patients.
+# Gauge values are local diagnostics, not accepted source coverage or clinical/finance decisions.
+@managementHost = http://localhost:8088
+GET {{managementHost}}/actuator/metrics/report.telemetry.available
+Authorization: Bearer {{token}}
+
+### Private aggregate pending diagnostic (same explicit management-plane opt-in)
+GET {{managementHost}}/actuator/metrics/report.admission.pending
+Authorization: Bearer {{token}}
