@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.in.ManageSurgeryConsentUseCase;
@@ -30,13 +32,15 @@ public class SurgeryConsentApplicationService implements ManageSurgeryConsentUse
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryCommandReceiptPort receipts;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
 
     public SurgeryConsentApplicationService(SurgeryCaseRepositoryPort cases,
                                            SurgeryConsentRepositoryPort consents,
                                            SurgeryScheduleRepositoryPort schedules,
                                            SurgeryResourceReservationPort reservations,
                                            SurgeryCommandReceiptPort receipts,
-                                           SurgeryClockPort surgeryClock) {
+                                           SurgeryClockPort surgeryClock, SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases;
         this.consents = consents;
         this.schedules = schedules;
@@ -65,7 +69,7 @@ public class SurgeryConsentApplicationService implements ManageSurgeryConsentUse
                 .anyMatch(existing -> existing.consentType() == command.consentType() && existing.isActive());
         if (activeTypeExists) throw new SurgeryRevisionConflictException();
         Instant at = clock.now();
-        SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.recordedBy(),
+        var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.recordedBy(),
                 command.correlationId(), at, "CONSENT_CHANGED", schedules, reservations);
         SurgeryConsentRecord consent = SurgeryConsentRecord.sign(UUID.randomUUID(),
                 command.surgeryCaseId(), command.consentType(), command.signerId(),
@@ -75,6 +79,7 @@ public class SurgeryConsentApplicationService implements ManageSurgeryConsentUse
         surgeryCase.recordBusinessMutation(command.recordedBy(), command.correlationId(), at,
                 "CONSENT_SIGNED");
         cases.save(surgeryCase, command.expectedCaseRevision());
+        pendingEvent.capture(surgeryCase, events);
         SurgeryCommandOutcome outcome = new SurgeryCommandOutcome(SIGN_COMMAND,
                 surgeryCase.getSurgeryCaseId(), surgeryCase.getRevision(), consent.consentId(),
                 1, "ACTIVE:" + command.consentType().name(), at, false);
@@ -101,7 +106,7 @@ public class SurgeryConsentApplicationService implements ManageSurgeryConsentUse
                 .filter(value -> value.surgeryCaseId().equals(command.surgeryCaseId()))
                 .orElseThrow(SurgeryRevisionConflictException::new);
         Instant at = clock.now();
-        SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.recordedBy(),
+        var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.recordedBy(),
                 command.correlationId(), at, "CONSENT_REVOKED", schedules, reservations);
         SurgeryConsentRecord revoked = current.revoke(command.recordedBy(), at,
                 command.correlationId(), command.reason().trim());
@@ -109,6 +114,7 @@ public class SurgeryConsentApplicationService implements ManageSurgeryConsentUse
         surgeryCase.recordBusinessMutation(command.recordedBy(), command.correlationId(), at,
                 "CONSENT_REVOKED");
         cases.save(surgeryCase, command.expectedCaseRevision());
+        pendingEvent.capture(surgeryCase, events);
         SurgeryCommandOutcome outcome = new SurgeryCommandOutcome(REVOKE_COMMAND,
                 surgeryCase.getSurgeryCaseId(), surgeryCase.getRevision(), revoked.consentId(),
                 2, "REVOKED:" + revoked.consentType().name(), at, false);

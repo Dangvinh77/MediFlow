@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.in.ApplySurgeryAuthorityInvalidationUseCase;
 import com.mediflow.surgery.application.port.in.QuerySurgeryAuthorityInvalidationsUseCase.Candidate;
@@ -19,8 +21,11 @@ public class SurgeryAuthorityInvalidationService implements ApplySurgeryAuthorit
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryAuthorityInvalidationPort invalidations;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
     public SurgeryAuthorityInvalidationService(SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
-            SurgeryResourceReservationPort reservations, SurgeryAuthorityInvalidationPort invalidations, SurgeryClockPort clock) {
+            SurgeryResourceReservationPort reservations, SurgeryAuthorityInvalidationPort invalidations, SurgeryClockPort clock,
+            SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases; this.schedules = schedules; this.reservations = reservations;
         this.invalidations = invalidations; this.clock = clock;
     }
@@ -43,9 +48,10 @@ public class SurgeryAuthorityInvalidationService implements ApplySurgeryAuthorit
         if (!candidate.scheduleId().equals(schedule.scheduleId()) || candidate.scheduleRevision() != schedule.revision()
                 || !pending.orElseThrow().change().affects(schedule)) throw new SurgeryRevisionConflictException();
         long revision = value.getRevision();
-        SurgeryReadinessInvalidation.invalidateIfRequired(value, SurgeryAuditActor.system("organization-service"),
+        var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(value, SurgeryAuditActor.system("organization-service"),
                 pending.orElseThrow().correlationId(), now, "ORGANIZATION_AUTHORITY_CHANGED", schedules, reservations);
         cases.save(value, revision);
+        pendingEvent.capture(value, events);
         invalidations.finish(candidate, SurgeryAuthorityInvalidationPort.Completion.APPLIED, now);
         return true;
     }

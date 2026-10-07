@@ -61,7 +61,7 @@ class OperationalReplayPostgresTest {
 
     @BeforeEach
     void clean() {
-        jdbc.execute("TRUNCATE operational_replay_generation, operational_event_journal, operational_contribution, daily_operational_report CASCADE");
+        jdbc.execute("TRUNCATE operational_source_snapshot, operational_replay_generation, operational_event_journal, operational_contribution, daily_operational_report CASCADE");
     }
 
     @Test
@@ -78,6 +78,36 @@ class OperationalReplayPostgresTest {
         assertThat(count("operational_replay_contribution")).isOne();
         assertThat(jdbc.queryForList("SELECT numeric_value FROM operational_replay_scope", Long.class)).containsExactly(1L, 1L);
         assertThat(jdbc.queryForList("SELECT completed_visits FROM daily_operational_report", Long.class)).containsExactly(2L, 2L);
+    }
+
+    @Test void actualClinicalPharmacySurgeryJournal_rebuildsSameMultiMetricTotalsFromEmptyGeneration() throws Exception {
+        var decoder = new com.mediflow.report.infrastructure.messaging.carefinance.CareFinanceEnvelopeDecoder(new ObjectMapper());
+        var zone = java.time.ZoneId.of("Asia/Bangkok");
+        var clinical = decoder.decode("medicalrecord.completed", java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json")));
+        var pharmacy = decoder.decode("prescription.filled", java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.v1.json")));
+        var surgery = decoder.decode("surgery.completed", java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.v1.json")));
+        live.apply(new com.mediflow.report.application.mapper.ClinicalOperationalContributionMapper(zone).map(clinical));
+        live.apply(new com.mediflow.report.application.mapper.PrescriptionOperationalContributionMapper(zone).map(pharmacy));
+        var surgeryMapper = new com.mediflow.report.application.mapper.SurgeryOperationalContributionMapper(zone);
+        live.apply(surgeryMapper.map(surgery)); live.apply(surgeryMapper.map(surgery));
+        var meta = surgery.metadata();
+        live.apply(surgeryMapper.map(new DecodedCareFinanceEvent(new CareFinanceEventMetadata(UUID.randomUUID(),
+                meta.eventType(), 1, meta.occurredAt(), meta.correlationId(), meta.producer(),
+                meta.sourceField(), meta.sourceId()), surgery.payload())));
+        var generation = replay.start();
+        assertThat(generation.sourceEvents()).isEqualTo(4);
+        assertThat(count("operational_replay_contribution")).isZero();
+        for (int batch = 0; batch < 3; batch++) replay.advance(generation.generationId(), 1);
+        assertThat(replay.advance(generation.generationId(), 1).status()).isEqualTo(Status.VERIFIED);
+        assertThat(count("operational_replay_contribution")).isEqualTo(5);
+        assertThat(count("operational_contribution")).isEqualTo(5);
+        assertThat(jdbc.queryForList("SELECT metric_type,numeric_value FROM operational_replay_scope WHERE department_id IS NULL"))
+                .hasSize(5).allSatisfy(row -> assertThat(row.get("numeric_value"))
+                        .isEqualTo(row.get("metric_type").equals("SURGERY_DURATION_MINUTES") ? 6L
+                                : row.get("metric_type").equals("DISPENSED_UNITS") ? 2L : 1L));
     }
 
     @Test

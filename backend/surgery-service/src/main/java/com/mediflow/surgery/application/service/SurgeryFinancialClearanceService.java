@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
 import com.mediflow.surgery.application.port.in.ReactToSurgeryClearanceUseCase;
@@ -15,8 +17,11 @@ public class SurgeryFinancialClearanceService implements ReactToSurgeryClearance
     private final SurgeryScheduleRepositoryPort schedules;
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
     public SurgeryFinancialClearanceService(SurgeryCaseRepositoryPort cases, SurgeryFinancialClearanceRepositoryPort clearances,
-            SurgeryInboxPort inbox, SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
+            SurgeryInboxPort inbox, SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort reservations, SurgeryClockPort clock,
+            SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases; this.clearances = clearances; this.inbox = inbox;
         this.schedules = schedules; this.reservations = reservations; this.clock = clock;
     }
@@ -45,9 +50,10 @@ public class SurgeryFinancialClearanceService implements ReactToSurgeryClearance
         if (saved == SurgeryFinancialClearanceRepositoryPort.SaveDecision.CREATED
                 && (surgeryCase.getStatus() == SurgeryStatus.READY || surgeryCase.getStatus() == SurgeryStatus.SCHEDULED)) {
             long previousRevision = surgeryCase.getRevision();
-            SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, SurgeryAuditActor.system("billing-service"),
+            var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, SurgeryAuditActor.system("billing-service"),
                     command.correlationId(), now, "FINANCIAL_CLEARANCE_CHANGED", schedules, reservations);
             cases.save(surgeryCase, previousRevision);
+            pendingEvent.capture(surgeryCase, events);
         }
         inbox.markApplied(command.incoming().eventId(), now);
         return Outcome.APPLIED;

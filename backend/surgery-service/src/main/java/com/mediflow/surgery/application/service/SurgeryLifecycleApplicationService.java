@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.application.dto.SurgeryLifecycleCommand;
 import com.mediflow.surgery.application.dto.SurgeryReadinessEvidence;
@@ -54,6 +56,7 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
     private final SurgeryReadinessAuthorityPort authority;
     private final SurgeryLifecycleIntentPort intents;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
     private final SurgeryReadinessEngine engine;
 
     public SurgeryLifecycleApplicationService(SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
@@ -62,7 +65,8 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
             SurgeryFinancialClearanceRepositoryPort clearances, SurgeryResourceReservationPort resources,
             SurgeryResultRepositoryPort results, SurgeryReadinessAuthorityPort authority,
             SurgeryLifecycleIntentPort intents, SurgeryClockPort clock, SurgeryReadinessEngine engine,
-            FinancialClearanceLookupPort financialAuthority) {
+            FinancialClearanceLookupPort financialAuthority, SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases; this.schedules = schedules; this.receipts = receipts; this.snapshots = snapshots;
         this.checklists = checklists; this.consents = consents; this.clearances = clearances; this.resources = resources;
         this.results = results; this.authority = authority; this.intents = intents; this.clock = clock; this.engine = engine;
@@ -108,9 +112,10 @@ public class SurgeryLifecycleApplicationService implements EvaluateSurgeryReadin
         boolean changed = required != SurgeryStatus.PREOP_IN_PROGRESS && !sameDependencies(value.getReadinessSnapshot(),snapshot);
         if (!snapshot.isReady() || priorExpired || changed) {
             if (required != SurgeryStatus.PREOP_IN_PROGRESS) {
-                SurgeryReadinessInvalidation.invalidateIfRequired(value,actor(command),command.correlationId(),at,
+                var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(value,actor(command),command.correlationId(),at,
                         "READINESS_RECHECK_FAILED",schedules,resources);
                 cases.save(value,command.expectedCaseRevision());
+                pendingEvent.capture(value, events);
             }
             // Return a committed denial, not an exception that rolls back the invalidation/audit.
             String denial = priorExpired ? "READINESS_EXPIRED" : !snapshot.isReady() ? "NOT_READY" : "READINESS_CHANGED";

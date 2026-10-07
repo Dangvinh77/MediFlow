@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SurgeryMigrationUpgradeIntegrationTest {
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    @ParameterizedTest(name = "upgrade existing V{0} to V6 preserves all prior rows and retry bytes")
-    @ValueSource(ints = {1, 2, 3, 4, 5})
+    @ParameterizedTest(name = "upgrade existing V{0} to V7 preserves all prior rows and retry bytes")
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
     void migrate_existingData_preservesRowsAndDoesNotCreateAuthorityOrJobs(int baseline) {
         String schema = "upgrade_" + UUID.randomUUID().toString().replace("-", "");
         var initial = Flyway.configure().dataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())
@@ -64,10 +64,16 @@ class SurgeryMigrationUpgradeIntegrationTest {
                     """,
                     fixture.caseId(), fixture.snapshotId(), Timestamp.from(now.plusSeconds(120)), Timestamp.from(now));
         }
+        if (baseline >= 6) {
+            db.update("""
+                    INSERT INTO surgery_lifecycle_intent(operation_id,surgery_case_id,case_revision,intent_kind,
+                        protocol_version,correlation_id,payload) VALUES (?,?,3,'READY',1,'upgrade',?)
+                    """, UUID.randomUUID(), fixture.caseId(), retained);
+        }
         Map<String, List<String>> before = snapshot(db);
         var current = Flyway.configure().dataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())
                 .schemas(schema).defaultSchema(schema).load();
-        assertThat(current.migrate().migrationsExecuted).isEqualTo(6 - baseline);
+        assertThat(current.migrate().migrationsExecuted).isEqualTo(7 - baseline);
         for (var table : before.entrySet()) {
             assertThat(rows(db, table.getKey())).as("unchanged existing %s", table.getKey()).isEqualTo(table.getValue());
         }
@@ -76,7 +82,8 @@ class SurgeryMigrationUpgradeIntegrationTest {
         assertThat(db.queryForList("SELECT status FROM surgery_resource_reservation", String.class)).containsExactly("RESERVED", "RESERVED");
         assertThat(db.queryForObject("SELECT count(*) FROM surgery_authority_change", Integer.class)).isZero();
         assertThat(db.queryForObject("SELECT count(*) FROM surgery_authority_invalidation", Integer.class)).isZero();
-        assertThat(db.queryForObject("SELECT count(*) FROM surgery_lifecycle_intent", Integer.class)).isZero();
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_lifecycle_intent", Integer.class)).isEqualTo(baseline >= 6 ? 1 : 0);
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_care_event_outbox", Integer.class)).isZero();
         assertThat(db.queryForObject("SELECT count(*) FROM surgery_readiness_precision", Integer.class)).isZero();
         assertThat(db.queryForObject("SELECT payload FROM surgery_inbox", byte[].class)).containsExactly(retained);
         assertThat(current.validateWithResult().validationSuccessful).isTrue();

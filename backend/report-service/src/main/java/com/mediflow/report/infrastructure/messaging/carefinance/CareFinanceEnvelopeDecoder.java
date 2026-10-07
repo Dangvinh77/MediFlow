@@ -17,8 +17,7 @@ import com.mediflow.report.messaging.consumer.ReportEventValidationException;
 
 /**
  * Offline V2 decoder harness. It is deliberately not attached to Rabbit routing; only contracts
- * with a source ID and producer fixed by current owner specs are accepted here. Surgery events
- * remain unsupported until D07/D11 lock their canonical projection source identity.
+ * with a source ID and producer fixed by current canonical contracts are accepted here.
  */
 @Component
 public class CareFinanceEnvelopeDecoder {
@@ -34,7 +33,9 @@ public class CareFinanceEnvelopeDecoder {
             Map.entry("admission.started", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("admission.closed", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("lab.result.created", new SourceContract("lab-service", "labId")),
-            Map.entry("prescription.filled", new SourceContract("pharmacy-service", "dispenseId")));
+            Map.entry("prescription.filled", new SourceContract("pharmacy-service", "dispenseId")),
+            Map.entry("surgery.completed", new SourceContract("surgery-service", "resultId")),
+            Map.entry("surgery.cancelled", new SourceContract("surgery-service", "cancellationId")));
 
     private static final TypeReference<LinkedHashMap<String, Object>> PAYLOAD_TYPE =
             new TypeReference<>() { };

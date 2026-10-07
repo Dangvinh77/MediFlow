@@ -60,7 +60,7 @@ class OperationalContributionPostgresTest {
 
     @BeforeEach
     void clean() {
-        jdbc.execute("TRUNCATE operational_delivery, operational_event_journal, operational_contribution, daily_operational_report CASCADE");
+        jdbc.execute("TRUNCATE operational_source_snapshot, operational_delivery, operational_event_journal, operational_contribution, daily_operational_report CASCADE");
     }
 
     @Test
@@ -74,6 +74,52 @@ class OperationalContributionPostgresTest {
         assertThat(count("operational_contribution")).isOne();
         assertThat(total(null)).isOne();
         assertThat(total(departmentId)).isOne();
+    }
+
+    @Test
+    void huyActualProducerBytes_replayCountsOnceAndRetainsNoNarrativeOrPatientData() throws Exception {
+        var decoder=new CareFinanceEnvelopeDecoder(new ObjectMapper());
+        var mapper=new com.mediflow.report.application.mapper.SurgeryOperationalContributionMapper(ZoneId.of("Asia/Bangkok"));
+        var path=Path.of("../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.v1.json");
+        var event=decoder.decode("surgery.completed",Files.readAllBytes(path));
+        service.apply(mapper.map(event));service.apply(mapper.map(event));
+        var metadata=event.metadata();
+        var redelivery=new CareFinanceEventMetadata(UUID.randomUUID(),metadata.eventType(),metadata.version(),
+                metadata.occurredAt(),metadata.correlationId(),metadata.producer(),metadata.sourceField(),metadata.sourceId());
+        service.apply(mapper.map(new DecodedCareFinanceEvent(redelivery,event.payload())));
+        assertThat(count("operational_contribution")).isEqualTo(2);
+        assertThat(jdbc.queryForList("SELECT surgeries_completed,surgery_duration_minutes FROM daily_operational_report"))
+                .hasSize(2).allSatisfy(row->{assertThat(row.get("surgeries_completed")).isEqualTo(1L);
+                    assertThat(row.get("surgery_duration_minutes")).isEqualTo(6L);});
+        assertThat(jdbc.queryForList("SELECT event_snapshot::text || contribution_snapshot::text FROM operational_event_journal",String.class))
+                .allSatisfy(snapshot->assertThat(snapshot).doesNotContain("patientId","performedItems","complicationsSummary","Indication"));
+    }
+
+    @Test void surgery_sameResultNewDeliveryChangedNonMetricEvidence_isConflictAndRollsBack() throws Exception {
+        var decoder = new CareFinanceEnvelopeDecoder(new ObjectMapper());
+        var mapper = new com.mediflow.report.application.mapper.SurgeryOperationalContributionMapper(ZoneId.of("Asia/Bangkok"));
+        var event = decoder.decode("surgery.completed", Files.readAllBytes(Path.of(
+                "../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.v1.json")));
+        service.apply(mapper.map(event));
+        var changed = new LinkedHashMap<>(event.payload()); changed.put("performedItems", List.of());
+        var meta = event.metadata();
+        var changedEvent = new DecodedCareFinanceEvent(new CareFinanceEventMetadata(UUID.randomUUID(),
+                meta.eventType(),1,meta.occurredAt(),meta.correlationId(),meta.producer(),meta.sourceField(),meta.sourceId()), changed);
+        assertThatThrownBy(() -> service.apply(mapper.map(changedEvent))).hasMessageContaining("conflict");
+        assertThat(count("operational_event_journal")).isOne();
+        assertThat(count("operational_source_snapshot")).isOne();
+        assertThat(count("operational_contribution")).isEqualTo(2);
+    }
+
+    @Test void upgradedSourceWithoutRawPayloadHash_cannotBeSilentlyRebasedByNewDelivery() {
+        var command = command(UUID.randomUUID(), sourceId, departmentId, time);
+        jdbc.update("""
+                INSERT INTO operational_source_snapshot(source_type,source_id,source_revision,event_type,
+                    first_event_id,evidence_state) VALUES ('MEDICAL_RECORD',?,1,'medicalrecord.completed',?,'LEGACY_UNVERIFIED')
+                """, sourceId, UUID.randomUUID());
+        assertThatThrownBy(() -> service.apply(command)).hasMessageContaining("revalidation");
+        assertThat(count("operational_event_journal")).isZero();
+        assertThat(count("operational_contribution")).isZero();
     }
 
     @Test
@@ -91,6 +137,34 @@ class OperationalContributionPostgresTest {
                 .hasMessageContaining("conflict");
         assertThat(count("operational_event_journal")).isOne();
         assertThat(total(null)).isOne();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"clinical", "pharmacy"})
+    void actualClinicalAndPharmacyProducerBytes_updateBothScopesOnceWithoutPatientJournal(String source) throws Exception {
+        var decoder = new CareFinanceEnvelopeDecoder(new ObjectMapper());
+        String eventType = source.equals("clinical") ? "medicalrecord.completed" : "prescription.filled";
+        Path path = source.equals("clinical")
+                ? Path.of("../clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json")
+                : Path.of("../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.v1.json");
+        var event = decoder.decode(eventType, Files.readAllBytes(path));
+        java.util.function.Function<DecodedCareFinanceEvent, ApplyOperationalContributionCommand> mapper = source.equals("clinical")
+                ? new com.mediflow.report.application.mapper.ClinicalOperationalContributionMapper(ZoneId.of("Asia/Bangkok"))::map
+                : new com.mediflow.report.application.mapper.PrescriptionOperationalContributionMapper(ZoneId.of("Asia/Bangkok"))::map;
+        service.apply(mapper.apply(event)); service.apply(mapper.apply(event));
+        var metadata = event.metadata();
+        service.apply(mapper.apply(new DecodedCareFinanceEvent(new CareFinanceEventMetadata(UUID.randomUUID(),
+                eventType, 1, metadata.occurredAt(), metadata.correlationId(), metadata.producer(),
+                metadata.sourceField(), metadata.sourceId()), event.payload())));
+        assertThat(count("operational_contribution")).isEqualTo(source.equals("clinical") ? 1 : 2);
+        assertThat(jdbc.queryForList("SELECT completed_visits,dispensed_prescriptions,dispensed_units FROM daily_operational_report"))
+                .hasSize(2).allSatisfy(row -> {
+                    assertThat(row.get("completed_visits")).isEqualTo(source.equals("clinical") ? 1L : 0L);
+                    assertThat(row.get("dispensed_prescriptions")).isEqualTo(source.equals("pharmacy") ? 1L : 0L);
+                    assertThat(row.get("dispensed_units")).isEqualTo(source.equals("pharmacy") ? 2L : 0L);
+                });
+        assertThat(jdbc.queryForList("SELECT event_snapshot::text || contribution_snapshot::text FROM operational_event_journal", String.class))
+                .allSatisfy(snapshot -> assertThat(snapshot).doesNotContain("patientId", "drugName", "dosage", "diagnosis"));
     }
 
     @Test

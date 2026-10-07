@@ -7,10 +7,45 @@
 
 ## Price and charge source
 
-Surgery publishes a request with `surgeryCaseId`, `admissionId`, `patientId`, `departmentId`,
+### Huy-owned event identity — fixed for Billing fixtures (2026-10-07)
+
+| Business fact | `eventType` and Rabbit routing key | Envelope `version` | Producer |
+|---|---|---:|---|
+| Case exists; request planned charges | `surgery.case.created` | 1 | `surgery-service` |
+| Surgery performed; reconcile actual charges | `surgery.completed` | 1 | `surgery-service` |
+| Pre-start cancellation; apply financial adjustment policy | `surgery.cancelled` | 1 | `surgery-service` |
+
+Exchange: durable topic `mediflow.events`. No `.v1` routing suffix. JSON is the nested common
+envelope, not the legacy flat payload. AMQP `messageId=eventId`, `correlationId=correlationId`,
+`contentType=application/json`, headers `eventType` and integer `eventVersion=1`.
+These names/version are no longer a Huy decision blocker: Billing may build fixtures against
+the checked-in producer files below. This does not claim Billing consumer acceptance or live delivery.
+
+`surgery.requested` remains Clinical/Inpatient → Surgery referral only. “Post-case charge” means
+after creating a Surgery case, not after performing surgery. Actual post-operation reconciliation
+uses `surgery.completed`; do not create a second `surgery.charge.*` event for the same fact.
+
+After creating its own case, Surgery captures `surgery.case.created` with `surgeryCaseId`, `admissionId`, `patientId`, `departmentId`,
 `procedureCode`, planned item/price codes and priority. Billing owns pricing and creates charges with
 `sourceType=SURGERY` and `sourceId=surgeryCaseId`. Surgery never stores authoritative paid amount or
 queries Billing tables.
+
+### Post-case identity bridge V1 — 2026-10-07
+
+`surgery.requested` is the upstream Clinical/Inpatient referral and cannot contain a Surgery-owned
+case UUID before creation. It is NOT the Billing charge command. Surgery's separate
+`surgery.case.created` envelope includes exact `surgeryRequestId`, patient/department/care episode,
+nullable admission/record, `caseRevision=0`, `sourceRevision=1`, `sourceType=SURGERY`,
+`sourceId=surgeryCaseId`, procedure/priority/requester/requestedAt and explicit nonempty
+`plannedItems[{itemCode,priceCode,quantity}]`. No price, paid amount or clinical indication is sent.
+One case has one immutable creation fact; repeated bytes are idempotent, changed planned items
+conflict rather than silently revise the charge request. Billing owns price lookup and charge IDs.
+The internal capture requires the same caller transaction as case creation. It is not a new
+public case-creation API and does not bypass the separately missing referral authority.
+
+Producer fixtures live in Surgery's `src/test/resources/contracts/surgery-outcomes-v1/`.
+Delivery stays HELD until Billing creates/reconciles charges and Inpatient registers exact case
+references with durable early-event handling. A held row is NOT consumer acceptance.
 
 ## Clearance
 
@@ -67,10 +102,43 @@ consumer; these engineering dependencies are **not waiting for Lộc to write co
 performed charges idempotently by `(surgeryCaseId, itemCode)`. A price code not recognized by Billing
 is a contract/catalog error and must not default to zero.
 
+The exact immutable source operation is `resultId` with `sourceRevision=1`, independent of
+envelope `version` and mutable `caseRevision`. `surgeryCaseId` ties the result to the original
+planned charge source. Payload carries exact patient/department/episode, nullable admission/record,
+actual `startedAt`/`completedAt`, and `recordedAt`; envelope `occurredAt=recordedAt`.
+`performedItems[{performedItemId,itemCode,priceCode,quantity}]` contains no price or amount.
+Repeated delivery or identical business source under a new event ID must not apply reconciliation
+twice; changed content for the same result/revision is a conflict, not an implicit correction.
+
+### Files Billing should read after pull
+
+All paths are relative to `backend/surgery-service/src/test/resources/contracts/surgery-outcomes-v1/`:
+
+| Scenario | Producer fixture (both `admission` and `outpatient`) |
+|---|---|
+| Planned charges | `surgery.case.created.<context>.v1.json` |
+| Actual completion matching plan | `surgery.completed.<context>.v1.json` |
+| Actual quantity 2 rather than planned 1; additional quantity 0.5 line | `surgery.completed.<context>.planned-difference.v1.json` |
+| Syntactically valid code absent from Billing's test catalogue | `surgery.completed.<context>.unknown-price.v1.json` |
+| Pre-start cancellation | `surgery.cancelled.<context>.v1.json` |
+
+Use each completion variant in an isolated scenario with its matching case-created fixture.
+Variants intentionally reuse the same case/result/event IDs to model alternative results,
+NOT a valid correction stream. Feeding two different variants together must conflict.
+`ITEM`, `PRICE`, `EXTRA_ITEM`, `EXTRA_PRICE` are synthetic contract test codes: Billing supplies
+its own test catalogue/prices. `UNRECOGNIZED_PRICE` must be absent in the unknown-code test;
+no production catalogue approval or expected monetary total is invented by Surgery.
+
+Producer serializer tests validate these exact JSON structures. A real RabbitMQ test verifies
+creation/completion routing, envelope version/headers and byte-identical retries. PostgreSQL tests
+verify atomic HELD capture, duplicate/conflict and rollback. The transport test sends test fixture
+bytes directly; it does not release V7 rows or connect a live referral/public creation endpoint.
+
 ## Cancellation and refund
 
-`surgery.cancelled` identifies stage (`BEFORE_PREOP`, `AFTER_PREOP`, `BEFORE_START`,
-`IN_PROGRESS_ABORTED`), exact case/admission IDs and reason. Billing applies policy to void unearned
+`surgery.cancelled` identifies stage (`BEFORE_PREOP`, `AFTER_PREOP`,
+`BEFORE_START` only in V1), exact case/admission IDs and reason. Post-start abort is not an implemented
+V1 operation. Billing applies policy to void unearned
 charges or create refund/credit transactions. It never mutates or deletes a completed payment.
 Billing publishes `payment.refunded` when a real ledger refund completes.
 

@@ -62,6 +62,7 @@ class SurgeryChecklistApplicationServiceTest {
     @Mock private SurgeryScheduleRepositoryPort schedules;
     @Mock private SurgeryResourceReservationPort reservations;
     @Mock private SurgeryClockPort clock;
+    @Mock private com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events;
     @InjectMocks private SurgeryChecklistApplicationService service;
 
     @Test

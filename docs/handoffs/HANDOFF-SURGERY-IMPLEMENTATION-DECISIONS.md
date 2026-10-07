@@ -71,13 +71,23 @@ Huy has selected English snake_case for Surgery-owned SQL identifiers and Englis
 
 There is a contract naming/ownership conflict to resolve: the architecture lists `surgery.requested.v1` from Clinical/Inpatient to Surgery **and Billing**, while `CONTRACT-SURGERY-BILLING-01` describes a Surgery-originated request carrying `surgeryCaseId` and planned items. Those are different facts because Billing cannot use a Surgery case ID before the case exists.
 
-**Huy chose:** keep referral-to-Surgery and post-case charge intent as two semantically distinct facts; do not reuse `surgery.requested` for both meanings. The post-case charge fact should identify `surgeryCaseId` as stable `sourceId`, selected care episode, department, procedure and planned `{itemCode, priceCode, quantity}` lines. Surgery sends codes/quantities only; Billing owns catalog validity and all prices/amounts. Event name, envelope version, routing key and whether Billing may also observe the original referral remain for owner confirmation; do not invent them in code.
+**HUY DECISION COMPLETE — 2026-10-07:** referral-to-Surgery and post-case charge are distinct facts. Planned charge bridge uses `eventType=surgery.case.created`, envelope `version=1`, routing key `surgery.case.created`, producer `surgery-service`, exchange `mediflow.events`. It identifies `surgeryCaseId` as stable `sourceId` (`sourceType=SURGERY`, `sourceRevision=1`), exact episode/department/procedure and planned `{itemCode,priceCode,quantity}` lines. Actual post-operation reconciliation uses `surgery.completed`, envelope `version=1`, routing key `surgery.completed` on the same exchange/producer; operation identity is `resultId` + `sourceRevision=1`. No `.v1` routing suffix or second charge event is used. Surgery sends codes/quantities only; Billing owns catalog validity and all prices/amounts. `surgery.requested` is the upstream referral, not a charge trigger. Canonical fields, producer fixtures and test instructions are in [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md#huy-owned-event-identity--fixed-for-billing-fixtures-2026-10-07). Lộc can implement Billing fixtures without waiting for another Huy naming decision; Billing acceptance/reconciliation and live creation/delivery remain OPEN.
 
 The clearance path must be exact and purpose-specific: `purpose=SURGERY`, matching `surgeryCaseId`, patient and selected episode; admission target is required for inpatient surgery. The current Surgery–Billing contract describes admission clearance, while the Surgery candidate supports outpatient cases too.
 
 **Huy chose:** clearance must be purpose-specific (`purpose=SURGERY`) and match exact `surgeryCaseId`, patient and selected episode; admission additionally requires exact `admissionId`. **Still needed from Lộc (and Vinh for episode fields):** confirm outpatient/admission target shape and charge source contract, then provide canonical producer bytes. Acceptance is one same-byte producer/consumer fixture for each supported episode plus wrong-case/wrong-episode rejection. Unknown `priceCode` is a contract/catalog error, never zero-priced.
 
 ### C. Surgery event facts and consumer fields
+
+**2026-10-07 local producer update:** the historical gap table below is now superseded on the
+Huy producer boundary by typed V1 READY/COMPLETED/CANCELLED, `surgery.readiness.invalidated` and
+the separate post-case `surgery.case.created` capture. Ten same-serializer fixtures cover both
+care contexts; V7 captures HELD rows in local mutation transactions. Inpatient adapter tests read
+the actual admission fixtures; Report maps actual completion/cancellation bytes. No live case
+creation caller, approved policy sources or downstream workflow acceptance is claimed.
+Lasting fields are in the [canonical care contract](care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
+and [charge bridge](care-finance/CONTRACT-SURGERY-BILLING-01.md), not a second handoff.
+See [execution/remaining work](../superpowers/plans/2026-10-07-huy-outbound-contracts.md).
 
 Every event fixture must include the common envelope (`eventId`, `eventType`, `version`, `occurredAt`, `correlationId`, `producer`) and exact producer-owned source/business keys. Owner teams must decide whether corrections are new revisions of an operation or a replacement fact; `eventId` alone does not make a semantic operation unique.
 
@@ -98,6 +108,9 @@ Inpatient is **not** a scaffold-only dependency anymore. Its [event consumer](..
 | Completed/cancelled treatment-entry handling expects an ADMITTED admission; delivery can be late or out of order. | Vinh + Huy: define late outcome after discharge/close and READY after terminal outcome, including revision/semantic dedupe. Test no lost durable fact, no reopened admission and no repeated treatment entry. | S-03.6, S-07.5 |
 | Human-authorized admission GET exists, but does not by itself establish a service-auth relationship lookup. | Vinh: specify authoritative referral proof or service-only lookup and freshness for exact patient/department/admission eligibility. No assumption that Patient exists proves this relationship. | S-03.3.3, S-04.1 |
 
+The historical “do not invent a case-created event” prohibition is superseded by the explicit
+Surgery-owned post-case contract above. It does not authorize inferring an upstream referral ID.
+Reference-first/event-first/outpatient/late acceptance remains unimplemented, not a wire-field wait.
 These are acceptance details, not an ownership blocker after the 2026-10-05 user override.
 The service-only admission lookup row is now partially implemented and tested for exact identity
 and medical-care window. It does not prove referral or current placement. The other lifecycle,
@@ -142,7 +155,7 @@ Reply by editing this handoff (or link a canonical contract/spec PR) with the re
 | Owner | Required response | Status / link / date |
 |---|---|---|
 | Vinh — Clinical/Inpatient | Confirm referral ownership/stable identity, relationship proof, external-order registration and outpatient/late-event handling (§D); provide checklist/consent/clinical result policies. Post-start abort is deferred from V1. | `OPEN` — fill in after review |
-| Lộc — Billing/Notification | Confirm distinct post-case charge fact, item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `OPEN` — fill in after review |
+| Lộc — Billing/Notification | Use the fixed Surgery V1 names and actual producer fixtures in SURGERY-BILLING; implement/verify item/price-code reconciliation, exact clearance with validity/revoke policy, adjustment semantics and provisional READY/invalidation/reschedule consumers. | `HUY EVENT NAMING/FIXTURE READY LOCALLY (2026-10-07); BILLING/NOTIFICATION ACCEPTANCE OPEN` |
 | Hoàng Anh — Organization | Master's generic room lookup and additive `eligibleTeamRoles` producer fixtures retained. Local revisioned operating-room and explicit interval-scoped capability authority remain separate; Surgery consumes their canonical fixtures and packaged runtime tests pass read/draft/revoke. Gated V1 authority-change intake/durable invalidation has same producer event fixtures and PG/Rabbit evidence. Generic job-title roles must not substitute for explicit grants. Fresh-authority READY/finalize/START reconciliation, generic fixture adoption, clinical policy and multi-service event rollout remain open. [Runtime verification](../ai/services/surgery.md). | `GENERIC PRODUCER READY; EXPLICIT AUTHORITY/LOCAL INVALIDATION VERIFIED; FULL LIFECYCLE OPEN` |
 | Huy — Surgery | Staff/department/room/capability adapters and gated authority invalidation exist. Internal seven-guard readiness, explicit configured checklist/consent/team policies and evaluate/finalize/START/COMPLETE orchestration implemented on 2026-10-06; case/resource locks, committed denial/release, immutable result and replay are covered by local tests. V6 stores private HELD intents only, not approved READY/COMPLETED wire. Still supply real policy/source adapters, preflight outside write transaction, shared producer fixtures, referral consumer and live HTTP acceptance. | `INTERNAL LIFECYCLE IMPLEMENTED; PRODUCTION AUTHORITY/WIRE/ACCEPTANCE OPEN` |
 

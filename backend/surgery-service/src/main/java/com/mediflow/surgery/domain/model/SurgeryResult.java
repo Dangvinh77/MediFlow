@@ -27,7 +27,7 @@ public record SurgeryResult(
     public SurgeryResult {
         if (resultId == null || surgeryCaseId == null || !validCode(procedureCode)
                 || !validCode(methodCode) || !validCode(treatmentOutcomeCode)
-                || (complicationGroupCode != null && !validCode(complicationGroupCode))
+                || (complicationGroupCode != null && !complicationGroupCode.matches("[A-Za-z0-9._-]{1,64}"))
                 || actualStartAt == null || actualEndAt == null
                 || !actualEndAt.isAfter(actualStartAt)
                 || performedItems == null || recordedAt == null

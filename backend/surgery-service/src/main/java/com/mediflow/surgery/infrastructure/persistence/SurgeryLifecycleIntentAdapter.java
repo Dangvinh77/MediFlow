@@ -23,13 +23,18 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class SurgeryLifecycleIntentAdapter implements SurgeryLifecycleIntentPort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
-    public SurgeryLifecycleIntentAdapter(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc = jdbc; this.mapper = mapper; }
+    private final com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events;
+    public SurgeryLifecycleIntentAdapter(JdbcTemplate jdbc, ObjectMapper mapper,
+            com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events) {
+        this.jdbc = jdbc; this.mapper = mapper; this.events = events;
+    }
 
     @Override public void holdReady(SurgeryCase value, SurgerySchedule schedule, ReadinessSnapshot snapshot, String correlation) {
         if (value.getStatus() != SurgeryStatus.READY || !snapshot.equals(value.getReadinessSnapshot())) throw new SurgeryRevisionConflictException();
         var fields = context(value,schedule);
         fields.put("readiness",snapshot);
         hold("READY",snapshot.snapshotId(),value,fields,correlation);
+        events.hold(com.mediflow.surgery.application.mapper.SurgeryCareEventFactory.ready(value,schedule,snapshot),value.getRevision());
     }
 
     @Override public void holdCompleted(SurgeryCase value, SurgerySchedule schedule, SurgeryResult result, String correlation) {
@@ -37,6 +42,7 @@ public class SurgeryLifecycleIntentAdapter implements SurgeryLifecycleIntentPort
         var fields = context(value,schedule);
         fields.put("result",result); // Controlled codes/quantities only; result model has no clinical narrative.
         hold("COMPLETED",result.resultId(),value,fields,correlation);
+        events.hold(com.mediflow.surgery.application.mapper.SurgeryCareEventFactory.completed(value,result),value.getRevision());
     }
 
     private Map<String,Object> context(SurgeryCase value,SurgerySchedule schedule) {

@@ -6,6 +6,7 @@ import com.mediflow.surgery.application.port.in.ReceiveSurgeryAuthorityChangeUse
 import com.mediflow.surgery.application.port.in.RecordSurgeryAuthorityInvalidationRetryUseCase;
 import com.mediflow.surgery.application.port.out.SurgeryAuthorityInvalidationPort;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
 import com.mediflow.surgery.application.port.out.SurgeryInboxPort;
 import com.mediflow.surgery.application.port.out.SurgeryResourceReservationPort;
@@ -30,8 +31,9 @@ public class SurgeryAuthorityApplicationConfiguration {
         return new SurgeryAuthorityInvalidationQueryService(jobs, clock);
     }
     @Bean ApplySurgeryAuthorityInvalidationUseCase applySurgeryAuthorityInvalidation(SurgeryCaseRepositoryPort cases,
-            SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort resources, SurgeryAuthorityInvalidationPort jobs, SurgeryClockPort clock) {
-        return new SurgeryAuthorityInvalidationService(cases, schedules, resources, jobs, clock);
+            SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort resources, SurgeryAuthorityInvalidationPort jobs, SurgeryClockPort clock,
+            SurgeryCareEventCapturePort events) {
+        return new SurgeryAuthorityInvalidationService(cases, schedules, resources, jobs, clock, events);
     }
     @Bean RecordSurgeryAuthorityInvalidationRetryUseCase retrySurgeryAuthorityInvalidation(SurgeryCaseRepositoryPort cases,
             SurgeryAuthorityInvalidationPort jobs, SurgeryClockPort clock) {

@@ -68,6 +68,21 @@ public class OperationalContributionPersistenceAdapter implements OperationalCon
         requireSame(projectionFingerprint, jdbc.queryForObject(
                 "SELECT projection_fingerprint FROM operational_event_journal WHERE event_id = ?",
                 String.class, metadata.eventId()), "OPERATIONAL_PROJECTION_CONFLICT");
+        var fact = command.contributions().getFirst();
+        String payloadFingerprint = hash(json(event.payload()));
+        jdbc.update("""
+                INSERT INTO operational_source_snapshot(source_type,source_id,source_revision,event_type,
+                    first_event_id,payload_fingerprint,evidence_state)
+                VALUES (?,?,?,?,?,?,'VERIFIED_PAYLOAD') ON CONFLICT DO NOTHING
+                """, fact.sourceType(),fact.sourceId(),fact.sourceRevision(),metadata.eventType(),
+                metadata.eventId(),payloadFingerprint);
+        String storedPayload = jdbc.queryForObject("""
+                SELECT payload_fingerprint FROM operational_source_snapshot
+                WHERE source_type=? AND source_id=? AND source_revision=? AND event_type=?
+                """, String.class, fact.sourceType(),fact.sourceId(),fact.sourceRevision(),metadata.eventType());
+        if (storedPayload == null) throw new ReportRuleException("OPERATIONAL_LEGACY_SOURCE_UNVERIFIED",
+                "Legacy source payload requires controlled revalidation before accepting a new delivery");
+        requireSame(payloadFingerprint, storedPayload, "OPERATIONAL_SOURCE_PAYLOAD_CONFLICT");
     }
 
     @Override

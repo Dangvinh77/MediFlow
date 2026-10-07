@@ -3,6 +3,17 @@
 Owner: Huy (`LQHuy0210`). Port `8091`, owned DB `mediflow_surgery`, base path `/api/v1/surgery`.
 Design: [bounded context](../../docs/ai/services/surgery.md), [V2 specification](../../docs/eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md).
 
+## Billing producer contract — 2026-10-07
+
+Fixed nested-envelope V1 events on `mediflow.events`: `surgery.case.created` for planned charges
+after case creation; `surgery.completed` for actual post-operation reconciliation. Routing key equals
+eventType, no `.v1` suffix, producer `surgery-service`. Lộc may read the
+[producer fixtures and Billing scenarios](src/test/resources/contracts/surgery-outcomes-v1/README.md)
+and [canonical contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md) after pull.
+Includes admission/outpatient, planned/performed quantity changes, unknown price code and repeated
+delivery transport tests. Names/version are settled; catalogue pricing and consumer effects remain
+Billing-owned. V7 rows stay HELD, with no live referral/creation caller or V1 dispatcher enabled.
+
 ## Implemented routes — 2026-10-05
 
 | Method/path beneath `/api/v1/surgery/cases` | Roles | Behavior |
@@ -182,12 +193,12 @@ Critical PostgreSQL/RabbitMQ tests require Docker; skipped tests are not accepta
 mvn -f backend/surgery-service/pom.xml '-Dapi.version=1.44' test
 ```
 
-`SurgeryMigrationUpgradeIntegrationTest` starts each prior Flyway version V1/V2/V3/V4/V5 in
+`SurgeryMigrationUpgradeIntegrationTest` starts each prior Flyway version V1/V2/V3/V4/V5/V6 in
 its own isolated PostgreSQL schema, inserts an existing SCHEDULED case with snapshot/history,
-reservations, receipt and pending inbox/outbox bytes, then upgrades to V6. It compares every
+reservations, receipt and pending inbox/outbox bytes, then upgrades to V7. It compares every
 pre-existing table row, verifies retry/financial evidence where present, validates checksums and
 requires a second migration to do no work. Migration must not fabricate authority hints, jobs
-or lifecycle intents.
+or lifecycle intents, and does not backfill public events into the new HELD-only V7 table.
 This test fails if Docker is unavailable; compilation alone is not migration acceptance.
 
 ```powershell

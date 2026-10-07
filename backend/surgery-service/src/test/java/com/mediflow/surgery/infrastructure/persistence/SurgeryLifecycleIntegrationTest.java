@@ -123,6 +123,9 @@ class SurgeryLifecycleIntegrationTest {
         assertThat(cases.findById(fixture.caseId()).orElseThrow().getStatus()).isEqualTo(SurgeryStatus.PREOP_IN_PROGRESS);
         assertThat(bookings(fixture)).containsExactlyInAnyOrder("RELEASED","RELEASED");
         assertThat(lifecycle.start(command).replayed()).isTrue();
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_care_event_outbox WHERE event_type='surgery.readiness.invalidated'",
+                Integer.class)).isOne();
+        assertThat(db.queryForList("SELECT delivery_status FROM surgery_care_event_outbox", String.class)).containsOnly("HELD");
     }
     @Test void evaluate_billingUnavailable_rollsBackReceiptAndNoSnapshotOrIntent() {
         var fixture=seed(UUID.randomUUID(),NOW.plusSeconds(300),NOW.plusSeconds(600));
@@ -161,6 +164,8 @@ class SurgeryLifecycleIntegrationTest {
         assertThat(count("surgery_result")).isEqualTo(1); assertThat(count("surgery_performed_item")).isEqualTo(2);
         assertThat(count("surgery_lifecycle_intent")).isEqualTo(2); assertThat(count("surgery_command_receipt")).isEqualTo(4);
         assertThat(count("surgery_outbox")).isZero();
+        assertThat(count("surgery_care_event_outbox")).isEqualTo(2);
+        assertThat(db.queryForList("SELECT delivery_status FROM surgery_care_event_outbox",String.class)).containsOnly("HELD");
         assertThat(db.queryForList("SELECT delivery_status FROM surgery_lifecycle_intent",String.class)).containsOnly("HELD");
     }
 
@@ -175,6 +180,7 @@ class SurgeryLifecycleIntegrationTest {
         assertThat(count("surgery_readiness_snapshot")).isZero(); assertThat(count("surgery_readiness_precision")).isZero();
         assertThat(count("surgery_lifecycle_intent")).isZero(); assertThat(count("surgery_command_receipt")).isZero();
         assertThat(count("surgery_revision_history")).isEqualTo(history);
+        assertThat(count("surgery_care_event_outbox")).isZero();
         reset(intents);
         assertThat(lifecycle.evaluate(command).state()).isEqualTo("READY");
     }
@@ -190,6 +196,7 @@ class SurgeryLifecycleIntegrationTest {
         assertThat(bookings(fixture)).containsOnly("IN_USE"); assertThat(count("surgery_result")).isZero();
         assertThat(count("surgery_performed_item")).isZero(); assertThat(count("surgery_lifecycle_intent")).isEqualTo(1);
         assertThat(count("surgery_command_receipt")).isEqualTo(3);
+        assertThat(count("surgery_care_event_outbox")).isOne();
         reset(intents); assertThat(lifecycle.complete(command).state()).isEqualTo("COMPLETED");
     }
 
@@ -368,9 +375,10 @@ class SurgeryLifecycleIntegrationTest {
                 SurgeryCommandReceiptPort receipts,SurgeryReadinessSnapshotPort snapshots,SurgeryChecklistRepositoryPort checklists,
                 SurgeryConsentRepositoryPort consents,SurgeryFinancialClearanceRepositoryPort clearances,SurgeryResourceReservationPort resources,
                 SurgeryResultRepositoryPort results,SurgeryReadinessAuthorityPort authority,SurgeryLifecycleIntentPort intents,SurgeryClockPort clock,
-                FinancialClearanceLookupPort financialAuthority) {
+                FinancialClearanceLookupPort financialAuthority,
+                com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events) {
             return new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,
-                    new SurgeryReadinessEngine(Duration.ofSeconds(30),Duration.ofSeconds(5)),financialAuthority);
+                    new SurgeryReadinessEngine(Duration.ofSeconds(30),Duration.ofSeconds(5)),financialAuthority,events);
         }
     }
 }

@@ -45,7 +45,8 @@ class SurgeryReadinessExpiryServiceTest {
     private SurgeryAuditActor actor;
 
     @BeforeEach void setup() {
-        service = new SurgeryReadinessExpiryService(cases, schedules, resources, clock);
+        service = new SurgeryReadinessExpiryService(cases, schedules, resources, clock,
+                mock(com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort.class));
         actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
         value = SurgeryCase.create(UUID.randomUUID(), UUID.randomUUID(),
                 new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(), null, UUID.randomUUID()),

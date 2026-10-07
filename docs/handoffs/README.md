@@ -11,10 +11,23 @@ wire contracts belong in the canonical contract documents under
 | [Clinical/Lab Gateway role alignment](HANDOFF-VINH-GATEWAY-CARE-ROLES.md) | PARTIAL — exact roles implemented; Gateway 135 tests pass, deployment smoke pending | Huy (user-authorized dependency scope); Hoàng Anh retains long-term ownership | verify actual Gateway-to-Clinical/Lab deployment; no remaining role-code blocker |
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | PARTIAL — Billing held grant producer and same-byte EXAM/LAB_TEST consumer tests added; request issuance/live rollout remain open | Huy (user-authorized dependency scope); Lộc/Vinh retain long-term ownership | Clinical EXAM authorization and Lab exact-test clearance |
 | [Inpatient deposit and settlement](../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md) | PARTIAL — held ADMISSION_DEPOSIT grant/receipt producer and exact consumer fixture added; top-up/settlement absent | Huy (user-authorized dependency scope); Lộc/Vinh retain long-term ownership | deposit request issuance, top-up projection and administrative close after settlement |
-| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | PARTIAL — Organization room/capability, gated authority invalidation and Inpatient admission authority added; clinical/referral/finance gaps remain | Huy has user-authorized dependency implementation scope; original owners retain long-term ownership | episode/referral/charge/clearance and clinical policies; Inpatient reference registration + outpatient/late-event handling; full READY/finalize/START reconciliation and invalidation notification wire |
+| [Surgery G0 decisions (H-01.2/H-01.3)](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | PARTIAL — local Surgery V1 wire/HELD capture + producer fixtures added; clinical/referral/finance/runtime gaps remain | Huy has user-authorized dependency implementation scope; original owners retain long-term ownership | episode/referral/charge/clearance and clinical policies; Inpatient reference registration + outpatient/late-event handling; full READY/finalize/START authority wiring and downstream invalidation-reminder acceptance |
 | [Huy Pharmacy/Report care-finance contracts](HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) | PARTIAL — medical discharge plus Billing clearance/receipt fixtures added; transfer/live admission, financial projector and reversal/settlement remain open | Huy has user-authorized dependency scope; original owners retain long-term ownership | remaining admission/finance/replay gaps; additive local work proceeds behind disabled flags |
 
 ## Lifecycle rule
+
+**Huy update 2026-10-07:** the Surgery handoff's missing outbound shapes are implemented locally:
+five typed V1 facts, ten actual producer fixtures and atomic HELD capture. Report supplies offline
+Clinical/Pharmacy/Surgery mappings and source-payload conflict fencing. Existing handoffs stay active
+for referral/reference/outpatient/late handling, finance writers, reminder intake, clinical policy
+and actual live acceptance; no whole workflow is closed by local wire tests. See
+[current evidence and remaining scope](../superpowers/plans/2026-10-07-huy-outbound-contracts.md).
+
+The H-01.2 charge event name/version/routing decision is now fixed by Huy in
+[SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md): `surgery.case.created` for planned
+charges and `surgery.completed` for actual reconciliation, both envelope V1 on `mediflow.events`.
+Billing can consume the Surgery-owned fixtures after pull; naming is no longer an outstanding
+Huy decision. Billing consumer/catalogue/effects acceptance and live delivery remain open.
 
 1. A handoff exists only while a named owner action is blocked.
 2. It states producer, consumer, required fields/behavior, reason, and acceptance criteria.

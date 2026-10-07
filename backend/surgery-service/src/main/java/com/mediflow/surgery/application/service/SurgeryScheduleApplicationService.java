@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.exception.UpstreamUnavailableException;
@@ -36,6 +38,7 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
     private final AdmissionLookupPort admissions;
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
 
     public SurgeryScheduleApplicationService(SurgeryCaseRepositoryPort cases,
                                              SurgeryScheduleRepositoryPort schedules,
@@ -43,7 +46,8 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
                                              OrganizationLookupPort organization,
                                              AdmissionLookupPort admissions,
                                              SurgeryResourceReservationPort reservations,
-                                             SurgeryClockPort clock) {
+                                             SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases;
         this.schedules = schedules;
         this.receipts = receipts;
@@ -144,6 +148,7 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
             throw new UpstreamUnavailableException("Schedule authority became stale while waiting for mutation");
         }
         long revisionBeforeDraft = command.expectedCaseRevision();
+        var pendingEvent = SurgeryReadinessInvalidation.Pending.NONE;
         if (surgeryCase.getStatus() == SurgeryStatus.READY || surgeryCase.getStatus() == SurgeryStatus.SCHEDULED) {
             if (current == null || surgeryCase.getReadinessSnapshot() == null
                     || surgeryCase.getReadinessSnapshot().dependencyRevisions().stream().noneMatch(value ->
@@ -151,7 +156,7 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
                             && current.scheduleId().equals(value.sourceId()) && current.revision() == value.revision())) {
                 throw new SurgeryRevisionConflictException();
             }
-            SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.actor(), command.correlationId(),
+            pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.actor(), command.correlationId(),
                     at, "SCHEDULE_REPLACED", schedules, reservations);
             // Draft adapter requires persisted PREOP. Both saves and old-release roll back together.
             cases.save(surgeryCase, revisionBeforeDraft);
@@ -162,6 +167,7 @@ public class SurgeryScheduleApplicationService implements PrepareSurgerySchedule
                 "SCHEDULE_DRAFT_PREPARED");
         cases.save(surgeryCase, revisionBeforeDraft);
 
+        pendingEvent.capture(surgeryCase, events);
         SurgeryCommandOutcome outcome = new SurgeryCommandOutcome(COMMAND_CODE,
                 surgeryCase.getSurgeryCaseId(), surgeryCase.getRevision(), scheduleId,
                 draft.revision(), "DRAFT", at, false);

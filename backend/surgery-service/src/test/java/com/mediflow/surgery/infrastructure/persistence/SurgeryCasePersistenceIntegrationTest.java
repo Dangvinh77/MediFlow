@@ -103,6 +103,8 @@ class SurgeryCasePersistenceIntegrationTest {
     @Autowired private SurgeryCommandReceiptPort receipts;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort careEvents;
+    @Autowired private com.mediflow.surgery.application.port.in.CaptureSurgeryCaseCreatedUseCase createdEvents;
     @Autowired private com.mediflow.surgery.application.port.out.SurgeryCaseQueryPort board;
     @Autowired private com.mediflow.surgery.application.port.in.QuerySurgeryCasesUseCase queries;
 
@@ -124,6 +126,48 @@ class SurgeryCasePersistenceIntegrationTest {
                 department, null, null, null, null, null, new com.mediflow.common.api.PageQuery(1,2)));
         assertThat(next.content()).extracting(com.mediflow.surgery.application.dto.response.SurgeryCaseBoardItem::surgeryCaseId)
                 .containsExactly(older.getSurgeryCaseId());
+    }
+
+    @Test void createdFact_sameTransaction_retryIsStableAndChangedPlanRollsBack() {
+        var actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        var value = SurgeryCase.create(UUID.randomUUID(), UUID.randomUUID(),
+                new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(), null, UUID.randomUUID()),
+                UUID.randomUUID(), UUID.randomUUID(), actor.verifiedStaffId(), "PROC", "Private indication",
+                SurgeryPriority.ROUTINE, REQUESTED_AT, actor, "created-contract-pg");
+        var items = List.of(new com.mediflow.surgery.domain.model.SurgeryPlannedItem("ITEM", "PRICE", BigDecimal.ONE));
+        var tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(ignored -> {
+            cases.save(value, -1);
+            createdEvents.capture(value.getSurgeryCaseId(), items);
+            createdEvents.capture(value.getSurgeryCaseId(), items);
+        });
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_care_event_outbox WHERE surgery_case_id=?",
+                Integer.class, value.getSurgeryCaseId())).isOne();
+        assertThat(jdbc.queryForObject("SELECT delivery_status FROM surgery_care_event_outbox WHERE surgery_case_id=?",
+                String.class, value.getSurgeryCaseId())).isEqualTo("HELD");
+        assertThatThrownBy(() -> tx.executeWithoutResult(ignored -> createdEvents.capture(value.getSurgeryCaseId(),
+                List.of(new com.mediflow.surgery.domain.model.SurgeryPlannedItem("ITEM", "OTHER_PRICE", BigDecimal.ONE)))))
+                .isInstanceOf(SurgeryRevisionConflictException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_care_event_outbox WHERE surgery_case_id=?",
+                Integer.class, value.getSurgeryCaseId())).isOne();
+    }
+
+    @Test void createdFact_failureAfterCapture_rollsBackCaseHistoryAndEvent() {
+        var actor = SurgeryAuditActor.human(UUID.randomUUID(), UUID.randomUUID());
+        var admission = UUID.randomUUID();
+        var value = SurgeryCase.create(UUID.randomUUID(), UUID.randomUUID(),
+                new CareEpisode(CareEpisodeType.ADMISSION, admission, admission, null),
+                UUID.randomUUID(), UUID.randomUUID(), actor.verifiedStaffId(), "PROC", "Private indication",
+                SurgeryPriority.ROUTINE, REQUESTED_AT, actor, "created-rollback-pg");
+        assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(ignored -> {
+            cases.save(value, -1);
+            createdEvents.capture(value.getSurgeryCaseId(), List.of(
+                    new com.mediflow.surgery.domain.model.SurgeryPlannedItem("ITEM", "PRICE", BigDecimal.ONE)));
+            throw new IllegalStateException("test rollback after capture");
+        })).isInstanceOf(IllegalStateException.class);
+        assertThat(cases.findById(value.getSurgeryCaseId())).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_care_event_outbox WHERE surgery_case_id=?",
+                Integer.class, value.getSurgeryCaseId())).isZero();
     }
 
     @Test
@@ -586,7 +630,7 @@ class SurgeryCasePersistenceIntegrationTest {
                         REQUESTED_AT.plusSeconds(86400), REQUESTED_AT.plusSeconds(88200)));
         SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
                 cases, schedules, receipts, organization, org.mockito.Mockito.mock(
-                        com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303));
+                        com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303), careEvents);
         Instant startsAt = REQUESTED_AT.plusSeconds(86400);
         PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
                 surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
@@ -664,7 +708,7 @@ class SurgeryCasePersistenceIntegrationTest {
                             REQUESTED_AT.plusSeconds(86400), REQUESTED_AT.plusSeconds(88200)));
             SurgeryScheduleApplicationService service = new SurgeryScheduleApplicationService(
                     cases, schedules, receipts, organization, org.mockito.Mockito.mock(
-                            com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303));
+                            com.mediflow.surgery.application.port.out.AdmissionLookupPort.class), resources, () -> REQUESTED_AT.plusSeconds(303), careEvents);
             Instant startsAt = REQUESTED_AT.plusSeconds(86400);
             PrepareSurgeryScheduleUseCase.Command command = new PrepareSurgeryScheduleUseCase.Command(
                     surgeryCase.getSurgeryCaseId(), 1, 0, roomId, startsAt, startsAt.plusSeconds(1800),
@@ -742,7 +786,7 @@ class SurgeryCasePersistenceIntegrationTest {
         ScheduledFixture fixture = persistScheduledCaseWithActiveConsent(actor, "cancel-scheduled-pg");
         Instant cancelledAt = REQUESTED_AT.plusSeconds(310);
         SurgeryCancellationApplicationService cancellation = new SurgeryCancellationApplicationService(
-                cases, schedules, resources, receipts, () -> cancelledAt);
+                cases, schedules, resources, receipts, () -> cancelledAt, careEvents);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
         var outcome = tx.execute(ignored -> cancellation.cancel(new CancelSurgeryUseCase.Command(
@@ -781,7 +825,7 @@ class SurgeryCasePersistenceIntegrationTest {
         // Earlier than the persisted finalization audit: release runs first, then domain time guard fails.
         Instant invalidAt = REQUESTED_AT.plusSeconds(305);
         SurgeryCancellationApplicationService cancellation = new SurgeryCancellationApplicationService(
-                cases, schedules, resources, receipts, () -> invalidAt);
+                cases, schedules, resources, receipts, () -> invalidAt, careEvents);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
         assertThatThrownBy(() -> tx.executeWithoutResult(ignored -> cancellation.cancel(
@@ -1114,7 +1158,7 @@ class SurgeryCasePersistenceIntegrationTest {
                 new OrganizationLookupPort.SurgicalEligibilitySnapshot(member.staffId(),member.role(),
                         OrganizationLookupPort.ReferenceState.ACTIVE,department,at,"1",command.startsAt(),command.endsAt()));
         return new SurgeryScheduleApplicationService(cases,schedules,receipts,organization,
-                org.mockito.Mockito.mock(com.mediflow.surgery.application.port.out.AdmissionLookupPort.class),resources,() -> at);
+                org.mockito.Mockito.mock(com.mediflow.surgery.application.port.out.AdmissionLookupPort.class),resources,() -> at,careEvents);
     }
 
     private boolean reserveAfterBarrier(SurgerySchedule schedule, CyclicBarrier barrier) throws Exception {

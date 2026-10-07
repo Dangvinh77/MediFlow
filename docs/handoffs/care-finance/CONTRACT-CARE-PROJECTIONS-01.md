@@ -62,6 +62,23 @@ date or department.
 
 ### Operational source identity and revision
 
+- Clinical V1 completion is an immutable singleton `(medicalrecord.completed, recordId)` operation:
+  the producer permits only OPEN → COMPLETED and no subsequent update/correction. Its implicit
+  operation revision is 1, not the envelope version. Count one completed outpatient encounter even
+  if disposition is ADMISSION; this does not count an inpatient admission. Current producer bytes
+  do not contain an episode pair: Report retains null episode dimensions, never substitutes recordId
+  or appointmentId. Disposition and admissionRequired must agree. Corrections remain unsupported.
+- Pharmacy V1 fill is an immutable singleton `(prescription.filled, dispenseId)` operation, revision 1.
+  Report counts one fill plus the sum of explicit positive integral item quantities, using filledAt
+  and requesting department/episode. It never counts requested or cancelled prescriptions as fills.
+- Surgery V1 result/cancellation use explicit resultId/cancellationId and sourceRevision=1. Count
+  actual completions/cancellations at completedAt/cancelledAt. Duration is whole elapsed minutes per
+  result, floored before aggregation from actual startedAt → completedAt (not planned schedule or
+  recordedAt). A missing interval/category is not inferred. Only controlled category/stage is retained;
+  clinical narrative and patient IDs never enter the operational replay journal.
+
+These mappings are offline until producer/consumer runtime acceptance and publication gates pass.
+
 - For `lab.result.created`, `labId` is the source business ID and payload `resultVersion` is the
   business result revision. Envelope `version` is only the wire-schema version. The current Lab V2
   state machine starts at result revision `0`, emits its first and only supported completed snapshot

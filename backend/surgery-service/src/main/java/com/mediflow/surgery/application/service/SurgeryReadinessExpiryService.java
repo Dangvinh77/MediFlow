@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.port.in.ExpireSurgeryReadinessUseCase;
 import com.mediflow.surgery.application.port.in.QueryExpiredSurgeryReadinessUseCase.Candidate;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
@@ -17,9 +19,11 @@ public class SurgeryReadinessExpiryService implements ExpireSurgeryReadinessUseC
     private final SurgeryScheduleRepositoryPort schedules;
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
 
     public SurgeryReadinessExpiryService(SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
-            SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
+            SurgeryResourceReservationPort reservations, SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases; this.schedules = schedules; this.reservations = reservations; this.clock = clock;
     }
 
@@ -38,9 +42,10 @@ public class SurgeryReadinessExpiryService implements ExpireSurgeryReadinessUseC
         var now = clock.now();
         if (snapshot.validUntil() == null || now.isBefore(snapshot.validUntil())) return false;
         long previousRevision = surgeryCase.getRevision();
-        SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, SurgeryAuditActor.system("surgery-service"),
+        var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, SurgeryAuditActor.system("surgery-service"),
                 correlationId, now, "READINESS_EXPIRED", schedules, reservations);
         cases.save(surgeryCase, previousRevision);
+        pendingEvent.capture(surgeryCase, events);
         return true;
     }
 }
