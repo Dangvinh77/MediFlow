@@ -1,4 +1,4 @@
-# 10 — inpatient-service — Core V1 implementation specification
+# 10 — inpatient-service — canonical Core V1 implementation specification
 
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 
@@ -10,7 +10,11 @@
 
 **Base path:** `/api/v1/inpatient`
 
-**Status:** implementation-ready Core V1; external integrations remain gated by shared fixtures
+**Status:** Core V1 `IMPLEMENTED`; messaging `FEATURE_GATED` and `EXTERNAL_BLOCKED` by shared
+fixtures plus broker-backed Docker acceptance
+
+This is Inpatient's sole canonical implementation specification. Its `care-finance-v2` directory
+location records the redesign workstream; it does not indicate a competing legacy specification.
 
 ## 1. Sources and bounded context
 

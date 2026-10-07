@@ -1,70 +1,30 @@
-# HANDOFF — Inpatient deposit, top-up and settlement facts
+# HANDOFF — Inpatient deposit and settlement
 
-- **Status:** `PARTIAL`; implementation update 2026-10-05, working tree based on `3103fa1`.
-- **Producer / owner:** Billing — Lộc (`locgit-89`).
-- **Consumer:** Inpatient — Vinh (`Dangvinh77` / `Harori`).
-- **Canonical contract:**
-  [`CONTRACT-CARE-BILLING-01`](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
-- **Blocked behavior:** normal admission authorization, deposit top-up visibility and
-  administrative close after final settlement.
+**Status:** ACTIVE — held deposit fixtures exist; request issuance, top-up and settlement producers remain open.
+**Owner:** Lộc (`locgit-89`), Billing.
+**Unblocks:** Vinh's admission activation and administrative close.
 
-Billing now records immutable classified deposit receipts and an exact ADMISSION_DEPOSIT grant
-after full payment of a persisted request, atomically with held V1 outbox rows. Inpatient tests
-read Billing's actual producer fixture. Deposit cash is not allocated to service charges or
-treated as earned revenue. Notification records the private deposit receipt without claiming
-final settlement. Huy implemented this slice under the user-authorized dependency override;
-permanent ownership is unchanged.
+## Producer
 
-`deposit.topup.required` and `settlement.completed` producers, authoritative request issuance,
-catalogue/expected-total reconciliation and actual broker E2E remain absent. Billing V1 rows are
-DB-fenced from publication; all new intake/API flags default OFF. A deposit grant alone does not
-close this integration or authorize administrative admission close.
+Billing produces purpose-scoped `financial.clearance.granted`, `deposit.topup.required` and `settlement.completed` version-1 facts. Contract fields and episode rules are canonical in [`CONTRACT-CARE-BILLING-01`](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
 
-## Required producer contracts
+## Consumer
 
-All events use the common versioned envelope, `producer=billing-service`, a transactional outbox
-and immutable replay bytes for the same `eventId`.
+Inpatient consumes deposit clearance for the exact admission, projects explicit top-up requests, and accepts settlement only for the same admission before administrative close. Its consumers and producers remain disabled pending shared acceptance.
 
-### Admission deposit clearance
+## Owner actions
 
-Publish `financial.clearance.granted` version 1 only after the matching admission-deposit payment
-is committed. The payload must contain:
-
-- `clearanceId`, `invoiceId`, `accountId`, `patientId`;
-- `careEpisodeType=ADMISSION`, `careEpisodeId=admissionId`;
-- `purpose=ADMISSION_DEPOSIT` and the same exact `admissionId`;
-- `amount`, `currency`, `paymentMethod`, nullable `expiresAt`, and `emergencyOverride`.
-
-Do not infer an admission from patient, latest invoice or latest open account. A clearance for
-EXAM, LAB_TEST, PRESCRIPTION or SURGERY is not an admission-deposit authorization.
-
-### Deposit top-up
-
-Publish `deposit.topup.required` with exact `accountId`, `admissionId`, `currentBalance`,
-`requestedAmount` and non-blank `reason`. Re-delivery must preserve the operation identity and must
-not create repeated top-up effects or notifications.
-
-### Final settlement
-
-Publish `settlement.completed` only after the settlement is committed. The payload must contain
-`settlementId`, `admissionId`, `accountId`, `grossAmount`, `insuranceAmount`,
-`patientLiability`, `completedPayments`, `completedRefunds`, `balance`, `outcome` and
-`completedAt`. `outcome` uses the canonical settlement enum. The fact authorizes Inpatient to
-validate an explicit close command; consuming the fact must not silently close the admission.
+1. Create the initial deposit request from `admission.deposit.requested` with exact admission and patient references.
+2. Publish live ADMISSION_DEPOSIT clearance after an authoritative payment allocation.
+3. Define and implement top-up calculation, request issuance and `deposit.topup.required` outbox publication without reading Inpatient tables.
+4. Reconcile the admission ledger and publish `settlement.completed` once per closeable account.
+5. Preserve reversals and late-event handling without inferring an admission from patient ID.
 
 ## Acceptance criteria
 
-- Billing has canonical producer fixtures for all three facts; Inpatient deserializes the exact
-  same bytes with no alternate field aliases.
-- A wrong patient, episode type, episode ID, purpose, admission ID or account ID is rejected and
-  cannot advance an admission.
-- Duplicate commands/outbox replay publish one immutable business fact and Inpatient applies each
-  event once by `eventId`.
-- A deposit changes cash/liability projections without being counted as earned revenue.
-- Settlement covers `PAID_IN_FULL`, `ADDITIONAL_PAYMENT_REQUIRED`, `REFUND_DUE` and approved
-  debt/waiver outcomes according to the canonical contract; completed payments are never mutated.
-- Producer and consumer tests cover out-of-order delivery, malformed required fields and DLQ
-  behavior before the integration flags are enabled.
-- After both sides pass, move the lasting payload rules into the canonical contract/service docs,
-  update their status and delete this handoff plus its active-registry entry.
-
+- Billing and Inpatient share exact fixtures for deposit request, grant, top-up and settlement.
+- Duplicate and out-of-order events are idempotent; wrong admission/episode targets are rejected.
+- Docker proves referral → deposit request → payment → grant → admission.
+- Docker proves medical discharge → final ledger reconciliation → settlement → close.
+- Emergency admission leaves an auditable receivable and does not fabricate payment.
+- Only after these checks may owners enable the related flags and delete this handoff.

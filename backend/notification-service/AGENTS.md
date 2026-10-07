@@ -11,7 +11,8 @@ Root `AGENTS.md` rules continue to apply.
 - **Integration gate:** before changing event bindings, templates, patient claims/contact lookup or
   fixtures, read the [care-finance registry](../../docs/handoffs/care-finance/README.md),
   [CARE-PROJECTIONS](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md), and
-  [IDENTITY-LOOKUP](../../docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md).
+  [IDENTITY-LOOKUP](../../docs/handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md), then complete
+  the [active Notification projection handoff](../../docs/handoffs/HANDOFF-NOTIFICATION-CARE-PROJECTIONS.md).
 - Notification never authorizes workflow transitions. Keep payment, deposit, top-up, refund and
   settlement templates semantically distinct.
 - **Verify:** `mvn -q -pl backend/notification-service -am test`

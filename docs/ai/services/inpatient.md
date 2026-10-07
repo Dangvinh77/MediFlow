@@ -1,6 +1,8 @@
 # Service: inpatient
 
-**Status:** Core V1 implemented; cross-service activation remains integration-gated
+**Status:** locally complete for Core V1; cross-service activation remains feature-gated and
+externally blocked. The sole implementation authority is
+[`backend-spec/care-finance-v2/10-inpatient.md`](../../eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md).
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 **Module:** `backend/inpatient-service/` · **Port:** 8090 · **Database:** `mediflow_inpatient` · **Base path:** `/api/v1/inpatient` (Gateway route live)
@@ -122,3 +124,8 @@ bed-transfer/release/capacity or Surgery wire events before their canonical fiel
 are approved. The public route is available, but financial and Surgery event activation still wait
 for the active handoffs above. Contract status stays `DESIGN_READY` until those integration gates
 pass.
+
+Keep `mediflow.features.inpatient-event-producers=false` and
+`mediflow.features.inpatient-event-consumers=false` until Billing, Surgery, Pharmacy, Report and
+Notification satisfy their registered handoffs and the admission/deposit/discharge/settlement
+Docker slices pass through RabbitMQ.

@@ -19,6 +19,30 @@ chứ không chép lại. Nếu có mâu thuẫn, thứ tự thẩm quyền là:
 2. `docs/ai/` — cho *code tổ chức ra sao*
 3. thư mục này — cho *hình hài cụ thể của phần triển khai*
 
+## Canonical implementation entry point
+
+Mỗi bounded context chỉ có **một** điểm vào để triển khai. Trạng thái trong bảng mô tả khả năng
+chạy hiện tại, không thay thế điều kiện acceptance của từng service.
+
+| Service | Canonical implementation spec | Runtime state |
+|---|---|---|
+| Organization | [01-organization.md](01-organization.md) | `COMPATIBILITY_LIVE` |
+| Patient | [02-patient.md](02-patient.md) | `COMPATIBILITY_LIVE` |
+| Clinical | [03-clinical.md](03-clinical.md) | compatibility `COMPATIBILITY_LIVE`; Care-Finance `FEATURE_GATED` + `EXTERNAL_BLOCKED` |
+| Lab | [04-lab.md](04-lab.md) | compatibility `COMPATIBILITY_LIVE`; Care-Finance `FEATURE_GATED` + `EXTERNAL_BLOCKED` |
+| Pharmacy | [05-pharmacy.md](05-pharmacy.md) | `COMPATIBILITY_LIVE`; target rollout follows its owner spec |
+| Billing | [06-billing.md](06-billing.md) | `COMPATIBILITY_LIVE`; target rollout follows its owner spec |
+| Notification | [07-notification.md](07-notification.md) | `COMPATIBILITY_LIVE`; care projections `EXTERNAL_BLOCKED` |
+| Report | [08-report.md](08-report.md) | `COMPATIBILITY_LIVE`; care projections `FEATURE_GATED` |
+| Gateway | [09-gateway.md](09-gateway.md) | `COMPATIBILITY_LIVE`; deployment smoke pending |
+| Inpatient | [care-finance-v2/10-inpatient.md](care-finance-v2/10-inpatient.md) | Core V1 `IMPLEMENTED`; messaging `FEATURE_GATED` + `EXTERNAL_BLOCKED` |
+| Surgery | [10-surgery.md](10-surgery.md) | `DRAFT`; use [target detail](care-finance-v2/11-surgery.md) only with its decision gates |
+
+`care-finance-v2/03-clinical.md` and `04-lab.md` are compatibility redirects only. Clinical and
+Lab CURRENT plus TARGET details now live together in the canonical files above. Inpatient has no
+legacy top-level implementation spec, so its file under `care-finance-v2/` is canonical rather than
+a duplicate.
+
 ## Danh sách file
 
 | File | Service | Module |
@@ -35,12 +59,11 @@ chứ không chép lại. Nếu có mâu thuẫn, thứ tự thẩm quyền là:
 | [09-gateway.md](09-gateway.md) | Định tuyến, JWT, giới hạn tần suất | `gateway` |
 | [10-surgery.md](10-surgery.md) | **DRAFT H-01a–d + Surgery prep, chưa đủ để code nghiệp vụ** — glossary, rule/test inventory, contract/fixture manifest, aggregate/transaction/read/checklist alternatives và technical foundation; episode-referral, DDL và exact DTO/event vẫn chờ quyết định | `surgery-service` (planned) |
 
-## Care-finance V2 TARGET
+## Care-finance rollout material
 
-[`care-finance-v2/README.md`](care-finance-v2/README.md) chứa bộ spec đích tách biệt cho luồng thu
-phí trước dịch vụ, tạm ứng nội trú, phẫu thuật và quyết toán. Các file ở bảng trên tiếp tục là
-CURRENT trong giai đoạn migration; không ghi đè CURRENT bằng TARGET khi producer/consumer fixture và
-Docker acceptance flow chưa đạt.
+[`care-finance-v2/README.md`](care-finance-v2/README.md) giữ target specs của các context chưa hợp
+nhất và các redirect tương thích. Không bật target khi producer/consumer fixture và Docker
+acceptance flow chưa đạt. Trạng thái canonical luôn lấy từ bảng trên.
 
 ## Thứ tự xây dựng
 

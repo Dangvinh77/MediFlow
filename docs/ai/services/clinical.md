@@ -1,5 +1,9 @@
 # Service: clinical (Khoa Khám bệnh)
 
+**Implementation status:** locally complete; Care-Finance runtime integration is feature-gated and
+externally blocked. The single implementation authority is
+[`backend-spec/03-clinical.md`](../../eproject_general_plan/backend-spec/03-clinical.md).
+
 **Source of truth:** `docs/eproject_general_plan/clinical-service.html` plus the approved
 [`care-finance redesign`](../../architecture/mediflow-care-finance-redesign.html) for payment gates,
 admission referral and cross-service contracts.
@@ -113,3 +117,5 @@ retired. This does not establish a patient-search selector or replace runtime au
   path. Do not remove it until Billing and Clinical share clearance v1 fixtures and migration tests.
 - Contract status is not `IMPLEMENTED` until the producer fixture and Clinical consumer fixture/test
   pass together. Missing target IDs must block the flow; never select a record by patient.
+- Keep `mediflow.features.care-finance-v2=false` until Billing publishes live EXAM clearance from an
+  authoritative request and the broker-backed check-in → payment → examination Docker slice passes.
