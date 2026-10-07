@@ -23,7 +23,9 @@ a Notification template unless the canonical contract is amended by its owners.
 
 1. Add guarded version-1 bindings and exact decoders for `admission.deposit.requested`,
    `deposit.topup.required`, `admission.started`, `surgery.ready`, `surgery.cancelled`,
-   `settlement.completed` and `admission.closed`.
+   `settlement.completed` and `admission.closed`. Add `surgery.readiness.invalidated` only after its
+   reminder-suppression intent is registered in the canonical projection contract; do not infer the
+   behavior from producer bytes alone.
 2. Reuse existing Billing notification paths only where the canonical intent is identical; keep
    deposit, top-up, receipt, refund and settlement templates semantically distinct.
 3. Persist one notification intent per event ID and retain bounded retry/failure state.

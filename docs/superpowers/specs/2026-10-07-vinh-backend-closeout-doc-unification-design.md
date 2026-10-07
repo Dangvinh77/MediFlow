@@ -80,8 +80,8 @@ or the canonical service/contract docs.
 | Clinical/Lab financial clearance | keep; reduce to Billing request issuance, live publication, broker E2E and activation evidence |
 | Inpatient deposit/settlement | keep; reduce to top-up, settlement, request issuance, reconciliation and broker E2E |
 | Gateway Clinical/Lab roles | keep until real Gateway-to-service smoke passes; code changes are complete |
-| Surgery implementation decisions | keep but replace the historical document with exact `surgery.requested` intake and Surgery result-event obligations |
-| Huy Pharmacy/Report consumers | keep but retain only missing live bindings/projectors, placement policy and replay/cutover work |
+| Surgery implementation decisions | keep but replace the historical document with exact `surgery.requested` intake, held-outbound activation and downstream acceptance obligations |
+| Huy Pharmacy/Report consumers | keep but retain only Pharmacy admission wiring, Report finance/live publication, placement policy and replay/cutover work |
 | Notification care projections | create a new handoff for Lộc because Notification has no Clinical completion, admission, top-up, settlement or Surgery V1 bindings |
 
 No completed handoff is retained merely as a progress report. When Gateway smoke passes, its lasting
@@ -99,11 +99,20 @@ RBAC rules move to the Gateway/Clinical/Lab service docs and the handoff is dele
 
 ### Huy — Surgery, Pharmacy and Report
 
-- Accept a shared `surgery.requested` fixture before Clinical or Inpatient publishes it.
-- Publish exact `surgery.ready`, `surgery.completed` and `surgery.cancelled` fixtures and live events.
+- Accept a shared `surgery.requested` fixture before Clinical or Inpatient publishes it and connect
+  it to the implemented held case-event capture.
+- Release the tested held Surgery V1 facts only after downstream same-byte and runtime acceptance.
 - Connect Pharmacy admission lifecycle handling to an approved live authorization path.
-- Connect Report's existing offline care-finance decoder/projection code to guarded live bindings,
-  then prove replay/cutover behavior.
+- Connect Report's implemented offline operational mappers to guarded live bindings and controlled
+  publication, add finance projection, then prove replay/cutover behavior.
+
+## Source refresh after design approval
+
+`origin/master` advanced during implementation with Huy's outbound-contract PR. The final handoffs
+therefore preserve the new Surgery held V1 producer fixtures/capture and Report operational mapping
+evidence. They track only request intake, live dispatch, downstream acceptance, Pharmacy admission,
+Report finance/publication and placement/replay gaps. This refresh does not change Vinh's local
+closeout conclusion or enable any runtime feature.
 
 ### Hoàng Anh — Gateway
 
