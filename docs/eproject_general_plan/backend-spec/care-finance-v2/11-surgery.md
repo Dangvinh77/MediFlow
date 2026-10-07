@@ -389,7 +389,8 @@ codes. Actor IDs come from verified claims, not request bodies where the acting 
 
 **Internal LOCAL creation core — 2026-10-07:** channel-neutral `CreateSurgeryCaseUseCase` now has
 mandatory creation authority authorization/observation ports, without a production provider or
-public/referral driving adapter. V8 globally fences request UUID + deterministic clinical-intent
+referral driving adapter. A follow-up default-off HTTP adapter is now implemented (see below).
+V8 globally fences request UUID + deterministic clinical-intent
 fingerprint; no actor/channel/delivery identity splits one business request into multiple cases.
 Replay reauthorizes and returns original IDs/nanosecond time without repeating lookups or charge
 capture. External preflight suspends caller transactions; bounded fresh writes serialize the request,
@@ -398,6 +399,20 @@ PENDING checklist snapshot/items, initial histories, canonical V7 HELD charge by
 Unknown historical cases are not automatically adopted/charged. No catalogue/legal policy/default
 permission is fabricated; actual referral/requester/source-fence/API/consumer acceptance stays open.
 See [ten execution checks and evidence](../../../superpowers/plans/2026-10-07-surgery-creation-batch.md).
+
+**Creation HTTP follow-up — 2026-10-07:** explicit wiring requires business and
+`mediflow.surgery.creation.api.enabled` flags plus all mandatory ports; missing real authority
+fails startup. Both flags stay false. POST `/api/v1/surgery/cases` uses the source fields illustrated
+in §5 plus positive `templateRevision` and 1..100 distinct `plannedItems[{itemCode,priceCode,quantity}]`.
+It rejects unknown top-level/nested fields, wrong admission episode and quantities outside 15 integer/
+4 fractional digits. ADMIN/DOCTOR require a verified account and signed staff recorder, independent
+of the untrusted source `requestedBy`; actual delegation and relationship policy remain the authority's
+responsibility. No body value supplies approval. Header `Idempotency-Key` must equal canonical lowercase
+`surgeryRequestId`; first response is 201 with Location, matching authorized replay 200 with the same
+Location and original `requestId/case/checklist/createdAt/replayed` receipt. There is no current-state
+or clinical narrative in the receipt. Error codes/correlation remain stable; 404/422/500/503 messages
+are redacted. Direct HTTP/PG validation and internal SYSTEM contention are not shared referral wire or
+Gateway approval. [Ten-check verification](../../../superpowers/plans/2026-10-07-surgery-creation-api-batch.md).
 
 1. Claim `surgery.requested` event or command idempotency key.
 2. Validate one exact episode mapping, patient, department and requester eligibility.

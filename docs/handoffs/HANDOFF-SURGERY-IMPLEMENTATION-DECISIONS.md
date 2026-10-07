@@ -18,8 +18,11 @@ The channel-neutral internal creation kernel now atomically persists the case, p
 history, canonical V7 HELD `surgery.case.created` fact and V8 global request receipt. Exact replay
 reauthorizes and preserves the original outcome; changed intent fails closed. PostgreSQL tests cover
 concurrent duplicate requests, rollback at each append boundary and independent durable pending
-recovery. No production referral/requester/template authority provider, HTTP/referral adapter or
-live dispatcher is installed. Local evidence is not upstream or downstream acceptance.
+recovery. An opt-in HTTP adapter now exists behind separate business/creation gates, both false,
+with explicit real kernel wiring. No production referral/requester/template authority provider,
+referral adapter or live dispatcher is installed. Enabling both gates without the mandatory authority
+fails startup; ADMIN/DOCTOR need signed staff identity and still reauthorize every replay. Local
+evidence is not upstream or downstream acceptance.
 
 The lifecycle kernel also implements readiness, explicit finalization, START, completion and
 pre-start cancellation with remote preflight outside transactions, bounded SQL lock retries,
@@ -33,6 +36,7 @@ and producer fixtures in the canonical contracts, not an alternate schema in thi
 
 Evidence:
 [creation batch](../superpowers/plans/2026-10-07-surgery-creation-batch.md),
+[creation HTTP follow-up](../superpowers/plans/2026-10-07-surgery-creation-api-batch.md),
 [lifecycle batch](../superpowers/plans/2026-10-07-surgery-closeable-batch.md),
 [outbound contracts](../superpowers/plans/2026-10-07-huy-outbound-contracts.md).
 

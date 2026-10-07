@@ -9,6 +9,12 @@ Completion rule: implementation, required producer/consumer compatibility, actua
 
 ## Fixed selection — 18/50 accepted locally, 32 remaining
 
+Creation HTTP follow-up 2026-10-07: ten LOCAL implementation/verification checks decompose remaining
+S-04.1/S-04.4/S-02.3/S-02.4/S-07.6/X-01.7 work. No new global IDs or whole joint-contract closure
+is counted; all ten checks pass LOCAL with **740/740** full Surgery clean regression, zero fail/error/skip.
+Production authority/referral/Gateway/consumer gates remain open. Current selection stays
+18/50 and global backlog 62. [API follow-up evidence](2026-10-07-surgery-creation-api-batch.md).
+
 Latest creation follow-up 2026-10-07: S-04.2 now meets LOCAL atomic creation/replay/race/rollback/
 durable pending-recovery criteria; full Surgery 665/665 pass, zero fail/error/skip. Nine other
 existing IDs advanced but stay open; no ten-ID closure is claimed for this batch. Main backlog

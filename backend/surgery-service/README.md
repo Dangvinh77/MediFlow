@@ -57,10 +57,11 @@ Errors use the shared envelope/correlation: 400 malformed input, 401 missing aut
 403 forbidden, 404 missing/out-of-scope, 409 receipt/revision conflict, 422 business denial,
 503 unavailable authority and redacted 500 for unexpected failures.
 
-## Internal creation kernel (not a public route)
+## Creation kernel and opt-in HTTP boundary
 
-`CreateSurgeryCaseUseCase` is channel-neutral and has no production bean/authority provider or
-HTTP/referral adapter. V8 fences `surgeryRequestId` globally with a deterministic clinical-intent
+`CreateSurgeryCaseUseCase` is channel-neutral. A default-off HTTP adapter and explicit kernel wiring
+now exist, but no production creation authority or referral adapter is installed. V8 fences
+`surgeryRequestId` globally with a deterministic clinical-intent
 fingerprint; actor/correlation/channel do not create a second business request. Authorization runs
 before every replay. Requester staff/episode/template authority must be supplied by a real provider,
 never an inferred identity or positive default. After outside-transaction preflight, the bounded
@@ -77,7 +78,33 @@ mvn -pl backend/surgery-service -am '-Dapi.version=1.44' '-Dtest=SurgeryCreation
 ```
 
 Latest evidence and remaining integration gates:
-[creation execution batch](../../docs/superpowers/plans/2026-10-07-surgery-creation-batch.md).
+[creation execution batch](../../docs/superpowers/plans/2026-10-07-surgery-creation-batch.md) and
+[ten HTTP follow-up checks](../../docs/superpowers/plans/2026-10-07-surgery-creation-api-batch.md).
+
+POST `/api/v1/surgery/cases` needs BOTH `mediflow.features.surgery.enabled=true` and
+`mediflow.surgery.creation.api.enabled=true` (both default false). Enabling them without a real
+`SurgeryCreationAuthorityPort` fails startup. Test-only authority beans are not production policy.
+The creation gate is independent of the lifecycle API and messaging gates; none releases HELD rows.
+
+Only ADMIN/DOCTOR with verified account and signed staff identity may call it. `requestedBy` is an
+independent source staff reference, never the recorder or delegated authority. The mandatory authority
+provider must check requester/department/episode/referral/template permission on every attempt,
+including replay; ADMIN has no positive fallback. JWT department alone proves no care relationship.
+
+The strict request DTO uses `surgeryRequestId`, `careEpisodeType`, `careEpisodeId`, nullable
+`admissionId`/`recordId`, `patientId`, `departmentId`, `requestedBy`, `procedureCode`, `indication`,
+`priority`, `requestedAt`, `templateRevision` and 1..100 distinct planned item codes. Item/price codes
+are 1..64 ASCII code characters and quantity is positive with at most 15 integer/4 fractional digits.
+Top-level and item authority/amount/unknown fields are rejected. Admission must select its exact
+admission ID; outpatient keeps a distinct record as context without replacing the selected episode.
+
+`Idempotency-Key` must equal the lowercase canonical `surgeryRequestId` UUID. It does not introduce
+a channel-specific receipt or another case. First creation returns 201 with relative `Location`;
+authorized replay returns 200 with the same location and original receipt. Response fields are
+`requestId`, `surgeryCaseId`, `checklistSnapshotId`, `createdAt`, `replayed` (no clinical narrative,
+amount, readiness or current-state claim). 404/422 messages, like 500/503, do not expose exception
+detail; stable error codes and correlation remain. Gateway route/policy and actual referral/consumer
+acceptance are separate owner gates, not verified by the direct-service HTTP tests.
 
 ## Clearance intake and feature gates
 

@@ -1,5 +1,6 @@
 ### MediFlow — Surgery service qua gateway :8080
-### Yêu cầu: bật Surgery business gate và Gateway Surgery route trong môi trường test/local; case đã tồn tại.
+### Yêu cầu: các route hiện hữu cần case đã tồn tại; create cần approved request/authority và gate riêng.
+### Bật Surgery business gate và Gateway Surgery route chỉ trong môi trường test/local được nghiệm thu.
 ### MEDIFLOW_FEATURES_SURGERY_ENABLED=true và MEDIFLOW_GATEWAY_SURGERY_ENABLED=true; messaging vẫn off.
 
 @host = http://localhost:8080
@@ -13,6 +14,44 @@
 # @roomId = paste-authoritative-active-operating-room-id-here
 # @surgeonId = paste-explicitly-qualified-staff-id-here
 # @scheduleIdempotencyKey = unique-schedule-operation-key
+
+# @surgeryRequestId = canonical-lowercase-uuid-of-approved-request
+# @careEpisodeId = exact-selected-appointment-or-record-id
+# @recordId = exact-source-record-id
+# @patientId = exact-patient-id
+# @departmentId = approved-department-id
+# @requesterStaffId = approved-source-requester-staff-id
+# @procedureCode = approved-procedure-code
+# @plannedItemCode = approved-item-code
+# @priceCode = billing-catalogue-code
+
+### Tạo ca — ADMIN/DOCTOR có signed staffId; API mặc định tắt, không phải bypass referral
+### Cần BOTH business + MEDIFLOW_SURGERY_CREATION_API_ENABLED=true và real creation authority provider.
+### Gateway route/policy do Hoàng Anh nghiệm thu riêng; mẫu này không xác nhận gateway đã cho POST.
+### Idempotency-Key phải bằng surgeryRequestId canonical; 201 + Location, replay 200 + cùng receipt.
+### Đổi requestedAt/template/codes theo nguồn được phê duyệt; không tự tạo UUID quan hệ.
+POST {{host}}/api/v1/surgery/cases
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{surgeryRequestId}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "surgeryRequestId": "{{surgeryRequestId}}",
+  "careEpisodeType": "OUTPATIENT_VISIT",
+  "careEpisodeId": "{{careEpisodeId}}",
+  "admissionId": null,
+  "recordId": "{{recordId}}",
+  "patientId": "{{patientId}}",
+  "departmentId": "{{departmentId}}",
+  "requestedBy": "{{requesterStaffId}}",
+  "procedureCode": "{{procedureCode}}",
+  "indication": "Approved clinical indication from source request",
+  "priority": "ROUTINE",
+  "requestedAt": "2026-10-07T08:00:00Z",
+  "templateRevision": 1,
+  "plannedItems": [{"itemCode": "{{plannedItemCode}}", "priceCode": "{{priceCode}}", "quantity": 1}]
+}
 
 ### Chuẩn bị/đổi lịch nháp — ADMIN/MANAGER/DOCTOR; không reserve, không READY
 ### Đổi ca READY/SCHEDULED sẽ invalidate về PREOP và release booking cũ, phải đánh giá/chốt lại

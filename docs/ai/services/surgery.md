@@ -106,6 +106,28 @@ remain open; other endpoints still require their own implementation-ready DTO/co
 
 ## Current implementation state — 2026-10-05
 
+### Creation HTTP follow-up — 2026-10-07 (default OFF)
+
+The internal creation kernel now has an explicit default-off POST `/api/v1/surgery/cases` adapter
+and configuration. Both business and `mediflow.surgery.creation.api.enabled` gates are required.
+No real creation authority provider is installed; both gates enabled without one fail startup.
+Only ADMIN/DOCTOR with verified account plus signed staff identity may submit a request.
+`requestedBy` is a source staff reference, not the recorder or delegated authorization. Every
+attempt, including replay, requires the kernel's authority authorization. JWT department alone
+does not prove a care relationship; missing staff is denied even for ADMIN.
+
+Strict English DTO fields follow the candidate's exact care-episode/request references, with
+approved `templateRevision` and bounded distinct planned item/price codes and quantities only.
+Unknown fields at either level, including actors, READY, override, approval and amounts, fail 400.
+`Idempotency-Key` equals the canonical lowercase `surgeryRequestId` UUID: the existing V8 global
+fence, not a new channel-specific key. 201 + relative Location on create; 200 + same Location on
+authorized replay, preserving original case/checklist/time. The receipt is not current case state.
+Detailed fields/examples are in the module README and `.http` collection.
+
+No Clinical/Inpatient referral decoder, production requester/template policy, source race fence,
+Gateway policy change, consumer approval or live V7 dispatch is introduced. Direct-service HTTP/PG
+evidence is LOCAL only. [Ten follow-up checks](../../superpowers/plans/2026-10-07-surgery-creation-api-batch.md).
+
 Detail/list and draft-schedule PUT have application ports, immutable redacted DTOs, MapStruct,
 real persistence queries, direct API role tests and exact Gateway authorization. ADMIN/MANAGER read
 all departments; DOCTOR/NURSE require signed staff identity and fresh active Organization authority
@@ -270,7 +292,8 @@ changed clinical intent conflicts, replay preserves original IDs/time and still 
 repeating external lookups or charge capture. Preflight suspends caller transactions; Clock/proof
 validity and exact approved template are checked after lock waits. The existing durable pending
 clearance worker can recover after creation commits, independently of any in-memory callback.
-There is no production creation-authority provider, HTTP/referral adapter or permissive fallback.
+There is no production creation-authority provider, referral adapter or permissive fallback.
+The later default-off HTTP adapter/wiring is described above; it cannot activate without real authority.
 The internal caller is not live referral/creation acceptance, a source lease or clinical approval.
 V1–V7 are unchanged; V8 neither backfills/adopts old cases nor releases held events. Local verification
 and the ten selected backlog edges: [creation batch](../../superpowers/plans/2026-10-07-surgery-creation-batch.md).

@@ -84,13 +84,13 @@ public class SurgeryWebExceptionHandler {
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiResponse<Void>> businessRule(
             BusinessRuleException exception, HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, exception.getCode(), exception.getMessage(), request);
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, exception.getCode(), "Surgery business requirements are not satisfied", request);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> notFound(
             ResourceNotFoundException exception, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage(), request);
+        return build(HttpStatus.NOT_FOUND, exception.getCode(), "Requested Surgery resource was not found", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
