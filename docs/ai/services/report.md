@@ -329,8 +329,14 @@ làm source revision hoặc recordId làm episode; chỉ revision 1 có mapping 
 Lab fixture nay là first-completion revision 1 đúng với producer; imported completion/correction
 vẫn bị từ chối cho tới khi có contract riêng.
 Unit mapping và PostgreSQL effect tests đã chạy thật khi Docker bật lại; evidence mới nhất ở Huy plan.
-Local tests không thay cho producer mapping acceptance; Clinical/Pharmacy và admission metric
-mappers vẫn OPEN, không tự bổ sung revision thiếu trong wire.
+Local tests không thay cho producer runtime acceptance. Update 2026-10-07: offline Clinical
+completion, Pharmacy fill and Surgery result/cancellation mappers now read actual producer bytes.
+Immutable singleton revision-1 semantics, business times, duration rounding and null episode handling
+are explicit in [canonical projections](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
+New V11 source-payload hash fence detects same-operation/new-event changes even when KPIs do not
+change, without retaining patient/narrative data. Existing redacted sources are LEGACY_UNVERIFIED;
+new delivery needs controlled source revalidation, not an inferred hash. Admission metric mapping,
+financial projections, clinical policy acceptance and live publication remain OPEN.
 
 V9 thêm offline minimal admission history và delivery fingerprint ledger. Actual start/close bytes
 map thành immutable exact ID/patient/department/bed/business time/proof; không lưu clinical payload.

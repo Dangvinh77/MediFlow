@@ -61,6 +61,7 @@ class SurgeryScheduleApplicationServiceTest {
     @Mock private OrganizationLookupPort organization;
     @Mock private com.mediflow.surgery.application.port.out.AdmissionLookupPort admissions;
     @Mock private SurgeryClockPort clock;
+    @Mock private com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events;
     @InjectMocks private SurgeryScheduleApplicationService service;
 
     private SurgeryAuditActor actor;

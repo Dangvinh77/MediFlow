@@ -1,5 +1,7 @@
 package com.mediflow.surgery.application.service;
 
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
+
 import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
 import com.mediflow.surgery.application.port.in.UpdateChecklistItemUseCase;
@@ -32,13 +34,15 @@ public class SurgeryChecklistApplicationService implements UpdateChecklistItemUs
     private final SurgeryScheduleRepositoryPort schedules;
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
 
     public SurgeryChecklistApplicationService(SurgeryCaseRepositoryPort cases,
                                               SurgeryChecklistRepositoryPort checklists,
                                               SurgeryCommandReceiptPort receipts,
                                               SurgeryScheduleRepositoryPort schedules,
                                               SurgeryResourceReservationPort reservations,
-                                              SurgeryClockPort surgeryClock) {
+                                              SurgeryClockPort surgeryClock, SurgeryCareEventCapturePort events) {
+        this.events = java.util.Objects.requireNonNull(events);
         this.cases = cases;
         this.checklists = checklists;
         this.receipts = receipts;
@@ -96,12 +100,13 @@ public class SurgeryChecklistApplicationService implements UpdateChecklistItemUs
                 UUID.randomUUID(), before.checklistItemId(), after.revision(),
                 before.status(), after.status(), after.evidenceReferenceId(), after.evidenceRevision(),
                 command.actor(), at, command.correlationId());
-        SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.actor(),
+        var pendingEvent = SurgeryReadinessInvalidation.invalidateIfRequired(surgeryCase, command.actor(),
                 command.correlationId(), at, "CHECKLIST_CHANGED", schedules, reservations);
         surgeryCase.recordBusinessMutation(command.actor(), command.correlationId(), at,
                 "CHECKLIST_ITEM_CHANGED");
         cases.save(surgeryCase, command.expectedCaseRevision());
         checklists.saveItemChange(revised, command.expectedSnapshotRevision(), change);
+        pendingEvent.capture(surgeryCase, events);
         SurgeryCommandOutcome outcome = new SurgeryCommandOutcome(COMMAND_CODE,
                 surgeryCase.getSurgeryCaseId(), surgeryCase.getRevision(), after.checklistItemId(),
                 after.revision(), after.status().name(), at, false);

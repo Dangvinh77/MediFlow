@@ -145,8 +145,8 @@ class CareFinanceEnvelopeDecoderTest {
 
     @Test
     void decode_unknownEventType_rejects() {
-        assertThatThrownBy(() -> decoder.decode("surgery.completed",
-                envelope("surgery.completed", 1, "surgery-service", "resultId", SOURCE_ID)))
+        assertThatThrownBy(() -> decoder.decode("surgery.unapproved",
+                envelope("surgery.unapproved", 1, "surgery-service", "resultId", SOURCE_ID)))
                 .isInstanceOf(ReportEventValidationException.class)
                 .hasMessageContaining("Unsupported");
     }

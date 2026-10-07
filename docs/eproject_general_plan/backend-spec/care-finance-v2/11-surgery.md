@@ -397,6 +397,14 @@ and scheduling additionally permits MANAGER. Every method has explicit `@PreAuth
 
 ## 8. Events
 
+**Current producer contract — 2026-10-07:** post-case planned charge uses `surgery.case.created`;
+actual performed-charge reconciliation uses `surgery.completed`. Both have nested envelope
+`version=1`, producer `surgery-service`, exchange `mediflow.events`, routing key equal to eventType
+(no `.v1` suffix). This supersedes the candidate's unresolved post-case naming, not live rollout.
+The canonical [SURGERY-BILLING contract](../../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
+and actual producer fixtures, including planned/performed differences and unknown price codes,
+govern exact fields. Private V6 intents are not wire events; V7 capture remains HELD.
+
 Publish `surgery.ready`, `surgery.completed`, `surgery.cancelled` with the exact fields from the
 care-finance contracts. Subscribe to `surgery.requested` and `financial.clearance.granted` with
 `purpose=SURGERY`. A general Lab result cannot satisfy a checklist item unless it carries explicit

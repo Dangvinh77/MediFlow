@@ -79,6 +79,7 @@ class SurgeryLifecycleApplicationServiceTest {
     private final SurgeryReadinessAuthorityPort authority = mock(SurgeryReadinessAuthorityPort.class);
     private final SurgeryLifecycleIntentPort intents = mock(SurgeryLifecycleIntentPort.class);
     private final SurgeryClockPort clock = mock(SurgeryClockPort.class);
+    private final com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events = mock(com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort.class);
     private final SurgeryReadinessEngine engine = new SurgeryReadinessEngine(Duration.ofSeconds(30),Duration.ofSeconds(5));
     private final AtomicReference<Instant> currentTime = new AtomicReference<>(NOW);
     private final UUID account = UUID.randomUUID(), staff = UUID.randomUUID(), teamPolicy = UUID.randomUUID();
@@ -116,7 +117,7 @@ class SurgeryLifecycleApplicationServiceTest {
         when(clock.now()).thenAnswer(ignored -> currentTime.get());
         when(receipts.claim(any(),anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.NEW,UUID.randomUUID(),null,null));
         when(authority.observe(any(),any(),anyString())).thenAnswer(ignored -> evidence());
-        service = new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,engine,financialAuthority);
+        service = new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,engine,financialAuthority,events);
     }
 
     @Test void evaluate_validLocalAndAuthorityProofs_storesReadyAndHeldIntentNotBrokerOutput() {

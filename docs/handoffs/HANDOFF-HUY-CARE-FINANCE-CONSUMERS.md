@@ -13,6 +13,14 @@
 
 ## Producer actions and Huy acceptance gates
 
+**Huy outbound/Report update — 2026-10-07:** Surgery now supplies typed outcome/creation/invalidation
+contracts and actual serializer fixtures, held atomically by new V7 capture. Report has offline
+Clinical completion, Pharmacy fill and Surgery outcome mappers, with explicit immutable V1 operation
+identities and source-payload conflict fencing (V11). These remove missing local mapping/wire shapes,
+not the remaining finance/admission/publication workflows. Pharmacy's five V1 producer fixtures were
+already present and are unchanged; Inpatient adapter tests now read its actual fill bytes.
+See [current implementation and limits](../superpowers/plans/2026-10-07-huy-outbound-contracts.md).
+
 **Dependency implementation update — 2026-10-05:** Billing now has an opt-in real ledger payment
 command for already-authoritative requests, partial-payment receipts, bounded charge allocations,
 and full-payment purpose/target-specific grants. Its immutable V1 outbox rows stay held by a DB

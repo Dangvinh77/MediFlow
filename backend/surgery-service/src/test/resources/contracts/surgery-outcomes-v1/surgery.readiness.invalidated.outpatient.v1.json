@@ -1,0 +1,24 @@
+{
+  "eventId": "ced5bd8f-0543-31e2-ac24-a98190bc526f",
+  "eventType": "surgery.readiness.invalidated",
+  "version": 1,
+  "occurredAt": "2026-10-07T01:03:00Z",
+  "correlationId": "surgery-contract-outpatient",
+  "producer": "surgery-service",
+  "payload": {
+    "surgeryCaseId": "00000000-0000-4000-8000-000000000101",
+    "surgeryRequestId": "00000000-0000-4000-8000-000000000102",
+    "patientId": "00000000-0000-4000-8000-000000000103",
+    "departmentId": "00000000-0000-4000-8000-000000000104",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000110",
+    "admissionId": null,
+    "recordId": "00000000-0000-4000-8000-000000000109",
+    "caseRevision": 4,
+    "readinessSnapshotId": "00000000-0000-4000-8000-000000000113",
+    "scheduleId": "00000000-0000-4000-8000-000000000111",
+    "scheduleRevision": 1,
+    "reasonCode": "CHECKLIST_CHANGED",
+    "invalidatedAt": "2026-10-07T01:03:00Z"
+  }
+}

@@ -69,10 +69,12 @@ Publish an event whenever a service **changes its own state and other contexts m
 | `admission.started` | inpatient | billing, notification, report | planned |
 | `discharge.medically.approved` | inpatient | billing, pharmacy | planned; ends normal admission medication eligibility but does not administratively close |
 | `admission.closed` | inpatient | notification, report | planned |
-| `surgery.requested` | clinical/inpatient | surgery, billing | planned |
-| `surgery.ready` | surgery | inpatient, notification | planned |
-| `surgery.completed` | surgery | inpatient, billing, report | planned |
-| `surgery.cancelled` | surgery | inpatient, billing, notification, report | planned |
+| `surgery.requested` | clinical/inpatient | surgery | upstream referral; runtime producer/consumer still planned, not a post-case Billing charge command |
+| `surgery.case.created` | surgery | inpatient, billing | V1 typed producer fixture/internal transaction capture implemented locally; HELD, no live referral creation caller |
+| `surgery.ready` | surgery | inpatient, notification | V1 typed fixture/atomic HELD capture; provisional schedule, not finalized booking; downstream runtime acceptance pending |
+| `surgery.readiness.invalidated` | surgery | notification | V1 exact prior snapshot/schedule fixture/atomic HELD capture across seven invalidation paths; reminder suppression reader pending |
+| `surgery.completed` | surgery | inpatient, billing, report | V1 typed fixture/atomic HELD capture; immutable result identity; Report offline mapper, admission adapter decoding only |
+| `surgery.cancelled` | surgery | inpatient, billing, notification, report | V1 pre-start typed fixture/atomic HELD capture; immutable cancellation identity; financial adjustment and runtime readers pending |
 | `invoice.created` | billing | notification | current compatibility event/payment request notice |
 | `payment.completed` | billing | pharmacy, lab, patient(log), notification, report | V0 compatibility remains live; V1 classified installment/deposit producer implemented but DB-held. Notification private receipt intake defaults OFF; Report V1 financial projector pending. Never unlock care from a receipt. |
 | `financial.clearance.granted` | billing | clinical, lab, pharmacy, inpatient, surgery | V1 exact-purpose/target producer and same-byte consumer tests implemented; outbox DB-held, request issuance/revocation/live cutover pending. Surgery grant projection is offline only. |

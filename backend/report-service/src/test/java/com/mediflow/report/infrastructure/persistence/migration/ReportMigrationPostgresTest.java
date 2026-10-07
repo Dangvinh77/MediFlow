@@ -43,6 +43,21 @@ class ReportMigrationPostgresTest {
         assertThat(queryInt("SELECT count(*) FROM operational_report_publication")).isZero();
     }
 
+    @Test void v11Upgrade_preservesCountersAndMarksUnrecoverableOldSourceWithoutInventingPayload() throws Exception {
+        Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .locations("classpath:db/migration").target("10").load().migrate();
+        UUID source = UUID.randomUUID();
+        execute("INSERT INTO operational_contribution(contribution_id,event_id,source_type,source_id,source_revision,metric_type,"
+                + "department_id,metric_date,numeric_value,occurred_at,fact_fingerprint) VALUES ('" + UUID.randomUUID()
+                + "','" + UUID.randomUUID() + "','MEDICAL_RECORD','" + source + "',1,'COMPLETED_VISITS','"
+                + UUID.randomUUID() + "',DATE '2026-10-01',1,TIMESTAMPTZ '2026-10-01T08:00:00Z','" + "a".repeat(64) + "')");
+        flyway().migrate();
+        assertThat(queryInt("SELECT count(*) FROM operational_contribution")).isOne();
+        assertThat(queryInt("SELECT count(*) FROM operational_source_snapshot WHERE evidence_state='LEGACY_UNVERIFIED' AND payload_fingerprint IS NULL")).isOne();
+        assertConstraintViolation(() -> execute("INSERT INTO operational_source_snapshot(source_type,source_id,source_revision,event_type,first_event_id,evidence_state)"
+                + " VALUES ('DISPENSE','" + UUID.randomUUID() + "',1,'prescription.filled','" + UUID.randomUUID() + "','VERIFIED_PAYLOAD')"), "23514");
+    }
+
     @Test
     void v9Upgrade_preservesLegacyDataAndAddsEmptyPendingEvidenceTables() throws Exception {
         Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())

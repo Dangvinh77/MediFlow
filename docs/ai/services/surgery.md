@@ -236,7 +236,17 @@ Full failure matrix, approved producer/consumer bytes, clinical policies and liv
 remain open. See the execution ledger for actual tests; do not promote local mock acceptance to
 joint contract approval.
 
-**Planned publish contracts (not delivered by held intents):** `surgery.ready`, `surgery.completed`, `surgery.cancelled`.
+**2026-10-07 local outbound boundary:** typed V1 `surgery.case.created`, `surgery.ready`,
+`surgery.readiness.invalidated`, `surgery.completed` and `surgery.cancelled` have actual serializer
+fixtures for admission/outpatient. New V7 `surgery_care_event_outbox` stores only HELD wire bytes,
+with immutable event/content uniqueness and exact persisted case/context/revision checks. Local
+READY/COMPLETE/CANCEL and all seven readiness-invalidation callers capture in their transaction.
+Case-created capture requires the caller's creation transaction; a live referral/creation caller is
+still missing. This is separate from PRIVATE V6 intents; neither table has a public V1 dispatcher.
+Canonical payloads/consumer gates remain in [care contract](../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
+and [charge contract](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
+Inpatient verifies actual admission bytes at its adapter; outpatient/reference/late acceptance,
+Billing reconciliation, Notification reminder handling, policy sources and live rollout stay OPEN.
 
 **Subscribe:** `surgery.requested`, `financial.clearance.granted` with `purpose=SURGERY`, and explicit
 pre-op Lab/Pharmacy facts chosen by the future contract. A general Lab result does not automatically

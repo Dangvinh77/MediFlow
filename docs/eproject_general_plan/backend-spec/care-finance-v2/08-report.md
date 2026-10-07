@@ -165,6 +165,15 @@ revision-3 rejection assertions to read the corrected producer fixture before ow
 
 ## 4. Projection equations
 
+**Offline source additions 2026-10-07:** canonical Clinical/Pharmacy singleton-operation revision-1
+semantics and Surgery explicit result/cancellation revision now have source mappers and same-byte
+tests. This supersedes the earlier dated Clinical/Pharmacy mapping gap, not runtime activation.
+V11 adds normalized source-payload hashes alongside per-event/per-metric fingerprints, so changed
+non-metric evidence under a new event ID conflicts. Old redacted sources are marked unverified;
+no payload hash, historical coverage or acceptance is fabricated. Full producer exports/cutover
+are still required. Duration uses whole actual elapsed minutes floored per Surgery result; Clinical
+missing episode remains null. Lasting rules are in CONTRACT-CARE-PROJECTIONS-01.
+
 ```text
 payment SERVICE_PAYMENT     → cash += amount; revenue += allocated earned amount
 payment ADMISSION_DEPOSIT   → cash += amount; liability += unallocated deposit amount

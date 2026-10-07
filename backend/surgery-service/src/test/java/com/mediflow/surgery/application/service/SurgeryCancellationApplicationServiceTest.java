@@ -58,6 +58,7 @@ class SurgeryCancellationApplicationServiceTest {
     @Mock private SurgeryResourceReservationPort reservations;
     @Mock private SurgeryCommandReceiptPort receipts;
     @Mock private SurgeryClockPort clock;
+    @Mock private com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events;
     @InjectMocks private SurgeryCancellationApplicationService service;
 
     private SurgeryAuditActor actor;

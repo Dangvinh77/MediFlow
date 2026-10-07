@@ -53,6 +53,7 @@ class SurgeryFinancialClearanceServiceTest {
     @Mock SurgeryScheduleRepositoryPort schedules;
     @Mock SurgeryResourceReservationPort reservations;
     @Mock SurgeryClockPort clock;
+    @Mock private com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events;
     @InjectMocks SurgeryFinancialClearanceService service;
 
     @ParameterizedTest

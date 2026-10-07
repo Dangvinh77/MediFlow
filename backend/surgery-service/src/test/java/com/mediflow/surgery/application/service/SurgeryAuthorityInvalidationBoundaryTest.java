@@ -64,7 +64,8 @@ class SurgeryAuthorityInvalidationBoundaryTest {
         var cases = mock(SurgeryCaseRepositoryPort.class); var schedules = mock(SurgeryScheduleRepositoryPort.class);
         var resources = mock(SurgeryResourceReservationPort.class); var candidate = candidate();
         when(cases.lockById(candidate.surgeryCaseId())).thenReturn(Optional.empty());
-        assertThat(new SurgeryAuthorityInvalidationService(cases, schedules, resources, jobs, clock).apply(candidate)).isFalse();
+        assertThat(new SurgeryAuthorityInvalidationService(cases, schedules, resources, jobs, clock,
+                mock(com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort.class)).apply(candidate)).isFalse();
         verifyNoInteractions(schedules, resources, jobs);
     }
     @Test void retryRejectsFreeTextAndMissingCaseDoesNotReopenWork() {

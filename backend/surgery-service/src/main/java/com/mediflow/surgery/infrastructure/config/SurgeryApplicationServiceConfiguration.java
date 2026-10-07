@@ -7,6 +7,7 @@ import com.mediflow.surgery.application.port.in.PrepareSurgeryScheduleUseCase;
 import com.mediflow.surgery.application.port.in.UpdateChecklistItemUseCase;
 import com.mediflow.surgery.application.port.out.OrganizationLookupPort;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
 import com.mediflow.surgery.application.port.out.SurgeryChecklistRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
 import com.mediflow.surgery.application.port.out.SurgeryCommandReceiptPort;
@@ -29,6 +30,11 @@ import org.springframework.context.annotation.Profile;
 @ConditionalOnProperty(prefix = "mediflow.features.surgery", name = "enabled", havingValue = "true")
 public class SurgeryApplicationServiceConfiguration {
     @Bean
+    com.mediflow.surgery.application.port.in.CaptureSurgeryCaseCreatedUseCase captureSurgeryCaseCreatedUseCase(
+            SurgeryCaseRepositoryPort cases,com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events) {
+        return new com.mediflow.surgery.application.service.SurgeryCaseCreatedCaptureService(cases,events);
+    }
+    @Bean
     com.mediflow.surgery.application.port.in.QueryExpiredSurgeryReadinessUseCase queryExpiredSurgeryReadinessUseCase(
             com.mediflow.surgery.application.port.out.SurgeryReadinessExpiryPort expiry, SurgeryClockPort clock) {
         return new com.mediflow.surgery.application.service.ExpiredSurgeryReadinessQueryService(expiry, clock);
@@ -37,8 +43,8 @@ public class SurgeryApplicationServiceConfiguration {
     @Bean
     com.mediflow.surgery.application.port.in.ExpireSurgeryReadinessUseCase expireSurgeryReadinessUseCase(
             SurgeryCaseRepositoryPort cases, SurgeryScheduleRepositoryPort schedules,
-            SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
-        return new com.mediflow.surgery.application.service.SurgeryReadinessExpiryService(cases, schedules, reservations, clock);
+            SurgeryResourceReservationPort reservations, SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
+        return new com.mediflow.surgery.application.service.SurgeryReadinessExpiryService(cases, schedules, reservations, clock, events);
     }
 
     @Bean
@@ -65,9 +71,9 @@ public class SurgeryApplicationServiceConfiguration {
             SurgeryCaseRepositoryPort cases,
             com.mediflow.surgery.application.port.out.SurgeryFinancialClearanceRepositoryPort clearances,
             com.mediflow.surgery.application.port.out.SurgeryInboxPort inbox,
-            SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort reservations, SurgeryClockPort clock) {
+            SurgeryScheduleRepositoryPort schedules, SurgeryResourceReservationPort reservations, SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
         return new com.mediflow.surgery.application.service.SurgeryFinancialClearanceService(
-                cases, clearances, inbox, schedules, reservations, clock);
+                cases, clearances, inbox, schedules, reservations, clock, events);
     }
 
     @Bean
@@ -82,8 +88,9 @@ public class SurgeryApplicationServiceConfiguration {
                                                SurgeryScheduleRepositoryPort schedules,
                                                SurgeryResourceReservationPort reservations,
                                                SurgeryCommandReceiptPort receipts,
-                                               SurgeryClockPort clock) {
-        return new SurgeryCancellationApplicationService(cases, schedules, reservations, receipts, clock);
+                                               SurgeryClockPort clock,
+                                               com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events) {
+        return new SurgeryCancellationApplicationService(cases, schedules, reservations, receipts, clock,events);
     }
 
     @Bean
@@ -93,9 +100,9 @@ public class SurgeryApplicationServiceConfiguration {
             SurgeryCommandReceiptPort receipts,
             SurgeryScheduleRepositoryPort schedules,
             SurgeryResourceReservationPort reservations,
-            SurgeryClockPort clock) {
+            SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
         return new SurgeryChecklistApplicationService(
-                cases, checklists, receipts, schedules, reservations, clock);
+                cases, checklists, receipts, schedules, reservations, clock, events);
     }
 
     @Bean
@@ -105,9 +112,9 @@ public class SurgeryApplicationServiceConfiguration {
             SurgeryScheduleRepositoryPort schedules,
             SurgeryResourceReservationPort reservations,
             SurgeryCommandReceiptPort receipts,
-            SurgeryClockPort clock) {
+            SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
         return new SurgeryConsentApplicationService(
-                cases, consents, schedules, reservations, receipts, clock);
+                cases, consents, schedules, reservations, receipts, clock, events);
     }
 
     @Bean
@@ -119,7 +126,7 @@ public class SurgeryApplicationServiceConfiguration {
             OrganizationLookupPort organization,
             com.mediflow.surgery.application.port.out.AdmissionLookupPort admissions,
             SurgeryResourceReservationPort reservations,
-            SurgeryClockPort clock) {
-        return new SurgeryScheduleApplicationService(cases, schedules, receipts, organization, admissions, reservations, clock);
+            SurgeryClockPort clock, SurgeryCareEventCapturePort events) {
+        return new SurgeryScheduleApplicationService(cases, schedules, receipts, organization, admissions, reservations, clock, events);
     }
 }

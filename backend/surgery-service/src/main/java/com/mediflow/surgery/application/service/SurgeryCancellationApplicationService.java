@@ -2,6 +2,8 @@ package com.mediflow.surgery.application.service;
 
 import com.mediflow.surgery.application.dto.SurgeryCommandOutcome;
 import com.mediflow.surgery.application.exception.SurgeryRevisionConflictException;
+import com.mediflow.surgery.application.mapper.SurgeryCareEventFactory;
+import com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort;
 import com.mediflow.surgery.application.port.in.CancelSurgeryUseCase;
 import com.mediflow.surgery.application.port.out.SurgeryCaseRepositoryPort;
 import com.mediflow.surgery.application.port.out.SurgeryClockPort;
@@ -29,17 +31,20 @@ public class SurgeryCancellationApplicationService implements CancelSurgeryUseCa
     private final SurgeryResourceReservationPort reservations;
     private final SurgeryCommandReceiptPort receipts;
     private final SurgeryClockPort clock;
+    private final SurgeryCareEventCapturePort events;
 
     public SurgeryCancellationApplicationService(SurgeryCaseRepositoryPort cases,
                                                   SurgeryScheduleRepositoryPort schedules,
                                                   SurgeryResourceReservationPort reservations,
                                                   SurgeryCommandReceiptPort receipts,
-                                                  SurgeryClockPort clock) {
+                                                  SurgeryClockPort clock,
+                                                  SurgeryCareEventCapturePort events) {
         this.cases = cases;
         this.schedules = schedules;
         this.reservations = reservations;
         this.receipts = receipts;
         this.clock = clock;
+        this.events = java.util.Objects.requireNonNull(events);
     }
 
     @Override
@@ -93,6 +98,7 @@ public class SurgeryCancellationApplicationService implements CancelSurgeryUseCa
         }
         surgeryCase.cancel(actor, command.correlationId(), at, command.reason());
         cases.save(surgeryCase, command.expectedCaseRevision());
+        events.hold(SurgeryCareEventFactory.cancelled(surgeryCase), surgeryCase.getRevision());
 
         SurgeryCommandOutcome outcome = new SurgeryCommandOutcome(COMMAND_CODE,
                 surgeryCase.getSurgeryCaseId(), surgeryCase.getRevision(),

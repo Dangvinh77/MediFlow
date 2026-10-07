@@ -63,7 +63,39 @@ Readiness is the conjunction of valid indication, complete mandatory pre-op chec
 team assignment, room/time confirmation and surgery financial clearance. No consumer may set READY
 from a payment event alone.
 
-## Inpatient medication
+### Surgery-owned outbound V1 decisions — 2026-10-07
+
+Huy's producer DTOs/fixtures define one common wire for all consumers (no Java imports across
+modules). Every outcome includes `surgeryCaseId`, `surgeryRequestId`, `patientId`, `departmentId`,
+`careEpisodeType`, `careEpisodeId`, nullable `admissionId`/`recordId`, and `caseRevision`.
+
+- READY also carries `scheduleId`, `scheduleRevision`, `roomId`, `plannedStartAt`, `plannedEndAt`,
+  `readinessSnapshotId`, `readyAt`, `emergencyOverrideUsed=false`, `reservationConfirmed=false`.
+  This is provisional readiness, NOT a finalized booking. Its semantic key is the snapshot UUID.
+- COMPLETED carries persisted `resultId`, `sourceRevision=1`, actual `startedAt`/`completedAt`,
+  `recordedAt`, `procedureCode`, `methodCode`, `outcomeCode`, nullable `complicationsCategory`,
+  `complicationsSummary=null`, and performed `{performedItemId,itemCode,priceCode,quantity}`.
+  No diagnosis, narrative or consent document is published. The result is immutable in V1.
+- CANCELLED carries producer-owned `cancellationId`, `sourceRevision=1`, `cancellationStage`,
+  `reason`, `reasonCode=PRE_START_CANCELLATION`, `cancelledBy` (human account UUID),
+  optional `cancelledByStaffId`, and `cancelledAt`. The stage is derived from the last committed
+  transition: REQUESTED → BEFORE_PREOP; PREOP/READY → AFTER_PREOP; SCHEDULED → BEFORE_START.
+  Cancellation UUID is the Java name-UUID of UTF-8 `surgery.cancelled:<surgeryCaseId>`; this
+  is Surgery's new operation identity, not an inferred external reference.
+
+- `surgery.readiness.invalidated` identifies the exact prior `readinessSnapshotId`, `scheduleId`
+  and `scheduleRevision`, with the same care identity, final committed `caseRevision`, structured
+  `reasonCode` and `invalidatedAt`. It never claims that a new schedule is booked. Its semantic
+  identity is the old readiness snapshot, not an external authority revision. Notification must
+  suppress that snapshot's reminder; a later READY for a new snapshot can create a new provisional
+  reminder. Terminal events dominate READY regardless of delivery order. Reasons are
+  READINESS_EXPIRED, ORGANIZATION_AUTHORITY_CHANGED, FINANCIAL_CLEARANCE_CHANGED, CONSENT_CHANGED,
+  CONSENT_REVOKED, CHECKLIST_CHANGED, SCHEDULE_REPLACED and READINESS_RECHECK_FAILED.
+
+Consumer acceptance is tracked separately. Inpatient must classify valid outpatient outcomes
+before requiring admission IDs, and must register the exact case reference before applying
+admission outcomes (or retain early outcomes durably). Existing consumer code alone does not
+prove event-first/late/terminal ordering acceptance. Held producer rows do not activate this flow.
 
 ### Additive exact-admission authority lookup V1 (2026-10-05)
 
