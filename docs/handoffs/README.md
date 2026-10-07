@@ -6,7 +6,7 @@ This is the only registry for implementation blockers that still require another
 
 | Handoff | Status | Owner who must act | Unblocks |
 |---|---|---|---|
-| [Clinical/Lab Gateway deployment smoke](HANDOFF-VINH-GATEWAY-CARE-ROLES.md) | ACTIVE — role code complete; real downstream smoke pending | Hoàng Anh | close routing acceptance without broadening exact roles |
+| [Clinical/Lab Gateway policy and deployment smoke](HANDOFF-VINH-GATEWAY-CARE-ROLES.md) | CI RED — 13 Gateway policy/route failures; reconcile matcher and Surgery default flag before smoke | Hoàng Anh | restore green integration CI and close routing acceptance |
 | [Clinical/Lab financial clearance](../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md) | ACTIVE — request issuance and live publication pending | Lộc | Clinical EXAM and Lab exact-test activation |
 | [Inpatient deposit and settlement](../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md) | ACTIVE — request issuance, top-up and settlement pending | Lộc | admission activation and administrative close |
 | [Surgery intake and held outbound activation](HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) | ACTIVE — held V1 fixtures/capture complete; request intake, live dispatch and consumer acceptance pending | Huy plus affected consumers | Clinical/Inpatient referral publication and Surgery runtime workflow |
