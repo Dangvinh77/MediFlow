@@ -9,6 +9,7 @@ import com.mediflow.inpatient.domain.model.DepositTopupRequest;
 import com.mediflow.inpatient.domain.model.DischargeSummary;
 import com.mediflow.inpatient.domain.model.FinancialClearance;
 import com.mediflow.inpatient.domain.model.SettlementSnapshot;
+import com.mediflow.inpatient.domain.model.SurgeryEventReceipt;
 import com.mediflow.inpatient.domain.model.TreatmentEntry;
 import com.mediflow.inpatient.domain.model.enums.OverrideType;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.AdmissionJpaEntity;
@@ -21,6 +22,7 @@ import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.DischargeSumm
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.FinancialClearanceJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.OverrideJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.SettlementSnapshotJpaEntity;
+import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.SurgeryEventReceiptJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.TreatmentEntryJpaEntity;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +32,37 @@ import java.util.UUID;
 /** Explicit conversions between the inpatient domain and its database rows. */
 @Component
 public class InpatientPersistenceMapper {
+
+    public SurgeryEventReceipt toDomain(SurgeryEventReceiptJpaEntity row) {
+        return SurgeryEventReceipt.restore(row.maTiepNhan, row.maSuKien, row.loaiSuKien,
+                row.maNghiepVu, row.dauVanTai, row.maCaMo, row.maYeuCauMo,
+                row.maDotNoiTru, row.maBenhNhan,
+                row.maKhoa, row.phienBanCa, row.phienBanNguon, row.trangThaiDich, row.tomTat,
+                row.noiDungDienBien, row.thoiGianDienBien, row.nhanLuc, row.apDungLuc);
+    }
+
+    public SurgeryEventReceiptJpaEntity copy(SurgeryEventReceipt model,
+                                              SurgeryEventReceiptJpaEntity row) {
+        row.maTiepNhan = model.receiptId();
+        row.maSuKien = model.eventId();
+        row.loaiSuKien = model.eventType();
+        row.maNghiepVu = model.operationId();
+        row.dauVanTai = model.payloadFingerprint();
+        row.maCaMo = model.surgeryCaseId();
+        row.maYeuCauMo = model.surgeryRequestId();
+        row.maDotNoiTru = model.admissionId();
+        row.maBenhNhan = model.patientId();
+        row.maKhoa = model.departmentId();
+        row.phienBanCa = model.caseRevision();
+        row.phienBanNguon = model.sourceRevision();
+        row.trangThaiDich = model.targetStatus();
+        row.tomTat = model.summary();
+        row.noiDungDienBien = model.timelineContent();
+        row.thoiGianDienBien = model.timelineAt();
+        row.nhanLuc = model.receivedAt();
+        row.apDungLuc = model.appliedAt();
+        return row;
+    }
 
     public Admission toDomain(AdmissionJpaEntity row, Instant depositExpiresAt) {
         return Admission.restore(row.maDotNoiTru, row.maYeuCauNoiTru, row.maBenhNhan,

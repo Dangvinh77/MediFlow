@@ -31,6 +31,7 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.dto.request.CreateAdmissionRequest;
 import com.mediflow.inpatient.domain.model.Admission;
@@ -79,6 +80,7 @@ class InpatientServiceSmokeTest {
     @MockBean private ClinicalOrderReferenceRepositoryPort references;
     @MockBean private DischargeSummaryRepositoryPort discharges;
     @MockBean private ProcessedEventPort processedEvents;
+    @MockBean private SurgeryEventReceiptRepositoryPort surgeryReceipts;
     @MockBean private InpatientEventStorePort eventStore;
     @MockBean private InpatientOutboxPort outbox;
     @MockBean private DepositSuggestionPolicyPort depositSuggestions;

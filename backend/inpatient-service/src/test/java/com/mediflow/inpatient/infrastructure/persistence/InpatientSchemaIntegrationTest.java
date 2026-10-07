@@ -33,6 +33,9 @@ class InpatientSchemaIntegrationTest {
                 .isEqualTo("dot_noi_tru");
         assertThat(jdbc.queryForObject("SELECT to_regclass('phan_giuong')", String.class))
                 .isEqualTo("phan_giuong");
+        assertThat(jdbc.queryForObject(
+                "SELECT to_regclass('tiep_nhan_su_kien_phau_thuat')", String.class))
+                .isEqualTo("tiep_nhan_su_kien_phau_thuat");
         assertThat(jdbc.queryForObject("SELECT indexdef FROM pg_indexes WHERE indexname = 'uq_phan_giuong_active_bed'",
                 String.class)).containsIgnoringCase("UNIQUE").containsIgnoringCase("WHERE")
                 .containsIgnoringCase("status").containsIgnoringCase("'ACTIVE'");
