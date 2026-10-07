@@ -27,7 +27,7 @@ không copy một bản contract khác.
 | Lab | CARE-BILLING, IDENTITY-LOOKUP, CARE-PROJECTIONS |
 | Pharmacy | CARE-BILLING, INPATIENT-SURGERY, SURGERY-BILLING, CARE-PROJECTIONS |
 | Billing | CARE-BILLING, SURGERY-BILLING, CARE-PROJECTIONS |
-| Notification | CARE-PROJECTIONS, IDENTITY-LOOKUP |
+| Notification | CARE-PROJECTIONS, IDENTITY-LOOKUP, [active Notification projection handoff](../HANDOFF-NOTIFICATION-CARE-PROJECTIONS.md) |
 | Report | CARE-PROJECTIONS |
 | Inpatient (planned) | all five contracts |
 | Surgery (planned) | all five contracts except outpatient-only parts of CARE-BILLING |
