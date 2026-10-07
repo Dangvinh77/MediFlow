@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -106,6 +107,79 @@ class DepartmentControllerSecurityTest {
                                 }
                                 """))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void create_duplicateAbbreviation_returnsStableConflictCode() throws Exception {
+        when(createDepartmentUseCase.execute(
+                "Outpatient", "OUT", DepartmentType.CLINICAL, "Building A"))
+                .thenThrow(new DataIntegrityViolationException(
+                        "duplicate key violates uk_department_abbreviation"));
+
+        mockMvc.perform(post("/api/v1/org/departments")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "departmentName": "Outpatient",
+                                  "abbreviation": "OUT",
+                                  "departmentType": "CLINICAL",
+                                  "location": "Building A"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code")
+                        .value("DEPARTMENT_ABBREVIATION_DUPLICATE"))
+                .andExpect(jsonPath("$.error.message")
+                        .value("Department abbreviation already exists"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void create_invalidDepartmentType_returnsInvalidRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/org/departments")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "departmentName": "Outpatient",
+                                  "abbreviation": "OUT",
+                                  "departmentType": "UNKNOWN",
+                                  "location": "Building A"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void create_malformedJson_returnsInvalidRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/org/departments")
+                        .contentType("application/json")
+                        .content("{\"departmentName\":\"Outpatient\","))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void create_validationFailure_returnsFieldDetails() throws Exception {
+        mockMvc.perform(post("/api/v1/org/departments")
+                        .contentType("application/json")
+                        .content("""
+                                {"departmentName":"","abbreviation":"","departmentType":null}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details.length()").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void list_invalidBoolean_returnsInvalidRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/org/departments?activeOnly=not-bool"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
     }
 
     @Test

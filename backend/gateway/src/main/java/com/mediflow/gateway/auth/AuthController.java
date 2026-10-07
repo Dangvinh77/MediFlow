@@ -12,6 +12,7 @@ import com.mediflow.gateway.security.JwtTokenService.InvalidCredentialsException
 import com.mediflow.gateway.security.JwtTokenService.UpstreamUnavailableException;
 import com.mediflow.gateway.auth.OrganizationAuthClient.UpstreamTimeoutException;
 import io.jsonwebtoken.Claims;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +47,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public Mono<ResponseEntity<Object>> login(
-            @RequestBody LoginRequest request,
+            @Valid @RequestBody LoginRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String requestedCorrelationId) {
@@ -97,7 +98,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
-            @RequestBody RefreshRequest request,
+            @Valid @RequestBody RefreshRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
                     required = false) String requestedCorrelationId) {
