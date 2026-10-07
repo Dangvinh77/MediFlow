@@ -25,7 +25,7 @@ The local Maven run produced the following service evidence:
 |---|---:|---|
 | Clinical | 217 | no failures or errors |
 | Lab | 169 | no failures or errors |
-| Inpatient | 98 | 97 completed; one Testcontainers error because Docker was unavailable |
+| Inpatient | 102 | 101 completed; one Testcontainers error because Docker Desktop's Linux engine was unavailable |
 
 Clinical implements its compatibility CRUD plus check-in, EXAM clearance, guarded start, record
 completion and admission-referral paths. Lab implements compatibility payment projection plus
