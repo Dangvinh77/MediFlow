@@ -12,6 +12,7 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.service.InpatientApplicationService;
 import com.mediflow.inpatient.application.service.LookupAdmissionAuthorityService;
@@ -44,12 +45,14 @@ public class InpatientApplicationConfiguration {
             ClinicalOrderReferenceRepositoryPort references,
             DischargeSummaryRepositoryPort discharges,
             ProcessedEventPort processedEvents,
+            SurgeryEventReceiptRepositoryPort surgeryReceipts,
             InpatientEventStorePort eventStore,
             InpatientOutboxPort outbox,
             DepositSuggestionPolicyPort depositSuggestions,
             InpatientDtoMapper mapper,
             Clock clock) {
         return new InpatientApplicationService(admissions, beds, assignments, treatments, references,
-                discharges, processedEvents, eventStore, outbox, depositSuggestions, mapper, clock);
+                discharges, processedEvents, surgeryReceipts, eventStore, outbox,
+                depositSuggestions, mapper, clock);
     }
 }

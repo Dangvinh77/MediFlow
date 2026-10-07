@@ -9,8 +9,15 @@ public record SurgeryCancelledFactCommand(
         String maTuongQuan,
         UUID maYLenhBenNgoai,
         UUID maDotNoiTru,
+        UUID maLanHuy,
         String giaiDoanHuy,
         String lyDo,
         Instant huyLuc,
-        Instant xayRaLuc) implements ExternalOrderFactCommand {
+        Instant xayRaLuc,
+        UUID maYeuCauMo,
+        UUID maBenhNhan,
+        UUID maKhoa,
+        int phienBanCa,
+        int phienBanNguon,
+        String dauVanTai) implements ExternalOrderFactCommand {
 }
