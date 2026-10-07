@@ -107,9 +107,22 @@ class SurgeryLifecycleIntegrationTest {
     @BeforeEach void resetIsolatedPrerequisites() {
         db.execute("TRUNCATE surgery_case CASCADE");
         fixtures.clear(); lifecycleTestTime.set(NOW);
-        when(authority.observe(any(),any(),anyString())).thenAnswer(call -> evidence(call.getArgument(0),call.getArgument(1)));
-        when(financialAuthority.observe(any(),anyString())).thenAnswer(call -> new FinancialClearanceLookupPort.Observation(
-                true,lifecycleTestTime.get(),null));
+        when(authority.observe(any(),any(),anyString())).thenAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return evidence(call.getArgument(0),call.getArgument(1));
+        });
+        when(financialAuthority.observe(any(),anyString())).thenAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return new FinancialClearanceLookupPort.Observation(true,lifecycleTestTime.get(),null);
+        });
+        doAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return null;
+        }).when(authority).verifyResult(any(),any(),anyString());
+        doAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isTrue();
+            return null;
+        }).when(authority).reconcile(any(),any(),any());
     }
 
     @Test void start_billingRevokedClearance_commitsDenialAuditAndReleasesSchedule() {
@@ -251,7 +264,8 @@ class SurgeryLifecycleIntegrationTest {
         doAnswer(call -> {
             var observed = evidence(call.getArgument(0),call.getArgument(1));
             var consent = consents.findByCaseId(fixture.caseId()).stream().filter(item -> item.consentType() == SurgeryConsentType.ANESTHESIA).findFirst().orElseThrow();
-            consents.save(consent.revoke(SurgeryAuditActor.human(ACCOUNT,fixture.staff()),lifecycleTestTime.get(),"local-pg","withdrawn"));
+            new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                    consents.save(consent.revoke(SurgeryAuditActor.human(ACCOUNT,fixture.staff()),lifecycleTestTime.get(),"local-pg","withdrawn")));
             return observed;
         }).when(authority).observe(any(),any(),anyString());
         var denied = lifecycle.start(command);
@@ -310,9 +324,110 @@ class SurgeryLifecycleIntegrationTest {
     private void start(Fixture fixture) {
         lifecycle.evaluate(identity(fixture,"ready")); lifecycle.finalizeSchedule(identity(fixture,"finalize")); lifecycle.start(identity(fixture,"start"));
     }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"same","partial","contained","shared-staff","reversed-team","adjacent"})
+    void finalize_realTwoWorkerIntervalAndTeamMatrix_neverCommitsPartialBooking(String scenario) throws Exception {
+        UUID room=UUID.randomUUID(), shared=UUID.randomUUID(), other=UUID.randomUUID();
+        var team=List.of(new SurgeryTeamAssignment(shared,SurgeryTeamRole.PRIMARY_SURGEON));
+        var secondTeam=List.of(new SurgeryTeamAssignment(UUID.randomUUID(),SurgeryTeamRole.PRIMARY_SURGEON));
+        UUID secondRoom=room;
+        Instant secondStarts=NOW.plusSeconds(300), secondEnds=NOW.plusSeconds(600);
+        if(scenario.equals("partial")) { secondStarts=NOW.plusSeconds(450); secondEnds=NOW.plusSeconds(750); }
+        if(scenario.equals("contained")) { secondStarts=NOW.plusSeconds(350); secondEnds=NOW.plusSeconds(550); }
+        if(scenario.equals("shared-staff")) { secondRoom=UUID.randomUUID(); secondTeam=team; }
+        if(scenario.equals("reversed-team")) {
+            secondRoom=UUID.randomUUID();
+            team=List.of(new SurgeryTeamAssignment(shared,SurgeryTeamRole.PRIMARY_SURGEON),new SurgeryTeamAssignment(other,SurgeryTeamRole.ASSISTANT_SURGEON));
+            secondTeam=List.of(new SurgeryTeamAssignment(other,SurgeryTeamRole.PRIMARY_SURGEON),new SurgeryTeamAssignment(shared,SurgeryTeamRole.ASSISTANT_SURGEON));
+        }
+        if(scenario.equals("adjacent")) { secondStarts=NOW.plusSeconds(600); secondEnds=NOW.plusSeconds(900); }
+        var first=seed(room,NOW.plusSeconds(300),NOW.plusSeconds(600),team);
+        var second=seed(secondRoom,secondStarts,secondEnds,secondTeam);
+        lifecycle.evaluate(identity(first,"ready-matrix")); lifecycle.evaluate(identity(second,"ready-matrix"));
+        var firstCommand=identity(first,"finalize-matrix");
+        var secondCommand=identity(second,"finalize-matrix");
+        var barrier=new CyclicBarrier(2);
+        doAnswer(call -> { var result=evidence(call.getArgument(0),call.getArgument(1)); barrier.await(5,TimeUnit.SECONDS); return result; })
+                .when(authority).observe(any(),any(),anyString());
+        try(var pool=Executors.newFixedThreadPool(2)) {
+            var one=pool.submit(() -> finalizeAttempt(firstCommand)); var two=pool.submit(() -> finalizeAttempt(secondCommand));
+            var outcomes=List.of(one.get(12,TimeUnit.SECONDS),two.get(12,TimeUnit.SECONDS));
+            if(scenario.equals("adjacent")) assertThat(outcomes).containsOnly("SCHEDULED");
+            else assertThat(outcomes).containsExactlyInAnyOrder("SCHEDULED","CONFLICT");
+        }
+        for(var fixture:List.of(first,second)) {
+            var value=cases.findById(fixture.caseId()).orElseThrow();
+            int expected=schedules.findByCaseId(fixture.caseId()).orElseThrow().teamAssignments().size()+1;
+            if(value.getStatus()==SurgeryStatus.SCHEDULED) assertThat(bookings(fixture)).hasSize(expected).containsOnly("RESERVED");
+            else { assertThat(value.getStatus()).isEqualTo(SurgeryStatus.READY); assertThat(bookings(fixture)).isEmpty(); }
+        }
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_command_receipt WHERE status='PENDING'",Integer.class)).isZero();
+        assertThat(count("surgery_command_receipt")).isEqualTo(scenario.equals("adjacent") ? 4 : 3);
+        assertThat(count("surgery_care_event_outbox")).isEqualTo(2);
+        assertThat(db.queryForList("SELECT delivery_status FROM surgery_care_event_outbox",String.class)).containsOnly("HELD");
+    }
+
+    private String finalizeAttempt(SurgeryLifecycleCommand command) {
+        try { return lifecycle.finalizeSchedule(command).state(); }
+        catch(SurgeryScheduleConflictException denied) { return "CONFLICT"; }
+    }
+
+    @Test void readinessAfterDependencyInvalidationProducesDistinctHeldFactAndOriginalReplayRemainsStable() {
+        var fixture=seed(UUID.randomUUID(),NOW.plusSeconds(300),NOW.plusSeconds(600));
+        var command=identity(fixture,"first-ready"); var original=lifecycle.evaluate(command);
+        var replacement=new Fixture(fixture.caseId(),fixture.staff(),fixture.checklistId(),fixture.grantId(),fixture.consents(),UUID.randomUUID());
+        fixtures.put(fixture.caseId(),replacement);
+        var denial=lifecycle.finalizeSchedule(identity(replacement,"changed-dependency"));
+        assertThat(denial.state()).isEqualTo("READINESS_CHANGED");
+        assertThat(denial.blockingReasons()).contains("READINESS_CHANGED");
+        var newReady=lifecycle.evaluate(identity(replacement,"second-ready"));
+        assertThat(newReady.state()).isEqualTo("READY"); assertThat(newReady.subjectId()).isNotEqualTo(original.subjectId());
+        assertThat(lifecycle.evaluate(command)).isEqualTo(original.asReplay());
+        assertThat(db.queryForObject("SELECT count(DISTINCT event_id) FROM surgery_care_event_outbox WHERE event_type='surgery.ready'",Integer.class)).isEqualTo(2);
+        assertThat(db.queryForObject("SELECT count(DISTINCT case_revision) FROM surgery_care_event_outbox WHERE event_type='surgery.ready'",Integer.class)).isEqualTo(2);
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_care_event_outbox WHERE event_type='surgery.readiness.invalidated'",Integer.class)).isOne();
+        assertThat(count("surgery_command_receipt")).isEqualTo(3);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"finalize","start"})
+    void failureAfterResourceWriteRollsBackCaseScheduleSnapshotsHistoryAndReceipt(String operation) {
+        var fixture=seed(UUID.randomUUID(),NOW.plusSeconds(300),NOW.plusSeconds(600));
+        lifecycle.evaluate(identity(fixture,"ready-before-fault"));
+        if(operation.equals("start")) lifecycle.finalizeSchedule(identity(fixture,"finalize-before-fault"));
+        var before=cases.findById(fixture.caseId()).orElseThrow();
+        var command=identity(fixture,"fault-command");
+        int receiptsBefore=count("surgery_command_receipt"), historyBefore=count("surgery_revision_history"), snapshotsBefore=count("surgery_readiness_snapshot");
+        String target=operation.equals("start") ? "IN_PROGRESS" : "SCHEDULED";
+        db.execute("""
+                CREATE FUNCTION fail_lifecycle_state() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN IF NEW.status = TG_ARGV[0] THEN RAISE EXCEPTION 'test-only write failure'; END IF; RETURN NEW; END $$
+                """);
+        db.execute("CREATE TRIGGER fail_lifecycle_state BEFORE UPDATE ON surgery_case FOR EACH ROW EXECUTE FUNCTION fail_lifecycle_state('"+target+"')");
+        try {
+            assertThatThrownBy(() -> { if(operation.equals("start")) lifecycle.start(command); else lifecycle.finalizeSchedule(command); })
+                    .isInstanceOf(org.springframework.dao.DataAccessException.class);
+            var after=cases.findById(fixture.caseId()).orElseThrow();
+            assertThat(after.getStatus()).isEqualTo(before.getStatus()); assertThat(after.getRevision()).isEqualTo(before.getRevision());
+            assertThat(after.getReadinessSnapshot()).isEqualTo(before.getReadinessSnapshot());
+            assertThat(count("surgery_command_receipt")).isEqualTo(receiptsBefore);
+            assertThat(count("surgery_revision_history")).isEqualTo(historyBefore);
+            assertThat(count("surgery_readiness_snapshot")).isEqualTo(snapshotsBefore);
+            if(operation.equals("start")) assertThat(bookings(fixture)).containsExactlyInAnyOrder("RESERVED","RESERVED");
+            else assertThat(bookings(fixture)).isEmpty();
+            assertThat(count("surgery_care_event_outbox")).isOne();
+        } finally {
+            db.execute("DROP TRIGGER fail_lifecycle_state ON surgery_case"); db.execute("DROP FUNCTION fail_lifecycle_state()");
+        }
+        assertThat(operation.equals("start") ? lifecycle.start(command).state() : lifecycle.finalizeSchedule(command).state()).isEqualTo(target);
+    }
     private Fixture seed(UUID room,Instant starts,Instant ends) {
+        return seed(room,starts,ends,List.of(new SurgeryTeamAssignment(UUID.randomUUID(),SurgeryTeamRole.PRIMARY_SURGEON)));
+    }
+    private Fixture seed(UUID room,Instant starts,Instant ends,List<SurgeryTeamAssignment> team) {
         return new TransactionTemplate(transactionManager).execute(ignored -> {
-            UUID staff = UUID.randomUUID(); var actor = SurgeryAuditActor.human(ACCOUNT,staff);
+            UUID staff = team.getFirst().staffId(); var actor = SurgeryAuditActor.human(ACCOUNT,staff);
             String procedure = "TEST-"+UUID.randomUUID().toString().substring(0,8);
             var value = SurgeryCase.create(UUID.randomUUID(),UUID.randomUUID(),new CareEpisode(CareEpisodeType.OUTPATIENT_VISIT,UUID.randomUUID(),null,UUID.randomUUID()),
                     UUID.randomUUID(),UUID.randomUUID(),staff,procedure,"Isolated test-only clinical prerequisite",SurgeryPriority.ROUTINE,NOW.minusSeconds(100),actor,"local-pg");
@@ -329,7 +444,7 @@ class SurgeryLifecycleIntegrationTest {
                 var consent = SurgeryConsentRecord.sign(UUID.randomUUID(),value.getSurgeryCaseId(),type,value.getPatientId(),SurgeryConsentSignerType.PATIENT,
                         UUID.randomUUID(),actor,NOW.minusSeconds(70),"local-pg"); consents.save(consent); consentIds.put(type,consent.consentId());
             }
-            var schedule = new SurgerySchedule(UUID.randomUUID(),value.getSurgeryCaseId(),1,room,starts,ends,List.of(new SurgeryTeamAssignment(staff,SurgeryTeamRole.PRIMARY_SURGEON)));
+            var schedule = new SurgerySchedule(UUID.randomUUID(),value.getSurgeryCaseId(),1,room,starts,ends,team);
             schedules.saveDraft(schedule,0,NOW.minusSeconds(60));
             var grant = new SurgeryFinancialClearance(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),value.getPatientId(),value.getSurgeryCaseId(),value.getCareEpisode().type(),
                     value.getCareEpisode().episodeId(),null,BigDecimal.TEN,"VND","CASH",NOW.minusSeconds(50),NOW.plusSeconds(120).plusNanos(1),"a".repeat(64));
@@ -376,9 +491,10 @@ class SurgeryLifecycleIntegrationTest {
                 SurgeryConsentRepositoryPort consents,SurgeryFinancialClearanceRepositoryPort clearances,SurgeryResourceReservationPort resources,
                 SurgeryResultRepositoryPort results,SurgeryReadinessAuthorityPort authority,SurgeryLifecycleIntentPort intents,SurgeryClockPort clock,
                 FinancialClearanceLookupPort financialAuthority,
-                com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events) {
+                com.mediflow.surgery.application.port.out.SurgeryCareEventCapturePort events,
+                com.mediflow.surgery.application.port.out.SurgeryUnitOfWorkPort unitOfWork) {
             return new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,
-                    new SurgeryReadinessEngine(Duration.ofSeconds(30),Duration.ofSeconds(5)),financialAuthority,events);
+                    new SurgeryReadinessEngine(Duration.ofSeconds(30),Duration.ofSeconds(5)),financialAuthority,events,unitOfWork);
         }
     }
 }

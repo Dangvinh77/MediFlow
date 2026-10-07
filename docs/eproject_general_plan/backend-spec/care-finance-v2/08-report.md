@@ -187,6 +187,17 @@ transaction classification and persisted settlement totals.
 
 ## 5. Ports and commands
 
+**Local cash-only continuation 2026-10-07:** V12 adds isolated minimal receipt evidence and
+gross cash scopes, not a replacement for V6 FINANCIAL_CONTRIBUTION/DAILY_FINANCIAL_REPORT.
+Internal `ApplyCashReceiptUseCase` maps actual Billing service/deposit V1 fixture bytes, keys the
+immutable receipt by transactionId, preserves exact BigDecimal/currency/business completion time
+and commits delivery/source evidence with department/hospital scopes. Receipt department is the
+Billing account department, not allocation authority; currencies/classifications stay separate.
+Gross inflows do not implement net cash/refunds, deposit liability, earned recognition or receivable.
+No financial listener/API/history backfill/replay/publication is enabled. Lasting local rules and
+remaining full-target acceptance are in CONTRACT-CARE-PROJECTIONS-01. The equations above are
+unchanged, and no missing financial metric is published as zero.
+
 ```java
 public interface ProjectCareFinanceEventUseCase {
     void onPaymentCompleted(PaymentCompletedCommand command);
@@ -260,6 +271,16 @@ missing source IDs or unknown event versions are retry/DLQ failures and are neve
 successful zero-valued report.
 
 ## 9. Replay contract
+
+**Local cash-only rebuild 2026-10-07:** V13 freezes the statement-visible committed V12 receipt
+set with exact minimal inputs and first-delivery/source/fact proof hashes. Internal 1..500 batch
+replay uses isolated generations, DB row locking, shared pure cash scope planning and atomic
+receipt/effect/progress commits. Strict snapshot/projector version 1 decoding preserves V12 hashes
+and nanos; complete bidirectional receipt/proof/scope/count reconciliation against the manifest
+yields VERIFIED or FAILED. No live reset, raw payload reconstruction, producer publication or
+financial read switch occurs. This supplies only a finite gross-receipt rebuild, not missing
+recognition/refund/settlement/pending-correction logic, pre-activation history, retention approval,
+live catch-up or full V2 financial acceptance. Details are canonical in CARE-PROJECTIONS.
 
 **Local read slice 2026-10-02 (not full target activation):** V10 adds empty accepted-coverage
 publication storage for immutable operational replay generations. Two default-off operations GET

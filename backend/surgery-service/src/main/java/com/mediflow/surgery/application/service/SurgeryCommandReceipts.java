@@ -18,7 +18,7 @@ import java.util.UUID;
 /** Deterministic receipt encoding/fingerprinting shared by transactional command use cases. */
 public final class SurgeryCommandReceipts {
 
-    private static final int FORMAT_VERSION = 1;
+    private static final int FORMAT_VERSION = 2;
 
     private SurgeryCommandReceipts() { }
 
@@ -28,6 +28,10 @@ public final class SurgeryCommandReceipts {
                                     String commandCode,
                                     UUID caseId) {
         SurgeryCommandReceiptPort.Claim claim = receipts.claim(key, fingerprint);
+        return resolve(claim, commandCode, caseId);
+    }
+
+    public static ClaimResult resolve(SurgeryCommandReceiptPort.Claim claim, String commandCode, UUID caseId) {
         return switch (claim.state()) {
             case NEW -> new ClaimResult(claim.receiptId(), null);
             case REPLAY -> {
@@ -75,7 +79,9 @@ public final class SurgeryCommandReceipts {
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             try (DataOutputStream data = new DataOutputStream(bytes)) {
-                data.writeInt(FORMAT_VERSION);
+                // Existing commands keep byte-compatible V1 when no structured denial is needed.
+                int format = outcome.blockingReasons().isEmpty() ? 1 : FORMAT_VERSION;
+                data.writeInt(format);
                 data.writeUTF(outcome.commandCode());
                 writeUuid(data, outcome.surgeryCaseId());
                 data.writeLong(outcome.caseRevision());
@@ -84,6 +90,10 @@ public final class SurgeryCommandReceipts {
                 data.writeUTF(outcome.state());
                 data.writeLong(outcome.occurredAt().getEpochSecond());
                 data.writeInt(outcome.occurredAt().getNano());
+                if (format >= 2) {
+                    data.writeInt(outcome.blockingReasons().size());
+                    for (String reason : outcome.blockingReasons()) data.writeUTF(reason);
+                }
             }
             return bytes.toByteArray();
         } catch (IOException exception) {
@@ -94,7 +104,8 @@ public final class SurgeryCommandReceipts {
     private static SurgeryCommandOutcome decode(byte[] bytes) {
         if (bytes == null) throw new IllegalStateException("Applied receipt has no response payload");
         try (DataInputStream data = new DataInputStream(new ByteArrayInputStream(bytes))) {
-            if (data.readInt() != FORMAT_VERSION) throw new IOException("Unsupported receipt format");
+            int format = data.readInt();
+            if (format != 1 && format != FORMAT_VERSION) throw new IOException("Unsupported receipt format");
             String command = data.readUTF();
             UUID caseId = readUuid(data);
             long caseRevision = data.readLong();
@@ -102,9 +113,15 @@ public final class SurgeryCommandReceipts {
             long subjectRevision = data.readLong();
             String state = data.readUTF();
             Instant occurredAt = Instant.ofEpochSecond(data.readLong(), data.readInt());
+            var reasons = new java.util.ArrayList<String>();
+            if (format >= 2) {
+                int count = data.readInt();
+                if (count < 0 || count > 32) throw new IOException("Invalid reason count");
+                for (int i = 0; i < count; i++) reasons.add(data.readUTF());
+            }
             if (data.available() != 0) throw new IOException("Trailing receipt payload bytes");
             return new SurgeryCommandOutcome(command, caseId, caseRevision, subjectId,
-                    subjectRevision, state, occurredAt, false);
+                    subjectRevision, state, occurredAt, false, reasons);
         } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("Stored Surgery command receipt is corrupt", exception);
         }

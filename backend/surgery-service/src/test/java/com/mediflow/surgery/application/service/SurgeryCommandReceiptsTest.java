@@ -62,7 +62,42 @@ class SurgeryCommandReceiptsTest {
         return new SurgeryCommandReceiptPort.Key("actor", "BEGIN_PREOP:case", "request-1");
     }
 
+    @Test void reasonsAndNanosecondsSurviveVersionTwoReplay() {
+        var receipts=new RecordingReceiptPort(); var id=UUID.randomUUID();
+        var original=new SurgeryCommandOutcome("EVALUATE_READINESS",UUID.randomUUID(),1,UUID.randomUUID(),0,
+                "NOT_READY",OCCURRED_AT.plusNanos(123456789),false,java.util.List.of("FINANCIAL_CLEARANCE_INVALID"));
+        SurgeryCommandReceipts.complete(receipts,id,original);
+        var replay=SurgeryCommandReceipts.resolve(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.REPLAY,
+                id,original.commandCode(),receipts.response),original.commandCode(),original.surgeryCaseId()).replay();
+        assertThat(replay).isEqualTo(original.asReplay());
+    }
+
+    @Test void originalVersionOneReceiptStillReplaysWithoutRewrite() {
+        var receipts=new RecordingReceiptPort(); var id=UUID.randomUUID();
+        var original=new SurgeryCommandOutcome("BEGIN_PREOP",UUID.randomUUID(),1,null,0,"PREOP_IN_PROGRESS",OCCURRED_AT,false);
+        SurgeryCommandReceipts.complete(receipts,id,original);
+        byte[] legacy=receipts.response.clone();
+        assertThat(java.nio.ByteBuffer.wrap(legacy).getInt()).isOne();
+        var replay=SurgeryCommandReceipts.resolve(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.REPLAY,
+                id,original.commandCode(),legacy),original.commandCode(),original.surgeryCaseId()).replay();
+        assertThat(replay).isEqualTo(original.asReplay());
+        assertThat(java.nio.ByteBuffer.wrap(legacy).getInt()).isOne();
+    }
+
+    @Test void corruptReasonCountOrTrailingPayloadCannotBeReplayed() {
+        var receipts=new RecordingReceiptPort(); var id=UUID.randomUUID(); var caseId=UUID.randomUUID();
+        SurgeryCommandReceipts.complete(receipts,id,new SurgeryCommandOutcome("BEGIN_PREOP",caseId,1,null,0,"PREOP_IN_PROGRESS",OCCURRED_AT,false));
+        byte[] emptyV2=java.util.Arrays.copyOf(receipts.response,receipts.response.length+Integer.BYTES);
+        java.nio.ByteBuffer.wrap(emptyV2).putInt(2);
+        byte[] badCount=emptyV2.clone(); java.nio.ByteBuffer.wrap(badCount).putInt(badCount.length-4,33);
+        byte[] trailing=java.util.Arrays.copyOf(emptyV2,emptyV2.length+1);
+        for(byte[] invalid:new byte[][]{badCount,trailing}) assertThatThrownBy(() -> SurgeryCommandReceipts.resolve(
+                new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.REPLAY,id,"BEGIN_PREOP",invalid),"BEGIN_PREOP",caseId))
+                .isInstanceOf(IllegalStateException.class).hasMessage("Stored Surgery command receipt is corrupt");
+    }
+
     private static final class RecordingReceiptPort implements SurgeryCommandReceiptPort {
+        public java.util.Optional<Claim> find(Key key, String fingerprint) { return java.util.Optional.empty(); }
         private Claim nextClaim = new Claim(State.NEW, UUID.randomUUID(), null, null);
         private byte[] response;
         private UUID completedCaseId;

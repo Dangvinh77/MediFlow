@@ -14,7 +14,7 @@ không copy một bản contract khác.
 | [`CONTRACT-SURGERY-BILLING-01`](CONTRACT-SURGERY-BILLING-01.md) | PARTIAL_IMPLEMENTATION; payments/grants/current lookup implemented, issuance/reconciliation/refund writers open | Huy + Lộc | procedure charge, current surgery clearance, cancellation/refund |
 | [`CONTRACT-IDENTITY-LOOKUP-01`](CONTRACT-IDENTITY-LOOKUP-01.md) | PRODUCER-READY / CONSUMER-FIXTURES-PENDING | Hoàng Anh + all consumers | patient/staff/department/room identity, job-title team-role projection, JWT service auth, Gateway routes |
 | [`CONTRACT-PATIENT-NOTIFICATION-01`](CONTRACT-PATIENT-NOTIFICATION-01.md) | COMPATIBILITY_LOCKED | Hoàng Anh + Lộc | flat `patient.created` payload and versioned-envelope migration gate |
-| [`CONTRACT-CARE-PROJECTIONS-01`](CONTRACT-CARE-PROJECTIONS-01.md) | PARTIAL; local operational source mappers/held producers; financial/reminder/live acceptance open | Lộc + Huy + event producers | Notification templates and Report projections |
+| [`CONTRACT-CARE-PROJECTIONS-01`](CONTRACT-CARE-PROJECTIONS-01.md) | PARTIAL; local operational mappings + gross receipt kernel/finite replay; recognition/refund/settlement/reminder/live acceptance open | Lộc + Huy + event producers | Notification templates and Report projections |
 
 ## Service reading matrix
 

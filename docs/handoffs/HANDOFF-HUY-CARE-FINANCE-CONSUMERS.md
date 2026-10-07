@@ -1,6 +1,6 @@
 # HANDOFF — Pharmacy and Report care-finance activation
 
-**Status:** ACTIVE — Report operational mappings and producer-byte PostgreSQL evidence exist; Pharmacy admission wiring, Report finance/live publication and placement policy remain open.
+**Status:** ACTIVE — Report operational mappings, V12 gross receipt evidence and V13 finite cash replay exist locally; Pharmacy admission wiring, Report finance/live publication and placement policy remain open.
 **Owner:** Huy (`LQHuy0210`), Pharmacy and Report.
 **Unblocks:** safe Inpatient lifecycle activation and complete operational/financial reporting.
 
@@ -12,6 +12,23 @@ Inpatient produces approved admission/discharge lifecycle events. Billing produc
 
 - Pharmacy uses admission lifecycle only to authorize medication for an exact admission. Its current admission decoder is offline and is not a live Rabbit listener.
 - Report now maps actual Clinical, Pharmacy and Surgery producer bytes with source fingerprints and PostgreSQL dedupe/rollback/replay evidence. This does not activate live bindings, finance projection or controlled publication.
+
+## Huy local implementation — 2026-10-07
+
+Report V12 maps actual Billing service/deposit receipt bytes into transaction-keyed gross cash
+receipt evidence with atomic dedupe, rollback and currency isolation. V13 rebuilds those accepted
+minimal facts into isolated finite generations with frozen input, bounded resume and bidirectional
+reconciliation. VERIFIED does not publish a read model, prove historical completeness, release held
+events or establish owner acceptance. Deposit cash is not earned revenue.
+
+These local kernels supersede the historical absence of gross-receipt mapping/replay only, not
+recognition, deposit release, refunds, settlement or corrections. Operational Clinical/Pharmacy/
+Surgery mappings and source conflict fencing remain implemented but offline.
+
+Evidence and remaining scope:
+[cash receipt batch](../superpowers/plans/2026-10-07-report-cash-receipts.md),
+[cash replay batch](../superpowers/plans/2026-10-07-report-cash-replay-batch.md),
+[canonical cash-only boundary](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-offline-gross-receipt-evidence--2026-10-07).
 
 ## Owner actions
 

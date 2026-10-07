@@ -8,10 +8,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.mediflow.report.application.mapper.LabOperationalContributionMapper;
 import com.mediflow.report.application.mapper.AdmissionReportFactMapper;
+import com.mediflow.report.application.mapper.BillingCashReceiptMapper;
 
 /** Infrastructure wiring for report-specific runtime configuration. */
 @Configuration
 public class ReportConfiguration {
+
+    @Bean
+    BillingCashReceiptMapper billingCashReceiptMapper(ZoneId reportZoneId) {
+        return new BillingCashReceiptMapper(reportZoneId);
+    }
 
     @Bean
     AdmissionReportFactMapper admissionReportFactMapper() {

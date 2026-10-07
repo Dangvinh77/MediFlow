@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 @Profile("!test")
@@ -20,6 +21,25 @@ public class SurgeryCommandReceiptAdapter implements SurgeryCommandReceiptPort {
 
     public SurgeryCommandReceiptAdapter(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+    }
+
+    @Override
+    public Optional<Claim> find(Key key, String fingerprint) {
+        requireTransaction();
+        if (key == null || fingerprint == null || !fingerprint.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException("Invalid command fingerprint");
+        }
+        return jdbc.query("""
+                SELECT receipt_id, fingerprint, status, response_code, response_payload
+                FROM surgery_command_receipt
+                WHERE actor_scope = ? AND command_code = ? AND idempotency_key = ?
+                """, (rs, ignored) -> {
+            UUID id = rs.getObject("receipt_id", UUID.class);
+            if (!fingerprint.equals(rs.getString("fingerprint"))) return new Claim(State.CONFLICT,id,null,null);
+            return "APPLIED".equals(rs.getString("status"))
+                    ? new Claim(State.REPLAY,id,rs.getString("response_code"),rs.getBytes("response_payload"))
+                    : new Claim(State.IN_PROGRESS,id,null,null);
+        }, key.actorScope(),key.operation(),key.idempotencyKey()).stream().findFirst();
     }
 
     @Override

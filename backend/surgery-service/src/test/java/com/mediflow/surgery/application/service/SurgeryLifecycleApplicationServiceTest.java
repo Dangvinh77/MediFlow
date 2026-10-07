@@ -84,6 +84,12 @@ class SurgeryLifecycleApplicationServiceTest {
     private final AtomicReference<Instant> currentTime = new AtomicReference<>(NOW);
     private final UUID account = UUID.randomUUID(), staff = UUID.randomUUID(), teamPolicy = UUID.randomUUID();
     private SurgeryLifecycleApplicationService service;
+    private final com.mediflow.surgery.application.port.out.SurgeryUnitOfWorkPort unitOfWork =
+            new com.mediflow.surgery.application.port.out.SurgeryUnitOfWorkPort() {
+                public <T> T read(java.util.function.Supplier<T> action) { return action.get(); }
+                public <T> T write(java.util.function.Supplier<T> action) { return action.get(); }
+                public <T> T outside(java.util.function.Supplier<T> action) { return action.get(); }
+            };
     private SurgeryCase value;
     private SurgerySchedule schedule;
     private SurgeryChecklistSnapshot checklist;
@@ -117,7 +123,7 @@ class SurgeryLifecycleApplicationServiceTest {
         when(clock.now()).thenAnswer(ignored -> currentTime.get());
         when(receipts.claim(any(),anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.NEW,UUID.randomUUID(),null,null));
         when(authority.observe(any(),any(),anyString())).thenAnswer(ignored -> evidence());
-        service = new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,engine,financialAuthority,events);
+        service = new SurgeryLifecycleApplicationService(cases,schedules,receipts,snapshots,checklists,consents,clearances,resources,results,authority,intents,clock,engine,financialAuthority,events,unitOfWork);
     }
 
     @Test void evaluate_validLocalAndAuthorityProofs_storesReadyAndHeldIntentNotBrokerOutput() {
@@ -230,8 +236,8 @@ class SurgeryLifecycleApplicationServiceTest {
         doAnswer(call -> { bytes.set(call.getArgument(3)); return null; }).when(receipts).complete(any(),any(),anyString(),any(),any());
         var original = command();
         var outcome = service.evaluate(original);
-        when(receipts.claim(any(),anyString())).thenReturn(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.REPLAY,
-                UUID.randomUUID(),"EVALUATE_READINESS",bytes.get()));
+        when(receipts.find(any(),anyString())).thenReturn(Optional.of(new SurgeryCommandReceiptPort.Claim(SurgeryCommandReceiptPort.State.REPLAY,
+                UUID.randomUUID(),"EVALUATE_READINESS",bytes.get())));
         currentTime.set(NOW.plusSeconds(20));
         var replay = service.evaluate(original);
         assertThat(replay.replayed()).isTrue(); assertThat(replay.occurredAt()).isEqualTo(outcome.occurredAt());
@@ -270,6 +276,18 @@ class SurgeryLifecycleApplicationServiceTest {
                 proof.proofs().stream().map(item -> item.type() != SurgeryDependencyType.FINANCIAL_CLEARANCE ? item : new SurgeryReadinessEvidence.Proof(
                         item.type(),item.sourceId(),item.revision(),item.decision(),item.observedAt(),item.validFrom(),grant.expiresAt())).toList());
         value.markReady(engine.evaluate(value,schedule,proof,NOW.minusSeconds(1)),SurgeryAuditActor.human(account,staff),"local-lifecycle");
+    }
+
+    @Test void replayCommittedBetweenProbeAndStateReadReturnsOriginalWithoutAnotherAuthorityCall() {
+        var bytes=new AtomicReference<byte[]>();
+        doAnswer(call -> { bytes.set(call.getArgument(3)); return null; }).when(receipts).complete(any(),any(),anyString(),any(),any());
+        var original=command(); var applied=service.evaluate(original);
+        when(receipts.find(any(),anyString())).thenReturn(Optional.empty(),Optional.of(new SurgeryCommandReceiptPort.Claim(
+                SurgeryCommandReceiptPort.State.REPLAY,UUID.randomUUID(),"EVALUATE_READINESS",bytes.get())));
+        assertThat(service.evaluate(original)).isEqualTo(applied.asReplay());
+        verify(authority,times(1)).observe(any(),any(),anyString());
+        verify(receipts,times(1)).claim(any(),anyString());
+        verify(intents,times(1)).holdReady(any(),any(),any(),anyString());
     }
     private void scheduled() { ready(); value.finalizeSchedule(SurgeryAuditActor.human(account,staff),"local-lifecycle",NOW.minusSeconds(1)); }
     private void started() { scheduled(); value.start(engine.evaluate(value,schedule,evidence(),NOW.minusSeconds(1)),SurgeryAuditActor.human(account,staff),"local-lifecycle",NOW.minusSeconds(1)); }

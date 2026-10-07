@@ -314,6 +314,26 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
 
 ## 12. Care-finance projection đích
 
+**Local telemetry 2026-10-07:** default-off, aggregate-only Report monitoring reads pending admission
+evidence, separate operational/cash replay inventories/progress/ages and legacy-unverified source
+hash counts with one bounded MVCC statement. V14 is index-only. Cached Micrometer meters never query
+on scrape; unavailable/stale data is NaN rather than fabricated zero, and labels/logs contain no
+patient/entity IDs or payloads. Explicit age/availability/inventory thresholds and their limitations
+are in the [ten-deliverable runbook](../../superpowers/plans/2026-10-07-report-telemetry-batch.md).
+Web exposure remains health,info; separately exposed metrics require telemetry opt-in and
+ADMIN/MANAGER access tokens. No V2 activation, publication, broker lag/DLQ measurement or dashboard
+deployment is implied. Failed generation counts are retained inventory, not a new-incident rate.
+
+**Internal cash replay update 2026-10-07:** V13 adds frozen minimal receipt inputs and isolated
+cash-only replay generations. Snapshot/projector V1 preserve the V12 fingerprint format and ISO
+nanoseconds; no producer payload is fabricated. One MVCC-visible source statement, DB generation
+lock, bounded resume, shared live/replay scope planner and full fact/proof/scope/count reconciliation
+rebuild gross receipt totals without changing live tables or legacy bindings. VERIFIED is finite
+manifest equality, not financial coverage/publication. Missing first-delivery proof fails freeze;
+unsupported/corrupt inputs fail before batch effects. Recognition/refund/settlement/pending
+reversals, historical export, catch-up and financial read acceptance remain OPEN. See the
+[ten-task batch](../../superpowers/plans/2026-10-07-report-cash-replay-batch.md).
+
 Report tiếp tục là read model thuần event. Nó không trở thành nguồn chuẩn của tiền, admission hay
 surgery và không gọi REST để bù dữ liệu thiếu trong event.
 
@@ -346,6 +366,16 @@ time giữ nanos qua reload. Canonical contract xem STARTED/CLOSED là singleton
 revision 1, độc lập envelope version. Chưa ghi contributions/counts/medical LOS/occupancy vì duration
 medical-discharge và transfer/release/capacity semantics chưa chốt. Unit/static và PG reload/rollback/race cùng
 V8→V9 upgrade/constraints đã được chạy thật; không admission metric/listener mới.
+
+Offline financial input update 2026-10-07: `BillingCashReceiptMapper` reads the two actual ledger
+receipt fixtures. V12 stores minimal immutable transaction/delivery evidence and cash-only gross
+receipt scopes separated by currency, timezone, classification and Billing account department.
+Internal `ApplyCashReceiptUseCase` joins both scopes and evidence atomically. No listener/HTTP
+caller activates it; current five bindings and legacy projections are unchanged. Monetary JSON
+parsing is exact BigDecimal without changing operational V11 hash normalization. Neither receipt
+amount nor a deposit receipt supplies earned revenue/unallocated liability. Full financial mapping,
+recognition/refund/settlement, finite finance replay and accepted publication remain OPEN; see the
+[canonical local boundary](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-offline-gross-receipt-evidence--2026-10-07).
 
 Financial projection phải tách `cashReceived`, `depositLiability`, `earnedRevenue`, `refunds` và
 `outstandingReceivable`. `payment.completed` cho tạm ứng chỉ tăng cash/liability; earned revenue chỉ

@@ -47,6 +47,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
                                                    ObjectMapper objectMapper,
+                                                   @Value("${mediflow.report.telemetry.enabled:false}")
+                                                   boolean telemetryEnabled,
                                                    @Value("${mediflow.security.swagger-permit:false}")
                                                    boolean swaggerPermit) throws Exception {
         return http
@@ -59,6 +61,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> {
                     authorize.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
                     authorize.requestMatchers("/actuator/health").permitAll();
+                    // Metrics remain unexposed by default. An explicit management-plane opt-in
+                    // must not make aggregate operational diagnostics visible to patient tokens.
+                    if (telemetryEnabled) {
+                        authorize.requestMatchers("/actuator/metrics", "/actuator/metrics/**")
+                                .hasAnyRole("ADMIN", "MANAGER");
+                    } else {
+                        authorize.requestMatchers("/actuator/metrics", "/actuator/metrics/**").denyAll();
+                    }
                     if (swaggerPermit) {
                         authorize.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                                 .permitAll();

@@ -42,6 +42,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 })
 class ReportControllerTest {
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void telemetryDefaultDisabled_deniesMetricsEvenToAdmin() throws Exception {
+        mockMvc.perform(get("/actuator/metrics")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/actuator/metrics/report.admission.pending")).andExpect(status().isForbidden());
+    }
+
     private static final String BASE_PATH = "/api/v1/reports";
 
     @Autowired
