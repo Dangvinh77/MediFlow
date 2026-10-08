@@ -61,11 +61,12 @@
 - Modify: `frontend/src/features/lab/types.ts`
 - Modify: `frontend/src/features/lab/components/LabDetail.tsx`
 
-- [ ] Add only the live check-in, examination start, record completion, admission-referral, Lab start, result, and cancel commands.
-- [ ] Gate affordances by backend roles and current lifecycle status while treating 403 as authoritative.
-- [ ] Keep financial clearance activation unavailable until Billing and Gateway handoffs pass.
-- [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(clinical-ui): complete live care commands`.
+- [x] Add the always-on Lab start, result, and cancel commands.
+- [ ] Add check-in, examination start, record completion, and admission referral after `care-finance-v2` is enabled in the service and Docker runtime.
+- [x] Gate affordances by backend roles and current lifecycle status while treating 403 as authoritative.
+- [x] Keep financial clearance activation unavailable until Billing and Gateway handoffs pass.
+- [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+- [ ] Commit the available batch as `feat(lab-ui): complete live laboratory commands`.
 
 ### Task 4: Hoang Anh organization and patient administration
 

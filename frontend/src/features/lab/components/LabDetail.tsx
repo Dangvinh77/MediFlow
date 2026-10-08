@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { labApi } from "../api";
 import type { LabTestDTO, LabTestStatus } from "../types";
+import { LabActions } from "./LabActions";
 
 interface LabDetailProps {
   testId: string;
@@ -153,6 +154,11 @@ export function LabDetail({ testId, notice }: LabDetailProps) {
         )}
         <div className="mt-5 border-t border-border pt-4"><h3 className="text-sm font-semibold">Kết luận</h3><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{test.conclusion ?? "Chưa có kết luận."}</p></div>
       </section>
+
+      <LabActions
+        test={test}
+        onUpdated={(updated) => setState({ key: requestKey, status: "success", test: updated })}
+      />
 
       {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs">{test.emergencyOverrideId}</p></section> : null}
       <Link href="/lab" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>
