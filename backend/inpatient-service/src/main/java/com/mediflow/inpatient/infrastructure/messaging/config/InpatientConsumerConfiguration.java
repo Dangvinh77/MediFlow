@@ -91,6 +91,13 @@ public class InpatientConsumerConfiguration {
     }
 
     @Bean
+    Binding surgeryCaseCreatedBinding(
+            @Qualifier("inpatientQueue") Queue queue,
+            @Qualifier("inpatientEventsExchange") TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with("surgery.case.created");
+    }
+
+    @Bean
     Binding surgeryReadyBinding(
             @Qualifier("inpatientQueue") Queue queue,
             @Qualifier("inpatientEventsExchange") TopicExchange exchange) {

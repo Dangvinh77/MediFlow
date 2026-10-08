@@ -13,7 +13,7 @@ import java.time.Clock;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class AdmissionAuthorityIntegrationTest {
     @Container static final PostgreSQLContainer<?> PG=new PostgreSQLContainer<>("postgres:16-alpine");
     @Test void lookup_committedAdmissionAndMedicalDischarge_preservesExactIdsAndRevision() {

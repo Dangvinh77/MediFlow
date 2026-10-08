@@ -10,6 +10,7 @@ import com.mediflow.inpatient.application.dto.command.FinancialClearanceCommand;
 import com.mediflow.inpatient.application.dto.command.LabResultFactCommand;
 import com.mediflow.inpatient.application.dto.command.PrescriptionFilledFactCommand;
 import com.mediflow.inpatient.application.dto.command.SettlementCompletedCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryCaseCreatedCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryCancelledFactCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryCompletedFactCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
@@ -59,6 +60,7 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.domain.exception.AdmissionRuleViolationException;
 import com.mediflow.inpatient.domain.model.Admission;
@@ -72,6 +74,7 @@ import com.mediflow.inpatient.domain.model.DischargeSummary;
 import com.mediflow.inpatient.domain.model.EmergencyOverride;
 import com.mediflow.inpatient.domain.model.FinancialClearance;
 import com.mediflow.inpatient.domain.model.SettlementSnapshot;
+import com.mediflow.inpatient.domain.model.SurgeryEventReceipt;
 import com.mediflow.inpatient.domain.model.TreatmentEntry;
 import com.mediflow.inpatient.domain.model.enums.AdmissionStatus;
 import com.mediflow.inpatient.domain.model.enums.BedStatus;
@@ -107,6 +110,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
     private final ClinicalOrderReferenceRepositoryPort references;
     private final DischargeSummaryRepositoryPort discharges;
     private final ProcessedEventPort processedEvents;
+    private final SurgeryEventReceiptRepositoryPort surgeryReceipts;
     private final InpatientEventStorePort eventStore;
     private final InpatientOutboxPort outbox;
     private final DepositSuggestionPolicyPort depositSuggestions;
@@ -121,6 +125,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
             ClinicalOrderReferenceRepositoryPort references,
             DischargeSummaryRepositoryPort discharges,
             ProcessedEventPort processedEvents,
+            SurgeryEventReceiptRepositoryPort surgeryReceipts,
             InpatientEventStorePort eventStore,
             InpatientOutboxPort outbox,
             DepositSuggestionPolicyPort depositSuggestions,
@@ -133,6 +138,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         this.references = references;
         this.discharges = discharges;
         this.processedEvents = processedEvents;
+        this.surgeryReceipts = surgeryReceipts;
         this.eventStore = eventStore;
         this.outbox = outbox;
         this.depositSuggestions = depositSuggestions;
@@ -471,7 +477,76 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
     }
 
     @Override
+    public void onSurgeryCaseCreated(SurgeryCaseCreatedCommand command) {
+        validateEnvelope(command.maSuKien(), command.phienBan(), command.xayRaLuc(), command.maTuongQuan());
+        require(command.maCaMo(), "surgeryCaseId");
+        require(command.maYeuCauMo(), "surgeryRequestId");
+        require(command.maDotNoiTru(), "admissionId");
+        require(command.maBenhNhan(), "patientId");
+        require(command.maKhoa(), "departmentId");
+        requireText(command.maThuThuat(), "procedureCode");
+        require(command.yeuCauLuc(), "requestedAt");
+        requireText(command.dauVanTai(), "payloadFingerprint");
+        SurgeryEventReceipt candidate = SurgeryEventReceipt.pending(command.maSuKien(),
+                "surgery.case.created", command.maCaMo(), command.dauVanTai(), command.maCaMo(),
+                command.maYeuCauMo(), command.maDotNoiTru(), command.maBenhNhan(), command.maKhoa(),
+                command.phienBanCa(), command.phienBanNguon(), ExternalOrderStatus.REQUESTED,
+                command.maThuThuat(), null, null, command.xayRaLuc());
+        if (!processedEvents.tryClaim(command.maSuKien(), "surgery.case.created")) {
+            surgeryReceipts.findByEventId(command.maSuKien())
+                    .ifPresent(receipt -> requireMatchingFingerprint(receipt, command.dauVanTai()));
+            return;
+        }
+
+        Admission admission = requireAdmissionForUpdate(command.maDotNoiTru());
+        if (!admission.patientId().equals(command.maBenhNhan())
+                || !admission.departmentId().equals(command.maKhoa())) {
+            throw externalOrderMismatch();
+        }
+        Optional<SurgeryEventReceipt> existingReceipt = surgeryReceipts.findByBusinessOperation(
+                "surgery.case.created", command.maCaMo());
+        if (existingReceipt.isPresent()) {
+            requireMatchingFingerprint(existingReceipt.get(), command.dauVanTai());
+            return;
+        }
+        if (admission.status() == AdmissionStatus.CLOSED || admission.status() == AdmissionStatus.CANCELLED) {
+            throw violation("INPATIENT_INVALID_STATUS_TRANSITION", "Ended admission cannot register surgery");
+        }
+
+        Optional<ClinicalOrderReference> existing = references.findByTypeAndExternalId(
+                ClinicalOrderType.SURGERY, command.maCaMo());
+        ClinicalOrderReference reference;
+        if (existing.isPresent()) {
+            if (!existing.get().admissionId().equals(command.maDotNoiTru())) {
+                throw externalOrderMismatch();
+            }
+            reference = existing.get();
+        } else {
+            reference = references.save(ClinicalOrderReference.create(command.maDotNoiTru(),
+                    ClinicalOrderType.SURGERY, command.maCaMo(), ExternalOrderStatus.REQUESTED,
+                    command.maThuThuat(), command.phienBanCa()));
+        }
+
+        SurgeryEventReceipt caseReceipt = candidate;
+        caseReceipt.markApplied(clock.instant());
+        surgeryReceipts.save(caseReceipt);
+
+        for (SurgeryEventReceipt receipt : surgeryReceipts.findByCaseId(command.maCaMo()).stream()
+                .filter(pendingReceipt -> !pendingReceipt.applied())
+                .sorted(Comparator.comparing(SurgeryEventReceipt::receivedAt))
+                .toList()) {
+            applySurgeryReceipt(admission, reference, caseReceipt, receipt);
+        }
+    }
+
+    @Override
     public void onExternalOrderFact(ExternalOrderFactCommand command) {
+        if (command instanceof SurgeryReadyFactCommand
+                || command instanceof SurgeryCompletedFactCommand
+                || command instanceof SurgeryCancelledFactCommand) {
+            onSurgeryFact(command);
+            return;
+        }
         validateEnvelope(command.maSuKien(), command.phienBan(), command.xayRaLuc(), command.maTuongQuan());
         require(command.maYLenhBenNgoai(), "externalOrderId");
         require(command.maDotNoiTru(), "admissionId");
@@ -527,6 +602,143 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
             treatments.save(TreatmentEntry.create(admission.admissionId(), TreatmentEntryType.SURGERY,
                     content, admission.requestedBy(), surgery.huyLuc()));
         }
+    }
+
+    private void onSurgeryFact(ExternalOrderFactCommand command) {
+        validateEnvelope(command.maSuKien(), command.phienBan(), command.xayRaLuc(), command.maTuongQuan());
+        require(command.maYLenhBenNgoai(), "surgeryCaseId");
+        require(command.maDotNoiTru(), "admissionId");
+        String eventType = externalEventType(command);
+        SurgeryEventReceipt candidate = surgeryReceipt(command);
+        if (!processedEvents.tryClaim(command.maSuKien(), eventType)) {
+            surgeryReceipts.findByEventId(command.maSuKien())
+                    .ifPresent(receipt -> requireMatchingFingerprint(receipt, candidate.payloadFingerprint()));
+            return;
+        }
+
+        Admission admission = requireAdmissionForUpdate(command.maDotNoiTru());
+        if (!admission.patientId().equals(candidate.patientId())
+                || !admission.departmentId().equals(candidate.departmentId())) {
+            throw externalOrderMismatch();
+        }
+        Optional<SurgeryEventReceipt> existing = surgeryReceipts.findByBusinessOperation(
+                candidate.eventType(), candidate.operationId());
+        if (existing.isPresent()) {
+            requireMatchingFingerprint(existing.get(), candidate.payloadFingerprint());
+            return;
+        }
+        if (isTerminal(candidate.targetStatus())) {
+            boolean conflictingTerminal = surgeryReceipts.findByCaseId(candidate.surgeryCaseId()).stream()
+                    .anyMatch(receipt -> isTerminal(receipt.targetStatus())
+                            && !receipt.operationId().equals(candidate.operationId()));
+            if (conflictingTerminal) {
+                throw surgeryContractConflict();
+            }
+        }
+
+        SurgeryEventReceipt saved = surgeryReceipts.save(candidate);
+        Optional<SurgeryEventReceipt> caseReceipt = surgeryReceipts.findByBusinessOperation(
+                "surgery.case.created", candidate.surgeryCaseId());
+        if (caseReceipt.isEmpty()) {
+            return;
+        }
+        requireMatchingSurgeryIdentity(caseReceipt.get(), saved);
+        Optional<ClinicalOrderReference> reference = references.findByTypeAndExternalId(
+                ClinicalOrderType.SURGERY, candidate.surgeryCaseId());
+        if (reference.isEmpty()) {
+            throw externalOrderMismatch();
+        }
+        applySurgeryReceipt(admission, reference.get(), caseReceipt.get(), saved);
+    }
+
+    private SurgeryEventReceipt surgeryReceipt(ExternalOrderFactCommand command) {
+        if (command instanceof SurgeryReadyFactCommand ready) {
+            return SurgeryEventReceipt.pending(ready.maSuKien(), "surgery.ready",
+                    require(ready.maAnhChupSanSang(), "readinessSnapshotId"),
+                    requireText(ready.dauVanTai(), "payloadFingerprint"), ready.maYLenhBenNgoai(),
+                    require(ready.maYeuCauMo(), "surgeryRequestId"), ready.maDotNoiTru(),
+                    require(ready.maBenhNhan(), "patientId"),
+                    require(ready.maKhoa(), "departmentId"), ready.phienBanCa(), ready.phienBanLich(),
+                    ExternalOrderStatus.READY, "Surgery ready: " + ready.maLichMo(), null,
+                    require(ready.sanSangLuc(), "readyAt"), ready.xayRaLuc());
+        }
+        if (command instanceof SurgeryCompletedFactCommand completed) {
+            String content = "Surgery completed: " + completed.maKetQuaMo()
+                    + (completed.tomTatBienChung() == null ? ""
+                    : "; complications: " + completed.tomTatBienChung());
+            return SurgeryEventReceipt.pending(completed.maSuKien(), "surgery.completed",
+                    require(completed.maKetQuaMo(), "resultId"),
+                    requireText(completed.dauVanTai(), "payloadFingerprint"), completed.maYLenhBenNgoai(),
+                    require(completed.maYeuCauMo(), "surgeryRequestId"), completed.maDotNoiTru(),
+                    require(completed.maBenhNhan(), "patientId"),
+                    require(completed.maKhoa(), "departmentId"), completed.phienBanCa(),
+                    completed.phienBanNguon(), ExternalOrderStatus.COMPLETED,
+                    completed.tomTatBienChung(), content,
+                    require(completed.hoanTatLuc(), "completedAt"), completed.xayRaLuc());
+        }
+        SurgeryCancelledFactCommand cancelled = (SurgeryCancelledFactCommand) command;
+        String content = "Surgery cancelled at " + cancelled.giaiDoanHuy() + ": " + cancelled.lyDo();
+        return SurgeryEventReceipt.pending(cancelled.maSuKien(), "surgery.cancelled",
+                require(cancelled.maLanHuy(), "cancellationId"),
+                requireText(cancelled.dauVanTai(), "payloadFingerprint"), cancelled.maYLenhBenNgoai(),
+                require(cancelled.maYeuCauMo(), "surgeryRequestId"), cancelled.maDotNoiTru(),
+                require(cancelled.maBenhNhan(), "patientId"),
+                require(cancelled.maKhoa(), "departmentId"), cancelled.phienBanCa(),
+                cancelled.phienBanNguon(), ExternalOrderStatus.CANCELLED, cancelled.lyDo(), content,
+                require(cancelled.huyLuc(), "cancelledAt"), cancelled.xayRaLuc());
+    }
+
+    private void applySurgeryReceipt(Admission admission, ClinicalOrderReference reference,
+                                     SurgeryEventReceipt caseReceipt, SurgeryEventReceipt receipt) {
+        requireMatchingSurgeryIdentity(caseReceipt, receipt);
+        if (!reference.admissionId().equals(receipt.admissionId())
+                || !reference.externalOrderId().equals(receipt.surgeryCaseId())) {
+            throw externalOrderMismatch();
+        }
+        if (isTerminal(reference.status()) && isTerminal(receipt.targetStatus())
+                && reference.status() != receipt.targetStatus()) {
+            throw surgeryContractConflict();
+        }
+        boolean changed = reference.applyFact(receipt.admissionId(), receipt.surgeryCaseId(),
+                receipt.targetStatus(), receipt.summary(), receipt.caseRevision());
+        if (changed) {
+            references.save(reference);
+            if (isTerminal(receipt.targetStatus())) {
+                requireStatus(admission, AdmissionStatus.ADMITTED);
+                treatments.save(TreatmentEntry.create(admission.admissionId(), TreatmentEntryType.SURGERY,
+                        receipt.timelineContent(), admission.requestedBy(), receipt.timelineAt()));
+            }
+        }
+        receipt.markApplied(clock.instant());
+        surgeryReceipts.save(receipt);
+    }
+
+    private static void requireMatchingSurgeryIdentity(SurgeryEventReceipt caseReceipt,
+                                                       SurgeryEventReceipt receipt) {
+        if (!caseReceipt.surgeryCaseId().equals(receipt.surgeryCaseId())
+                || !caseReceipt.surgeryRequestId().equals(receipt.surgeryRequestId())
+                || !caseReceipt.admissionId().equals(receipt.admissionId())
+                || !caseReceipt.patientId().equals(receipt.patientId())
+                || !caseReceipt.departmentId().equals(receipt.departmentId())) {
+            throw surgeryContractConflict();
+        }
+    }
+
+    private static void requireMatchingFingerprint(SurgeryEventReceipt receipt, String fingerprint) {
+        if (!receipt.hasFingerprint(fingerprint)) {
+            throw surgeryContractConflict();
+        }
+    }
+
+    private static boolean isTerminal(ExternalOrderStatus status) {
+        return status == ExternalOrderStatus.COMPLETED
+                || status == ExternalOrderStatus.CANCELLED
+                || status == ExternalOrderStatus.FAILED;
+    }
+
+    private static AdmissionRuleViolationException surgeryContractConflict() {
+        return violation("INPATIENT_SURGERY_CONTRACT_CONFLICT",
+                "Surgery business operation was redelivered with conflicting data");
     }
 
     private Admission createAdmissionModel(CreateAdmissionRequest request, String correlationId) {

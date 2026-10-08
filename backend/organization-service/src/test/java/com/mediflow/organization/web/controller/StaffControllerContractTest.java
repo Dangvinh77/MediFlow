@@ -249,6 +249,22 @@ class StaffControllerContractTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void staffList_invalidJobTitle_returnsInvalidRequest() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "?jobTitle=UNKNOWN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void staffList_invalidPage_returnsInvalidRequest() throws Exception {
+        mockMvc.perform(get(BASE_PATH + "?page=abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
     private String systemToken() {
         return token("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE);
     }
