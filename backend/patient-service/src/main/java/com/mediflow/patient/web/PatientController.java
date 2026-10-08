@@ -13,7 +13,6 @@ import com.mediflow.patient.application.port.in.GetPatientUseCase;
 import com.mediflow.patient.application.port.in.ReadPatientIdentityUseCase;
 import com.mediflow.patient.application.port.in.UpdatePatientUseCase;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import com.mediflow.patient.application.port.out.CorrelationIdProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -53,8 +53,10 @@ public class PatientController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','NURSE')")
     public ResponseEntity<ApiResponse<PatientDTO>> create(@Valid @RequestBody CreatePatientRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(createPatient.create(request), correlationId()));
+        PatientDTO created = createPatient.create(request);
+        return ResponseEntity
+                .created(URI.create("/api/v1/patients/" + created.maBenhNhan()))
+                .body(ApiResponse.ok(created, correlationId()));
     }
 
     @GetMapping("/{id}")

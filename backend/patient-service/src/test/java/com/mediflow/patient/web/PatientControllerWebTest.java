@@ -175,6 +175,8 @@ class PatientControllerWebTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/v1/patients/" + id))
+                .andExpect(jsonPath("$.success", is(true)))
                 .andExpect(jsonPath("$.data.maBenhNhan", is(id.toString())));
     }
 
