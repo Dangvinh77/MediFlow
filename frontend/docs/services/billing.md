@@ -11,17 +11,15 @@
 
 ## Current UI baseline
 
-`/billing` performs an explicit patient UUID lookup and renders paged invoices through
-`GET /v1/billing/patient/{patientId}`. It displays invoice totals, paid/payment method state, saga
-status, and timestamps. UI roles are `ADMIN` and `CASHIER`.
+`/billing` performs patient invoice lookup. `/billing/new` creates an invoice from server-owned
+unpaid fees, and `/billing/{invoiceId}` renders fee detail and supports payment. UI roles are
+`ADMIN` and `CASHIER`; the browser never calculates authoritative totals.
 
 ## Owner queue
 
-- `FE-BILLING-01` — `VERIFY-CONTRACT`: add invoice detail using the exact live DTO.
-- `FE-BILLING-02` — `VERIFY-CONTRACT`: add one invoice creation or fee-detail slice supported by
-  the live controller.
-- `FE-BILLING-03` — `VERIFY-CONTRACT`: add one payment/refund lifecycle action with exact idempotency,
-  saga status, and failure behavior.
+- `FE-BILLING-01` — `DONE`: invoice detail uses the exact live DTO.
+- `FE-BILLING-02` — `DONE`: invoice creation and fee detail are implemented.
+- `FE-BILLING-03` — `DONE` for payment; refund remains absent because no live controller command exists.
 - `FE-BILLING-04` — `IMPLEMENT`: test pagination, money display, terminal states, errors, and retries
   after the shared harness exists.
 

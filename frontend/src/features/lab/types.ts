@@ -50,3 +50,25 @@ export interface CreateLabRequest {
   careEpisodeId?: string | null;
   priceCode?: string | null;
 }
+
+export interface StartLabTestRequest {
+  emergencyOverride: null;
+}
+
+export interface LabResultInput {
+  indicator: string;
+  value: string;
+  unit: string | null;
+  referenceRange: string | null;
+}
+
+export interface AddLabResultsRequest {
+  results: LabResultInput[];
+  conclusion: string | null;
+  performedDate: string;
+}
+
+export interface CancelLabTestRequest {
+  reason: string;
+  cancelledBy: string;
+}

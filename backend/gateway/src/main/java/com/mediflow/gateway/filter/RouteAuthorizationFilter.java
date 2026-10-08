@@ -45,10 +45,15 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/appointments", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/appointments", HttpMethod.POST, Roles.ADMIN, Roles.NURSE),
-            rule("/api/v1/appointments/*", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
-            rule("/api/v1/appointments/**/status", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
-            rule("/api/v1/appointments/**/check-in", HttpMethod.PUT, Roles.ADMIN, Roles.NURSE),
-            rule("/api/v1/appointments/**/start-exam", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
+            // Commands are enumerated by their exact URI shape. A broad ** command rule
+            // would union roles and authorize nested/future endpoints accidentally.
+            rule("/api/v1/appointments/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/{id}/status", HttpMethod.PUT,
+                    Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/appointments/{id}/check-in", HttpMethod.PUT,
+                    Roles.ADMIN, Roles.NURSE),
+            rule("/api/v1/appointments/{id}/start-exam", HttpMethod.PUT,
+                    Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/records", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/{id}/admission-referrals", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
@@ -91,7 +96,13 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
             rule("/api/v1/inpatient/beds/**", HttpMethod.PUT,
                     Roles.ADMIN, Roles.MANAGER),
 
-            // Only the currently implemented, feature-gated Surgery actions are exposed.
+            // Surgery list/detail/schedule and commands mirror downstream @PreAuthorize rules.
+            rule("/api/v1/surgery/cases", HttpMethod.GET,
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/surgery/cases/{id}", HttpMethod.GET,
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/surgery/cases/{id}/schedule", HttpMethod.PUT,
+                    Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
             rule("/api/v1/surgery/cases/*/preop", HttpMethod.POST,
                     Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/surgery/cases/*/cancel", HttpMethod.POST,

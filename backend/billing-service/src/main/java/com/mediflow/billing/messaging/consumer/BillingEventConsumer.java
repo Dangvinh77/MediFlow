@@ -15,8 +15,12 @@ import com.mediflow.billing.application.event.PrescriptionCancelledEvent;
 import com.mediflow.billing.application.event.PrescriptionDispenseFailedEvent;
 import com.mediflow.billing.application.event.PrescriptionExpiredEvent;
 import com.mediflow.billing.application.event.PrescriptionFilledEvent;
+import com.mediflow.billing.application.event.SurgeryCancelledEvent;
+import com.mediflow.billing.application.event.SurgeryCaseCreatedEvent;
+import com.mediflow.billing.application.event.SurgeryCompletedEvent;
 import com.mediflow.billing.application.port.in.AccrueFeeUseCase;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
+import com.mediflow.billing.application.port.in.SurgeryChargeUseCase;
 import com.mediflow.billing.infrastructure.config.RabbitConfig;
 
 /**
@@ -42,12 +46,14 @@ public class BillingEventConsumer {
 
     private final AccrueFeeUseCase accrueFeeUseCase;
     private final SagaCompensationUseCase sagaCompensationUseCase;
+    private final SurgeryChargeUseCase surgeryChargeUseCase;
     private final ObjectMapper objectMapper;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
-                                ObjectMapper objectMapper) {
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
+        this.surgeryChargeUseCase = surgeryChargeUseCase;
         this.objectMapper = objectMapper;
     }
 
@@ -72,6 +78,12 @@ public class BillingEventConsumer {
                     sagaCompensationUseCase.onPrescriptionCancelled(read(body, PrescriptionCancelledEvent.class));
             case RabbitConfig.RK_PRESCRIPTION_EXPIRED ->
                     sagaCompensationUseCase.onPrescriptionExpired(read(body, PrescriptionExpiredEvent.class));
+            case RabbitConfig.RK_SURGERY_CASE_CREATED ->
+                    surgeryChargeUseCase.onSurgeryCaseCreated(read(body, SurgeryCaseCreatedEvent.class));
+            case RabbitConfig.RK_SURGERY_COMPLETED ->
+                    surgeryChargeUseCase.onSurgeryCompleted(read(body, SurgeryCompletedEvent.class));
+            case RabbitConfig.RK_SURGERY_CANCELLED ->
+                    surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));
             default -> throw new IllegalArgumentException(
                     "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
         }

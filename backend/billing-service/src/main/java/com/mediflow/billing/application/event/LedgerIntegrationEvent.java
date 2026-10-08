@@ -17,4 +17,7 @@ public record LedgerIntegrationEvent(UUID eventId, String eventType, int version
             UUID appointmentId, UUID recordId, List<UUID> labTestIds, UUID prescriptionId,
             UUID admissionId, UUID surgeryCaseId, BigDecimal amount, String currency,
             String paymentMethod, Instant expiresAt, boolean emergencyOverride) { }
+    public record PaymentRefundedPayload(UUID refundTransactionId, UUID originalTransactionId, UUID accountId,
+            UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,
+            BigDecimal amount, String currency, String reason, Instant completedAt) { }
 }

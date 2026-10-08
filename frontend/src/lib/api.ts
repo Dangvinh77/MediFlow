@@ -205,4 +205,9 @@ export const api = {
     request<T>(path, {
       method: "DELETE",
     }),
+
+  delEmpty: (path: string) =>
+    requestJson<void>(path, {
+      method: "DELETE",
+    }),
 };

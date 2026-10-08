@@ -35,13 +35,25 @@ public class RabbitConfig {
     public static final String RK_PAYMENT_COMPLETED = "payment.completed";
     public static final String RK_PAYMENT_FAILED = "payment.failed";
 
+    // Subscribe — CONTRACT-CARE-PROJECTIONS-01 (nested envelope, version=1, no .v1 suffix)
+    public static final String RK_ADMISSION_DEPOSIT_REQUESTED = "admission.deposit.requested";
+    public static final String RK_ADMISSION_STARTED = "admission.started";
+    public static final String RK_ADMISSION_CLOSED = "admission.closed";
+    public static final String RK_SURGERY_READY = "surgery.ready";
+    public static final String RK_SURGERY_CANCELLED = "surgery.cancelled";
+
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PATIENT_CREATED,
             RK_APPOINTMENT_CREATED,
             RK_LAB_RESULT_CREATED,
             RK_PRESCRIPTION_FILLED,
             RK_PAYMENT_COMPLETED,
-            RK_PAYMENT_FAILED
+            RK_PAYMENT_FAILED,
+            RK_ADMISSION_DEPOSIT_REQUESTED,
+            RK_ADMISSION_STARTED,
+            RK_ADMISSION_CLOSED,
+            RK_SURGERY_READY,
+            RK_SURGERY_CANCELLED
     };
 
     public static final String QUEUE = "notification.q";
