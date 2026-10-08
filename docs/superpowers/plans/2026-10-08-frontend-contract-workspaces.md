@@ -93,10 +93,10 @@
 - Extend: `frontend/src/features/notification/**`
 - Extend: `frontend/src/app/(dashboard)/notifications/**`
 
-- [ ] Add invoice detail, supported invoice creation/payment actions, and exact money/status presentation.
-- [ ] Add notification detail and manual send using privacy-safe response fields.
-- [ ] Do not expose unavailable refund/read-state controls or infer patient identity.
-- [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+- [x] Add invoice detail, supported invoice creation/payment actions, and exact money/status presentation.
+- [x] Add notification detail and manual send using privacy-safe response fields.
+- [x] Do not expose unavailable refund/read-state controls or infer patient identity.
+- [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 - [ ] Commit as `feat(frontend): add billing and notification operations`.
 
 ### Task 6: Huy pharmacy completion and reporting

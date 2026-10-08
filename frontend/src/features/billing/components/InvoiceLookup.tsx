@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -120,6 +121,7 @@ export function InvoiceLookup() {
 
   return (
     <section className="mt-6">
+      <div className="mb-4 flex justify-end"><Link href="/billing/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Lập hóa đơn</Link></div>
       <form
         onSubmit={onSearch}
         noValidate
@@ -200,7 +202,7 @@ export function InvoiceLookup() {
                   return (
                     <tr key={invoice.invoiceId} className="border-b border-border align-top last:border-0">
                       <td className="px-4 py-3">{formatLocalDate(invoice.createdDate)}</td>
-                      <td className="px-4 py-3 font-mono text-xs">{invoice.invoiceId}</td>
+                      <td className="px-4 py-3 font-mono text-xs"><Link href={`/billing/${invoice.invoiceId}`} className="text-primary hover:underline">{invoice.invoiceId}</Link></td>
                       <td className="px-4 py-3 font-medium">{formatDecimal(invoice.totalAmount)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge tone={invoice.isPaid ? "success" : "warning"}>

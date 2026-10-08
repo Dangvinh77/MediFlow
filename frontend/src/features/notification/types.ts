@@ -13,3 +13,11 @@ export interface NotificationDTO {
   createdAt: string;
   sentAt: string | null;
 }
+
+export interface SendNotificationRequest {
+  patientId: string;
+  title: string;
+  content: string;
+  channel: NotificationChannel;
+  recipientAddress: string | null;
+}
