@@ -76,9 +76,10 @@
 - Extend: `frontend/src/features/patient/**`
 - Extend: `frontend/src/app/(dashboard)/patients/**`
 
-- [ ] Mirror live department, staff, account, and patient DTOs and request validation.
+- [x] Mirror live patient DTOs and request validation.
+- [ ] Mirror live department, staff, and account DTOs and request validation.
 - [ ] Add department/staff detail and supported create/update flows.
-- [ ] Add patient detail plus create/update/delete with explicit destructive confirmation.
+- [x] Add patient detail plus create/update/delete with explicit destructive confirmation.
 - [ ] Preserve service-only lookup endpoints as non-UI APIs.
 - [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 - [ ] Commit as `feat(frontend): add organization and patient administration`.
