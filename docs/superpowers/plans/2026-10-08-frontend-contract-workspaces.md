@@ -26,7 +26,7 @@
 - [x] Keep navigation filtered by the signed role and add the live Inpatient destination.
 - [x] Implement shared button, field, and table-shell primitives using the tokens in `docs/DESIGN.md`.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(frontend): establish shared clinical workspace`.
+- [x] Commit as `feat(frontend): establish shared clinical workspace`.
 
 ### Task 2: Vinh-owned Inpatient workspace
 
@@ -41,11 +41,11 @@
 - Create: `frontend/src/app/(dashboard)/inpatient/[admissionId]/page.tsx`
 - Create: `frontend/src/app/(dashboard)/inpatient/beds/page.tsx`
 
-- [ ] Mirror the live admission search/detail and bed response records from Inpatient Java DTOs.
-- [ ] Add typed API calls for `GET /v1/inpatient/admissions`, `GET /v1/inpatient/admissions/{id}`, and `GET /v1/inpatient/beds`.
-- [ ] Render explicit loading, empty, error, retry, pagination, status, and UUID reference states.
-- [ ] Keep deposit, settlement, and Surgery controls absent while their handoffs remain active.
-- [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+- [x] Mirror the live admission search/detail and bed response records from Inpatient Java DTOs.
+- [x] Add typed API calls for `GET /v1/inpatient/admissions`, `GET /v1/inpatient/admissions/{id}`, and `GET /v1/inpatient/beds`.
+- [x] Render explicit loading, empty, error, retry, pagination, status, and UUID reference states.
+- [x] Keep deposit, settlement, and Surgery controls absent while their handoffs remain active.
+- [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 - [ ] Commit as `feat(inpatient-ui): add admission and bed workspaces`.
 
 ### Task 3: Complete live Clinical and Lab commands
