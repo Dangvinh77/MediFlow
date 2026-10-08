@@ -77,12 +77,13 @@
 - Extend: `frontend/src/app/(dashboard)/patients/**`
 
 - [x] Mirror live patient DTOs and request validation.
-- [ ] Mirror live department, staff, and account DTOs and request validation.
-- [ ] Add department/staff detail and supported create/update flows.
+- [x] Mirror live department, staff, and account DTOs and request validation.
+- [x] Add department/staff detail and supported create/update flows.
 - [x] Add patient detail plus create/update/delete with explicit destructive confirmation.
-- [ ] Preserve service-only lookup endpoints as non-UI APIs.
-- [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(frontend): add organization and patient administration`.
+- [x] Preserve service-only lookup endpoints as non-UI APIs.
+- [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+- [x] Commit the Patient batch as `feat(patient-ui): add patient administration workflow`.
+- [ ] Commit the Organization batch as `feat(organization-ui): add workforce administration`.
 
 ### Task 5: Loc billing and notification operations
 

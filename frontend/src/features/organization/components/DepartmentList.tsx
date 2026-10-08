@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -44,7 +45,7 @@ export function DepartmentList() {
     setError(null);
 
     try {
-      const result = await organizationApi.departments();
+      const result = await organizationApi.departments(false);
       setDepartments(result);
     } catch (cause: unknown) {
       if (cause instanceof ApiRequestError && cause.status === 401) {
@@ -62,7 +63,7 @@ export function DepartmentList() {
     let disposed = false;
 
     organizationApi
-      .departments()
+      .departments(false)
       .then((result) => {
         if (!disposed) {
           setDepartments(result);
@@ -130,7 +131,7 @@ export function DepartmentList() {
             <tbody>
               {departments.map((department) => (
                 <tr key={department.departmentId} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium">{department.departmentName}</td>
+                  <td className="px-4 py-3 font-medium"><Link href={`/organization/departments/${department.departmentId}`} className="text-primary hover:underline">{department.departmentName}</Link></td>
                   <td className="px-4 py-3">{department.abbreviation}</td>
                   <td className="px-4 py-3">
                     {departmentTypeLabels[department.departmentType] ?? "Không xác định"}
