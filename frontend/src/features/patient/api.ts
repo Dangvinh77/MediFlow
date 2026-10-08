@@ -23,5 +23,5 @@ export const patientApi = {
   update: (patientId: string, body: UpdatePatientRequest) =>
     api.put<PatientDTO>(`/v1/patients/${encodeURIComponent(patientId)}`, body),
   delete: (patientId: string) =>
-    api.del<void>(`/v1/patients/${encodeURIComponent(patientId)}`),
+    api.delEmpty(`/v1/patients/${encodeURIComponent(patientId)}`),
 };
