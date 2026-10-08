@@ -51,10 +51,6 @@ spring:
           uri: lb://inpatient-service
           predicates:
             - Path=/api/v1/inpatient/**
-        - id: surgery-service
-          uri: lb://surgery-service
-          predicates:
-            - Path=/api/v1/surgery/**
       # Redis rate limiting (100 req/min per IP, see docs/ai/07) is intentionally
       # deferred until the shared docker-compose/root dependency/Redis infrastructure
       # scope is explicitly assigned. Do not enable a local-only limiter here.

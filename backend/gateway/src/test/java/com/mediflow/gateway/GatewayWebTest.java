@@ -34,7 +34,8 @@ import static org.mockito.Mockito.when;
                 "mediflow.jwt.secret=test-secret-must-have-at-least-32-bytes",
                 "spring.cloud.discovery.enabled=false",
                 "eureka.client.enabled=false",
-                "spring.cloud.gateway.discovery.locator.enabled=false"
+                "spring.cloud.gateway.discovery.locator.enabled=false",
+                "mediflow.routes.surgery.enabled=true"
         })
 @AutoConfigureWebTestClient
 class GatewayWebTest {
