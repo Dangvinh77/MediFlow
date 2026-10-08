@@ -14,11 +14,14 @@ import com.mediflow.inpatient.infrastructure.messaging.consumer.InpatientEventCo
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +57,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 class InpatientRabbitIntegrationTest {
 
+    private static final UUID SURGERY_CASE_ID = UUID.fromString("00000000-0000-4000-8000-000000000001");
+    private static final UUID SURGERY_PATIENT_ID = UUID.fromString("00000000-0000-4000-8000-000000000003");
+    private static final UUID SURGERY_DEPARTMENT_ID = UUID.fromString("00000000-0000-4000-8000-000000000004");
+    private static final UUID SURGERY_ADMISSION_ID = UUID.fromString("00000000-0000-4000-8000-000000000008");
+
     @Container
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -83,9 +91,14 @@ class InpatientRabbitIntegrationTest {
     @BeforeEach
     void prepareBrokerAndDatabase() {
         dispatcher = new InpatientOutboxDispatcher(outbox, rabbitTemplate);
-        jdbcTemplate.update("DELETE FROM su_kien_outbox_noi_tru");
         rabbitAdmin.purgeQueue(InpatientConsumerConfiguration.INPATIENT_QUEUE, false);
         rabbitAdmin.purgeQueue(InpatientConsumerConfiguration.DEAD_LETTER_QUEUE, false);
+        jdbcTemplate.update("DELETE FROM dien_bien_dieu_tri");
+        jdbcTemplate.update("DELETE FROM tham_chieu_y_lenh");
+        jdbcTemplate.update("DELETE FROM tiep_nhan_su_kien_phau_thuat");
+        jdbcTemplate.update("DELETE FROM su_kien_da_xu_ly");
+        jdbcTemplate.update("DELETE FROM su_kien_outbox_noi_tru");
+        jdbcTemplate.update("DELETE FROM dot_noi_tru");
         clearInvocations(consumer);
     }
 
@@ -166,6 +179,41 @@ class InpatientRabbitIntegrationTest {
         assertThat(deadLetter.getMessageProperties().getXDeathHeader()).isNotEmpty();
     }
 
+    @Test
+    void consumer_surgeryEventFirstSequence_preservesTerminalStateUnderRedelivery() throws Exception {
+        insertAdmittedSurgeryAdmission();
+
+        publishSurgeryFixture("surgery.completed", "surgery.completed.admission.v1.json");
+        awaitDatabase(() -> count("tiep_nhan_su_kien_phau_thuat") == 1
+                && count("tham_chieu_y_lenh") == 0
+                && count("dien_bien_dieu_tri") == 0,
+                "early surgery completion was not retained without side effects");
+
+        publishSurgeryFixture("surgery.case.created", "surgery.case.created.admission.v1.json");
+        awaitDatabase(() -> count("tiep_nhan_su_kien_phau_thuat") == 2
+                && count("tham_chieu_y_lenh") == 1
+                && count("dien_bien_dieu_tri") == 1
+                && "COMPLETED".equals(referenceStatus()),
+                "retained surgery completion was not applied after reference registration");
+
+        publishSurgeryFixture("surgery.ready", "surgery.ready.admission.v1.json");
+        publishSurgeryFixture("surgery.completed", "surgery.completed.admission.v1.json");
+        awaitDatabase(() -> count("tiep_nhan_su_kien_phau_thuat") == 3
+                && count("dien_bien_dieu_tri") == 1
+                && "COMPLETED".equals(referenceStatus()),
+                "late readiness or redelivery changed the terminal surgery effect");
+
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM tiep_nhan_su_kien_phau_thuat
+                WHERE surgery_case_id = ? AND applied_at IS NOT NULL
+                """, Integer.class, SURGERY_CASE_ID)).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT content FROM dien_bien_dieu_tri
+                WHERE admission_id = ? AND entry_type = 'SURGERY'
+                """, String.class, SURGERY_ADMISSION_ID))
+                .contains("Surgery completed");
+    }
+
     private UUID insertPendingEvent(String eventType) {
         UUID eventId = UUID.randomUUID();
         UUID admissionId = UUID.randomUUID();
@@ -175,6 +223,52 @@ class InpatientRabbitIntegrationTest {
                 new AdmissionStartedEvent(admissionId, UUID.randomUUID(), UUID.randomUUID(),
                         UUID.randomUUID(), occurredAt, false, null)));
         return eventId;
+    }
+
+    private void insertAdmittedSurgeryAdmission() {
+        jdbcTemplate.update("""
+                INSERT INTO dot_noi_tru(admission_id, admission_request_id, patient_id, source_record_id,
+                    requested_by, diagnosis_summary, requested_at, department_id, priority, emergency,
+                    status, admitted_at)
+                VALUES (?, ?, ?, ?, ?, 'Surgery broker acceptance', now(), ?, 'ROUTINE', false,
+                    'ADMITTED', now())
+                """, SURGERY_ADMISSION_ID, UUID.randomUUID(), SURGERY_PATIENT_ID, UUID.randomUUID(),
+                UUID.randomUUID(), SURGERY_DEPARTMENT_ID);
+    }
+
+    private void publishSurgeryFixture(String routingKey, String fixtureName) throws Exception {
+        Path fixture = Path.of("../surgery-service/src/test/resources/contracts/surgery-outcomes-v1", fixtureName);
+        rabbitTemplate.send(InpatientConsumerConfiguration.EVENTS_EXCHANGE, routingKey,
+                MessageBuilder.withBody(Files.readAllBytes(fixture))
+                        .setContentType("application/json")
+                        .build());
+    }
+
+    private int count(String table) {
+        return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
+    }
+
+    private String referenceStatus() {
+        return jdbcTemplate.queryForObject("""
+                SELECT status FROM tham_chieu_y_lenh
+                WHERE order_type = 'SURGERY' AND external_order_id = ?
+                """, String.class, SURGERY_CASE_ID);
+    }
+
+    private void awaitDatabase(BooleanSupplier condition, String failureMessage) {
+        long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) {
+                return;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Interrupted while waiting for database state", exception);
+            }
+        }
+        throw new AssertionError(failureMessage);
     }
 
     private String declareBoundQueue(String routingKey) {

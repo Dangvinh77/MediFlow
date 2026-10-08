@@ -61,7 +61,8 @@ Evidence:
 
 1. Approve the exact `surgery.requested` fixture and connect it to one idempotent case-creation transaction keyed by the stable request identity.
 2. Capture `surgery.case.created` from that live transaction; keep planned charge and upstream referral as distinct facts.
-3. Complete reference-first, event-first, outpatient and late-terminal handling with Inpatient.
+3. Run broker-backed same-byte acceptance for Inpatient's completed reference-first, event-first,
+   outpatient and late-terminal consumer while the runtime flag remains off.
 4. Complete Billing charge/reconciliation, Notification provisional/invalidation reminder, and Report live-delivery acceptance against the checked-in fixtures.
 5. Release held rows through an approved source-fenced dispatcher only after every affected consumer passes the same bytes.
 

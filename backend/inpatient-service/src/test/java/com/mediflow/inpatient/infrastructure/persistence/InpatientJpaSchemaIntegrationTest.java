@@ -15,23 +15,28 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.service.InpatientApplicationService;
 import com.mediflow.inpatient.domain.model.Admission;
 import com.mediflow.inpatient.domain.model.Bed;
 import com.mediflow.inpatient.domain.model.BedAssignment;
 import com.mediflow.inpatient.domain.model.AdmissionStatusHistory;
+import com.mediflow.inpatient.domain.model.SurgeryEventReceipt;
 import com.mediflow.inpatient.domain.model.enums.AdmissionPriority;
 import com.mediflow.inpatient.domain.model.enums.AdmissionStatus;
+import com.mediflow.inpatient.domain.model.enums.ExternalOrderStatus;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.AdmissionStatusHistoryJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.jpaEntity.FinancialClearanceJpaEntity;
 import com.mediflow.inpatient.infrastructure.persistence.adapter.AdmissionPersistenceAdapter;
 import com.mediflow.inpatient.infrastructure.persistence.adapter.BedPersistenceAdapter;
+import com.mediflow.inpatient.infrastructure.persistence.adapter.SurgeryEventReceiptPersistenceAdapter;
 import com.mediflow.inpatient.infrastructure.persistence.mapper.InpatientPersistenceMapper;
 import com.mediflow.inpatient.infrastructure.persistence.repository.AdmissionJpaRepository;
 import com.mediflow.inpatient.infrastructure.persistence.repository.AdmissionStatusHistoryJpaRepository;
 import com.mediflow.inpatient.infrastructure.persistence.repository.BedAssignmentJpaRepository;
 import com.mediflow.inpatient.infrastructure.persistence.repository.FinancialClearanceJpaRepository;
+import com.mediflow.inpatient.infrastructure.persistence.repository.SurgeryEventReceiptJpaRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -46,6 +51,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -53,7 +59,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({AdmissionPersistenceAdapter.class, BedPersistenceAdapter.class,
-        InpatientPersistenceMapper.class})
+        SurgeryEventReceiptPersistenceAdapter.class, InpatientPersistenceMapper.class})
 @Testcontainers(disabledWithoutDocker = true)
 class InpatientJpaSchemaIntegrationTest {
     private static final Instant NOW = Instant.parse("2026-09-27T04:00:00Z");
@@ -90,6 +96,12 @@ class InpatientJpaSchemaIntegrationTest {
 
     @Autowired
     private InpatientPersistenceMapper mapper;
+
+    @Autowired
+    private SurgeryEventReceiptRepositoryPort surgeryReceiptStore;
+
+    @Autowired
+    private SurgeryEventReceiptJpaRepository surgeryReceiptRows;
 
     @DynamicPropertySource
     static void postgresProperties(DynamicPropertyRegistry registry) {
@@ -181,6 +193,7 @@ class InpatientJpaSchemaIntegrationTest {
         var service = new InpatientApplicationService(admissionStore, bedStore, assignmentStore,
                 mock(TreatmentEntryRepositoryPort.class), references,
                 mock(DischargeSummaryRepositoryPort.class), mock(ProcessedEventPort.class),
+                mock(SurgeryEventReceiptRepositoryPort.class),
                 mock(InpatientEventStorePort.class), mock(InpatientOutboxPort.class),
                 mock(DepositSuggestionPolicyPort.class), mock(InpatientDtoMapper.class),
                 Clock.fixed(transferredAt, ZoneOffset.UTC));
@@ -196,5 +209,40 @@ class InpatientJpaSchemaIntegrationTest {
                 .extracting(BedAssignment::bedId).isEqualTo(targetBedId);
         assertThat(admissionStore.findById(admissionId)).get()
                 .extracting(Admission::status).isEqualTo(AdmissionStatus.ADMITTED);
+    }
+
+    @Test
+    void surgeryReceiptAdapterReloadsExactIdentityAndEnforcesSemanticUniqueness() {
+        UUID admissionId = UUID.randomUUID();
+        Admission admission = Admission.create(admissionId, UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), "Surgery", NOW, UUID.randomUUID(),
+                AdmissionPriority.ROUTINE, false);
+        admissionStore.saveAndFlush(admission);
+        UUID operationId = UUID.randomUUID();
+        UUID caseId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
+        SurgeryEventReceipt receipt = SurgeryEventReceipt.pending(UUID.randomUUID(),
+                "surgery.completed", operationId, "a".repeat(64), caseId, requestId,
+                admissionId, admission.patientId(), admission.departmentId(), 3, 1,
+                ExternalOrderStatus.COMPLETED, null, "Surgery completed", NOW, NOW);
+
+        SurgeryEventReceipt saved = surgeryReceiptStore.save(receipt);
+        surgeryReceiptRows.flush();
+
+        assertThat(surgeryReceiptStore.findByEventId(saved.eventId())).get()
+                .extracting(SurgeryEventReceipt::surgeryRequestId).isEqualTo(requestId);
+        assertThat(surgeryReceiptStore.findByBusinessOperation("surgery.completed", operationId))
+                .get().extracting(SurgeryEventReceipt::receiptId).isEqualTo(saved.receiptId());
+        assertThat(surgeryReceiptStore.findByCaseId(caseId))
+                .extracting(SurgeryEventReceipt::receiptId).containsExactly(saved.receiptId());
+
+        SurgeryEventReceipt duplicate = SurgeryEventReceipt.pending(UUID.randomUUID(),
+                "surgery.completed", operationId, "b".repeat(64), caseId, requestId,
+                admissionId, admission.patientId(), admission.departmentId(), 4, 2,
+                ExternalOrderStatus.COMPLETED, null, "Surgery completed again", NOW, NOW);
+        surgeryReceiptStore.save(duplicate);
+
+        org.junit.jupiter.api.Assertions.assertThrows(DataIntegrityViolationException.class,
+                surgeryReceiptRows::flush);
     }
 }

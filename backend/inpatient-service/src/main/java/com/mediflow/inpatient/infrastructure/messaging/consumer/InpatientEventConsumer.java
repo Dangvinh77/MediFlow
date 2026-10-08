@@ -8,6 +8,7 @@ import com.mediflow.inpatient.application.dto.command.FinancialClearanceCommand;
 import com.mediflow.inpatient.application.dto.command.LabResultFactCommand;
 import com.mediflow.inpatient.application.dto.command.PrescriptionFilledFactCommand;
 import com.mediflow.inpatient.application.dto.command.SettlementCompletedCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryCaseCreatedCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryCancelledFactCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryCompletedFactCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
@@ -23,8 +24,14 @@ import com.mediflow.inpatient.domain.model.enums.SettlementOutcome;
 import com.mediflow.inpatient.infrastructure.messaging.config.InpatientConsumerConfiguration;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
@@ -101,18 +108,8 @@ public class InpatientEventConsumer {
             case "prescription.filled" -> externalOrders.onExternalOrderFact(new PrescriptionFilledFactCommand(
                     eventId, version, correlationId, uuid(payload, "prescriptionId"), uuid(payload, "admissionId"),
                     uuid(payload, "patientId"), instant(payload, "filledAt"), occurredAt));
-            case "surgery.ready" -> externalOrders.onExternalOrderFact(new SurgeryReadyFactCommand(
-                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
-                    uuid(payload, "scheduleId"), uuid(payload, "readinessSnapshotId"),
-                    instant(payload, "readyAt"), occurredAt));
-            case "surgery.completed" -> externalOrders.onExternalOrderFact(new SurgeryCompletedFactCommand(
-                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
-                    uuid(payload, "resultId"), optionalText(payload, "complicationsSummary"),
-                    instant(payload, "completedAt"), occurredAt));
-            case "surgery.cancelled" -> externalOrders.onExternalOrderFact(new SurgeryCancelledFactCommand(
-                    eventId, version, correlationId, uuid(payload, "surgeryCaseId"), uuid(payload, "admissionId"),
-                    text(payload, "cancellationStage"), text(payload, "reason"),
-                    instant(payload, "cancelledAt"), occurredAt));
+            case "surgery.case.created", "surgery.ready", "surgery.completed", "surgery.cancelled" ->
+                    onSurgeryEvent(eventType, payload, eventId, version, occurredAt, correlationId);
             default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);
         }
     }
@@ -157,6 +154,121 @@ public class InpatientEventConsumer {
                 integer(payload, "resultVersion"), text(payload, "conclusion"), occurredAt));
     }
 
+    private void onSurgeryEvent(String eventType, JsonNode payload, UUID eventId, int version,
+                                Instant occurredAt, String correlationId) {
+        UUID surgeryCaseId = uuid(payload, "surgeryCaseId");
+        UUID surgeryRequestId = uuid(payload, "surgeryRequestId");
+        UUID patientId = uuid(payload, "patientId");
+        UUID departmentId = uuid(payload, "departmentId");
+        UUID careEpisodeId = uuid(payload, "careEpisodeId");
+        optionalUuid(payload, "recordId");
+        int caseRevision = integer(payload, "caseRevision");
+        String fingerprint = payloadFingerprint(payload);
+        switch (eventType) {
+            case "surgery.case.created" -> {
+                integer(payload, "sourceRevision");
+                text(payload, "procedureCode");
+                instant(payload, "requestedAt");
+            }
+            case "surgery.ready" -> {
+                uuid(payload, "scheduleId");
+                uuid(payload, "readinessSnapshotId");
+                integer(payload, "scheduleRevision");
+                instant(payload, "readyAt");
+            }
+            case "surgery.completed" -> {
+                uuid(payload, "resultId");
+                integer(payload, "sourceRevision");
+                instant(payload, "completedAt");
+            }
+            case "surgery.cancelled" -> {
+                uuid(payload, "cancellationId");
+                integer(payload, "sourceRevision");
+                text(payload, "cancellationStage");
+                text(payload, "reason");
+                instant(payload, "cancelledAt");
+            }
+            default -> throw new AmqpException("Unsupported inpatient surgery event type: " + eventType);
+        }
+        CareEpisodeType episodeType = enumValue(payload, "careEpisodeType", CareEpisodeType.class);
+        if (episodeType == CareEpisodeType.OUTPATIENT_VISIT) {
+            JsonNode admissionNode = payload.get("admissionId");
+            if (admissionNode != null && !admissionNode.isNull()) {
+                throw new AmqpException(eventType + " outpatient episode must not contain admissionId");
+            }
+            return;
+        }
+
+        UUID admissionId = uuid(payload, "admissionId");
+        if (!admissionId.equals(careEpisodeId)) {
+            throw new AmqpException(eventType + " careEpisodeId must equal admissionId");
+        }
+        if ("surgery.case.created".equals(eventType)) {
+            externalOrders.onSurgeryCaseCreated(new SurgeryCaseCreatedCommand(
+                    eventId, version, correlationId, surgeryCaseId,
+                    surgeryRequestId, admissionId, patientId, departmentId,
+                    caseRevision, integer(payload, "sourceRevision"),
+                    text(payload, "procedureCode"), instant(payload, "requestedAt"),
+                    fingerprint, occurredAt));
+        } else if ("surgery.ready".equals(eventType)) {
+            externalOrders.onExternalOrderFact(new SurgeryReadyFactCommand(
+                    eventId, version, correlationId, surgeryCaseId, admissionId,
+                    uuid(payload, "scheduleId"), uuid(payload, "readinessSnapshotId"),
+                    instant(payload, "readyAt"), occurredAt,
+                    surgeryRequestId, patientId, departmentId, caseRevision,
+                    integer(payload, "scheduleRevision"), fingerprint));
+        } else if ("surgery.completed".equals(eventType)) {
+            externalOrders.onExternalOrderFact(new SurgeryCompletedFactCommand(
+                    eventId, version, correlationId, surgeryCaseId, admissionId,
+                    uuid(payload, "resultId"), optionalText(payload, "complicationsSummary"),
+                    instant(payload, "completedAt"), occurredAt,
+                    surgeryRequestId, patientId, departmentId, caseRevision,
+                    integer(payload, "sourceRevision"), fingerprint));
+        } else {
+            externalOrders.onExternalOrderFact(new SurgeryCancelledFactCommand(
+                    eventId, version, correlationId, surgeryCaseId, admissionId,
+                    uuid(payload, "cancellationId"), text(payload, "cancellationStage"),
+                    text(payload, "reason"), instant(payload, "cancelledAt"), occurredAt,
+                    surgeryRequestId, patientId, departmentId, caseRevision,
+                    integer(payload, "sourceRevision"), fingerprint));
+        }
+    }
+
+    private static String payloadFingerprint(JsonNode payload) {
+        StringBuilder canonical = new StringBuilder();
+        appendCanonical(payload, canonical);
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.toString().getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
+    }
+
+    private static void appendCanonical(JsonNode node, StringBuilder target) {
+        if (node.isObject()) {
+            target.append('{');
+            List<String> names = new ArrayList<>();
+            node.fieldNames().forEachRemaining(names::add);
+            names.sort(String::compareTo);
+            for (String name : names) {
+                target.append(name).append(':');
+                appendCanonical(node.get(name), target);
+                target.append(';');
+            }
+            target.append('}');
+        } else if (node.isArray()) {
+            target.append('[');
+            node.forEach(value -> {
+                appendCanonical(value, target);
+                target.append(';');
+            });
+            target.append(']');
+        } else {
+            target.append(node.toString());
+        }
+    }
+
     private JsonNode parse(byte[] body) {
         try {
             JsonNode node = objectMapper.readTree(body);
@@ -175,7 +287,8 @@ public class InpatientEventConsumer {
             case "financial.clearance.granted", "settlement.completed", "deposit.topup.required" -> "billing-service";
             case "lab.result.created" -> "lab-service";
             case "prescription.filled" -> "pharmacy-service";
-            case "surgery.ready", "surgery.completed", "surgery.cancelled" -> "surgery-service";
+            case "surgery.case.created", "surgery.ready", "surgery.completed", "surgery.cancelled" ->
+                    "surgery-service";
             default -> throw new AmqpException("Unsupported inpatient event type: " + eventType);
         };
         if (!expectedProducer.equals(producer)) {
@@ -306,6 +419,11 @@ public class InpatientEventConsumer {
         } catch (IllegalArgumentException exception) {
             throw new AmqpException("Inpatient event field must be a UUID: " + field, exception);
         }
+    }
+
+    private static UUID optionalUuid(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : uuid(node, field);
     }
 
     private static Instant instant(JsonNode node, String field) {

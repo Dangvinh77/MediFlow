@@ -4,6 +4,10 @@ import com.mediflow.inpatient.application.dto.command.AdmissionRequestedCommand;
 import com.mediflow.inpatient.application.dto.command.FinancialClearanceCommand;
 import com.mediflow.inpatient.application.dto.command.LabResultFactCommand;
 import com.mediflow.inpatient.application.dto.command.SettlementCompletedCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryCaseCreatedCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryCompletedFactCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryCancelledFactCommand;
+import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
 import com.mediflow.inpatient.application.dto.event.AdmissionClosedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
@@ -24,6 +28,7 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.domain.exception.AdmissionRuleViolationException;
 import com.mediflow.inpatient.domain.model.Admission;
@@ -31,6 +36,7 @@ import com.mediflow.inpatient.domain.model.Bed;
 import com.mediflow.inpatient.domain.model.BedAssignment;
 import com.mediflow.inpatient.domain.model.ClinicalOrderReference;
 import com.mediflow.inpatient.domain.model.SettlementSnapshot;
+import com.mediflow.inpatient.domain.model.SurgeryEventReceipt;
 import com.mediflow.inpatient.domain.model.enums.AdmissionPriority;
 import com.mediflow.inpatient.domain.model.enums.AdmissionStatus;
 import com.mediflow.inpatient.domain.model.enums.BedAssignmentStatus;
@@ -64,6 +70,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,6 +90,7 @@ class InpatientApplicationServiceTest {
     @Mock private ClinicalOrderReferenceRepositoryPort references;
     @Mock private DischargeSummaryRepositoryPort discharges;
     @Mock private ProcessedEventPort processedEvents;
+    @Mock private SurgeryEventReceiptRepositoryPort surgeryReceipts;
     @Mock private InpatientEventStorePort eventStore;
     @Mock private InpatientOutboxPort outbox;
     @Mock private DepositSuggestionPolicyPort depositSuggestions;
@@ -93,7 +101,7 @@ class InpatientApplicationServiceTest {
     @BeforeEach
     void setUp() {
         service = new InpatientApplicationService(admissions, beds, assignments, treatments,
-                references, discharges, processedEvents, eventStore, outbox,
+                references, discharges, processedEvents, surgeryReceipts, eventStore, outbox,
                 depositSuggestions, mapper, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -376,10 +384,285 @@ class InpatientApplicationServiceTest {
         verify(references, never()).save(any());
     }
 
+    @Test
+    void surgeryCaseCreated_registersExactAdmissionReference() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        SurgeryCaseCreatedCommand command = surgeryCaseCreated(admission);
+        when(processedEvents.tryClaim(command.maSuKien(), "surgery.case.created")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(references.findByTypeAndExternalId(ClinicalOrderType.SURGERY, command.maCaMo()))
+                .thenReturn(Optional.empty());
+
+        service.onSurgeryCaseCreated(command);
+
+        ArgumentCaptor<ClinicalOrderReference> saved = ArgumentCaptor.forClass(ClinicalOrderReference.class);
+        verify(references).save(saved.capture());
+        assertEquals(ADMISSION_ID, saved.getValue().admissionId());
+        assertEquals(command.maCaMo(), saved.getValue().externalOrderId());
+        assertEquals(ExternalOrderStatus.REQUESTED, saved.getValue().status());
+        assertEquals(command.phienBanCa(), saved.getValue().eventVersion());
+    }
+
+    @Test
+    void surgeryCompleted_beforeCaseCreated_isRetainedAndAppliedOnceReferenceArrives() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        SurgeryCaseCreatedCommand created = surgeryCaseCreated(admission);
+        SurgeryCompletedFactCommand completed = surgeryCompleted(
+                admission, created.maCaMo(), created.maYeuCauMo());
+        java.util.Map<String, SurgeryEventReceipt> receipts = new java.util.LinkedHashMap<>();
+        java.util.concurrent.atomic.AtomicReference<ClinicalOrderReference> reference =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        when(processedEvents.tryClaim(any(), any())).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(references.findByTypeAndExternalId(ClinicalOrderType.SURGERY, created.maCaMo()))
+                .thenAnswer(ignored -> Optional.ofNullable(reference.get()));
+        when(references.save(any())).thenAnswer(invocation -> {
+            ClinicalOrderReference saved = invocation.getArgument(0);
+            reference.set(saved);
+            return saved;
+        });
+        when(surgeryReceipts.findByBusinessOperation(any(), any())).thenAnswer(invocation ->
+                Optional.ofNullable(receipts.get(invocation.getArgument(0) + ":" + invocation.getArgument(1))));
+        when(surgeryReceipts.findByCaseId(created.maCaMo())).thenAnswer(ignored ->
+                receipts.values().stream().filter(receipt -> receipt.surgeryCaseId().equals(created.maCaMo()))
+                        .toList());
+        when(surgeryReceipts.save(any())).thenAnswer(invocation -> {
+            SurgeryEventReceipt saved = invocation.getArgument(0);
+            receipts.put(saved.eventType() + ":" + saved.operationId(), saved);
+            return saved;
+        });
+
+        service.onExternalOrderFact(completed);
+
+        assertEquals(ExternalOrderStatus.COMPLETED,
+                receipts.get("surgery.completed:" + completed.maKetQuaMo()).targetStatus());
+        assertEquals(false, receipts.get("surgery.completed:" + completed.maKetQuaMo()).applied());
+        verify(treatments, never()).save(any());
+
+        service.onSurgeryCaseCreated(created);
+
+        assertEquals(ExternalOrderStatus.COMPLETED, reference.get().status());
+        assertEquals(completed.phienBanCa(), reference.get().eventVersion());
+        verify(treatments, times(1)).save(any());
+        assertEquals(true, receipts.get("surgery.completed:" + completed.maKetQuaMo()).applied());
+    }
+
+    @Test
+    void surgeryCancelled_afterCompletedReference_isContractConflict() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        UUID surgeryCaseId = UUID.randomUUID();
+        ClinicalOrderReference reference = ClinicalOrderReference.create(ADMISSION_ID,
+                ClinicalOrderType.SURGERY, surgeryCaseId, ExternalOrderStatus.REQUESTED, "PROC", 0);
+        reference.applyFact(ADMISSION_ID, surgeryCaseId, ExternalOrderStatus.COMPLETED, null, 5);
+        SurgeryCancelledFactCommand cancelled = surgeryCancelled(admission, surgeryCaseId);
+        when(processedEvents.tryClaim(cancelled.maSuKien(), "surgery.cancelled")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(references.findByTypeAndExternalId(ClinicalOrderType.SURGERY, surgeryCaseId))
+                .thenReturn(Optional.of(reference));
+        when(surgeryReceipts.findByBusinessOperation("surgery.cancelled", cancelled.maLanHuy()))
+                .thenReturn(Optional.empty());
+        when(surgeryReceipts.findByBusinessOperation("surgery.case.created", surgeryCaseId))
+                .thenReturn(Optional.of(surgeryCaseReceipt(admission, surgeryCaseId,
+                        cancelled.maYeuCauMo())));
+        when(surgeryReceipts.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdmissionRuleViolationException exception = assertThrows(AdmissionRuleViolationException.class,
+                () -> service.onExternalOrderFact(cancelled));
+
+        assertEquals("INPATIENT_SURGERY_CONTRACT_CONFLICT", exception.code());
+        verify(treatments, never()).save(any());
+    }
+
+    @Test
+    void surgeryCompleted_sameOperationAndFingerprint_isSemanticDuplicate() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        SurgeryCompletedFactCommand completed = surgeryCompleted(admission, UUID.randomUUID());
+        SurgeryEventReceipt existing = SurgeryEventReceipt.pending(UUID.randomUUID(),
+                "surgery.completed", completed.maKetQuaMo(), completed.dauVanTai(),
+                completed.maYLenhBenNgoai(), completed.maYeuCauMo(), completed.maDotNoiTru(),
+                completed.maBenhNhan(),
+                completed.maKhoa(), completed.phienBanCa(), completed.phienBanNguon(),
+                ExternalOrderStatus.COMPLETED, null, "Surgery completed", completed.hoanTatLuc(), NOW);
+        existing.markApplied(NOW);
+        when(processedEvents.tryClaim(completed.maSuKien(), "surgery.completed")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(surgeryReceipts.findByBusinessOperation("surgery.completed", completed.maKetQuaMo()))
+                .thenReturn(Optional.of(existing));
+
+        service.onExternalOrderFact(completed);
+
+        verify(surgeryReceipts, never()).save(any());
+        verify(references, never()).save(any());
+        verify(treatments, never()).save(any());
+    }
+
+    @Test
+    void surgeryCompleted_sameOperationWithChangedPayload_isContractConflict() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        SurgeryCompletedFactCommand completed = surgeryCompleted(admission, UUID.randomUUID());
+        SurgeryEventReceipt existing = SurgeryEventReceipt.pending(UUID.randomUUID(),
+                "surgery.completed", completed.maKetQuaMo(), "x".repeat(64),
+                completed.maYLenhBenNgoai(), completed.maYeuCauMo(), completed.maDotNoiTru(),
+                completed.maBenhNhan(),
+                completed.maKhoa(), completed.phienBanCa(), completed.phienBanNguon(),
+                ExternalOrderStatus.COMPLETED, null, "Surgery completed", completed.hoanTatLuc(), NOW);
+        when(processedEvents.tryClaim(completed.maSuKien(), "surgery.completed")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(surgeryReceipts.findByBusinessOperation("surgery.completed", completed.maKetQuaMo()))
+                .thenReturn(Optional.of(existing));
+
+        AdmissionRuleViolationException exception = assertThrows(AdmissionRuleViolationException.class,
+                () -> service.onExternalOrderFact(completed));
+
+        assertEquals("INPATIENT_SURGERY_CONTRACT_CONFLICT", exception.code());
+        verify(references, never()).save(any());
+        verify(treatments, never()).save(any());
+    }
+
+    @Test
+    void surgeryReady_afterCompletedReference_doesNotReopenTerminalCase() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        UUID surgeryCaseId = UUID.randomUUID();
+        ClinicalOrderReference reference = ClinicalOrderReference.create(ADMISSION_ID,
+                ClinicalOrderType.SURGERY, surgeryCaseId, ExternalOrderStatus.REQUESTED, "PROC", 0);
+        reference.applyFact(ADMISSION_ID, surgeryCaseId, ExternalOrderStatus.COMPLETED, null, 5);
+        SurgeryReadyFactCommand ready = surgeryReady(admission, surgeryCaseId);
+        when(processedEvents.tryClaim(ready.maSuKien(), "surgery.ready")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(surgeryReceipts.findByBusinessOperation("surgery.ready", ready.maAnhChupSanSang()))
+                .thenReturn(Optional.empty());
+        when(surgeryReceipts.findByBusinessOperation("surgery.case.created", surgeryCaseId))
+                .thenReturn(Optional.of(surgeryCaseReceipt(admission, surgeryCaseId,
+                        ready.maYeuCauMo())));
+        when(surgeryReceipts.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(references.findByTypeAndExternalId(ClinicalOrderType.SURGERY, surgeryCaseId))
+                .thenReturn(Optional.of(reference));
+
+        service.onExternalOrderFact(ready);
+
+        assertEquals(ExternalOrderStatus.COMPLETED, reference.status());
+        assertEquals(5, reference.eventVersion());
+        verify(references, never()).save(any());
+        verify(treatments, never()).save(any());
+        ArgumentCaptor<SurgeryEventReceipt> receipt = ArgumentCaptor.forClass(SurgeryEventReceipt.class);
+        verify(surgeryReceipts, times(2)).save(receipt.capture());
+        assertEquals(true, receipt.getAllValues().getLast().applied());
+    }
+
+    @Test
+    void surgeryCaseCreated_identicalSemanticRedeliveryAfterClose_isIdempotent() {
+        Admission admission = restoredAdmission(AdmissionStatus.CLOSED, false, null, null, UUID.randomUUID());
+        SurgeryCaseCreatedCommand command = surgeryCaseCreated(admission);
+        SurgeryEventReceipt existing = surgeryCaseReceipt(admission, command.maCaMo(),
+                command.maYeuCauMo(), command.dauVanTai());
+        when(processedEvents.tryClaim(command.maSuKien(), "surgery.case.created")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(surgeryReceipts.findByBusinessOperation("surgery.case.created", command.maCaMo()))
+                .thenReturn(Optional.of(existing));
+
+        service.onSurgeryCaseCreated(command);
+
+        verify(references, never()).save(any());
+        verify(surgeryReceipts, never()).save(any());
+    }
+
+    @Test
+    void surgeryCompleted_withDifferentRequestThanCaseCreated_isContractConflict() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        UUID surgeryCaseId = UUID.randomUUID();
+        UUID acceptedRequestId = UUID.randomUUID();
+        SurgeryCompletedFactCommand completed = surgeryCompleted(
+                admission, surgeryCaseId, UUID.randomUUID());
+        SurgeryEventReceipt caseReceipt = surgeryCaseReceipt(
+                admission, surgeryCaseId, acceptedRequestId);
+        when(processedEvents.tryClaim(completed.maSuKien(), "surgery.completed")).thenReturn(true);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(surgeryReceipts.findByBusinessOperation("surgery.completed", completed.maKetQuaMo()))
+                .thenReturn(Optional.empty());
+        when(surgeryReceipts.findByBusinessOperation("surgery.case.created", surgeryCaseId))
+                .thenReturn(Optional.of(caseReceipt));
+        when(surgeryReceipts.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdmissionRuleViolationException exception = assertThrows(AdmissionRuleViolationException.class,
+                () -> service.onExternalOrderFact(completed));
+
+        assertEquals("INPATIENT_SURGERY_CONTRACT_CONFLICT", exception.code());
+        verify(references, never()).save(any());
+        verify(treatments, never()).save(any());
+    }
+
+    @Test
+    void surgeryCompleted_sameEventIdWithChangedPayload_isContractConflict() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        SurgeryCompletedFactCommand completed = surgeryCompleted(admission, UUID.randomUUID());
+        SurgeryEventReceipt existing = SurgeryEventReceipt.pending(completed.maSuKien(),
+                "surgery.completed", completed.maKetQuaMo(), "x".repeat(64),
+                completed.maYLenhBenNgoai(), completed.maYeuCauMo(), completed.maDotNoiTru(),
+                completed.maBenhNhan(), completed.maKhoa(), completed.phienBanCa(),
+                completed.phienBanNguon(), ExternalOrderStatus.COMPLETED, null,
+                "Surgery completed", completed.hoanTatLuc(), NOW);
+        when(processedEvents.tryClaim(completed.maSuKien(), "surgery.completed")).thenReturn(false);
+        when(surgeryReceipts.findByEventId(completed.maSuKien())).thenReturn(Optional.of(existing));
+
+        AdmissionRuleViolationException exception = assertThrows(AdmissionRuleViolationException.class,
+                () -> service.onExternalOrderFact(completed));
+
+        assertEquals("INPATIENT_SURGERY_CONTRACT_CONFLICT", exception.code());
+        verifyNoInteractions(admissions, references, treatments);
+    }
+
     private static AdmissionRequestedCommand referral() {
         return new AdmissionRequestedCommand(UUID.randomUUID(), 1, NOW, UUID.randomUUID().toString(),
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), "Pneumonia", AdmissionPriority.ROUTINE, false, NOW);
+    }
+
+    private static SurgeryCaseCreatedCommand surgeryCaseCreated(Admission admission) {
+        return new SurgeryCaseCreatedCommand(UUID.randomUUID(), 1, "corr-surgery",
+                UUID.randomUUID(), UUID.randomUUID(), admission.admissionId(), admission.patientId(),
+                admission.departmentId(), 0, 1, "PROC", NOW, "a".repeat(64), NOW);
+    }
+
+    private static SurgeryCompletedFactCommand surgeryCompleted(Admission admission, UUID surgeryCaseId) {
+        return surgeryCompleted(admission, surgeryCaseId, UUID.randomUUID());
+    }
+
+    private static SurgeryCompletedFactCommand surgeryCompleted(Admission admission, UUID surgeryCaseId,
+                                                                 UUID surgeryRequestId) {
+        return new SurgeryCompletedFactCommand(UUID.randomUUID(), 1, "corr-surgery", surgeryCaseId,
+                admission.admissionId(), UUID.randomUUID(), null, NOW, NOW,
+                surgeryRequestId, admission.patientId(), admission.departmentId(), 5, 1,
+                "b".repeat(64));
+    }
+
+    private static SurgeryEventReceipt surgeryCaseReceipt(Admission admission, UUID surgeryCaseId,
+                                                           UUID surgeryRequestId) {
+        return surgeryCaseReceipt(admission, surgeryCaseId, surgeryRequestId, "a".repeat(64));
+    }
+
+    private static SurgeryEventReceipt surgeryCaseReceipt(Admission admission, UUID surgeryCaseId,
+                                                           UUID surgeryRequestId, String fingerprint) {
+        SurgeryEventReceipt receipt = SurgeryEventReceipt.pending(UUID.randomUUID(),
+                "surgery.case.created", surgeryCaseId, fingerprint, surgeryCaseId,
+                surgeryRequestId, admission.admissionId(), admission.patientId(),
+                admission.departmentId(), 0, 1, ExternalOrderStatus.REQUESTED,
+                "PROC", null, null, NOW);
+        receipt.markApplied(NOW);
+        return receipt;
+    }
+
+    private static SurgeryCancelledFactCommand surgeryCancelled(Admission admission, UUID surgeryCaseId) {
+        return new SurgeryCancelledFactCommand(UUID.randomUUID(), 1, "corr-surgery", surgeryCaseId,
+                admission.admissionId(), UUID.randomUUID(), "BEFORE_START", "Patient request",
+                NOW, NOW, UUID.randomUUID(), admission.patientId(), admission.departmentId(),
+                6, 1, "c".repeat(64));
+    }
+
+    private static SurgeryReadyFactCommand surgeryReady(Admission admission, UUID surgeryCaseId) {
+        return new SurgeryReadyFactCommand(UUID.randomUUID(), 1, "corr-surgery", surgeryCaseId,
+                admission.admissionId(), UUID.randomUUID(), UUID.randomUUID(), NOW, NOW,
+                UUID.randomUUID(), admission.patientId(), admission.departmentId(),
+                2, 1, "d".repeat(64));
     }
 
     private static FinancialClearanceCommand clearance(UUID admissionId) {
