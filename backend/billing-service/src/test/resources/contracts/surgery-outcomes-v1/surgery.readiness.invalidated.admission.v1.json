@@ -1,0 +1,24 @@
+{
+  "eventId": "7b2d0c2e-88bc-33a6-9d54-b10fd42d343b",
+  "eventType": "surgery.readiness.invalidated",
+  "version": 1,
+  "occurredAt": "2026-10-07T01:03:00Z",
+  "correlationId": "surgery-contract-admission",
+  "producer": "surgery-service",
+  "payload": {
+    "surgeryCaseId": "00000000-0000-4000-8000-000000000001",
+    "surgeryRequestId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000004",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000008",
+    "admissionId": "00000000-0000-4000-8000-000000000008",
+    "recordId": "00000000-0000-4000-8000-000000000009",
+    "caseRevision": 4,
+    "readinessSnapshotId": "00000000-0000-4000-8000-000000000013",
+    "scheduleId": "00000000-0000-4000-8000-000000000011",
+    "scheduleRevision": 1,
+    "reasonCode": "CHECKLIST_CHANGED",
+    "invalidatedAt": "2026-10-07T01:03:00Z"
+  }
+}

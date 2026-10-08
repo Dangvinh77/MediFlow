@@ -19,13 +19,18 @@ import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import java.util.List;
+import java.util.UUID;
 
 /** Maps Organization errors to the shared response envelope. */
 @RestControllerAdvice
@@ -45,13 +50,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidArgument(IllegalArgumentException exception) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "ORG_VALIDATION_ERROR", exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request");
     }
 
-    @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,
-            org.springframework.http.converter.HttpMessageNotReadableException.class})
+    @ExceptionHandler({MissingServletRequestParameterException.class,
+            HttpMessageNotReadableException.class})
     public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception exception) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "ORG_VALIDATION_ERROR", "Malformed request");
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request");
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
@@ -79,8 +84,32 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(
             MethodArgumentTypeMismatchException exception) {
+        boolean pathVariable = exception.getParameter()
+                .hasParameterAnnotation(PathVariable.class)
+                && UUID.class.equals(exception.getRequiredType());
+        if (!pathVariable) {
+            return buildResponse(HttpStatus.BAD_REQUEST,
+                    "INVALID_REQUEST", "Invalid request");
+        }
         return buildResponse(HttpStatus.BAD_REQUEST,
                 "MALFORMED_UUID", "Path parameter must be a valid UUID");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException exception) {
+        String constraint = findConstraint(exception);
+        if ("uk_account_username".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "ACCOUNT_USERNAME_DUPLICATE", "Account username already exists");
+        }
+        if ("uk_department_abbreviation".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "DEPARTMENT_ABBREVIATION_DUPLICATE",
+                    "Department abbreviation already exists");
+        }
+        return buildResponse(HttpStatus.CONFLICT,
+                "DATA_INTEGRITY_VIOLATION", "Request violates a data constraint");
     }
 
     @ExceptionHandler(DataAccessException.class)
@@ -204,5 +233,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status)
                 .header(JwtClaims.HEADER_CORRELATION_ID, correlationId)
                 .body(ApiResponse.fail(error, correlationId));
+    }
+
+    private String findConstraint(Throwable exception) {
+        for (Throwable current = exception; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message == null) {
+                continue;
+            }
+            if (message.contains("uk_account_username")) {
+                return "uk_account_username";
+            }
+            if (message.contains("uk_department_abbreviation")) {
+                return "uk_department_abbreviation";
+            }
+        }
+        return null;
     }
 }

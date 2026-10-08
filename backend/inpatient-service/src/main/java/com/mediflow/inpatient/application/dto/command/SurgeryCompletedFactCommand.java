@@ -12,5 +12,11 @@ public record SurgeryCompletedFactCommand(
         UUID maKetQuaMo,
         String tomTatBienChung,
         Instant hoanTatLuc,
-        Instant xayRaLuc) implements ExternalOrderFactCommand {
+        Instant xayRaLuc,
+        UUID maYeuCauMo,
+        UUID maBenhNhan,
+        UUID maKhoa,
+        int phienBanCa,
+        int phienBanNguon,
+        String dauVanTai) implements ExternalOrderFactCommand {
 }

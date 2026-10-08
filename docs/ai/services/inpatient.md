@@ -89,8 +89,11 @@ Start, medical discharge and close are immutable singleton operations keyed by r
 `admission.closed` remains the later administrative fact.
 
 **Subscribe:** `admission.requested`, `financial.clearance.granted` for ADMISSION_DEPOSIT,
-`surgery.ready`, `surgery.completed`, `surgery.cancelled`, `settlement.completed`, and explicit
-Lab/Pharmacy completion facts needed for the admission timeline.
+`surgery.case.created`, `surgery.ready`, `surgery.completed`, `surgery.cancelled`,
+`settlement.completed`, and explicit Lab/Pharmacy completion facts needed for the admission timeline.
+The Surgery consumer stores semantic receipts, retains event-first terminal outcomes until the exact
+case reference exists, requires the same case/request/admission/patient/department identity on every
+outcome, rejects changed redeliveries and ignores valid outpatient facts without inventing an admission.
 
 ## Business rules
 

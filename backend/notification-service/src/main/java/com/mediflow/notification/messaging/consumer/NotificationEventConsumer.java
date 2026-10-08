@@ -3,6 +3,7 @@ package com.mediflow.notification.messaging.consumer;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -44,29 +45,48 @@ public class NotificationEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationEventConsumer.class);
 
+    private static final Set<String> CARE_PROJECTION_ROUTING_KEYS = Set.of(
+            RabbitConfig.RK_ADMISSION_DEPOSIT_REQUESTED, RabbitConfig.RK_ADMISSION_STARTED,
+            RabbitConfig.RK_ADMISSION_CLOSED, RabbitConfig.RK_SURGERY_READY, RabbitConfig.RK_SURGERY_CANCELLED);
+
     private final SendNotificationUseCase sendNotificationUseCase;
     private final NotificationTemplates templates;
     private final ObjectMapper objectMapper;
     private final CarePaymentReceiptWireHandler careReceipts;
+    private final CareProjectionWireHandler careProjections;
 
     public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
                                      ObjectMapper objectMapper) {
-        this(sendNotificationUseCase, templates, objectMapper, null);
+        this(sendNotificationUseCase, templates, objectMapper, null, null);
+    }
+
+    public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
+                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts) {
+        this(sendNotificationUseCase, templates, objectMapper, careReceipts, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
-                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts) {
+                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts,
+                                     CareProjectionWireHandler careProjections) {
         this.sendNotificationUseCase = sendNotificationUseCase;
         this.templates = templates;
         this.objectMapper = objectMapper;
         this.careReceipts = careReceipts;
+        this.careProjections = careProjections;
     }
 
     @RabbitListener(queues = RabbitConfig.QUEUE)
     public void onMessage(Message message) throws IOException {
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         byte[] body = message.getBody();
+
+        if (CARE_PROJECTION_ROUTING_KEYS.contains(routingKey)) {
+            if (careProjections == null)
+                throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("Care projection intake unavailable");
+            careProjections.receive(routingKey, body);
+            return;
+        }
 
         var root = objectMapper.readTree(body);
         if (root != null && (root.has("version") || root.has("payload") || root.has("eventType"))) {
