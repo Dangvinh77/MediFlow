@@ -14,16 +14,16 @@ need an explicitly assigned shared task.
 
 ## Current UI baseline
 
-`/organization` loads active departments and paged staff as independent read sections through
-`GET /v1/org/departments` and `GET /v1/org/staff`. UI roles are `ADMIN`, `MANAGER`, `DOCTOR`, and
-`NURSE`.
+`/organization` loads all departments and paged staff as independent read sections. Detail routes
+exist for both resources. `ADMIN` can create/update departments, create/update/transfer staff, and
+use `/organization/accounts` to create or lock/unlock an account. Service-only lookup and credential
+verification endpoints remain outside the browser UI.
 
 ## Owner queue
 
-- `FE-ORG-01` — `VERIFY-CONTRACT`: add department detail or one supported administration slice.
-- `FE-ORG-02` — `VERIFY-CONTRACT`: add staff detail or one supported create/update slice.
-- `FE-ORG-03` — `VERIFY-CONTRACT`: add account administration only when a live read/write contract
-  and roles exist.
+- `FE-ORG-01` — `DONE`: department detail/create/update with exact roles and fields.
+- `FE-ORG-02` — `DONE`: staff detail/create/update/department transfer.
+- `FE-ORG-03` — `DONE`: account create/status commands; SYSTEM account creation remains backend-only.
 - `FE-ORG-04` — `IMPLEMENT`: test independent section failures, pagination, role gates, and retries
   after the shared harness exists.
 

@@ -11,18 +11,15 @@
 
 ## Current UI baseline
 
-`/patients` contains a paged keyword list UI and is gated to `ADMIN`, `DOCTOR`, and `NURSE`. Its
-TypeScript contract now has a live Patient read/list controller and response DTO to verify against.
-The service-only existence lookup is also implemented and is consumed by Clinical; it is not a
-frontend endpoint.
+`/patients` contains paged search and detail. `ADMIN`/`NURSE` can create and update patients;
+`ADMIN` can delete after explicit confirmation. The immutable `soCmnd` rule is reflected in the
+edit form. The service-only existence lookup remains unavailable to browser code.
 
 ## Owner queue
 
-- `FE-PATIENT-01` — `BLOCKED`: implement and verify the backend Patient controller and DTO first.
-- `FE-PATIENT-02` — after that contract lands, replace spec-backed frontend fields with an exact
-  live DTO mapping and verify the list/search route.
-- `FE-PATIENT-03` — `VERIFY-CONTRACT`: add detail, then one create/update/delete slice with exact
-  roles and validation from live source.
+- `FE-PATIENT-01` — `DONE`: live controller/DTO verified.
+- `FE-PATIENT-02` — `DONE`: exact Vietnamese wire mapping and list/search route.
+- `FE-PATIENT-03` — `DONE`: detail/create/update/delete with controller roles and validation.
 - `FE-PATIENT-04` — `IMPLEMENT`: add contract/component tests after the shared harness exists.
 
 ## Handoffs and blockers
@@ -33,7 +30,7 @@ frontend endpoint.
   controller fixture, then verify populated, empty, unavailable and retry states through Gateway.
 - Patient self-service and “my notifications” require a documented patient identity mapping from
   Gateway and Patient. Do not decode or infer an undocumented token claim.
-- Do not add mutations, fake data or direct database access before the live write contract exists.
+- Patient self-service mutation still requires an explicit owner contract; current writes are staff-only.
 
 ## Contract and verification gate
 

@@ -1,66 +1,45 @@
 # Frontend Workboard
 
-> Current frontend routing and ownership view, checked 2026-10-06 against baseline
-> `origin/master` at `a283b30`. Refresh the date and commit when route or contract state changes.
-> Ownership rules live in [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
-> Per-service scope, queue, and handoffs live in [`services/`](services/README.md).
+> Audited 2026-10-08 against backend baseline `e7dab08` and implemented on
+> `codex/frontend-contract-workspaces`. Ownership rules remain in
+> [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
 
-## Status vocabulary
+## Shipped route state
 
-- `IMPLEMENT`: bounded implementation can proceed after the owner contract check.
-- `VERIFY-CONTRACT`: code exists, but the next change must confirm the live owner backend contract.
-- `HANDOFF`: another owner must provide or change a producer contract; record the handoff under
-  `docs/` before implementation continues.
-- `BLOCKED`: a named contract or decision is missing, so implementation must wait.
+| Context | Routes and workflow | State |
+|---|---|---|
+| Shared | Responsive role-filtered sidebar, compact header, field/button/table primitives | `DONE` |
+| Clinical | Appointment list/detail/create/edit plus legacy arrival/cancel; record lookup/detail/create/edit/diagnosis | `DONE` for always-on controllers |
+| Lab | Queue/detail/create plus start, result entry and cancel with live role/status guards | `DONE` |
+| Inpatient | Admission list/detail and bed list with filters, paging and exact Vietnamese wire names | `DONE` read workspace |
+| Organization | Department and staff list/detail/create/update; staff transfer; account create/status | `DONE` |
+| Patient | List/detail/create/update/delete with immutable identity number | `DONE` |
+| Pharmacy | Drug, stock, prescription, dispense/cancel and ADMIN outbox replay workflows | `DONE` |
+| Billing | Patient invoice lookup, invoice detail/create/payment and fee breakdown | `DONE` |
+| Notification | Patient history, secured detail and ADMIN manual send without exposing recipient PII | `DONE` |
+| Report | Daily, monthly and top-medicine reports | `DONE` for always-on controllers |
 
-## Current state
+## Deliberately unavailable
 
-All nine service-facing route entries currently exist under `src/app/(dashboard)/`:
-`organization`, `patients`, `appointments`, `records`, `lab`, `pharmacy`, `billing`,
-`notifications`, and `reports`. Login is present at `/login`. The context feature folders and
-route pages are present for these areas. Inpatient is now canonically assigned to Vinh and its
-backend Gateway route is live, but `features/inpatient` and `/inpatient` have not been created yet.
+- Clinical check-in, examination start, record completion and admission referral remain hidden
+  because `mediflow.features.care-finance-v2` defaults to `false` in Clinical and Docker runtime.
+- Inpatient deposit, top-up, settlement and Surgery composition remain blocked on Billing/Surgery
+  activation contracts. The read workspace never derives financial clearance in the browser.
+- Report operational and Surgery snapshots remain hidden because Report Care/Finance V2 defaults
+  to `false`.
+- Surgery has no navigation entry while its Gateway route is default-off and its production
+  authority handoff is open.
+- Refund, notification read-state/retry and other commands absent from live controllers are not
+  represented as UI controls.
 
-Pharmacy is the deepest current frontend workflow. Its visible route tree includes drug catalog,
-drug detail/create/stock actions, prescription create/lookup/detail/cancel/dispense actions, and a
-known-event outbox replay screen. The remaining bounded contexts are mostly base read flows: their
-next expansion must begin with a live backend contract audit. This board records implementation
-state only; it does not assert endpoint or DTO details that have not been verified from the owner
-backend.
+## Next tasks
 
-Appointments now include the contract-aligned seven-status list/detail presentation, creation,
-pending-only schedule editing, and the two legacy generic status actions (`ARRIVED`, `CANCELLED`).
-Care-finance and examination states remain read-only in this frontend slice and are not exposed as
-generic status mutations.
+1. Enable and smoke-test the Care/Finance V2 services through Gateway, then expose the already
+   specified Clinical and Report command surfaces as one bounded batch.
+2. Add a shared frontend test harness, then cover role denial, validation, terminal states and
+   API error/correlation-ID rendering per service.
+3. Run an authenticated browser smoke for each role against Docker Compose before release.
 
-## Owner queue
-
-Vinh's audited execution split and prepared Cloud task scopes are in the
-[2026-10-03 local/Cloud backlog](../../docs/architecture/2026-10-03-vinh-local-cloud-backlog.md).
-Records now include create/update/diagnosis mutations, and Lab request creation is present. Gateway
-role/method code parity is implemented, but deployment smoke is still required before
-result/start/cancel can be presented as a complete LAB_TECH workflow. Inpatient read pages can now
-start within the canonical Vinh scope; financial and Surgery composition remains blocked by the
-active contracts.
-
-| Task ID | Owner | Scope | Current state | Next action |
-|---|---|---|---|---|
-| `FE-VINH-01` | Vinh | appointments | `DONE`: list/detail plus create, pending-only edit, lifecycle timestamps, and valid legacy status actions | Re-verify the live Clinical contract before adding any explicit care-finance or examination command. |
-| `FE-VINH-02` | Vinh | records | `DONE`: patient lookup, record detail, create, update and add-diagnosis flows mirror the live controller roles and DTOs | Re-verify the live Clinical contract before adding care-finance completion/admission commands. |
-| `FE-VINH-03` | Vinh | lab | `DONE`: queue/detail reflect all live statuses and episode filters; compatibility request creation is available to ADMIN/DOCTOR without browser payment inference | Result/start/cancel remain integration-blocked until real Gateway-to-Lab deployment smoke passes. |
-| `FE-VINH-04` | Vinh | inpatient | Backend Core V1 and Gateway route exist; frontend not started | `IMPLEMENT`: admission list/detail and bed list first; keep finance/Surgery integration blocked. |
-| `FE-HUY-01` | Huy | pharmacy | Deeper workflows present | `VERIFY-CONTRACT`: recheck the current pharmacy controller/DTO/test contract before extending the workflow; use `HANDOFF` for missing producer behavior. |
-| `FE-HUY-02` | Huy | reports | Base read route and feature present | `VERIFY-CONTRACT`: audit the report DTO, filters, roles, and empty/error behavior before adding drill-downs. |
-| `FE-HOANGANH-01` | Hoàng Anh | organization | Base read route and feature present | `VERIFY-CONTRACT`: audit the live organization contract before adding staff/department mutations or cross-context composition. |
-| `FE-HOANGANH-02` | Hoàng Anh | patients | Base read route plus live Patient read/list backend contract present | `VERIFY-CONTRACT`: align the frontend DTO and empty/error/retry tests with the live controller fixture before adding write flows. |
-| `FE-HOANGANH-03` | Hoàng Anh | Gateway identity liaison | Shared login/session integration present | `VERIFY-CONTRACT`; create `HANDOFF` when a Gateway identity claim or endpoint must change. Shared auth/session files require explicit shared task scope. |
-| `FE-LOC-01` | Lộc | billing | Base read route and feature present | `VERIFY-CONTRACT`: audit the live billing lookup contract before adding payment or invoice actions. |
-| `FE-LOC-02` | Lộc | notifications | Base read route and feature present | `VERIFY-CONTRACT`: audit the live notification lookup contract before adding read-state or delivery controls. |
-
-## Shared gate for every queue item
-
-Before an `IMPLEMENT` task starts, confirm the owner backend controller/DTO/tests, gateway path,
-roles, envelope, and error codes. If the producer contract is absent or needs another owner's
-change, stop at `HANDOFF`/`BLOCKED` and document the exact contract instead of guessing. Shared
-changes to app shell/layout/loading/global files, auth/session, generic `lib` helpers, components,
-packages, or config require explicit assignment in the task.
+Every new UI mutation must still confirm the owner controller, request/response DTO, Gateway
+method/role matrix and error codes. Missing producer behavior becomes a handoff, never a guessed
+frontend contract.

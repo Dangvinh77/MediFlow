@@ -23,13 +23,17 @@ revision, textual results and conclusion. It is available to `ADMIN`, `DOCTOR`, 
 required record, patient, department, type and requested date fields. It intentionally omits V2
 episode/price identity while activation is held and never infers financial clearance in the browser.
 
+The detail workspace now exposes start to `ADMIN`/`LAB_TECH` for `PENDING` or `READY`, result entry
+to those roles for `IN_PROGRESS`, and cancel to `ADMIN`/`DOCTOR`/`LAB_TECH` for non-terminal tests.
+The backend remains authoritative for every 403 and lifecycle conflict.
+
 ## Owner queue
 
 - `FE-LAB-01` — `DONE`: test detail mirrors the exact live response DTO and keeps payment/lifecycle separate.
 - `FE-LAB-02` — `DONE`: request creation mirrors the live compatibility DTO, roles, validation,
   success navigation, and 400/403/404/409/business-rule handling.
-- `FE-LAB-03` — `VERIFY-CONTRACT`: add one result-entry or lifecycle-transition slice supported by
-  the live controller; keep abnormal-result semantics explicit.
+- `FE-LAB-03` — `DONE`: start, multi-indicator result entry and audited cancellation use the exact
+  live request records and roles.
 - `FE-LAB-04` — `IMPLEMENT`: cover filters, pagination, payment/clinical status separation, and
   retry behavior with focused tests after the shared harness exists.
 

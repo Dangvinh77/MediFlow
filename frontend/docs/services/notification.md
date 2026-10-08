@@ -11,18 +11,15 @@
 
 ## Current UI baseline
 
-`/notifications` performs an explicit patient UUID lookup and renders a paged notification history
-through `GET /v1/notifications/patient/{patientId}`. It shows channel, delivery status, failure
-reason, and timestamps without exposing recipient addresses. UI roles are `ADMIN`, `NURSE`, and
-`PATIENT`.
+`/notifications` renders patient history. `ADMIN` and the authorized `PATIENT` can open secured
+detail; `ADMIN` can send manually through `/notifications/send`. Responses never display recipient
+address or internal retry metadata. `NURSE` remains list-only, matching the controller roles.
 
 ## Owner queue
 
-- `FE-NOTIFICATION-01` — `VERIFY-CONTRACT`: add notification detail if a live secured endpoint exists.
-- `FE-NOTIFICATION-02` — `VERIFY-CONTRACT`: add one send action supported by the live controller,
-  including channel validation and failure behavior.
-- `FE-NOTIFICATION-03` — `VERIFY-CONTRACT`: add retry or read-state controls only when those commands
-  exist in the owner contract.
+- `FE-NOTIFICATION-01` — `DONE`: secured detail mirrors live roles.
+- `FE-NOTIFICATION-02` — `DONE`: manual send includes channel/address validation.
+- `FE-NOTIFICATION-03` — `BLOCKED`: retry/read-state commands do not exist in the live contract.
 - `FE-NOTIFICATION-04` — `IMPLEMENT`: test pagination, channel/status display, errors, and privacy
   boundaries after the shared harness exists.
 

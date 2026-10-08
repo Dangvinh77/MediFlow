@@ -112,7 +112,7 @@
 - [ ] Add operations-daily and surgery-operation reports after `care-finance-v2` is enabled in Report runtime.
 - [x] Keep Surgery UI disabled until the Gateway default-off route and production authority handoff close.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(report-ui): add monthly and medicine reports`.
+- [x] Commit as `feat(report-ui): add monthly and medicine reports`.
 
 ### Task 7: Contract registry and release evidence
 
@@ -120,8 +120,8 @@
 - Modify: `frontend/docs/frontend-workboard.md`
 - Modify: `frontend/docs/services/*.md`
 
-- [ ] Record each shipped route and remaining external blocker against the exact backend commit.
-- [ ] Run a final raw-fetch scan; only `frontend/src/lib/api.ts` may call `fetch`.
+- [x] Record each shipped route and remaining external blocker against backend baseline `e7dab08`.
+- [x] Run a final raw-fetch scan; only `frontend/src/lib/api.ts` calls `fetch`.
 - [ ] Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` from a clean tree.
-- [ ] Review the branch diff for feature-to-feature imports, guessed DTO fields, and role drift.
+- [x] Review the branch diff for feature-to-feature imports, guessed DTO fields, and role drift.
 

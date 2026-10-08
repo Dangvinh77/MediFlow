@@ -11,16 +11,16 @@
 
 ## Current UI baseline
 
-`/reports` provides a daily report query with required date and optional department UUID through
-`GET /v1/reports/daily`. It renders visit, lab, prescription, and revenue metrics. UI roles are
-`ADMIN` and `MANAGER`.
+`/reports` provides daily metrics, monthly revenue with zero-filled daily detail, and top-dispensed
+medicine ranking through the three always-on report endpoints. UI roles are `ADMIN` and `MANAGER`.
+Operational and Surgery snapshots remain absent because their Care/Finance V2 controller is
+disabled by default.
 
 ## Owner queue
 
-- `FE-REPORT-01` — `VERIFY-CONTRACT`: harden daily report validation, empty/zero, error, and retry
-  behavior against the live DTO.
-- `FE-REPORT-02` — `VERIFY-CONTRACT`: add one monthly drill-down supported by the live controller.
-- `FE-REPORT-03` — `VERIFY-CONTRACT`: add one medicine-ranking view supported by the live controller.
+- `FE-REPORT-01` — `DONE`: daily validation, zero data, error and retry behavior.
+- `FE-REPORT-02` — `DONE`: monthly revenue and calendar detail.
+- `FE-REPORT-03` — `DONE`: bounded date/rank medicine view.
 - `FE-REPORT-04` — `IMPLEMENT`: add formatter and component tests after the shared harness exists.
 
 ## Handoffs and blockers

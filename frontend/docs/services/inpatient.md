@@ -14,18 +14,15 @@ require an explicit shared frontend assignment.
 
 ## Current UI baseline
 
-No Inpatient feature or route exists yet. The backend Core V1 endpoints are implemented, and
-Gateway routes `/api/v1/inpatient/**` to `lb://inpatient-service` with endpoint-specific role rules.
-Cross-service RabbitMQ flags remain disabled; frontend availability does not activate Billing,
-Surgery, Pharmacy or Report integrations.
+`/inpatient` provides admission filters and paging, `/inpatient/{admissionId}` shows the exact
+admission projection and external-order references, and `/inpatient/beds` provides bed filters and
+paging. Gateway roles mirror the live controller. The UI is read-only and does not activate
+Billing, Surgery, Pharmacy or Report integrations.
 
 ## Owner queue
 
-- `FE-INPATIENT-01` — `IMPLEMENT`: add typed admission search and detail using the live
-  `GET /v1/inpatient/admissions` and `GET /v1/inpatient/admissions/{id}` contracts. Preserve exact
-  status, patient/department/referral IDs and empty/error/retry states without cross-feature joins.
-- `FE-INPATIENT-02` — `IMPLEMENT`: add the bed list from `GET /v1/inpatient/beds`, keeping bed state
-  separate from an admission's historical initial-bed snapshot.
+- `FE-INPATIENT-01` — `DONE`: typed admission search/detail preserve exact status and bare UUIDs.
+- `FE-INPATIENT-02` — `DONE`: bed list keeps current bed state separate from admission history.
 - `FE-INPATIENT-03` — `VERIFY-CONTRACT`: add create/assign/transfer/release/treatment/discharge
   commands one bounded transition at a time, with exact roles, validation and conflict handling.
 - `FE-INPATIENT-04` — `BLOCKED`: deposit, top-up, settlement and Surgery-facing UI wait for their
