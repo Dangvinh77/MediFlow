@@ -46,7 +46,7 @@
 - [x] Render explicit loading, empty, error, retry, pagination, status, and UUID reference states.
 - [x] Keep deposit, settlement, and Surgery controls absent while their handoffs remain active.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(inpatient-ui): add admission and bed workspaces`.
+- [x] Commit as `feat(inpatient-ui): add admission and bed workspaces`.
 
 ### Task 3: Complete live Clinical and Lab commands
 
@@ -66,7 +66,7 @@
 - [x] Gate affordances by backend roles and current lifecycle status while treating 403 as authoritative.
 - [x] Keep financial clearance activation unavailable until Billing and Gateway handoffs pass.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit the available batch as `feat(lab-ui): complete live laboratory commands`.
+- [x] Commit the available batch as `feat(lab-ui): complete live laboratory commands`.
 
 ### Task 4: Hoang Anh organization and patient administration
 
@@ -83,7 +83,7 @@
 - [x] Preserve service-only lookup endpoints as non-UI APIs.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
 - [x] Commit the Patient batch as `feat(patient-ui): add patient administration workflow`.
-- [ ] Commit the Organization batch as `feat(organization-ui): add workforce administration`.
+- [x] Commit the Organization batch as `feat(organization-ui): add workforce administration`.
 
 ### Task 5: Loc billing and notification operations
 
@@ -97,7 +97,7 @@
 - [x] Add notification detail and manual send using privacy-safe response fields.
 - [x] Do not expose unavailable refund/read-state controls or infer patient identity.
 - [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(frontend): add billing and notification operations`.
+- [x] Commit as `feat(frontend): add billing and notification operations`.
 
 ### Task 6: Huy pharmacy completion and reporting
 
@@ -107,11 +107,12 @@
 - Extend: `frontend/src/features/report/**`
 - Extend: `frontend/src/app/(dashboard)/reports/**`
 
-- [ ] Preserve the existing Pharmacy workflows and align remaining error/empty/terminal states with shared primitives.
-- [ ] Add monthly, top-medicine, operations-daily, and surgery-operation report views from live endpoints.
-- [ ] Keep Surgery UI disabled until the Gateway default-off route and production authority handoff close.
-- [ ] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
-- [ ] Commit as `feat(frontend): complete pharmacy and report workspaces`.
+- [x] Preserve the existing complete Pharmacy workflows and their explicit error/empty/terminal states.
+- [x] Add monthly and top-medicine report views from always-on endpoints.
+- [ ] Add operations-daily and surgery-operation reports after `care-finance-v2` is enabled in Report runtime.
+- [x] Keep Surgery UI disabled until the Gateway default-off route and production authority handoff close.
+- [x] Verify with `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+- [ ] Commit as `feat(report-ui): add monthly and medicine reports`.
 
 ### Task 7: Contract registry and release evidence
 
