@@ -50,6 +50,9 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   surgery:
+    creation:
+      api:
+        enabled: false
     lifecycle:
       api:
         enabled: false

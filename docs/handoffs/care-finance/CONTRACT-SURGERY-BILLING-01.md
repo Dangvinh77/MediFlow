@@ -51,6 +51,13 @@ Trusted actor authorization is required even on replay, with no production posit
 fallback. This changes no wire version/fixture and does not activate referral/HTTP delivery,
 Billing pricing/issuance/reconciliation or Inpatient reference registration.
 
+Creation HTTP follow-up on the same date adds an explicit default-off driving adapter and kernel
+wiring, not a new charge schema or pricing authority. Both business and creation API gates require
+real creation authority; missing provider fails startup. The HTTP key is the same global request UUID,
+authorized replay preserves the original case/receipt, and actual owned-PG tests retain one HELD
+charge under HTTP/internal SYSTEM contention. No upstream referral wire, Billing consumer approval
+or held event release is implied. [Scoped evidence](../../superpowers/plans/2026-10-07-surgery-creation-api-batch.md).
+
 Producer fixtures live in Surgery's `src/test/resources/contracts/surgery-outcomes-v1/`.
 Delivery stays HELD until Billing creates/reconciles charges and Inpatient registers exact case
 references with durable early-event handling. A held row is NOT consumer acceptance.

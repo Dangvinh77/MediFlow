@@ -15,8 +15,9 @@ This is the only registry for implementation blockers that still require another
 
 ## Huy local evidence — 2026-10-07
 
-Surgery now has an internal atomic creation caller and lifecycle kernel, but no production referral
-authority or live create adapter. Report has V12 gross receipt evidence and V13 finite cash replay,
+Surgery now has an internal atomic creation caller, lifecycle kernel and default-off creation HTTP
+adapter, but no production referral authority or activated create workflow. Report has V12 gross
+receipt evidence and V13 finite cash replay,
 but no accepted full finance/read-model publication. The active handoffs above retain those exact
 remaining gates. Charge event naming is fixed in
 [SURGERY-BILLING](care-finance/CONTRACT-SURGERY-BILLING-01.md); it is no longer an outstanding
