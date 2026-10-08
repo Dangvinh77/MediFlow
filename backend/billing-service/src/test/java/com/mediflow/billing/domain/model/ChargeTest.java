@@ -65,6 +65,64 @@ class ChargeTest {
                 .isInstanceOf(BillingRuleException.class);
     }
 
+    @Test
+    void reconcilePerformed_firstTime_updatesQuantityAndAmount() {
+        Charge charge = post(BigDecimal.ONE, new BigDecimal("500000.00"));
+        UUID resultId = UUID.randomUUID();
+
+        charge.reconcilePerformed(resultId, new BigDecimal("2"), new BigDecimal("500000.00"));
+
+        assertThat(charge.getQuantity()).isEqualByComparingTo("2");
+        assertThat(charge.getGrossAmount()).isEqualByComparingTo("1000000.00");
+        assertThat(charge.getReconciledResultId()).isEqualTo(resultId);
+    }
+
+    @Test
+    void reconcilePerformed_sameResultRedeliveredIdenticalFigures_isNoOp() {
+        Charge charge = post(BigDecimal.ONE, new BigDecimal("500000.00"));
+        UUID resultId = UUID.randomUUID();
+        charge.reconcilePerformed(resultId, BigDecimal.ONE, new BigDecimal("500000.00"));
+
+        charge.reconcilePerformed(resultId, BigDecimal.ONE, new BigDecimal("500000.00"));
+
+        assertThat(charge.getQuantity()).isEqualByComparingTo("1");
+        assertThat(charge.getReconciledResultId()).isEqualTo(resultId);
+    }
+
+    @Test
+    void reconcilePerformed_sameResultDifferentFigures_throwsConflict() {
+        Charge charge = post(BigDecimal.ONE, new BigDecimal("500000.00"));
+        UUID resultId = UUID.randomUUID();
+        charge.reconcilePerformed(resultId, BigDecimal.ONE, new BigDecimal("500000.00"));
+
+        assertThatThrownBy(() -> charge.reconcilePerformed(resultId, new BigDecimal("3"), new BigDecimal("500000.00")))
+                .isInstanceOf(BillingRuleException.class)
+                .extracting(ex -> ((BillingRuleException) ex).getCode())
+                .isEqualTo("BILLING_SURGERY_RECONCILIATION_CONFLICT");
+    }
+
+    @Test
+    void reconcilePerformed_differentResultAfterAlreadyReconciled_throwsConflict() {
+        Charge charge = post(BigDecimal.ONE, new BigDecimal("500000.00"));
+        charge.reconcilePerformed(UUID.randomUUID(), BigDecimal.ONE, new BigDecimal("500000.00"));
+
+        assertThatThrownBy(() -> charge.reconcilePerformed(UUID.randomUUID(), BigDecimal.ONE, new BigDecimal("500000.00")))
+                .isInstanceOf(BillingRuleException.class)
+                .extracting(ex -> ((BillingRuleException) ex).getCode())
+                .isEqualTo("BILLING_SURGERY_RECONCILIATION_CONFLICT");
+    }
+
+    @Test
+    void reconcilePerformed_voidedCharge_throwsAlreadyVoided() {
+        Charge charge = post(BigDecimal.ONE, new BigDecimal("500000.00"));
+        charge.voidCharge("Hủy ca mổ");
+
+        assertThatThrownBy(() -> charge.reconcilePerformed(UUID.randomUUID(), BigDecimal.ONE, new BigDecimal("500000.00")))
+                .isInstanceOf(BillingRuleException.class)
+                .extracting(ex -> ((BillingRuleException) ex).getCode())
+                .isEqualTo("BILLING_CHARGE_ALREADY_VOIDED");
+    }
+
     private Charge post(BigDecimal quantity, BigDecimal unitAmount) {
         return Charge.post(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "EXAM",
                 UUID.randomUUID(), "EXAM_GENERAL", "Khám tổng quát", quantity, unitAmount, Instant.now());

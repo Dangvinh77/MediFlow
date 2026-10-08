@@ -26,18 +26,19 @@ public class Charge {
     private final UUID sourceId;
     private final String priceCode;
     private final String description;
-    private final BigDecimal quantity;
-    private final BigDecimal unitAmount;
-    private final BigDecimal grossAmount;
+    private BigDecimal quantity;
+    private BigDecimal unitAmount;
+    private BigDecimal grossAmount;
     private ChargeStatus status;
     private String voidReason;
+    private UUID reconciledResultId;
     private final Instant incurredAt;
     private final Instant createdAt;
 
     private Charge(UUID chargeId, UUID accountId, UUID patientId, UUID departmentId, String sourceType,
                     UUID sourceId, String priceCode, String description, BigDecimal quantity,
                     BigDecimal unitAmount, BigDecimal grossAmount, ChargeStatus status,
-                    String voidReason, Instant incurredAt, Instant createdAt) {
+                    String voidReason, UUID reconciledResultId, Instant incurredAt, Instant createdAt) {
         this.chargeId = chargeId;
         this.accountId = accountId;
         this.patientId = patientId;
@@ -51,6 +52,7 @@ public class Charge {
         this.grossAmount = grossAmount;
         this.status = status;
         this.voidReason = voidReason;
+        this.reconciledResultId = reconciledResultId;
         this.incurredAt = incurredAt;
         this.createdAt = createdAt;
     }
@@ -69,17 +71,18 @@ public class Charge {
         }
         BigDecimal gross = quantity.multiply(unitAmount).setScale(2, RoundingMode.HALF_UP);
         return new Charge(null, accountId, patientId, departmentId, sourceType, sourceId, priceCode,
-                description, quantity, unitAmount, gross, ChargeStatus.POSTED, null, incurredAt, null);
+                description, quantity, unitAmount, gross, ChargeStatus.POSTED, null, null, incurredAt, null);
     }
 
     /** Dựng lại từ dữ liệu đã lưu — không chạy lại quy tắc lúc ghi phí. */
     public static Charge restore(UUID chargeId, UUID accountId, UUID patientId, UUID departmentId,
                                   String sourceType, UUID sourceId, String priceCode, String description,
                                   BigDecimal quantity, BigDecimal unitAmount, BigDecimal grossAmount,
-                                  ChargeStatus status, String voidReason, Instant incurredAt,
-                                  Instant createdAt) {
+                                  ChargeStatus status, String voidReason, UUID reconciledResultId,
+                                  Instant incurredAt, Instant createdAt) {
         return new Charge(chargeId, accountId, patientId, departmentId, sourceType, sourceId, priceCode,
-                description, quantity, unitAmount, grossAmount, status, voidReason, incurredAt, createdAt);
+                description, quantity, unitAmount, grossAmount, status, voidReason, reconciledResultId,
+                incurredAt, createdAt);
     }
 
     /**
@@ -100,5 +103,42 @@ public class Charge {
 
     public boolean isPosted() {
         return status == ChargeStatus.POSTED;
+    }
+
+    /**
+     * Đối chiếu charge theo kết quả mổ thực tế — {@code resultId} bất biến là khóa đối chiếu
+     * (CONTRACT-SURGERY-BILLING-01 "Performed items and completion"). Lần đầu gọi: cập nhật số
+     * lượng/đơn giá/thành tiền theo thực tế đã mổ. Gửi lại đúng {@code resultId} với cùng số liệu
+     * là vô hại (idempotent, redelivery). Một {@code resultId} khác, hoặc cùng resultId nhưng số
+     * liệu đổi, là xung đột hợp đồng — không được âm thầm sửa đè charge đã đối chiếu.
+     */
+    public void reconcilePerformed(UUID resultId, BigDecimal performedQuantity, BigDecimal performedUnitAmount) {
+        if (status == ChargeStatus.VOIDED) {
+            throw new BillingRuleException("BILLING_CHARGE_ALREADY_VOIDED",
+                    "Không thể đối chiếu charge đã bị hủy");
+        }
+        if (resultId == null) {
+            throw new BillingRuleException("BILLING_SURGERY_RESULT_ID_REQUIRED", "resultId là bắt buộc");
+        }
+        if (performedQuantity == null || performedQuantity.signum() <= 0) {
+            throw new BillingRuleException("BILLING_CHARGE_INVALID_QUANTITY", "Số lượng thực tế phải lớn hơn 0");
+        }
+        if (performedUnitAmount == null || performedUnitAmount.signum() < 0) {
+            throw new BillingRuleException("BILLING_CHARGE_INVALID_AMOUNT", "Đơn giá thực tế không được âm");
+        }
+        if (reconciledResultId != null) {
+            boolean sameResult = reconciledResultId.equals(resultId);
+            boolean sameAmounts = quantity.compareTo(performedQuantity) == 0
+                    && unitAmount.compareTo(performedUnitAmount) == 0;
+            if (sameResult && sameAmounts) {
+                return;
+            }
+            throw new BillingRuleException("BILLING_SURGERY_RECONCILIATION_CONFLICT",
+                    "Kết quả mổ xung đột với dữ liệu đã đối chiếu cho charge này");
+        }
+        this.quantity = performedQuantity;
+        this.unitAmount = performedUnitAmount;
+        this.grossAmount = performedQuantity.multiply(performedUnitAmount).setScale(2, RoundingMode.HALF_UP);
+        this.reconciledResultId = resultId;
     }
 }

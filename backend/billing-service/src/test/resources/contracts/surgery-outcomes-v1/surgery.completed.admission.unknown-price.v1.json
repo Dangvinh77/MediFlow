@@ -1,0 +1,37 @@
+{
+  "eventId": "c687d333-f537-3a9c-81ad-59438114ae6e",
+  "eventType": "surgery.completed",
+  "version": 1,
+  "occurredAt": "2026-10-07T01:11:00Z",
+  "correlationId": "surgery-contract-admission",
+  "producer": "surgery-service",
+  "payload": {
+    "surgeryCaseId": "00000000-0000-4000-8000-000000000001",
+    "surgeryRequestId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000004",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000008",
+    "admissionId": "00000000-0000-4000-8000-000000000008",
+    "recordId": "00000000-0000-4000-8000-000000000009",
+    "caseRevision": 5,
+    "resultId": "00000000-0000-4000-8000-000000000014",
+    "sourceRevision": 1,
+    "procedureCode": "PROC",
+    "methodCode": "METHOD",
+    "outcomeCode": "COMPLETE",
+    "complicationsCategory": null,
+    "complicationsSummary": null,
+    "performedItems": [
+      {
+        "performedItemId": "00000000-0000-4000-8000-000000000015",
+        "itemCode": "ITEM",
+        "priceCode": "UNRECOGNIZED_PRICE",
+        "quantity": 1
+      }
+    ],
+    "startedAt": "2026-10-07T01:04:00Z",
+    "completedAt": "2026-10-07T01:10:30Z",
+    "recordedAt": "2026-10-07T01:11:00Z"
+  }
+}

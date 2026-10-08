@@ -1,0 +1,27 @@
+{
+  "eventId": "18d083a6-89b5-37db-acd2-d04687622604",
+  "eventType": "surgery.cancelled",
+  "version": 1,
+  "occurredAt": "2026-10-07T01:05:00Z",
+  "correlationId": "surgery-contract-admission",
+  "producer": "surgery-service",
+  "payload": {
+    "surgeryCaseId": "00000000-0000-4000-8000-000000000001",
+    "surgeryRequestId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000004",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000008",
+    "admissionId": "00000000-0000-4000-8000-000000000008",
+    "recordId": "00000000-0000-4000-8000-000000000009",
+    "caseRevision": 4,
+    "cancellationId": "74b182de-a395-387a-b359-62491fc7ca4c",
+    "sourceRevision": 1,
+    "cancellationStage": "BEFORE_START",
+    "reason": "Patient request",
+    "reasonCode": "PRE_START_CANCELLATION",
+    "cancelledBy": "00000000-0000-4000-8000-000000000006",
+    "cancelledByStaffId": "00000000-0000-4000-8000-000000000007",
+    "cancelledAt": "2026-10-07T01:05:00Z"
+  }
+}

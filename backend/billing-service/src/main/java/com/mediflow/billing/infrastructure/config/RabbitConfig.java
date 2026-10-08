@@ -19,9 +19,11 @@ import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Topology RabbitMQ của billing-service (backend-spec/06-billing.md §12.4,
- * docs/ai/06-events-rabbitmq.md). Một queue {@value #QUEUE} nhận 8 routing key billing subscribe;
- * 3 routing key billing publish ({@code invoice.created}, {@code payment.completed},
- * {@code payment.failed}) không cần binding vào đây.
+ * docs/ai/06-events-rabbitmq.md). Một queue {@value #QUEUE} nhận các routing key billing subscribe
+ * (8 cái V1 cộng 3 cái surgery theo CONTRACT-SURGERY-BILLING-01); 3 routing key billing publish
+ * ({@code invoice.created}, {@code payment.completed}, {@code payment.failed}) không cần binding
+ * vào đây — còn các event V2 ledger (kể cả {@code payment.refunded}) đi qua
+ * {@code BILLING_EVENT_OUTBOX} như mô tả ở V4 migration.
  */
 @Configuration
 public class RabbitConfig {
@@ -44,6 +46,11 @@ public class RabbitConfig {
     public static final String RK_LAB_RESULT_CREATED = "lab.result.created";
     public static final String RK_APPOINTMENT_STATUS_CHANGED = "appointment.status.changed";
 
+    // Subscribe — CONTRACT-SURGERY-BILLING-01 (surgery-service, envelope version=1, no .v1 suffix)
+    public static final String RK_SURGERY_CASE_CREATED = "surgery.case.created";
+    public static final String RK_SURGERY_COMPLETED = "surgery.completed";
+    public static final String RK_SURGERY_CANCELLED = "surgery.cancelled";
+
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PRESCRIPTION_CREATED,
             RK_PRESCRIPTION_FILLED,
@@ -52,7 +59,10 @@ public class RabbitConfig {
             RK_PRESCRIPTION_EXPIRED,
             RK_MEDICAL_RECORD_CREATED,
             RK_LAB_RESULT_CREATED,
-            RK_APPOINTMENT_STATUS_CHANGED
+            RK_APPOINTMENT_STATUS_CHANGED,
+            RK_SURGERY_CASE_CREATED,
+            RK_SURGERY_COMPLETED,
+            RK_SURGERY_CANCELLED
     };
 
     public static final String QUEUE = "billing.q";
