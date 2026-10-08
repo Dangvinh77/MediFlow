@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -56,7 +57,7 @@ export function StaffTable() {
     setError(null);
 
     try {
-      const result = await organizationApi.staff(page, STAFF_PAGE_SIZE);
+      const result = await organizationApi.staff({ page, size: STAFF_PAGE_SIZE });
       setStaff(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
@@ -78,7 +79,7 @@ export function StaffTable() {
     const initialPage = 0;
 
     organizationApi
-      .staff(initialPage, STAFF_PAGE_SIZE)
+      .staff({ page: initialPage, size: STAFF_PAGE_SIZE })
       .then((result) => {
         if (disposed) return;
 
@@ -150,7 +151,7 @@ export function StaffTable() {
               <tbody>
                 {staff.map((member) => (
                   <tr key={member.staffId} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-medium">{member.fullName}</td>
+                    <td className="px-4 py-3 font-medium"><Link href={`/organization/staff/${member.staffId}`} className="text-primary hover:underline">{member.fullName}</Link></td>
                     <td className="px-4 py-3">
                       {jobTitleLabels[member.jobTitle] ?? "Không xác định"}
                     </td>

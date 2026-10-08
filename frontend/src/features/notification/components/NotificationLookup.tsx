@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
@@ -16,6 +18,7 @@ import type {
 } from "../types";
 
 const NOTIFICATION_PAGE_SIZE = 20;
+const getServerRole = () => null;
 
 const channelLabels: Record<NotificationChannel, string> = {
   EMAIL: "Email",
@@ -59,6 +62,7 @@ function getRequestError(cause: unknown): RequestError {
 
 export function NotificationLookup() {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patientId, setPatientId] = useState("");
   const [activePatientId, setActivePatientId] = useState("");
   const [notifications, setNotifications] = useState<NotificationDTO[]>([]);
@@ -124,6 +128,7 @@ export function NotificationLookup() {
 
   return (
     <section className="mt-6">
+      {role === "ADMIN" ? <div className="mb-4 flex justify-end"><Link href="/notifications/send" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Gửi thông báo</Link></div> : null}
       <form
         onSubmit={onSearch}
         noValidate
@@ -233,7 +238,7 @@ export function NotificationLookup() {
                       className="border-b border-border align-top last:border-0"
                     >
                       <td className="max-w-xs whitespace-normal break-words px-4 py-3 font-medium">
-                        {notification.title}
+                        {(role === "ADMIN" || role === "PATIENT") ? <Link href={`/notifications/${notification.notificationId}`} className="text-primary hover:underline">{notification.title}</Link> : notification.title}
                       </td>
                       <td className="px-4 py-3">
                         {channelLabels[notification.channel] ?? "Không xác định"}

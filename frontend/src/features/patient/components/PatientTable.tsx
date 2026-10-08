@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatLocalDate } from "@/lib/format";
 import { patientApi } from "../api";
 import type { PatientDTO } from "../types";
 
 const PATIENT_PAGE_SIZE = 20;
+const getServerRole = () => null;
 
 interface PatientRequest {
   keyword: string;
@@ -35,8 +38,9 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function PatientTable() {
+export function PatientTable({ notice }: { notice?: "deleted" }) {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patients, setPatients] = useState<PatientDTO[]>([]);
   const [error, setError] = useState<RequestError | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +104,8 @@ export function PatientTable() {
 
   return (
     <section className="mt-6">
+      {notice === "deleted" ? <p role="status" className="mb-4 rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">Đã xóa bệnh nhân.</p> : null}
+      {(role === "ADMIN" || role === "NURSE") ? <div className="mb-4 flex justify-end"><Link href="/patients/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">Thêm bệnh nhân</Link></div> : null}
       <form onSubmit={onSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="patient-keyword" className="mb-1 block text-sm font-medium">
@@ -164,7 +170,7 @@ export function PatientTable() {
                     key={patient.maBenhNhan}
                     className="border-b border-border last:border-0"
                   >
-                    <td className="px-4 py-3">{patient.hoTen}</td>
+                    <td className="px-4 py-3"><Link href={`/patients/${patient.maBenhNhan}`} className="font-medium text-primary hover:underline">{patient.hoTen}</Link></td>
                     <td className="px-4 py-3">{formatLocalDate(patient.ngaySinh)}</td>
                     <td className="px-4 py-3">{patient.gioiTinh}</td>
                     <td className="px-4 py-3">{patient.soCmnd}</td>

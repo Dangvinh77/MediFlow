@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import {
   getRole,
   isAuthenticated,
@@ -15,6 +16,7 @@ const getServerAuthSnapshot = (): boolean | null => null;
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const authorized = useSyncExternalStore(
     subscribeToAuthChanges,
     getAuthSnapshot,
@@ -38,9 +40,20 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <DashboardHeader role={role} onLogout={onLogout} />
-      {children}
+    <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <DashboardSidebar
+        role={role}
+        open={navigationOpen}
+        onClose={() => setNavigationOpen(false)}
+      />
+      <div className="min-w-0">
+        <DashboardHeader
+          role={role}
+          onLogout={onLogout}
+          onOpenNavigation={() => setNavigationOpen(true)}
+        />
+        {children}
+      </div>
     </div>
   );
 }

@@ -35,6 +35,9 @@ department, Lab, Pharmacy, and Billing data remain external references.
 - `/records/{recordId}/edit`: ADMIN/DOCTOR update symptoms on an open record; completed records are
   presented as immutable. The detail page also supports adding a diagnosis with an inline success state.
 - Both flows use feature-local types/API modules, shared async states, and the gateway API wrapper.
+- Check-in, examination start, record completion and admission referral are intentionally not
+  exposed while `mediflow.features.care-finance-v2` remains disabled by default in Clinical and
+  Docker Compose.
 
 ## Owner queue
 
@@ -46,6 +49,8 @@ department, Lab, Pharmacy, and Billing data remain external references.
   live controller DTOs, roles, validation and error states.
 - `FE-CLINICAL-04` — `IMPLEMENT`: add focused API/component tests after the shared test harness is
   assigned.
+- `FE-CLINICAL-05` — `BLOCKED`: enable and smoke Care/Finance V2 through Gateway before adding its
+  conditional command controls.
 
 ## Handoffs and blockers
 

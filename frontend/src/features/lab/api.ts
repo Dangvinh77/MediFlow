@@ -1,10 +1,13 @@
 import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
+  AddLabResultsRequest,
+  CancelLabTestRequest,
   CreateLabRequest,
   LabCareEpisodeType,
   LabTestDTO,
   LabTestStatus,
+  StartLabTestRequest,
 } from "./types";
 
 export interface LabSearchParams {
@@ -32,4 +35,10 @@ export const labApi = {
   },
   create: (body: CreateLabRequest) =>
     api.post<LabTestDTO>("/v1/lab", body),
+  start: (testId: string, body: StartLabTestRequest = { emergencyOverride: null }) =>
+    api.put<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}/start`, body),
+  addResults: (testId: string, body: AddLabResultsRequest) =>
+    api.put<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}/results`, body),
+  cancel: (testId: string, body: CancelLabTestRequest) =>
+    api.put<LabTestDTO>(`/v1/lab/${encodeURIComponent(testId)}/cancel`, body),
 };

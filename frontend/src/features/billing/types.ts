@@ -31,3 +31,14 @@ export interface InvoiceDTO {
   paidAt: string | null;
   fees: FeeDTO[];
 }
+
+export interface CreateInvoiceRequest { patientId: string; createdDate: string }
+export interface PayInvoiceRequest { paymentMethod: PaymentMethod }
+export interface PaymentResultDTO {
+  invoiceId: string;
+  success: boolean;
+  totalAmount: number;
+  paymentMethod: PaymentMethod;
+  paidAt: string;
+  sagaStatus: SagaStatus;
+}
