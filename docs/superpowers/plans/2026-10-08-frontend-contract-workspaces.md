@@ -122,6 +122,5 @@
 
 - [x] Record each shipped route and remaining external blocker against backend baseline `e7dab08`.
 - [x] Run a final raw-fetch scan; only `frontend/src/lib/api.ts` calls `fetch`.
-- [ ] Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` from a clean tree.
+- [x] Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` from a clean tree.
 - [x] Review the branch diff for feature-to-feature imports, guessed DTO fields, and role drift.
-
