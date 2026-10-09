@@ -22,6 +22,7 @@ import com.mediflow.report.application.port.out.DrugStatisticRepositoryPort;
 import com.mediflow.report.application.port.out.MonthlyRevenueReportRepositoryPort;
 import com.mediflow.report.application.port.out.PaymentContributionRepositoryPort;
 import com.mediflow.report.application.port.out.ProcessedEventPort;
+import com.mediflow.report.application.port.out.PrescriptionFillReceiptPort;
 import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.DailyVisitReport;
 import com.mediflow.report.domain.model.DrugStatistic;
@@ -43,6 +44,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     private final DrugStatisticRepositoryPort drugStatistics;
     private final MonthlyRevenueReportRepositoryPort monthlyReports;
     private final PaymentContributionRepositoryPort paymentContributions;
+    private final PrescriptionFillReceiptPort prescriptionFills;
     private final ZoneId reportZone;
 
     @Override
@@ -73,6 +75,10 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
                 prescriptionId, items);
         List<AggregatedItem> groupedItems = groupItems(items);
         if (!processedEventPort.claimIfAbsent(eventId, PRESCRIPTION_FILLED)) {
+            return;
+        }
+        if (!prescriptionFills.claim(prescriptionId, occurredAt, departmentId, reportZone,
+                groupedItems.stream().map(item -> new DispensedItem(item.drugId(), item.drugName(), item.quantity())).toList())) {
             return;
         }
 

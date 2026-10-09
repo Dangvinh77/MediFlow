@@ -19,13 +19,14 @@ import com.mediflow.notification.application.service.NotificationTemplates;
 import com.mediflow.notification.infrastructure.config.RabbitConfig;
 import com.mediflow.notification.messaging.consumer.payload.AppointmentCreatedPayload;
 import com.mediflow.notification.messaging.consumer.payload.LabResultCreatedPayload;
+import com.mediflow.notification.messaging.consumer.payload.InvoiceCreatedPayload;
 import com.mediflow.notification.messaging.consumer.payload.PatientCreatedPayload;
 import com.mediflow.notification.messaging.consumer.payload.PaymentCompletedPayload;
 import com.mediflow.notification.messaging.consumer.payload.PaymentFailedPayload;
 import com.mediflow.notification.messaging.consumer.payload.PrescriptionFilledPayload;
 
 /**
- * Driving adapter duy nhất nhận cả 6 routing key notification subscribe, trên <b>một</b> queue
+ * Driving adapter for the CURRENT compatibility subscriptions on <b>one</b> queue
  * {@value RabbitConfig#QUEUE} (backend-spec/07-notification.md §12 "một class consumer với
  * switch"). Đọc {@link Message} thô + tự định tuyến theo routing key — không dùng 6
  * {@code @RabbitListener} riêng, vì nhiều listener trên cùng một queue vật lý sẽ cạnh tranh nhau
@@ -34,9 +35,9 @@ import com.mediflow.notification.messaging.consumer.payload.PrescriptionFilledPa
  *
  * <p>Dựng nội dung từ {@link NotificationTemplates} (§8) rồi gói vào {@link NotificationTrigger}
  * — {@link SendNotificationUseCase} không bao giờ thấy kiểu AMQP. Email/phone chỉ có sẵn trên
- * {@code patient.created}; 5 event còn lại không mang địa chỉ liên hệ. V1 chấp nhận phương án đơn
+ * {@code patient.created}; other current events do not carry contact addresses. V1 chấp nhận phương án đơn
  * giản ở §10: <b>không</b> dựng bảng chiếu email/phone cục bộ (sẽ cần thêm bảng + tiêu thụ thêm
- * {@code patient.updated}) — 5 event đó gửi {@code email = phone = null}, khiến
+ * {@code patient.updated}) — those events pass {@code email = phone = null}, so
  * {@code NotificationApplicationService} (BR-N9) tự rơi về kênh {@code IN_APP}. Đây là lựa chọn
  * hợp lệ mà spec cho phép, không phải thiếu sót; nâng lên bảng chiếu là việc của một task sau.
  */
@@ -106,6 +107,7 @@ public class NotificationEventConsumer {
             case RabbitConfig.RK_PAYMENT_COMPLETED ->
                     handlePaymentCompleted(read(body, PaymentCompletedPayload.class));
             case RabbitConfig.RK_PAYMENT_FAILED -> handlePaymentFailed(read(body, PaymentFailedPayload.class));
+            case RabbitConfig.RK_INVOICE_CREATED -> handleInvoiceCreated(read(body, InvoiceCreatedPayload.class));
             default -> log.warn("Bỏ qua routing key không xác định trên {}: {}", RabbitConfig.QUEUE, routingKey);
         }
     }
@@ -140,6 +142,17 @@ public class NotificationEventConsumer {
         dispatch(RabbitConfig.RK_PAYMENT_FAILED, e.eventId(), e.patientId(), null, null, Map.of(
                 "maHoaDon", String.valueOf(e.invoiceId()),
                 "reason", nullToEmpty(e.reason())));
+    }
+
+    private void handleInvoiceCreated(InvoiceCreatedPayload e) {
+        if (e.eventId() == null || e.occurredAt() == null || e.invoiceId() == null || e.patientId() == null
+                || e.correlationId() == null || e.correlationId().isBlank()
+                || e.totalAmount() == null || e.totalAmount().signum() < 0) {
+            throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("Invalid current invoice fact");
+        }
+        // No contact inference, receipt claim or clinical authorization: private IN_APP only.
+        dispatch(RabbitConfig.RK_INVOICE_CREATED, e.eventId(), e.patientId(), null, null, Map.of(
+                "invoiceId", e.invoiceId().toString(), "totalAmount", e.totalAmount().toPlainString()));
     }
 
     private void dispatch(String routingKey, UUID eventId, UUID patientId, String email, String phone,

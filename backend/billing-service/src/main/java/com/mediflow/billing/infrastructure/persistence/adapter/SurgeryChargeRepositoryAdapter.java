@@ -60,7 +60,14 @@ public class SurgeryChargeRepositoryAdapter implements SurgeryChargeRepositoryPo
 
     @Override
     public List<Charge> findChargesBySource(String sourceType, UUID sourceId) {
-        return jdbc.query("SELECT * FROM CHARGE WHERE source_type = ? AND source_id = ?",
+        // Same case -> account -> ordered charge lock hierarchy as the strict issuer/cancellation.
+        // A completion waiting behind cancellation must re-read VOIDED, not restore stale POSTED data.
+        jdbc.execute("SET LOCAL lock_timeout='3s'");
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "surgery-charge:" + sourceId);
+        var accountIds = jdbc.queryForList("SELECT DISTINCT account_id FROM CHARGE WHERE source_type=? AND source_id=? ORDER BY account_id",
+                UUID.class, sourceType, sourceId);
+        for (var accountId : accountIds) jdbc.queryForList("SELECT account_id FROM BILLING_ACCOUNT WHERE account_id=? FOR UPDATE", UUID.class, accountId);
+        return jdbc.query("SELECT * FROM CHARGE WHERE source_type = ? AND source_id = ? ORDER BY charge_id FOR UPDATE",
                 (rs, row) -> charge(rs), sourceType, sourceId);
     }
 

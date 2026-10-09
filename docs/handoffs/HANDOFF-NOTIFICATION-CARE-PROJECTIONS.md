@@ -1,7 +1,7 @@
 # HANDOFF — Notification care-finance projections
 
-**Status:** ACTIVE — Notification has no live version-1 bindings for the admission, top-up,
-settlement or Surgery lifecycle.
+**Status:** ACTIVE — gated Surgery V1 intake and suppression are implemented and locally verified;
+admission, top-up, settlement and reviewed live publication remain open.
 **Owner:** Lộc (`locgit-89`), Notification.
 **Unblocks:** privacy-safe patient communication for the Care-Finance workflow.
 
@@ -20,6 +20,20 @@ It creates delivery intents and retry history; it never authorizes a care or pay
 a Notification template unless the canonical contract is amended by its owners.
 
 ## Owner actions
+
+Refund follow-up 2026-10-08: completed-refund template/strict two-gated reader now
+consume actual Billing fixtures directly. Private history, source/delivery claims and held
+sent fact are atomic; PG/Rabbit duplicate/conflict/rollback/DLQ/replay and full **171/171**
+pass. Refund notice no longer waits for implementation. Remaining admission/top-up/
+settlement, external delivery and released multi-service acceptance keep this handoff active.
+[Evidence](../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
+Surgery engineering intake no longer waits for Lộc: the 2026-10-08 user-scoped override implemented
+four exact subscriptions/V3 suppression and the separate Billing Surgery request notice/V4 semantic
+source receipt. Final full clean Notification suite passed 145/145 (19 reports) with PostgreSQL/
+RabbitMQ, zero skipped. Producer bytes are consumed directly; no fixture copies.
+This is local broker acceptance, not released Surgery/Billing outboxes or production activation.
+The remaining admission/top-up/settlement work and cutover criteria below stay active.
 
 1. Add guarded version-1 bindings and exact decoders for `admission.deposit.requested`,
    `deposit.topup.required`, `admission.started`, `surgery.ready`, `surgery.cancelled`,

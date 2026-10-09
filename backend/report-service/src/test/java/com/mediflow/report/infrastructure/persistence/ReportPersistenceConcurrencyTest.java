@@ -29,6 +29,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.mediflow.report.application.service.AggregateUpdaterService;
+import com.mediflow.report.infrastructure.persistence.adapter.PrescriptionFillReceiptAdapter;
 import com.mediflow.report.infrastructure.config.ReportConfiguration;
 import com.mediflow.report.infrastructure.persistence.adapter.DailyVisitReportPersistenceAdapter;
 import com.mediflow.report.infrastructure.persistence.adapter.DrugStatisticPersistenceAdapter;
@@ -42,7 +43,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.ProcessedEventPers
 @Import({ReportConfiguration.class, AggregateUpdaterService.class,
         DailyVisitReportPersistenceAdapter.class, DrugStatisticPersistenceAdapter.class,
         MonthlyRevenueReportPersistenceAdapter.class, PaymentContributionPersistenceAdapter.class,
-        ProcessedEventPersistenceAdapter.class})
+        ProcessedEventPersistenceAdapter.class, PrescriptionFillReceiptAdapter.class})
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class ReportPersistenceConcurrencyTest {
@@ -71,7 +72,7 @@ class ReportPersistenceConcurrencyTest {
 
     @BeforeEach
     void cleanProjectionTables() {
-        jdbcTemplate.execute("TRUNCATE TABLE processed_event, payment_contribution, "
+        jdbcTemplate.execute("TRUNCATE TABLE prescription_fill_receipt, processed_event, payment_contribution, "
                 + "daily_visit_report, monthly_revenue_report, drug_statistic CASCADE");
     }
 

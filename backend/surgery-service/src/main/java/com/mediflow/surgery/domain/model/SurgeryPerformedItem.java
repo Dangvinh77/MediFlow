@@ -17,9 +17,18 @@ public record SurgeryPerformedItem(
                 || quantity == null || quantity.signum() <= 0) {
             throw invalid("SURGERY_PERFORMED_ITEM_INVALID");
         }
+        // Preserve the same value in owned NUMERIC(19,4) storage and the Billing fact.
+        // Normalize only insignificant zeroes; never round a clinical quantity to fit storage.
+        try {
+            quantity = quantity.stripTrailingZeros();
+        } catch (ArithmeticException unsupportedScale) {
+            throw invalid("SURGERY_PERFORMED_ITEM_INVALID");
+        }
+        if (quantity.scale() > 4 || (long) quantity.precision() - quantity.scale() > 15) {
+            throw invalid("SURGERY_PERFORMED_ITEM_INVALID");
+        }
         itemCode = itemCode.trim();
         priceCode = priceCode.trim();
-        quantity = quantity.stripTrailingZeros();
     }
 
     private static boolean validCode(String value) {

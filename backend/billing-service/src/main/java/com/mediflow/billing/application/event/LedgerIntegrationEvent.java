@@ -8,6 +8,10 @@ import java.util.UUID;
 /** Immutable producer bytes are stored by the outbox adapter, never rebuilt on replay. */
 public record LedgerIntegrationEvent(UUID eventId, String eventType, int version, Instant occurredAt,
                                      String correlationId, String producer, Object payload) {
+    public record SurgeryPaymentRequestPayload(UUID invoiceId, UUID paymentRequestId, UUID accountId,
+            UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId, String purpose,
+            UUID surgeryCaseId, UUID admissionId, BigDecimal totalAmount, String currency,
+            Instant createdAt, Instant expiresAt) { }
     public record PaymentCompletedPayload(UUID transactionId, UUID invoiceId, UUID paymentRequestId,
             UUID accountId, UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,
             String classification, BigDecimal totalAmount, String currency, String paymentMethod,

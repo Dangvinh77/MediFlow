@@ -9,19 +9,21 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.report.application.dto.command.carefinance.CareFinanceEventMetadata;
 import com.mediflow.report.application.dto.command.carefinance.DecodedCareFinanceEvent;
 import com.mediflow.report.messaging.consumer.ReportEventValidationException;
+import com.mediflow.report.application.port.out.CareFinanceWirePort;
 
 /**
- * Offline V2 decoder harness. It is deliberately not attached to Rabbit routing; only contracts
- * with a source ID and producer fixed by current canonical contracts are accepted here.
+ * Shared strict V2 decoder. Individual intakes independently gate their approved routing subset;
+ * decoding a supported financial envelope does not authorize financial projection/publication.
  */
 @Component
-public class CareFinanceEnvelopeDecoder {
+public class CareFinanceEnvelopeDecoder implements CareFinanceWirePort {
 
     private static final Map<String, SourceContract> SOURCE_CONTRACTS = Map.ofEntries(
             Map.entry("payment.completed", new SourceContract("billing-service", "transactionId")),
@@ -44,11 +46,16 @@ public class CareFinanceEnvelopeDecoder {
     private final ObjectMapper objectMapper;
 
     public CareFinanceEnvelopeDecoder(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        this.objectMapper = objectMapper.copy().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     }
 
+    @Override
     public DecodedCareFinanceEvent decode(String routingKey, byte[] body) {
         try {
+            if (body == null || body.length == 0 || body.length > 1_048_576) {
+                throw invalid("Invalid care-finance envelope size");
+            }
             // Financial values must never pass through double. Keep the existing operational
             // representation stable: V11 hashes historical normalized payloads, not raw bytes.
             boolean financial = "payment.completed".equals(routingKey) || "payment.refunded".equals(routingKey)
@@ -85,6 +92,7 @@ public class CareFinanceEnvelopeDecoder {
             UUID eventId = requiredUuid(root, "eventId");
             Instant occurredAt = requiredInstant(root, "occurredAt");
             String correlationId = requiredText(root, "correlationId");
+            if (correlationId.length() > 120) throw invalid("Correlation identity is too long");
             JsonNode payloadNode = root.get("payload");
             if (payloadNode == null || !payloadNode.isObject()) {
                 throw invalid("payload must be a JSON object");
@@ -119,7 +127,10 @@ public class CareFinanceEnvelopeDecoder {
 
     private static UUID requiredUuid(JsonNode node, String field) {
         try {
-            return UUID.fromString(requiredText(node, field));
+            String text = requiredText(node, field);
+            UUID value = UUID.fromString(text);
+            if (!value.toString().equals(text)) throw new IllegalArgumentException("Noncanonical UUID");
+            return value;
         } catch (IllegalArgumentException exception) {
             throw new ReportEventValidationException(field + " must be a UUID", exception);
         }

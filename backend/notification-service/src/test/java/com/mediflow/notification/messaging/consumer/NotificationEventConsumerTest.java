@@ -39,6 +39,51 @@ class NotificationEventConsumerTest {
             new NotificationEventConsumer(sendNotificationUseCase, new NotificationTemplates(), objectMapper);
 
     @Test
+    void invoiceCreated_readsActualBillingFixture_asPrivateRequestNotReceipt() throws Exception {
+        byte[] body = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/invoice.created.json"));
+        consumer.onMessage(new Message(body, propertiesFor(RabbitConfig.RK_INVOICE_CREATED)));
+        var source = objectMapper.readTree(body);
+        verify(sendNotificationUseCase).handleEvent(argThat(t ->
+                t.eventId().toString().equals(source.path("eventId").asText())
+                        && t.patientId().toString().equals(source.path("patientId").asText())
+                        && t.routingKey().equals("invoice.created") && t.email() == null && t.phone() == null
+                        && t.title().equals("Yêu cầu thanh toán")
+                        && t.content().contains(source.path("invoiceId").asText())
+                        && t.content().contains("30") && t.content().contains("không phải biên nhận")));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"eventId", "occurredAt", "invoiceId", "patientId", "correlationId", "totalAmount"})
+    void invoiceCreated_missingRequiredFact_rejectsWithoutEffect(String field) throws Exception {
+        var root = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(java.nio.file.Files.readAllBytes(
+                java.nio.file.Path.of("../billing-service/src/test/resources/contracts/invoice.created.json")));
+        root.remove(field);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> consumer.onMessage(messageFor("invoice.created", root)))
+                .isInstanceOf(org.springframework.amqp.AmqpRejectAndDontRequeueException.class);
+        verifyNoInteractions(sendNotificationUseCase);
+    }
+
+    @Test
+    void invoiceCreated_versionedFact_neverDowngradesToLegacyRequest() throws Exception {
+        byte[] body = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-admission.json"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> consumer.onMessage(
+                new Message(body, propertiesFor("invoice.created"))))
+                .isInstanceOf(org.springframework.amqp.AmqpRejectAndDontRequeueException.class);
+        verifyNoInteractions(sendNotificationUseCase);
+    }
+
+    @Test
+    void currentTopology_hasInvoiceRequestBinding() {
+        var config = new RabbitConfig();
+        var keys = config.notificationQueueBindings(config.notificationQueue(), config.mediflowEventsExchange())
+                .getDeclarablesByType(org.springframework.amqp.core.Binding.class).stream()
+                .map(org.springframework.amqp.core.Binding::getRoutingKey).toList();
+        org.assertj.core.api.Assertions.assertThat(keys).hasSize(12).contains("invoice.created", "admission.started", "surgery.cancelled");
+    }
+
+    @Test
     void patientCreated_buildsTriggerWithEmailAndPhoneFromPayload() throws Exception {
         UUID patientId = UUID.randomUUID();
         PatientCreatedPayload payload = new PatientCreatedPayload(

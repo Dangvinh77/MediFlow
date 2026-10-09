@@ -111,6 +111,22 @@ class SurgeryLifecycleApiTest {
         doThrow(new com.mediflow.surgery.application.exception.UpstreamUnavailableException("private")).when(starting).start(any());
         request("start","DOCTOR",BODY).andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.error.code").value("SURGERY_UPSTREAM_UNAVAILABLE"));
     }
+    @ParameterizedTest
+    @ValueSource(strings={"0.00001","1.00001","999999999999999.99999","1000000000000000","1E15","1E-20"})
+    void completion_quantityWouldRoundOrOverflow_rejectedBeforeUseCase(String quantity) throws Exception {
+        request("complete","DOCTOR",COMPLETE.replace("\"quantity\":0.5","\"quantity\":"+quantity))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        verifyNoInteractions(completion);
+    }
+    @ParameterizedTest
+    @ValueSource(strings={"0.0001","999999999999999.9999","1E14"})
+    void completion_exactStorageBoundary_preservesRequestedQuantity(String quantity) throws Exception {
+        when(completion.complete(any())).thenReturn(outcome("COMPLETED",List.of()));
+        request("complete","DOCTOR",COMPLETE.replace("\"quantity\":0.5","\"quantity\":"+quantity))
+                .andExpect(status().isOk());
+        verify(completion).complete(argThat(command -> command.performedItems().getFirst().quantity()
+                .compareTo(new java.math.BigDecimal(quantity))==0));
+    }
     private org.springframework.test.web.servlet.ResultActions request(String suffix,String role,String content) throws Exception {
         return mvc.perform(post(path(suffix)).header("Authorization","Bearer "+token(role)).header("Idempotency-Key","api-test")
                 .contentType(MediaType.APPLICATION_JSON).content(content));

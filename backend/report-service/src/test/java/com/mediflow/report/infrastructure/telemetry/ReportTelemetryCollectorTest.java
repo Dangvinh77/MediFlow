@@ -114,6 +114,8 @@ class ReportTelemetryCollectorTest {
     @Test
     void failureLog_containsNoExceptionOrPayload() {
         var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ReportTelemetryCollector.class);
+        var previousLevel = logger.getLevel();
+        logger.setLevel(ch.qos.logback.classic.Level.WARN);
         var logs = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
         logs.start(); logger.addAppender(logs);
         try {
@@ -123,7 +125,7 @@ class ReportTelemetryCollectorTest {
                 assertThat(event.getFormattedMessage()).doesNotContain("private", "secret", "patientId", "token");
                 assertThat(event.getThrowableProxy()).isNull();
             });
-        } finally { logger.detachAppender(logs); logs.stop(); }
+        } finally { logger.detachAppender(logs); logs.stop(); logger.setLevel(previousLevel); }
     }
 
     @Test

@@ -13,6 +13,10 @@ import com.mediflow.report.application.mapper.BillingCashReceiptMapper;
 /** Infrastructure wiring for report-specific runtime configuration. */
 @Configuration
 public class ReportConfiguration {
+    @Bean
+    com.mediflow.report.application.mapper.BillingCashRefundMapper billingCashRefundMapper(ZoneId reportZoneId) {
+        return new com.mediflow.report.application.mapper.BillingCashRefundMapper(reportZoneId);
+    }
 
     @Bean
     BillingCashReceiptMapper billingCashReceiptMapper(ZoneId reportZoneId) {

@@ -108,6 +108,99 @@ class CarePrescriptionCreationServiceTest {
         assertThatThrownBy(() -> service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "a"))).hasMessageContaining("expiry");
         verifyNoInteractions(prescriptions, slips, capture);
     }
+    @Test void create_contextCheckedPinsExactRecordAndDoesNotChangeHeldPriceOrReceiptBehavior() {
+        UUID record = UUID.randomUUID();
+        var command = withRecord(record);
+        assertThat(service.createCare(key, command, context(record))).isEqualTo(resultId);
+        verify(prescriptions).save(argThat(p -> record.equals(p.getRecordId()) && patient.equals(p.getPatientId())));
+        verify(capture).capture(eq(resultId), any(UUID.class), eq(EventType.CREATED), eq("context"));
+    }
+    @Test void create_midnightDuringReservationReadRechecksEveryDrugBeforeWriting() {
+        when(clock.instant()).thenReturn(Instant.parse("2027-01-01T23:59:59Z"));
+        when(reservations.findReservedByDrug(drugId)).thenAnswer(call -> {
+            when(clock.instant()).thenReturn(Instant.parse("2027-01-02T00:00:01Z"));
+            return List.of();
+        });
+        assertThatThrownBy(() -> service.createCare(key, command(doctor, CareContext.OUTPATIENT, 2, "midnight")))
+                .hasMessageContaining("expiry");
+        verifyNoInteractions(prescriptions, slips, capture);
+        verify(reservations, never()).save(any());
+        verify(receipts, never()).complete(any(), any());
+    }
+    @Test void create_contextWrongPatientRejectsBeforeReceiptReplayOrStockLock() {
+        UUID record = UUID.randomUUID();
+        var wrong = new OutpatientPrescriptionContextPort.Observation(true, record, UUID.randomUUID(), doctor.staffId(), department,
+                "OUTPATIENT_VISIT", episode, "OPEN", null, now);
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), wrong))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
+        verifyNoInteractions(receipts, drugs, prescriptions, slips, reservations, capture);
+    }
+    @Test void create_contextExpiresDuringStockLockWaitRejectsBeforeAnyStockOrOutboxEffect() {
+        UUID record = UUID.randomUUID();
+        when(drugs.findByIdForUpdate(drugId)).thenAnswer(call -> {
+            when(clock.instant()).thenReturn(now.plusSeconds(31));
+            return Optional.of(Drug.restore(drugId, "Server name", null, "tablet", new BigDecimal("50.00"),
+                    5, LocalDate.of(2027, 1, 1), null, 1, now, now));
+        });
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), context(record)))
+                .isInstanceOf(com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException.class);
+        verifyNoInteractions(prescriptions, slips, reservations, capture); verify(receipts, never()).complete(any(), any());
+    }
+    @Test void create_contextRequiredOverloadDoesNotFallBackToUnverifiedKernel() {
+        assertThatThrownBy(() -> service.createCare(key, withRecord(UUID.randomUUID()), null));
+        verifyNoInteractions(receipts, drugs, prescriptions, slips, reservations, capture);
+    }
+    @Test void create_contextExpiresDuringReceiptReplayWaitCannotReturnOldPrescription() {
+        UUID record = UUID.randomUUID();
+        when(receipts.claim(eq(key), eq(doctor.accountId()), anyString())).thenAnswer(call -> {
+            when(clock.instant()).thenReturn(now.plusSeconds(31));
+            return Optional.of(resultId);
+        });
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), context(record)))
+                .isInstanceOf(com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException.class);
+        verifyNoInteractions(drugs, prescriptions, slips, reservations, capture);
+    }
+    private CreatePrescriptionCommand withRecord(UUID record) {
+        var c = command(doctor, CareContext.OUTPATIENT, 2, "context"); var r = c.request();
+        return new CreatePrescriptionCommand(new CreatePrescriptionRequest(record, r.patientId(), r.doctorId(), r.departmentId(),
+                r.prescribedDate(), r.lines(), 1, r.careContext(), r.careEpisodeType(), r.careEpisodeId(), null, r.priceCode()), c.actor(), c.correlationId());
+    }
+    @Test void create_identityCheckedWriterRequiresBothProofs() {
+        assertThatThrownBy(() -> service.createCare(key, withRecord(UUID.randomUUID()), null, identity()));
+        assertThatThrownBy(() -> service.createCare(key, withRecord(UUID.randomUUID()), context(UUID.randomUUID()), null));
+        verifyNoInteractions(receipts, drugs, prescriptions, reservations, slips, capture);
+    }
+    @Test void create_identityExpiresDuringReceiptReplayWaitDeniesEvenWhenClinicalProofIsFresh() {
+        var record = UUID.randomUUID();
+        when(receipts.claim(eq(key), eq(doctor.accountId()), anyString())).thenAnswer(call -> {
+            when(clock.instant()).thenReturn(now.plusSeconds(10)); return Optional.of(resultId);
+        });
+        var oldIdentity = new PrescriptionIdentityPort.Observation(patient, true, doctor.staffId(), true, true,
+                department, department, true, now.minusSeconds(25));
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), context(record), oldIdentity))
+                .isInstanceOf(com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException.class);
+        verifyNoInteractions(drugs, prescriptions, slips, reservations, capture);
+    }
+    @Test void create_identityExpiresDuringStockLockDeniesBeforeReservationOrHeldWrite() {
+        var record = UUID.randomUUID();
+        when(drugs.findByIdForUpdate(drugId)).thenAnswer(call -> {
+            when(clock.instant()).thenReturn(now.plusSeconds(10));
+            return Optional.of(Drug.restore(drugId, "Server name", null, "tablet", new BigDecimal("50.00"),
+                    5, LocalDate.of(2027, 1, 1), null, 1, now, now));
+        });
+        var oldIdentity = new PrescriptionIdentityPort.Observation(patient, true, doctor.staffId(), true, true,
+                department, department, true, now.minusSeconds(25));
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), context(record), oldIdentity))
+                .isInstanceOf(com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException.class);
+        verifyNoInteractions(prescriptions, slips, reservations, capture);
+    }
+    private PrescriptionIdentityPort.Observation identity() {
+        return new PrescriptionIdentityPort.Observation(patient, true, doctor.staffId(), true, true, department, department, true, now);
+    }
+    private OutpatientPrescriptionContextPort.Observation context(UUID record) {
+        return new OutpatientPrescriptionContextPort.Observation(true, record, patient, doctor.staffId(), department,
+                "OUTPATIENT_VISIT", episode, "OPEN", null, now);
+    }
     private CreatePrescriptionCommand command(ActorIdentity actor, CareContext context, int quantity, String correlation) {
         return new CreatePrescriptionCommand(new CreatePrescriptionRequest(null, patient, doctor.staffId(), department,
                 LocalDate.of(2026, 10, 2), List.of(new PrescriptionLineRequest(drugId, quantity, "Daily")), 1, context,

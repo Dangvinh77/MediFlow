@@ -47,6 +47,10 @@ mediflow:
       enabled: ${MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED:false}
     ledger:
       enabled: ${MEDIFLOW_BILLING_LEDGER_ENABLED:false}
+    refunds:
+      enabled: ${MEDIFLOW_BILLING_REFUNDS_ENABLED:false}
+    surgery-charge-consumer:
+      enabled: ${MEDIFLOW_BILLING_SURGERY_CHARGE_CONSUMER_ENABLED:false}
     rabbit:
       retry:
         max-attempts: ${MEDIFLOW_BILLING_RABBIT_RETRY_MAX_ATTEMPTS:3}

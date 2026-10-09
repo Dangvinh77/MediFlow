@@ -10,6 +10,20 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 
 ## Status
 
+2026-10-09 identity follow-up: `MEDIFLOW_PHARMACY_IDENTITY_ENABLED` AND care-finance-v2
+(both default false) register real Patient and Organization preflight reads. The internal
+context-checked caller requires them and rechecks both identity/context after receipt/stock waits.
+Confirmed missing/ineligible identities reject; failed/malformed reads are unavailable. This is
+necessary descriptive evidence, not an order/license grant. Public V1 and held rows stay closed.
+Expiry and proof timestamps are re-evaluated after reservation reads, including crossing midnight.
+[Verification and remaining V2 work](../../docs/superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
+2026-10-09: opt-in Clinical context transport and internal context-checked creation now match
+exact record/patient/prescriber/department/episode and recheck freshness after receipt/stock lock
+waits. Calls are service-authenticated and outside mutation transactions, with absence distinct
+from outage. This is necessary relationship evidence only; public V1 remains fail-closed and
+HELD rows remain blocked. [Canonical contract](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
+
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. The
 transactional outbox is enabled for durable event delivery; cross-service E2E gates remain before release.
@@ -135,6 +149,34 @@ Reservation TTL defaults to 24 hours and is configurable with
 `MEDIFLOW_PHARMACY_RESERVATION_TTL` (ISO-8601 duration, for example `PT24H`).
 
 ## Tests
+
+### Packaged distributed-flow acceptance
+
+The owned `distributed-acceptance` profile starts current Pharmacy/Billing/Report/Notification
+JVMs, four separate PostgreSQL databases and RabbitMQ. It creates prescriptions and payments
+through authenticated HTTP only; it does not seed/query service databases or fake Billing facts.
+It tests duplicate delivery, Report JVM outage/catch-up and broker outage/producer JVM recovery.
+Notification is needed to receive the mandatory `invoice.created` predecessor.
+This is CURRENT V0 acceptance, not V1/admission activation, Gateway or a complete finance rollout.
+
+```powershell
+mvn -pl backend/pharmacy-service,backend/billing-service,backend/report-service,backend/notification-service -am -DskipTests package
+mvn -f backend/pharmacy-service/pom.xml -Pdistributed-acceptance verify
+```
+
+See [scope, priority and evidence](../../docs/superpowers/plans/2026-10-08-huy-distributed-flow-priority.md).
+
+### Default-off admission integrations (2026-10-08)
+
+With care-finance-v2 also enabled, `MEDIFLOW_PHARMACY_ADMISSION_CONSUMER_ENABLED` opts into the
+private durable admission lifecycle queue; `MEDIFLOW_PHARMACY_ADMISSION_AUTHORITY_ENABLED`
+independently registers the current-admission Inpatient read adapter. Both default false.
+The queue commits immutable exact lifecycle evidence only, never automatic stock/medication effects.
+The lookup uses a short-lived Pharmacy service credential, Eureka, bounded timeouts/circuit breaker
+and strict identity/correlation/freshness validation; failure is unavailable, not confirmed absence.
+No REST call is allowed within a mutation transaction. Neither path opens public V1 admission
+commands or held outbox delivery, and current placement/order authority remains an activation gate.
+See [current evidence and limitations](../../docs/superpowers/plans/2026-10-08-huy-ready-task-completion.md).
 
 ```bash
 mvn -pl backend/pharmacy-service test        # unit (domain + application, no Spring)

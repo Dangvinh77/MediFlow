@@ -18,6 +18,10 @@ public class AdmissionReportFactMapper {
             throw new IllegalArgumentException("Only canonical Inpatient start/administrative-close facts are supported");
         }
         var payload = event.payload();
+        for (String field : java.util.List.of("sourceRevision", "revision", "supersedes", "supersedesId",
+                "supersedesEventId", "originalEventId", "replacementOf", "correctionOf", "correctedAt")) {
+            if (payload.containsKey(field)) throw new IllegalArgumentException("Admission corrections require a versioned source contract");
+        }
         UUID admissionId = requiredUuid(payload, "admissionId");
         if (!metadata.sourceId().equals(admissionId)) throw new IllegalArgumentException("Admission source identity differs");
         UUID patientId = requiredUuid(payload, "patientId");
@@ -40,7 +44,12 @@ public class AdmissionReportFactMapper {
         }
         return value;
     }
-    private static UUID requiredUuid(Map<String, Object> payload, String field) { return UUID.fromString(text(payload, field)); }
+    private static UUID requiredUuid(Map<String, Object> payload, String field) {
+        String value = text(payload, field);
+        UUID id = UUID.fromString(value);
+        if (!id.toString().equals(value)) throw new IllegalArgumentException("Canonical " + field + " is required");
+        return id;
+    }
     private static UUID optionalUuid(Map<String, Object> payload, String field) {
         return payload.get(field) == null ? null : requiredUuid(payload, field);
     }

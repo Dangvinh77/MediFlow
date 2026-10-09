@@ -11,21 +11,30 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.core.JsonParser;
+import com.mediflow.pharmacy.application.port.out.AdmissionLifecycleWirePort;
 import com.mediflow.pharmacy.application.dto.command.AdmissionLifecycleCommand;
 import com.mediflow.pharmacy.domain.model.AdmissionLifecycleFact;
 import com.mediflow.pharmacy.domain.model.AdmissionLifecycleFact.Kind;
 
-/** Offline decoder of existing Inpatient V1 bytes. Deliberately not a Rabbit listener. */
+/** Shared strict decoder for offline evidence and the separately gated lifecycle intake. */
 @Component
-public class AdmissionLifecycleDecoder {
+public class AdmissionLifecycleDecoder implements AdmissionLifecycleWirePort {
     private final ObjectMapper mapper;
 
     public AdmissionLifecycleDecoder(ObjectMapper mapper) {
-        this.mapper = mapper.copy().enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+        this.mapper = mapper.copy().enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     }
 
+    @Override
     public AdmissionLifecycleCommand decode(String routingKey, byte[] body) {
         try {
+            if (routingKey == null || body == null || body.length == 0 || body.length > 1_048_576) {
+                throw new IllegalArgumentException("Admission message size/routing is invalid");
+            }
             JsonNode root = mapper.readTree(body);
             if (root == null || !root.isObject() || !routingKey.equals(text(root, "eventType"))
                     || !"inpatient-service".equals(text(root, "producer"))) {
@@ -38,7 +47,9 @@ public class AdmissionLifecycleDecoder {
             }
             UUID eventId = uuid(root, "eventId");
             Instant.parse(text(root, "occurredAt"));
-            text(root, "correlationId");
+            if (text(root, "correlationId").length() > 120) {
+                throw new IllegalArgumentException("Correlation identity is too long");
+            }
             JsonNode payload = root.get("payload");
             if (payload == null || !payload.isObject()) {
                 throw new IllegalArgumentException("Admission payload is required");
@@ -100,7 +111,10 @@ public class AdmissionLifecycleDecoder {
     }
 
     private static UUID uuid(JsonNode node, String field) {
-        return UUID.fromString(text(node, field));
+        String value = text(node, field);
+        UUID parsed = UUID.fromString(value);
+        if (!parsed.toString().equals(value)) throw new IllegalArgumentException("Noncanonical " + field);
+        return parsed;
     }
 
     private static UUID optionalUuid(JsonNode node, String field) {

@@ -14,7 +14,36 @@ Includes admission/outpatient, planned/performed quantity changes, unknown price
 delivery transport tests. Names/version are settled; catalogue pricing and consumer effects remain
 Billing-owned. V7 rows stay HELD, with no live referral/creation caller or V1 dispatcher enabled.
 
-## Implemented routes — 2026-10-05
+## Pre-op mutation HTTP — 2026-10-07 (default OFF)
+
+Business + `mediflow.surgery.preop.api.enabled` gates are mandatory and default false.
+Enabling both without a real `SurgeryPreopAuthorityPort` fails startup; no provider or positive
+medical/legal policy default is installed. ADMIN/DOCTOR/NURSE need signed account AND staff identity,
+including ADMIN. Every attempt, including receipt replay, obtains fresh authority.
+
+- PUT `/{id}/checklist`: `checklistItemId`, nonnegative `expectedCaseRevision`,
+  `expectedSnapshotRevision`, `expectedItemRevision`, `status`, optional `evidenceReferenceId` /
+  nonnegative `evidenceRevision`. SATISFIED requires both evidence fields; PENDING forbids evidence;
+  a revision always requires a reference. NOT_APPLICABLE remains denied until policy is approved.
+- POST `/{id}/consents`: nonnegative `expectedCaseRevision`, `consentType` (SURGERY/ANESTHESIA),
+  `signerId`, `signerType` (PATIENT/GUARDIAN/AUTHORIZED_REPRESENTATIVE), required `evidenceDocumentId`.
+  These are untrusted references, not proof of signer/witness/guardian/care relationship authority.
+
+Unknown fields are rejected. `Idempotency-Key` is mandatory, nonblank, max 160 characters.
+Checklist returns 200; new consent 201 + relative Location, authorized replay 200 + same Location.
+Data is the existing command receipt, not current clinical permission. Recorder comes from JWT;
+recording time comes from the kernel Clock, not caller-supplied timestamps.
+Remote preflight suspends caller transactions. Proof binds exact case/request/patient/department/
+episode/procedure/current revision, intent/key and recorder; locked context is re-read. Missing,
+wrong, future, more-than-30-second-old or expired proof fails closed (503). Proof is checked again
+after kernel/resource waits before commit. Child/audit/receipt/invalidation/exact release/V7 HELD
+writes remain atomic. Observation freshness is not a clinical TTL or distributed source lease.
+No revoke mapping is added: its legal roles/policy remain unresolved.
+
+This is a direct-service LOCAL slice, not source policy, Gateway or downstream acceptance. No
+migrations/outbound bytes/producer activation changed. [Execution ledger](../../docs/superpowers/plans/2026-10-07-surgery-preop-api-batch.md).
+
+## Implemented routes — 2026-10-07
 
 | Method/path beneath `/api/v1/surgery/cases` | Roles | Behavior |
 |---|---|---|
@@ -162,6 +191,21 @@ durable **denial** outcome, rather than throw an exception that undoes invalidat
 the exact room/staff booking set and rejects other cases still IN_USE despite planned end time.
 COMPLETE stores one immutable result, distinct performed lines, history, receipt and exact
 resource release in one transaction. Same-key replay keeps the original result/time.
+Performed quantities fit the existing `NUMERIC(19,4)` exactly: at most 15 integer and 4 significant
+fractional digits. Domain rejects overflow/rounding instead of letting PostgreSQL change the value;
+HTTP validates 15/4 digits before the use case. Surgery still never calculates a price.
+
+### Owned workflow verification follow-up — 2026-10-07
+
+The new `SurgeryHttpWorkflowPostgresTest` connects create/preop/checklist/two consents/draft/
+READY/finalize/START/COMPLETE and pre-start cancellation through real HTTP and the owned PostgreSQL
+adapters. Only approved-template/exact-grant prerequisites use owned ports; source authority/Clock
+are test-only doubles. It covers appointment-backed, walk-in and admission identities, terminal
+receipt/Location replay, changed-result conflict, missing consent/current finance denial,
+scheduled correction/new draft revision and HELD failure rollback/retry. These assertions are
+**not yet DB-verified** while Docker is unavailable; no shared/Gateway/live-delivery acceptance is
+claimed. Framework-free cross-command tests complement, not replace, that database evidence.
+[Selection and fresh verification](../../docs/superpowers/plans/2026-10-07-surgery-workflow-batch.md).
 
 Gated POST paths: `/{id}/readiness/evaluate`, `/{id}/schedule/finalize`, `/{id}/start`, `/{id}/complete`
 under `/api/v1/surgery/cases`. ADMIN/DOCTOR may use clinical commands; finalize also permits MANAGER.

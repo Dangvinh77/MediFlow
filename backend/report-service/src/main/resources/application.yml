@@ -43,6 +43,14 @@ mediflow:
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   report:
     zone-id: ${MEDIFLOW_REPORT_ZONE_ID:Asia/Bangkok}
+    operational-consumer:
+      enabled: ${MEDIFLOW_REPORT_OPERATIONAL_CONSUMER_ENABLED:false}
+    cash-receipt-consumer:
+      enabled: ${MEDIFLOW_REPORT_CASH_RECEIPT_CONSUMER_ENABLED:false}
+    cash-refund-consumer:
+      enabled: ${MEDIFLOW_REPORT_CASH_REFUND_CONSUMER_ENABLED:false}
+      recovery-delay-ms: ${MEDIFLOW_REPORT_CASH_REFUND_RECOVERY_DELAY_MS:5000}
+      recovery-initial-delay-ms: ${MEDIFLOW_REPORT_CASH_REFUND_RECOVERY_INITIAL_DELAY_MS:5000}
     telemetry:
       enabled: ${MEDIFLOW_REPORT_TELEMETRY_ENABLED:false}
       sample-interval-ms: ${MEDIFLOW_REPORT_TELEMETRY_SAMPLE_INTERVAL_MS:30000}

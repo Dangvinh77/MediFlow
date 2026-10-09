@@ -40,7 +40,7 @@ service port directly instead of Gateway.
 - current: `medicalrecord.created`, `appointment.status.changed`, `lab.result.created`,
   `prescription.created`, pharmacy saga completion/failure;
 - target: `lab.request.created`, `admission.deposit.requested`, `admission.started`,
-  `discharge.medically.approved`, `surgery.requested`, `surgery.completed`, `surgery.cancelled`.
+  `discharge.medically.approved`, `surgery.case.created`, `surgery.completed`, `surgery.cancelled`.
 
 **Publish:**
 
@@ -68,6 +68,24 @@ are authoritative in [SURGERY-BILLING](../../handoffs/care-finance/CONTRACT-SURG
 This user-scoped implementation is performed on both sides, not deferred to Lộc. Other charge,
 refund and settlement writers remain implementation tasks; lookup does not claim them delivered.
 
+### Opt-in Surgery planned-charge issuer (2026-10-08)
+
+The opt-in strict handler accepts actual Surgery `surgery.case.created` V1, never the upstream
+referral as a charge command. It requires ledger and surgery-charge-consumer gates, both false by
+default. V9 adds immutable delivery/source/item receipts and widens quantity to NUMERIC(19,4);
+master's V7 reconciliation and V8 refund migrations are unchanged. The existing `billing.q`
+dispatcher selects exactly one creation handler, never both: enabled uses this issuer, disabled
+preserves master's charge-only path. No competing queue/listener or failure fallback is registered.
+Claim, exact-episode account, catalog-derived charge snapshots, selected SURGERY request/target and
+held V1 invoice fact commit atomically. Matching replay does not re-price; changed source conflicts.
+Unknown catalog/zero-total policy cases reject. One episode can span generating departments while
+preserving the account department used by cash receipts. There is no public arbitrary-charge API.
+Actual payment then produces an exact-purpose clearance usable by the internal current-authority
+lookup; performed reconciliation, refunds/settlement and cutover stay separate.
+Canonical invoice fixtures are read directly by Notification; its new private notice is a request,
+not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence is recorded in
+[cross-service closure](../../superpowers/plans/2026-10-08-cross-service-closure.md).
+
 - Mandatory: [`CONTRACT-CARE-BILLING-01`](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md),
   [`CONTRACT-SURGERY-BILLING-01`](../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md) and
   [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
@@ -78,6 +96,38 @@ refund and settlement writers remain implementation tasks; lookup does not claim
   owner cannot update in the same PR, keep the registry status blocked and retain compatibility.
 
 ## Acceptance gates
+
+### Opt-in pre-start cancellation adjustment (2026-10-08)
+
+The issuer gates now select strict `surgery.cancelled` on the single billing.q dispatcher.
+V10 durable early cancellation, immutable source/delivery dedupe, exact-context checks and
+case/account/charge locks commit voided charges, cancelled exact requests, revoked grants and
+original-only refund-due evidence. Cancellation does NOT execute or fabricate a completed refund.
+ADMIN/CASHIER can read the remaining due through the gated surgery-cancellations endpoint and
+record actual returned money through the existing refund command. Read amounts reflect linked
+refund allocations; narrative is not retained/exposed. Known invalid facts reject; invalid early
+facts quarantine without poisoning later issuance. Replays never reopen or reprice.
+Gateway and all false/held defaults are unchanged. Full performed finance, START fencing and
+production cutover remain open. Canonical semantics are in SURGERY-BILLING-01.
+
+### CURRENT outpatient fill redelivery (2026-10-08)
+
+The existing invoice-by-prescription row lock serializes completion. A new delivery ID for an
+already COMPLETED prescription records the delivery marker with no invoice/fee/payment mutation;
+the domain state machine is not relaxed. Both original and repeat fills must match invoice patient
+and numeric total, otherwise `BILLING_PRESCRIPTION_FILL_CONFLICT` rejects without a marker. This is
+a completion hint, not a stored fingerprint of every dispensing item; Report independently checks
+its immutable projection source. REFUNDED and other invalid transitions remain rejected.
+
+### Standalone completed-refund slice — 2026-10-08
+
+Ledger + refund flags gate signed ADMIN/CASHIER recording of completed CASH/TRANSFER refunds.
+V8 preserves originals and appends local reason evidence; idempotency/account/original locking
+bounds cumulative refunds/reversals and reverses only the original installment's allocations.
+Unsatisfied grants revoke locally with the held fact. Exact replay is no-effect after account
+closure; new CLOSED/SETTLED refunds or allocated-deposit policy gaps reject. No provider
+instruction, Surgery cancellation reconciliation, supersession or distributed START fence.
+Full PG/Rabbit module 314/314. [Canonical wire and both consumers](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#completed-refund-fact--v1-paymentrefunded-2026-10-08).
 
 ### Current additive ledger payment slice (2026-10-05)
 

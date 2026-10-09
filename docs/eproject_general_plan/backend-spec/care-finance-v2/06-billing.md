@@ -18,6 +18,20 @@ settlement/recognition and live cutover remain unimplemented. See CARE-BILLING-0
 
 ## 1. Sources and boundary
 
+**Implemented follow-up 2026-10-08:** V9 planned Surgery issuance and V8 completed-refund
+recording now exist. Refund/own-allocation reversals/local grant revocation commit atomically
+with held payment.refunded; no bank execution or automatic cancellation. Earlier missing
+writers are superseded, not performed reconciliation, distributed revocation/supersession,
+top-up/settlement or full finance acceptance.
+[Producer-byte PG/Rabbit evidence](../../../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
+V10 now adds strict pre-start cancellation adjustment/early recovery and original-only refund-due
+evidence. Actual returned money still uses the cashier refund command; cancellation emits no cash
+receipt. The compatibility paid cancellation path rejects rather than fabricating a completed refund.
+Completion uses case/account/charge locks and exact grouped quantities; replay does not reprice.
+Full performed monetary adjustment/request accounting and START fencing remain open, as recorded
+in SURGERY-BILLING-01. Master's V7 reconciliation checksum is unchanged.
+
 **Implemented current-clearance lookup (2026-10-06):** independently gated service-only SURGERY
 lookup verifies current ledger/net payment/charge/target context, revocation and exclusive expiry.
 Surgery supplies the matching strict Feign consumer and internal lifecycle integration. The additive
@@ -465,3 +479,20 @@ serve as fallback identifiers.
 
 Done means ledger equations, idempotency, concurrency, refunds, settlement, DLQ and role matrices
 pass, and no service uses a generic payment fact as unrelated operational authorization.
+
+## Implementation follow-up — 2026-10-08
+
+V9 is additive Surgery planned-charge/request issuance; preserve released V4/V5/V6/V7 checksums.
+It widens CHARGE quantity to NUMERIC(19,4), preserving exact Surgery producer quantities, and adds
+delivery/source/item provenance. The existing configured catalogue is used with immutable price
+snapshots; unknown/invalid codes and zero-total requests reject, never default to paid/free.
+One selected SURGERY request and held V1 invoice fact commit with charges and source receipts.
+Same episode reuses the patient account across generating departments; individual charges retain
+their source department. Matched replay preserves original IDs/prices after catalogue or account
+changes. The authoritative issuer does not expose a public arbitrary-charge endpoint. Payment,
+allocation and current clearance lookup are exercised from actual issued rows with PG/Rabbit/HTTP;
+Notification accepts the same producer invoice fixtures. Defaults remain off and V6 holds all V1
+delivery. Performed reconciliation, refund/cancellation, deposit/top-up and settlement remain open.
+This follow-up corrects the historical subscription list above: planned charges consume
+`surgery.case.created`; upstream `surgery.requested` is referral only. See SURGERY-BILLING-01 and
+[verification](../../../superpowers/plans/2026-10-08-cross-service-closure.md).

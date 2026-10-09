@@ -7,6 +7,13 @@ lại kết quả. Nó không sở hữu dữ liệu nghiệp vụ cốt lõi n�
 
 Đây **không phải một khoa phòng** — nó là kênh kỹ thuật. Đừng trình bày nó như một phòng ban.
 
+**Additive CURRENT compatibility, 2026-10-08:** the six-key baseline below is extended to seven
+keys by flat V0 `invoice.created` in the same queue/consumer. Its private IN_APP template is an
+unpaid payment request, not a receipt or clinical permission. This closes Billing's mandatory
+invoice outbox `NO_ROUTE` predecessor. Exact fixture, validation and V1 cutover limits are canonical
+in [CARE-PROJECTIONS](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#held-surgery-payment-request-fact--v1-invoicecreated)
+and [Notification service](../../ai/services/notification.md#current-outpatient-invoice-compatibility-2026-10-08).
+
 ## 1. Lược đồ — `V1__init.sql`
 
 ```sql

@@ -83,6 +83,31 @@ as public human routes.
 HTTP 404 or `exists=false` means confirmed absence only. Timeout, circuit-open, 5xx and malformed
 envelopes map to upstream unavailable; consumer must not turn them into “not found”.
 
+### Pharmacy necessary identity preflight — 2026-10-09
+
+The independently default-off `care-finance-v2 AND pharmacy.identity.enabled` consumer reads Patient
+`/exists` and Organization's generic staff and department `/lookup` endpoints before any receipt or
+stock transaction. It supplies current descriptive facts to the internal context-checked creation
+caller: exact patient existence, active DOCTOR job, matching active department. It does not derive
+prescribing permission from `eligibleTeamRoles`, replace the separate doctor-eligibility endpoint,
+or assert a license/medication order. Patient/Organization production code is unchanged.
+
+Canonical IDs, explicit boolean/null shapes, bounded strict JSON and header/envelope correlation
+are validated. Confirmed missing/ineligible facts reject the command; HTTP failure (including 404),
+malformed envelopes and circuit-open are unavailable. The explicit `exists=false` shape is required
+for confirmed absence in this consumer. No failure falls back to an unverified writer.
+
+`checkedAt` is the local **start** of the three remote reads, not an invented producer observation or
+revision. Age <=30s / future skew <=5s are necessary bounds, rechecked after network calls and
+mutation-lock waits, including replay. This is not a state lease across services. Short-lived
+Pharmacy SYSTEM JWTs carry no human identity claims. The checked caller requires both Clinical
+context and current identity ports/proofs; a missing provider prevents startup when it is enabled.
+
+Patient and generic staff consumer tests read existing producer fixture files. The department reply
+is a local contract example, not a new producer-approved fixture or clinical-policy approval. Full
+order/finance/admission authority and public/held activation remain open.
+[Verification](../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
 ## Additive Surgery authority V1 (2026-10-05)
 
 Organization owns the operating-room **reference catalog**, not occupancy/reservations (Surgery)

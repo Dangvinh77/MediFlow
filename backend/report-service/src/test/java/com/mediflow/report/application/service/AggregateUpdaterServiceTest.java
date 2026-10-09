@@ -31,6 +31,7 @@ import com.mediflow.report.application.port.out.DrugStatisticRepositoryPort;
 import com.mediflow.report.application.port.out.MonthlyRevenueReportRepositoryPort;
 import com.mediflow.report.application.port.out.PaymentContributionRepositoryPort;
 import com.mediflow.report.application.port.out.ProcessedEventPort;
+import com.mediflow.report.application.port.out.PrescriptionFillReceiptPort;
 import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.DailyVisitReport;
 import com.mediflow.report.domain.model.DrugStatistic;
@@ -55,13 +56,14 @@ class AggregateUpdaterServiceTest {
     @Mock private DrugStatisticRepositoryPort drugStatistics;
     @Mock private MonthlyRevenueReportRepositoryPort monthlyReports;
     @Mock private PaymentContributionRepositoryPort paymentContributions;
+    @Mock private PrescriptionFillReceiptPort prescriptionFills;
 
     private AggregateUpdaterService service;
 
     @BeforeEach
     void setUp() {
         service = new AggregateUpdaterService(processedEvents, dailyReports, drugStatistics,
-                monthlyReports, paymentContributions, ZoneId.of("Asia/Bangkok"));
+                monthlyReports, paymentContributions, prescriptionFills, ZoneId.of("Asia/Bangkok"));
     }
 
     @Test
@@ -108,6 +110,7 @@ class AggregateUpdaterServiceTest {
         DrugStatistic hospitalB = DrugStatistic.initialize(DRUG_B, "B", DATE, null);
         DrugStatistic departmentB = DrugStatistic.initialize(DRUG_B, "B", DATE, DEPARTMENT_ID);
         when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(true);
+        when(prescriptionFills.claim(eq(PRESCRIPTION_ID), any(), eq(DEPARTMENT_ID), any(), any())).thenReturn(true);
         when(dailyReports.findOrCreate(DATE, null)).thenReturn(hospital);
         when(dailyReports.findOrCreate(DATE, DEPARTMENT_ID)).thenReturn(department);
         when(drugStatistics.findOrCreate(DRUG_A, "A-new", DATE, null)).thenReturn(hospitalA);
@@ -222,11 +225,12 @@ class AggregateUpdaterServiceTest {
     @Test
     void occurredAt_usesConfiguredReportZoneAtDayBoundary() {
         AggregateUpdaterService utcService = new AggregateUpdaterService(processedEvents, dailyReports,
-                drugStatistics, monthlyReports, paymentContributions, ZoneId.of("UTC"));
+                drugStatistics, monthlyReports, paymentContributions, prescriptionFills, ZoneId.of("UTC"));
         LocalDate utcDate = LocalDate.of(2026, 9, 14);
         DailyVisitReport hospital = DailyVisitReport.initialize(utcDate, null);
         DailyVisitReport department = DailyVisitReport.initialize(utcDate, DEPARTMENT_ID);
         when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(true);
+        when(prescriptionFills.claim(eq(PRESCRIPTION_ID), any(), eq(DEPARTMENT_ID), any(), any())).thenReturn(true);
         when(dailyReports.findOrCreate(utcDate, null)).thenReturn(hospital);
         when(dailyReports.findOrCreate(utcDate, DEPARTMENT_ID)).thenReturn(department);
         when(drugStatistics.findOrCreate(DRUG_A, "A", utcDate, null))
@@ -239,6 +243,37 @@ class AggregateUpdaterServiceTest {
 
         verify(dailyReports).findOrCreate(utcDate, null);
         verify(dailyReports).findOrCreate(utcDate, DEPARTMENT_ID);
+    }
+
+    @Test
+    void prescription_newDeliveryOfAcceptedSource_doesNotTouchTotals() {
+        when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(true);
+        when(prescriptionFills.claim(eq(PRESCRIPTION_ID), any(), eq(DEPARTMENT_ID), any(), any())).thenReturn(false);
+
+        service.onPrescriptionFilled(EVENT_ID, Instant.now(), DEPARTMENT_ID, PRESCRIPTION_ID,
+                List.of(new DispensedItem(DRUG_A, "A", 1)));
+
+        verifyNoInteractions(dailyReports, drugStatistics, monthlyReports, paymentContributions);
+    }
+
+    @Test
+    void prescription_changedAcceptedSource_rejectsBeforeTotals() {
+        when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(true);
+        when(prescriptionFills.claim(eq(PRESCRIPTION_ID), any(), eq(DEPARTMENT_ID), any(), any()))
+                .thenThrow(new ReportRuleException("REPORT_PRESCRIPTION_FILL_CONFLICT", "Conflicting source"));
+
+        assertThatThrownBy(() -> service.onPrescriptionFilled(EVENT_ID, Instant.now(), DEPARTMENT_ID, PRESCRIPTION_ID,
+                List.of(new DispensedItem(DRUG_A, "A", 1))))
+                .isInstanceOf(ReportRuleException.class);
+        verifyNoInteractions(dailyReports, drugStatistics);
+    }
+
+    @Test
+    void prescription_sameDelivery_doesNotClaimSourceAgain() {
+        when(processedEvents.claimIfAbsent(EVENT_ID, "prescription.filled")).thenReturn(false);
+        service.onPrescriptionFilled(EVENT_ID, Instant.now(), DEPARTMENT_ID, PRESCRIPTION_ID,
+                List.of(new DispensedItem(DRUG_A, "A", 1)));
+        verifyNoInteractions(prescriptionFills, dailyReports, drugStatistics);
     }
 
     @Test

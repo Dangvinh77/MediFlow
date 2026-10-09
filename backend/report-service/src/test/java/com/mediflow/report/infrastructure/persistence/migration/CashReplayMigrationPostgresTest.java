@@ -57,7 +57,8 @@ class CashReplayMigrationPostgresTest {
         payload.put("completedAt", "2026-10-04T18:30:00.123456789Z");
         var accepted = new DecodedCareFinanceEvent(event.metadata(), payload);
         var live = new CashReceiptApplicationService(new CashReceiptPersistenceAdapter(jdbc, new ObjectMapper()),
-                new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")));
+                new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")),
+                org.mockito.Mockito.mock(com.mediflow.report.application.port.in.ApplyCashRefundUseCase.class));
         transactions.executeWithoutResult(status -> live.apply(accepted));
         // Literal sorted JSON is the pre-refactor V12 receipt fingerprint contract. This is not
         // calculated via the new codec, so accidental hash-format changes cannot pass both sides.

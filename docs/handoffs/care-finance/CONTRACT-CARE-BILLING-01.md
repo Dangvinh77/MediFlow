@@ -28,6 +28,52 @@ later. `recordId` can still be carried as a source/clinical reference.
 
 ## Operational facts that create charges
 
+### Additive Clinical prescription-context lookup — 2026-10-09
+
+Clinical owns `GET /api/v1/records/{recordId}/prescription-context`, independently gated by
+`mediflow.clinical.prescription-context-lookup.enabled=false`. It accepts only GET with a signed
+`sub=pharmacy-service`, `type=service`, `role=SYSTEM` JWT, mandatory iat/exp, positive lifetime
+at most 60 seconds and future-issued skew at most 5 seconds. Human access/refresh credentials
+and service credentials on human mutation endpoints are rejected. Gateway is unchanged/read-only;
+this is a direct internal lookup, not a newly approved public route.
+
+The standard envelope contains `{exists, recordId, patientId, doctorId, departmentId,
+careEpisodeType, careEpisodeId, recordStatus, disposition, observedAt}`. Clinical selects the
+episode from its own exact persisted relationship: appointment-backed uses appointmentId, walk-in
+uses recordId. It never selects by patient/latest record. IDs must be consistent with the joined
+appointment patient/department. A missing record returns 200 with echoed recordId, exists=false
+and every other business field null; DB failure/inconsistent relationship is 503
+`CLINICAL_CONTEXT_UNAVAILABLE`, not absence. One owned MVCC statement supplies both context and
+observation time; no diagnoses, symptoms, notes, contacts or invented source revision are returned.
+Required nonblank X-Correlation-Id (at most 120 characters, no controls) is echoed unchanged.
+
+Pharmacy's `care-finance-v2 AND pharmacy.clinical-context.enabled` gates, both false by default,
+select real Feign/Eureka, 2s connect/3s read timeouts, circuit breaker and unavailable fallback.
+The consumer reads original Clinical `contracts/prescription-context-v1/` fixture bytes, checks
+canonical IDs, strict booleans/state, duplicate JSON keys/trailing tokens, <=1MB payload,
+header/envelope correlation and <=30s observation age / <=5s future skew. 404/5xx/malformed
+responses never become absence. Network reads are rejected inside mutation transactions.
+
+The new internal context-checked creation caller performs remote preflight outside transactions,
+then calls the existing atomic stock/held writer. Doctor self/ADMIN delegation is checked before
+lookup and replay. The writer matches exact record/patient/doctor/department/episode before
+receipt claim, after receipt-lock waits (including replay), after all drug locks and before save.
+No failure falls back to the unverified internal kernel. Existing trusted low-level kernel,
+V0 endpoints and V1 public rejection remain unchanged.
+
+**These are necessary relationship facts, not complete medication permission.** OPEN or a
+PRESCRIPTION disposition is not a medication order; no status is treated as a current license,
+financial grant, inpatient placement or distributed lease. Current Patient existence and descriptive
+Organization active-job/department preflight are now required by the checked caller, independently
+gated and rechecked after receipt/stock waits. They do not replace doctor-eligibility/order policy.
+Authoritative order policy, Billing Rx request issuance/terminal adjustment and reviewed public/held
+activation remain separate gates. No public V1 endpoint or held event is enabled by this read.
+
+Same-byte producer/consumer tests and owned PostgreSQL verification:
+[execution evidence](../../superpowers/plans/2026-10-09-pharmacy-clinical-context.md).
+Identity follow-up: [canonical lookup boundary](CONTRACT-IDENTITY-LOOKUP-01.md#pharmacy-necessary-identity-preflight--2026-10-09)
+and [current verification](../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
 | Event | Producer | Billing action |
 |---|---|---|
 | `medicalrecord.created` or explicit exam-order fact | Clinical | create one EXAM charge for the outpatient episode |
@@ -35,7 +81,7 @@ later. `recordId` can still be carried as a source/clinical reference.
 | `prescription.created` | Pharmacy | create outpatient DRUG charge or admission charge according to `careContext` |
 | `admission.deposit.requested` | Inpatient | create a deposit payment request; deposit is liability until settlement |
 | `admission.started` / treatment facts | Inpatient | open/continue the admission billing account |
-| `surgery.requested` | Clinical/Inpatient | create planned procedure charges under `CONTRACT-SURGERY-BILLING-01` |
+| `surgery.case.created` | Surgery | create planned procedure charges under `CONTRACT-SURGERY-BILLING-01`; upstream `surgery.requested` is referral only |
 | `surgery.completed` | Surgery | reconcile performed items under `CONTRACT-SURGERY-BILLING-01` |
 
 Each fact uses the common envelope and an immutable producer-sourced `sourceId`. Redelivery must not
@@ -159,10 +205,43 @@ invent an account, charge, price or source relationship.
   constraint hold V1 events. Legacy dispatch/admin replay cannot release them. Legacy producers keep
   contract version 0 and their original flat bytes. Release requires a reviewed migration/cutover.
 
-Still open: authoritative event→account/charge/request issuance and versioned catalogue, refunds and
+Still open beyond the new Surgery planned-charge slice: other authoritative event→account/charge/request issuance and versioned catalogue, refunds and
 grant revocation/supersession, deposit top-up, final settlement/recognition, Report projections,
 live consumers and actual broker/Gateway multi-service E2E. This slice does not close the whole
 contract or approve operational activation.
+
+### Surgery planned-charge issuance follow-up — 2026-10-08
+
+**Refund follow-up (same date):** a separately gated ADMIN/CASHIER command records completed
+CASH/TRANSFER refunds against exact original payments. V8 local reason audit, bounded cumulative
+refunds/reversals, original-only allocation reversal and unsatisfied-grant revocation commit with a
+HELD `payment.refunded` V1. Originals/paid requests are not rewritten or reopened; replay is exact
+and no-effect even after account close. Fresh CLOSED/SETTLED-account refunds and allocated-deposit
+refunds requiring an unimplemented policy reject. This is not automatic Surgery cancellation,
+bank/provider execution, revocation-event publication, supersession, settlement or distributed fencing.
+Notification/Report both consume actual fixtures in real local PG/Rabbit tests. Wire and semantic
+limits are canonical in [CARE-PROJECTIONS](CONTRACT-CARE-PROJECTIONS-01.md#completed-refund-fact--v1-paymentrefunded-2026-10-08);
+[verification](../../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
+Actual Surgery case-created V1 bytes now drive the opt-in Billing issuer: immutable delivery/source
+receipt, exact episode/patient account, explicit catalogue price snapshots, grouped price charges
+with preserved item lines, one selected SURGERY request/target and held invoice-created V1 all commit
+together. V9 widens quantity without rounding; unknown/invalid prices and zero-total policy gaps reject.
+After the latest master merge, this opt-in issuer is selected by the existing `billing.q` dispatcher,
+not a parallel binding. With both flags enabled it replaces only the creation handler; disabled
+preserves the master's charge-only path. Strict-reader or storage failure never falls back to that
+other writer. Owner completion now uses the same case/account/charge locks and price-group
+quantity validation, without repricing exact reconciled replay. Strict cancellation now has durable
+early evidence and atomic void/cancel/revoke/refund-due adjustment; the compatibility paid path
+rejects instead of inventing a completed cash refund. Full performed selected-request/allocation
+reconciliation acceptance is not implied by these changes; details are in SURGERY-BILLING-01.
+Matching source under a new event ID replays the original request even after account close/catalog
+change. No HTTP caller can invent arbitrary charges, account/source references or paid status.
+Actual PostgreSQL/RabbitMQ payment flow and internal current-clearance HTTP lookup validate the
+issued request, not hand-seeded charge relationships. Notification reads the actual held invoice
+fixtures and persists a distinct private request notice. Both feature families stay default off;
+V6 still prevents released V1 outboxes. This does not complete performed reconciliation, refunds,
+deposit issuance/top-up, settlements, historical finance or whole-care E2E.
 
 ### Opt-in Surgery and Pharmacy grant intake — 2026-10-05
 

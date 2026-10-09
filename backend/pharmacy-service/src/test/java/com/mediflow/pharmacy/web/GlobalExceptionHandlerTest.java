@@ -14,6 +14,17 @@ class GlobalExceptionHandlerTest {
             new GlobalExceptionHandler();
 
     @Test
+    void admissionAuthorityUnavailable_returns503WithoutPayloadOrFalseAbsence() {
+        var response = handler.upstreamUnavailable(
+                new com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody().success()).isFalse();
+        assertThat(response.getBody().data()).isNull();
+        assertThat(response.getBody().error().code()).isEqualTo("PHARMACY_UPSTREAM_UNAVAILABLE");
+        assertThat(response.getBody().error().message()).isEqualTo("Admission authority is unavailable");
+    }
+
+    @Test
     void forbiddenOperation_returns403AndStableErrorCode() {
         PrescriptionCancellationForbiddenException exception =
                 new PrescriptionCancellationForbiddenException(

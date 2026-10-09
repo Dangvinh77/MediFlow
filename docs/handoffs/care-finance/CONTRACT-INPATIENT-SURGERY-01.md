@@ -122,6 +122,15 @@ authorized by this lookup. `sourceRecordId` is the admission referral's exact so
 substitute for any Surgery request. Consumers compare exact admission/patient/department IDs and
 may not claim that this proves the independently missing surgery-referral relationship.
 
+Pharmacy's independently gated consumer-side read adapter is now implemented (2026-10-08), with
+SYSTEM service credential, exact correlation/identity and strict source row revision (including 0).
+It matches Surgery's <=30-second observation age / <=5-second future-skew boundary, bounded
+timeouts, circuit breaker and unavailable fallback. It refuses a call inside a mutation transaction;
+the necessary exact patient/department/current-state check must be repeated after lock waits.
+It does not supply order/prescriber/current-placement permission or activate public admission
+commands. Actual fixture-over-HTTP evidence and remaining gates are in
+[Huy's follow-up](../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+
 Fresh request-time REST is not a distributed lease: Surgery/Pharmacy must revalidate at their own
 mutation boundary and retain local revision/audit fences. A draft lookup cannot authorize a future
 start/dispense. Surgery accepts observations at most 30 seconds old with at most 5 seconds future

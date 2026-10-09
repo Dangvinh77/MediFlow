@@ -1,5 +1,11 @@
 # Huy — execution batch of 50 existing work items
 
+Latest follow-up 2026-10-08: [completed-refund implementation/evidence](2026-10-08-billing-refund-closure.md)
+adds actual Billing/Notification/Report acceptance under the user override. It does not close the
+remaining Surgery/Pharmacy IDs in this fixed selection or create new global tasks. Existing clinical
+acceptance is refined by the [official-source Surgery design](../../architecture/surgery-safety-policy-research-2026-10-08.md);
+research references are not a production authority provider or clinical activation approval.
+
 Date: 2026-10-05. Baseline: master `3103fa1` plus the preserved, uncommitted cross-service work.
 Source: [active plan](2026-09-25-huy-surgery-pharmacy-report.md). This is an execution ledger, not a replacement plan or 50 newly invented subtasks.
 
@@ -8,6 +14,33 @@ Scope: all 42 outstanding non-overlapping Surgery items and 8 Pharmacy items. Pa
 Completion rule: implementation, required producer/consumer compatibility, actual discovered tests, and evidence in the active plan. Flags remain off by default. Module tests and HTTP stubs are not actual multi-service acceptance. Clinical/legal qualifications and prices are authoritative configured data, never guessed or seeded in production.
 
 ## Fixed selection — 18/50 accepted locally, 32 remaining
+
+Latest follow-up 2026-10-08: all previous pre-op/workflow local execution checks are now actually
+verified (15+14 HTTP/PG cases), full clean Surgery **908/908 PASS**. Pharmacy admission intake and
+current-state lookup, plus Report seven-key operational/evidence intake, are implemented behind
+separate default-off gates. Pharmacy full clean **484/484 PASS**, Report **458/458 PASS**; Inpatient existing selected suites
+read-only **45/45 PASS** include event-first registration recovery over RabbitMQ. Parent full
+source/clinical/publication acceptance stays open; counts are not reduced by counting these local
+checkpoints as entire global IDs. Current evidence: [ready-task follow-up](2026-10-08-huy-ready-task-completion.md).
+The older Docker-blocked paragraphs below describe 2026-10-07 attempts, not current availability.
+
+Owned HTTP workflow follow-up 2026-10-07: ten checkpoints selected from S-07.6/S-02.6/S-05.5/
+S-07.5 now have source coverage across creation-to-completion, all pre-start cancel states,
+original terminal replay and failure/recovery boundaries. Found and corrected performed quantity
+rounding/overflow before owned NUMERIC(19,4) storage; no migration/wire change. Real PG execution
+is blocked on Docker initialization, so no full parent is closed and counts remain unchanged.
+Clean selected domain/application/API/configuration/architecture regression **561/561 PASS**,
+45 fresh reports, zero failure/error/skip. New 14 HTTP/PG + previous 15 pre-op PG cases remain
+unexecuted after Testcontainers setup failure; no full-module claim.
+Current verification/status: [workflow batch](2026-10-07-surgery-workflow-batch.md).
+
+Pre-op HTTP follow-up 2026-10-07: ten LOCAL subtask checkpoints implement checklist/consent boundary
+plus mandatory authority/preflight/transaction fences and tests. These decompose S-05.1.2/S-05.2.2/
+S-02.3/S-07.6 and preserve S-04.6 conventions. No whole clinical/legal contract closure or global
+ID count reduction is claimed: fixed selection 18/50, global backlog 62 remain. Clean focused
+114/114 pass (7 fresh reports); 9/10 LOCAL checkpoints accepted, PG/full-module verification blocked
+by Docker startup failure at dockerInference. No current 740-test or full-module PASS claim. Actual fresh
+verification and status: [pre-op HTTP batch](2026-10-07-surgery-preop-api-batch.md).
 
 Creation HTTP follow-up 2026-10-07: ten LOCAL implementation/verification checks decompose remaining
 S-04.1/S-04.4/S-02.3/S-02.4/S-07.6/X-01.7 work. No new global IDs or whole joint-contract closure

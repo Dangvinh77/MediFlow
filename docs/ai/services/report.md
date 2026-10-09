@@ -82,6 +82,17 @@ Ràng buộc DB: `ck_month` — `month BETWEEN 1 AND 12`. `total_revenue >= 0` l
 
 ### `PAYMENT_CONTRIBUTION` — contribution theo invoice
 
+**CURRENT prescription source hardening — 2026-10-08:** V16 adds
+`prescription_fill_receipt(prescription_id, fact_fingerprint, accepted_at)` for the existing
+single-fill V0 contract. New delivery IDs for the same accepted prescription cannot increment
+daily counts/drug quantities again. Exact business Instant, department, report zone and grouped
+drug/name/quantity proof are immutable; conflicting accepted source evidence rejects. The source
+receipt and delivery claim commit/rollback with both aggregate scopes, with database uniqueness
+serializing concurrent replicas. No patient/narrative/raw event data is retained.
+This does not change V1 wire/queues or create a replay archive. Existing historical totals cannot
+be used to infer prescription source identity: upgrade leaves V16 empty and historical completeness
+remains unverified. [Current distributed-flow batch](../../superpowers/plans/2026-10-08-huy-distributed-flow-priority.md).
+
 `invoice_id` UUID PK · `completed_event_id` UUID UNIQUE · `failed_event_id` UUID UNIQUE nullable ·
 `payment_date` DATE nullable · `department_id` UUID nullable · `amount` DECIMAL(15,2) nullable ·
 `status` (`PENDING_REVERSAL`, `APPLIED`, `REVERSED`) · timestamps. Bảng này cần thiết vì
@@ -314,6 +325,48 @@ V1 không có endpoint trả 404 cho dữ liệu thiếu: daily/monthly đều z
 
 ## 12. Care-finance projection đích
 
+**Opt-in gross-receipt intake — 2026-10-08:** `report.cash-receipts-v2.q`/DLQ accepts only
+`payment.completed`, behind `care-finance-v2 AND report.cash-receipt-consumer.enabled`, both
+default false. The shared strict decoder feeds the existing cash mapper/transactional V12 kernel;
+the receipt transaction ID, never invoice ID, is the immutable business identity. ACK follows commit;
+permanent malformed/conflict errors have no sensitive cause, storage errors have three attempts
+before retained-byte DLQ. Real PG/Rabbit checks include compatibility-listener coexistence,
+deposit isolation, exact decimals, conflicting/reused delivery rollback, recovery and finite V13
+rebuild. No recognition/refund/settlement mapping, financial API/publication, export approval or
+held-producer activation is inferred. [Current evidence](../../superpowers/plans/2026-10-08-report-cash-intake.md).
+
+**Opt-in operational intake — 2026-10-08:** separate `report.operational-v2.q`/DLQ and
+`care-finance-v2 AND report.operational-consumer.enabled` (defaults false). Exactly seven bindings:
+medicalrecord.completed, lab.result.created, prescription.filled, surgery.completed,
+surgery.cancelled, admission.started and admission.closed. Each approved revision-one operation
+passes its existing pure mapper and transactional journal/dedupe/two-scope kernel before ACK;
+admission facts originally called only the minimal pending/pairing kernel. The 2026-10-09 follow-up
+below adds the start counter; medical discharge, LOS and occupancy remain separate. Unknown
+version/revision or immutable source conflict rejects permanently; storage failure has bounded
+three-attempt retry and original-byte DLQ recovery. Strict shared parsing rejects duplicate/trailing
+JSON, noncanonical source/event UUID and unbounded body/correlation while preserving existing
+operational source hashes and exact financial decimal decoding. No payment/refund/settlement binding,
+legacy projection mutation, source-history approval, publication writer or read cutover is added.
+Actual producer-byte Rabbit/PG and finite rebuild evidence is in
+[the execution follow-up](../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+Earlier dated offline-only intake statements are history; missing finance/LOS/capacity/correction
+and full runtime publication remain open.
+
+**Admission start counter — 2026-10-09:** the existing opt-in operational receiver now joins exact
+start/close evidence validation and one `ADMISSIONS` contribution in the same local transaction.
+Only canonical `admission.started` counts: admission ID, implicit immutable-operation revision 1,
+start department, ADMISSION episode and `admittedAt` in the configured reporting zone. Same source
+with a new delivery ID is journaled but never counted twice; a changed source snapshot is rejected
+even when its KPI value is unchanged. Early close pairs only with the same patient/admission and
+does not reopen it. Hospital-scope failure rolls back admission evidence, delivery/source claims,
+journal and both scopes together. The minimal accepted journal supports the existing finite replay.
+
+`admission.closed` remains administrative evidence only: no discharge count, LOS, current bed,
+occupancy or medical time is inferred. Unsupported correction/revision markers are rejected before
+effects. Old evidence rows are not automatically backfilled: a newly received actual start must be
+revalidated. No new binding, publication, migration or public read activation is introduced.
+[Current verification](../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
 **Local telemetry 2026-10-07:** default-off, aggregate-only Report monitoring reads pending admission
 evidence, separate operational/cash replay inventories/progress/ages and legacy-unverified source
 hash counts with one bounded MVCC statement. V14 is index-only. Cached Micrometer meters never query
@@ -355,7 +408,8 @@ Immutable singleton revision-1 semantics, business times, duration rounding and 
 are explicit in [canonical projections](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 New V11 source-payload hash fence detects same-operation/new-event changes even when KPIs do not
 change, without retaining patient/narrative data. Existing redacted sources are LEGACY_UNVERIFIED;
-new delivery needs controlled source revalidation, not an inferred hash. Admission metric mapping,
+new delivery needs controlled source revalidation, not an inferred hash. Admission start metric mapping
+is implemented in the 2026-10-09 follow-up; other admission metrics,
 financial projections, clinical policy acceptance and live publication remain OPEN.
 
 V9 thêm offline minimal admission history và delivery fingerprint ledger. Actual start/close bytes
@@ -400,9 +454,27 @@ journal inputs bằng một INSERT SELECT, bounded batch/DB generation lock và 
 shared pure planner/codec và đối soát cả fact set lẫn department/hospital scopes. VERIFIED chỉ bằng
 tập manifest, không thay live read pointer. Unit/static và PG snapshot/race/rollback/reconcile pass.
 Financial pending, historical coverage/live catch-up/controlled publication/read cutover vẫn còn
-R-01.4–.7; Rabbit ACK không phải archive. Admission evidence pending không phải admission metric.
+R-01.4–.7; Rabbit ACK không phải archive. Pending close evidence alone is not an admission metric.
 
 ### Local accepted finite-snapshot queries — 2026-10-02
+
+**Paired accepted cash-state rebuild follow-up 2026-10-08:** V17/internal use case freezes receipt
+and refund manifests in one REPEATABLE READ snapshot and rebuilds isolated refund-day cash-out
+after its receipt generation verifies. Exact original/cumulative amount/classification/day are
+rechecked. PENDING/REJECTED remain explicit copied inventory, not newly retried live outcomes.
+Both scopes/progress are atomic and bidirectionally reconciled; old V13 gross-only runs remain
+unchanged. No financial API, publication, five-metric acceptance, source coverage or producer release.
+[Canonical boundary](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-paired-finite-accepted-cash-rebuild--v17-2026-10-08);
+[verification](../../superpowers/plans/2026-10-08-huy-master-sync-refund-replay.md).
+
+**Cash-refund follow-up 2026-10-08:** V15/default-off intake persist actual Billing refund
+bytes, exact local original receipts and refund-day cash-out scopes. Early facts remain pending;
+bounded recovery quarantines invalid early evidence without poisoning the original. Shared
+source locks bound cumulative amounts and evidence/two scopes are atomic. Gross receipts stay
+unchanged; classification and original date come from the receipt. This supersedes the absence
+of refund cash mapping only, not earned/liability reversal, settlement, full financial/refund
+replay or accepted publication. [Canonical behavior](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#completed-refund-fact--v1-paymentrefunded-2026-10-08);
+[verification](../../superpowers/plans/2026-10-08-billing-refund-closure.md).
 
 V10 adds empty `operational_report_publication`: exact date range, timezone, required metric set,
 accepted-coverage reference and generation ID. VERIFIED replay never creates publication. No

@@ -7,6 +7,13 @@
 
 ## Bounded context
 
+**Safety-policy research 2026-10-08:** use the
+[official WHO/Vietnam source design](../../architecture/surgery-safety-policy-research-2026-10-08.md).
+Existing pre-op readiness does not represent all intraoperative pauses. No full WHO catalogue
+seed into READY, universal staffing counts, login-role signer authority or clinical approval
+is inferred. Phased persistence/applicability and real source providers remain implementation
+work; clinical activation stays off.
+
 Owns surgery cases, indications/reference to request, pre-op checklist, consent, schedule, room/time,
 team assignments, readiness snapshots, result and state history.
 
@@ -105,6 +112,17 @@ default. Neither publishes business events. Billing/Inpatient event identity and
 remain open; other endpoints still require their own implementation-ready DTO/contract slices.
 
 ## Current implementation state — 2026-10-05
+
+### Pre-op mutation HTTP follow-up — 2026-10-07 (default OFF)
+
+Checklist PUT and consent-record POST have a separate default-off pre-op boundary, behind
+business + `mediflow.surgery.preop.api.enabled`. Its mandatory authority port has no production
+provider: role/staff identity alone never proves evidence, signer/guardian/witness or care relationship.
+Approval binds exact context/current revision and intent/recorder; locked context/freshness and a
+final before-commit proof check fence local waits. Atomic kernels retain audit, receipt replay,
+invalidation/exact release and HELD capture. No consent revoke mapping, N/A defaults, distributed
+lease or live delivery is added. Exact LOCAL scope:
+[pre-op API batch](../../superpowers/plans/2026-10-07-surgery-preop-api-batch.md).
 
 ### Creation HTTP follow-up — 2026-10-07 (default OFF)
 
@@ -249,6 +267,9 @@ locks, obtain Clock after waiting, and require exact pinned dependencies. Failed
 commits a denial with PREOP/audit/exact release; it is not a successful transition. START rejects
 foreign IN_USE resources and mismatched booking sets. COMPLETE stores result/items/history/receipt,
 exact release and a held intent atomically, with original-result replay and no implicit correction.
+Performed quantity must be exactly representable in the owned `NUMERIC(19,4)` column (15 integer,
+4 significant fractional digits); domain rejects overflow/rounding and HTTP validates 15/4 digits.
+No price calculation, migration or event-schema change is introduced by this consistency rule.
 
 Additive V6 `surgery_lifecycle_intent` is a PRIVATE HELD-only journal: no event routing, dispatcher
 or approved consumer may treat its bytes as a domain event. Production publishing gates do not

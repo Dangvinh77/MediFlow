@@ -10,7 +10,7 @@ import java.util.UUID;
 import com.mediflow.report.application.dto.command.carefinance.DecodedCareFinanceEvent;
 import com.mediflow.report.domain.model.CashReceipt;
 
-/** Offline acceptance of the two actual Billing ledger V1 receipt fixtures, not legacy invoices. */
+/** Acceptance of the two actual Billing ledger V1 receipt fixtures, never legacy invoice revenue. */
 public class BillingCashReceiptMapper {
     private final ZoneId reportZone;
 

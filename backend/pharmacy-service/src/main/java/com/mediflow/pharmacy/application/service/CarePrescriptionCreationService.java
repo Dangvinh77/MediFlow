@@ -28,7 +28,8 @@ import com.mediflow.pharmacy.domain.model.enums.CareContext;
 /** P-02.5: server price/name snapshots, stock reservations and held creation in one transaction. */
 @Service
 @Transactional
-public class CarePrescriptionCreationService implements CreateCarePrescriptionUseCase {
+public class CarePrescriptionCreationService implements CreateCarePrescriptionUseCase,
+        com.mediflow.pharmacy.application.port.in.CreateCarePrescriptionWithContextUseCase {
     private final CarePrescriptionCreationPort receipts;
     private final DrugRepositoryPort drugs;
     private final PrescriptionRepositoryPort prescriptions;
@@ -57,15 +58,39 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
 
     @Override
     public UUID createCare(UUID commandId, CreatePrescriptionCommand command) {
+        return createInternal(commandId, command, null, null);
+    }
+
+    @Override
+    public UUID createCare(UUID commandId, CreatePrescriptionCommand command, OutpatientPrescriptionContextPort.Observation context) {
+        if (context == null) throw invalid("Clinical context proof is required");
+        return createInternal(commandId, command, context, null);
+    }
+
+    @Override
+    public UUID createCare(UUID commandId, CreatePrescriptionCommand command, OutpatientPrescriptionContextPort.Observation context,
+            PrescriptionIdentityPort.Observation identities) {
+        if (context == null || identities == null) throw invalid("Clinical and identity proofs are required");
+        return createInternal(commandId, command, context, identities);
+    }
+
+    private UUID createInternal(UUID commandId, CreatePrescriptionCommand command, OutpatientPrescriptionContextPort.Observation context,
+            PrescriptionIdentityPort.Observation identities) {
         validate(commandId, command);
         var request = command.request();
+        requireContext(context, command, clock.instant());
+        requireIdentities(identities, command, clock.instant());
         // Authorization precedes receipt replay; correlation is delivery metadata, not business intent.
         var existing = receipts.claim(commandId, command.actor().accountId(), fingerprint(command));
+        requireContext(context, command, clock.instant()); // Receipt lock/replay can also wait.
+        requireIdentities(identities, command, clock.instant());
         if (existing.isPresent()) return existing.get();
         var requested = request.lines().stream().sorted(Comparator.comparing(PrescriptionLineRequest::drugId)).toList();
         var locked = requested.stream().map(line -> drugs.findByIdForUpdate(line.drugId())
                 .orElseThrow(() -> invalid("Requested drug is unavailable"))).toList();
         var now = clock.instant(); // All drug lock waits have completed.
+        requireContext(context, command, now);
+        requireIdentities(identities, command, now);
         LocalDate today = now.atZone(clock.getZone()).toLocalDate();
         if (request.prescribedDate().isAfter(today)) throw invalid("Prescription date cannot be in the future");
         var lines = new java.util.ArrayList<PrescriptionLine>();
@@ -80,6 +105,14 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
             if ((long) drug.getStockQuantity() - reserved < line.quantity()) throw invalid("Insufficient available stock");
             lines.add(PrescriptionLine.create(drug.getDrugId(), line.quantity(), drug.getPrice(), line.dosage(), drug.getDrugName()));
         }
+        now = clock.instant(); // Reservation reads/waits must not retain the earlier business date.
+        requireContext(context, command, now);
+        requireIdentities(identities, command, now);
+        today = now.atZone(clock.getZone()).toLocalDate();
+        if (request.prescribedDate().isAfter(today)) throw invalid("Prescription date cannot be in the future");
+        for (var drug : locked) {
+            if (drug.getExpiryDate().isBefore(today)) throw invalid("Drug identity/expiry is invalid");
+        }
         var prescription = prescriptions.save(Prescription.create(request.recordId(), request.patientId(), request.doctorId(),
                 request.departmentId(), request.prescribedDate(), lines, PrescriptionCareContext.v1(request.careContext(),
                         new CareEpisode(request.careEpisodeType(), request.careEpisodeId()), null, request.priceCode())));
@@ -92,7 +125,7 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
         return prescription.getPrescriptionId();
     }
 
-    private static void validate(UUID commandId, CreatePrescriptionCommand command) {
+    static void validate(UUID commandId, CreatePrescriptionCommand command) {
         if (commandId == null || command == null) throw invalid("Command identity is required");
         var request = command.request();
         var actor = command.actor();
@@ -113,6 +146,21 @@ public class CarePrescriptionCreationService implements CreateCarePrescriptionUs
                 || request.lines().stream().map(PrescriptionLineRequest::drugId).distinct().count() != request.lines().size()) {
             throw invalid("Positive, unique, bounded prescription lines are required");
         }
+    }
+
+    private static void requireContext(OutpatientPrescriptionContextPort.Observation context,
+            CreatePrescriptionCommand command, java.time.Instant at) {
+        if (context == null) return; // Existing internal kernel; never selected as a public V1 fallback.
+        var request = command.request();
+        context.requireExact(request.recordId(), request.patientId(), request.doctorId(), request.departmentId(),
+                request.careEpisodeId(), at);
+    }
+
+    private static void requireIdentities(PrescriptionIdentityPort.Observation identities, CreatePrescriptionCommand command,
+            java.time.Instant at) {
+        if (identities == null) return; // Trusted low-level kernels are not public fallback paths.
+        var request = command.request();
+        identities.requireExact(request.patientId(), request.doctorId(), request.departmentId(), at);
     }
 
     private static String fingerprint(CreatePrescriptionCommand command) {

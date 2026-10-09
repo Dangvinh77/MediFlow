@@ -20,7 +20,8 @@ import com.mediflow.report.infrastructure.messaging.carefinance.CareFinanceEnvel
 class CashReceiptApplicationServiceTest {
     private final CashReceiptStorePort store = mock(CashReceiptStorePort.class);
     private final BillingCashReceiptMapper mapper = new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok"));
-    private final CashReceiptApplicationService service = new CashReceiptApplicationService(store, mapper);
+    private final com.mediflow.report.application.port.in.ApplyCashRefundUseCase refunds = mock(com.mediflow.report.application.port.in.ApplyCashRefundUseCase.class);
+    private final CashReceiptApplicationService service = new CashReceiptApplicationService(store, mapper, refunds);
 
     @Test
     void apply_newReceipt_recordsBeforeBothScopesInStableOrder() throws Exception {

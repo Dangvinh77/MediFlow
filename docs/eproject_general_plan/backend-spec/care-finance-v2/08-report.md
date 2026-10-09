@@ -11,6 +11,13 @@ and durable replay remain gated by the canonical producer contracts
 
 ## 1. Sources and boundary
 
+**Cash-refund follow-up 2026-10-08:** actual V15 adds minimal completed-refund evidence
+and separate refund-day cash-out. Early delivery is durable PENDING; receipt/worker recovery
+is bounded. Exact original context/classification and cumulative amounts are verified under
+shared source locks. Gross inflows stay unchanged. This is not earned/liability reversal,
+settlement, full finance/refund replay or accepted read publication.
+[Migration/PG/Rabbit evidence](../../../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
 - [`CONTRACT-CARE-BILLING-01`](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
@@ -272,6 +279,15 @@ successful zero-valued report.
 
 ## 9. Replay contract
 
+Paired cash-state continuation 2026-10-08: V17 internal replay freezes a new V13 receipt manifest
+and V15 refund evidence/states in one REPEATABLE READ snapshot; lower-isolation callers fail closed.
+APPLIED cash-out is verified against frozen exact originals/cumulative amounts and rebuilt into
+isolated facts/two scopes, while PENDING/REJECTED remain copied inventory without live retry.
+Bounded row-fenced batches and bidirectional reconciliation preserve existing gross-only runs/live
+tables. This is finite accepted cash rebuilding, not historical decisions, recognition/liability
+release/settlement, live catch-up or public financial publication. Lasting semantics and tests are
+in [CARE-PROJECTIONS](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-paired-finite-accepted-cash-rebuild--v17-2026-10-08).
+
 **Local cash-only rebuild 2026-10-07:** V13 freezes the statement-visible committed V12 receipt
 set with exact minimal inputs and first-delivery/source/fact proof hashes. Internal 1..500 batch
 replay uses isolated generations, DB row locking, shared pure cash scope planning and atomic
@@ -362,6 +378,33 @@ and upgrade/shape tests remain VERIFY OPEN without Docker.
 | all fixtures deserialize | `careFinanceFixtures_roundTrip` |
 
 ## 11. Rollout and Definition of Done
+
+Cash intake follow-up 2026-10-08: the cash-only receipt kernel has a separate default-off two-gate
+broker adapter for actual Billing V1 service/deposit receipts. It preserves transaction/delivery
+identity, exact amounts, atomic scope writes and finite replay; legacy consumers reject the same
+V1 bytes instead of counting deposit revenue. Permanent conflicts go to a dedicated DLQ; database
+failure rolls back all evidence/effects through three attempts, then supports retained-byte replay.
+Recognition/deposit release/refund/settlement and full financial/read/publication/producer rollout
+remain unchanged target gates. [Current evidence](../../../superpowers/plans/2026-10-08-report-cash-intake.md).
+
+Local intake follow-up 2026-10-08: a dedicated seven-key operational/admission-evidence queue is
+implemented behind two independent default-off gates, with strict decoder, existing pure source
+mappers and transactional kernels. Actual producer-byte PG/Rabbit tests prove journal/two scopes,
+semantic duplicate/conflict, unsupported correction rejection, rollback/DLQ retained-byte replay
+and finite rebuild. Admission was evidence-only in this batch; the 2026-10-09 follow-up below adds
+start counting only. No financial
+intake, compatibility mutation, source history approval or accepted read publication is added.
+Full Report clean 458/458 PASS, 0 failure/error/skip. This supersedes dated offline-only intake and
+Docker-unavailable statements above, not the missing target metrics/full publication acceptance.
+Current evidence: [follow-up](../../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+
+Local start-count follow-up 2026-10-09: actual `admission.started` now maps the contract's immutable
+singleton revision 1 to one ADMISSIONS fact at admittedAt/start department/exact ADMISSION episode.
+Evidence/patient/chronology validation, claims, minimal journal and two scopes commit together.
+Duplicate/new delivery, early close, changed non-KPI source fields, second-scope rollback, replicas
+and finite replay are verified. Close itself remains evidence only: medical discharge, LOS,
+occupancy/capacity, finance and accepted publication are not inferred.
+[Current verification](../../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
 
 Create V2 projections and run parallel replay without changing CURRENT endpoints. Reconcile totals,
 then expose V2 endpoints. Done requires PostgreSQL concurrency tests, duplicate/reversal tests,
