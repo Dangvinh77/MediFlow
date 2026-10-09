@@ -58,13 +58,13 @@ public class StaffController {
                         @Valid @RequestBody CreateStaffRequest request) {
 
                 Staff staff = createStaffUseCase.execute(
-                                request.getFullName(),
-                                request.getDepartmentId(),
-                                request.getJobTitle(),
-                                request.getSpecialization(),
-                                request.getLicenseNumber(),
-                                request.getPhoneNumber(),
-                                request.getEmail());
+                                request.fullName(),
+                                request.departmentId(),
+                                request.jobTitle(),
+                                request.specialization(),
+                                request.licenseNumber(),
+                                request.phoneNumber(),
+                                request.email());
 
                 return ResponseEntity
                                 .created(URI.create("/api/v1/org/staff/" + staff.getStaffId()))
@@ -81,7 +81,7 @@ public class StaffController {
 
                 Staff staff = changeStaffDepartmentUseCase.execute(
                                 staffId,
-                                request.getNewDepartmentId());
+                                request.newDepartmentId());
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 StaffResponse.from(staff),
@@ -111,12 +111,12 @@ public class StaffController {
                         @Valid @RequestBody UpdateStaffRequest request) {
                 Staff staff = updateStaffUseCase.execute(
                                 staffId,
-                                request.getFullName(),
-                                request.getJobTitle(),
-                                request.getSpecialization(),
-                                request.getLicenseNumber(),
-                                request.getPhoneNumber(),
-                                request.getEmail());
+                                request.fullName(),
+                                request.jobTitle(),
+                                request.specialization(),
+                                request.licenseNumber(),
+                                request.phoneNumber(),
+                                request.email());
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 StaffResponse.from(staff),
