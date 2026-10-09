@@ -17,6 +17,7 @@ import { isUuid } from "@/lib/validation";
 import { inpatientApi, type AdmissionSearchParams } from "../api";
 import { admissionPriorityLabel, admissionStatusPresentation } from "../presentation";
 import type { AdmissionDTO, AdmissionStatus } from "../types";
+import { AdmissionCreateLink } from "./AdmissionCreateLink";
 
 const PAGE_SIZE = 20;
 const detailRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE", "CASHIER"];
@@ -117,7 +118,8 @@ export function AdmissionTable() {
 
   return (
     <section className="mt-6">
-      <div className="mb-5 flex justify-end">
+        <div className="mb-5 flex flex-wrap justify-end gap-3">
+          <AdmissionCreateLink role={role} />
         <Link href="/inpatient/beds" className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-muted">
           Danh mục giường
         </Link>
