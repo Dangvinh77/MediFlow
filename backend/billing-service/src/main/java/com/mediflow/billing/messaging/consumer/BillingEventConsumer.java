@@ -5,6 +5,8 @@ import java.io.IOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.billing.application.event.AppointmentStatusChangedEvent;
@@ -48,16 +50,34 @@ public class BillingEventConsumer {
     private final SagaCompensationUseCase sagaCompensationUseCase;
     private final SurgeryChargeUseCase surgeryChargeUseCase;
     private final ObjectMapper objectMapper;
+    private final SurgeryChargeConsumer plannedRequestConsumer;
+    private final SurgeryCancellationConsumer cancellationConsumer;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer, null);
+    }
+
+    @Autowired
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
         this.objectMapper = objectMapper;
+        this.plannedRequestConsumer = plannedRequestConsumer;
+        this.cancellationConsumer = cancellationConsumer;
     }
 
-    @RabbitListener(queues = RabbitConfig.QUEUE)
+    @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
     public void onMessage(Message message) throws IOException {
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         byte[] body = message.getBody();
@@ -78,12 +98,18 @@ public class BillingEventConsumer {
                     sagaCompensationUseCase.onPrescriptionCancelled(read(body, PrescriptionCancelledEvent.class));
             case RabbitConfig.RK_PRESCRIPTION_EXPIRED ->
                     sagaCompensationUseCase.onPrescriptionExpired(read(body, PrescriptionExpiredEvent.class));
-            case RabbitConfig.RK_SURGERY_CASE_CREATED ->
-                    surgeryChargeUseCase.onSurgeryCaseCreated(read(body, SurgeryCaseCreatedEvent.class));
+            case RabbitConfig.RK_SURGERY_CASE_CREATED -> {
+                // One queue and exactly one writer. The opt-in issuer validates the original bytes,
+                // not a reserialized/partially decoded compatibility DTO. Never fall back on failure.
+                if (plannedRequestConsumer != null) plannedRequestConsumer.receive(message);
+                else surgeryChargeUseCase.onSurgeryCaseCreated(read(body, SurgeryCaseCreatedEvent.class));
+            }
             case RabbitConfig.RK_SURGERY_COMPLETED ->
                     surgeryChargeUseCase.onSurgeryCompleted(read(body, SurgeryCompletedEvent.class));
-            case RabbitConfig.RK_SURGERY_CANCELLED ->
-                    surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));
+            case RabbitConfig.RK_SURGERY_CANCELLED -> {
+                if (cancellationConsumer != null) cancellationConsumer.receive(message);
+                else surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));
+            }
             default -> throw new IllegalArgumentException(
                     "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
         }

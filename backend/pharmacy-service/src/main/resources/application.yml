@@ -38,6 +38,25 @@ spring:
     template:
       mandatory: true
 
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          pharmacyInpatientClient:
+            connectTimeout: 2000
+            readTimeout: 3000
+          pharmacyClinicalContextClient:
+            connectTimeout: 2000
+            readTimeout: 3000
+          pharmacyPatientIdentityClient:
+            connectTimeout: 2000
+            readTimeout: 3000
+          pharmacyOrganizationIdentityClient:
+            connectTimeout: 2000
+            readTimeout: 3000
+
 eureka:
   client:
     service-url:
@@ -50,6 +69,14 @@ mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   pharmacy:
+    identity:
+      enabled: ${MEDIFLOW_PHARMACY_IDENTITY_ENABLED:false}
+    clinical-context:
+      enabled: ${MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED:false}
+    admission-consumer:
+      enabled: ${MEDIFLOW_PHARMACY_ADMISSION_CONSUMER_ENABLED:false}
+    admission-authority:
+      enabled: ${MEDIFLOW_PHARMACY_ADMISSION_AUTHORITY_ENABLED:false}
     clearance-consumer:
       enabled: ${MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED:false}
     business-zone: ${MEDIFLOW_PHARMACY_BUSINESS_ZONE:Asia/Ho_Chi_Minh}

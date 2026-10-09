@@ -24,3 +24,21 @@ X-Correlation-ID: 9e6c524e-a2e0-4ca9-ac20-6c61f93ae091
   "paymentMethod": "CASH",
   "providerReference": null
 }
+
+### Implemented cashier-recorded refund (201), OFF unless BOTH ledger + refunds flags are true.
+### Gateway routing is not changed by this slice; verify its owner policy before calling via @host.
+### Completed CASH/TRANSFER recording only; no bank/provider instruction is issued.
+### Original payment/allocations are immutable; the refund appends linked reversal allocations.
+### Same key/actor/reason/method/amount replays. Settled/closed account requires explicit reopen policy.
+@originalTransactionId = replace-with-real-completed-payment-uuid
+POST {{host}}/api/v1/billing/transactions/{{originalTransactionId}}/refunds
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-ID: 9e6c524e-a2e0-4ca9-ac20-6c61f93ae091
+
+{
+  "idempotencyKey": "replace-with-real-cashier-refund-key",
+  "amount": 20.00,
+  "reason": "Approved cashier refund; internal audit only",
+  "paymentMethod": "CASH"
+}

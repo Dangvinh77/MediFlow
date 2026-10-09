@@ -21,6 +21,7 @@ import com.mediflow.billing.application.port.out.FeeRepositoryPort;
 import com.mediflow.billing.application.port.out.InvoiceRepositoryPort;
 import com.mediflow.billing.application.port.out.ProcessedEventPort;
 import com.mediflow.billing.domain.model.Fee;
+import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Invoice;
 import com.mediflow.billing.domain.model.SagaStatus;
 
@@ -120,6 +121,16 @@ public class SagaCompensationService implements SagaCompensationUseCase {
         }
 
         Invoice invoice = found.get();
+        if (!invoice.getPatientId().equals(e.patientId()) || e.totalAmount() == null
+                || invoice.getTotalAmount().compareTo(e.totalAmount()) != 0) {
+            throw new BillingRuleException("BILLING_PRESCRIPTION_FILL_CONFLICT", "Fill does not match its invoice");
+        }
+        // Same prescription under a new delivery ID: never reopen a terminal saga.
+        // The row lock serializes this with the original completion.
+        if (invoice.getSagaStatus() == SagaStatus.COMPLETED) {
+            processedEvent.markProcessed(e.eventId(), RK_PRESCRIPTION_FILLED);
+            return;
+        }
         invoice.transitionSaga(SagaStatus.COMPLETED);
         invoiceRepo.save(invoice);
 

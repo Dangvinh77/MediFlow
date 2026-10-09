@@ -28,7 +28,7 @@ class ReportTelemetryMigrationPostgresTest {
         String row = jdbc.queryForObject("SELECT row_to_json(g)::text FROM cash_replay_generation g", String.class);
         long tables = jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='public'", Long.class);
         Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                .locations("classpath:db/migration").load().migrate();
+                .locations("classpath:db/migration").target("14").load().migrate();
         assertThat(jdbc.queryForObject("SELECT row_to_json(g)::text FROM cash_replay_generation g", String.class)).isEqualTo(row);
         assertThat(jdbc.queryForObject("SELECT sum(visit_count) FROM daily_visit_report", Long.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='public'", Long.class)).isEqualTo(tables);

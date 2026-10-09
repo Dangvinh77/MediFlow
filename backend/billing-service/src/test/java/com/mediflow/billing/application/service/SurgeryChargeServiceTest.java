@@ -238,6 +238,52 @@ class SurgeryChargeServiceTest {
     }
 
     // ---- surgery.cancelled ----
+    @Test
+    void completed_twoDistinctItemsSharingPrice_reconcilesOneCombinedCharge() {
+        Charge planned = Charge.post(accountId, patientId, departmentId, "SURGERY", surgeryCaseId, "PRICE",
+                "Synthetic", BigDecimal.ONE, new BigDecimal("100"), now);
+        when(repository.findChargesBySource("SURGERY", surgeryCaseId)).thenReturn(List.of(planned));
+        when(priceCatalog.requireActive("PRICE", now)).thenReturn(new PriceSnapshot("Synthetic", new BigDecimal("100")));
+        service.onSurgeryCompleted(completed(UUID.randomUUID(), List.of(
+                new PerformedItem(UUID.randomUUID(),"A","PRICE",new BigDecimal("1.0001")),
+                new PerformedItem(UUID.randomUUID(),"B","PRICE",new BigDecimal("0.5")))));
+        verify(repository).updateCharge(any());
+        assertThat(planned.getQuantity()).isEqualByComparingTo("1.5001");
+        assertThat(planned.getGrossAmount()).isEqualByComparingTo("150.01");
+    }
+    @Test
+    void completed_exactResultReplay_doesNotRepriceWithChangedCatalog() {
+        UUID result = UUID.randomUUID();
+        Charge charge = Charge.post(accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"PRICE","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        charge.reconcilePerformed(result,BigDecimal.ONE,new BigDecimal("100"));
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(charge));
+        service.onSurgeryCompleted(completed(result,List.of(new PerformedItem(UUID.randomUUID(),"ITEM","PRICE",BigDecimal.ONE))));
+        verifyNoInteractions(priceCatalog);
+        assertThat(charge.getGrossAmount()).isEqualByComparingTo("100");
+    }
+    @Test
+    void completed_duplicateItemCodes_rejectsBeforeChargeEffects() {
+        Charge charge=Charge.post(accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"PRICE","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(charge));
+        assertThatThrownBy(() -> service.onSurgeryCompleted(completed(UUID.randomUUID(),List.of(
+                new PerformedItem(UUID.randomUUID(),"ITEM","PRICE",BigDecimal.ONE),
+                new PerformedItem(UUID.randomUUID(),"ITEM","PRICE",BigDecimal.ONE))))).isInstanceOf(BillingRuleException.class);
+        verify(repository,never()).updateCharge(any()); verifyNoInteractions(priceCatalog);
+    }
+    @Test
+    void completed_foreignPatient_rejectsBeforePriceLookupOrMutation() {
+        Charge charge=Charge.post(accountId,UUID.randomUUID(),departmentId,"SURGERY",surgeryCaseId,"PRICE","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(charge));
+        assertThatThrownBy(() -> service.onSurgeryCompleted(completed(UUID.randomUUID(),List.of(new PerformedItem(UUID.randomUUID(),"ITEM","PRICE",BigDecimal.ONE))))).isInstanceOf(BillingRuleException.class);
+        verify(repository,never()).updateCharge(any()); verifyNoInteractions(priceCatalog);
+    }
+    @Test
+    void completed_overPrecisionQuantity_rejectsWithoutStorageRounding() {
+        Charge charge=Charge.post(accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"PRICE","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(charge));
+        assertThatThrownBy(() -> service.onSurgeryCompleted(completed(UUID.randomUUID(),List.of(new PerformedItem(UUID.randomUUID(),"ITEM","PRICE",new BigDecimal("1.00001")))))).isInstanceOf(BillingRuleException.class);
+        verify(repository,never()).updateCharge(any()); verifyNoInteractions(priceCatalog);
+    }
 
     @Test
     void cancelled_unpaidCharge_isVoidedWithoutRefund() {
@@ -256,7 +302,7 @@ class SurgeryChargeServiceTest {
     }
 
     @Test
-    void cancelled_paidCharge_refundsAllocationAndVoidsCharge() {
+    void cancelled_paidCharge_rejectsWithoutFabricatingCompletedCashRefund() {
         Charge charge = Charge.post(accountId, patientId, departmentId, "SURGERY", surgeryCaseId, "PRICE",
                 "Phẫu thuật", BigDecimal.ONE, new BigDecimal("500000.00"), now);
         when(repository.findChargesBySource("SURGERY", surgeryCaseId)).thenReturn(List.of(charge));
@@ -267,27 +313,14 @@ class SurgeryChargeServiceTest {
         when(repository.refundTransactionExists(any())).thenReturn(false);
         when(repository.findAccountById(accountId)).thenReturn(Optional.of(account));
 
-        service.onSurgeryCancelled(cancelled());
-
-        ArgumentCaptor<PaymentTransaction> refundCaptor = ArgumentCaptor.forClass(PaymentTransaction.class);
-        verify(repository).saveRefund(refundCaptor.capture(), eq(charge.getChargeId()));
-        PaymentTransaction refund = refundCaptor.getValue();
-        assertThat(refund.getTransactionType()).isEqualTo(PaymentTransactionType.REFUND);
-        assertThat(refund.getOriginalTransactionId()).isEqualTo(originalTransactionId);
-        assertThat(refund.getAmount()).isEqualByComparingTo("500000.00");
-        assertThat(refund.isCompleted()).isTrue();
-
-        ArgumentCaptor<LedgerIntegrationEvent> eventCaptor = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
-        verify(events).appendHeld(eq(accountId), eventCaptor.capture());
-        assertThat(eventCaptor.getValue().eventType()).isEqualTo("payment.refunded");
-        assertThat(((PaymentRefundedPayload) eventCaptor.getValue().payload()).originalTransactionId())
-                .isEqualTo(originalTransactionId);
-
-        verify(repository).updateCharge(argThatVoided());
+        assertThatThrownBy(() -> service.onSurgeryCancelled(cancelled())).isInstanceOf(BillingRuleException.class)
+                .extracting(e -> ((BillingRuleException)e).getCode()).isEqualTo("BILLING_SURGERY_CANCELLATION_REQUIRES_ADJUSTMENT");
+        verify(repository,never()).saveRefund(any(),any()); verify(repository,never()).updateCharge(any());
+        verifyNoInteractions(events); verify(processedEvent,never()).markProcessed(any(),any());
     }
 
     @Test
-    void cancelled_refundAlreadyRecorded_isIdempotent() {
+    void cancelled_priorRefund_doesNotGuessACompletedRefundFromCancellation() {
         Charge charge = Charge.post(accountId, patientId, departmentId, "SURGERY", surgeryCaseId, "PRICE",
                 "Phẫu thuật", BigDecimal.ONE, new BigDecimal("500000.00"), now);
         when(repository.findChargesBySource("SURGERY", surgeryCaseId)).thenReturn(List.of(charge));
@@ -295,10 +328,32 @@ class SurgeryChargeServiceTest {
                 new ChargeAllocation(UUID.randomUUID(), new BigDecimal("500000.00"), UUID.randomUUID(), "VND", "CASH")));
         when(repository.refundTransactionExists(any())).thenReturn(true);
 
-        service.onSurgeryCancelled(cancelled());
+        assertThatThrownBy(() -> service.onSurgeryCancelled(cancelled())).isInstanceOf(BillingRuleException.class);
 
         verify(repository, never()).saveRefund(any(), any());
         verifyNoInteractions(events);
+    }
+
+    @Test void cancelled_missingCreation_rejectsWithoutTerminalProcessedMarker() {
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of());
+        assertThatThrownBy(() -> service.onSurgeryCancelled(cancelled())).isInstanceOf(BillingRuleException.class);
+        verify(processedEvent,never()).markProcessed(any(),any()); verifyNoInteractions(events);
+    }
+    @Test void cancelled_performedCharge_rejectsWithoutVoidingEarnedCare() {
+        var charge=Charge.post(accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"PRICE","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        charge.reconcilePerformed(UUID.randomUUID(),BigDecimal.ONE,new BigDecimal("100"));
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(charge));
+        assertThatThrownBy(() -> service.onSurgeryCancelled(cancelled())).isInstanceOf(BillingRuleException.class);
+        verify(repository,never()).updateCharge(any()); verifyNoInteractions(events);
+    }
+    @Test void cancelled_unpaidPrefixThenPaidCharge_deniesBeforeAnyVoid() {
+        var unpaid=Charge.post(accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"A","Synthetic",BigDecimal.ONE,new BigDecimal("100"),now);
+        var paid=Charge.restore(UUID.randomUUID(),accountId,patientId,departmentId,"SURGERY",surgeryCaseId,"B","Synthetic",BigDecimal.ONE,new BigDecimal("100"),new BigDecimal("100"),ChargeStatus.POSTED,null,null,now,now);
+        when(repository.findChargesBySource("SURGERY",surgeryCaseId)).thenReturn(List.of(unpaid,paid));
+        when(repository.findCompletedAllocations(null)).thenReturn(List.of());
+        when(repository.findCompletedAllocations(paid.getChargeId())).thenReturn(List.of(new ChargeAllocation(UUID.randomUUID(),new BigDecimal("100"),UUID.randomUUID(),"VND","CASH")));
+        assertThatThrownBy(() -> service.onSurgeryCancelled(cancelled())).isInstanceOf(BillingRuleException.class);
+        assertThat(unpaid.isPosted()).isTrue(); verify(repository,never()).updateCharge(any()); verifyNoInteractions(events);
     }
 
     @Test

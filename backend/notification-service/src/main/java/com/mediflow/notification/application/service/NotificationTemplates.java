@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 /**
- * Kho mẫu nội dung thông báo cho sáu sự kiện được tiêu thụ
+ * Templates for the current compatibility subscriptions, including unpaid invoice requests
  * (backend-spec/07-notification.md §8). Tiếng Việt, không chứa PII ngoài tên.
  *
  * <p>Dùng bởi {@code NotificationEventConsumer} (Phần 5/5): consumer dựng tiêu đề + nội dung từ
@@ -44,6 +44,10 @@ public class NotificationTemplates {
             case "payment.completed" -> Optional.of(new Rendered(
                     "Thanh toán thành công",
                     fill("Hóa đơn {maHoaDon} đã được thanh toán: {tongTien} VNĐ.", v)));
+            case "invoice.created" -> Optional.of(new Rendered(
+                    "Yêu cầu thanh toán",
+                    fill("Hóa đơn {invoiceId} được lập với số tiền {totalAmount} VNĐ. "
+                            + "Đây là yêu cầu thanh toán, không phải biên nhận đã trả tiền.", v)));
             case "payment.failed" -> Optional.of(new Rendered(
                     "Thanh toán không thành công",
                     fill("Hóa đơn {maHoaDon} gặp sự cố: {reason}.", v)));

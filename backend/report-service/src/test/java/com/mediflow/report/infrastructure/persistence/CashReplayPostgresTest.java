@@ -47,7 +47,9 @@ import com.mediflow.report.infrastructure.persistence.adapter.CashReplayPersiste
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CashReceiptApplicationService.class, CashReceiptPersistenceAdapter.class, CashReplayApplicationService.class,
-        CashReplayPersistenceAdapter.class, CashReplayPostgresTest.Config.class})
+        CashReplayPersistenceAdapter.class, CashReplayPostgresTest.Config.class,
+        com.mediflow.report.application.service.CashRefundApplicationService.class,
+        com.mediflow.report.infrastructure.persistence.adapter.CashRefundPersistenceAdapter.class})
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CashReplayPostgresTest {
@@ -329,6 +331,9 @@ class CashReplayPostgresTest {
 
     @TestConfiguration
     static class Config {
+        @Bean com.mediflow.report.application.mapper.BillingCashRefundMapper billingCashRefundMapper() {
+            return new com.mediflow.report.application.mapper.BillingCashRefundMapper(ZoneId.of("Asia/Bangkok"));
+        }
         @Bean ObjectMapper objectMapper() { return new ObjectMapper(); }
         @Bean BillingCashReceiptMapper billingCashReceiptMapper() { return new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")); }
     }

@@ -25,6 +25,13 @@
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
+### Internal Clinical -> Pharmacy context only; not a Gateway/human API or dispensing permission.
+### Requires MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED=true and a signed
+### sub=pharmacy-service/type=service/role=SYSTEM JWT with iat/exp and lifetime <=60s.
+GET http://localhost:8082/api/v1/records/{{recordId}}/prescription-context
+Authorization: Bearer {{pharmacyServiceToken}}
+X-Correlation-Id: 09000000-0000-0000-0000-000000000006
+
 # ============ LỊCH HẸN /api/v1/appointments ============
 
 ### Danh sách lịch hẹn theo khoa + ngày (phân trang)

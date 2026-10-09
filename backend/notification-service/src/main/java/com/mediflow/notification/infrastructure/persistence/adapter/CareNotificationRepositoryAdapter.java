@@ -52,4 +52,14 @@ public class CareNotificationRepositoryAdapter implements CareNotificationReposi
             throw new IllegalStateException("Cannot serialize notification delivery fact", exception);
         }
     }
+
+    @Override public void recordSuppressedInApp(CareNotificationIntent intent) {
+        jdbc.update("""
+                INSERT INTO NOTIFICATION(notification_id,patient_id,title,content,channel,status,failure_reason,
+                    template_key,source_event_id,source_event_type,source_id,correlation_id,sensitivity)
+                VALUES (?,?,?,?,'IN_APP','FAILED','SURGERY_REMINDER_SUPPRESSED',?,?,?,?,?,'PRIVATE_IN_APP_ONLY')
+                """, intent.notificationId(), intent.patientId(), intent.title(), intent.content(), intent.templateKey(),
+                intent.sourceEventId(), intent.sourceEventType(), intent.sourceId(), intent.correlationId());
+        // This is suppressed audit history, not a successful delivery. Never append notification.sent.
+    }
 }

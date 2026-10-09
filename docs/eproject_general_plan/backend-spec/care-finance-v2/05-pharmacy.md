@@ -315,6 +315,24 @@ Key errors: `PHARMACY_CARE_CONTEXT_INVALID` (422), `PHARMACY_ADMISSION_INACTIVE`
 
 ## 10. Rollout and Definition of Done
 
+Local checked-creation follow-up 2026-10-09: real Clinical relationship and independently gated
+Patient/Organization identity preflight now supply exact current descriptive facts before stock/
+receipt transactions. The checked caller requires both ports/proofs, revalidates after network/
+receipt/stock waits, and never falls back to the unverified kernel. Fresh drug expiry is also
+rechecked after reservation reads before writes. This is necessary evidence, not license/order
+permission, Billing Rx issuance, admission command authority or public/held activation.
+[Current verification](../../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
+Local transport/read follow-up 2026-10-08: separate default-off admission lifecycle queue now
+commits exact start/medical-discharge/close evidence before ACK, with PG/Rabbit dedupe, pending,
+listener-restart, conflict rollback, DLQ and retained-byte recovery proof. An independently gated
+Inpatient Feign read adapter validates service auth, exact IDs/correlation/row revision/freshness,
+has bounded timeouts/circuit breaker/unavailable fallback, and refuses network inside a mutation
+transaction. Necessary observation checks do not authorize order/prescriber/current placement.
+Public admission create/dispense remains closed; discharge/close-versus-stock race, terminal
+adjustment and reviewed held-delivery rollout remain open. Full Pharmacy clean 484/484 PASS,
+0 failure/error/skip. Current evidence: [follow-up](../../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+
 Add the columns/projections behind `mediflow.features.care-finance-v2=false`. Enable OUTPATIENT V2
 after Billing clearance fixtures pass; enable ADMISSION after Inpatient lifecycle fixtures pass.
 Done requires concurrency, duplicate delivery, DLQ, role and Docker flows for both contexts.

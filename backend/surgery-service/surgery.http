@@ -24,6 +24,16 @@
 # @procedureCode = approved-procedure-code
 # @plannedItemCode = approved-item-code
 # @priceCode = billing-catalogue-code
+# @readinessIdempotencyKey = unique-readiness-operation-key
+# @finalizeIdempotencyKey = unique-finalize-operation-key
+# @startIdempotencyKey = unique-start-operation-key
+# @completeIdempotencyKey = unique-complete-operation-key
+# @methodCode = approved-actual-method-code
+# @outcomeCode = approved-controlled-outcome-code
+# @performedItemId = unique-surgery-owned-performed-line-uuid
+# @performedItemCode = approved-actual-item-code
+# @actualStartAt = actual-performed-start-iso-instant
+# @actualEndAt = actual-performed-end-iso-instant
 
 ### Tạo ca — ADMIN/DOCTOR có signed staffId; API mặc định tắt, không phải bypass referral
 ### Cần BOTH business + MEDIFLOW_SURGERY_CREATION_API_ENABLED=true và real creation authority provider.
@@ -95,6 +105,40 @@ X-Correlation-Id: {{correlationId}}
   "expectedCaseRevision": {{caseRevision}}
 }
 
+### Checklist — ADMIN/DOCTOR/NURSE, signed staff; business + preop API gates OFF by default
+### Gateway acceptance and real authority provider pending; use exact pinned evidence references
+PUT {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/checklist
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: checklist-command-key
+X-Correlation-Id: {{correlationId}}
+
+{
+  "checklistItemId": "{{checklistItemId}}",
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedSnapshotRevision": {{checklistSnapshotRevision}},
+  "expectedItemRevision": {{checklistItemRevision}},
+  "status": "SATISFIED",
+  "evidenceReferenceId": "{{evidenceReferenceId}}",
+  "evidenceRevision": {{evidenceRevision}}
+}
+
+### Consent — same roles/gates/mandatory authority; new 201+Location, authorized replay 200
+### Signer/document inputs never establish legal authority; no consent revoke HTTP mapping
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/consents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: consent-command-key
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "consentType": "SURGERY",
+  "signerId": "{{signerId}}",
+  "signerType": "PATIENT",
+  "evidenceDocumentId": "{{evidenceDocumentId}}"
+}
+
 ### Hủy ca trước khi phẫu thuật bắt đầu — ADMIN/DOCTOR; replay cùng key trả lại kết quả gốc
 POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/cancel
 Authorization: Bearer {{token}}
@@ -105,4 +149,64 @@ X-Correlation-Id: {{correlationId}}
 {
   "expectedCaseRevision": {{caseRevision}},
   "reason": "Patient requested cancellation"
+}
+
+### Lifecycle API: mặc định OFF; cần business + mediflow.surgery.lifecycle.api.enabled và real use-case/authority beans.
+### Gateway policy/activation nghiệm thu riêng bởi Hoàng Anh. Không tự bật production để thử các request này.
+### Evaluate READY — ADMIN/DOCTOR; case/schedule revision lấy đúng từ trạng thái hiện tại.
+### NOT_READY + blockingReasons là quyết định từ chối, không phải READY thành công; replay không evaluate lại.
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/readiness/evaluate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{readinessIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedScheduleRevision": {{scheduleRevision}}
+}
+
+### Finalize — ADMIN/MANAGER/DOCTOR; READY + current DRAFT, reserve resources; không phải PUT lịch nháp.
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/schedule/finalize
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{finalizeIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedScheduleRevision": {{scheduleRevision}}
+}
+
+### Start — ADMIN/DOCTOR; recheck current guards, không override tài chính; dùng revision mới sau finalize.
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{startIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedScheduleRevision": {{scheduleRevision}}
+}
+
+### Complete — ADMIN/DOCTOR; IN_PROGRESS, actual times/codes; không dùng planned times hay tự tính tiền.
+### Quantity dương, tối đa 15 chữ số nguyên / 4 thập phân; không làm tròn để vừa SQL.
+### Same key/body replay giữ result/time gốc; đổi body cùng key conflict, V1 không correction/abort.
+POST {{host}}/api/v1/surgery/cases/{{surgeryCaseId}}/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: {{completeIdempotencyKey}}
+X-Correlation-Id: {{correlationId}}
+
+{
+  "expectedCaseRevision": {{caseRevision}},
+  "expectedScheduleRevision": {{scheduleRevision}},
+  "procedureCode": "{{procedureCode}}",
+  "methodCode": "{{methodCode}}",
+  "outcomeCode": "{{outcomeCode}}",
+  "complicationGroupCode": null,
+  "actualStartAt": "{{actualStartAt}}",
+  "actualEndAt": "{{actualEndAt}}",
+  "performedItems": [{"performedItemId": "{{performedItemId}}", "itemCode": "{{performedItemCode}}", "priceCode": "{{priceCode}}", "quantity": 1}]
 }

@@ -35,6 +35,13 @@ still not invented. Canonical contract and verification: [SURGERY-BILLING](../..
 
 ## 1. Sources and boundary
 
+**Safety-policy research follow-up 2026-10-08:** use
+[official WHO/Vietnam analysis](../../../architecture/surgery-safety-policy-research-2026-10-08.md).
+Pre-op readiness is distinct from before-anaesthesia, pre-incision and OR-exit pauses.
+Phased evidence/applicability, procedure-specific teams and verified signer/decision
+authority still need additive implementation and acceptance. Research is not an approved
+clinical template/provider; no legal branch, emergency bypass or universal TTL is invented.
+
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-INPATIENT-SURGERY-01`](../../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
 - [`CONTRACT-SURGERY-BILLING-01`](../../../handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md)
@@ -294,6 +301,23 @@ public enum CancellationStage { BEFORE_PREOP, AFTER_PREOP, BEFORE_START, IN_PROG
 
 ## 5. Ports and DTOs
 
+**Pre-op HTTP follow-up — 2026-10-07:** strict English item-update and consent-record DTOs,
+`RecordSurgeryPreopUseCase` and mandatory `SurgeryPreopAuthorityPort` wrap the existing atomic
+checklist/consent kernels. PUT `/{id}/checklist` uses exact item/case/snapshot/item revisions plus
+status/evidence reference and revision. POST `/{id}/consents` uses case revision, typed consent,
+signer category/reference and required document. ADMIN/DOCTOR/NURSE need signed staff identity;
+no body-supplied recorder, time, READY, permission or approval is accepted. New consent is 201
+with Location; replay 200, checklist 200. Every replay still obtains current authority.
+Preflight suspends caller transactions; proof binds exact care context/current revision and
+intent/recorder. Context/freshness are rechecked after case lock and proof again before commit,
+after kernel/resource waits. Existing child/audit/receipt/invalidation/exact release/V7 HELD writes
+remain one transaction. No migrations/outbound schema change. Both business and
+`mediflow.surgery.preop.api.enabled` gates default false; missing authority fails startup.
+No clinical/legal defaults/provider are installed; source/witness/order acceptance and distributed
+fences remain open. NOT_APPLICABLE is denied; consent revoke stays unmapped. See
+[pre-op HTTP ledger](../../../superpowers/plans/2026-10-07-surgery-preop-api-batch.md) and README/.http
+for exact DTO/validation/maturity, not the illustrative candidate snippets below.
+
 Implemented local lifecycle boundary (2026-10-07): `SurgeryUnitOfWorkPort` separates read/preflight
 and atomic write phases without application imports of adapter transaction machinery. Remote readiness
 observation, live Billing and result-code verification execute with any calling transaction suspended.
@@ -382,6 +406,12 @@ public record FinancialClearanceCommand(
 
 Schedule/team/result DTOs carry exact UUIDs, validated time intervals and non-empty performed item
 codes. Actor IDs come from verified claims, not request bodies where the acting user is implicit.
+Performed quantities must fit Surgery's existing `NUMERIC(19,4)` storage exactly: 15 integer and
+4 significant fractional digits. Domain normalizes insignificant zeroes only, rejecting rounding
+and overflow; HTTP DTO validates 15/4 digits. This is storage/wire consistency, not Billing pricing
+or a changed event version. Workflow follow-up evidence is recorded in
+[the owned HTTP workflow ledger](../../../superpowers/plans/2026-10-07-surgery-workflow-batch.md);
+PostgreSQL assertions remain pending while Docker cannot initialize.
 
 ## 6. Application algorithms
 

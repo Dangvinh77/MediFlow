@@ -152,6 +152,37 @@ class SagaCompensationServiceTest {
     }
 
     @Test
+    void onPrescriptionFilled_completedSource_newDeliveryHasNoFurtherEffects() {
+        UUID prescriptionId = UUID.randomUUID();
+        Invoice invoice = paidAwaitingDispense(prescriptionId);
+        invoice.transitionSaga(SagaStatus.COMPLETED);
+        UUID delivery = UUID.randomUUID();
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+        service.onPrescriptionFilled(new PrescriptionFilledEvent(delivery, Instant.now(), "corr", prescriptionId,
+                invoice.getPatientId(), UUID.randomUUID(), new BigDecimal("300000"), List.of()));
+        verify(processedEvent).markProcessed(delivery, "prescription.filled");
+        verify(invoiceRepo, never()).save(any());
+        org.mockito.Mockito.verifyNoInteractions(feeRepo, publisher);
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.COMPLETED);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void onPrescriptionFilled_conflictingPatientOrAmount_neverCompletesOrClaims(boolean wrongPatient) {
+        UUID prescriptionId = UUID.randomUUID();
+        Invoice invoice = paidAwaitingDispense(prescriptionId);
+        when(invoiceRepo.findByPrescriptionForUpdate(prescriptionId)).thenReturn(Optional.of(invoice));
+        var event = new PrescriptionFilledEvent(UUID.randomUUID(), Instant.now(), "corr", prescriptionId,
+                wrongPatient ? UUID.randomUUID() : invoice.getPatientId(), UUID.randomUUID(),
+                new BigDecimal(wrongPatient ? "300000" : "1"), List.of());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.onPrescriptionFilled(event))
+                .isInstanceOf(com.mediflow.billing.domain.exception.BillingRuleException.class);
+        verify(processedEvent, never()).markProcessed(any(), any());
+        verify(invoiceRepo, never()).save(any());
+        assertThat(invoice.getSagaStatus()).isEqualTo(SagaStatus.AWAITING_DISPENSE);
+    }
+
+    @Test
     void onPrescriptionFilled_redelivered_isIdempotent() {
         UUID prescriptionId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();

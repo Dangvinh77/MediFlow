@@ -17,6 +17,12 @@ events remain unfinished. `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED` defaults to fa
 
 ## 1. Sources and boundary
 
+**Completed-refund follow-up 2026-10-08:** strict separately gated V1 intake, semantic
+dedupe, private PAYMENT_REFUNDED history and held sent fact now pass actual Billing fixture
+PG/Rabbit rollback/DLQ/replay acceptance. Flags remain false; no external delivery, final
+settlement or clinical permission. Other templates/reviewed release remain open.
+[Canonical wire and verification](../../../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-CARE-PROJECTIONS-01`](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
 - [`CONTRACT-IDENTITY-LOOKUP-01`](../../../handoffs/care-finance/CONTRACT-IDENTITY-LOOKUP-01.md)
@@ -160,3 +166,15 @@ Current subscriptions remain until each target producer fixture is green.
 Add schema/template registry first. Bind each target routing key only after its producer fixture
 passes. Done means redelivery is harmless, privacy tests pass, delivery failure is isolated from
 producer workflows, outbox publication is crash-safe and all notification history remains auditable.
+
+## Implementation follow-up — 2026-10-08
+
+Actual current migrations are V3 Surgery reminder evidence and V4 semantic notification sources;
+the DDL above remains target design, not permission to rewrite V1/V2. Four gated Surgery subscriptions
+use actual producer bytes, exact pinned snapshot suppression and absorbing cancellation/completion.
+READY is provisional IN_APP only; completion has no clinical-result template. A separate gated
+Billing `invoice.created` V1 Surgery request notice is explicitly not a receipt or booked surgery.
+Source re-delivery under a new event ID does not send again. Claim/source/history/held sent outbox
+are transactional with bounded retry/DLQ recovery. Full clean **145/145**, 19 fresh reports, no
+fail/error/skip, real PG/Rabbit (2026-10-08). Admission/refund/top-up/settlement and reviewed live
+release remain open. Precise schema/semantics are in CONTRACT-CARE-PROJECTIONS-01, not duplicated here.

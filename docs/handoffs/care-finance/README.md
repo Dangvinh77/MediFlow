@@ -11,10 +11,10 @@ không copy một bản contract khác.
 |---|---|---|---|
 | [`CONTRACT-CARE-BILLING-01`](CONTRACT-CARE-BILLING-01.md) | DESIGN_READY; current outpatient contracts partially implemented | Vinh + Lộc + Huy | care episode, charge, purpose-scoped clearance, deposit, settlement |
 | [`CONTRACT-INPATIENT-SURGERY-01`](CONTRACT-INPATIENT-SURGERY-01.md) | PARTIAL; local Surgery V1 held producer/fixtures, admission decoding; reference/outpatient/late/live workflows open | Vinh + Huy | admission referral, surgery workflow, inpatient medication |
-| [`CONTRACT-SURGERY-BILLING-01`](CONTRACT-SURGERY-BILLING-01.md) | PARTIAL_IMPLEMENTATION; payments/grants/current lookup implemented, issuance/reconciliation/refund writers open | Huy + Lộc | procedure charge, current surgery clearance, cancellation/refund |
+| [`CONTRACT-SURGERY-BILLING-01`](CONTRACT-SURGERY-BILLING-01.md) | PARTIAL_IMPLEMENTATION; planned issuance/payments/grants/current lookup, standalone refunds and pre-start cancellation adjustment tested; full performed reconciliation, distributed fencing and release open | Huy + Lộc | procedure charge, current surgery clearance, cancellation/refund |
 | [`CONTRACT-IDENTITY-LOOKUP-01`](CONTRACT-IDENTITY-LOOKUP-01.md) | PRODUCER-READY / CONSUMER-FIXTURES-PENDING | Hoàng Anh + all consumers | patient/staff/department/room identity, job-title team-role projection, JWT service auth, Gateway routes |
 | [`CONTRACT-PATIENT-NOTIFICATION-01`](CONTRACT-PATIENT-NOTIFICATION-01.md) | COMPATIBILITY_LOCKED | Hoàng Anh + Lộc | flat `patient.created` payload and versioned-envelope migration gate |
-| [`CONTRACT-CARE-PROJECTIONS-01`](CONTRACT-CARE-PROJECTIONS-01.md) | PARTIAL; local operational mappings + gross receipt kernel/finite replay; recognition/refund/settlement/reminder/live acceptance open | Lộc + Huy + event producers | Notification templates and Report projections |
+| [`CONTRACT-CARE-PROJECTIONS-01`](CONTRACT-CARE-PROJECTIONS-01.md) | PARTIAL; gated operational/gross/refund cash intake and private notices tested; full finance/refund replay, recognition/settlement and release open | Lộc + Huy + event producers | Notification templates and Report projections |
 
 ## Service reading matrix
 

@@ -66,6 +66,8 @@ mediflow:
     care-finance-v2:
       enabled: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:false}
   clinical:
+    prescription-context-lookup:
+      enabled: ${MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED:false}
     exam-price:
       default-code: ${MEDIFLOW_EXAM_PRICE_CODE:OUTPATIENT_EXAM}
       by-department: {}

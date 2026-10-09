@@ -18,7 +18,8 @@ public record CompleteSurgeryRequest(@NotNull @PositiveOrZero Long expectedCaseR
         @NotNull Instant actualStartAt, @NotNull Instant actualEndAt,
         @NotNull List<@NotNull @Valid PerformedItem> performedItems) {
     public record PerformedItem(@NotNull UUID performedItemId, @NotBlank @Size(max=64) String itemCode,
-            @NotBlank @Size(max=64) String priceCode, @NotNull @DecimalMin(value="0",inclusive=false) BigDecimal quantity) {
+            @NotBlank @Size(max=64) String priceCode, @NotNull @DecimalMin(value="0",inclusive=false)
+            @Digits(integer=15,fraction=4) BigDecimal quantity) {
         @com.fasterxml.jackson.annotation.JsonAnySetter
         public void rejectUnknownField(String name, Object value) { throw new IllegalArgumentException("Unexpected performed item field"); }
     }

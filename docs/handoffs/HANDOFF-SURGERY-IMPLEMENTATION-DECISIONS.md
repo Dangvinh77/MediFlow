@@ -27,6 +27,10 @@ evidence is not upstream or downstream acceptance.
 The lifecycle kernel also implements readiness, explicit finalization, START, completion and
 pre-start cancellation with remote preflight outside transactions, bounded SQL lock retries,
 source reconciliation and default-off endpoint gates. It does not invent clinical/legal authority.
+Checklist/consent recording now has a default-off HTTP boundary with mandatory pre-op authority
+preflight and locked/before-commit freshness fences. The provider still must verify exact evidence/
+order revisions, signer/guardian/witness/document and recorder relationships from approved sources;
+no positive provider or revoke route is installed. [Local scope/evidence](../superpowers/plans/2026-10-07-surgery-preop-api-batch.md).
 
 The charge naming decision is fixed: `surgery.case.created` for planned charges and
 `surgery.completed` for actual reconciliation, envelope version 1 on `mediflow.events`, with
@@ -41,6 +45,21 @@ Evidence:
 [outbound contracts](../superpowers/plans/2026-10-07-huy-outbound-contracts.md).
 
 ## Remaining authority and owner inputs
+
+Research follow-up requested by Huy (2026-10-08): official WHO checklist/manual/adaptation
+and Vietnam's 2026 consolidated law now inform a
+[source-linked design](../architecture/surgery-safety-policy-research-2026-10-08.md)
+refining S-05/S-06/S-07. Huy can implement phase/applicability/authority boundaries without
+guessing medical catalogue values. Real procedure mappings, verified relationships and
+documented clinical activation approval remain required. No positive provider/new handoff.
+
+Verification update 2026-10-08: full Surgery clean **908/908 PASS**, including all previously
+pending pre-op/workflow HTTP/PG cases. Inpatient existing selected suites run read-only **45/45**,
+including real event-first completion -> case reference -> late READY/redelivery broker proof.
+Reference registration/core pending handling is no longer waiting for implementation. Outpatient/
+late-discharge/negative broker matrix and live held-delivery E2E are not certified by that one sequence.
+Report now has a default-off operational intake with same-byte PG/Rabbit proof, not accepted
+publication. Details: [current follow-up](../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
 
 - Vinh / Clinical-Inpatient: stable referral identity and exact patient/department/episode proof,
   reference registration, outpatient not-applicable and durable late-terminal handling; approved

@@ -85,14 +85,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     return;
                 }
             }
-            if (request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")) {
+            if (request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
+                    || request.getRequestURI().startsWith("/api/v1/billing/surgery-cancellations/")
+                    || request.getRequestURI().startsWith("/api/v1/billing/transactions/")) {
                 if (!StringUtils.hasText(subject)
                         || !JwtClaims.ACCESS_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class))
                         || claims.getExpiration() == null) {
                     SecurityContextHolder.clearContext();
                     return;
                 }
-                java.util.UUID.fromString(subject);
+                if (!java.util.UUID.fromString(subject).toString().equalsIgnoreCase(subject)) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
             }
             if (!StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
                 SecurityContextHolder.clearContext();

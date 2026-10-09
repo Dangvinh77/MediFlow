@@ -1,23 +1,40 @@
 # notification-service
 
-Email/SMS/in-app notification history (`THONG_BAO`). Mostly event-driven.
+Private notification history (`NOTIFICATION`). Mostly event-driven.
 
-Reference: [`docs/ai/services/notification.md`](../docs/ai/services/notification.md) · design doc `docs/eproject_general_plan/notification-service.html`.
+Reference: [`service rules`](../../docs/ai/services/notification.md) and the canonical [projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
 
 - **Port:** 8087 · **Base path:** `/api/v1/notifications` · **DB:** `mediflow_notification` (PostgreSQL)
-- **Owns tables:** `THONG_BAO`
-- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
+- **Owns tables:** `NOTIFICATION`, `PROCESSED_EVENT`, held notification outbox and Surgery reminder evidence.
+- **Architecture:** clean architecture per [blueprint](../../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
 
 ## Status
 
-**Skeleton only.** Module, dependencies, config and the mandated package layout are in place — there is **no business code yet**. Build it out against the *Definition of Done* in the blueprint, and the bounded context / rules in the service doc above.
+Compatibility consumers, authenticated history APIs and gated V1 Billing receipts are implemented.
+Surgery's ready/invalidation/cancel/completed intake is separately opt-in and stores exact-case
+suppression evidence. READY is provisional only; completion suppresses reminders without exposing
+clinical results. Cancellation uses a generic private IN_APP message. No email/SMS address is inferred.
+Both `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED` and `MEDIFLOW_NOTIFICATION_SURGERY_CONSUMER_ENABLED`
+must be true to create the dedicated durable queue/DLQ; defaults are false. Notification sent events
+remain HELD. Billing's V1 Surgery payment-request facts have a separate opt-in private notice;
+`MEDIFLOW_NOTIFICATION_SURGERY_PAYMENT_REQUEST_CONSUMER_ENABLED=false` and care-v1 must both be
+enabled. Requests are not receipts or booked surgery. Admission/top-up/settlement projections and
+reviewed publication remain separate tasks.
 
-Package layout (already created, each folder holds a `.gitkeep` until you fill it):
+Completed-refund follow-up: care-v1 AND `MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED` (false)
+gate a separate refund queue/DLQ. Actual Billing fixtures produce one private `PAYMENT_REFUNDED`
+history and held sent event per immutable refund source, with atomic rollback/dedupe/conflict and
+retained-byte recovery. It does not imply final settlement or surgery authorization and does not send
+email/SMS. Latest complete suite: **171/171**, zero fail/error/skip, actual PG/RabbitMQ.
+[Canonical contract and evidence](../../docs/superpowers/plans/2026-10-08-billing-refund-closure.md).
+
+Package layout:
 
 ```
 domain/model          domain/exception
 application/port/in   application/port/out   application/dto   application/mapper   application/service
-infrastructure/web    infrastructure/persistence   infrastructure/messaging   infrastructure/client
+web                   messaging/consumer
+infrastructure/persistence   infrastructure/messaging   infrastructure/client
 infrastructure/security   infrastructure/config
 ```
 
@@ -37,8 +54,10 @@ Swagger UI: http://localhost:8087/swagger-ui.html
 
 - **Publish:** `notification.sent`
 - **Subscribe:** `patient.created`, `appointment.created`, `lab.result.created`, `prescription.filled`, `payment.completed`, `payment.failed`
+- **Opt-in Surgery:** `surgery.ready`, `surgery.readiness.invalidated`, `surgery.cancelled`, `surgery.completed`.
+- **Opt-in completed refunds:** `payment.refunded`, with independent care-v1 + refund-consumer gates.
 
-Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
+Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
 
 ## Tests
 

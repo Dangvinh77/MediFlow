@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Topology RabbitMQ của notification-service (backend-spec/07-notification.md §13.4,
- * docs/ai/06-events-rabbitmq.md). Một queue {@value #QUEUE} bind cả 6 routing key subscribe;
+ * docs/ai/06-events-rabbitmq.md). One queue subscribes to the current compatibility events;
  * {@code notification.sent} là routing key publish, không cần binding vào đây.
  */
 @Configuration
@@ -34,6 +34,7 @@ public class RabbitConfig {
     public static final String RK_PRESCRIPTION_FILLED = "prescription.filled";
     public static final String RK_PAYMENT_COMPLETED = "payment.completed";
     public static final String RK_PAYMENT_FAILED = "payment.failed";
+    public static final String RK_INVOICE_CREATED = "invoice.created";
 
     // Subscribe — CONTRACT-CARE-PROJECTIONS-01 (nested envelope, version=1, no .v1 suffix)
     public static final String RK_ADMISSION_DEPOSIT_REQUESTED = "admission.deposit.requested";
@@ -53,7 +54,8 @@ public class RabbitConfig {
             RK_ADMISSION_STARTED,
             RK_ADMISSION_CLOSED,
             RK_SURGERY_READY,
-            RK_SURGERY_CANCELLED
+            RK_SURGERY_CANCELLED,
+            RK_INVOICE_CREATED
     };
 
     public static final String QUEUE = "notification.q";
@@ -84,7 +86,7 @@ public class RabbitConfig {
     }
 
     /**
-     * Bind {@value #QUEUE} vào cả 6 routing key. Trả {@link Declarables} (không phải mảng
+     * Bind {@value #QUEUE} to the compatibility and approved care projection routing keys. Returns {@link Declarables} (not a raw
      * {@code Binding[]} thô) để {@code RabbitAdmin} — vốn chỉ quét bean kiểu {@code Declarable} —
      * khai báo được từng binding.
      */

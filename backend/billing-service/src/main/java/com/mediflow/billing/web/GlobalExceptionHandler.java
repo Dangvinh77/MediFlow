@@ -35,12 +35,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({org.springframework.dao.DataAccessException.class, org.springframework.transaction.TransactionException.class})
     public ResponseEntity<ApiResponse<Void>> storageFailure(RuntimeException ex,
             jakarta.servlet.http.HttpServletRequest request) {
-        if (!request.getRequestURI().startsWith("/api/v1/billing/financial-clearances/")) return unexpected(ex);
+        boolean lookup = request.getRequestURI().startsWith("/api/v1/billing/financial-clearances/");
+        boolean ledger = request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
+                || request.getRequestURI().startsWith("/api/v1/billing/transactions/");
+        if (!lookup && !ledger) return unexpected(ex);
         String correlation = request.getHeader(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID);
+        if (correlation == null || correlation.isBlank()) correlation = java.util.UUID.randomUUID().toString();
         // Do not leak SQL, ledger values or connection details to this service contract.
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .header(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID, correlation)
-                .body(ApiResponse.fail(ApiError.of("BILLING_CLEARANCE_UNAVAILABLE", "Financial authority unavailable"), correlation));
+                .body(ApiResponse.fail(ApiError.of(lookup ? "BILLING_CLEARANCE_UNAVAILABLE" : "BILLING_LEDGER_UNAVAILABLE",
+                        lookup ? "Financial authority unavailable" : "Financial ledger unavailable; retry with the same operation key"), correlation));
     }
 
     @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)

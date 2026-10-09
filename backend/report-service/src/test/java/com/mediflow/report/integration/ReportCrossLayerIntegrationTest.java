@@ -89,6 +89,7 @@ class ReportCrossLayerIntegrationTest {
         rabbitAdmin.purgeQueue(RabbitConfig.QUEUE, false);
         rabbitAdmin.purgeQueue(RabbitConfig.DLQ, false);
         jdbcTemplate.update("DELETE FROM payment_contribution");
+        jdbcTemplate.update("DELETE FROM prescription_fill_receipt");
         jdbcTemplate.update("DELETE FROM drug_statistic");
         jdbcTemplate.update("DELETE FROM monthly_revenue_report");
         jdbcTemplate.update("DELETE FROM daily_visit_report");

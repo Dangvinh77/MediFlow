@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -39,6 +40,7 @@ import com.mediflow.pharmacy.application.port.out.*;
 import com.mediflow.pharmacy.application.service.CareDispenseTransactionService;
 import com.mediflow.pharmacy.application.service.CarePrescriptionTerminalService;
 import com.mediflow.pharmacy.application.service.CarePrescriptionCreationService;
+import com.mediflow.pharmacy.application.service.ContextCheckedPrescriptionCreationService;
 import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
@@ -57,6 +59,7 @@ import com.mediflow.pharmacy.infrastructure.persistence.adapter.*;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CareDispenseTransactionService.class, CarePrescriptionTerminalService.class, CarePrescriptionCreationService.class,
+        ContextCheckedPrescriptionCreationService.class,
         CarePrescriptionCreationPersistenceAdapter.class, PrescriptionCareEventCaptureService.class,
         PrescriptionClearanceAuthorizationService.class, PrescriptionClearancePersistenceAdapter.class,
         PrescriptionPersistenceAdapter.class, DispenseSlipPersistenceAdapter.class, DrugPersistenceAdapter.class,
@@ -70,6 +73,9 @@ class CareDispensePostgresTest {
     @Autowired CareDispenseTransactionService service;
     @Autowired CarePrescriptionTerminalService terminal;
     @Autowired CarePrescriptionCreationService creation;
+    @Autowired ContextCheckedPrescriptionCreationService contextCreation;
+    @MockBean OutpatientPrescriptionContextPort contextSource;
+    @MockBean PrescriptionIdentityPort identitySource;
     @Autowired PrescriptionCareEventCaptureService capture;
     @Autowired PrescriptionRepositoryPort prescriptions;
     @Autowired DispenseSlipRepositoryPort slips;
@@ -210,6 +216,69 @@ class CareDispensePostgresTest {
 
     private CancelPrescriptionCommand cancelCommand(UUID id) {
         return new CancelPrescriptionCommand(id, new ActorIdentity(UUID.randomUUID(), null, "ADMIN"), "Changed treatment", "cancel");
+    }
+
+    @Test void creation_contextCheckedProofCommitsExactRecordAndReplayKeepsOneHeldEvent() {
+        var original = creationCommand(); var r = original.request(); var record = UUID.randomUUID();
+        var command = new CreatePrescriptionCommand(new CreatePrescriptionRequest(record, r.patientId(), r.doctorId(), r.departmentId(),
+                r.prescribedDate(), r.lines(), 1, r.careContext(), r.careEpisodeType(), r.careEpisodeId(), null, r.priceCode()), original.actor(), original.correlationId());
+        var proof = new OutpatientPrescriptionContextPort.Observation(true, record, r.patientId(), r.doctorId(), r.departmentId(),
+                "OUTPATIENT_VISIT", r.careEpisodeId(), "OPEN", null, clock.instant());
+        UUID key = UUID.randomUUID(), id = creation.createCare(key, command, proof);
+        assertThat(creation.createCare(key, command, proof)).isEqualTo(id);
+        assertThat(jdbc.queryForObject("SELECT record_id FROM PRESCRIPTION WHERE prescription_id=?", UUID.class, id)).isEqualTo(record);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE care_contract_version=1", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM STOCK_RESERVATION WHERE prescription_id=?", Integer.class, id)).isOne();
+        var stale = new OutpatientPrescriptionContextPort.Observation(true, record, r.patientId(), r.doctorId(), r.departmentId(),
+                "OUTPATIENT_VISIT", r.careEpisodeId(), "OPEN", null, clock.instant().minusSeconds(31));
+        assertThatThrownBy(() -> creation.createCare(key, command, stale)).isInstanceOf(com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE care_contract_version=1", Integer.class)).isOne();
+    }
+
+    @Test void creation_contextPreflightRunsOutsideTransactionAndStockWriterCommitsAtomically() {
+        var original = creationCommand(); var r = original.request(); var record = UUID.randomUUID();
+        var command = new CreatePrescriptionCommand(new CreatePrescriptionRequest(record, r.patientId(), r.doctorId(), r.departmentId(),
+                r.prescribedDate(), r.lines(), 1, r.careContext(), r.careEpisodeType(), r.careEpisodeId(), null, r.priceCode()), original.actor(), original.correlationId());
+        var proof = new OutpatientPrescriptionContextPort.Observation(true, record, r.patientId(), r.doctorId(), r.departmentId(),
+                "OUTPATIENT_VISIT", r.careEpisodeId(), "OPEN", null, clock.instant());
+        org.mockito.Mockito.when(contextSource.findRecord(record, command.correlationId())).thenAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return proof;
+        });
+        org.mockito.Mockito.when(identitySource.lookup(r.patientId(), r.doctorId(), r.departmentId(), command.correlationId())).thenAnswer(call -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return new PrescriptionIdentityPort.Observation(r.patientId(), true, r.doctorId(), true, true,
+                    r.departmentId(), r.departmentId(), true, clock.instant());
+        });
+        UUID id = contextCreation.createWithContext(UUID.randomUUID(), command);
+        assertThat(jdbc.queryForObject("SELECT record_id FROM PRESCRIPTION WHERE prescription_id=?", UUID.class, id)).isEqualTo(record);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE care_contract_version=1", Integer.class)).isOne();
+    }
+
+    @Test void creation_contextPreflightRejectsAmbientTransactionBeforeRemoteOrStockEffects() {
+        var command = creationCommand();
+        assertThatThrownBy(() -> new TransactionTemplate(transactions).execute(status ->
+                contextCreation.createWithContext(UUID.randomUUID(), command)))
+                .isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
+        org.mockito.Mockito.verifyNoInteractions(contextSource);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PRESCRIPTION", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX", Integer.class)).isZero();
+    }
+
+    @Test void creation_currentIdentityDenialCannotClaimCommandReserveStockOrCreateHeldEvent() {
+        var original = creationCommand(); var r = original.request(); var record = UUID.randomUUID();
+        var command = new CreatePrescriptionCommand(new CreatePrescriptionRequest(record, r.patientId(), r.doctorId(), r.departmentId(),
+                r.prescribedDate(), r.lines(), 1, r.careContext(), r.careEpisodeType(), r.careEpisodeId(), null, r.priceCode()), original.actor(), original.correlationId());
+        org.mockito.Mockito.when(contextSource.findRecord(record, command.correlationId())).thenReturn(
+                new OutpatientPrescriptionContextPort.Observation(true, record, r.patientId(), r.doctorId(), r.departmentId(),
+                        "OUTPATIENT_VISIT", r.careEpisodeId(), "OPEN", null, clock.instant()));
+        org.mockito.Mockito.when(identitySource.lookup(r.patientId(), r.doctorId(), r.departmentId(), command.correlationId())).thenReturn(
+                new PrescriptionIdentityPort.Observation(r.patientId(), true, r.doctorId(), true, false, null,
+                        r.departmentId(), true, clock.instant()));
+        assertThatThrownBy(() -> contextCreation.createWithContext(UUID.randomUUID(), command))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
+        for (String table : new String[]{"PRESCRIPTION", "STOCK_RESERVATION", "PHARMACY_EVENT_OUTBOX", "DISPENSE_SLIP", "care_prescription_creation"})
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM " + table, Integer.class)).as(table).isZero();
     }
 
     @Test void creation_retryAndChangedIntent_haveOneAggregateAndOneHeldCreation() {

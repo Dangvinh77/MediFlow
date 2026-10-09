@@ -364,6 +364,64 @@ orchestration, public/live wiring, reviewed activation migration/cutover và PG 
 
 ## 12. Care-finance và nội trú — contract đích
 
+### Exact Clinical context and internal checked creation — 2026-10-09
+
+Separate default-off `care-finance-v2 AND pharmacy.clinical-context.enabled` gates supply real
+Clinical service-only context lookup and an internal preflight caller. The remote read runs before
+transactions; exact record/patient/prescriber/department/owner-chosen episode and freshness are
+checked again after receipt/drug lock waits, including receipt replay, in the existing atomic
+creation/held writer. No lookup failure uses an unverified fallback. Producer/consumer share original
+Clinical fixture bytes. The identity follow-up below adds current Patient/Organization facts, not
+medication-order permission, Billing Rx issuance/adjustment,
+inpatient authority or public V1/held cutover. OPEN/completed disposition is not a permission grant.
+Canonical details are in [CARE-BILLING](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
+
+### Current identity preflight — 2026-10-09
+
+`care-finance-v2 AND pharmacy.identity.enabled` (both default false) supplies real Patient existence
+and Organization staff/department Feign lookups. The context-checked internal caller requires this
+port; enabling that caller without an identity provider fails startup, never selects a permissive
+fallback. Short-lived SYSTEM service credentials, correlation, strict bounded JSON, service discovery,
+short timeouts and safe unavailable fallback apply. Remote reads are refused inside transactions.
+
+The necessary identity check requires the exact existing patient, an active DOCTOR in the exact active
+department, using Organization's current descriptive job/department fields, not `eligibleTeamRoles`.
+This does not replace Organization's separate `/staff/{id}/exists` doctor-eligibility contract or
+claim a license, order permission or distributed lease. Confirmed absence/ineligibility rejects the
+command; malformed/failed lookups are unavailable. Freshness begins before the first remote read
+and is rechecked after all remote calls and receipt/stock waits, including command replay. Context
+and identity proofs must both be non-null in the checked writer. V0 and trusted internal test/kernel
+entry points are unchanged; no public V1 API or held delivery is opened.
+
+Remaining: authoritative prescribing/order policy, Billing Rx issuance and terminal adjustment,
+admission command authorization/races and reviewed activation. Verification is recorded in the
+[Pharmacy/Report priority batch](../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+
+### Opt-in admission intake and current-state lookup — 2026-10-08
+
+`care-finance-v2 AND pharmacy.admission-consumer.enabled` gates the durable
+`pharmacy.admission-lifecycle.q`/DLQ and exactly `admission.started`,
+`discharge.medically.approved`, `admission.closed`. The strict decoder rejects duplicate keys,
+trailing JSON, noncanonical UUIDs, unknown producer/version/routing and unbounded body/correlation.
+Admission claim plus exact lifecycle evidence commit before ACK; permanent contract conflicts reject
+without payload-bearing exceptions, infrastructure failures retry three times then retain original
+bytes in the DLQ. Medical discharge/close-before-start survives listener restart; late start never
+restores eligibility. No stock/Rx/slip/payment/outbox effect is triggered by this intake.
+
+`care-finance-v2 AND pharmacy.admission-authority.enabled` independently gates an Inpatient Feign
+lookup using Eureka service name, 2s connect/3s read timeout, circuit breaker and fail-closed fallback.
+It sends Pharmacy's short-lived SYSTEM service token and exact correlation; strict response parsing
+preserves canonical IDs/row revision (including 0), confirmed missing versus unavailable, and source
+observation <=30s old / <=5s future skew. A lookup is refused inside a mutation transaction. The
+observation has a necessary exact patient/department/current-state check which must be rechecked
+after mutation-lock waits; it is not sufficient permission and is not a source-state lease.
+
+Both gates default false. Public admission create/dispense and held delivery remain closed until
+current prescriber/order/placement authority and the complete stock/discharge race are implemented
+and accepted. A start bed is not current placement; outpatient clearance is never admission authority.
+These updates supersede earlier dated offline-only transport statements, not their activation gates.
+Fresh verification: [execution follow-up](../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+
 ### Current opt-in clearance intake — 2026-10-05
 
 The exact Billing producer fixture now feeds a real authorization-only consumer, separately gated

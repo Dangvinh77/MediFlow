@@ -3,12 +3,13 @@ package com.mediflow.billing.application.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mediflow.billing.application.event.LedgerIntegrationEvent;
-import com.mediflow.billing.application.event.LedgerIntegrationEvent.PaymentRefundedPayload;
 import com.mediflow.billing.application.event.SurgeryCancelledEvent;
 import com.mediflow.billing.application.event.SurgeryCaseCreatedEvent;
 import com.mediflow.billing.application.event.SurgeryCompletedEvent;
@@ -17,14 +18,10 @@ import com.mediflow.billing.application.port.out.LedgerEventPort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
 import com.mediflow.billing.application.port.out.ProcessedEventPort;
 import com.mediflow.billing.application.port.out.SurgeryChargeRepositoryPort;
-import com.mediflow.billing.application.port.out.SurgeryChargeRepositoryPort.ChargeAllocation;
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.BillingAccount;
 import com.mediflow.billing.domain.model.CareEpisodeType;
 import com.mediflow.billing.domain.model.Charge;
-import com.mediflow.billing.domain.model.PaymentClassification;
-import com.mediflow.billing.domain.model.PaymentTransaction;
-import com.mediflow.billing.domain.model.PaymentTransactionType;
 
 /**
  * Hiện thực {@link SurgeryChargeUseCase} — tạo/đối chiếu/hủy charge ca mổ
@@ -33,8 +30,8 @@ import com.mediflow.billing.domain.model.PaymentTransactionType;
  *
  * <p>Mọi handler: chống xử lý trùng theo {@code eventId} ({@link ProcessedEventPort}), cộng thêm
  * khóa nghiệp vụ riêng — charge dedup theo {@code (sourceType, sourceId, priceCode)}, đối chiếu
- * theo {@code resultId} bất biến, hoàn tiền theo idempotency key dẫn xuất từ
- * {@code cancellationId}. Mã giá chưa khai báo ({@link PriceCatalogPort}) bị từ chối, không mặc
+ * theo {@code resultId} bất biến. Paid cancellation uses the separately gated audited adjustment
+ * workflow; this compatibility handler cannot fabricate a completed refund. Mã giá chưa khai báo ({@link PriceCatalogPort}) bị từ chối, không mặc
  * định về 0 — lỗi được ném tiếp để message vào DLQ, không bị nuốt.
  */
 @Service
@@ -49,14 +46,12 @@ public class SurgeryChargeService implements SurgeryChargeUseCase {
     private final ProcessedEventPort processedEvent;
     private final SurgeryChargeRepositoryPort repository;
     private final PriceCatalogPort priceCatalog;
-    private final LedgerEventPort events;
 
     public SurgeryChargeService(ProcessedEventPort processedEvent, SurgeryChargeRepositoryPort repository,
                                 PriceCatalogPort priceCatalog, LedgerEventPort events) {
         this.processedEvent = processedEvent;
         this.repository = repository;
         this.priceCatalog = priceCatalog;
-        this.events = events;
     }
 
     /** {@code surgery.case.created} → charge dự kiến (POSTED) cho từng dòng {@code plannedItems}. */
@@ -69,16 +64,29 @@ public class SurgeryChargeService implements SurgeryChargeUseCase {
         CareEpisodeType episodeType = parseEpisodeType(e.careEpisodeType());
         BillingAccount account = repository.findOrOpenAccount(e.patientId(), e.departmentId(), episodeType,
                 e.careEpisodeId(), CURRENCY, e.occurredAt());
-        for (SurgeryCaseCreatedEvent.PlannedItem item : e.plannedItems()) {
-            var price = priceCatalog.requireActive(item.priceCode(), e.occurredAt());
-            Optional<Charge> existing = repository.findChargeBySource(SOURCE_TYPE_SURGERY, e.surgeryCaseId(), item.priceCode());
+        require(account.getPatientId().equals(e.patientId()) && account.getCareEpisodeType() == episodeType
+                && account.getCareEpisodeId().equals(e.careEpisodeId()), "BILLING_SURGERY_EPISODE_MISMATCH", "Exact episode account required");
+        var planned = new TreeMap<String, BigDecimal>();
+        var itemCodes = new HashSet<String>();
+        require(e.plannedItems() != null && !e.plannedItems().isEmpty() && e.plannedItems().size() <= 1000, "BILLING_SURGERY_ITEMS_REQUIRED", "Planned items required");
+        for (var item : e.plannedItems()) {
+            require(item != null && code(item.itemCode()) && itemCodes.add(item.itemCode())
+                    && code(item.priceCode()) && quantity(item.quantity()),
+                    "BILLING_SURGERY_ITEM_INVALID", "Distinct positive planned items required");
+            planned.merge(item.priceCode(), item.quantity(), BigDecimal::add);
+        }
+        for (var item : planned.entrySet()) {
+            require(quantity(item.getValue()), "BILLING_CHARGE_INVALID_QUANTITY", "Grouped quantity must fit storage exactly");
+            Optional<Charge> existing = repository.findChargeBySource(SOURCE_TYPE_SURGERY, e.surgeryCaseId(), item.getKey());
             if (existing.isPresent()) {
-                require(existing.get().getQuantity().compareTo(item.quantity()) == 0, "BILLING_SURGERY_CHARGE_CONFLICT",
-                        "Kế hoạch mổ gửi lại khác số liệu đã ghi cho price code " + item.priceCode());
+                require(existing.get().getPatientId().equals(e.patientId()) && existing.get().getAccountId().equals(account.getAccountId())
+                        && existing.get().getQuantity().compareTo(item.getValue()) == 0, "BILLING_SURGERY_CHARGE_CONFLICT",
+                        "Kế hoạch mổ gửi lại khác số liệu đã ghi");
                 continue;
             }
+            var price = priceCatalog.requireActive(item.getKey(), e.occurredAt());
             Charge charge = Charge.post(account.getAccountId(), e.patientId(), e.departmentId(), SOURCE_TYPE_SURGERY,
-                    e.surgeryCaseId(), item.priceCode(), price.description(), item.quantity(), price.unitAmount(), e.occurredAt());
+                    e.surgeryCaseId(), item.getKey(), price.description(), item.getValue(), price.unitAmount(), e.occurredAt());
             repository.saveCharge(charge);
         }
         processedEvent.markProcessed(e.eventId(), RK_SURGERY_CASE_CREATED);
@@ -92,69 +100,72 @@ public class SurgeryChargeService implements SurgeryChargeUseCase {
             return;
         }
         List<Charge> existingCharges = repository.findChargesBySource(SOURCE_TYPE_SURGERY, e.surgeryCaseId());
-        for (SurgeryCompletedEvent.PerformedItem item : e.performedItems()) {
-            var price = priceCatalog.requireActive(item.priceCode(), e.recordedAt());
+        require(!existingCharges.isEmpty(), "BILLING_SURGERY_CASE_NOT_FOUND", "Planned source must arrive first");
+        var accountId = existingCharges.getFirst().getAccountId();
+        for (var charge : existingCharges) require(charge.getPatientId().equals(e.patientId())
+                && charge.getDepartmentId().equals(e.departmentId()) && charge.getAccountId().equals(accountId)
+                && charge.isPosted(), "BILLING_SURGERY_RECONCILIATION_CONTEXT_MISMATCH", "Exact posted case context required");
+        var performed = new TreeMap<String, BigDecimal>();
+        var itemIds = new HashSet<UUID>();
+        var itemCodes = new HashSet<String>();
+        require(e.performedItems() != null && !e.performedItems().isEmpty() && e.performedItems().size() <= 1000, "BILLING_SURGERY_ITEMS_REQUIRED", "Performed items required");
+        for (var item : e.performedItems()) {
+            require(item != null && item.performedItemId() != null && itemIds.add(item.performedItemId())
+                    && code(item.itemCode()) && itemCodes.add(item.itemCode()) && code(item.priceCode())
+                    && quantity(item.quantity()),
+                    "BILLING_SURGERY_ITEM_INVALID", "Distinct positive performed items required");
+            performed.merge(item.priceCode(), item.quantity(), BigDecimal::add);
+        }
+        for (var item : performed.entrySet()) {
+            require(quantity(item.getValue()), "BILLING_CHARGE_INVALID_QUANTITY", "Grouped quantity must fit storage exactly");
             Optional<Charge> existing = existingCharges.stream()
-                    .filter(c -> c.getPriceCode().equals(item.priceCode())).findFirst();
+                    .filter(c -> c.getPriceCode().equals(item.getKey())).findFirst();
             if (existing.isPresent()) {
                 Charge charge = existing.get();
-                charge.reconcilePerformed(e.resultId(), item.quantity(), price.unitAmount());
+                // Matched immutable replay must not consult today's catalog or re-price historical care.
+                var unit = charge.getReconciledResultId() == null
+                        ? priceCatalog.requireActive(item.getKey(), e.recordedAt()).unitAmount() : charge.getUnitAmount();
+                charge.reconcilePerformed(e.resultId(), item.getValue(), unit);
                 repository.updateCharge(charge);
             } else {
                 // Dòng thực tế không có trong kế hoạch (ví dụ EXTRA_ITEM) — cần ít nhất một charge
                 // đã có cho case này để biết account; nếu chưa có, surgery.case.created chưa tới.
-                UUID accountId = existingCharges.stream().findFirst().map(Charge::getAccountId)
-                        .orElseThrow(() -> new BillingRuleException("BILLING_SURGERY_CASE_NOT_FOUND",
-                                "Chưa có charge dự kiến cho ca mổ " + e.surgeryCaseId() + "; chờ surgery.case.created"));
+                var price = priceCatalog.requireActive(item.getKey(), e.recordedAt());
                 Charge charge = Charge.post(accountId, e.patientId(), e.departmentId(), SOURCE_TYPE_SURGERY,
-                        e.surgeryCaseId(), item.priceCode(), price.description(), item.quantity(), price.unitAmount(),
+                        e.surgeryCaseId(), item.getKey(), price.description(), item.getValue(), price.unitAmount(),
                         e.recordedAt());
-                charge.reconcilePerformed(e.resultId(), item.quantity(), price.unitAmount());
+                charge.reconcilePerformed(e.resultId(), item.getValue(), price.unitAmount());
                 repository.saveCharge(charge);
             }
         }
         processedEvent.markProcessed(e.eventId(), RK_SURGERY_COMPLETED);
     }
 
-    /** {@code surgery.cancelled} → hủy charge chưa phân bổ thanh toán, hoàn tiền phần đã thanh toán. */
+    /** Compatibility only: unpaid voiding. Paid cancellation requires the audited strict adjustment path. */
     @Override
     @Transactional
     public void onSurgeryCancelled(SurgeryCancelledEvent e) {
         if (processedEvent.alreadyProcessed(e.eventId())) {
             return;
         }
-        for (Charge charge : repository.findChargesBySource(SOURCE_TYPE_SURGERY, e.surgeryCaseId())) {
+        require(e.cancellationStage() != null && java.util.Set.of("BEFORE_PREOP", "AFTER_PREOP", "BEFORE_START").contains(e.cancellationStage()),
+                "BILLING_SURGERY_CANCELLATION_STAGE_INVALID", "Only pre-start cancellation is supported");
+        var charges = repository.findChargesBySource(SOURCE_TYPE_SURGERY, e.surgeryCaseId());
+        require(!charges.isEmpty(), "BILLING_SURGERY_CASE_NOT_FOUND", "Planned source must arrive first");
+        // Validate the entire case BEFORE effects. A cancellation is never proof that cash was returned.
+        for (var charge : charges) {
+            require(charge.getReconciledResultId() == null, "BILLING_SURGERY_ALREADY_PERFORMED_OR_VOIDED", "Performed care cannot be cancelled");
+            require(repository.findCompletedAllocations(charge.getChargeId()).isEmpty(),
+                    "BILLING_SURGERY_CANCELLATION_REQUIRES_ADJUSTMENT", "Paid cancellation requires the strict adjustment workflow");
+        }
+        for (Charge charge : charges) {
             if (!charge.isPosted()) {
                 continue;
             }
-            for (ChargeAllocation allocation : repository.findCompletedAllocations(charge.getChargeId())) {
-                refundAllocation(e, charge, allocation);
-            }
-            charge.voidCharge("Hủy ca mổ trước khi bắt đầu: " + e.reason());
+            charge.voidCharge("PRE_START_CANCELLATION");
             repository.updateCharge(charge);
         }
         processedEvent.markProcessed(e.eventId(), RK_SURGERY_CANCELLED);
-    }
-
-    private void refundAllocation(SurgeryCancelledEvent e, Charge charge, ChargeAllocation allocation) {
-        String idempotencyKey = "SURGERY_CANCEL:" + e.cancellationId() + ":" + allocation.transactionId();
-        if (repository.refundTransactionExists(idempotencyKey)) {
-            return;
-        }
-        BillingAccount account = repository.findAccountById(charge.getAccountId())
-                .orElseThrow(() -> new BillingRuleException("BILLING_ACCOUNT_NOT_FOUND",
-                        "Không tìm thấy tài khoản cho charge " + charge.getChargeId()));
-        PaymentTransaction refund = PaymentTransaction.open(charge.getAccountId(), allocation.paymentRequestId(),
-                PaymentTransactionType.REFUND, PaymentClassification.SERVICE_PAYMENT, allocation.amount(),
-                allocation.currency(), allocation.paymentMethod(), null, idempotencyKey,
-                allocation.transactionId(), e.cancelledAt());
-        refund.complete(e.cancelledAt());
-        repository.saveRefund(refund, charge.getChargeId());
-        events.appendHeld(charge.getAccountId(), new LedgerIntegrationEvent(UUID.randomUUID(), "payment.refunded", 1,
-                e.cancelledAt(), e.correlationId(), "billing-service", new PaymentRefundedPayload(
-                        refund.getTransactionId(), allocation.transactionId(), charge.getAccountId(), charge.getPatientId(),
-                        charge.getDepartmentId(), account.getCareEpisodeType().name(), account.getCareEpisodeId(),
-                        allocation.amount(), allocation.currency(), e.reason(), e.cancelledAt())));
     }
 
     private static CareEpisodeType parseEpisodeType(String value) {
@@ -170,5 +181,10 @@ public class SurgeryChargeService implements SurgeryChargeUseCase {
         if (!valid) {
             throw new BillingRuleException(code, message);
         }
+    }
+    private static boolean code(String value) { return value != null && value.matches("[A-Za-z0-9._-]{1,64}"); }
+    private static boolean quantity(BigDecimal value) {
+        return value != null && value.signum() > 0 && value.stripTrailingZeros().scale() <= 4
+                && value.precision() - value.scale() <= 15;
     }
 }

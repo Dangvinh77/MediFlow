@@ -32,6 +32,16 @@ class BillingEventPublisherAdapterTest {
             new BillingEventPublisherAdapter(outboxRepository, objectMapper);
 
     @Test
+    void publishInvoiceCreated_matchesConsumerSharedFixture() throws Exception {
+        var wireMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+                .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        var fixture = java.nio.file.Files.readString(java.nio.file.Path.of("src/test/resources/contracts/invoice.created.json"));
+        var event = wireMapper.readValue(fixture, InvoiceCreatedEvent.class);
+        new BillingEventPublisherAdapter(outboxRepository, wireMapper).publishInvoiceCreated(event);
+        assertThat(wireMapper.readTree(capturedRow().getPayload())).isEqualTo(wireMapper.readTree(fixture));
+    }
+
+    @Test
     void publishInvoiceCreated_writesOutboxWithStableIdentity() {
         InvoiceCreatedEvent event = new InvoiceCreatedEvent(
                 UUID.randomUUID(), Instant.now(), "cid", UUID.randomUUID(), UUID.randomUUID(),

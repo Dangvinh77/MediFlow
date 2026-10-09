@@ -28,6 +28,7 @@ public class LedgerPaymentRepositoryAdapter implements LedgerPaymentRepositoryPo
 
     @Override
     public void lockIdempotencyKey(String key) {
+        jdbc.execute("SET LOCAL lock_timeout = '3s'");
         // Cross-account key reuse must serialize before acquiring an account lock.
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", key);
     }

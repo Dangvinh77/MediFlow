@@ -7,6 +7,7 @@ import com.mediflow.common.exception.BusinessRuleException;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
+import com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException;
 import com.mediflow.common.security.JwtClaims;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -36,6 +37,12 @@ public class GlobalExceptionHandler {
 
     private static final Logger log =
             LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(PharmacyUpstreamUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> upstreamUnavailable(PharmacyUpstreamUnavailableException exception) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "PHARMACY_UPSTREAM_UNAVAILABLE",
+                "Admission authority is unavailable");
+    }
 
     /**
      * Trả về 404 khi không tìm thấy tài nguyên được yêu cầu.

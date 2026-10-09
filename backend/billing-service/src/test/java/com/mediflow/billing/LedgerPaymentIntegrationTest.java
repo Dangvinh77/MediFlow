@@ -54,6 +54,7 @@ class LedgerPaymentIntegrationTest {
         registry.add("mediflow.jwt.secret", () -> SECRET);
         registry.add("eureka.client.enabled", () -> false);
         registry.add("mediflow.billing.ledger.enabled", () -> true);
+        registry.add("mediflow.billing.refunds.enabled", () -> true);
         registry.add("mediflow.billing.clearance-lookup.enabled", () -> true);
         registry.add("mediflow.billing.outbox.enabled", () -> false);
         registry.add("mediflow.billing.outbox.metrics-enabled", () -> false);
@@ -61,6 +62,7 @@ class LedgerPaymentIntegrationTest {
     }
     @Autowired JdbcTemplate jdbc;
     @Autowired ProcessLedgerPaymentUseCase payments;
+    @Autowired com.mediflow.billing.application.port.in.RefundLedgerPaymentUseCase refunds;
     @Autowired PlatformTransactionManager manager;
     @Autowired BillingEventOutboxJpaRepository outbox;
     @Autowired ObjectMapper mapper;
@@ -270,6 +272,174 @@ class LedgerPaymentIntegrationTest {
         seed("SURGERY","ADMISSION","100");
         payments.complete(request,command("lookup-paid","100"),actor,"lookup-trace");
         return jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE",UUID.class);
+    }
+    @Test void refund_completedSurgeryPayment_appendsReversalAndDeniesCurrentClearance() throws Exception {
+        seed("SURGERY", "ADMISSION", "100");
+        var payment = payments.complete(request, command("paid", "100"), actor, "paid");
+        var original = jdbc.queryForObject("SELECT row_to_json(t)::text FROM PAYMENT_TRANSACTION t WHERE transaction_id=?", String.class, payment.transactionId());
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        var refund = refunds.refund(payment.transactionId(), refundCommand("refund", "20"), actor, "refund-trace");
+        assertThat(refund.originalTransactionId()).isEqualTo(payment.transactionId());
+        assertThat(jdbc.queryForObject("SELECT row_to_json(t)::text FROM PAYMENT_TRANSACTION t WHERE transaction_id=?", String.class, payment.transactionId())).isEqualTo(original);
+        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM PAYMENT_ALLOCATION WHERE transaction_id=?", BigDecimal.class, refund.refundTransactionId())).isEqualByComparingTo("20");
+        assertThat(jdbc.queryForObject("SELECT revoked_at IS NOT NULL FROM FINANCIAL_CLEARANCE", Boolean.class)).isTrue();
+        assertThat(mapper.readTree(lookup(clearance, serviceHeaders("service", "SYSTEM", "surgery-service", 60)).getBody()).path("data").path("eligible").asBoolean()).isFalse();
+        assertThat(jdbc.queryForObject("SELECT status FROM PAYMENT_REQUEST", String.class)).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE routing_key='payment.refunded'", String.class))
+                .contains("CASHIER_RECORDED_REFUND", "refund-trace").doesNotContain("Private audit reason");
+        assertThat(jdbc.queryForObject("SELECT publication_enabled FROM BILLING_EVENT_OUTBOX WHERE routing_key='payment.refunded'", Boolean.class)).isFalse();
+    }
+
+    @Test void refund_deposit_recordsCashOutWithoutEarnedAllocation() {
+        seed("ADMISSION_DEPOSIT", "ADMISSION", "100");
+        var original = payments.complete(request, command("deposit", "100"), actor, "paid");
+        var refund = refunds.refund(original.transactionId(), refundCommand("refund", "100"), actor, "refund");
+        assertThat(count("PAYMENT_ALLOCATION")).isZero();
+        assertThat(refund.classification().name()).isEqualTo("ADMISSION_DEPOSIT");
+        assertThat(jdbc.queryForObject("SELECT revoked_at IS NOT NULL FROM FINANCIAL_CLEARANCE", Boolean.class)).isTrue();
+    }
+
+    @Test void refund_twoPartialsCannotExceedOriginalAndReplayPreservesAudit() {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        var first = refunds.refund(original.transactionId(), refundCommand("refund-1", "60"), actor, "first");
+        refunds.refund(original.transactionId(), refundCommand("refund-2", "40"), actor, "second");
+        assertThatThrownBy(() -> refunds.refund(original.transactionId(), refundCommand("refund-3", "0.01"), actor, "third"))
+                .hasMessage("BILLING_REFUND_EXCEEDS_PAYMENT");
+        jdbc.update("UPDATE BILLING_ACCOUNT SET status='CLOSED'");
+        assertThat(refunds.refund(original.transactionId(), refundCommand("refund-1", "60.00"), actor, "retry").refundTransactionId())
+                .isEqualTo(first.refundTransactionId());
+        assertThat(count("ledger_refund_evidence")).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM PAYMENT_TRANSACTION WHERE transaction_type='REFUND'", BigDecimal.class)).isEqualByComparingTo("100");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM BILLING_EVENT_OUTBOX WHERE routing_key='payment.refunded'", Long.class)).isEqualTo(2);
+    }
+
+    @Test void refund_racingDistinctKeys_serializesOriginalBudget() throws Exception {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var a = workers.submit(() -> refundAttempt(start, original.transactionId(), "a"));
+            var b = workers.submit(() -> refundAttempt(start, original.transactionId(), "b"));
+            start.countDown();
+            assertThat(List.of(a.get(15, TimeUnit.SECONDS), b.get(15, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder("COMPLETED", "BILLING_REFUND_EXCEEDS_PAYMENT");
+        }
+        assertThat(count("ledger_refund_evidence")).isEqualTo(1);
+    }
+
+    @Test void refund_racingSameKey_returnsOneImmutableRefund() throws Exception {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        var start = new CountDownLatch(1);
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var a = workers.submit(() -> { start.await(); return refunds.refund(original.transactionId(), refundCommand("same", "20"), actor, "a"); });
+            var b = workers.submit(() -> { start.await(); return refunds.refund(original.transactionId(), refundCommand("same", "20"), actor, "b"); });
+            start.countDown();
+            assertThat(a.get(15, TimeUnit.SECONDS).refundTransactionId()).isEqualTo(b.get(15, TimeUnit.SECONDS).refundTransactionId());
+        }
+        assertThat(count("ledger_refund_evidence")).isEqualTo(1);
+    }
+
+    @Test void refund_outboxFailure_rollsBackMoneyReversalAuditAndRevocation() {
+        seed("SURGERY", "ADMISSION", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        jdbc.execute("CREATE FUNCTION reject_refund_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test rollback'; END $$");
+        jdbc.execute("CREATE TRIGGER reject_refund_event BEFORE INSERT ON BILLING_EVENT_OUTBOX FOR EACH ROW EXECUTE FUNCTION reject_refund_event()");
+        try {
+            assertThatThrownBy(() -> refunds.refund(original.transactionId(), refundCommand("refund", "20"), actor, "refund"))
+                    .isInstanceOf(org.springframework.dao.DataAccessException.class);
+            assertThat(count("PAYMENT_TRANSACTION")).isEqualTo(1);
+            assertThat(count("PAYMENT_ALLOCATION")).isEqualTo(1);
+            assertThat(count("ledger_refund_evidence")).isZero();
+            assertThat(jdbc.queryForObject("SELECT revoked_at FROM FINANCIAL_CLEARANCE", java.sql.Timestamp.class)).isNull();
+        } finally {
+            jdbc.execute("DROP TRIGGER reject_refund_event ON BILLING_EVENT_OUTBOX");
+            jdbc.execute("DROP FUNCTION reject_refund_event()");
+        }
+        refunds.refund(original.transactionId(), refundCommand("refund", "20"), actor, "retry-after-fix");
+        assertThat(count("ledger_refund_evidence")).isEqualTo(1);
+    }
+
+    @Test void refund_httpRoleValidationAndSignedActorCannotBeSpoofed() throws Exception {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        String path = "/api/v1/billing/transactions/" + original.transactionId() + "/refunds";
+        assertThat(http.postForEntity(path, refundCommand("http", "20"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        for (String role : List.of("DOCTOR", "NURSE", "MANAGER", "PATIENT", "PHARMACIST", "LAB_TECH")) {
+            assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), headers(role)), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        }
+        assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), serviceHeaders("refresh", "CASHIER", actor.toString(), 60)), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), serviceHeaders("service", "SYSTEM", "surgery-service", 60)), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http", "0.001"), headers("CASHIER")), String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(count("ledger_refund_evidence")).isZero();
+        var headers = headers("CASHIER"); headers.set("X-Actor-Account-Id", UUID.randomUUID().toString()); headers.set("X-Correlation-Id", "refund-http");
+        var response = http.postForEntity(path, new HttpEntity<>(refundCommand("http", "20"), headers), String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        var result = mapper.readTree(response.getBody());
+        assertThat(result.path("correlationId").asText()).isEqualTo("refund-http");
+        assertThat(result.path("data").path("originalTransactionId").asText()).isEqualTo(original.transactionId().toString());
+        assertThat(jdbc.queryForObject("SELECT actor_account_id FROM PAYMENT_TRANSACTION WHERE transaction_type='REFUND'", UUID.class)).isEqualTo(actor);
+    }
+
+    @Test void refund_wrongOriginalOrReusedPaymentKey_neverCreatesEffect() {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var original = payments.complete(request, command("paid", "100"), actor, "paid");
+        assertThatThrownBy(() -> refunds.refund(UUID.randomUUID(), refundCommand("absent", "20"), actor, "refund")).hasMessage("Payment transaction not found");
+        assertThatThrownBy(() -> refunds.refund(original.transactionId(), refundCommand("paid", "20"), actor, "refund")).hasMessage("BILLING_IDEMPOTENCY_CONFLICT");
+        var refunded = refunds.refund(original.transactionId(), refundCommand("refund", "20"), actor, "refund");
+        assertThatThrownBy(() -> refunds.refund(refunded.refundTransactionId(), refundCommand("refund-of-refund", "1"), actor, "refund"))
+                .hasMessage("BILLING_REFUND_REQUIRES_COMPLETED_PAYMENT");
+        assertThat(count("ledger_refund_evidence")).isEqualTo(1);
+    }
+    @Test void refund_httpStorageFailure_returnsSafe503AndSameKeyRecovers() {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var payment = payments.complete(request, command("paid", "100"), actor, "paid");
+        String path = "/api/v1/billing/transactions/" + payment.transactionId() + "/refunds";
+        jdbc.execute("CREATE FUNCTION fail_refund_http() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'private SQL detail'; END $$");
+        jdbc.execute("CREATE TRIGGER fail_refund_http BEFORE INSERT ON BILLING_EVENT_OUTBOX FOR EACH ROW EXECUTE FUNCTION fail_refund_http()");
+        try {
+            var headers = headers("CASHIER"); headers.set("X-Correlation-Id", "refund-unavailable");
+            var response = http.postForEntity(path, new HttpEntity<>(refundCommand("http-retry", "20"), headers), String.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(response.getBody()).contains("BILLING_LEDGER_UNAVAILABLE", "refund-unavailable").doesNotContain("private SQL", "INSERT INTO", "Private audit");
+            assertThat(count("ledger_refund_evidence")).isZero();
+        } finally { jdbc.execute("DROP TRIGGER fail_refund_http ON BILLING_EVENT_OUTBOX"); jdbc.execute("DROP FUNCTION fail_refund_http()"); }
+        assertThat(http.postForEntity(path, new HttpEntity<>(refundCommand("http-retry", "20"), headers("CASHIER")), String.class).getStatusCode())
+                .isEqualTo(HttpStatus.CREATED);
+        assertThat(count("ledger_refund_evidence")).isOne();
+    }
+    @org.junit.jupiter.params.ParameterizedTest @org.junit.jupiter.params.provider.ValueSource(strings = {"CLOSED", "SETTLED"})
+    void refund_terminalAccount_requiresExplicitReopenPolicy(String status) {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var payment = payments.complete(request, command("paid", "100"), actor, "paid");
+        jdbc.update("UPDATE BILLING_ACCOUNT SET status=?", status);
+        assertThatThrownBy(() -> refunds.refund(payment.transactionId(), refundCommand("refund", "20"), actor, "refund"))
+                .hasMessage("BILLING_REFUND_REQUIRES_ACCOUNT_REOPEN");
+        assertThat(count("ledger_refund_evidence")).isZero();
+    }
+    @Test void refund_oneInstallment_cannotReverseAnotherPaymentsAllocations() {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var first = payments.complete(request, command("first", "40"), actor, "paid");
+        var second = payments.complete(request, command("second", "60"), actor, "paid");
+        refunds.refund(first.transactionId(), refundCommand("refund", "40"), actor, "refund");
+        assertThatThrownBy(() -> refunds.refund(first.transactionId(), refundCommand("too-much", "0.01"), actor, "refund"))
+                .hasMessage("BILLING_REFUND_EXCEEDS_PAYMENT");
+        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM PAYMENT_ALLOCATION WHERE transaction_id=?", BigDecimal.class, second.transactionId()))
+                .isEqualByComparingTo("60");
+        assertThat(jdbc.queryForObject("SELECT SUM(CASE WHEN t.transaction_type='PAYMENT' THEN a.amount ELSE -a.amount END) FROM PAYMENT_ALLOCATION a JOIN PAYMENT_TRANSACTION t ON t.transaction_id=a.transaction_id", BigDecimal.class))
+                .isEqualByComparingTo("60");
+    }
+
+    private String refundAttempt(CountDownLatch start, UUID original, String key) throws InterruptedException {
+        start.await();
+        try { refunds.refund(original, refundCommand(key, "80"), actor, key); return "COMPLETED"; }
+        catch (BillingRuleException rejected) { return rejected.getCode(); }
+    }
+    private com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest refundCommand(String key, String amount) {
+        return new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest(key, new BigDecimal(amount), "Private audit reason", PaymentMethod.CASH);
     }
     private ResponseEntity<String> lookup(UUID clearance,HttpHeaders headers) {
         headers.set("X-Correlation-Id","lookup-trace");

@@ -66,6 +66,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String role = claims.get(JwtClaims.ROLE, String.class);
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
             Date expiration = claims.getExpiration();
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            if (path.matches("/api/v1/records/[^/]+/prescription-context")) {
+                Date issued = claims.getIssuedAt();
+                long now = System.currentTimeMillis();
+                if (!path.matches("/api/v1/records/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/prescription-context")
+                        || !"GET".equals(request.getMethod()) || !"service".equals(tokenType)
+                        || !"SYSTEM".equals(role) || !"pharmacy-service".equals(subject)
+                        || issued == null || expiration == null || expiration.getTime() <= now
+                        || issued.getTime() > now + 5000 || expiration.getTime() <= issued.getTime()
+                        || expiration.getTime() - issued.getTime() > 60000) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                        new ClinicalServicePrincipal(subject), null, List.of(new SimpleGrantedAuthority("ROLE_SYSTEM"))));
+                return;
+            }
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
                     || expiration == null || !expiration.after(new Date())
                     || !StringUtils.hasText(subject) || !StringUtils.hasText(role)) {

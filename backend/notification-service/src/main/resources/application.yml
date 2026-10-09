@@ -39,6 +39,12 @@ mediflow:
   notification:
     care-v1:
       enabled: ${MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED:false}
+    surgery-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_SURGERY_CONSUMER_ENABLED:false}
+    surgery-payment-request-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_SURGERY_PAYMENT_REQUEST_CONSUMER_ENABLED:false}
+    refund-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 

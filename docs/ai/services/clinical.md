@@ -92,6 +92,14 @@ examination belong to, so every downstream fee, test and report can be attribute
 
 ## Cross-service
 
+Additive Pharmacy context read (2026-10-09): independently default-off service-only
+`GET /api/v1/records/{id}/prescription-context` supplies minimal exact record/patient/doctor/
+department and owner-selected outpatient episode from one owned snapshot, not a medication order
+or dispensing permission. Only short-lived pharmacy-service SYSTEM credentials are accepted;
+absence is explicit 200, storage/inconsistent relationships 503, correlation is preserved and
+clinical narrative is excluded. Canonical wire/gates and same-byte consumer evidence are in
+[CARE-BILLING](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
+
 Both are synchronous reads, so both must be resilient (timeout + circuit breaker + fallback, `01`):
 
 - `patient-service` — does this patient exist?
