@@ -1,7 +1,7 @@
 # Frontend Workboard
 
-> Audited 2026-10-08 against backend baseline `e7dab08` and implemented on
-> `codex/frontend-contract-workspaces`. Ownership rules remain in
+> Audited 2026-10-09 against the live Inpatient controller and implemented on
+> `codex/inpatient-create-command`. Ownership rules remain in
 > [`docs/ai/15-frontend-ownership.md`](../../docs/ai/15-frontend-ownership.md).
 
 ## Shipped route state
@@ -11,7 +11,7 @@
 | Shared | Responsive role-filtered sidebar, compact header, field/button/table primitives | `DONE` |
 | Clinical | Appointment list/detail/create/edit plus legacy arrival/cancel; record lookup/detail/create/edit/diagnosis | `DONE` for always-on controllers |
 | Lab | Queue/detail/create plus start, result entry and cancel with live role/status guards | `DONE` |
-| Inpatient | Admission list/detail and bed list with filters, paging and exact Vietnamese wire names | `DONE` read workspace |
+| Inpatient | Admission list/detail, admission create, and bed list with exact Vietnamese wire names | `IN PROGRESS` command workspace |
 | Organization | Department and staff list/detail/create/update; staff transfer; account create/status | `DONE` |
 | Patient | List/detail/create/update/delete with immutable identity number | `DONE` |
 | Pharmacy | Drug, stock, prescription, dispense/cancel and ADMIN outbox replay workflows | `DONE` |
@@ -34,11 +34,13 @@
 
 ## Next tasks
 
-1. Enable and smoke-test the Care/Finance V2 services through Gateway, then expose the already
+1. Continue `FE-INPATIENT-03` with bed assignment as the next bounded transition after reconfirming
+   its controller roles, request DTO, status precondition and conflict codes.
+2. Extend the shared Vitest harness across each service for role denial, validation, terminal
+   states and API error/correlation-ID rendering.
+3. Enable and smoke-test the Care/Finance V2 services through Gateway, then expose the already
    specified Clinical and Report command surfaces as one bounded batch.
-2. Add a shared frontend test harness, then cover role denial, validation, terminal states and
-   API error/correlation-ID rendering per service.
-3. Run an authenticated browser smoke for each role against Docker Compose before release.
+4. Run an authenticated browser smoke for each role against Docker Compose before release.
 
 Every new UI mutation must still confirm the owner controller, request/response DTO, Gateway
 method/role matrix and error codes. Missing producer behavior becomes a handoff, never a guessed
