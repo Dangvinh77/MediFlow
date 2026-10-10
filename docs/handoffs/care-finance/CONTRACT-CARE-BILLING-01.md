@@ -243,6 +243,25 @@ fixtures and persists a distinct private request notice. Both feature families s
 V6 still prevents released V1 outboxes. This does not complete performed reconciliation, refunds,
 deposit issuance/top-up, settlements, historical finance or whole-care E2E.
 
+### LAB_TEST planned-request issuance — 2026-10-10
+
+Task-scoped Billing implementation by its owner (Lộc). An opt-in handler accepts actual Lab-service
+`lab.request.created` V1 bytes (never a reconstructed/guessed wire shape) and issues one LAB_TEST
+charge plus one `PAYMENT_REQUEST` per lab test, reusing the existing episode account and the
+Surgery planned-request pattern (claim delivery, lock recorded source, exact-episode account,
+catalog-derived price snapshot). Target is `recordId` (context) plus the single `labTestIds` entry;
+no admission/appointment/prescription/surgery field is set. Gated by `mediflow.billing.ledger.enabled`
+and `mediflow.billing.lab-test-charge-consumer.enabled`, both false by default; disabled leaves
+`lab.request.created` unbound on Billing's queue, same as before this slice. Exact replay of the same
+`labId` returns the recorded request without re-pricing; a conflicting replay (same `labId`, different
+`sourceOrderId` or bytes) rejects. No new writer was needed for payment/clearance: the existing generic
+ledger payment command already grants `financial.clearance.granted` for `LAB_TEST` once its exact
+request is paid in full, unchanged. Verified against lab-service's own fixture, copied byte-for-byte
+into Billing's test resources per the no-copied-wire-format rule. This does not implement EXAM
+issuance (blocked: Clinical has not committed a producer fixture for its V2 `medicalrecord.created`/
+`appointment.status.changed` payloads yet), Docker/Gateway multi-service acceptance, or deletion of
+[HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
 ### Opt-in Surgery and Pharmacy grant intake — 2026-10-05
 
 Both consumers decode the actual Billing `ledger-v1/clearance-*.json` producer fixtures, not copied

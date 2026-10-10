@@ -97,6 +97,17 @@ not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence
 
 ## Acceptance gates
 
+### Opt-in LAB_TEST planned-request issuance (2026-10-10)
+
+The opt-in `lab.request.created` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.lab-test-charge-consumer.enabled` false by default) posts one LAB_TEST charge and
+one PAYMENT_REQUEST per lab test from the configured price catalog, mirroring the Surgery
+planned-request pattern (V9). No new migration columns were needed: `PAYMENT_REQUEST_TARGET.record_id`/
+`lab_test_ids` already existed. Clearance granting reuses the existing generic `LedgerPaymentService`
+unchanged. Verified against lab-service's real producer fixture, copied into
+`src/test/resources/contracts/lab-request-v1/`. EXAM issuance remains open pending Clinical's own
+producer fixture commit; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
 ### Opt-in pre-start cancellation adjustment (2026-10-08)
 
 The issuer gates now select strict `surgery.cancelled` on the single billing.q dispatcher.

@@ -52,6 +52,7 @@ public class BillingEventConsumer {
     private final ObjectMapper objectMapper;
     private final SurgeryChargeConsumer plannedRequestConsumer;
     private final SurgeryCancellationConsumer cancellationConsumer;
+    private final LabTestChargeConsumer labTestChargeConsumer;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
@@ -64,17 +65,27 @@ public class BillingEventConsumer {
         this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer, null);
     }
 
-    @Autowired
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
                                 @Nullable SurgeryChargeConsumer plannedRequestConsumer,
                                 @Nullable SurgeryCancellationConsumer cancellationConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, null);
+    }
+
+    @Autowired
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
         this.objectMapper = objectMapper;
         this.plannedRequestConsumer = plannedRequestConsumer;
         this.cancellationConsumer = cancellationConsumer;
+        this.labTestChargeConsumer = labTestChargeConsumer;
     }
 
     @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
@@ -109,6 +120,12 @@ public class BillingEventConsumer {
             case RabbitConfig.RK_SURGERY_CANCELLED -> {
                 if (cancellationConsumer != null) cancellationConsumer.receive(message);
                 else surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));
+            }
+            case RabbitConfig.RK_LAB_REQUEST_CREATED -> {
+                // Bound only when LabTestChargeConfiguration's flags are both true; see RabbitConfig.
+                if (labTestChargeConsumer != null) labTestChargeConsumer.receive(message);
+                else throw new IllegalArgumentException(
+                        "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
             }
             default -> throw new IllegalArgumentException(
                     "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);

@@ -51,6 +51,11 @@ public class RabbitConfig {
     public static final String RK_SURGERY_COMPLETED = "surgery.completed";
     public static final String RK_SURGERY_CANCELLED = "surgery.cancelled";
 
+    // Subscribe — CONTRACT-CARE-BILLING-01 / HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE (lab-service).
+    // Opt-in only: bound by LabTestChargeConfiguration, not in SUBSCRIBED_ROUTING_KEYS below, so this
+    // queue stays unbound to it (messages simply drop, as today) until both feature flags are true.
+    public static final String RK_LAB_REQUEST_CREATED = "lab.request.created";
+
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PRESCRIPTION_CREATED,
             RK_PRESCRIPTION_FILLED,
