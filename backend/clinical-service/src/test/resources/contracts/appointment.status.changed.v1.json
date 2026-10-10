@@ -1,0 +1,23 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000001",
+  "eventType": "appointment.status.changed",
+  "version": 1,
+  "occurredAt": "2026-10-10T09:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "clinical-service",
+  "payload": {
+    "appointmentId": "00000000-0000-4000-8000-000000000002",
+    "recordId": null,
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000004",
+    "oldStatus": "PENDING",
+    "newStatus": "AWAITING_PAYMENT",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000002",
+    "sourceType": "EXAM",
+    "sourceId": "00000000-0000-4000-8000-000000000002",
+    "priceCode": "OUTPATIENT_EXAM",
+    "changedAt": "2026-10-10T09:00:00Z",
+    "emergencyOverrideId": null
+  }
+}
