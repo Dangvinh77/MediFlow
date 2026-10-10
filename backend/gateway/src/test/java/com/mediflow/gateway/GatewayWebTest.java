@@ -1,6 +1,7 @@
 package com.mediflow.gateway;
 
 import com.mediflow.common.security.Roles;
+import com.mediflow.common.security.JwtClaims;
 import com.mediflow.gateway.auth.OrganizationAuthClient;
 import com.mediflow.gateway.security.JwtTokenService;
 import com.mediflow.gateway.security.JwtTokenService.UpstreamUnavailableException;
@@ -88,6 +89,29 @@ class GatewayWebTest {
                     .exchange().expectStatus().isForbidden();
             webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();
         }
+    }
+
+    @Test
+    void serviceTokenWithBlankHumanIdentityClaim_isRejected() {
+        String token = serviceTokenWithBlankClaim(JwtClaims.STAFF_ID);
+
+        webTestClient.get()
+                .uri("/api/v1/org/rooms/{id}/lookup", UUID.randomUUID())
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.error.code").isEqualTo("AUTH_UNAUTHORIZED");
+    }
+
+    @Test
+    void organizationAndPatientUnknownNestedPaths_areDenied() {
+        String id = UUID.randomUUID().toString();
+
+        expectForbidden(HttpMethod.GET, "/api/v1/org/departments/" + id + "/unknown", Roles.ADMIN);
+        expectForbidden(HttpMethod.PUT, "/api/v1/org/staff/" + id + "/department/extra", Roles.ADMIN);
+        expectForbidden(HttpMethod.GET, "/api/v1/patients/" + id + "/unknown", Roles.ADMIN);
+        expectForbidden(HttpMethod.PUT, "/api/v1/patients/" + id + "/unknown", Roles.ADMIN);
     }
 
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
@@ -499,6 +523,20 @@ class GatewayWebTest {
                 .claim("type", "access")
                 .issuedAt(Date.from(now.minusSeconds(120)))
                 .expiration(Date.from(now.minusSeconds(60)))
+                .signWith(key)
+                .compact();
+    }
+
+    private String serviceTokenWithBlankClaim(String claimName) {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject("gateway-test")
+                .claim(JwtClaims.ROLE, Roles.SYSTEM)
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .claim(claimName, "")
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(60)))
                 .signWith(key)
                 .compact();
     }
