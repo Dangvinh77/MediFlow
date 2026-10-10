@@ -1,0 +1,50 @@
+flowchart TB
+    subgraph CLIENTS[Client channels]
+        WEB[Web application<br/>Next.js]
+        MOBILE[Mobile application<br/>Flutter]
+        API[Authorized API clients]
+    end
+
+    subgraph EDGE[Access and service coordination]
+        GATEWAY[API Gateway<br/>JWT validation, route authorization,<br/>correlation and rate controls]
+        EUREKA[Eureka Discovery<br/>service registration and lookup]
+    end
+
+    subgraph SERVICES[Ten bounded contexts with isolated data ownership]
+        direction TB
+        REST[Versioned REST APIs<br/>default-deny endpoint authorization]
+        CARE[Care delivery contexts<br/>Patient, Clinical, Lab, Inpatient and Surgery]
+        OPERATIONS[Operational contexts<br/>Organization, Pharmacy, Billing,<br/>Notification and Report]
+        DATA[Ten owned PostgreSQL databases<br/>one per service, no cross-service access]
+        REST --> CARE
+        REST --> OPERATIONS
+        CARE --> DATA
+        OPERATIONS --> DATA
+    end
+
+    subgraph INTEGRATION[Integration backbone]
+        EVENTS[RabbitMQ topic exchange<br/>durable queues, retries and DLQs]
+        CONTRACTS[Versioned event contracts<br/>transactional outbox and idempotent receipts]
+    end
+
+    subgraph CONTROLS[Cross-cutting controls]
+        SECURITY[Security<br/>RBAC, ownership checks and default deny]
+        OBS[Observability<br/>health, logs and correlation IDs]
+        QUALITY[Quality gates<br/>unit, web, persistence and integration tests]
+    end
+
+    WEB -->|HTTPS /api/v1| GATEWAY
+    MOBILE -->|HTTPS /api/v1| GATEWAY
+    API -->|HTTPS /api/v1| GATEWAY
+    GATEWAY -.->|service lookup| EUREKA
+    GATEWAY --> REST
+    REST -.->|register and discover| EUREKA
+    CARE <-->|integration events| CONTRACTS
+    OPERATIONS <-->|integration events| CONTRACTS
+    CONTRACTS <--> EVENTS
+
+    SECURITY -.-> GATEWAY
+    SECURITY -.-> REST
+    OBS -.-> GATEWAY
+    OBS -.-> REST
+    QUALITY -.-> REST

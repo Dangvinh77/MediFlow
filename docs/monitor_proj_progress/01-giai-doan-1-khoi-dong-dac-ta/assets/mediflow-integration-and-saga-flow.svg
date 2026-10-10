@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1286.95 1192" width="1286.95" height="1192" style="--bg:#ffffff;--fg:#111827;--line:#64748b;--accent:#2563eb;--muted:#334155;--surface:#f8fafc;--border:#94a3b8;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DejaVu%20Sans:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'DejaVu Sans', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<g class="block" data-type="opt" data-label="Current authority is required to finish the request">
+  <rect x="293.6545" y="228" width="371.68899999999996" height="100" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="293.6545" y="228" width="292.20999999999987" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="299.6545" y="237" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">opt [Current authority is required to finish the request]</text>
+</g>
+<g class="block" data-type="loop" data-label="Outbox dispatcher">
+  <rect x="293.6545" y="496" width="753.745" height="180" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="293.6545" y="496" width="144.37000000000003" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="299.6545" y="505" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">loop [Outbox dispatcher]</text>
+</g>
+<g class="block" data-type="alt" data-label="Exact duplicate">
+  <rect x="685.3435" y="764" width="559.7530000000002" height="348" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="685.3435" y="764" width="117.97000000000001" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="691.3435" y="773" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">alt [Exact duplicate]</text>
+  <line x1="685.3435" y1="880" x2="1245.0965" y2="880" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+  <text x="693.3435" y="894" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">[New valid event]</text>
+  <line x1="685.3435" y1="1024" x2="1245.0965" y2="1024" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+  <text x="693.3435" y="1038" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">[Invalid or transient failure]</text>
+</g>
+<line class="lifeline" data-actor="User" x1="70" y1="70" x2="70" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Gateway" x1="210" y1="70" x2="210" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Service" x1="391.7655" y1="70" x2="391.7655" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Authority" x1="587.6099999999999" y1="70" x2="587.6099999999999" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Store" x1="800.8679999999999" y1="70" x2="800.8679999999999" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Broker" x1="991.896" y1="70" x2="991.896" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Consumer" x1="1156.248" y1="70" x2="1156.248" y2="1162" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="User" data-to="Gateway" data-label="Authenticated HTTPS request" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="70" y1="90" x2="210" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="140" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Authenticated HTTPS request</text>
+</g>
+<g class="message" data-from="Gateway" data-to="Gateway" data-label="Validate token and route authorization" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="210,130 240,130 240,150 210,150" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="248" y="140" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Validate token and route authorization</text>
+</g>
+<g class="message" data-from="Gateway" data-to="Service" data-label="Forward versioned REST request" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="210" y1="200" x2="391.7655" y2="200" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="300.88275" y="190" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Forward versioned REST request</text>
+</g>
+<g class="message" data-from="Service" data-to="Authority" data-label="Resilient REST lookup with timeout" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="268" x2="587.6099999999999" y2="268" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="489.68774999999994" y="258" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Resilient REST lookup with timeout</text>
+</g>
+<g class="message" data-from="Authority" data-to="Service" data-label="Current decision or controlled failure" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="587.6099999999999" y1="308" x2="391.7655" y2="308" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="489.68774999999994" y="298" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Current decision or controlled failure</text>
+</g>
+<g class="message" data-from="Service" data-to="Store" data-label="Commit aggregate change and outbox event atomically" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="348" x2="800.8679999999999" y2="348" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="596.31675" y="338" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Commit aggregate change and outbox event atomically</text>
+</g>
+<g class="message" data-from="Store" data-to="Service" data-label="Local transaction committed" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="800.8679999999999" y1="388" x2="391.7655" y2="388" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="596.31675" y="378" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Local transaction committed</text>
+</g>
+<g class="message" data-from="Service" data-to="Gateway" data-label="API response envelope" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="428" x2="210" y2="428" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="300.88275" y="418" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">API response envelope</text>
+</g>
+<g class="message" data-from="Gateway" data-to="User" data-label="Status, data and correlation ID" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="210" y1="468" x2="70" y2="468" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="140" y="458" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Status, data and correlation ID</text>
+</g>
+<g class="message" data-from="Service" data-to="Store" data-label="Lock pending outbox record" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="536" x2="800.8679999999999" y2="536" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="596.31675" y="526" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Lock pending outbox record</text>
+</g>
+<g class="message" data-from="Service" data-to="Broker" data-label="Publish versioned integration event" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="576" x2="991.896" y2="576" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="691.83075" y="566" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Publish versioned integration event</text>
+</g>
+<g class="message" data-from="Broker" data-to="Service" data-label="Publisher confirmation" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="991.896" y1="616" x2="391.7655" y2="616" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="691.83075" y="606" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Publisher confirmation</text>
+</g>
+<g class="message" data-from="Service" data-to="Store" data-label="Mark event as published" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="391.7655" y1="656" x2="800.8679999999999" y2="656" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="596.31675" y="646" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Mark event as published</text>
+</g>
+<g class="message" data-from="Broker" data-to="Consumer" data-label="Deliver event from durable queue" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="991.896" y1="696" x2="1156.248" y2="696" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="1074.0720000000001" y="686" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Deliver event from durable queue</text>
+</g>
+<g class="message" data-from="Consumer" data-to="Store" data-label="Check event ID and payload fingerprint" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="1156.248" y1="736" x2="800.8679999999999" y2="736" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="978.558" y="726" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Check event ID and payload fingerprint</text>
+</g>
+<g class="message" data-from="Store" data-to="Consumer" data-label="Existing receipt found" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="800.8679999999999" y1="804" x2="1156.248" y2="804" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="978.558" y="794" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Existing receipt found</text>
+</g>
+<g class="message" data-from="Consumer" data-to="Broker" data-label="Acknowledge without a second mutation" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1156.248" y1="844" x2="991.896" y2="844" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="1074.0720000000001" y="834" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Acknowledge without a second mutation</text>
+</g>
+<g class="message" data-from="Consumer" data-to="Store" data-label="Apply state change and save receipt" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="1156.248" y1="908" x2="800.8679999999999" y2="908" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="978.558" y="898" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Apply state change and save receipt</text>
+</g>
+<g class="message" data-from="Store" data-to="Consumer" data-label="Local transaction committed" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="800.8679999999999" y1="948" x2="1156.248" y2="948" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="978.558" y="938" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Local transaction committed</text>
+</g>
+<g class="message" data-from="Consumer" data-to="Broker" data-label="Acknowledge after local commit" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1156.248" y1="988" x2="991.896" y2="988" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="1074.0720000000001" y="978" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Acknowledge after local commit</text>
+</g>
+<g class="message" data-from="Consumer" data-to="Broker" data-label="Reject or retry with bounded attempts" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1156.248" y1="1052" x2="991.896" y2="1052" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="1074.0720000000001" y="1042" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Reject or retry with bounded attempts</text>
+</g>
+<g class="message" data-from="Broker" data-to="Broker" data-label="Route exhausted messages to the service DLQ" data-line-style="dashed" data-arrow-head="filled" data-self="true">
+  <polyline points="991.896,1092 1021.896,1092 1021.896,1112 991.896,1112" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="1029.896" y="1102" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Route exhausted messages to the service DLQ</text>
+</g>
+<g class="actor" data-id="User" data-label="User" data-type="actor">
+  <g transform="translate(52,32) scale(1.5)">
+    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+  </g>
+  <text x="70" y="84" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">User</text>
+</g>
+<g class="actor" data-id="Gateway" data-label="API Gateway" data-type="participant">
+  <rect x="156.3455" y="30" width="107.30900000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="210" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">API Gateway</text>
+</g>
+<g class="actor" data-id="Service" data-label="Request-owning service" data-type="participant">
+  <rect x="303.6545" y="30" width="176.22199999999998" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="391.7655" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Request-owning service</text>
+</g>
+<g class="actor" data-id="Authority" data-label="Authority service" data-type="participant">
+  <rect x="519.8764999999999" y="30" width="135.467" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="587.6099999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Authority service</text>
+</g>
+<g class="actor" data-id="Store" data-label="Local PostgreSQL and outbox" data-type="participant">
+  <rect x="695.3435" y="30" width="211.049" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="800.8679999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Local PostgreSQL and outbox</text>
+</g>
+<g class="actor" data-id="Broker" data-label="RabbitMQ" data-type="participant">
+  <rect x="946.3924999999999" y="30" width="91.007" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="991.896" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">RabbitMQ</text>
+</g>
+<g class="actor" data-id="Consumer" data-label="Idempotent consumer" data-type="participant">
+  <rect x="1077.3995" y="30" width="157.697" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1156.248" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Idempotent consumer</text>
+</g>
+</svg>
