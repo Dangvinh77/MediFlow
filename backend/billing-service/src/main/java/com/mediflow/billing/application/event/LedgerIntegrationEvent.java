@@ -24,4 +24,8 @@ public record LedgerIntegrationEvent(UUID eventId, String eventType, int version
     public record PaymentRefundedPayload(UUID refundTransactionId, UUID originalTransactionId, UUID accountId,
             UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,
             BigDecimal amount, String currency, String reason, Instant completedAt) { }
+    public record SettlementCompletedPayload(UUID settlementId, UUID admissionId, UUID accountId,
+            UUID patientId, UUID departmentId, BigDecimal grossAmount, BigDecimal insuranceAmount,
+            BigDecimal patientLiability, BigDecimal completedPayments, BigDecimal completedRefunds,
+            BigDecimal balance, String outcome, Instant completedAt) { }
 }

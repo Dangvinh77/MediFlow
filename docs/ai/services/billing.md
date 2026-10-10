@@ -97,6 +97,47 @@ not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence
 
 ## Acceptance gates
 
+### Opt-in discharge freeze and admission settlement (2026-10-10)
+
+Both gated by `mediflow.billing.ledger.enabled` + `mediflow.billing.settlement.enabled` (default
+off). `discharge.medically.approved` freezes the exact admission account (OPEN → CHARGE_CLOSED).
+`POST /api/v1/billing/accounts/{id}/settlements` (ADMIN/CASHIER) computes gross/liability/balance
+from persisted rows per the ledger equations, persists a new immutable settlement version, issues a
+settlement PAYMENT_REQUEST for a positive no-insurance balance (paid through the existing generic
+ledger payment command, unchanged), records REFUND_DUE for a negative balance without acting on it,
+and publishes `settlement.completed` plus closes the account to SETTLED only for a zero balance or
+an explicitly approved DEBT_APPROVED/WAIVED override. A positive balance under a nonzero insurance
+adjustment explicitly rejects (`BILLING_SETTLEMENT_INSURANCE_PAYMENT_REQUEST_UNSUPPORTED`) rather
+than guessing how to distribute the adjustment across charges; deposit recognition at settlement is
+likewise left open per CONTRACT-CARE-BILLING-01's own "final settlement/recognition" item. No new
+migration: SETTLEMENT/INSURANCE_ADJUSTMENT and the domain model already existed. Verified against
+inpatient-service's real discharge fixture and a hand-authored settlement.completed producer
+fixture (none existed from either side yet). See
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
+### Opt-in ADMISSION_DEPOSIT initial request issuance (2026-10-10)
+
+The opt-in `admission.deposit.requested` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.admission-deposit-consumer.enabled` false by default) creates one PAYMENT_REQUEST
+per admission from Inpatient's own `suggestedAmount`, with no CHARGE row — a deposit is cash/liability,
+never an earned charge. Clearance granting reuses the existing generic `LedgerPaymentService`
+unchanged. Verified against inpatient-service's real producer fixture, copied into
+`src/test/resources/contracts/admission-deposit-v1/`. Top-up issuance remains open, blocked on an
+undecided trigger-threshold policy (not an implementation gap); settlement remains open and unbuilt
+(no undecided policy blocks it). See
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
+### Opt-in LAB_TEST planned-request issuance (2026-10-10)
+
+The opt-in `lab.request.created` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.lab-test-charge-consumer.enabled` false by default) posts one LAB_TEST charge and
+one PAYMENT_REQUEST per lab test from the configured price catalog, mirroring the Surgery
+planned-request pattern (V9). No new migration columns were needed: `PAYMENT_REQUEST_TARGET.record_id`/
+`lab_test_ids` already existed. Clearance granting reuses the existing generic `LedgerPaymentService`
+unchanged. Verified against lab-service's real producer fixture, copied into
+`src/test/resources/contracts/lab-request-v1/`. EXAM issuance remains open pending Clinical's own
+producer fixture commit; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
 ### Opt-in pre-start cancellation adjustment (2026-10-08)
 
 The issuer gates now select strict `surgery.cancelled` on the single billing.q dispatcher.
