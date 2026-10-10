@@ -1,107 +1,174 @@
-# BÁO CÁO GIẢI TRÌNH GIAI ĐOẠN 1
+# Phase 1 Source-Alignment Report
 
-## Khởi động và Đặc tả yêu cầu
+## 1. Report metadata
 
-**Dự án:** MediFlow - Hệ thống quản lý phân tán bệnh viện/phòng khám  
-**Kỳ báo cáo:** 03/08/2026 - 09/08/2026  
-**Ngày lập giải trình:** 02/09/2026  
-**Người chịu trách nhiệm tổng hợp:** Phạm Đăng Vinh - Nhóm trưởng  
-**Tình trạng:** Trễ hạn; đã phục hồi bản nháp để xin ý kiến và chốt SRS v1.0.
+| Item | Value |
+|---|---|
+| Project | MediFlow Hospital Management System |
+| Phase | Phase 1 — Project initiation and requirements specification |
+| Review date | 10 October 2026 |
+| Source baseline | Commit `3f10ea6` |
+| Evidence scope | Backend, gateway, web frontend, Flutter mobile application, database migrations, security rules, integration events, and automated tests |
+| Document scope | Markdown and Mermaid assets in this Phase 1 folder only |
 
-## 1. Căn cứ và mục tiêu phải giải trình
+## 2. Executive conclusion
 
-Kế hoạch của giáo viên yêu cầu Giai đoạn 1 làm rõ vấn đề của đề tài, phân tích yêu cầu khách hàng theo tài liệu hướng dẫn, xác định vai trò người dùng và chức năng tương ứng, đồng thời hoàn thành bộ biểu mẫu ban đầu. Kế hoạch MediFlow cụ thể hóa thành bảy đầu việc từ kickoff đến SRS v1.0, hạn cuối ngày 09/08/2026.
+The Phase 1 package has been rewritten in English and reconciled with the current repository. The earlier material described an eight-service target and treated Inpatient and Surgery as future work. The source now contains ten implemented business services, their database migrations, security rules, REST endpoints, event publishers and consumers, and automated tests. The new requirements baseline therefore recognizes all ten contexts as implemented scope.
 
-Vì vậy báo cáo Giai đoạn 1 phải trả lời được:
+The source also disproves the earlier statements that authorization and messaging were absent. Controllers use endpoint-level authorization, the gateway validates access before routing, services publish and consume RabbitMQ integration events, and critical event paths use outbox dispatch, receipt-based idempotency, retry policies, and dead-letter queues.
 
-1. Dự án giải quyết vấn đề nào, cho tổ chức/người dùng nào và trong phạm vi nào?
-2. Ai là actor của hệ thống; mỗi actor được thực hiện chức năng nào?
-3. Danh sách Use Case đã đủ, không trùng lặp và có tiêu chí chấp nhận chưa?
-4. NFR của hệ thống phân tán đã có chỉ tiêu đo được chưa?
-5. Biểu mẫu nghiệp vụ nào đã thu thập, nguồn nào xác nhận và còn biểu mẫu nào thiếu?
-6. Ai lập, ai rà soát, ai phê duyệt SRS; phiên bản được khóa ở đâu?
+This report does not claim that every product or operational decision is final. Matters such as production service-level objectives, disaster recovery targets, audit-log retention, accessibility conformance, and external hospital integrations remain stakeholder decisions and are listed explicitly as open items.
 
-## 2. Đối chiếu kế hoạch với tình trạng thực tế
+## 3. Alignment with the Phase 1 teaching objective
 
-| STT | Cam kết trong kế hoạch | Hạn | Đầu ra phải có | Tình trạng tại 02/09 | Bằng chứng/ghi chú |
-|---|---|---:|---|---|---|
-| 1.1 | Họp kickoff về mục tiêu và phạm vi | 03/08 | Biên bản họp | Chưa tìm thấy artifact độc lập | Cần bổ sung ngày họp, người dự, quyết định và action item |
-| 1.2 | Xác định Problem Statement | 04/08 | Phần 1.1 SRS | Có thể phục hồi từ hồ sơ thiết kế | Đã đưa vào SRS bản nháp |
-| 1.3 | Xác định vai trò người dùng | 05/08 | Bảng vai trò | Có nhưng chưa thống nhất | Kế hoạch dùng 3 vai trò tổng quát; tài liệu RBAC hiện hành dùng 9 vai trò |
-| 1.4 | Phân tích yêu cầu chức năng | 06/08 | Danh sách Use Case | Có dữ liệu nguồn, chưa được ký chốt | Có thể truy vết từ 56 endpoint đặc tả |
-| 1.5 | Phân tích NFR | 07/08 | Danh sách NFR | Có yêu cầu định tính, thiếu ngưỡng nghiệm thu | Đã có bảo mật, resilience, logging; thiếu SLA, tải, RTO/RPO và retention định lượng |
-| 1.6 | Hoàn thành biểu mẫu ban đầu | 08/08 | Bộ biểu mẫu | Chưa có manifest bàn giao | Cần liệt kê form, nguồn cung cấp, phiên bản và trạng thái xác nhận |
-| 1.7 | Tổng hợp SRS v1.0 | 09/08 | `giai-doan-1-srs.md` | Bản chính thức chưa tồn tại đúng hạn | Bản phục hồi ngày 02/09 chỉ là bản nháp để review |
+| Teaching objective | Evidence in the refreshed package |
+|---|---|
+| Identify the project problem | The customer requirements document explains fragmented hospital workflows, duplicated data entry, weak traceability, delayed financial clearance, and incomplete cross-department visibility. |
+| Analyze customer requirements | Functional requirements are grouped by the ten source-aligned bounded contexts and by cross-cutting security and integration behavior. |
+| Define actors and responsibilities | Nine source-defined roles are mapped to hospital responsibilities, permitted actions, and restrictions. |
+| Prepare initial forms | The package defines the minimum fields and validation intent for patient, appointment, clinical, laboratory, pharmacy, billing, inpatient, surgery, notification, and reporting forms. |
+| Establish an acceptance baseline | Each major requirement has a stable identifier, expected outcome, and verification approach. |
 
-## 3. Nội dung nghiệp vụ phải trình bày trong SRS
+## 4. Source evidence reviewed
 
-### 3.1 Vấn đề và phạm vi
+### 4.1 Implemented system structure
 
-- Bối cảnh vận hành hiện tại của bệnh viện/phòng khám và điểm nghẽn cần giải quyết.
-- Mục tiêu đo được của MediFlow, đối tượng sử dụng và giá trị kỳ vọng.
-- Phạm vi trong giai đoạn học kỳ: quản lý tổ chức, bệnh nhân, khám lâm sàng, xét nghiệm, dược, thanh toán, thông báo và báo cáo.
-- Ngoài phạm vi, giả định và phụ thuộc: hạ tầng, dữ liệu khảo sát, hệ thống ngoài và trách nhiệm người dùng.
-- Thuật ngữ nghiệp vụ thống nhất để tránh dùng đồng thời nhiều tên cho cùng một vai trò hoặc quy trình.
+The Maven backend contains the gateway, Eureka server, shared contracts, and ten business services. Each business service owns its PostgreSQL schema and follows the repository's domain, application, and infrastructure boundaries.
 
-### 3.2 Actor và phân quyền
+| Context | Implemented responsibility observed in source |
+|---|---|
+| Organization | Users, staff profiles, departments, specialties, rooms, schedules, roles, and organizational authority. |
+| Patient | Patient identity, demographics, contacts, insurance, appointments, and patient-facing records. |
+| Clinical | Encounters, medical records, diagnoses, vital signs, prescriptions, clinical queues, and clinical workflow coordination. |
+| Lab | Test catalog, laboratory orders, work queues, sample/result workflows, result publication, and billing triggers. |
+| Pharmacy | Medicine catalog, stock, prescriptions, dispensing, replenishment, and inventory effects. |
+| Billing | Invoices, charge items, payments, deposits, refunds, receipts, and financial-clearance decisions. |
+| Notification | Delivery of operational and patient notifications from domain events. |
+| Report | Operational and management projections built from service events. |
+| Inpatient | Admission requests, bed and room coordination, deposits, inpatient stays, and discharge workflow. |
+| Surgery | Surgery requests, readiness and financial clearance, scheduling, execution, outcomes, and related notifications. |
 
-Kế hoạch khởi động nêu ba nhóm tổng quát `Administrator`, `Customer`, `Staff/Expert`. Thiết kế hiện hành đã chi tiết thành chín vai trò RBAC. Báo cáo phải có bảng ánh xạ từ vai trò tổng quát sang vai trò nghiệp vụ cụ thể, nêu rõ quyền xem/tạo/sửa/duyệt và giới hạn dữ liệu. Nhóm cần phê duyệt một danh mục actor duy nhất và dùng nhất quán trong SRS, API, GUI và kiểm thử.
+### 4.2 Security and role evidence
 
-### 3.3 Use Case
+The Organization domain defines the following roles:
 
-Mỗi Use Case tối thiểu phải có: mã, tên, actor chính/phụ, mục tiêu, tiền điều kiện, kích hoạt, luồng chính, luồng thay thế/ngoại lệ, hậu điều kiện, dữ liệu vào/ra, quy tắc nghiệp vụ và tiêu chí chấp nhận. Danh mục phải phủ đủ tám bounded context nghiệp vụ và truy vết được sang màn hình, endpoint, bảng/event và test case.
+`ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, and `SYSTEM`.
 
-### 3.4 NFR cho hệ thống phân tán
+The gateway provides the public API entry point. Backend controllers declare authorization rules with `@PreAuthorize`, and the design uses default deny, role checks, and ownership or context checks where a role alone is insufficient. The refreshed requirements preserve this distinction: hiding a feature in a client is only a usability measure; backend authorization remains authoritative.
 
-Nhóm đã có nền tảng định tính về JWT/RBAC, database-per-service, timeout, circuit breaker, idempotency, dead-letter queue, correlation ID và rate limit. Trước khi chốt phải bổ sung ngưỡng đo cho:
+### 4.3 REST and event evidence
 
-- hiệu năng: percentile thời gian đáp ứng, tải đồng thời và throughput;
-- khả dụng: mục tiêu uptime, timeout, số lần retry và tiêu chí degraded mode;
-- phục hồi: RTO, RPO, backup và diễn tập khôi phục;
-- bảo mật: vòng đời token, khóa tài khoản, audit trail và dữ liệu nhạy cảm;
-- quan sát: tỷ lệ log/trace, thời gian lưu giữ, cảnh báo và correlation xuyên dịch vụ;
-- khả năng mở rộng, tương thích Web/Mobile, accessibility và tiêu chí bảo trì/kiểm thử.
+The implementation uses two integration styles for different consistency needs:
 
-### 3.5 Bộ biểu mẫu ban đầu
+- Versioned REST calls are used when a request must obtain a current decision before it can complete, such as authority, financial clearance, or another service's current status.
+- RabbitMQ events propagate completed facts to other contexts without creating cross-service database access.
 
-Mỗi biểu mẫu phải ghi tên, quy trình sử dụng, người cung cấp/xác nhận, trường dữ liệu, quy tắc kiểm tra, phân quyền, phiên bản và liên kết Use Case. Nếu dùng biểu mẫu giả lập thay khảo sát thực tế, phải ghi rõ giả định để giáo viên đánh giá.
+Observed consumers cover inpatient lifecycle, cash receipts and refunds, billing changes, lab and clinical queues, prescription and surgery clearance, payment completion, notification delivery, and report facts. Publishers use routing keys and exchange configuration rather than direct service-to-service table coupling.
 
-## 4. Phần đã làm được gửi kiểm tra ngay
+Critical paths include safeguards for reliable asynchronous processing:
 
-- [SRS phục hồi - bản nháp](../giai-doan-1-srs.md), được tổng hợp từ kế hoạch, backend spec, API, RBAC và tài liệu kiến trúc.
-- [Kiểm kê mã nguồn](../source-audit.md), ghi nhận 56 endpoint ở mức đặc tả, 9 vai trò RBAC hiện hành và mức triển khai của từng nền tảng.
-- Các đặc tả triển khai tại [`docs/eproject_general_plan/backend-spec`](../../eproject_general_plan/backend-spec/README.md).
-- Chuẩn API, bảo mật, event và kiến trúc tại [`docs/ai`](../../ai/README.md).
+- aggregate state and its outgoing event are committed through an outbox pattern;
+- consumers store event receipts or fingerprints to reject exact duplicates safely;
+- transient failures are retried with a bounded policy;
+- exhausted messages are routed to a service dead-letter queue;
+- event payloads are versioned contracts rather than entity serialization.
 
-Các tài liệu trên là minh chứng tiến độ, chưa phải bằng chứng SRS đã được nhóm và giáo viên phê duyệt.
+### 4.4 Quality evidence
 
-## 5. Nguyên nhân trễ cần trình bày minh bạch
+The latest complete Maven suite executed against the current repository completed successfully:
 
-Nguyên nhân có thể xác nhận từ repository là đầu ra bị phân tán vào backend spec, tài liệu kiến trúc và ERD nhưng không có bước đóng gói thành SRS độc lập; checklist và biên bản phê duyệt không được cập nhật. Ngoài ra, actor và NFR chưa được chốt thành một baseline có thể kiểm thử. Các nguyên nhân ngoài repository như lịch học, lịch khảo sát hoặc thay đổi phân công chỉ được bổ sung khi có xác nhận của nhóm.
+| Metric | Result |
+|---|---:|
+| Tests executed | 3,612 |
+| Failures | 0 |
+| Errors | 0 |
+| Skipped | 0 |
 
-## 6. Hành động bù tiến độ và điều kiện hoàn tất
+Coverage includes gateway behavior and all ten business services. The result supports the claim that the requirements baseline is tied to executable behavior, while not replacing product acceptance testing by hospital stakeholders.
 
-| Ưu tiên | Hành động | Chủ trì | Người rà soát | Điều kiện hoàn tất |
-|---|---|---|---|---|
-| P0 | Chốt Problem Statement, scope và thuật ngữ | Vinh | Cả nhóm | Không còn mâu thuẫn giữa kế hoạch và SRS |
-| P0 | Chốt bảng ánh xạ actor và RBAC | Vinh, Huy | Hoàng Anh | Một danh mục actor dùng chung toàn hồ sơ |
-| P0 | Review Use Case theo từng bounded context | Cả nhóm | Vinh | Mỗi Use Case đủ luồng, rule và acceptance criteria |
-| P0 | Định lượng NFR | Huy | Vinh | Mỗi NFR có metric, ngưỡng và cách kiểm chứng |
-| P1 | Lập manifest biểu mẫu | Phúc | Huy | Mỗi form có nguồn, version, Use Case liên quan |
-| P1 | Baseline SRS v1.0 và ký duyệt | Vinh | Cả nhóm | Có version, ngày duyệt, người duyệt và change log |
+## 5. Corrections made to the former Phase 1 baseline
 
-Lịch bù chi tiết dùng chung nằm tại [lộ trình bù tiến độ](../recovery-roadmap.md).
+| Former statement or assumption | Source-aligned correction |
+|---|---|
+| The architecture has eight implemented business services. | The repository contains ten implemented business services, including Inpatient and Surgery. |
+| Inpatient and Surgery are approved future contexts. | Both contexts now contain production code, migrations, security, integration behavior, and tests. |
+| Messaging is not implemented. | RabbitMQ publishers, listeners, queue declarations, event contracts, retries, DLQs, and outbox processing are implemented. |
+| Endpoint role enforcement is missing. | Controllers across the services declare `@PreAuthorize` rules and the gateway enforces authenticated routing. |
+| The repository is mostly a skeleton. | The source contains domain models, use cases, ports, adapters, controllers, migrations, and extensive automated tests across the bounded contexts. |
+| Cross-context consistency can be documented as a shared transaction. | Each service owns its local transaction. Cross-context workflows use REST authority checks and asynchronous events or sagas. |
+| Service entities can be treated as one shared hospital data model. | Identifiers cross boundaries as values; services must not read or join another service's database. |
 
-## 7. Xác nhận trước khi nộp
+## 6. Architecture baseline
 
-| Vai trò | Người xác nhận | Nội dung xác nhận | Ngày | Kết quả |
-|---|---|---|---|---|
-| Nhóm trưởng/Backend | Phạm Đăng Vinh | Scope, SRS, API và baseline |  |  |
-| Frontend/Mobile | Trần Hoàng Anh | Actor, screen flow và tính khả thi giao diện |  |  |
-| Database/QA | Lê Quang Huy | NFR, dữ liệu và khả năng kiểm thử |  |  |
-| Database/Frontend | Nguyễn Hoàng Phúc | Biểu mẫu và truy vết |  |  |
+![MediFlow system architecture](assets/mediflow-system-architecture.svg)
 
-## 8. Kết luận đề nghị giáo viên xem xét
+The diagram reflects these non-negotiable boundaries:
 
-Nhóm chưa đủ cơ sở tuyên bố Giai đoạn 1 hoàn thành đúng hạn. Nhóm xin nộp bản SRS phục hồi để giáo viên kiểm tra phạm vi, actor, Use Case và NFR; sau khi xử lý ý kiến và đủ chữ ký nội bộ, tài liệu mới được nâng thành SRS v1.0 chính thức.
+1. clients access backend functions through the gateway;
+2. each business service owns its data and schema;
+3. synchronous calls are reserved for current decisions required to complete a request;
+4. events propagate completed facts;
+5. outbox and idempotency controls protect event-driven consistency;
+6. authorization, observability, and automated tests apply across all contexts.
 
+## 7. Integration and saga baseline
+
+![MediFlow REST and event integration flow](assets/mediflow-integration-and-saga-flow.svg)
+
+Representative source-aligned workflows include:
+
+- a published laboratory result creating the appropriate billing charge;
+- payment or deposit clearance enabling dispensing, admission, or surgical readiness;
+- prescription authority changes enabling or stopping pharmacy work;
+- surgery readiness and financial clearance enabling scheduling and execution;
+- dispense, refund, admission, discharge, and surgery outcomes updating reports and notifications;
+- duplicate deliveries being acknowledged without applying a second business mutation.
+
+## 8. Traceability method
+
+The requirements document uses stable prefixes for traceability:
+
+| Prefix | Area |
+|---|---|
+| `ORG` | Organization |
+| `PAT` | Patient |
+| `CLI` | Clinical |
+| `LAB` | Laboratory |
+| `PHA` | Pharmacy |
+| `BIL` | Billing |
+| `NOT` | Notification |
+| `REP` | Reporting |
+| `INP` | Inpatient |
+| `SUR` | Surgery |
+| `SEC` | Security and access control |
+| `INT` | Integration and reliability |
+| `NFR` | Non-functional requirements |
+
+Each identifier states a verifiable outcome rather than an implementation detail. Later design, test, and acceptance artifacts can reference these identifiers without renumbering business rules.
+
+## 9. Open stakeholder decisions
+
+The following items are intentionally not invented from source code:
+
+| Decision | Why stakeholder confirmation is required |
+|---|---|
+| Production availability target and maintenance windows | These depend on hospital operating policy and deployment budget. |
+| Recovery time and recovery point objectives | These determine backup, replication, and disaster-recovery investment. |
+| Audit and medical-record retention periods | These depend on applicable law and hospital governance. |
+| Accessibility conformance target | The required standard and testing process must be approved by the customer. |
+| External insurance, laboratory, pharmacy, and identity integrations | Vendors, protocols, credentials, and contractual responsibilities are not defined by the repository. |
+| Clinical approval and escalation policies | Medical governance must define who can approve, override, or cancel sensitive actions. |
+| Data migration and cutover plan | The source does not identify the customer's legacy systems or data quality. |
+
+## 10. Phase 1 completion assessment
+
+The refreshed package satisfies the documentation objective for Phase 1 when reviewed as a source-aligned baseline:
+
+- the business problem and project goals are stated;
+- the scope matches the ten implemented bounded contexts;
+- actors and permissions reflect the role model in source;
+- initial business forms cover the primary workflows;
+- architecture and integration diagrams are editable Mermaid sources with English labels;
+- requirements are suitable for traceability into design and testing;
+- assumptions and unresolved customer decisions are explicit;
+- no Word, PDF, application source, or canonical `docs/ai` file was modified by this refresh.

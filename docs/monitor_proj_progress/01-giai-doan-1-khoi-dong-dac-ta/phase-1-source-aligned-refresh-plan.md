@@ -26,7 +26,7 @@ Use a `sequenceDiagram` that distinguishes synchronous REST authority checks fro
 
 - [ ] **Step 3: Validate Mermaid syntax with a temporary render**
 
-Run the Pretty Mermaid renderer against both `.mmd` files with the `zinc-light` theme.
+Run the Pretty Mermaid renderer against both `.mmd` files with the committed print-safe light palette and DejaVu Sans text.
 
 Expected: both commands exit `0` and produce non-empty SVG files.
 
@@ -46,13 +46,13 @@ Expected: both commands exit `0` and produce non-empty SVG files.
 
 - [ ] **Step 1: Render SVG outputs**
 
-Run `render.mjs` once per diagram with `--theme zinc-light`, generous padding, and spacing suitable for documentation.
+Run `render.mjs` once per diagram with the custom white, slate, and blue palette, DejaVu Sans text, generous padding, and spacing suitable for documentation.
 
 Expected: both SVG files begin with `<svg` and contain English labels.
 
 - [ ] **Step 2: Render PNG outputs**
 
-Run `render.mjs` once per diagram with `--format png --width 2400 --theme zinc-light`.
+Run `render.mjs` once per diagram with `--format png --width 2400` and the same custom palette and font settings used for SVG.
 
 Expected: both PNG files open successfully and contain no clipped labels.
 

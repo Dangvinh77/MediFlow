@@ -61,7 +61,7 @@ A Mermaid sequence diagram will separate synchronous authority checks from async
 
 ## Validation
 
-- Validate every Mermaid source by rendering both SVG and PNG with the `zinc-light` theme.
+- Validate every Mermaid source by rendering both SVG and PNG with the committed print-safe light palette and DejaVu Sans text.
 - Inspect both rendered PNG files for clipping, ambiguous arrows, unreadable labels, and English-only visible text.
 - Search the Phase 1 folder for remaining Vietnamese prose and stale asset references.
 - Check all Markdown links and asset paths.

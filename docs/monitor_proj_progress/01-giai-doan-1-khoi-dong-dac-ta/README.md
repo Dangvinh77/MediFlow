@@ -1,32 +1,80 @@
-# Bộ báo cáo Giai đoạn 1 - Khởi động và Đặc tả yêu cầu
+# Phase 1 — Project Initiation and Requirements Specification
 
-**Thời gian kế hoạch:** 03/08/2026 - 09/08/2026  
-**Trạng thái hồ sơ:** Bản giải trình tiến độ, dùng để giáo viên kiểm tra và nhóm chốt SRS v1.0.
+This folder contains the Phase 1 evidence package for MediFlow. It records the project problem, customer requirements, user roles, initial business forms, system boundaries, and the architecture baseline that the team will use in later phases.
 
-## Nội dung của folder
+The package was reconciled with repository source at commit `3f10ea6` on 10 October 2026. It describes the system that is implemented in source, not the earlier eight-service concept.
 
-1. [Báo cáo giải trình Giai đoạn 1](bao-cao-giai-trinh.md) - đối chiếu yêu cầu, tiến độ thực tế, nguyên nhân trễ và việc cần phê duyệt.
-2. [Xác định vấn đề, Giải pháp, CRS và Bộ biểu mẫu](giai-doan-1-crs-bieu-mau.md) - tài liệu trình bày chính của Giai đoạn 1, gồm bảng Use Case, Task, Process và NFR hệ thống phân tán.
-3. [SRS phục hồi - bản nháp](../giai-doan-1-srs.md) - Problem Statement, phạm vi, actor, Use Case và NFR được tổng hợp từ tài liệu hiện có.
-4. [Kiểm kê mã nguồn](../source-audit.md) - bằng chứng về actor, route, module và mức triển khai thực tế.
+## Phase 1 objective
 
-## Sơ đồ kiến trúc SVG
+The teaching plan requires the team to:
 
-- [Kiến trúc tổng quan MediFlow](assets/kien-truc-tong-quan-mediflow.svg).
-- [Luồng REST, Event và Saga](assets/luong-rest-event-va-saga.svg).
+1. identify the operational problem addressed by the project;
+2. analyze customer and stakeholder requirements;
+3. define the responsibilities of administrators, customers, staff, and specialists;
+4. prepare the initial business forms and acceptance baseline.
 
-### Bản dành cho Microsoft Word
+## Documents
 
-- [Kiến trúc tổng quan - Word-safe SVG](assets/kien-truc-tong-quan-mediflow-word-safe.svg) hoặc [PNG 2×](assets/kien-truc-tong-quan-mediflow-word-safe.png).
-- [REST, Event và Saga - Word-safe SVG](assets/luong-rest-event-va-saga-word-safe.svg) hoặc [PNG 2×](assets/luong-rest-event-va-saga-word-safe.png).
+| File | Purpose |
+|---|---|
+| [Customer requirements and initial forms](giai-doan-1-crs-bieu-mau.md) | The primary Phase 1 specification: scope, stakeholders, roles, functional requirements, use cases, forms, non-functional requirements, and acceptance criteria. |
+| [Source-alignment report](bao-cao-giai-trinh.md) | Evidence showing how this package was reconciled with the current backend, frontend, mobile, database, security, and integration implementation. |
+| [Refresh design](phase-1-source-aligned-refresh-design.md) | Design decisions and boundaries for this documentation refresh. |
+| [Refresh plan](phase-1-source-aligned-refresh-plan.md) | The implementation and verification plan used for the refresh. |
 
-Ưu tiên chèn bản Word-safe SVG bằng **Insert → Pictures → This Device**. Nếu Word vẫn thay đổi màu, dùng PNG 2× để giữ hình thức tuyệt đối.
+## Current system baseline
 
-## Khi nộp cho giáo viên
+MediFlow is a hospital management platform with three client channels and ten implemented business contexts:
 
-Nộp file `bao-cao-giai-trinh.md` trước, tiếp theo là `giai-doan-1-crs-bieu-mau.md`, SRS bản nháp và các biểu mẫu nghiệp vụ hiện có. Trước khi gọi đây là SRS v1.0, nhóm phải chốt actor, danh sách Use Case, chỉ tiêu NFR định lượng và chữ ký/người duyệt.
+- Web application: Next.js App Router, TypeScript, and Tailwind CSS.
+- Mobile application: Flutter.
+- API access: the gateway is the only public backend entry point.
+- Service discovery: Eureka.
+- Synchronous integration: versioned REST APIs when a current authority decision is required.
+- Asynchronous integration: RabbitMQ events with transactional outbox dispatch, idempotent consumers, bounded retries, and dead-letter queues.
+- Data ownership: one PostgreSQL database per business service; no cross-service table access.
+- Business services: Organization, Patient, Clinical, Lab, Pharmacy, Billing, Notification, Report, Inpatient, and Surgery.
 
-## Nguồn đối chiếu
+The source defines these application roles: `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, and `SYSTEM`.
 
-- [Kế hoạch của giáo viên](../TeacherPlans.docx)
-- [Kế hoạch dự án MediFlow](../../plan/KeHoachDuAnMediFlow.docx)
+## Mermaid assets
+
+Every diagram in this folder is maintained as Mermaid source. SVG is the primary format for Markdown and browser viewing; PNG is supplied for compatibility with office applications and submission systems.
+
+| Diagram | Mermaid source | SVG | PNG |
+|---|---|---|---|
+| System architecture | [`.mmd`](assets/mediflow-system-architecture.mmd) | [`.svg`](assets/mediflow-system-architecture.svg) | [`.png`](assets/mediflow-system-architecture.png) |
+| REST, event, outbox, and idempotency flow | [`.mmd`](assets/mediflow-integration-and-saga-flow.mmd) | [`.svg`](assets/mediflow-integration-and-saga-flow.svg) | [`.png`](assets/mediflow-integration-and-saga-flow.png) |
+
+### System architecture
+
+![MediFlow system architecture](assets/mediflow-system-architecture.svg)
+
+### Integration and saga flow
+
+![MediFlow integration and saga flow](assets/mediflow-integration-and-saga-flow.svg)
+
+## Diagram regeneration
+
+Use the repository's Pretty Mermaid tooling or any Mermaid-compatible renderer. The committed outputs use a print-safe white background, blue connectors, and DejaVu Sans text.
+
+Example:
+
+```powershell
+$node = "C:\Users\VIP\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+$render = "C:\Users\VIP\.codex\skills\pretty-mermaid\scripts\render.mjs"
+
+& $node $render `
+  --input assets/mediflow-system-architecture.mmd `
+  --output assets/mediflow-system-architecture.svg `
+  --font "DejaVu Sans" `
+  --bg "#ffffff" --fg "#111827" --muted "#334155" `
+  --line "#64748b" --accent "#2563eb" `
+  --surface "#f8fafc" --border "#94a3b8" --padding 40
+```
+
+Render PNG separately with the same palette and a width of 2400 pixels.
+
+## Scope boundary
+
+This refresh changes only Markdown and diagram assets in this Phase 1 folder. It intentionally does not modify generated Word or PDF submissions, application source code, canonical files under `docs/ai`, or later project phases.
