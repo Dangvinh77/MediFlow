@@ -60,6 +60,10 @@ public class RabbitConfig {
     // Opt-in only: bound by AdmissionDepositRequestConfiguration, same unbound-by-default pattern.
     public static final String RK_ADMISSION_DEPOSIT_REQUESTED = "admission.deposit.requested";
 
+    // Subscribe — CONTRACT-CARE-BILLING-01 / HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT (inpatient-service).
+    // Opt-in only: bound by AdmissionSettlementConfiguration, same unbound-by-default pattern.
+    public static final String RK_DISCHARGE_MEDICALLY_APPROVED = "discharge.medically.approved";
+
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PRESCRIPTION_CREATED,
             RK_PRESCRIPTION_FILLED,

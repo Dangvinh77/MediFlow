@@ -97,6 +97,24 @@ not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence
 
 ## Acceptance gates
 
+### Opt-in discharge freeze and admission settlement (2026-10-10)
+
+Both gated by `mediflow.billing.ledger.enabled` + `mediflow.billing.settlement.enabled` (default
+off). `discharge.medically.approved` freezes the exact admission account (OPEN → CHARGE_CLOSED).
+`POST /api/v1/billing/accounts/{id}/settlements` (ADMIN/CASHIER) computes gross/liability/balance
+from persisted rows per the ledger equations, persists a new immutable settlement version, issues a
+settlement PAYMENT_REQUEST for a positive no-insurance balance (paid through the existing generic
+ledger payment command, unchanged), records REFUND_DUE for a negative balance without acting on it,
+and publishes `settlement.completed` plus closes the account to SETTLED only for a zero balance or
+an explicitly approved DEBT_APPROVED/WAIVED override. A positive balance under a nonzero insurance
+adjustment explicitly rejects (`BILLING_SETTLEMENT_INSURANCE_PAYMENT_REQUEST_UNSUPPORTED`) rather
+than guessing how to distribute the adjustment across charges; deposit recognition at settlement is
+likewise left open per CONTRACT-CARE-BILLING-01's own "final settlement/recognition" item. No new
+migration: SETTLEMENT/INSURANCE_ADJUSTMENT and the domain model already existed. Verified against
+inpatient-service's real discharge fixture and a hand-authored settlement.completed producer
+fixture (none existed from either side yet). See
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
 ### Opt-in ADMISSION_DEPOSIT initial request issuance (2026-10-10)
 
 The opt-in `admission.deposit.requested` issuer (both `mediflow.billing.ledger.enabled` and

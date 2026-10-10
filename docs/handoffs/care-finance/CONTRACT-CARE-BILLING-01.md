@@ -243,6 +243,39 @@ fixtures and persists a distinct private request notice. Both feature families s
 V6 still prevents released V1 outboxes. This does not complete performed reconciliation, refunds,
 deposit issuance/top-up, settlements, historical finance or whole-care E2E.
 
+### Discharge freeze and admission settlement — 2026-10-10
+
+Task-scoped Billing implementation by its owner (Lộc). An opt-in consumer accepts actual
+inpatient-service `discharge.medically.approved` V1 bytes and freezes the exact admission account's
+charge intake (OPEN → CHARGE_CLOSED); it never closes the admission itself, consistent with
+"Inpatient closes only after settlement." An opt-in settlement command then computes
+`grossAmount`/`allocatedPayments`/`patientLiability`/`balance` from persisted CHARGE/PAYMENT_
+ALLOCATION/INSURANCE_ADJUSTMENT rows, persists a new immutable SETTLEMENT version linked to the
+previous one, and: issues a SETTLEMENT PAYMENT_REQUEST for a positive no-insurance balance (the
+exact remaining balance per POSTED charge, summing exactly to the request amount — paid later
+through the already-generic ledger payment command, no new writer); records REFUND_DUE for a
+negative balance without executing a refund; or publishes `settlement.completed` and closes the
+account to SETTLED for a zero balance or an explicitly approved DEBT_APPROVED/WAIVED exception.
+Gated by `mediflow.billing.ledger.enabled` and `mediflow.billing.settlement.enabled`, both false by
+default. No new migration: SETTLEMENT/INSURANCE_ADJUSTMENT tables and the Settlement/
+InsuranceAdjustment domain model already existed from the original V2 schema, unused until now.
+Verified against inpatient-service's own discharge fixture; `settlement.completed` had no canonical
+fixture from either side yet, so one was authored here matching the documented payload exactly and
+proven against the actual producer output, the same way `clearance-*.json` were established earlier.
+
+A positive balance under a nonzero approved insurance adjustment explicitly rejects
+(`BILLING_SETTLEMENT_INSURANCE_PAYMENT_REQUEST_UNSUPPORTED`) instead of guessing a per-charge
+distribution of the adjustment — attaching full remaining per-charge balances to the settlement
+request would only sum to the pre-insurance balance, and no per-charge insurance-allocation policy
+has been decided by anyone. Insurance recording itself, and the zero/negative-balance outcomes, are
+unaffected. Deposit recognition (unapplied deposit cash becoming earned revenue at settlement) also
+stays open, exactly matching this contract's own long-standing "final settlement/recognition" open
+item: a deposit never separately allocated to a charge is simply absent from `allocatedPayments`,
+per the §4 formula as written — not a shortcut taken here, the formula's literal consequence. Top-up
+issuance remains separately blocked on an undecided trigger-threshold policy. This does not
+implement Docker/Gateway multi-service acceptance or deletion of
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
 ### ADMISSION_DEPOSIT initial request issuance — 2026-10-10
 
 Task-scoped Billing implementation by its owner (Lộc). An opt-in handler accepts actual
