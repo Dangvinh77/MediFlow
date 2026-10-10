@@ -117,9 +117,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return Roles.SYSTEM.equals(claims.get(JwtClaims.ROLE, String.class))
                 && claims.getSubject() != null
                 && !claims.getSubject().isBlank()
-                && optionalUuid(claims, JwtClaims.PATIENT_ID) == null
-                && optionalUuid(claims, JwtClaims.STAFF_ID) == null
-                && optionalUuid(claims, JwtClaims.DEPARTMENT_ID) == null;
+                && !claims.containsKey(JwtClaims.PATIENT_ID)
+                && !claims.containsKey(JwtClaims.STAFF_ID)
+                && !claims.containsKey(JwtClaims.DEPARTMENT_ID);
     }
 
     private boolean isUuid(String value) {
