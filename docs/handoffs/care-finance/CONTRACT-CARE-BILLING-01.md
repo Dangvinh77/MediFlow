@@ -243,6 +243,24 @@ fixtures and persists a distinct private request notice. Both feature families s
 V6 still prevents released V1 outboxes. This does not complete performed reconciliation, refunds,
 deposit issuance/top-up, settlements, historical finance or whole-care E2E.
 
+### ADMISSION_DEPOSIT initial request issuance — 2026-10-10
+
+Task-scoped Billing implementation by its owner (Lộc). An opt-in handler accepts actual
+Inpatient-service `admission.deposit.requested` V1 bytes and issues one PAYMENT_REQUEST per admission
+for the exact `suggestedAmount` Inpatient supplied, with no `CHARGE` row — consistent with the
+existing invariant that a deposit is cash/liability, not an earned charge (the generic ledger payment
+command already rejects any charge allocation attempt against an `ADMISSION_DEPOSIT` request). Gated
+by `mediflow.billing.ledger.enabled` and `mediflow.billing.admission-deposit-consumer.enabled`, both
+false by default. Exact replay of the same `admissionId` returns the recorded request; a conflicting
+replay rejects. No new writer was needed for payment/clearance: the existing generic ledger payment
+command already grants `financial.clearance.granted` for `ADMISSION_DEPOSIT` once its exact request is
+paid in full, unchanged. Verified against inpatient-service's own fixture, copied byte-for-byte into
+Billing's test resources per the no-copied-wire-format rule. This does not implement top-up issuance
+(blocked: the trigger threshold and the operational meaning of `currentBalance` are not decided by
+anyone yet, not merely unbuilt) or settlement (unblocked by any decision, simply not built), Docker/
+Gateway multi-service acceptance, or deletion of
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
 ### LAB_TEST planned-request issuance — 2026-10-10
 
 Task-scoped Billing implementation by its owner (Lộc). An opt-in handler accepts actual Lab-service

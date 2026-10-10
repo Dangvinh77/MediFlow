@@ -56,6 +56,10 @@ public class RabbitConfig {
     // queue stays unbound to it (messages simply drop, as today) until both feature flags are true.
     public static final String RK_LAB_REQUEST_CREATED = "lab.request.created";
 
+    // Subscribe — CONTRACT-CARE-BILLING-01 / HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT (inpatient-service).
+    // Opt-in only: bound by AdmissionDepositRequestConfiguration, same unbound-by-default pattern.
+    public static final String RK_ADMISSION_DEPOSIT_REQUESTED = "admission.deposit.requested";
+
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PRESCRIPTION_CREATED,
             RK_PRESCRIPTION_FILLED,

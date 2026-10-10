@@ -97,6 +97,18 @@ not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence
 
 ## Acceptance gates
 
+### Opt-in ADMISSION_DEPOSIT initial request issuance (2026-10-10)
+
+The opt-in `admission.deposit.requested` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.admission-deposit-consumer.enabled` false by default) creates one PAYMENT_REQUEST
+per admission from Inpatient's own `suggestedAmount`, with no CHARGE row — a deposit is cash/liability,
+never an earned charge. Clearance granting reuses the existing generic `LedgerPaymentService`
+unchanged. Verified against inpatient-service's real producer fixture, copied into
+`src/test/resources/contracts/admission-deposit-v1/`. Top-up issuance remains open, blocked on an
+undecided trigger-threshold policy (not an implementation gap); settlement remains open and unbuilt
+(no undecided policy blocks it). See
+[HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT](../../../backend/billing-service/HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT.md).
+
 ### Opt-in LAB_TEST planned-request issuance (2026-10-10)
 
 The opt-in `lab.request.created` issuer (both `mediflow.billing.ledger.enabled` and
