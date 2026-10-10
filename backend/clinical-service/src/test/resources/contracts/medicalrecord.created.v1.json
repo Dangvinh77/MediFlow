@@ -1,0 +1,21 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000009",
+  "eventType": "medicalrecord.created",
+  "version": 1,
+  "occurredAt": "2026-10-10T09:30:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000007",
+  "producer": "clinical-service",
+  "payload": {
+    "recordId": "00000000-0000-4000-8000-000000000008",
+    "appointmentId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "doctorId": "00000000-0000-4000-8000-000000000005",
+    "departmentId": "00000000-0000-4000-8000-000000000004",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000002",
+    "sourceType": "EXAM",
+    "sourceId": "00000000-0000-4000-8000-000000000002",
+    "priceCode": "OUTPATIENT_EXAM",
+    "examinationDate": "2026-10-10"
+  }
+}
