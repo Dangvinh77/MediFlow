@@ -428,4 +428,3 @@ Invoke the graph tools with these exact arguments:
 ```
 
 Expected: the Java test classes and JSON resources are visible or explicitly reported as deliberately non-semantic resources; no production dependency boundary changes appear.
-
