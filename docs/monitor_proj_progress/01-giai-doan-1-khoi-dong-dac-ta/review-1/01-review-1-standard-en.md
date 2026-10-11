@@ -6,7 +6,7 @@
 | Review | Review 1 — Problem Definition and Customer Requirements Specification |
 | Version | Standard |
 | Language | English |
-| Source baseline | Current repository source code and configuration |
+| Source baseline | Repository commit `1cc014e` source code and configuration |
 | Intended use | Academic review, Word conversion, and project evaluation |
 
 ## Part A — Problem Definition
@@ -26,7 +26,7 @@ MediFlow covers ten implemented business contexts:
 5. Pharmacy
 6. Billing
 7. Notification
-8. Reporting
+8. Report
 9. Inpatient care
 10. Surgery
 
@@ -57,13 +57,13 @@ The primary objective is to provide a coherent, secure, and traceable digital wo
 
 Specific objectives are:
 
-- Establish a single operational path from registration to care, diagnostics, medication, billing, admission, surgery, discharge, notification, and reporting.
+- Establish traceable local workflows from registration to care, diagnostics, medication, billing, inpatient care, notification, and reporting, while documenting gates that prevent unapproved end-to-end activation.
 - Give each bounded context clear ownership of its data and business rules.
 - Reduce duplicate entry by exchanging identifiers and authorized information through explicit contracts.
 - Enforce role-based authorization at the gateway-facing backend endpoints.
 - Record state changes and publish domain events for dependent workflows.
 - Support financial accountability through charges, invoices, deposits, payments, receipts, and refunds.
-- Improve clinical coordination through encounter, laboratory, prescription, inpatient, and surgery workflows.
+- Improve clinical coordination through appointment, encounter, laboratory, prescription, and locally implemented inpatient workflows; keep unfinished Surgery and care-finance integrations explicit.
 - Provide reliable background processing through outbox publication, idempotent consumers, retry handling, and dead-letter queues.
 - Supply managers with consolidated operational information without allowing reporting logic to modify source-of-truth records.
 - Maintain a modular architecture that can be developed, tested, and deployed by bounded context.
@@ -74,16 +74,16 @@ Specific objectives are:
 
 | Scope area | Included capabilities |
 |---|---|
-| Organization | Users, staff, departments, roles, facilities, rooms, beds, and organization reference data |
-| Patient | Patient profiles, identifiers, contact information, appointments, and patient-facing records |
-| Clinical | Encounters, observations, diagnoses, clinical notes, laboratory requests, and prescriptions |
+| Organization | Users, staff, departments, roles, facilities, rooms, and organization reference data |
+| Patient | Patient profiles, identifiers, contact information, and demographic records |
+| Clinical | Appointments, encounters, observations, diagnoses, clinical notes, laboratory requests, and prescriptions |
 | Laboratory | Test catalogue, laboratory orders, specimens, processing states, results, and result publication |
 | Pharmacy | Medicine catalogue, inventory, stock movement, prescription validation, and dispensing |
 | Billing | Billable charges, invoices, deposits, payments, receipts, refunds, and financial clearance |
 | Notification | Event-driven notification requests, templates, delivery attempts, and delivery status |
 | Report | Event-fed read models and management-oriented operational reports |
-| Inpatient | Admission requests, clearance, bed allocation, stays, transfers, care tracking, and discharge |
-| Surgery | Surgery requests, readiness checks, clearance, scheduling, execution, and outcome records |
+| Inpatient | Locally complete Core V1 for admissions, bed ownership/allocation, stays, transfers, treatment tracking, and discharge; cross-service event activation remains gated |
+| Surgery | Feature-gated foundation and selected local routes; business, creation, pre-op, and lifecycle APIs default to disabled, and the complete end-to-end lifecycle is not yet active |
 | Shared platform | API gateway, service discovery, per-service databases, messaging, security conventions, and shared contracts |
 | Web client | Role-aware pages that call the platform through same-origin `/api/*` routes |
 
@@ -101,14 +101,14 @@ Specific objectives are:
 
 | Role | Main responsibilities | Representative system functions |
 |---|---|---|
-| `ADMIN` | Configure and govern the platform | Manage users, roles, departments, facilities, reference data, and system configuration; review administrative status |
-| `DOCTOR` | Diagnose and direct care | Review patient information; open and update encounters; enter observations and diagnoses; request tests; create prescriptions; request admission or surgery; review results and outcomes |
-| `NURSE` | Coordinate and document patient care | Support check-in; record observations; assist encounters; manage inpatient care activities, bed-related operations, transfers, and discharge preparation |
+| `ADMIN` | Configure and govern the platform | Manage users, roles, departments, facilities, organization reference data, and permitted Inpatient bed records; review administrative status |
+| `DOCTOR` | Diagnose and direct care | Review patient information; update encounters; enter observations/diagnoses; request tests; prescribe; create permitted admission requests; prepare future Surgery context without implying an active referral lifecycle |
+| `NURSE` | Coordinate and document patient care | Create permitted patient/appointment records; support check-in; record observations; assist encounters; perform permitted inpatient care and bed operations |
 | `PHARMACIST` | Validate and dispense medication | Review authorized prescriptions; verify medicines and quantities; manage stock; record dispensing and inventory movement |
 | `CASHIER` | Process patient financial transactions | Review charges and invoices; receive deposits and payments; issue receipts; process authorized refunds; confirm financial status |
 | `LAB_TECH` | Perform diagnostic testing | Accept laboratory orders; manage specimens; record processing states and results; verify and publish results |
 | `MANAGER` | Monitor hospital operations | View operational and financial reports, service activity, workloads, trends, and management indicators |
-| `PATIENT` | Access personal services and information | Register or maintain profile information; request and review appointments; view permitted results, prescriptions, invoices, receipts, notifications, and care status |
+| `PATIENT` | Access the currently exposed patient channel | Read owned notifications through the implemented authorization boundary; self-service registration, appointments, clinical results, prescriptions, and financial records remain future-facing requirements |
 | `SYSTEM` | Execute trusted automation | Publish and consume events; retry failed delivery; update read models; initiate notifications; preserve idempotency and traceability |
 
 ### A6. Proposed Solution
@@ -133,6 +133,9 @@ MediFlow proposes a modular hospital platform in which each business capability 
 | Limitation | Current position | Project consequence |
 |---|---|---|
 | Mobile application | Only a reusable Flutter loader package is present; no complete root mobile app is available | Mobile workflows cannot yet be accepted as a full delivery channel |
+| Patient self-service | Current `PATIENT` authorization is limited to owned notification reads | Registration, appointment, clinical-result, prescription, invoice, receipt, and payment self-service require future authorized endpoints |
+| Surgery activation | Surgery contains a feature-gated foundation and selected local routes, while business and lifecycle flags default to off | A complete request-to-outcome workflow cannot be accepted as active system behavior |
+| Inpatient integration | Inpatient Core V1 APIs are local and the public route is available, but RabbitMQ producers/consumers default to off | Admission, finance, Surgery, Pharmacy, Report, and Notification event chains remain gated pending contract acceptance |
 | External insurance | No production insurer contract is proven complete | Eligibility, claim submission, and reimbursement remain outside demonstrated scope |
 | External payment systems | Internal financial workflow exists, but bank/payment-gateway integration is not proven complete | Production electronic payment requires additional integration and compliance work |
 | National identity | No certified national identity integration is demonstrated | Patient identity still depends on project-level registration data |
@@ -156,9 +159,9 @@ MediFlow proposes a modular hospital platform in which each business capability 
 | Pharmacy staff | Dispense only valid prescriptions with sufficient stock | Dispensing creates auditable medication and inventory records |
 | Finance staff | Reconcile all patient financial activity | Charges, invoices, deposits, payments, receipts, and refunds have consistent states |
 | Inpatient staff | Coordinate admission, clearance, bed use, stay, and discharge | No admission proceeds without required state and resource checks |
-| Surgery team | Coordinate readiness, clearance, schedule, execution, and outcome | Surgery status and prerequisites are visible and auditable |
+| Surgery team | Prepare for readiness, clearance, scheduling, execution, and outcome workflows | Only feature-gated foundation/local route behavior is currently demonstrable; the full lifecycle remains future acceptance work |
 | Managers | Obtain timely operational and financial insight | Reports use trusted source events and do not modify operational data |
-| Patients | Access permitted personal and service information | The patient sees only authorized records associated with the correct identity |
+| Patients | Access permitted personal information | The current implemented `PATIENT` boundary exposes owned notification reads; broader self-service is a stated future requirement |
 | Technical operations | Operate services reliably and recover from transient failures | Health, logs, retries, dead-letter handling, and database isolation are observable |
 
 ### B2. Data-Processing Cycle by User Role
@@ -166,23 +169,26 @@ MediFlow proposes a modular hospital platform in which each business capability 
 | Workflow | Actor | Input information | Processing | Output information | Owning service |
 |---|---|---|---|---|---|
 | User and role administration | `ADMIN` | User identity, staff details, assigned roles, department | Validate uniqueness and permissions; create or update organization records | User/staff record, role assignment, audit timestamps | Organization |
-| Facility and bed setup | `ADMIN` | Facility, department, room, bed attributes | Validate hierarchy and resource state; persist reference data | Available organizational resources and bed catalogue | Organization |
-| Patient registration | `PATIENT`, authorized staff | Demographics, contact data, identifiers | Validate required fields and duplicate constraints; assign UUID | Patient profile and registration confirmation | Patient |
-| Appointment scheduling | `PATIENT`, `NURSE`, authorized staff | Patient UUID, department/provider, requested time, reason | Validate request and scheduling rules; create appointment state | Appointment identifier, schedule, and status | Patient |
+| Organization setup | `ADMIN` | Facility, department, room, and organization attributes | Validate hierarchy and persist organization reference data | Available organization and room references | Organization |
+| Bed catalogue setup | `ADMIN`, `MANAGER` | Department/room references and bed attributes | Validate references and bed state; persist the Inpatient-owned resource | Bed catalogue and availability state | Inpatient |
+| Patient registration | `ADMIN`, `NURSE` | Demographics, contact data, identifiers | Validate required fields and duplicate constraints; assign UUID | Patient profile and registration confirmation | Patient |
+| Appointment scheduling | `ADMIN`, `NURSE` | Patient UUID, department/provider, requested time, reason | Validate request and scheduling rules; create appointment state | Appointment identifier, schedule, and status | Clinical |
 | Clinical encounter | `DOCTOR`, `NURSE` | Patient UUID, appointment/reference, symptoms, observations | Open encounter; document assessment; validate state transitions | Encounter record, observations, diagnoses, notes | Clinical |
-| Laboratory request | `DOCTOR` | Encounter UUID, patient UUID, requested tests, clinical notes | Validate encounter and request; create test order request | Laboratory order reference and requested test list | Clinical / Laboratory |
+| Laboratory request authoring | `DOCTOR` | Encounter UUID, patient UUID, requested tests, clinical notes | Validate encounter and request; create the clinical request | Clinical laboratory-request reference | Clinical |
+| Laboratory order acceptance | `LAB_TECH` | Clinical request reference and requested tests | Validate the inbound request and create the laboratory-owned lifecycle | Laboratory order reference and initial status | Laboratory |
 | Specimen and test processing | `LAB_TECH` | Laboratory order, specimen information, measurements | Accept order; record collection and processing; validate result fields | Specimen status, test results, processing history | Laboratory |
 | Result verification and publication | `LAB_TECH` | Completed test values, ranges, comments | Verify authority and order status; publish final result | Published laboratory result and result event | Laboratory |
 | Prescription creation | `DOCTOR` | Encounter, patient, medicine identifiers, dose, quantity, instructions | Validate encounter and prescription data; authorize clinical instruction | Prescription and medication lines | Clinical |
 | Medicine dispensing | `PHARMACIST` | Authorized prescription, stock levels, dispense quantity | Verify prescription and stock; record dispense; reduce inventory | Dispense record, stock movement, remaining quantity | Pharmacy |
 | Charge and invoice handling | `CASHIER`, `SYSTEM` | Billable service event, patient UUID, amounts, invoice context | Create idempotent charge; group or update financial obligation | Charge and invoice with financial status | Billing |
-| Deposit and payment | `CASHIER`, `PATIENT` | Invoice/admission reference, amount, payment method | Validate amount and state; record transaction; update balance | Payment/deposit record, updated balance, receipt | Billing |
+| Deposit and payment | `CASHIER` | Invoice/admission reference, payer-provided amount and payment method | Validate amount and state; record transaction; update balance | Payment/deposit record, updated balance, receipt | Billing |
 | Refund | `CASHIER` | Original transaction, reason, approved refund amount | Check refundable balance and authorization; record reversal | Refund record and adjusted financial position | Billing |
-| Inpatient admission | `DOCTOR`, `NURSE`, `CASHIER` | Admission request, patient, clinical need, financial clearance | Validate request and clearance; allocate suitable available bed | Admission, bed assignment, active stay | Inpatient |
-| Inpatient care and transfer | `NURSE`, `DOCTOR` | Active stay, care observations, transfer request | Record care activity; validate room/bed transition; update occupancy | Updated stay history, care records, bed state | Inpatient |
-| Discharge | `DOCTOR`, `NURSE`, `CASHIER` | Active stay, clinical discharge decision, financial status | Validate discharge prerequisites; close stay; release bed | Discharge record, completed stay, available bed | Inpatient |
-| Surgery request and readiness | `DOCTOR`, surgery staff | Patient, encounter, procedure, priority, readiness evidence | Validate request and prerequisites; track readiness checklist | Surgery request and readiness status | Surgery |
-| Surgery scheduling and execution | Authorized surgery staff | Ready request, financial clearance, theatre/time/team | Validate resources and status; schedule; record execution and outcome | Schedule, procedure record, outcome, lifecycle events | Surgery |
+| Inpatient admission creation | `ADMIN`, `DOCTOR` | Patient, clinical need, and admission details | Validate references and create the local Core V1 admission | Pending admission | Inpatient |
+| Bed assignment and transfer | `ADMIN`, `NURSE` | Admission and requested/target bed | Validate availability and perform the bed transition | Updated admission and bed occupancy | Inpatient |
+| Inpatient treatment | `ADMIN`, `DOCTOR`, `NURSE` | Active admission and treatment/observation information | Append or correct permitted treatment entries | Updated treatment history | Inpatient |
+| Medical discharge | `ADMIN`, `DOCTOR` | Active admission and clinical discharge information | Apply medical-discharge transition | Medically discharged admission | Inpatient |
+| Administrative close | `ADMIN`, `CASHIER` | Medically discharged admission and local close information | Apply the permitted administrative close | Closed admission and released resources | Inpatient |
+| Surgery local foundation | Authorized staff under disabled feature flags | Case/pre-op/schedule inputs for selected implemented routes | Execute only when the required feature gates and authority provider are enabled | Local case/pre-op/draft-schedule result; no complete outcome event | Surgery |
 | Notification delivery | `SYSTEM` | Domain event, recipient reference, template data, channel | Select template; create delivery request; attempt and track delivery | Notification content, delivery status, failure details | Notification |
 | Management reporting | `MANAGER`, `SYSTEM` | Trusted domain events and report criteria | Update read models; aggregate permitted measures; filter by criteria | Operational and financial report output | Report |
 
@@ -190,15 +196,15 @@ MediFlow proposes a modular hospital platform in which each business capability 
 
 | Flow | Trigger | Main processing path | Result |
 |---|---|---|---|
-| Registration to appointment | Patient is registered and requests care | Patient stores identity and appointment data; authorized staff review schedule | Confirmed appointment associated with the correct patient UUID |
+| Registration to appointment | Authorized staff register a patient and schedule care | Patient stores identity; Clinical owns and stores the appointment using the patient UUID | Confirmed appointment associated with the correct patient UUID |
 | Appointment to encounter | Appointment reaches check-in/consultation state | Clinical validates the patient/appointment reference and opens an encounter | Traceable clinical encounter |
 | Encounter to laboratory | Doctor orders one or more tests | Clinical records the order; Laboratory accepts and processes it | Published result available to permitted clinical users |
 | Laboratory to billing | A billable test reaches the contractually defined state | Laboratory event is consumed idempotently by Billing | One charge for the eligible laboratory activity |
 | Prescription to dispensing | Doctor authorizes prescription | Pharmacy validates prescription and stock, then records dispense | Medication supplied with inventory movement history |
 | Care to finance | A billable care activity is completed | Owning service publishes event; Billing creates/reconciles charge and invoice | Updated patient financial obligation |
-| Admission to active stay | Admission request and financial clearance are satisfied | Inpatient verifies prerequisites and allocates an available bed | Active inpatient stay with bed occupancy |
-| Active stay to discharge | Clinical discharge decision and required clearance are satisfied | Inpatient closes the stay and releases resources | Discharge record and reusable bed |
-| Surgery request to outcome | Readiness and financial clearance are satisfied | Surgery schedules resources, records execution, and publishes outcome | Complete auditable surgery lifecycle |
+| Admission to active stay | Local admission and bed prerequisites are satisfied | Inpatient Core V1 verifies the local state and allocates an available bed; event-driven financial activation remains gated | Active local inpatient stay with bed occupancy |
+| Active stay to discharge | Medical discharge and administrative-close conditions are satisfied | Authorized Inpatient roles apply medical discharge, administrative close, and bed release | Closed local admission and reusable bed |
+| Surgery target lifecycle | Future readiness and financial-clearance contracts are approved | Feature-gated Surgery slices would be extended through scheduling, execution, and outcome publication | Not currently an accepted end-to-end workflow |
 | Domain event to notification/report | An eligible state change is committed | Outbox publishes event; Notification and Report consume idempotently | Delivery record and updated reporting read model |
 
 ### B4. Client Hardware Requirements
@@ -282,8 +288,8 @@ The Review 1 requirements are considered represented by the current solution whe
 5. Laboratory staff can progress an order to a verified, published result.
 6. Pharmacy staff can validate a prescription, dispense medicine, and update stock records.
 7. Billing can record eligible charges, invoices, deposits/payments, receipts, and authorized refunds.
-8. Inpatient care can progress from admission request through clearance, allocation, active stay, and discharge.
-9. Surgery can progress from request through readiness, clearance, schedule, execution, and outcome.
+8. Inpatient Core V1 can demonstrate its local admission, bed, treatment, medical-discharge, and administrative-close APIs; cross-service event activation is recorded as gated.
+9. Surgery can demonstrate only the selected local, feature-gated routes with default-off flags; the complete request-to-outcome lifecycle is excluded from current acceptance.
 10. Eligible state changes can generate notifications and update reporting read models through events.
 11. Unauthorized roles are rejected at protected endpoints.
 12. Services do not depend on another service's database.

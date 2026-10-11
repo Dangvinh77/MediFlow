@@ -6,7 +6,7 @@
 | Đợt đánh giá | Review 1 — Xác định vấn đề và Đặc tả yêu cầu khách hàng |
 | Phiên bản | Tiêu chuẩn |
 | Ngôn ngữ | Tiếng Việt |
-| Đường cơ sở nguồn | Mã nguồn và cấu hình hiện tại của kho mã |
+| Đường cơ sở nguồn | Mã nguồn và cấu hình tại commit `1cc014e` |
 | Mục đích sử dụng | Đánh giá học thuật, chuyển đổi sang Word và thẩm định dự án |
 
 ## Phần A — Xác định vấn đề
@@ -74,16 +74,16 @@ Các mục tiêu cụ thể gồm:
 
 | Khu vực phạm vi | Chức năng bao gồm |
 |---|---|
-| Organization | Người dùng, nhân viên, khoa, vai trò, cơ sở, phòng, giường và dữ liệu tham chiếu tổ chức |
-| Patient | Hồ sơ người bệnh, định danh, thông tin liên hệ, lịch khám và hồ sơ phía người bệnh |
-| Clinical | Lượt khám, quan sát, chẩn đoán, ghi chú lâm sàng, yêu cầu xét nghiệm và đơn thuốc |
+| Organization | Người dùng, nhân viên, khoa, vai trò, cơ sở, phòng và dữ liệu tham chiếu tổ chức |
+| Patient | Hồ sơ người bệnh, định danh, liên hệ và dữ liệu nhân khẩu học |
+| Clinical | Lịch khám, lượt khám, quan sát, chẩn đoán, ghi chú, yêu cầu xét nghiệm và đơn thuốc |
 | Laboratory | Danh mục xét nghiệm, phiếu xét nghiệm, mẫu bệnh phẩm, trạng thái xử lý, kết quả và công bố kết quả |
 | Pharmacy | Danh mục thuốc, tồn kho, biến động kho, xác minh đơn thuốc và cấp phát |
 | Billing | Phí dịch vụ, hóa đơn, tạm ứng, thanh toán, biên lai, hoàn tiền và xác nhận tài chính |
 | Notification | Yêu cầu thông báo từ sự kiện, mẫu thông báo, lần gửi và trạng thái gửi |
 | Report | Mô hình đọc được nuôi bằng sự kiện và báo cáo vận hành dành cho quản lý |
-| Inpatient | Yêu cầu nhập viện, xác nhận, phân giường, đợt nằm viện, chuyển giường, theo dõi chăm sóc và xuất viện |
-| Surgery | Yêu cầu phẫu thuật, kiểm tra sẵn sàng, xác nhận, xếp lịch, thực hiện và ghi nhận kết quả |
+| Inpatient | Core V1 hoàn tất cục bộ cho nhập viện, quyền sở hữu/phân giường, đợt nằm viện, chuyển, điều trị và xuất viện; kích hoạt sự kiện chéo dịch vụ còn bị khóa |
+| Surgery | Nền tảng feature-gated và một số route cục bộ; các cờ business, creation, pre-op và lifecycle mặc định tắt, chưa có vòng đời đầu-cuối hoạt động |
 | Nền tảng dùng chung | API gateway, khám phá dịch vụ, cơ sở dữ liệu riêng theo dịch vụ, messaging, quy ước bảo mật và hợp đồng dùng chung |
 | Ứng dụng web | Các trang theo vai trò gọi nền tảng qua đường dẫn cùng nguồn `/api/*` |
 
@@ -102,13 +102,13 @@ Các mục tiêu cụ thể gồm:
 | Vai trò | Trách nhiệm chính | Chức năng hệ thống tiêu biểu |
 |---|---|---|
 | `ADMIN` | Cấu hình và quản trị nền tảng | Quản lý người dùng, vai trò, khoa, cơ sở, dữ liệu tham chiếu và cấu hình hệ thống; xem trạng thái quản trị |
-| `DOCTOR` | Chẩn đoán và chỉ đạo điều trị | Xem thông tin người bệnh; mở/cập nhật lượt khám; nhập quan sát và chẩn đoán; chỉ định xét nghiệm; kê đơn; yêu cầu nhập viện hoặc phẫu thuật; xem kết quả |
+| `DOCTOR` | Chẩn đoán và chỉ đạo điều trị | Xem người bệnh; cập nhật lượt khám; nhập quan sát/chẩn đoán; chỉ định; kê đơn; tạo admission được phép; chuẩn bị ngữ cảnh Surgery tương lai mà không hàm ý referral lifecycle đang hoạt động |
 | `NURSE` | Điều phối và ghi nhận chăm sóc | Hỗ trợ tiếp nhận; ghi dấu hiệu/quan sát; hỗ trợ lượt khám; quản lý chăm sóc nội trú, thao tác giường, chuyển giường và chuẩn bị xuất viện |
 | `PHARMACIST` | Xác minh và cấp thuốc | Xem đơn đã được duyệt; kiểm tra thuốc và số lượng; quản lý tồn kho; ghi nhận cấp phát và biến động kho |
 | `CASHIER` | Xử lý giao dịch tài chính người bệnh | Xem phí và hóa đơn; nhận tạm ứng/thanh toán; phát hành biên lai; xử lý hoàn tiền được phép; xác nhận trạng thái tài chính |
 | `LAB_TECH` | Thực hiện xét nghiệm chẩn đoán | Tiếp nhận phiếu xét nghiệm; quản lý mẫu; ghi trạng thái xử lý và kết quả; xác minh và công bố kết quả |
 | `MANAGER` | Theo dõi vận hành bệnh viện | Xem báo cáo vận hành và tài chính, hoạt động dịch vụ, tải công việc, xu hướng và chỉ số quản trị |
-| `PATIENT` | Truy cập dịch vụ và thông tin cá nhân | Đăng ký/cập nhật hồ sơ; yêu cầu và xem lịch khám; xem kết quả, đơn thuốc, hóa đơn, biên lai, thông báo và trạng thái chăm sóc được phép |
+| `PATIENT` | Truy cập kênh người bệnh hiện đã công khai | Đọc thông báo thuộc chính mình qua ranh giới quyền đã triển khai; tự đăng ký, lịch khám, kết quả, đơn, hóa đơn và thanh toán là yêu cầu tương lai |
 | `SYSTEM` | Thực hiện tự động hóa đáng tin cậy | Phát và nhận sự kiện; thử lại khi gửi thất bại; cập nhật mô hình đọc; khởi tạo thông báo; duy trì idempotency và khả năng truy vết |
 
 ### A6. Giải pháp đề xuất
@@ -133,6 +133,9 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 | Giới hạn | Trạng thái hiện tại | Hệ quả đối với dự án |
 |---|---|---|
 | Ứng dụng di động | Chỉ có gói Flutter loader tái sử dụng; chưa có ứng dụng mobile gốc hoàn chỉnh | Chưa thể nghiệm thu mobile như một kênh cung cấp đầy đủ |
+| Tự phục vụ của người bệnh | Quyền `PATIENT` hiện giới hạn ở đọc thông báo thuộc chính mình | Đăng ký, lịch khám, kết quả, đơn, hóa đơn, biên lai và thanh toán cần endpoint có quyền trong tương lai |
+| Kích hoạt Surgery | Có nền tảng feature-gated và một số route cục bộ, các cờ business/lifecycle mặc định tắt | Không thể nghiệm thu vòng đời đầy đủ từ yêu cầu đến kết quả như hành vi đang hoạt động |
+| Tích hợp Inpatient | Core V1 API hoạt động cục bộ và gateway route có sẵn, nhưng producer/consumer RabbitMQ mặc định tắt | Chuỗi sự kiện nhập viện, tài chính, Surgery, Pharmacy, Report, Notification còn chờ nghiệm thu hợp đồng |
 | Bảo hiểm ngoài hệ thống | Chưa chứng minh hợp đồng production với bên bảo hiểm | Kiểm tra quyền lợi, gửi yêu cầu và hoàn trả nằm ngoài phạm vi đã trình diễn |
 | Hệ thống thanh toán ngoài | Có quy trình tài chính nội bộ nhưng chưa chứng minh tích hợp ngân hàng/cổng thanh toán | Thanh toán điện tử production cần thêm tích hợp và công việc tuân thủ |
 | Định danh quốc gia | Chưa có tích hợp định danh quốc gia đã chứng nhận | Định danh người bệnh vẫn phụ thuộc dữ liệu đăng ký ở cấp dự án |
@@ -156,9 +159,9 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 | Nhân viên dược | Chỉ cấp phát đơn hợp lệ với tồn kho đủ | Cấp phát tạo hồ sơ thuốc và kho có thể kiểm toán |
 | Nhân viên tài chính | Đối soát mọi hoạt động tài chính của người bệnh | Phí, hóa đơn, tạm ứng, thanh toán, biên lai và hoàn tiền có trạng thái nhất quán |
 | Nhân viên nội trú | Điều phối nhập viện, xác nhận, giường, lưu trú và xuất viện | Không nhập viện khi chưa đạt điều kiện trạng thái và tài nguyên |
-| Nhóm phẫu thuật | Điều phối sẵn sàng, xác nhận, lịch, thực hiện và kết quả | Trạng thái và điều kiện tiên quyết của phẫu thuật hiển thị và kiểm toán được |
+| Nhóm phẫu thuật | Chuẩn bị cho quy trình sẵn sàng, xác nhận, lịch, thực hiện và kết quả | Hiện chỉ trình diễn nền tảng/route cục bộ bị feature gate; vòng đời đầy đủ còn là công việc nghiệm thu tương lai |
 | Nhà quản lý | Có thông tin vận hành và tài chính kịp thời | Báo cáo dùng sự kiện nguồn đáng tin cậy và không sửa dữ liệu vận hành |
-| Người bệnh | Truy cập thông tin dịch vụ và cá nhân được phép | Người bệnh chỉ thấy hồ sơ được phép gắn đúng định danh |
+| Người bệnh | Truy cập thông tin cá nhân được phép | Ranh giới `PATIENT` hiện chỉ công khai đọc thông báo thuộc chính mình; tự phục vụ rộng hơn là yêu cầu tương lai |
 | Vận hành kỹ thuật | Vận hành dịch vụ tin cậy và khôi phục sau lỗi tạm thời | Health, log, retry, dead-letter và tách biệt cơ sở dữ liệu quan sát được |
 
 ### B2. Chu trình xử lý dữ liệu theo đối tượng sử dụng
@@ -166,23 +169,26 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 | Quy trình | Đối tượng | Thông tin đầu vào | Xử lý | Thông tin đầu ra | Dịch vụ sở hữu |
 |---|---|---|---|---|---|
 | Quản trị người dùng và vai trò | `ADMIN` | Định danh người dùng, thông tin nhân viên, vai trò, khoa | Kiểm tra duy nhất và quyền; tạo/cập nhật hồ sơ tổ chức | Hồ sơ người dùng/nhân viên, gán vai trò, thời gian kiểm toán | Organization |
-| Thiết lập cơ sở và giường | `ADMIN` | Thuộc tính cơ sở, khoa, phòng, giường | Kiểm tra phân cấp và trạng thái tài nguyên; lưu dữ liệu tham chiếu | Tài nguyên tổ chức và danh mục giường khả dụng | Organization |
-| Đăng ký người bệnh | `PATIENT`, nhân viên được phép | Nhân khẩu học, liên hệ, định danh | Kiểm tra trường bắt buộc và trùng lặp; cấp UUID | Hồ sơ người bệnh và xác nhận đăng ký | Patient |
-| Xếp lịch khám | `PATIENT`, `NURSE`, nhân viên được phép | UUID người bệnh, khoa/bác sĩ, thời gian, lý do | Kiểm tra yêu cầu và quy tắc lịch; tạo trạng thái lịch khám | Mã lịch khám, lịch và trạng thái | Patient |
+| Thiết lập tổ chức | `ADMIN` | Thuộc tính cơ sở, khoa, phòng và tổ chức | Kiểm tra phân cấp; lưu dữ liệu tham chiếu tổ chức | Tham chiếu tổ chức và phòng khả dụng | Organization |
+| Thiết lập danh mục giường | `ADMIN`, `MANAGER` | Tham chiếu khoa/phòng và thuộc tính giường | Kiểm tra tham chiếu/trạng thái; lưu tài nguyên do Inpatient sở hữu | Danh mục giường và trạng thái khả dụng | Inpatient |
+| Đăng ký người bệnh | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh | Kiểm tra trường bắt buộc và trùng lặp; cấp UUID | Hồ sơ người bệnh và xác nhận đăng ký | Patient |
+| Xếp lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, khoa/bác sĩ, thời gian, lý do | Kiểm tra yêu cầu và quy tắc lịch; tạo trạng thái lịch khám | Mã lịch khám, lịch và trạng thái | Clinical |
 | Lượt khám lâm sàng | `DOCTOR`, `NURSE` | UUID người bệnh, lịch/tham chiếu, triệu chứng, quan sát | Mở lượt khám; ghi nhận đánh giá; kiểm tra chuyển trạng thái | Hồ sơ lượt khám, quan sát, chẩn đoán, ghi chú | Clinical |
-| Yêu cầu xét nghiệm | `DOCTOR` | UUID lượt khám, UUID người bệnh, danh sách xét nghiệm, ghi chú | Kiểm tra lượt khám và yêu cầu; tạo yêu cầu phiếu xét nghiệm | Tham chiếu phiếu xét nghiệm và danh sách test | Clinical / Laboratory |
+| Soạn yêu cầu xét nghiệm | `DOCTOR` | UUID lượt khám/người bệnh, danh sách test, ghi chú | Kiểm tra lượt khám/yêu cầu; tạo yêu cầu lâm sàng | Tham chiếu yêu cầu xét nghiệm lâm sàng | Clinical |
+| Tiếp nhận phiếu xét nghiệm | `LAB_TECH` | Tham chiếu yêu cầu lâm sàng và danh sách test | Kiểm tra yêu cầu đến; tạo vòng đời do Laboratory sở hữu | Tham chiếu phiếu xét nghiệm và trạng thái đầu | Laboratory |
 | Mẫu và xử lý xét nghiệm | `LAB_TECH` | Phiếu xét nghiệm, thông tin mẫu, số đo | Tiếp nhận; ghi lấy mẫu và xử lý; kiểm tra trường kết quả | Trạng thái mẫu, kết quả, lịch sử xử lý | Laboratory |
 | Xác minh và công bố kết quả | `LAB_TECH` | Giá trị test hoàn tất, khoảng tham chiếu, nhận xét | Kiểm tra quyền và trạng thái phiếu; công bố kết quả cuối | Kết quả xét nghiệm đã công bố và sự kiện kết quả | Laboratory |
 | Tạo đơn thuốc | `DOCTOR` | Lượt khám, người bệnh, mã thuốc, liều, số lượng, hướng dẫn | Kiểm tra lượt khám và dữ liệu kê đơn; xác nhận chỉ định | Đơn thuốc và các dòng thuốc | Clinical |
 | Cấp phát thuốc | `PHARMACIST` | Đơn đã duyệt, tồn kho, số lượng cấp | Xác minh đơn và tồn; ghi cấp phát; giảm kho | Hồ sơ cấp phát, biến động kho, số lượng còn lại | Pharmacy |
 | Xử lý phí và hóa đơn | `CASHIER`, `SYSTEM` | Sự kiện dịch vụ tính phí, UUID người bệnh, số tiền, ngữ cảnh hóa đơn | Tạo phí idempotent; gom hoặc cập nhật nghĩa vụ tài chính | Phí và hóa đơn cùng trạng thái tài chính | Billing |
-| Tạm ứng và thanh toán | `CASHIER`, `PATIENT` | Tham chiếu hóa đơn/nhập viện, số tiền, phương thức | Kiểm tra số tiền và trạng thái; ghi giao dịch; cập nhật số dư | Hồ sơ thanh toán/tạm ứng, số dư mới, biên lai | Billing |
+| Tạm ứng và thanh toán | `CASHIER` | Tham chiếu hóa đơn/nhập viện, số tiền và phương thức do người trả cung cấp | Kiểm tra số tiền/trạng thái; ghi giao dịch; cập nhật số dư | Hồ sơ thanh toán/tạm ứng, số dư mới, biên lai | Billing |
 | Hoàn tiền | `CASHIER` | Giao dịch gốc, lý do, số tiền được duyệt | Kiểm tra số dư có thể hoàn và thẩm quyền; ghi đảo giao dịch | Hồ sơ hoàn tiền và vị thế tài chính đã điều chỉnh | Billing |
-| Nhập viện nội trú | `DOCTOR`, `NURSE`, `CASHIER` | Yêu cầu nhập viện, người bệnh, nhu cầu lâm sàng, xác nhận tài chính | Kiểm tra yêu cầu/xác nhận; phân giường phù hợp còn trống | Hồ sơ nhập viện, phân giường, đợt nằm viện hoạt động | Inpatient |
-| Chăm sóc và chuyển nội trú | `NURSE`, `DOCTOR` | Đợt nằm viện, quan sát chăm sóc, yêu cầu chuyển | Ghi hoạt động chăm sóc; kiểm tra chuyển phòng/giường; cập nhật sử dụng | Lịch sử đợt điều trị, hồ sơ chăm sóc, trạng thái giường | Inpatient |
-| Xuất viện | `DOCTOR`, `NURSE`, `CASHIER` | Đợt nằm viện, quyết định chuyên môn, trạng thái tài chính | Kiểm tra điều kiện xuất viện; đóng đợt; giải phóng giường | Hồ sơ xuất viện, đợt hoàn tất, giường khả dụng | Inpatient |
-| Yêu cầu và sẵn sàng phẫu thuật | `DOCTOR`, nhân viên phẫu thuật | Người bệnh, lượt khám, thủ thuật, ưu tiên, bằng chứng sẵn sàng | Kiểm tra yêu cầu và điều kiện; theo dõi checklist sẵn sàng | Yêu cầu phẫu thuật và trạng thái sẵn sàng | Surgery |
-| Xếp lịch và thực hiện phẫu thuật | Nhân viên phẫu thuật được phép | Yêu cầu sẵn sàng, xác nhận tài chính, phòng/thời gian/nhóm | Kiểm tra tài nguyên và trạng thái; xếp lịch; ghi thực hiện/kết quả | Lịch, hồ sơ thủ thuật, kết quả, sự kiện vòng đời | Surgery |
+| Tạo hồ sơ nhập viện | `ADMIN`, `DOCTOR` | Người bệnh, nhu cầu lâm sàng, chi tiết nhập viện | Kiểm tra tham chiếu và tạo admission Core V1 cục bộ | Hồ sơ nhập viện chờ xử lý | Inpatient |
+| Phân và chuyển giường | `ADMIN`, `NURSE` | Admission và giường yêu cầu/đích | Kiểm tra khả dụng và chuyển trạng thái giường | Admission và tình trạng sử dụng giường cập nhật | Inpatient |
+| Điều trị nội trú | `ADMIN`, `DOCTOR`, `NURSE` | Admission hoạt động và thông tin điều trị/quan sát | Thêm hoặc sửa có kiểm soát treatment entry | Lịch sử điều trị cập nhật | Inpatient |
+| Xuất viện y khoa | `ADMIN`, `DOCTOR` | Admission hoạt động và thông tin xuất viện lâm sàng | Áp dụng chuyển trạng thái medical discharge | Admission đã xuất viện y khoa | Inpatient |
+| Đóng hành chính | `ADMIN`, `CASHIER` | Admission đã xuất viện y khoa và thông tin đóng cục bộ | Áp dụng administrative close được phép | Admission đóng và tài nguyên được giải phóng | Inpatient |
+| Nền tảng Surgery cục bộ | Nhân viên được phép dưới feature flag đang tắt | Đầu vào case/pre-op/schedule cho route đã triển khai | Chỉ chạy khi bật đủ gate và authority provider | Kết quả case/pre-op/draft schedule cục bộ; chưa có outcome event đầy đủ | Surgery |
 | Gửi thông báo | `SYSTEM` | Domain event, tham chiếu người nhận, dữ liệu mẫu, kênh | Chọn mẫu; tạo yêu cầu gửi; thử gửi và theo dõi | Nội dung thông báo, trạng thái gửi, chi tiết lỗi | Notification |
 | Báo cáo quản trị | `MANAGER`, `SYSTEM` | Domain event tin cậy và tiêu chí báo cáo | Cập nhật mô hình đọc; tổng hợp chỉ số được phép; lọc theo tiêu chí | Kết quả báo cáo vận hành và tài chính | Report |
 
@@ -190,15 +196,15 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 
 | Luồng | Tác nhân kích hoạt | Đường xử lý chính | Kết quả |
 |---|---|---|---|
-| Đăng ký đến lịch khám | Người bệnh được đăng ký và yêu cầu khám | Patient lưu định danh và lịch; nhân viên được phép xem lịch | Lịch khám được xác nhận và gắn đúng UUID người bệnh |
+| Đăng ký đến lịch khám | Nhân viên được phép đăng ký người bệnh và xếp lịch | Patient lưu định danh; Clinical sở hữu/lưu lịch bằng UUID người bệnh | Lịch khám xác nhận gắn đúng UUID người bệnh |
 | Lịch khám đến lượt khám | Lịch đạt trạng thái tiếp nhận/khám | Clinical xác minh tham chiếu người bệnh/lịch rồi mở lượt khám | Lượt khám lâm sàng có thể truy vết |
 | Lượt khám đến xét nghiệm | Bác sĩ chỉ định một hoặc nhiều xét nghiệm | Clinical ghi chỉ định; Laboratory tiếp nhận và xử lý | Kết quả công bố sẵn có cho người dùng lâm sàng được phép |
 | Xét nghiệm đến viện phí | Xét nghiệm tính phí đạt trạng thái đã quy ước | Sự kiện Laboratory được Billing xử lý idempotent | Một khoản phí cho hoạt động xét nghiệm hợp lệ |
 | Đơn thuốc đến cấp phát | Bác sĩ xác nhận đơn thuốc | Pharmacy xác minh đơn và kho rồi ghi cấp phát | Thuốc được cấp cùng lịch sử biến động kho |
 | Chăm sóc đến tài chính | Hoạt động chăm sóc tính phí hoàn tất | Dịch vụ sở hữu phát sự kiện; Billing tạo/đối soát phí và hóa đơn | Nghĩa vụ tài chính người bệnh được cập nhật |
-| Yêu cầu nhập viện đến đợt nằm viện | Yêu cầu và xác nhận tài chính đạt điều kiện | Inpatient kiểm tra điều kiện và phân giường trống | Đợt nằm viện hoạt động cùng tình trạng chiếm giường |
-| Đợt nằm viện đến xuất viện | Quyết định xuất viện và xác nhận cần thiết đạt điều kiện | Inpatient đóng đợt và giải phóng tài nguyên | Hồ sơ xuất viện và giường có thể tái sử dụng |
-| Yêu cầu phẫu thuật đến kết quả | Đủ sẵn sàng và xác nhận tài chính | Surgery xếp tài nguyên, ghi thực hiện và công bố kết quả | Vòng đời phẫu thuật đầy đủ có thể kiểm toán |
+| Nhập viện đến đợt hoạt động | Đạt điều kiện nhập viện/giường cục bộ | Inpatient Core V1 kiểm tra trạng thái và phân giường; kích hoạt tài chính qua sự kiện còn bị khóa | Đợt nội trú cục bộ hoạt động cùng giường sử dụng |
+| Đợt nằm viện đến xuất viện | Đủ điều kiện medical discharge và administrative close | Vai trò Inpatient được phép áp dụng xuất viện, đóng hành chính và giải phóng giường | Admission cục bộ đóng và giường tái sử dụng |
+| Vòng đời Surgery mục tiêu | Hợp đồng sẵn sàng và tài chính tương lai được phê duyệt | Các slice feature-gated sẽ được mở rộng qua lịch, thực hiện và outcome | Chưa phải quy trình đầu-cuối được nghiệm thu hiện tại |
 | Domain event đến thông báo/báo cáo | Thay đổi trạng thái hợp lệ được commit | Outbox phát sự kiện; Notification và Report xử lý idempotent | Hồ sơ gửi và mô hình đọc báo cáo được cập nhật |
 
 ### B4. Yêu cầu phần cứng phía client
@@ -282,8 +288,8 @@ Các yêu cầu Review 1 được xem là đã được giải pháp hiện tạ
 5. Nhân viên xét nghiệm có thể đưa phiếu qua các trạng thái đến kết quả đã xác minh và công bố.
 6. Nhân viên dược có thể xác minh đơn, cấp thuốc và cập nhật hồ sơ kho.
 7. Billing có thể ghi phí, hóa đơn, tạm ứng/thanh toán, biên lai và hoàn tiền được phép.
-8. Nội trú có thể tiến từ yêu cầu nhập viện qua xác nhận, phân giường, đợt nằm viện đến xuất viện.
-9. Phẫu thuật có thể tiến từ yêu cầu qua sẵn sàng, xác nhận, lịch, thực hiện đến kết quả.
+8. Inpatient Core V1 có thể trình diễn API cục bộ về nhập viện, giường, điều trị, medical discharge và administrative close; kích hoạt sự kiện chéo dịch vụ được ghi là còn bị khóa.
+9. Surgery chỉ trình diễn các route cục bộ được chọn dưới feature flag mặc định tắt; vòng đời đầy đủ từ yêu cầu đến kết quả không thuộc nghiệm thu hiện tại.
 10. Thay đổi trạng thái hợp lệ có thể sinh thông báo và cập nhật mô hình đọc báo cáo qua sự kiện.
 11. Vai trò không được phép bị từ chối tại endpoint được bảo vệ.
 12. Dịch vụ không phụ thuộc vào cơ sở dữ liệu của dịch vụ khác.

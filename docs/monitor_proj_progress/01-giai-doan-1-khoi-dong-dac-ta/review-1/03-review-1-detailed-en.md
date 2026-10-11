@@ -7,7 +7,7 @@
 | Coverage | Part A — Problem Definition; Part B — Customer Requirements Specification |
 | Version | Detailed |
 | Language | English |
-| Baseline | Current repository source, deployment configuration, and implemented contracts |
+| Baseline | Repository commit `1cc014e`, its deployment configuration, and implemented contracts |
 | Audience | Review panel, project supervisors, customer representatives, developers, testers, and presenters |
 | Formatting objective | Direct conversion to Word with stable headings and tables |
 
@@ -97,16 +97,16 @@ The solution must answer five questions for every important action:
 
 | Bounded context | In-scope responsibility | Principal records/results |
 |---|---|---|
-| Organization | Identity-related organization records, staff, roles, departments, facilities, rooms, beds | Staff/user reference, role assignment, facility hierarchy, resource reference |
-| Patient | Patient registration, profile, identifiers, contact data, appointments | Patient profile, appointment, patient-facing status |
-| Clinical | Encounter documentation, observations, diagnoses, orders, prescriptions | Encounter, clinical note, diagnosis, lab request, prescription |
+| Organization | Identity-related organization records, staff, roles, departments, facilities, and rooms | Staff/user reference, role assignment, facility hierarchy, room reference |
+| Patient | Staff-operated patient registration, profile, identifiers, and contact data | Patient profile and demographic status |
+| Clinical | Appointments, encounters, observations, diagnoses, orders, and prescriptions | Appointment, encounter, clinical note, diagnosis, lab request, prescription |
 | Laboratory | Test catalogue, order lifecycle, specimen, result, verification | Lab order, specimen, result, published result event |
 | Pharmacy | Medicine catalogue, inventory, prescription validation, dispensing | Medicine, stock level/movement, dispense record |
 | Billing | Billable charges, invoices, deposits, payments, receipts, refunds, clearance | Charge, invoice, transaction, receipt, clearance status |
 | Notification | Template selection, recipient/channel processing, delivery attempts | Notification request and delivery status |
 | Report | Event-fed read models and filtered management reports | Operational and financial projections |
-| Inpatient | Admission, clearance, bed allocation, active stay, care/transfer, discharge | Admission, stay, bed occupancy, discharge |
-| Surgery | Request, readiness, clearance, scheduling, execution, outcome | Surgery request, schedule, procedure record, outcome |
+| Inpatient | Locally complete Core V1 for admission, bed ownership/allocation, active stay, treatment/transfer, and discharge; event integrations remain gated | Admission, bed, stay, treatment entry, discharge/close state |
+| Surgery | Feature-gated foundation and selected local case, pre-op, cancellation, read, and draft-schedule routes; full lifecycle is not active | Local gated case/readiness/schedule foundation data, without an accepted end-to-end outcome flow |
 
 #### A6.2. Shared platform scope
 
@@ -135,14 +135,14 @@ The solution must answer five questions for every important action:
 
 | Role | Creates or changes | Reads or reviews | Prohibited/controlled boundary |
 |---|---|---|---|
-| `ADMIN` | Users, staff references, roles, departments, facilities, rooms, beds, configuration | Administrative state and reference data | Does not obtain unrestricted clinical authority merely by being an administrator |
-| `DOCTOR` | Encounters, diagnoses, orders, prescriptions, admission/surgery requests, clinical decisions | Patient history, results, medication, inpatient/surgery status | Cannot directly alter pharmacy stock or settled financial transactions |
-| `NURSE` | Observations, care activities, allowed admission/bed/transfer/discharge support data | Appointments, encounters, orders, active stays | Cannot independently issue medical diagnosis or unauthorized financial approval |
+| `ADMIN` | Users, staff references, roles, departments, facilities, rooms, configuration, and permitted Inpatient bed records | Administrative state and reference data | Does not obtain unrestricted clinical authority merely by being an administrator |
+| `DOCTOR` | Encounters, diagnoses, orders, prescriptions, permitted admissions, clinical decisions, and future Surgery request context | Patient history, results, medication, and permitted local status | Cannot alter stock/settled finance or imply that the full Surgery referral/lifecycle is active |
+| `NURSE` | Permitted patient/appointment creation, observations, care activities, and Inpatient bed/transfer/treatment support data | Appointments, encounters, orders, active stays | Cannot create an admission, perform medical discharge, administratively close a stay, issue diagnosis, or approve finance outside granted routes |
 | `PHARMACIST` | Dispensing and inventory movements | Authorized prescriptions and medicine stock | Cannot rewrite the originating clinical prescription |
 | `CASHIER` | Deposits, payments, receipts, allowed refunds, financial confirmation | Charges, invoices, balances, clearance needs | Cannot alter clinical outcomes or create clinical orders |
 | `LAB_TECH` | Specimen, processing, result, verification/publication state | Laboratory orders and permitted patient context | Cannot change the clinical reason or originating encounter |
 | `MANAGER` | Report criteria and permitted management views | Aggregated operational/financial information | Reporting must not modify source operational records |
-| `PATIENT` | Own registration/contact/appointment inputs where permitted | Own permitted results, prescriptions, financial documents, notifications, care status | Cannot access another patient's records or staff-only operations |
+| `PATIENT` | No current staff-owned clinical, registration, appointment, or financial mutation | Owned notifications through the implemented Notification authorization boundary | Broader self-service profile, appointment, result, prescription, invoice, receipt, and payment access is future-facing and must not be presented as implemented |
 | `SYSTEM` | Event delivery records, retries, read-model updates, automated notifications | Machine-authorized event and operational data | Must not invent business decisions or bypass owning-service validation |
 
 ### A8. Proposed Architecture and Solution
@@ -183,6 +183,7 @@ Synchronous REST is selected when a request cannot be completed safely without i
 | ID | Limitation/risk | Current mitigation | Future work |
 |---|---|---|---|
 | LR-01 | No complete mobile app | Responsive web is the supported delivery assumption | Build and validate a gateway-only Flutter application |
+| LR-01A | Patient self-service is narrow | Current `PATIENT` access is limited to owned notification reads | Add explicitly authorized profile, appointment, clinical, and financial self-service endpoints |
 | LR-02 | External insurance not integrated | Financial workflow remains internal and explicit | Add insurer adapters, eligibility, claim, and reconciliation contracts |
 | LR-03 | External payments not integrated | Cashier-controlled internal transaction records | Integrate compliant payment provider and settlement reconciliation |
 | LR-04 | Device/external-lab interfaces not certified | Manual/internal laboratory lifecycle remains available | Define HL7/FHIR/device adapters where customer requires them |
@@ -192,6 +193,8 @@ Synchronous REST is selected when a request cannot be completed safely without i
 | LR-08 | Accessibility target not certified | Responsive web structure provides a base | Audit against an approved WCAG target and remediate |
 | LR-09 | Clinical governance outside code | Roles and workflow gates restrict operations | Establish policy ownership, review boards, and incident process |
 | LR-10 | Regulatory status not established | No unsupported certification claim is made | Conduct jurisdiction-specific legal and compliance assessment |
+| LR-11 | Inpatient cross-service activation is gated | Core V1 local APIs remain usable while RabbitMQ producers/consumers default off | Complete registered same-byte contracts and Docker acceptance slices before activation |
+| LR-12 | Surgery is a default-off foundation | Selected local routes and domain/persistence slices exist behind business/API flags | Complete authority providers, lifecycle routes, events, gateway activation, and cross-service acceptance |
 
 ## Part B — Customer Requirements Specification (CRS)
 
@@ -199,14 +202,17 @@ Synchronous REST is selected when a request cannot be completed safely without i
 
 The words **must**, **should**, and **may** indicate mandatory, recommended, and optional requirements. Requirement IDs are stable references for review and later acceptance. Priority uses `Must`, `Should`, or `Could`.
 
-### B2. Functional Requirements by Service
+### B2. Data-Processing Cycle by User Type
+
+The requirement summary is followed by one subsection per actor. Current permissions are distinguished from future customer requirements.
 
 | ID | Priority | Requirement | Owner | Main users |
 |---|---|---|---|---|
 | FR-ORG-01 | Must | The system must maintain staff/user references and assigned roles | Organization | `ADMIN` |
-| FR-ORG-02 | Must | The system must maintain departments, facilities, rooms, and beds | Organization | `ADMIN`, authorized ward staff |
-| FR-PAT-01 | Must | The system must register a patient with a stable UUID and validated demographics | Patient | `PATIENT`, authorized staff |
-| FR-PAT-02 | Must | The system must create and track appointments associated with the correct patient | Patient | `PATIENT`, `NURSE`, authorized staff |
+| FR-ORG-02 | Must | The system must maintain departments, facilities, and rooms | Organization | `ADMIN` |
+| FR-INP-00 | Must | The system must maintain Inpatient-owned beds through permitted management routes | Inpatient | `ADMIN`, `MANAGER` |
+| FR-PAT-01 | Must | The system must register a patient with a stable UUID and validated demographics | Patient | `ADMIN`, `NURSE` |
+| FR-CLI-00 | Must | The system must create and track appointments associated with the correct patient | Clinical | `ADMIN`, `NURSE` |
 | FR-CLI-01 | Must | The system must record encounters, observations, diagnoses, and notes | Clinical | `DOCTOR`, `NURSE` |
 | FR-CLI-02 | Must | The system must allow authorized doctors to issue lab requests and prescriptions | Clinical | `DOCTOR` |
 | FR-LAB-01 | Must | The system must progress a laboratory order through controlled lifecycle states | Laboratory | `LAB_TECH` |
@@ -214,39 +220,118 @@ The words **must**, **should**, and **may** indicate mandatory, recommended, and
 | FR-PHA-01 | Must | The system must validate an authorized prescription before dispensing | Pharmacy | `PHARMACIST` |
 | FR-PHA-02 | Must | The system must record stock and dispensing movements atomically | Pharmacy | `PHARMACIST` |
 | FR-BIL-01 | Must | The system must create traceable billable charges without duplicate effects | Billing | `SYSTEM`, `CASHIER` |
-| FR-BIL-02 | Must | The system must support invoices, deposits, payments, receipts, and refunds | Billing | `CASHIER`, `PATIENT` |
+| FR-BIL-02 | Must | The system must support invoices, deposits, payments, receipts, and refunds through authorized staff operations | Billing | `CASHIER` |
 | FR-NOT-01 | Must | The system must create notification requests from eligible domain events | Notification | `SYSTEM` |
 | FR-NOT-02 | Should | The system should retain delivery attempts, status, and failure reason | Notification | `SYSTEM`, support staff |
 | FR-REP-01 | Must | The system must update reporting projections from trusted events | Report | `SYSTEM` |
 | FR-REP-02 | Must | The system must provide filtered operational/financial reports to authorized managers | Report | `MANAGER` |
-| FR-INP-01 | Must | The system must control admission using clinical and financial prerequisites | Inpatient | `DOCTOR`, `NURSE`, `CASHIER` |
-| FR-INP-02 | Must | The system must allocate/release beds and track active stays and transfers | Inpatient | `NURSE`, `DOCTOR` |
-| FR-INP-03 | Must | The system must validate discharge prerequisites and close the stay | Inpatient | `DOCTOR`, `NURSE`, `CASHIER` |
-| FR-SUR-01 | Must | The system must track surgery request, readiness, and financial clearance | Surgery | `DOCTOR`, authorized surgery staff |
-| FR-SUR-02 | Must | The system must schedule and record execution and outcome | Surgery | Authorized surgery staff |
+| FR-INP-01 | Must | The local Core V1 must create/cancel admissions through permitted routes | Inpatient | `ADMIN`, `DOCTOR` |
+| FR-INP-02 | Must | The local Core V1 must manage beds and permitted treatment/stay transitions | Inpatient | `ADMIN`, `NURSE`, `DOCTOR` as authorized per route |
+| FR-INP-03 | Must | Medical discharge and administrative close must remain separate authorized transitions | Inpatient | `ADMIN`, `DOCTOR` for medical discharge; `ADMIN`, `CASHIER` for close |
+| FR-SUR-01 | Must | Selected implemented Surgery routes must remain inaccessible unless all required default-off business/API gates and authority dependencies are enabled | Surgery | Authorized roles per gated route |
+| FR-SUR-02 | Could | The future complete request-to-outcome lifecycle must not be accepted until remaining routes, events, authority providers, gateway policy, and cross-service contracts pass | Surgery | Future authorized surgery staff |
+
+#### B2.1 Administrator
+
+**Responsibilities:** Govern Organization data and perform expressly authorized operations in other services. **Restrictions:** `ADMIN` is not an automatic substitute for clinical judgment, and Organization does not own appointments or beds.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-ADM-01 | Maintain staff, roles, departments, facilities, and rooms | Authorized organization data | Validate role, uniqueness, and hierarchy | Updated organization reference | Organization | Invalid or duplicate data is rejected without partial change |
+| CRS-ADM-02 | Maintain the bed catalogue where permitted | Room/department references and bed data | Validate references and bed state | Inpatient-owned bed record | Inpatient | Invalid relationship or forbidden transition is rejected |
+
+#### B2.2 Doctor
+
+**Responsibilities:** Document clinical decisions, create orders/prescriptions, and perform permitted admission and medical-discharge actions. **Restrictions:** The doctor cannot alter pharmacy stock, settle finance, or bypass disabled Surgery gates.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-DOC-01 | Conduct encounter and issue clinical orders | Patient/appointment context and findings | Validate encounter state and doctor authority | Encounter, diagnosis, request, prescription | Clinical | Invalid state/reference is rejected |
+| CRS-DOC-02 | Create or medically discharge an admission | Patient/encounter or active admission | Apply route-specific Inpatient rules | Pending admission or medically discharged state | Inpatient | Financial/event integration is not inferred while gates remain off |
+
+#### B2.3 Nurse
+
+**Responsibilities:** Create permitted patient/appointment records, record observations, and perform permitted bed, admit, treatment, and transfer operations. **Restrictions:** The nurse cannot create an admission, perform medical discharge, or administratively close a stay.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-NUR-01 | Register a patient | Demographics and identity data | Validate and create the patient | Patient UUID/profile | Patient | Invalid or duplicate identity data is rejected |
+| CRS-NUR-02 | Create an appointment | Patient UUID and schedule data | Validate and create the appointment | Appointment UUID/state | Clinical | Invalid patient reference or schedule state is rejected |
+| CRS-NUR-03 | Assign/transfer bed or append treatment | Active admission and bed/treatment input | Enforce route role and state transition | Updated admission, bed, or treatment history | Inpatient | Occupied bed, stale state, or forbidden transition is rejected |
+
+#### B2.4 Laboratory Technician
+
+**Responsibilities:** Accept laboratory work, manage specimens, record results, verify, and publish. **Restrictions:** The technician cannot change the originating clinical reason or encounter.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-LAB-01 | Process and publish a laboratory result | Clinical request reference, specimen, measured values | Validate lifecycle and required result data | Published laboratory result | Laboratory | Invalid transition or incomplete result remains unpublishable |
+
+#### B2.5 Pharmacist
+
+**Responsibilities:** Validate prescriptions, dispense medicines, and maintain stock movements. **Restrictions:** The pharmacist cannot rewrite the Clinical-owned prescription.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-PHA-01 | Dispense an authorized prescription | Prescription reference, medicine, quantity | Validate prescription and stock; persist movement | Dispense record and stock balance | Pharmacy | Invalid prescription or insufficient stock rejects dispensing |
+
+#### B2.6 Cashier
+
+**Responsibilities:** Perform authorized invoice, deposit, payment, receipt, refund, clearance, and Inpatient administrative-close operations. **Restrictions:** The cashier cannot make clinical decisions or perform medical discharge.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-CAS-01 | Record a financial transaction | Invoice/admission reference, decimal amount, method | Validate state/amount and persist transaction | Balance, receipt, refund, or clearance | Billing | Invalid amount/state is rejected; repeated source event is idempotent |
+| CRS-CAS-02 | Administratively close an admission | Medically discharged admission and close data | Validate the local close transition | Closed admission | Inpatient | A non-discharged or stale admission is rejected |
+
+#### B2.7 Manager
+
+**Responsibilities:** Query authorized reports and manage Inpatient beds where permitted. **Restrictions:** Reporting is read-only and does not modify source records.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-MAN-01 | Query a management report | Report type, filters, authorized scope | Query the event-fed projection | Operational or financial report | Report | Unauthorized scope is rejected; projection delay is reported operationally |
+
+#### B2.8 Patient
+
+**Responsibilities:** Read notifications owned by the authenticated patient identity. **Restrictions:** Current source does not authorize `PATIENT` registration, appointment creation, clinical-result, prescription, invoice, receipt, or payment endpoints.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-PAT-01 | Read owned notifications | Authenticated patient identity and query criteria | Enforce ownership and return permitted data | Owned notification list/detail | Notification | Another patient's notification is denied or hidden |
+| CRS-PAT-FUT-01 | Future broader self-service | Future approved identity/relationship contract | Not currently implemented | No current acceptance output | Future owning service | Must remain documented as future work |
+
+#### B2.9 Internal System Actor
+
+**Responsibilities:** Publish outbox records, consume messages idempotently, retry bounded failures, update projections, and create notifications. **Restrictions:** Automation cannot invent identifiers or bypass an owning service's decision.
+
+| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|---|
+| CRS-SYS-01 | Deliver an approved domain event | Outbox record and event/correlation identity | Publish and consume idempotently | Downstream state or delivery record | Event producer/consumer respectively | Retry transient failure; route terminal failure to observable dead-letter handling |
 
 ### B3. Data-Processing Cycles by Role
 
 | Workflow | Actor | Input information | Processing | Output information | Owning service |
 |---|---|---|---|---|---|
 | Platform administration | `ADMIN` | Staff identity, role, department, facility/resource data | Validate authority and uniqueness; persist organization state | Governed user/resource references and audit data | Organization |
-| Patient self/service registration | `PATIENT`, authorized staff | Demographics, contacts, identifiers, consent-related input | Validate fields and duplicate rules; assign UUID | Patient profile and confirmation | Patient |
-| Appointment management | `PATIENT`, `NURSE` | Patient UUID, service/provider, time, reason | Validate scheduling conditions; create/update status | Appointment and visible status | Patient |
+| Staff-operated patient registration | `ADMIN`, `NURSE` | Demographics, contacts, identifiers, consent-related input | Validate fields and duplicate rules; assign UUID | Patient profile and confirmation | Patient |
+| Appointment management | `ADMIN`, `NURSE` | Patient UUID, service/provider, time, reason | Validate scheduling conditions; create/update status | Appointment and visible status | Clinical |
 | Clinical care | `DOCTOR`, `NURSE` | Patient context, symptoms, observations, appointment/reference | Open/update encounter; apply clinical workflow rules | Notes, observations, diagnoses, orders | Clinical |
 | Diagnostic testing | `LAB_TECH` | Order, test items, specimen, measured values | Progress lifecycle; verify result authority/completeness | Verified result and publication event | Laboratory |
 | Medication dispensing | `PHARMACIST` | Prescription, medicine, requested quantity, stock | Validate prescription/stock; persist dispense and movement | Dispense record and new stock position | Pharmacy |
 | Financial transaction | `CASHIER` | Charge/invoice/admission reference, amount, method, reason | Validate state and decimal amount; record transaction | Balance, receipt, refund or clearance status | Billing |
-| Inpatient management | `DOCTOR`, `NURSE`, `CASHIER` | Admission need, clearance, bed need, care/discharge information | Gate transitions; allocate/release resource; retain stay history | Admission/stay/transfer/discharge records | Inpatient |
-| Surgery management | `DOCTOR`, authorized surgery staff | Procedure need, priority, readiness, clearance, schedule/resources | Gate lifecycle; reserve schedule; record execution/outcome | Surgery status, schedule, procedure and outcome | Surgery |
+| Inpatient local Core V1 | Route-authorized `ADMIN`, `DOCTOR`, `NURSE`, or `CASHIER` | Admission, bed, treatment, medical-discharge, or close input | Apply the specific route's role and local state rules | Admission/bed/treatment/discharge record | Inpatient |
+| Surgery gated foundation | Authorized role under required default-off flags | Selected case/pre-op/cancellation/read/draft-schedule input | Execute only an implemented, enabled local slice | Local gated result; not a complete lifecycle | Surgery |
 | Management reporting | `MANAGER` | Report type, date/filter criteria, authorized scope | Query event-fed projection; aggregate and format | Operational or financial report | Report |
-| Background automation | `SYSTEM` | Outbox event, message key, recipient/projection data | Publish, consume idempotently, retry or dead-letter | Delivery status, downstream state, operational evidence | Shared/Notification/Report |
+| Notification automation | `SYSTEM` | Approved event, message key, recipient data | Consume idempotently, select template, attempt delivery | Delivery status and operational evidence | Notification |
+| Reporting automation | `SYSTEM` | Approved event, message key, projection data | Consume idempotently and update the read model | Updated reporting projection | Report |
 
 ### B4. Registration, Appointment, and Encounter Flow
 
 | Step | Actor/source | Input | Process and rule | Output/consumer |
 |---:|---|---|---|---|
-| 1 | Patient or authorized staff | Demographic and contact information | Patient validates mandatory data and uniqueness constraints | Patient UUID and profile |
-| 2 | Patient/reception | Patient UUID, requested service/time | Patient validates appointment data and records schedule state | Appointment UUID/status |
+| 1 | `ADMIN` or `NURSE` | Demographic and contact information | Patient validates mandatory data and uniqueness constraints | Patient UUID and profile |
+| 2 | `ADMIN` or `NURSE` | Patient UUID, requested service/time | Clinical validates appointment data and records schedule state | Appointment UUID/status |
 | 3 | Nurse/reception | Appointment and arrival information | Appointment progresses through an allowed check-in state | Ready appointment context |
 | 4 | Doctor/nurse | Patient and appointment references | Clinical confirms required context and opens encounter | Encounter UUID |
 | 5 | Doctor/nurse | Symptoms, observations, notes | Clinical validates and records care information | Updated encounter record |
@@ -279,7 +364,7 @@ The words **must**, **should**, and **may** indicate mandatory, recommended, and
 |---:|---|---|---|---|
 | 1 | Operational service event | Event ID, patient, source record, billable item, decimal amount | Billing checks event/idempotency key | New charge or recognized duplicate |
 | 2 | Billing | Open charges and patient/account context | Charges are associated with an invoice according to billing rules | Invoice and balance |
-| 3 | `CASHIER`/patient | Invoice/admission reference, amount, method | Validate positive decimal amount and allowed financial state | Deposit or payment transaction |
+| 3 | `CASHIER` | Invoice/admission reference plus payer-provided amount/method | Validate positive decimal amount and allowed financial state | Deposit or payment transaction |
 | 4 | Billing | Successful transaction | Update balance/clearance and issue receipt data | Receipt and financial status |
 | 5 | `CASHIER` | Original transaction, approved reason and amount | Validate refundable amount and authorization | Refund and adjusted balance |
 | 6 | `SYSTEM` | Financial state event | Notify dependent inpatient/surgery/reporting workflows | Clearance or reporting update |
@@ -290,24 +375,26 @@ Financial records must not use binary floating-point representation. Monetary va
 
 | Step | Actor | Input | Process | Output |
 |---:|---|---|---|---|
-| 1 | `DOCTOR` | Patient/encounter, clinical reason, requested admission details | Inpatient records admission request after reference validation | Pending admission |
-| 2 | `CASHIER`/Billing | Admission reference and required financial condition | Billing records deposit/payment and publishes clearance | Financial clearance status |
-| 3 | `NURSE`/authorized staff | Cleared admission, ward/bed need | Inpatient validates an available suitable bed and allocates it | Active admission and occupied bed |
-| 4 | `NURSE`, `DOCTOR` | Active stay, observations/care data | Record care activity under the active stay | Care history |
-| 5 | `NURSE`/authorized staff | Transfer need and target resource | Validate target availability and perform controlled bed transition | Transfer history and updated occupancy |
-| 6 | `DOCTOR` | Discharge decision and summary | Record clinical discharge readiness | Pending discharge completion |
-| 7 | `NURSE`, `CASHIER`, Inpatient | Care completion and required financial state | Validate prerequisites, close stay, release bed | Discharge record and available bed |
+| 1 | `ADMIN`, `DOCTOR` | Patient/encounter, clinical reason, requested admission details | Inpatient validates references and creates the local admission | Pending admission |
+| 2 | `CASHIER`/Billing | Admission reference and required financial condition | Billing may record the local transaction; cross-service event activation remains gated | Local financial record; no implied active event chain |
+| 3 | `ADMIN`, `NURSE` | Admission and ward/bed need | Inpatient validates an available suitable bed and assigns it | Updated admission and occupied bed |
+| 4 | `ADMIN`, `DOCTOR`, `NURSE` | Active admission and treatment/observation data | Append or correct an authorized treatment entry | Treatment history |
+| 5 | `ADMIN`, `NURSE` | Transfer need and target bed | Validate availability and perform controlled bed transition | Transfer history and updated occupancy |
+| 6 | `ADMIN`, `DOCTOR` | Discharge decision and summary | Apply the medical-discharge transition | Medically discharged admission |
+| 7 | `ADMIN`, `CASHIER` | Medically discharged admission and close data | Apply administrative close; release the bed through the permitted local workflow | Closed admission and available bed |
 
-### B9. Surgery Flow
+### B9. Surgery Target Flow and Current Gate
+
+The table below is a target customer workflow, not current end-to-end acceptance. Surgery business and API flags default to `false`. Selected local routes exist, but full referral, readiness, start, completion, outcome-event, and cross-service activation remain open.
 
 | Step | Actor | Input | Process | Output |
 |---:|---|---|---|---|
-| 1 | `DOCTOR` | Patient, encounter, proposed procedure, priority, reason | Surgery validates request information | Surgery request |
-| 2 | Authorized care team | Required readiness evidence/checklist | Record and evaluate prerequisites | Readiness status |
-| 3 | Billing/`CASHIER` | Surgery reference and financial requirements | Record financial transaction and clearance | Financial clearance status |
-| 4 | Authorized scheduler | Ready/cleared request, theatre, time, team/resources | Validate state and resource availability; schedule | Surgery schedule |
-| 5 | Authorized surgery staff | Scheduled procedure and intraoperative information | Record start, execution details, and completion according to allowed state | Procedure record |
-| 6 | Authorized clinician | Findings, outcome, postoperative information | Validate and record result | Surgery outcome and downstream event |
+| 1 | Future `DOCTOR` route | Patient, encounter, approved surgery-request contract | Creation may run only when business/creation gates and a real authority provider are enabled | Local Surgery case; no active referral chain |
+| 2 | Authorized care team under gates | Approved checklist/consent evidence | Selected pre-op routes may record local evidence only when enabled | Local pre-op evidence; full readiness remains gated |
+| 3 | Future Billing integration | Surgery reference and financial requirements | Contract is not active; no clearance may be invented locally | No current end-to-end clearance output |
+| 4 | Authorized scheduler under gates | Local case, room/time/team, expected revision | Draft schedule replacement validates local/authority dependencies | Draft schedule; not a finalized lifecycle schedule |
+| 5 | Future lifecycle route | Scheduled procedure and intraoperative information | Start/complete lifecycle remains open | No current accepted execution record |
+| 6 | Future lifecycle/event route | Findings and postoperative information | Outcome publication remains open | No current accepted outcome event |
 
 ### B10. Notification and Reporting Flow
 
@@ -318,12 +405,106 @@ Financial records must not use binary floating-point representation. Monetary va
 
 Notification and Report are downstream consumers. They do not become the authority for clinical, financial, pharmacy, laboratory, inpatient, or surgery records.
 
+### B10A. Ten Cross-Department Workflow Contracts
+
+#### Workflow 1 — Staff Registration and Appointment
+
+- **Trigger:** `ADMIN` or `NURSE` receives valid patient and scheduling data.
+- **Primary authority:** Patient owns registration; Clinical separately owns appointments.
+- **Input:** Demographics, identifiers, patient UUID, service/provider, and time.
+- **Process:** Create the Patient record, then call the Clinical appointment boundary; no shared transaction is implied.
+- **Output:** Patient UUID and appointment UUID/status.
+- **Failure or exception:** Each owner rejects invalid input independently; `PATIENT` self-service is not currently authorized.
+
+#### Workflow 2 — Appointment to Clinical Encounter
+
+- **Trigger:** An authorized staff workflow reaches the permitted consultation state.
+- **Primary authority:** Clinical.
+- **Input:** Clinical-owned appointment and patient UUID reference.
+- **Process:** Validate appointment/actor context and create or update the encounter.
+- **Output:** Encounter, observations, diagnosis, and next permitted orders.
+- **Failure or exception:** Invalid state, role, or reference is rejected by Clinical.
+
+#### Workflow 3 — Clinical Laboratory Order and Result
+
+- **Trigger:** An authorized doctor creates a laboratory request.
+- **Primary authority:** Clinical owns the request; Laboratory owns order/specimen/result lifecycle.
+- **Input:** Encounter/patient references, requested tests, specimen, measured values.
+- **Process:** Transfer the explicit request contract; Laboratory processes, verifies, and publishes.
+- **Output:** Published Laboratory result and eligible result event.
+- **Failure or exception:** Incomplete request/result or invalid state remains rejected/unpublished by its owner.
+
+#### Workflow 4 — Laboratory Result to Billing Charge
+
+- **Trigger:** An eligible Laboratory billable event is approved and emitted.
+- **Primary authority:** Billing owns the charge; Laboratory owns the source result.
+- **Input:** Event ID, source order/result reference, patient, item, decimal amount contract.
+- **Process:** Billing consumes the event idempotently and creates at most one charge.
+- **Output:** Charge/invoice state.
+- **Failure or exception:** Duplicate delivery is a no-op; invalid contracts follow retry/dead-letter policy.
+
+#### Workflow 5 — Prescription to Pharmacy Dispensing
+
+- **Trigger:** Clinical authorizes a prescription.
+- **Primary authority:** Clinical owns the prescription; Pharmacy owns dispense and stock.
+- **Input:** Prescription/medicine references, dose instructions, requested quantity, stock.
+- **Process:** Pharmacy validates the contract and stock, then records dispense/movement atomically.
+- **Output:** Dispense record and updated stock.
+- **Failure or exception:** Invalid prescription or insufficient stock prevents dispensing.
+
+#### Workflow 6 — Invoice and Financial Transaction
+
+- **Trigger:** A valid billable fact or authorized cashier request is received.
+- **Primary authority:** Billing.
+- **Input:** Charge/invoice/admission reference, decimal amount, payment method, refund reason.
+- **Process:** Validate state; record invoice, deposit/payment, receipt, or refund.
+- **Output:** Updated balance, transaction, receipt, refund, or clearance status.
+- **Failure or exception:** Invalid amount/state is rejected; the `PATIENT` role has no current payment endpoint.
+
+#### Workflow 7 — Inpatient Local Admission and Discharge
+
+- **Trigger:** An authorized local Inpatient command is submitted.
+- **Primary authority:** Inpatient.
+- **Input:** Admission, bed, treatment, medical-discharge, or administrative-close data.
+- **Process:** Apply route-specific roles and local state transitions; financial event activation remains off.
+- **Output:** Local admission, bed occupancy, treatment history, medical discharge, or closed state.
+- **Failure or exception:** Stale/forbidden transition is rejected; disabled cross-service events are not inferred.
+
+#### Workflow 8 — Surgery Target Lifecycle
+
+- **Trigger:** Future approved Surgery request and authority contracts.
+- **Primary authority:** Surgery for its local case; upstream owners retain their own evidence.
+- **Input:** Approved request, pre-op evidence, clearance, schedule resources, result data.
+- **Process:** Currently only selected default-off local slices exist; full start/complete/outcome flow remains open.
+- **Output:** Current acceptance is limited to an explicitly enabled local slice, not an outcome lifecycle.
+- **Failure or exception:** Disabled flags deny access; missing authority or contract cannot be bypassed.
+
+#### Workflow 9 — Event-Driven Notification
+
+- **Trigger:** An eligible approved domain event reaches Notification.
+- **Primary authority:** Notification for delivery records; the producer retains business-record authority.
+- **Input:** Event identity, recipient reference, channel/template data.
+- **Process:** Consume idempotently, render, attempt delivery, and record status.
+- **Output:** Notification content and delivery status; `PATIENT` may read owned notifications.
+- **Failure or exception:** Transient failure retries; terminal failure is observable without rolling back the source transaction.
+
+#### Workflow 10 — Event-Driven Reporting
+
+- **Trigger:** An eligible approved domain event reaches Report.
+- **Primary authority:** Report for its projection only.
+- **Input:** Event/correlation identity and projection fields.
+- **Process:** Consume idempotently and update the read model.
+- **Output:** Authorized operational or financial report data.
+- **Failure or exception:** Projection failure retries or dead-letters; Report never modifies the source record.
+
 ### B11. Data Ownership and Information Requirements
 
 | Information | Source of truth | Shared by | Key controls |
 |---|---|---|---|
-| Staff, role, department, facility, room, bed reference | Organization | REST/event references as defined | UUID, authorization, active status |
-| Patient profile and appointment | Patient | Authorized REST/event contract | Identity matching, privacy, stable UUID |
+| Staff, role, department, facility, and room reference | Organization | REST/event references as defined | UUID, authorization, active status |
+| Bed and bed occupancy | Inpatient | Controlled local APIs/contracts | UUID, availability, transition authorization |
+| Patient profile | Patient | Authorized REST/event contract | Identity matching, privacy, stable UUID |
+| Appointment | Clinical | Authorized REST/event contract | Patient UUID reference, schedule state, role authorization |
 | Encounter, diagnosis, order, prescription | Clinical | Controlled clinical contracts/events | Clinician authority, state validation |
 | Specimen and lab result | Laboratory | Result contract/event | Verification, publication state, correction control |
 | Medicine stock and dispense | Pharmacy | Dispense/inventory contract/event | Quantity rules, atomic movement, traceability |
@@ -331,7 +512,7 @@ Notification and Report are downstream consumers. They do not become the authori
 | Notification delivery | Notification | Operational query only | Recipient privacy, status, retry evidence |
 | Reporting projection | Report | Authorized manager query | Read-only projection, event idempotency |
 | Admission, stay, bed occupancy, discharge | Inpatient | Controlled references/events | Clearance and state-transition gates |
-| Surgery request, schedule, execution, outcome | Surgery | Controlled references/events | Readiness, clearance, authorization |
+| Surgery gated case/pre-op/draft schedule | Surgery | Selected local gated contracts | Default-off flags, authority dependencies, explicit non-acceptance of full lifecycle |
 
 ### B12. API and Boundary Requirements
 
@@ -408,9 +589,9 @@ These values are planning baselines, not performance guarantees.
 
 | Environment | Compute | Memory | Storage | Notes |
 |---|---|---|---|---|
-| Local demonstration | 8 logical cores | 16 GB | 40 GB free SSD | Supports containerized infrastructure and selected workloads |
-| Shared integration | 16 logical cores | 32 GB | 150 GB SSD | Supports concurrent services, tests, sample data, and basic monitoring |
-| Initial production planning baseline | 24+ logical cores across hosts | 64+ GB across hosts | 500+ GB resilient SSD plus isolated backups | Must be resized after load, retention, availability, and recovery tests |
+| Development/Demonstration | 8 logical cores | 16 GB | 40 GB free SSD | Supports containerized infrastructure and selected workloads |
+| Minimum Small Deployment | 16 logical cores | 32 GB | 150 GB SSD | Planning profile for concurrent services, tests, sample data, and basic monitoring |
+| Recommended Scalable Deployment | 24+ logical cores across hosts | 64+ GB across hosts | 500+ GB resilient SSD plus isolated backups | Planning profile only; resize after load, retention, availability, and recovery tests |
 
 Production design should isolate or distribute application, database, messaging, monitoring, and backup workloads according to the approved availability and compliance targets.
 
@@ -443,23 +624,25 @@ Production design should isolate or distribute application, database, messaging,
 
 ### B18. Traceability and Acceptance Matrix
 
-| Acceptance ID | Demonstration | Related requirements |
-|---|---|---|
-| AC-01 | Register a patient and create an appointment with valid ownership | FR-PAT-01, FR-PAT-02, SEC-03 |
-| AC-02 | Open an encounter and record observations/diagnosis under allowed roles | FR-CLI-01, SEC-01, SEC-02 |
-| AC-03 | Order, process, verify, and publish a laboratory result | FR-CLI-02, FR-LAB-01, FR-LAB-02 |
-| AC-04 | Create a prescription and dispense it while updating stock | FR-CLI-02, FR-PHA-01, FR-PHA-02 |
-| AC-05 | Consume a billable event once and produce traceable charge/invoice data | FR-BIL-01, EVT-03, EVT-04 |
-| AC-06 | Record deposit/payment, issue receipt, and perform an authorized refund | FR-BIL-02, SEC-02 |
-| AC-07 | Progress admission through clearance, bed allocation, care/transfer, and discharge | FR-INP-01, FR-INP-02, FR-INP-03 |
-| AC-08 | Progress surgery through request, readiness, clearance, schedule, execution, and outcome | FR-SUR-01, FR-SUR-02 |
-| AC-09 | Generate and track a notification from an eligible event | FR-NOT-01, FR-NOT-02, EVT-05, EVT-06 |
-| AC-10 | Update and query a reporting projection without modifying source records | FR-REP-01, FR-REP-02, EVT-04 |
-| AC-11 | Reject an unauthorized role at each protected operation | SEC-01, SEC-02, SEC-03 |
-| AC-12 | Demonstrate that services use contracts rather than cross-database access | API-03, API-06, EVT-07 |
-| AC-13 | Redeliver an event without creating duplicate business effects | EVT-04, FR-BIL-01 |
-| AC-14 | Observe bounded retry and terminal dead-letter/failure information | EVT-05, EVT-06 |
-| AC-15 | Execute the agreed automated verification suite successfully | OBJ-08 and all implemented business-rule requirements |
+The documented full Maven baseline is **3,612 tests, 0 failures, 0 errors, and 0 skips**. This is supporting engineering evidence from the recorded baseline, not proof that a customer has accepted every workflow or that default-off integrations are active.
+
+| Requirement ID | Actor or workflow | Owning service | Source evidence area | Acceptance method |
+|---|---|---|---|---|
+| AC-01 / FR-PAT-01 / FR-CLI-00 | Staff registration and appointment | Patient; Clinical separately | Patient and Clinical controllers/service docs | Demonstrate authorized `ADMIN`/`NURSE` operations and ownership separation |
+| AC-02 / FR-CLI-01 | Clinical encounter | Clinical | Clinical controller/domain tests | Demonstrate authorized encounter and diagnosis flow |
+| AC-03 / FR-LAB-01 | Laboratory lifecycle | Laboratory | Laboratory APIs, state rules, tests | Order, process, verify, and publish a result |
+| AC-04 / FR-PHA-01 | Prescription dispensing | Pharmacy | Pharmacy contracts and inventory tests | Validate prescription, dispense, and verify stock movement |
+| AC-05 / FR-BIL-01 | Billable event | Billing | Billing consumer/idempotency tests | Redeliver the same event and observe one business effect |
+| AC-06 / FR-BIL-02 | Staff financial transaction | Billing | Billing APIs/domain tests | Record authorized transaction, receipt, and refund |
+| AC-07 / FR-INP-01..03 | Local Inpatient Core V1 | Inpatient | Inpatient controller and service status document | Demonstrate route-specific local states; verify event flags remain off |
+| AC-08 / FR-SUR-01..02 | Surgery gated foundation | Surgery | Surgery configuration, service status, gated-route tests | Verify default-off behavior and selected enabled local slice only; exclude full lifecycle acceptance |
+| AC-09 / FR-NOT-01..02 | Notification delivery | Notification | Notification controller/consumer tests | Generate and track an eligible notification; verify patient ownership |
+| AC-10 / FR-REP-01..02 | Reporting projection | Report | Report consumer/query tests | Update/query projection without modifying source records |
+| AC-11 / SEC-01..03 | Protected operations | Each owning service | `@PreAuthorize` web tests | Reject unauthorized roles, including unsupported `PATIENT` operations |
+| AC-12 / API-03, API-06 | Service boundaries | Each owning service | Architecture rules and contract tests | Confirm DTO/UUID contracts and no cross-database access |
+| AC-13 / EVT-04 | Duplicate delivery | Consuming service | Idempotency tests | Repeat message without repeated business effect |
+| AC-14 / EVT-05..06 | Failure handling | Consuming service | Retry/DLQ configuration and tests | Observe bounded retry and terminal failure path |
+| AC-15 / OBJ-08 | Engineering baseline | Multi-module repository | Recorded full Maven verification report | Confirm the recorded 3,612/0/0/0 baseline, then run the current agreed suite |
 
 ### B19. Glossary
 

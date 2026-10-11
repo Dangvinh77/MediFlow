@@ -32,6 +32,7 @@
 | Acceptance / Nghiệm thu | Fifteen narrative acceptance checks / Mười lăm kiểm tra nghiệm thu dạng mô tả | Fifteen traceable acceptance rows linked to requirements / Mười lăm dòng nghiệm thu liên kết yêu cầu |
 | Best audience / Đối tượng phù hợp | Lecturer, supervisor, general customer representative / Giảng viên, hướng dẫn, đại diện khách hàng tổng quát | Technical panel, architect, tester, procurement or formal reviewer / Hội đồng kỹ thuật, kiến trúc sư, kiểm thử, mua sắm hoặc thẩm định chính thức |
 | Editing effort / Công sức chỉnh sửa | Lower / Thấp hơn | Higher because references must remain consistent / Cao hơn vì tham chiếu phải nhất quán |
+| Preparation effort / Công sức chuẩn bị | Moderate: consolidate evidence into readable sections / Trung bình: tổng hợp bằng chứng thành các mục dễ đọc | High: verify requirement IDs, actor failures, source evidence, and traceability / Cao: xác minh mã yêu cầu, nhánh lỗi actor, bằng chứng nguồn và truy vết |
 | Risk of overwhelming audience / Nguy cơ quá tải người đọc | Low / Thấp | Moderate if presented without an executive summary / Trung bình nếu không có tóm tắt |
 
 ## 3. Content Mapping / Ánh xạ nội dung

@@ -5,7 +5,7 @@
 | Topic | Problem Definition and Customer Requirements Specification |
 | Suggested duration | 12–18 minutes plus questions |
 | Structure | 10 presentation sections |
-| Source baseline | Current MediFlow repository |
+| Source baseline | MediFlow repository commit `1cc014e` |
 | Audience | Review panel and project stakeholders |
 
 ## Section 1 — Project Introduction
@@ -23,7 +23,7 @@
 
 MediFlow is not only a collection of forms. It models how information moves from registration to care, testing, medication, finance, admission, surgery, communication, and management reporting.
 
-**Presenter cue:** Start with a simple patient story: registration, doctor consultation, laboratory test, prescription, payment, and follow-up. Explain that the project makes every handoff visible and traceable.
+*Presenter cue: Start with a simple staff-assisted patient story: registration, appointment, consultation, laboratory test, prescription, payment, and follow-up. Explain that every implemented handoff has an owning service.*
 
 ## Section 2 — Problem Definition
 
@@ -37,7 +37,7 @@ MediFlow is not only a collection of forms. It models how information moves from
 | Manual management reporting | Slow and disputed figures | Event-fed read models |
 | Inconsistent access rules | Privacy and accountability risk | Backend role authorization and default deny |
 
-**Presenter cue:** Emphasize that the problem is not a lack of data; it is fragmented data without reliable ownership, timing, or accountability.
+*Presenter cue: Emphasize that the problem is not a lack of data; it is fragmented data without reliable ownership, timing, or accountability.*
 
 ## Section 3 — Objectives and Scope
 
@@ -55,34 +55,34 @@ MediFlow is not only a collection of forms. It models how information moves from
 
 | Service | Main responsibility |
 |---|---|
-| Organization | Staff, roles, departments, facilities, rooms, beds |
-| Patient | Profiles, identifiers, appointments |
-| Clinical | Encounters, diagnoses, orders, prescriptions |
+| Organization | Staff, roles, departments, facilities, rooms |
+| Patient | Staff-operated profiles and identifiers |
+| Clinical | Appointments, encounters, diagnoses, orders, prescriptions |
 | Laboratory | Orders, specimens, results, publication |
 | Pharmacy | Medicines, stock, dispensing |
 | Billing | Charges, invoices, payments, deposits, receipts, refunds, clearance |
 | Notification | Event-based notification processing and delivery status |
 | Report | Operational and financial read models |
-| Inpatient | Admission, beds, stays, transfers, discharge |
-| Surgery | Request, readiness, schedule, execution, outcome |
+| Inpatient | Locally complete Core V1 for admissions, owned beds, stays, treatment, transfers, discharge; event integration remains gated |
+| Surgery | Default-off feature-gated foundation and selected local routes; full lifecycle is not active |
 
-**Presenter cue:** Point out that Inpatient and Surgery are part of the current implemented source baseline, not merely conceptual modules.
+*Presenter cue: Distinguish status carefully: Inpatient Core V1 is locally complete but cross-service event activation is gated; Surgery is a default-off foundation with selected local routes, not a complete lifecycle.*
 
 ## Section 4 — Users and Functions
 
 | Role | Main functions |
 |---|---|
-| `ADMIN` | Configure users, roles, departments, facilities, rooms, beds, and reference data |
-| `DOCTOR` | Document encounters, diagnose, order tests, prescribe, request admission/surgery |
+| `ADMIN` | Configure Organization data and permitted Inpatient bed records |
+| `DOCTOR` | Document encounters, diagnose, order tests, prescribe, create permitted admissions, and prepare future Surgery context |
 | `NURSE` | Record observations, coordinate care, support inpatient and bed workflows |
 | `LAB_TECH` | Process orders/specimens, record, verify, and publish results |
 | `PHARMACIST` | Validate prescriptions, dispense medicines, control stock |
 | `CASHIER` | Handle invoices, deposits, payments, receipts, refunds, and clearance |
 | `MANAGER` | Review operational and financial reports |
-| `PATIENT` | Manage permitted profile/appointments and view own authorized information |
+| `PATIENT` | Read owned notifications; broader profile, appointment, clinical, and financial self-service is future-facing |
 | `SYSTEM` | Publish/consume events, retry failures, update reports, create notifications |
 
-**Presenter cue:** Explain that hiding a button is only user experience; the backend independently checks roles at protected endpoints.
+*Presenter cue: Explain that hiding a button is only user experience; the backend independently checks roles at protected endpoints.*
 
 ## Section 5 — Proposed Solution Architecture
 
@@ -100,31 +100,32 @@ MediFlow is not only a collection of forms. It models how information moves from
 
 Architecture rule: `infrastructure → application → domain`. The domain does not depend on Spring, transport, or persistence. Services exchange DTOs and UUID references, never database relations.
 
-**Presenter cue:** Contrast REST and events: REST answers “what must I confirm now?”, while an event announces “what has already happened?”.
+*Presenter cue: Contrast REST and events: REST answers “what must I confirm now?”, while an event announces “what has already happened?”.*
 
 ## Section 6 — Customer Data-Processing Cycles
 
 | Workflow | Actor | Input information | Processing | Output information | Owning service |
 |---|---|---|---|---|---|
-| Registration/appointment | `PATIENT`, staff | Demographics, contact, service/time | Validate identity and scheduling data | Profile and appointment | Patient |
+| Staff-operated registration | `ADMIN`, `NURSE` | Demographics, contact, identifiers | Validate identity data | Patient profile | Patient |
+| Appointment creation | `ADMIN`, `NURSE` | Patient UUID, service/time | Validate scheduling data | Appointment | Clinical |
 | Clinical encounter | `DOCTOR`, `NURSE` | Patient, appointment, symptoms, observations | Document assessment and allowed states | Encounter, diagnosis, orders | Clinical |
 | Laboratory | `LAB_TECH` | Order, specimen, measured values | Process, verify, publish | Result and result event | Laboratory |
 | Dispensing | `PHARMACIST` | Authorized prescription and stock | Validate, dispense, move inventory | Dispense record and stock state | Pharmacy |
 | Finance | `CASHIER`, `SYSTEM` | Charge/invoice reference, amount, method | Validate and record transaction | Balance, receipt, clearance/refund | Billing |
-| Inpatient | `DOCTOR`, `NURSE`, `CASHIER` | Admission, clearance, bed/care data | Gate state; allocate, track, discharge | Stay history and bed state | Inpatient |
-| Surgery | `DOCTOR`, surgery staff | Request, readiness, clearance, resources | Gate, schedule, execute, record outcome | Surgery lifecycle and outcome | Surgery |
+| Inpatient Core V1 | Route-authorized staff | Admission, bed, treatment, discharge/close data | Apply route-specific local state rules | Admission, treatment, discharge and bed state | Inpatient |
+| Surgery gated foundation | Authorized staff under default-off flags | Selected case/pre-op/cancel/read/draft-schedule input | Execute only an enabled local slice | Local result, not a complete outcome lifecycle | Surgery |
 | Notifications/reports | `SYSTEM`, `MANAGER` | Trusted events and criteria | Deliver/update projection/query | Delivery status and reports | Notification / Report |
 
-**Presenter cue:** Read one row using the five-part pattern: actor, input, process, output, owner. State that the same pattern is applied to every major workflow in the full reports.
+*Presenter cue: Read one row using the five-part pattern: actor, input, process, output, owner. State that the same pattern is applied to every major workflow in the full reports.*
 
 ## Section 7 — Main Cross-Department Flows
 
-1. Patient registration → appointment → clinical encounter.
+1. Staff-operated Patient registration → Clinical appointment → clinical encounter.
 2. Clinical encounter → laboratory order → specimen → verified result.
 3. Clinical prescription → pharmacy validation → dispense → stock movement.
 4. Billable care event → charge → invoice → payment/deposit → receipt/refund.
-5. Admission request → financial clearance → bed allocation → stay → discharge.
-6. Surgery request → readiness → clearance → schedule → execution → outcome.
+5. Local Inpatient admission → bed allocation → treatment → medical discharge → administrative close; cross-service event activation remains gated.
+6. Surgery request → readiness → clearance → schedule → execution → outcome is the target flow, not current acceptance; the source exposes only selected default-off local slices.
 7. Completed domain event → notification delivery and report projection update.
 
 Key controls:
@@ -136,7 +137,7 @@ Key controls:
 - Idempotent event consumption.
 - Bounded retry and visible dead-letter processing.
 
-**Presenter cue:** Use the admission or surgery flow to show why clinical and financial status must cooperate without either service reading the other's database.
+*Presenter cue: Use Inpatient to show local route ownership and explain that its financial event chain remains gated. Present Surgery as a target workflow, not active end-to-end behavior.*
 
 ## Section 8 — Hardware and Software Requirements
 
@@ -161,13 +162,16 @@ Key controls:
 
 These hardware values are planning recommendations. Production sizing requires load, availability, retention, and recovery tests.
 
-**Presenter cue:** Do not present the production numbers as guarantees. State clearly that they are starting points awaiting measured workload evidence.
+*Presenter cue: Do not present the production numbers as guarantees. State clearly that they are starting points awaiting measured workload evidence.*
 
 ## Section 9 — Limitations and Remaining Work
 
 | Limitation | Current status |
 |---|---|
 | Native mobile application | Only a Flutter loader package exists; no complete runnable mobile app |
+| Patient self-service | Current `PATIENT` access is limited to owned notification reads |
+| Inpatient cross-service integration | Core V1 local APIs exist; RabbitMQ producer/consumer activation defaults off |
+| Surgery lifecycle | Business/API flags default off and the complete lifecycle/outcome event is not implemented |
 | Insurance and national identity | No certified production integration is demonstrated |
 | Bank/payment gateway | Internal finance exists; commercial provider integration is not proven complete |
 | Medical devices/external labs/PACS/EHR | No certified external interoperability is claimed |
@@ -177,34 +181,34 @@ These hardware values are planning recommendations. Production sizing requires l
 | Accessibility and regulation | Formal targets and certifications remain future governance work |
 | Automated diagnosis/treatment | Explicitly outside current scope; clinical decisions remain human |
 
-**Presenter cue:** Frame limitations as controlled project boundaries. The report distinguishes future work from implemented capability so the review remains credible.
+*Presenter cue: Frame limitations as controlled project boundaries. The report distinguishes future work from implemented capability so the review remains credible.*
 
 ## Section 10 — Acceptance and Conclusion
 
 Review 1 can be demonstrated through the following acceptance story:
 
-1. Register a patient and schedule an appointment.
+1. As `ADMIN`/`NURSE`, register a patient in Patient and schedule an appointment in Clinical.
 2. Open an authorized clinical encounter.
 3. Order, process, verify, and publish a laboratory result.
 4. Prescribe and dispense medicine with stock update.
 5. Create one financial charge from one eligible event and process payment/receipt.
-6. Progress admission through clearance, bed allocation, active stay, and discharge.
-7. Progress surgery through readiness, clearance, scheduling, execution, and outcome.
+6. Demonstrate route-authorized local Inpatient Core V1 states and verify cross-service event flags remain off.
+7. Verify Surgery is default-off and demonstrate only an explicitly enabled, selected local slice; exclude full lifecycle acceptance.
 8. Generate notification and reporting updates from committed events.
 9. Reject unauthorized operations and repeated business effects.
 10. Execute the agreed automated verification suite successfully.
 
 **Conclusion:** MediFlow provides a source-aligned foundation for coordinated hospital operations. Its value is not only the number of modules, but the controlled movement of information between authorized actors and owning services.
 
-**Presenter cue:** Close with three phrases: “one clear owner for each record,” “one traceable path for each workflow,” and “one controlled gateway for client access.” Then invite questions about scope, data flow, or limitations.
+*Presenter cue: Close with three phrases: “one clear owner for each record,” “one traceable path for each implemented workflow,” and “one explicit gate for unfinished integration.” Then invite questions.*
 
-## Quick Questions and Answers
+### Quick Questions and Answers
 
 | Likely question | Short answer |
 |---|---|
 | Why microservices? | The hospital domains have distinct rules and ownership; independent services keep those boundaries explicit. |
 | Why both REST and events? | REST confirms information needed now; events distribute facts that already happened. |
 | Is mobile complete? | No. Only a shared Flutter loader package is present; responsive web is the current delivery assumption. |
-| Are Inpatient and Surgery only planned? | No. The current source contains implemented services; external policies and production validation remain limited. |
+| What is the status of Inpatient and Surgery? | Inpatient Core V1 is locally complete with event integrations off by default. Surgery is a default-off foundation with selected local routes; its full lifecycle is not implemented. |
 | Is production capacity guaranteed? | No. Hardware figures are planning baselines and require representative testing. |
 | How are duplicate charges prevented? | Billing consumers use event identity/idempotency so repeated delivery does not repeat the business effect. |
