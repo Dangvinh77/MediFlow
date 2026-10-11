@@ -23,7 +23,8 @@ class CashRefundApplicationServiceTest {
         when(store.record(event, refund)).thenReturn(true); when(store.original(refund.originalTransactionId())).thenReturn(Optional.empty());
         service.apply(event);
         verify(store, never()).apply(any(), any()); verify(store, never()).appliedTotal(any());
-        var order = inOrder(store); order.verify(store).lockOriginal(refund.originalTransactionId()); order.verify(store).record(event, refund);
+        var order = inOrder(store); order.verify(store).lockAccount(refund.accountId());
+        order.verify(store).lockOriginal(refund.originalTransactionId()); order.verify(store).record(event, refund);
     }
     @Test void apply_knownReceipt_validatesBoundBeforeEffects() throws Exception {
         var event = decoder.decode("payment.refunded", fixture("refund-service")); var refund = mapper.map(event); var original = receipt();
@@ -43,6 +44,49 @@ class CashRefundApplicationServiceTest {
     @Test void apply_duplicate_doesNotApplyTwice() throws Exception {
         var event = decoder.decode("payment.refunded", fixture("refund-service")); service.apply(event);
         verify(store, never()).original(any()); verify(store, never()).apply(any(), any());
+    }
+    @Test void recover_acquiresAccountBeforeOriginalAndRereadsImmutableIdentity() throws Exception {
+        var original = receipt(); when(store.original(original.transactionId())).thenReturn(Optional.of(original));
+        service.recover(original.transactionId());
+        var order = inOrder(store);
+        order.verify(store).original(original.transactionId());
+        order.verify(store).lockAccount(original.accountId());
+        order.verify(store).lockOriginal(original.transactionId());
+        order.verify(store).original(original.transactionId());
+        order.verify(store).pending(original.transactionId(), 20);
+    }
+    @Test void recover_absentOriginalDoesNotInventAccountOrAcquireInvertedLocks() {
+        var originalId = UUID.randomUUID(); when(store.original(originalId)).thenReturn(Optional.empty());
+        service.recover(originalId);
+        verify(store, never()).lockAccount(any()); verify(store, never()).lockOriginal(any());
+        verify(store, never()).pending(any(), anyInt());
+    }
+    @Test void apply_newRefundAfterFinal_requiresExplicitEarnedCorrectionAndHasNoEffect() throws Exception {
+        var event = decoder.decode("payment.refunded", fixture("refund-service"));
+        var refund = mapper.map(event); var original = receipt();
+        when(store.record(event, refund)).thenReturn(true);
+        when(store.original(refund.originalTransactionId())).thenReturn(Optional.of(original));
+        when(store.appliedTotal(refund.originalTransactionId())).thenReturn(BigDecimal.ZERO);
+        when(store.finalized(refund.accountId())).thenReturn(true);
+        assertThatThrownBy(() -> service.apply(event)).isInstanceOfSatisfying(
+                com.mediflow.report.domain.exception.ReportRuleException.class,
+                error -> assertThat(error.getCode()).isEqualTo("CASH_REFUND_FINAL_CORRECTION_UNSUPPORTED"));
+        verify(store, never()).apply(any(), any());
+    }
+    @Test void recover_pendingRefundOnFinalAccount_quarantinesWithoutReversingEarned() throws Exception {
+        var event = decoder.decode("payment.refunded", fixture("refund-service")); var refund = mapper.map(event); var original = receipt();
+        when(store.original(original.transactionId())).thenReturn(Optional.of(original));
+        when(store.pending(original.transactionId(), 20)).thenReturn(List.of(refund));
+        when(store.appliedTotal(original.transactionId())).thenReturn(BigDecimal.ZERO);
+        when(store.finalized(original.accountId())).thenReturn(true);
+        service.recover(original.transactionId());
+        verify(store).reject(refund.refundTransactionId(), "CASH_REFUND_FINAL_CORRECTION_UNSUPPORTED");
+        verify(store, never()).apply(any(), any());
+    }
+    @Test void apply_existingRefundRetry_doesNotReadFinalStatusOrMutateAgain() throws Exception {
+        var event = decoder.decode("payment.refunded", fixture("refund-service"));
+        service.apply(event);
+        verify(store, never()).finalized(any()); verify(store, never()).apply(any(), any());
     }
     private CashReceipt receipt() throws Exception { return new BillingCashReceiptMapper(ZoneId.of("Asia/Bangkok")).map(decoder.decode("payment.completed", fixture("payment-service"))); }
     private static byte[] fixture(String name) throws Exception { return Files.readAllBytes(Path.of("../billing-service/src/test/resources/contracts/ledger-v1/" + name + ".json")); }

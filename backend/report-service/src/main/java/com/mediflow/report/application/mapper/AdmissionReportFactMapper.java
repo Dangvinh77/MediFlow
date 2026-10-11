@@ -22,6 +22,7 @@ public class AdmissionReportFactMapper {
                 "supersedesEventId", "originalEventId", "replacementOf", "correctionOf", "correctedAt")) {
             if (payload.containsKey(field)) throw new IllegalArgumentException("Admission corrections require a versioned source contract");
         }
+        OperationalSourceFields.rejectCorrectionMarkers(payload);
         UUID admissionId = requiredUuid(payload, "admissionId");
         if (!metadata.sourceId().equals(admissionId)) throw new IllegalArgumentException("Admission source identity differs");
         UUID patientId = requiredUuid(payload, "patientId");

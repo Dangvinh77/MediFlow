@@ -24,6 +24,7 @@ public class ClinicalOperationalContributionMapper {
                 || !"clinical-service".equals(metadata.producer()) || !"recordId".equals(metadata.sourceField()))
             throw invalid("Clinical envelope");
         var payload = event.payload();
+        OperationalSourceFields.rejectCorrectionMarkers(payload);
         if (!metadata.sourceId().equals(uuid(payload, "recordId"))) throw invalid("recordId");
         uuid(payload, "appointmentId"); uuid(payload, "patientId");
         String disposition = text(payload, "disposition");

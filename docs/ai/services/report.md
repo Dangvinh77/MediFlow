@@ -1,5 +1,69 @@
 # Service: report (Phòng Kế hoạch – Tổng hợp)
 
+Current supported release 2026-10-11: the user's later available-history decision supersedes the
+earlier pre-V2 blocker below. V25 now implements controlled finite five-metric publication with
+current local source fencing, exact provenance/row reconciliation, immutable operator acceptance/
+audit, expected-pointer switch and explicit rollback. Missing historical periods remain unavailable;
+no synthetic data or upstream completeness is claimed. Source capability/coverage and bounded
+rebuild/operator APIs are separately dual-gated OFF. Unsupported corrections remain denied, including
+new refunds on an APPLIED final account without an earned-allocation reversal contract. Operational
+publication/full KPI/Gateway activation remain separate target work. No Gateway edits or gate enablement.
+[Current canonical release](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#supported-available-history-release-and-controlled-publication--2026-10-11).
+
+Local archive recovery 2026-10-11: sealed V23 minimal financial sources now have portable strict
+export/restore, default-off ADMIN-only download/import and immutable V24 operator provenance.
+An empty migrated Report database can rebuild the supported five metrics from the archive alone;
+pending decisions survive, concurrent restores deduplicate, storage failure rolls back. This is local
+Report recovery, not producer export/authenticity, pre-V2 coverage, correction or read publication.
+The discovered local legacy volume has no relevant rows, so no history is fabricated from it.
+[Canonical archive and exact source-discovery limits](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#portable-local-financial-evidence-archive--2026-10-11).
+
+Financial pending acceptance 2026-10-11: all financial source writers share account-first fences;
+final scope writes are hospital-first/sorted, and service funding requires exact receipt department.
+Six PG/Rabbit arrival permutations and actual original-linked partial Rx refunds reconcile without
+double effects. Pre-V2 history remains mandatory under the user's explicit decision; no legacy
+aggregate/fixture supplies missing transaction/episode/allocation identity or accepted coverage.
+[Canonical fence/history boundary](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-account-fencing-and-historical-evidence--2026-10-11).
+
+Finite-source continuation 2026-10-11: V23 rebuilds all five financial metrics for the supported
+initial sources into an isolated local generation. Frozen RR manifest, durable bounded checkpoints,
+replica fencing, funding/revision checks and bidirectional reconciliation do not approve historical
+coverage or publish V20. Corrections/full rollout remain open.
+[Canonical rebuild boundary](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#finite-initial-financial-source-rebuild--2026-10-11).
+
+Initial-final continuation 2026-10-10: V22 provides a separately default-off final recognition
+kernel with exact source/revision, local original cash pairing, durable pending recovery, original
+deposit-release budget and atomic per-operation department/hospital contributions. This is NOT a
+V20 five-metric rebuild/publication or post-final reversal/correction projector.
+[Canonical intake/limits](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#initial-final-only-recognition-intake--2026-10-10).
+
+User decision 2026-10-10: earned recognition is final-settlement-only. V21 medical discharge/
+completed-stay statistics are not census inpatientDays, bed utilization or activated public reads.
+[Canonical decision/definitions](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#final-only-earned-recognition--user-decision-2026-10-10).
+
+Financial read continuation 2026-10-10: complete local daily/monthly five-metric snapshot reader,
+separate default-off gate plus care-finance-v2, ADMIN/MANAGER, exact currency/zone/as-of evidence.
+Monthly flows sum while liability/receivable use closing stocks. V20 read namespace starts EMPTY:
+there is no production five-metric rebuild/publication writer; missing source/coverage/day is 404,
+not successful zeroes. No Gateway changes or source approval is implied.
+[Canonical read contract](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-snapshot-read-boundary--2026-10-10).
+
+Receivable follow-up 2026-10-10: separate default-off `settlement.reconciled` V1 intake projects
+immutable non-final Billing snapshots as latest account stock, not daily flow/cash/revenue.
+Version/source/delivery conflicts, stale delivery, both-scope atomicity and retained-byte recovery
+are enforced without REST/cross-service data access. Full financial publication remains unavailable.
+[Canonical semantics](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#versioned-non-final-receivable-stock--2026-10-10).
+
+Rx cash follow-up 2026-10-09: actual Billing producer-owned prescription installments are accepted
+as two immutable cash receipts on one invoice; duplicates and finite replay remain cash-only,
+never earned revenue. Optional Rx/Lab evidence now rejects malformed IDs, duplicate Lab targets,
+mixed Rx/Lab and deposit service targets before claims/effects. Historical hash representation
+and financial equations are unchanged. Actual original-linked Rx refund fixtures additionally
+reconcile cash-out against the two original installments, including early delivery/recovery,
+duplicates and isolated finite paired replay. Gross inflows are never rewritten. These cash
+checks do not implement earned recognition, settlement, full five-metric finance or publication.
+[Current evidence](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+
 **Module:** `backend/report-service/` · **Cổng chạy:** 8088 · **Base path:** `/api/v1/reports` · **Database:** `mediflow_report`
 
 **Nguồn tham khảo ban đầu:** `docs/eproject_general_plan/report-service.html` và
@@ -457,6 +521,17 @@ Financial pending, historical coverage/live catch-up/controlled publication/read
 R-01.4–.7; Rabbit ACK không phải archive. Pending close evidence alone is not an admission metric.
 
 ### Local accepted finite-snapshot queries — 2026-10-02
+
+**Read hardening — 2026-10-09:** operational snapshot reads remain finite accepted-coverage
+reads, not live source approval. V18 adds a generation/department/date/metric covering index only.
+One publication SELECT plus one bounded scope SELECT replaces no existing semantics: actual NULL
+hospital scope, exact department equality, 1..366 inclusive dates and at most days × metrics + one
+detection row. Each statement has a 3-second execution timeout; adapter-level connection/resource
+failure or driver cancellation is `REPORT_NOT_FOUND`, never successful zeros or exposed SQL details. Unknown
+publication metric metadata is unavailable; SQL programming errors are not swallowed. This does
+not establish a 3-second end-to-end SLA (connection acquisition and both statements are separate).
+No publication writer, new queue, finance API or legacy endpoint change. Verification and limits:
+[operational acceptance](../../superpowers/plans/2026-10-09-report-operational-verification.md).
 
 **Paired accepted cash-state rebuild follow-up 2026-10-08:** V17/internal use case freezes receipt
 and refund manifests in one REPEATABLE READ snapshot and rebuilds isolated refund-day cash-out

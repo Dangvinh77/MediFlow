@@ -10,6 +10,13 @@
 
 ## 1. Sources and boundary
 
+**Dependency continuation 2026-10-09:** Billing now consumes exact held Rx terminal facts on its
+guarded dispatcher with local charge/request adjustment, local grant revocation and original-only
+refund obligations. Pharmacy remains stock/workflow owner, never money owner; a terminal is not
+evidence of refunded cash. Distributed revoke/supersede, admission order/current-placement/close
+authority, public V1 activation and held delivery remain open.
+[Current implementation/verification](../../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-CARE-BILLING-01`](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md)
 - [`CONTRACT-INPATIENT-SURGERY-01`](../../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
@@ -314,6 +321,14 @@ Key errors: `PHARMACY_CARE_CONTEXT_INVALID` (422), `PHARMACY_ADMISSION_INACTIVE`
 | compatibility ID explicit | `onPaymentCompleted_targetsOnlyPrescriptionId` |
 
 ## 10. Rollout and Definition of Done
+
+Rx dependency follow-up 2026-10-09: Billing's gated creation issuer accepts actual Pharmacy bytes,
+commits exact-episode bundle pricing/receipts and selected outpatient request/payment/clearance.
+Pharmacy/Report check the same resulting producer-owned files. Admission is charge-only, not
+prepaid. Local terminal adjustment/private Rx notices are implemented in the continuation above;
+public V1, distributed revocation, admission late adjustment/authority and release remain open.
+[Canonical specialization](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#opt-in-prescription-charge-issuance--2026-10-09),
+[evidence](../../../superpowers/plans/2026-10-09-pharmacy-report-rx-issuance.md).
 
 Local checked-creation follow-up 2026-10-09: real Clinical relationship and independently gated
 Patient/Organization identity preflight now supply exact current descriptive facts before stock/

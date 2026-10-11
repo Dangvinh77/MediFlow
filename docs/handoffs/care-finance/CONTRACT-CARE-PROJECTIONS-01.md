@@ -1,10 +1,56 @@
 # CONTRACT-CARE-PROJECTIONS-01 — Notification and Report projections
 
+Rx continuation 2026-10-09: Report reads the exact Billing producer-service installment fixtures
+`payment-prescription-first.json` and `payment-prescription-last.json` from Billing's ledger-v1
+directory. They retain the existing receipt schema: two transaction sources on one selected Rx
+request are two SERVICE_PAYMENT inflows, not two invoices or earned revenue. No new financial
+equation, liability/recognition/reversal or historical hash representation is introduced. Optional
+canonical Rx/Lab evidence must be singular, with distinct canonical Lab UUIDs; a deposit cannot
+carry service targets. Invalid evidence rejects before claims and reaches the cash DLQ.
+PRESCRIPTION invoice notice now has guarded single-reader private intake as specified below.
+Actual Billing original-linked Rx refunds use the unchanged completed-refund schema: separate
+cash-out, never an earned-revenue reversal or settlement. No held event is released.
+[Current adjustment evidence](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+
 - **Status:** `DESIGN_READY`; current outpatient projections are partially implemented
 - **Owners:** Notification/Billing — Lộc; Report/Pharmacy/Surgery — Huy; Clinical/Lab/Inpatient — Vinh
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 
 ## Projection rule
+
+### Initial final-only recognition intake — 2026-10-10
+
+The dual-gated Report final-recognition consumer binds only `settlement.recognition.completed`
+V1 behind `mediflow.features.care-finance-v2` and
+`mediflow.report.final-recognition-consumer.enabled` (both default OFF). It does not bind
+`deposit.allocated`, `settlement.completed` or non-final reconciliation as earned sources.
+Exact producer/envelope/type/version/source key, the 25 payload fields and bounded nested fields,
+initial revision/predecessor, final boolean/outcome, immutable performed hashes, exact numeric
+amounts, original allocation/refund pairs and original-deposit releases must pass validation.
+Amounts/date/zone cannot be rewritten by republishing another delivery ID.
+
+V22 stores minimal financial snapshot/hash and durable delivery claims. A missing local accepted
+cash receipt or actual refund remains PENDING, without earned/release effects. Up to 1000 local
+receipts and 1000 APPLIED refunds must prove the exact account/patient/admission/currency/zone,
+original classification, amounts and completed cash totals. Report never enriches from REST or
+another service's database. Excess or mismatched evidence rejects. Bounded recovery (20 operations,
+60-second deferral, finite transaction timeouts) validates the retained snapshot; early invalid
+evidence becomes REJECTED with a reason, not a poisoned cash receipt.
+
+Account then sorted original-transaction fences are shared with cash/refund intake. Final source,
+delivery, APPLIED state, original release, per-operation contributions and daily department/hospital
+totals commit atomically. Cash refunds subsequently cannot borrow an already released deposit budget.
+The golden 120 receipt / 20 actual unused refund / 100 final operation yields earned 60/40 at the
+two generating departments and release 100 at the original receipt department. Hospital earned
+and release are each 100, not 120; neither is another cash receipt. Exact source/delivery replay
+has no extra contribution. Invalid facts use dedicated durable DLQ; storage failures get three
+bounded retries and retained original bytes can be replayed after repair.
+
+This is an isolated live contribution kernel, **not** V20 financial publication or complete
+financial rebuild. V20 remains EMPTY. Initial-final revisions only; correction/predecessor chains,
+post-final earned reversals, historical approval/cutover and SETTLEMENT_PAYMENT cash classification
+are not claimed. The exact wire is defined once in
+[CARE-BILLING](CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10).
 
 Notification and Report are consumers, not workflow authorities. Their failure must not roll back
 the producer's committed care/payment transaction. Both deduplicate by `eventId`; Report projection
@@ -48,7 +94,206 @@ suppression state; this slice sends no email/SMS and releases no held sent event
 record suppression state without an additional patient message; no arbitrary reason/narrative is
 copied. Live publication/activation remains separately gated by same-byte producer/consumer tests.
 
+### Prescription unpaid-request notice — additive V1 purpose, 2026-10-09
+
+Notification's existing two-gated payment-request queue/reader (historical Surgery naming retained
+for durable topology/config compatibility) also accepts Billing's exact `ledger-v1/invoice-prescription.json`.
+It does not introduce a competing listener on `notification.q` or another copy of invoice.created.
+PRESCRIPTION requires OUTPATIENT_VISIT and a singular canonical prescriptionId; no admission,
+Surgery, Lab or EXAM target may accompany it. SURGERY retains its exact case/admission validation.
+The purpose enters the typed command and selects a distinct PRESCRIPTION_PAYMENT_REQUEST private
+IN_APP template: unpaid request only, neither paid receipt nor confirmation that medicine was
+dispensed. No name, diagnosis, contact lookup or external channel is added. Source identity remains
+invoice.created + paymentRequestId, so changed purpose/target under the same request conflicts.
+Claim/source/history/held sent outbox share one transaction. Unknown/malformed purposes reject
+before claims and retain original bytes in the same bounded-retry DLQ. Both gates default OFF;
+acceptance does not release any Billing/Pharmacy/Notification held row.
+
 ## Report financial projections
+
+### Supported available-history release and controlled publication — 2026-10-11
+
+The user's later decision authorizes a reasonable fallback when pre-V2 sources cannot be found.
+It supersedes the earlier mandatory unavailable-history blocker, not the target correction/KPI
+architecture. Current release is explicitly `AVAILABLE_EVIDENCE_ONLY`: initial immutable producer
+operations plus contiguous explicit non-final settlement revisions. Missing pre-V2 periods are
+unavailable, never synthetic IDs, fake cash or inferred zeroes. Read models remain local event-only.
+The publisher rejects coverage starting before the earliest retained source business day; an empty
+manifest cannot certify historical no-events. These are finite accepted-source snapshots, not an
+attestation that every upstream transaction within the period has arrived.
+
+ADMIN-only capability metadata lists the twelve supported operational/financial sources, exact
+producer/source field/wire version and revision policy. Unsupported post-final earned reversal,
+operational correction/legacy import, census inpatient-days and staffed-bed occupancy are explicit.
+Correction/replacement/supersedes extensions reject before effects. New cash refunds on an APPLIED
+final account require a future explicit original-allocation earned-correction contract; duplicates
+of an already accepted refund remain harmless. Pre-final partial refunds inherit the exact original
+department/classification; cash-out uses refund business time, unused deposit reduces liability, and
+initial final recognizes only explicit original allocation/refund/release evidence at final time.
+
+V25 supplies a production finite financial publication writer. ADMIN must submit command UUID,
+verified generation, exact manifest proof, non-PII acceptance reference, explicit history policy
+and expected current pointer. All financial writers/recoveries hold a shared database publication
+fence before account/original locks; publication uses its exclusive counterpart. READ COMMITTED
+checks the current local manifest AFTER waiting. Source changes require a new complete freeze/
+bounded replay/reconcile, never mutation of the verified manifest. This is local catch-up only:
+neither undelivered broker messages nor upstream completeness are inferred.
+
+All five metric rows and provenance reconcile before and after V23-to-V20 copy. The immutable
+V20 generation, generation acceptance, read pointer and immutable actor/request audit commit
+atomically; failed/unresolved/empty/unverified/corrupt/stale candidates do not publish. Exact
+command retry returns its original result, never reverses a later switch. Changed actor/request
+under the same command conflicts. Rollback only selects a previously accepted/published target
+with unchanged as-of evidence and `snapshotOnly=true`. No manual SQL promotion is supported.
+
+New management APIs are dual-gated OFF (`care-finance-v2` AND `financial-publication.enabled`,
+env `MEDIFLOW_REPORT_FINANCIAL_PUBLICATION_ENABLED`). ADMIN alone can start/advance/read rebuild
+progress, inspect capabilities, publish and roll back. ADMIN/MANAGER can inspect financial coverage:
+`AVAILABLE_SNAPSHOT`, `UNAVAILABLE_HISTORY` or `UNAVAILABLE_PUBLICATION`, with no monetary zeroes
+or patient payload. Existing readers retain separate read gates and 404 outside exact coverage.
+Opt-in management JSON rejects duplicate/unknown fields, trailing input and numeric history-policy
+enum values. Actor UUID comes only from the signed authentication; command receipts preserve
+correlation and return `Cache-Control: no-store`.
+Keep minimal Report evidence without automatic purge; encrypted operator backups and restricted
+archive access/verified restore precede any future deletion. Default Billing/Pharmacy outbox purge
+remains OFF. Gateway is not changed; operator POST ingress needs its own reviewed policy.
+
+This completes the revised supported-release acceptance, not full target corrections, operational
+publication, staffed-bed metrics, deployment or HELD producer release. Dated absence statements
+below describe earlier tranches; this section is the current finite financial workflow.
+[Decision, six-task mapping, operator runbook and verification](../../superpowers/plans/2026-10-11-report-supported-release-60.md).
+
+### Portable local financial evidence archive — 2026-10-11
+
+Report can export a sealed V23 manifest and restore it into a new isolated V23 generation using
+archive schema version 1. This is Report's own minimal journal backup, **not a Billing export**, a
+producer signature, an event republisher, historical coverage approval or V20 publication.
+
+Archive metadata binds origin generation, exact covered period/zone, frozen observation, unresolved
+count and manifest fingerprint. Ordered entries retain kind/source ID, first event ID, source state,
+source/envelope fingerprints and exact typed snapshot bytes/hash. Source IDs/times are never minted
+or inferred. SHA-256 detects damaged or mismatched bytes; an authorized operator could recompute a
+digest, so it is not proof of authenticity/completeness. Empty archives do not prove no upstream events.
+
+Limits: 10,000 entries, 1 MiB per snapshot, 16 MiB total snapshots, 32 MiB wire body, 366 completed
+days, supported archive/projector/snapshot version 1. Strict JSON rejects duplicate/unknown/missing
+keys, trailing tokens, unsupported versions, wrong counts, duplicate/unsorted source keys, damaged
+snapshot/manifest/metadata hashes and invalid periods. Original nanosecond business times survive
+inside snapshot bytes; database observation time remains the original PostgreSQL precision.
+
+Export reads one REPEATABLE READ snapshot. Restore uses a database archive fence and immutable V24
+provenance (origin/new generation, archive digest, authenticated actor, restore time). One archive
+restores once across concurrent processes/retries, including after restart; another actor's retry
+does not rewrite the original audit actor. Source rows, seal and provenance commit together. Applied
+imports also decode and pass the same pure projector before commit. Frozen PENDING/REJECTED remains
+unresolved and fails rebuild rather than borrowing newer live proof. An audit/storage failure rolls
+back the entire new generation. No live source, outbox, payment or read pointer is changed.
+
+Operator routes, both gated OFF by default (`care-finance-v2` and
+`mediflow.report.financial-archive.enabled`, env `MEDIFLOW_REPORT_FINANCIAL_ARCHIVE_ENABLED`):
+
+- ADMIN only: `GET /api/v1/reports/financial/source-archives/{generationId}` downloads sensitive
+  local evidence as an octet stream, no-store/nosniff, fixed UUID-derived filename.
+- ADMIN only: `POST /api/v1/reports/financial/source-archives` accepts the bounded octet stream;
+  it takes the actor from the verified access-token UUID, not request JSON. No URL/path/file lookup.
+
+MANAGER and all other roles cannot export these patient-reference snapshots; aggregates remain on
+their existing reader routes. Human access type, expiration and canonical UUID subject are required.
+No Gateway code/permission is changed and no gate is enabled by this implementation. Store backups
+in operator-controlled encrypted storage with restricted access; the endpoint does not add encryption
+at rest or automatically upload a backup. Initial source/correction/history/publication gates remain.
+
+Local source discovery inspected an isolated read-only clone of `mediflow_mediflow-pgdata`: Billing
+and Report databases have no public tables; legacy Pharmacy prescription/dispense/drug/event tables
+each have zero rows. Observed Rabbit volume message-store segments have zero length. No dump/export
+was found in the scoped repo, project history or Documents/Downloads locations inspected. This
+describes known local evidence only, not global completeness or a historical no-events approval.
+[Implementation, discovery and verification](../../superpowers/plans/2026-10-11-report-financial-archive-recovery.md).
+
+### Financial account fencing and historical evidence — 2026-10-11
+
+Receipt/refund intake, refund recovery, initial-final intake/recovery and non-final stock intake
+share one account fence before original/source locks. Recovery resolves immutable original identity
+first and re-reads under account/original fences; it never takes account after an original lock.
+Initial-final contributions write hospital first, then departments sorted by UUID. Exact receipt
+department must match the account department even for service funding without deposit releases.
+All six receipt/refund/final arrival orders and actual partial Rx receipts/original refunds have
+PG/Rabbit acceptance. This is local contribution/pending acceptance, not a new wire or correction
+policy. Five-metric finite rebuilding remains isolated; V20 publication is not activated.
+
+The user requires pre-V2 history as well as retained activation-era sources. Historical no-events,
+complete exports or V2 transaction/allocation/episode identities cannot be inferred from legacy
+invoice aggregates, current pointers or test fixtures. Real archive/backup/source inventory and
+explicit producer-supported legacy conversion remain required. Billing/Pharmacy automatic published
+outbox cleanup is independently default OFF (`mediflow.<service>.outbox.purge-published-enabled`),
+preserving remaining bytes while archive/backup coverage is unverified. Dispatch/operator replay
+remain available. An explicit purge opt-in requires reviewed source archival/restore/retention;
+it is not itself completeness proof and cannot restore earlier deleted rows.
+[Verification and historical acceptance requirements](../../superpowers/plans/2026-10-11-financial-pending-and-history.md).
+
+### Finite initial-financial source rebuild — 2026-10-11
+
+Report V23 adds an internal finite five-metric rebuild from its own accepted receipt/refund,
+initial-final recognition and every retained non-final receivable revision. It never calls Billing
+REST/DB, resets live claims/totals, republishes commands or creates a V20 read publication.
+Cash/refund/earned are daily flows; liability/receivable are closing stocks, including exact opening
+stocks from earlier originals. Initial earned uses final completedAt and explicit generating charge
+departments; deposit cash/refund/release stays at the original receipt department. Final completion
+extinguishes its account's last non-final receivable without another cash/earned effect.
+
+One REPEATABLE READ transaction freezes the committed local VND/report-zone sources and provenance.
+The finite manifest includes pending/rejected refunds/finals rather than excluding them. Missing
+first-delivery proof, changed receipt/settlement/final snapshot hash or incomplete bounded source set
+aborts freeze. Known unresolved frozen sources fail the generation even after later live recovery;
+a new freeze is required. Every revision of non-final stock is retained, with contiguous predecessor
+history required; the latest current-account pointer alone cannot reconstruct prior daily stocks.
+Receipt/final/non-final sources on one account must share the exact patient/episode/receipt-department
+context even without a final operation. Frozen BUILDING manifests cannot append inputs or reopen.
+
+Limits are 10,000 sources, 16 MiB total manifest, 1 MiB/snapshot, 366 days, 100 departments plus
+hospital and 1..31-day atomic batches. Requested covered days must have ended by sourceObservedAt;
+business completion after that observation is invalid, including outside the requested period.
+Generation row locks serialize replicas. All scope rows/checkpoint commit or roll back together.
+Manifest validation failure may record FAILED; database write failures still roll back the batch.
+Full source/provenance and bidirectional scope/five-amount equality yield local VERIFIED; copied
+inputs/header and terminal generations are sealed. Terminal retry has no effects.
+
+VERIFIED proves equality with this finite local accepted set, **not** upstream history/export
+completeness, correction acceptance, no-events coverage, live catch-up or approved publication.
+Opaque retained original hashes are provenance, not reconstructed raw upstream envelopes.
+V20 stays EMPTY; no public command, scheduler, read switch, feature activation or held release is
+introduced. Post-final corrections and full source/coverage/publication gates remain open.
+[Implementation and verification](../../superpowers/plans/2026-10-11-financial-source-rebuild.md).
+
+### Final-only earned recognition — user decision, 2026-10-10
+
+Earned revenue starts only after Billing final settlement completes, not on performed care, cash,
+deposit allocation, medical discharge or non-final reconciliation alone. Recognition date is final
+completedAt in the configured Report zone. Exact recognition operation/revision, original charge/
+allocation references, currency and generating-department amounts are mandatory. Report never
+derives earned deltas from cash or cumulative settlement gross. Correction references the original
+operation/scope. Deposit remains liability until explicit final allocation/release or original-linked
+actual deposit refund. Refund-due/additional-payment estimates are not final. This user decision does
+not itself implement or accept the final source, financial replay or publication.
+[Billing canonical boundary](CONTRACT-CARE-BILLING-01.md#recognition-timing--user-decision-2026-10-10).
+
+### Medical discharge / completed-stay statistics — LOCAL, 2026-10-10
+
+The eighth key on Report's existing two-gated private operations queue is the exact five-field
+Inpatient `discharge.medically.approved` V1. V21 stores typed minimal proof/exact timestamp text,
+never clinical summary. START/CLOSE/medical proof share admission and delivery fences. Source,
+receipt, replay journal and hospital/department metrics commit together. Missing START stays
+PENDING_START; invalid early proof is quarantined without poisoning valid START; storage errors
+roll back. A later CLOSE earlier than an applied approval cannot rewrite medical history.
+
+`medicalDischarges` counts one immutable approval; `medicalLosMinutes` sums whole elapsed minutes
+per completed stay; `completedStayDays` sums whole 24-hour periods per stay, floor before sum.
+Durations use exact admittedAt -> approvedAt, never administrative closedAt. Contributions use
+approvedAt's configured-zone date and exact stored START department plus hospital. Average LOS
+denominator is the same medical-discharge cohort; no average/public reader is activated here.
+These are **not census inpatientDays, staffed-bed utilization or billable days**. Existing inpatient_days
+is not filled; those metrics still need actual bed intervals/capacity and accepted definitions.
+Correction/historical coverage/live publication/held release remain separate tasks.
 
 ### Completed-refund fact — V1 payment.refunded, 2026-10-08
 
@@ -61,6 +306,16 @@ Refund/original IDs must differ. Free-text reason is private Billing audit, neve
 No source revision, replacement marker, settlement, clinical outcome or earned allocation is inferred.
 Producer-service serializer fixtures are `ledger-v1/refund-service.json` and `refund-deposit.json`;
 Notification and Report read the same original files. [Raw hashes and verification](../../superpowers/plans/2026-10-08-billing-refund-closure.md).
+
+Rx continuation 2026-10-09 additionally verifies actual producer-service files
+`refund-prescription-first.json` (250), `refund-prescription-remainder.json` (500) and
+`refund-prescription-last.json` (1250). The first two link only to the original 750 receipt;
+the last links only to the original 1250 receipt. The unchanged schema needs no prescription ID
+in the refund payload: the authoritative original receipt supplies its context/classification.
+Report keeps gross 2000 separate from refunded 2000, including early recovery/dedupe and isolated
+finite paired replay. Notification emits private actual-refund notices, not a settlement or
+dispense confirmation. No recognition/reversal/coverage is inferred from this cash-only proof.
+[Current verification](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 
 Notification's care-v1 AND refund-consumer gates, both false, register
 `notification.refunds-v1.q`/DLQ and only this routing key. Semantic identity is
@@ -158,6 +413,53 @@ Report must separate:
 current outpatient invoice revenue can continue under the existing contribution model, while every
 event includes a transaction/account/episode classification that lets Report distinguish deposit.
 
+### Versioned non-final receivable stock — 2026-10-10
+
+Local source is Billing **`settlement.reconciled`** V1, source `settlementId`, with full payload
+defined only in [CARE-BILLING](CONTRACT-CARE-BILLING-01.md#non-final-versioned-reconciliation--2026-10-10).
+It is NOT `settlement.completed`; `finalSettlement` must be false. Clinical authorization,
+finalization, producer release and public financial acceptance are unchanged.
+
+Strict mapper validates exact producer/type/source/field set, positive integral business revision,
+UUIDs/predecessor shape, NUMERIC(19,2), liability/balance equations, net allocated ≤ gross and net
+completed funds, outcome sign and exact business/envelope time. Unknown/missing fields,
+floating/string amounts, final/debt/waiver semantics and contradictory evidence reject before writes.
+
+V19 stores immutable minimal typed inputs (snapshot format 1), normalized source proof and a
+separate typed-input fingerprint verified on restoration before any delta. No raw medical
+narrative, source account API or cross-service REST/database read is added. Source uniqueness is
+both `settlementId` and `(accountId, settlementVersion)`; delivery ID/hash is independent.
+Same fact/new delivery has no second effect; changed source/version or changed evidence under
+an existing event ID conflicts and rolls back.
+
+Receivable is **stock** `max(balance,0)`, not daily/monthly flow. Latest accepted account revision
+replaces prior stock, applying only `newStock − persistedPriorStock` to account-department and
+all-hospital scopes. Currency and Report timezone are isolated. Refund-due contributes zero, not
+negative debt. Snapshot completed payments/refunds/reversals never change cash again and never
+represent earned revenue/liability release. Account department is NOT 60/40 charge allocation.
+
+Full snapshots may arrive before predecessors: greatest revision wins, stale accepted versions
+retain proof but cannot downgrade current stock. Account/admission/patient/department/currency/zone
+are immutable. Known adjacent predecessor/successor identity and exact nanosecond chronology are
+checked in either order; non-adjacent business chronology cannot contradict the current revision.
+Known future-predecessor cycles and siblings claiming the same missing predecessor reject
+immediately; a unique predecessor/successor database fence protects concurrent namespace claims.
+Missing history is not declared covered. Database advisory fences serialize replicas; source,
+delivery, latest pointer and hospital-then-department stock commit/rollback together. Failure in
+the second scope leaves no source claim or first-scope effect and supports unchanged-byte retry.
+
+Dedicated durable queue `report.settlement-snapshots-v2.q`/DLQ binds only `settlement.reconciled`.
+Both `mediflow.features.care-finance-v2` and `mediflow.report.settlement-consumer.enabled` default
+false. ACK follows committed application transaction; permanent conflicts reject without requeue,
+transient storage failures have three bounded attempts then retain original bytes in the DLQ.
+Legacy queues and financial endpoints are unchanged; no accepted/public financial read switch exists.
+
+Same actual Billing producer-service fixtures are verified at mapper, PostgreSQL replica/order/
+deduplication/rollback and real Rabbit intake/DLQ replay boundaries. Applying the accepted fixture
+set to empty local stock in different orders produces the same latest balance. This completes
+the local **R-03.5 stock/revision projector**, not finalization/recognition, durable full-financial
+replay, historical coverage/retention approval, financial publication or held release.
+
 ### Report offline gross receipt evidence — 2026-10-07
 
 Report now reads Billing's actual `ledger-v1/payment-service.json` and `payment-deposit.json`.
@@ -225,6 +527,62 @@ read switch or held producer delivery is enabled. The ten local implementation s
 verification are recorded in the [Huy cash replay batch](../../superpowers/plans/2026-10-07-report-cash-replay-batch.md).
 
 ## Report operational projections
+
+### Financial snapshot read boundary — 2026-10-10
+
+The aggregate-only GETs `/api/v1/reports/financial/daily?from&to&departmentId` and
+`/api/v1/reports/financial/monthly?year&departmentId` now have a complete local read implementation.
+They require BOTH `care-finance-v2` and `report.financial-read.enabled`, default false. Direct roles
+are ADMIN/MANAGER only. The existing unmodified Gateway reports-GET rule has the same financial
+roles; its DOCTOR exception remains restricted to the two exact operations routes. No Gateway
+production/test file is changed by this read slice.
+
+V20 introduces a separate EMPTY financial generation/day/publication namespace, not a producer
+fact, export, replay writer or activation. Cash-only V13/V17 and non-final V19 must never be promoted
+into it. There is deliberately no production publication writer or manual SQL activation path.
+Future complete five-metric rebuilding must retain and reconcile its accepted input manifest,
+all scopes and source horizon before an explicitly approved workflow can populate/switch it.
+Synthetic read-boundary tests are NOT Billing expected-result fixtures or source acceptance.
+
+The reader requires a VERIFIED generation, snapshot/projector version 1, applied=source inputs,
+no unresolved inputs, reconciliation/proof metadata, explicit acceptance and matching configured
+currency/timezone. Covered days must have ended in that timezone by sourceObservedAt, which cannot
+follow reconciledAt or publishedAt; a publishedAt in the reader's future is unavailable rather than
+fabricated freshness. Response exposes these three instants, generationId,
+snapshotOnly=true, currency/reportZone and aggregate periods; no patient IDs or acceptance/audit
+reference is returned. One currency is configured (VND by default); no conversion or summation of
+currencies occurs.
+
+Every requested day/scope must have one EXPLICIT complete row for all five metrics. Missing day,
+unknown department, partial coverage, pending/failed/unsupported snapshot or an empty publication
+is 404 REPORT_NOT_FOUND, never fabricated zero stock. Explicit accepted all-zero rows are allowed.
+Daily periods are inclusive and bounded to 1..366 days, years 2000..2100. Monthly requests require
+the complete calendar year and return 12 ordered periods, including leap-day evidence.
+Invalid/malformed period, year or department returns 400 REPORT_VALIDATION_ERROR.
+
+cashReceived is gross completed cash inflow; refunds is actual completed cash-out, separately
+reported. Neither is earnedRevenue. Monthly cashReceived/earnedRevenue/refunds sum daily flows.
+depositLiability and outstandingReceivable are closing stocks taken from the LAST accepted day of
+each month, never sums of daily balances. Every amount is exact non-negative NUMERIC(19,2);
+unknown amounts are not null-to-zero, and overflowing monthly totals are unavailable, not rounded.
+
+The application read transaction is read-only REPEATABLE READ with an 8-second transaction timeout; each of the
+two indexed JDBC statements has a 3-second query timeout and the rows are bounded to days+1 for
+corruption detection. Adapter-level resource/cancellation failures are unavailable without exposed
+database data. These timeouts are not a hard end-to-end SLA including connection acquisition or
+transaction startup; errors before adapter execution retain the general backend error handling.
+Verified generation metadata/amount rows cannot be inserted/updated/deleted through ordinary
+mutations: database triggers fence the generation while building and seal it at verification.
+Pointer switch/rollback selects one immutable generation; this storage/read property is not proof
+of an approved production switch workflow or live catch-up.
+
+The new financial path additionally requires a signed access token with expiry and canonical UUID
+subject. Refresh/service/missing-type/missing-expiry/malformed-subject tokens are denied. Existing
+legacy DTOs, queues, source hashes, feature defaults and historical amounts are unchanged.
+
+This completes the LOCAL R-03.6 read code and R-02.3.2 financial-role/API boundary, not R-03.3/.4
+recognition/reversal, full financial replay/publication or approved historical coverage. Until those
+sources/workflows exist, the financial endpoint is intentionally unavailable in a real environment.
 
 ### CURRENT V0 prescription source dedupe — 2026-10-08
 

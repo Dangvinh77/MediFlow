@@ -2,6 +2,25 @@
 
 **Owner:** Lộc (`locgit-89`)
 
+Initial-final continuation 2026-10-10: V18 supplies initial final settlement, signed actor/key,
+medical/performed source proof, original allocation evidence and atomic SETTLED/two HELD facts.
+Generating-department earned amounts and original-deposit releases are explicit. Initial revisions
+only; corrections/reopening, insurance attribution, reversal and debt/waiver remain unsupported.
+[Canonical finalizer](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10).
+
+**User decision 2026-10-10:** earned recognition occurs only on completed final settlement,
+not service performance, receipt, deposit allocation or non-final stock. Exact recognition/
+charge/allocation and department evidence remain mandatory; estimates are non-final.
+V15 medical charge-close closes normal intake only, not money or finalization.
+[Canonical decision/boundary](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#recognition-timing--user-decision-2026-10-10).
+
+Non-final reconciliation continuation 2026-10-10 (existing user-scoped implementation override):
+actual three-gate ADMIN/CASHIER POST persists consecutive immutable balance snapshots and HELD
+`settlement.reconciled` V1 outbox from bounded persisted-ledger arithmetic. It changes neither
+financial amounts nor final account state and grants no discharge permission. V14 namespace is
+separate from SETTLEMENT; that earlier tranche did not supply finalization/recognition. Canonical API, payload and retry
+rules: [CARE-BILLING](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#non-final-versioned-reconciliation--2026-10-10).
+
 **Module:** `backend/billing-service`
 
 **Base path:** `/api/v1/billing`
@@ -17,6 +36,16 @@ remain disabled/held; event→account/charge/request issuer, price catalogue, re
 settlement/recognition and live cutover remain unimplemented. See CARE-BILLING-01 for exact behavior.
 
 ## 1. Sources and boundary
+
+**Rx terminal continuation 2026-10-09:** V13 adds strict immutable terminal intake and exact
+creation-proof recovery to the existing opt-in issuer. OPEN-account cancel/expire/fail void only
+the exact charge/request, locally revoke its grant and record original-payment refund obligations;
+FILLED is observational. Actual refunds still require the existing cash command. ADMIN/CASHIER
+read remaining obligations through the new default-off prescription-adjustments GET. Closed or
+ambiguous admission late adjustment rejects rather than inventing finance policy. Notification
+now accepts the private Rx unpaid-request purpose; no held event or public V1 gate is released.
+[Canonical semantics](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#prescription-terminal-adjustment--local-opt-in-continuation-2026-10-09),
+[current verification](../../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 
 **Implemented follow-up 2026-10-08:** V9 planned Surgery issuance and V8 completed-refund
 recording now exist. Refund/own-allocation reversals/local grant revocation commit atomically
@@ -332,7 +361,11 @@ public record SettleAdmissionRequest(
 ### Consume charge fact
 
 1. Validate event version, episode, source and price code.
-2. Claim event ID and resolve price from Billing catalog/policy.
+2. Claim event ID and resolve price from Billing catalog/policy. Prescription V1 uses the explicitly
+   approved bundle policy in CARE-BILLING-01: validate Pharmacy's server drug snapshots and exact
+   total, never a client amount or today's Surgery catalogue. The default-off V12 issuer creates
+   an outpatient selected request; admission is charge-only. Terminal adjustment, admission charge
+   closure and live publication remain separate gates.
 3. Open/reuse the unique episode account; never search by patient alone.
 4. Insert charge by `(sourceType, sourceId, priceCode)`; duplicate source is a no-op.
 5. Append payment-request fact when the workflow requires prepayment.
@@ -359,6 +392,16 @@ that balance.
 4. Add reversal allocations and append `payment.refunded`.
 
 ### Settle admission
+
+**Reconciliation prerequisite implemented 2026-10-09:** the default-off ADMIN/CASHIER
+settlement-preview GET reads persisted admission ledger facts in a bounded, read-only
+REPEATABLE READ snapshot. Pure calculation validates account/currency/original-allocation and
+approved insurance reversal evidence. Unallocated deposits are visible but not subtracted from
+the allocation balance or converted to revenue. Its estimated outcome is explicitly non-final;
+the algorithms below still require the medical charge-close writer, deposit allocation/recognition
+and immutable settlement/outbox producer. This GET performs none of those writes and is not a
+Report source. Exact additive shape and limitations are in
+[CARE-BILLING](../../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#read-only-admission-ledger-reconciliation--2026-10-09).
 
 1. Require account episode type ADMISSION and charges closed after medical discharge.
 2. Calculate totals from persisted ledger rows and approved insurance input.

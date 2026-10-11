@@ -115,6 +115,10 @@ public class LedgerPaymentRepositoryAdapter implements LedgerPaymentRepositoryPo
 
     @Override
     public void save(PaymentTransaction transaction, PaymentRequest request, UUID actor) {
+        if (jdbc.update("""
+                UPDATE BILLING_ACCOUNT SET version=version+1 WHERE account_id=?
+                    AND status NOT IN ('CLOSED','SETTLED')
+                """, transaction.getAccountId()) != 1) throw rule("BILLING_ACCOUNT_CLOSED");
         jdbc.update("""
                 INSERT INTO PAYMENT_TRANSACTION(transaction_id,account_id,payment_request_id,transaction_type,
                     classification,status,amount,currency,payment_method,provider_reference,idempotency_key,

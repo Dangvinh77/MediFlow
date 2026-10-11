@@ -69,6 +69,23 @@ class RefundReplayPostgresTest {
         assertThat(replay.advance(id,500)).isEqualTo(replay.progress(id));
         assertThat(count("report_cash_refund")).isEqualTo(2);
     }
+    @Test void actualPrescriptionInstallmentsAndRefunds_pairedRebuildReconcilesZeroNetCash() throws Exception {
+        for (String part : new String[]{"last", "remainder", "first"}) refunds.apply(fixture("refund-prescription-" + part));
+        receipts.apply(fixture("payment-prescription-last")); receipts.apply(fixture("payment-prescription-first"));
+        refunds.apply(fixture("refund-prescription-first"));
+        UUID id = replay.start().generationId();
+        var progress = replay.progress(id);
+        for (int batch = 0; batch < 8 && progress.status() == Status.BUILDING; batch++) progress = replay.advance(id, 1);
+        assertThat(progress.status()).isEqualTo(Status.VERIFIED);
+        assertThat(progress.sourceRefunds()).isEqualTo(3); assertThat(progress.pendingRefunds()).isZero();
+        assertThat(progress.rejectedRefunds()).isZero(); assertThat(count("refund_replay_fact")).isEqualTo(3);
+        assertThat(total(id)).isEqualByComparingTo("2000.00");
+        assertThat(jdbc.queryForObject("SELECT SUM(gross_receipts) FROM cash_replay_scope WHERE generation_id=? AND department_id IS NULL", BigDecimal.class, id))
+                .isEqualByComparingTo("2000.00");
+        assertThat(replay.advance(id, 500)).isEqualTo(replay.progress(id));
+        assertThat(count("daily_financial_report")).isZero(); assertThat(count("operational_report_publication")).isZero();
+    }
+
     @Test void earlyRefund_snapshotStaysPendingAfterLiveOriginalRecovery_newGenerationReflectsNewState() throws Exception {
         refunds.apply(fixture("refund-service"));
         UUID old=replay.start().generationId();

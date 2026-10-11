@@ -7,6 +7,14 @@ import java.util.UUID;
 
 final class OperationalSourceFields {
     private OperationalSourceFields() { }
+    static void rejectCorrectionMarkers(Map<String,Object> payload) {
+        for (String key : payload.keySet()) {
+            if (key.startsWith("supersedes") || key.startsWith("correction") || key.startsWith("replacement")
+                    || key.equals("correctedAt") || key.equals("originalEventId") || key.equals("revision")) {
+                throw invalid("unsupported correction contract");
+            }
+        }
+    }
     static String text(Map<String,Object> payload,String key) {
         if (!(payload.get(key) instanceof String value) || value.isBlank()) throw invalid(key);
         return value;

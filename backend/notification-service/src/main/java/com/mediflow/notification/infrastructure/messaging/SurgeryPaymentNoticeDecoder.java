@@ -28,17 +28,28 @@ public class SurgeryPaymentNoticeDecoder implements SurgeryPaymentNoticeWirePort
             var root = mapper.readTree(body); var p = root.path("payload");
             if (!root.isObject() || !p.isObject() || !key.equals(text(root, "eventType")) || !"billing-service".equals(text(root, "producer"))
                     || !root.path("version").isIntegralNumber() || !root.path("version").canConvertToInt() || root.path("version").intValue() != 1
-                    || !"SURGERY".equals(text(p, "purpose")) || !p.path("totalAmount").isNumber()) throw new IllegalArgumentException();
-            UUID request = uuid(p, "paymentRequestId"), invoice = uuid(p, "invoiceId"); uuid(p, "accountId"); uuid(p, "departmentId"); uuid(p, "surgeryCaseId");
+                    || !p.path("totalAmount").isNumber()) throw new IllegalArgumentException();
+            String purpose = text(p, "purpose");
+            if (!java.util.Set.of("SURGERY", "PRESCRIPTION").contains(purpose)) throw new IllegalArgumentException();
+            UUID request = uuid(p, "paymentRequestId"), invoice = uuid(p, "invoiceId"); uuid(p, "accountId"); uuid(p, "departmentId");
             if (invoice.equals(request)) throw new IllegalArgumentException();
             UUID episode = uuid(p, "careEpisodeId"), admission = p.hasNonNull("admissionId") ? uuid(p, "admissionId") : null;
             String type = text(p, "careEpisodeType");
             if (!("ADMISSION".equals(type) ? episode.equals(admission) : "OUTPATIENT_VISIT".equals(type) && admission == null)) throw new IllegalArgumentException();
+            if ("PRESCRIPTION".equals(purpose)) {
+                uuid(p, "prescriptionId");
+                if (!"OUTPATIENT_VISIT".equals(type) || p.hasNonNull("surgeryCaseId")) throw new IllegalArgumentException();
+            } else {
+                uuid(p, "surgeryCaseId");
+                if (p.hasNonNull("prescriptionId")) throw new IllegalArgumentException();
+            }
+            for (String field : java.util.List.of("appointmentId", "recordId", "labTestIds", "sourceRevision", "supersedesEventId", "correction"))
+                if (p.hasNonNull(field)) throw new IllegalArgumentException();
             Instant created = Instant.parse(text(p, "createdAt"));
             if (!Instant.parse(text(root, "occurredAt")).equals(created)
                     || p.hasNonNull("expiresAt") && !Instant.parse(text(p, "expiresAt")).isAfter(created)) throw new IllegalArgumentException();
             return new SurgeryPaymentNoticeCommand(uuid(root, "eventId"), hash(root), hash(p), text(root, "correlationId"), request,
-                    uuid(p, "patientId"), p.path("totalAmount").decimalValue(), text(p, "currency"));
+                    uuid(p, "patientId"), p.path("totalAmount").decimalValue(), text(p, "currency"), purpose);
         } catch (Exception invalid) { throw new IllegalArgumentException("Invalid Surgery payment-request notice contract"); }
     }
     private String hash(JsonNode node) throws Exception {

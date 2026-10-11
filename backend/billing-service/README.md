@@ -10,6 +10,10 @@ Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Bil
 
 ## Status
 
+Automatic published-outbox cleanup defaults OFF via `MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED`.
+Review archived source completeness and backup/restore before enabling it; 7-day retention is not a
+historical replay archive. Dispatch and operator replay remain available with cleanup disabled.
+
 Opt-in pre-start cancellation adjustment now uses the same `billing.q` dispatcher/issuer gates.
 V10 durable cancellation receipts and pending recovery atomically void exact unperformed charges,
 cancel exact requests, revoke grants and record original-only refund obligations. No cancellation

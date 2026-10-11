@@ -44,13 +44,15 @@ public class ReportOperationalConsumerConfiguration {
                 BindingBuilder.bind(queue).to(events).with("surgery.cancelled"),
                 BindingBuilder.bind(queue).to(events).with("admission.started"),
                 BindingBuilder.bind(queue).to(events).with("admission.closed"),
+                BindingBuilder.bind(queue).to(events).with("discharge.medically.approved"),
                 BindingBuilder.bind(dlq).to(dead).with(dlq.getName()));
     }
 
     @Bean
     ReceiveOperationalReportFactUseCase operationalReportFactReceiver(ApplyOperationalContributionUseCase operations,
-            ProjectAdmissionReportEvidenceUseCase admissions, ZoneId reportZoneId) {
-        return new OperationalReportFactReceiver(operations, admissions, reportZoneId);
+            ProjectAdmissionReportEvidenceUseCase admissions, ZoneId reportZoneId,
+            com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase medicalDischarges) {
+        return new OperationalReportFactReceiver(operations, admissions, reportZoneId, medicalDischarges);
     }
 
     @Bean

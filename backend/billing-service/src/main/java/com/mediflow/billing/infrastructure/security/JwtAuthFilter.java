@@ -86,6 +86,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
             if (request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
+                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-preview")
+                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-reconciliations")
+                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/deposit-allocations")
+                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")
                     || request.getRequestURI().startsWith("/api/v1/billing/surgery-cancellations/")
                     || request.getRequestURI().startsWith("/api/v1/billing/transactions/")) {
                 if (!StringUtils.hasText(subject)

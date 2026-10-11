@@ -20,23 +20,27 @@ public class PharmacyOutboxMaintenance implements ReplayPharmacyOutboxUseCase {
     private final PharmacyOutboxClaimService claimService;
     private final Clock clock;
     private final Duration retention;
+    private final boolean purgePublishedEnabled;
 
     /** Creates maintenance with a positive retention period. */
     public PharmacyOutboxMaintenance(
             PharmacyOutboxClaimService claimService,
             Clock clock,
-            @Value("${mediflow.pharmacy.outbox.retention:PT168H}") Duration retention) {
+            @Value("${mediflow.pharmacy.outbox.retention:PT168H}") Duration retention,
+            @Value("${mediflow.pharmacy.outbox.purge-published-enabled:false}") boolean purgePublishedEnabled) {
         if (retention.isNegative() || retention.isZero()) {
             throw new IllegalArgumentException("Outbox retention must be positive");
         }
         this.claimService = claimService;
         this.clock = clock;
         this.retention = retention;
+        this.purgePublishedEnabled = purgePublishedEnabled;
     }
 
-    /** Deletes only published rows older than the configured retention period. */
+    /** Disabled until archived source coverage and retention are explicitly reviewed. */
     @Scheduled(fixedDelayString = "${mediflow.pharmacy.outbox.retention-sweep-ms:3600000}")
     public void purgePublished() {
+        if (!purgePublishedEnabled) return;
         claimService.deletePublishedBefore(Instant.now(clock).minus(retention));
     }
 

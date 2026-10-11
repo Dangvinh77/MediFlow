@@ -22,6 +22,7 @@ public class SurgeryOperationalContributionMapper {
                 || !completed && !"surgery.cancelled".equals(metadata.eventType())
                 || !metadata.sourceField().equals(completed?"resultId":"cancellationId")) throw invalid("Surgery envelope");
         var payload=event.payload();
+        rejectCorrectionMarkers(payload);
         if(!metadata.sourceId().equals(uuid(payload,metadata.sourceField()))) throw invalid("sourceId");
         if(positiveInteger(payload.get("sourceRevision"),"sourceRevision")!=1) throw invalid("unsupported correction");
         uuid(payload,"surgeryCaseId"); uuid(payload,"surgeryRequestId"); episode(payload);

@@ -73,6 +73,18 @@ GET {{host}}/api/v1/reports/operations/surgery?from=2026-10-01&to=2026-10-02
 Authorization: Bearer {{token}}
 X-Correlation-Id: report-operations-surgery
 
+### V2 financial daily — ADMIN/MANAGER ONLY, both care-finance-v2 and financial-read.enabled default false
+# Empty/unaccepted/incomplete snapshots return 404 REPORT_NOT_FOUND, NOT successful zeroes.
+# Use the separately gated, audited finite-source publisher below; never insert publication rows manually.
+GET {{host}}/api/v1/reports/financial/daily?from=2026-10-01&to=2026-10-02
+Authorization: Bearer {{token}}
+X-Correlation-Id: report-financial-daily
+
+### V2 financial monthly — full year; flows sum, liability/receivable are each month's closing stocks
+GET {{host}}/api/v1/reports/financial/monthly?year=2026
+Authorization: Bearer {{token}}
+X-Correlation-Id: report-financial-monthly
+
 ### Private management diagnostic — ADMIN/MANAGER access token only, NOT a Gateway API
 # Default unavailable: telemetry=false and web exposure is health,info.
 # Explicit telemetry opt-in PLUS private metrics exposure is required. Never expose this to patients.
@@ -84,3 +96,66 @@ Authorization: Bearer {{token}}
 ### Private aggregate pending diagnostic (same explicit management-plane opt-in)
 GET {{managementHost}}/actuator/metrics/report.admission.pending
 Authorization: Bearer {{token}}
+
+### Sensitive local financial archive — ADMIN access token only; default OFF
+# Requires both care-finance-v2 and financial-archive.enabled. Gateway ownership/rules are unchanged.
+# A sealed V23 generation must already exist. Download contains exact minimal patient-reference evidence,
+# not accepted historical coverage. Save only to encrypted, operator-controlled backup storage.
+@archiveGenerationId = 00000000-0000-4000-8000-000000000001
+GET {{host}}/api/v1/reports/financial/source-archives/{{archiveGenerationId}}
+Authorization: Bearer {{token}}
+X-Correlation-Id: report-financial-source-export
+
+### Restore saved LOCAL Report evidence into a new isolated generation — never publishes a report
+# Replace the local input filename with the actual download. Never use test fixtures as production history.
+POST {{host}}/api/v1/reports/financial/source-archives
+Authorization: Bearer {{token}}
+Content-Type: application/octet-stream
+X-Correlation-Id: report-financial-source-restore
+
+< ./financial-source-archive.json
+
+### Inspect supported source contracts — ADMIN, care-finance-v2 AND financial-publication.enabled (default OFF)
+# New management-plane routes need separately reviewed Gateway POST policy. No Gateway change is made here.
+GET {{host}}/api/v1/reports/financial/capabilities
+Authorization: Bearer {{token}}
+
+### Explicit history availability — ADMIN/MANAGER; unavailable history is metadata, never money=0
+GET {{host}}/api/v1/reports/financial/coverage?from=2026-10-09&to=2026-10-10
+Authorization: Bearer {{token}}
+
+### Freeze supported LOCAL sources into an isolated generation — ADMIN, same publication gates
+# Set from at/after the earliest retained source business day; older missing history cannot publish.
+POST {{host}}/api/v1/reports/financial/rebuilds
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"from":"2026-10-10","to":"2026-10-10"}
+
+### Advance/reconcile a generation (1..31 completed days per transaction)
+@financialGenerationId = 00000000-0000-4000-8000-000000000001
+POST {{host}}/api/v1/reports/financial/rebuilds/{{financialGenerationId}}/batches?days=31
+Authorization: Bearer {{token}}
+
+### Inspect durable bounded rebuild progress — ADMIN
+GET {{host}}/api/v1/reports/financial/rebuilds/{{financialGenerationId}}
+Authorization: Bearer {{token}}
+
+### Publish VERIFIED all-five-metric snapshot — ADMIN signed access token UUID subject
+# Replace manifestFingerprint with progress.manifestFingerprint, and commandId with a unique command UUID.
+# expectedCurrentGenerationId=null is legal ONLY for the first publication. Later switch must provide current ID.
+# Exact retry returns the original receipt without reverting a subsequent switch. New sources require a NEW freeze.
+# AVAILABLE_EVIDENCE_ONLY explicitly excludes missing pre-V2 history; reference is a non-PII review/runbook ID.
+POST {{host}}/api/v1/reports/financial/publications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"commandId":"00000000-0000-4000-8000-000000000101","generationId":"{{financialGenerationId}}","expectedCurrentGenerationId":null,"manifestFingerprint":"replace-with-exact-64-character-progress-hash","acceptanceReference":"review/financial-local-v1","historyPolicy":"AVAILABLE_EVIDENCE_ONLY"}
+
+### Roll back pointer only to a previously accepted/published generation — ADMIN
+# New command UUID and exact expected current pointer. This does not relabel older evidence fresh/current.
+POST {{host}}/api/v1/reports/financial/publications/rollbacks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"commandId":"00000000-0000-4000-8000-000000000102","generationId":"{{financialGenerationId}}","expectedCurrentGenerationId":"00000000-0000-4000-8000-000000000002","acceptanceReference":"rollback/financial-v1"}

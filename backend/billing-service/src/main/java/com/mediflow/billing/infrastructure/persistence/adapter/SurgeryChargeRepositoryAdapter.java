@@ -34,6 +34,7 @@ public class SurgeryChargeRepositoryAdapter implements SurgeryChargeRepositoryPo
     @Override
     public BillingAccount findOrOpenAccount(UUID patientId, UUID departmentId, CareEpisodeType careEpisodeType,
                                              UUID careEpisodeId, String currency, Instant openedAt) {
+        AdmissionChargeIntakeFence.requireOpen(jdbc, careEpisodeType.name(), careEpisodeId, patientId);
         jdbc.update("""
                 INSERT INTO BILLING_ACCOUNT(account_id, patient_id, department_id, care_episode_type,
                     care_episode_id, status, currency, opened_at)
@@ -73,6 +74,7 @@ public class SurgeryChargeRepositoryAdapter implements SurgeryChargeRepositoryPo
 
     @Override
     public Charge saveCharge(Charge charge) {
+        requireChargeMutable(charge, false);
         UUID id = UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO CHARGE(charge_id, account_id, patient_id, department_id, source_type, source_id,
@@ -91,12 +93,32 @@ public class SurgeryChargeRepositoryAdapter implements SurgeryChargeRepositoryPo
 
     @Override
     public void updateCharge(Charge charge) {
+        if (!requireChargeMutable(charge, true)) return;
         jdbc.update("""
                 UPDATE CHARGE SET quantity = ?, unit_amount = ?, gross_amount = ?, status = ?, void_reason = ?,
                     reconciled_result_id = ?
                  WHERE charge_id = ?
                 """, charge.getQuantity(), charge.getUnitAmount(), charge.getGrossAmount(), charge.getStatus().name(),
                 charge.getVoidReason(), charge.getReconciledResultId(), charge.getChargeId());
+    }
+
+    private boolean requireChargeMutable(Charge charge, boolean existing) {
+        var account = jdbc.queryForMap("SELECT status,care_episode_type FROM billing_account WHERE account_id=? FOR UPDATE", charge.getAccountId());
+        if (!"ADMISSION".equals(account.get("care_episode_type")) || "OPEN".equals(account.get("status"))) return true;
+        if (existing) {
+            // A matching immutable completion replay after close is a no-effect, not a late adjustment.
+            var rows = jdbc.query("SELECT * FROM charge WHERE charge_id=?", (rs, row) -> charge(rs), charge.getChargeId());
+            if (!rows.isEmpty()) {
+                var previous = rows.getFirst();
+                if (previous.getQuantity().compareTo(charge.getQuantity()) == 0
+                        && previous.getUnitAmount().compareTo(charge.getUnitAmount()) == 0
+                        && previous.getGrossAmount().compareTo(charge.getGrossAmount()) == 0
+                        && previous.getStatus() == charge.getStatus()
+                        && java.util.Objects.equals(previous.getVoidReason(), charge.getVoidReason())
+                        && java.util.Objects.equals(previous.getReconciledResultId(), charge.getReconciledResultId())) return false;
+            }
+        }
+        throw new com.mediflow.billing.domain.exception.BillingRuleException("BILLING_ACCOUNT_CHARGE_CLOSED", "Admission financial adjustment requires an explicit reopen policy");
     }
 
     @Override

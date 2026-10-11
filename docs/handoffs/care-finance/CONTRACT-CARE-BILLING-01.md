@@ -1,12 +1,134 @@
 # CONTRACT-CARE-BILLING-01 — Care episodes, charges, clearance and settlement
 
-- **Status:** `DESIGN_READY`; existing outpatient fee/payment contracts are `PARTIAL`
+- **Status:** `DESIGN_READY`; opt-in Rx creation/terminal local adjustment are `PARTIAL`; distributed revoke, admission late adjustment/full finance/held publication remain open
 - **Owners:** Clinical/Lab/Inpatient — Vinh; Pharmacy — Huy; Billing — Lộc
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 - **Rule:** Billing is the only owner of money. Domain services own operational state and never
   infer payment from an invoice, patient, or unrelated payment event.
 
 ## Shared episode identity
+
+### Initial final settlement and explicit earned operation — 2026-10-10
+
+The opt-in `POST /api/v1/billing/accounts/{id}/final-settlements` accepts no client money or clinical
+approval. ADMIN/CASHIER must supply a signed access-token UUID actor and an `Idempotency-Key`.
+Ledger, settlement-preview, medical-charge-close and final-settlement gates all default OFF.
+One bounded repeatable snapshot must prove CHARGE_CLOSED/PENDING, exact APPLIED medical authority,
+every POSTED charge's actual performed Surgery or terminal FILLED Rx source, zero account balance,
+zero unapplied cash and zero unallocated deposit. Generating-department/source/fingerprint/operation
+must be explicit; planned price alone is insufficient. Insurance attribution, completed reversals,
+debt/waiver, reopen/corrections and existing historical SETTLEMENT rows are explicitly unsupported.
+
+Key -> account/version fences serialize with new cash/refund/allocation writes. Only known aborted
+serialization/deadlock transactions retry automatically, at most three fresh whole transactions;
+unknown commit/connection failures do not. A key binds account and actor; exact replay returns stored
+bytes after SETTLED. Settlement version 1, immutable V18 operation, SETTLED transition and both HELD
+facts commit atomically. No Gateway route or live outbox publication is enabled.
+
+`settlement.completed` V1 retains its existing 13-field discharge outcome contract. A **separate**
+`settlement.recognition.completed` V1 (routing key equals eventType, Billing common seven-field
+envelope) supplies explicit earned recognition; its source is `recognitionOperationId`, not gross
+total interpreted as a delta. Payload fields:
+
+- recognitionOperationId, recognitionRevision=1, supersedesOperationId=null;
+- settlementId, settlementVersion=1, supersedesSettlementId=null;
+- accountId, admissionId, patientId, accountDepartmentId, currency;
+- grossAmount, insuranceAmount, patientLiability, completedPayments, completedRefunds,
+  completedReversals, netAllocatedPayments, balance;
+- outcome=PAID_IN_FULL, completedAt, finalSettlement=true;
+- charges (max 500): chargeId, departmentId, sourceType, sourceId, performedOperationId,
+  performedFingerprint, performedAt, earnedAmount;
+- allocations (max 1000): allocationId, transactionId, originalTransactionId, chargeId,
+  transactionType, classification, amount;
+- depositReleases: originalTransactionId, receiptDepartmentId, amount.
+
+Only allocations of recognized POSTED charges appear; fully returned VOIDED charge allocations
+are omitted, while account completedPayments/completedRefunds still include their actual cash.
+Generating-department earned sums equal grossAmount; hospital totals count the operation once.
+Original deposit release uses its receipt department, not a proportional earned split. Non-final
+reconciliation/receipt/allocation/performed facts never independently recognize revenue.
+The actual FinalAdmissionSettlementService fixture is `settlement-recognition-completed.json`;
+matching actual payment/refund command fixtures are `payment-final-recognition-deposit.json` and
+`refund-final-recognition-deposit.json`. Generated delivery/transaction UUIDs alone normalize in
+cash fixture tests. All are under Billing `src/test/resources/contracts/ledger-v1/`.
+
+This supplies a local initial final writer, not a full admission activation/close workflow,
+historical import, post-final earned reversal or accepted five-metric report publication.
+Consumer implementation and limits are canonical in
+[CARE-PROJECTIONS](CONTRACT-CARE-PROJECTIONS-01.md#initial-final-only-recognition-intake--2026-10-10).
+
+### Local admission deposit allocation and unused-cash refund — 2026-10-10
+
+Billing now owns an opt-in `POST /api/v1/billing/accounts/{id}/deposit-allocations` for ADMIN/CASHIER,
+requiring a signed access-token UUID actor and `Idempotency-Key`. Ledger, settlement-preview and
+deposit-allocation gates all default OFF. Request: `{originalTransactionId, allocations:
+[{chargeId, amount}]}`; amounts are exact positive NUMERIC(19,2), at most 1000 distinct targets.
+The original must be a completed ADMISSION_DEPOSIT payment on this exact medically closed account.
+Charge/account/patient/currency, completed original returns, own prior allocations and each payable
+charge balance are checked from a bounded repeatable snapshot. Nonzero account-wide insurance is
+explicitly unsupported until its generating-charge attribution is implemented; it is not split by guess.
+
+One key is bound to account, actor, original payment and sorted exact target amounts. Replay returns
+the stored result, including after SETTLED; new intent after finalization rejects. Key -> account locks
+and account-version writes force concurrent repeatable snapshots to retry from fresh evidence.
+Base allocation rows stay append-only; an existing original/charge pair is never overwritten. V16
+stores immutable operation/audit/payload with the base rows and HELD outbox in one transaction.
+
+`deposit.allocated` V1 uses the common seven-field Billing envelope. Payload fields are
+`allocationOperationId`, `accountId`, `admissionId`, `patientId`, `originalTransactionId`, `currency`,
+`allocatedAmount`, `allocations` (allocationId/chargeId/amount), `allocatedAt`, `finalSettlement=false`.
+The actual service serializer fixture is `billing-service/src/test/resources/contracts/ledger-v1/deposit-allocated.json`.
+It is NOT a final settlement, earned-revenue or liability-release fact. Report/Notification have not
+accepted this new fact; it remains HELD and unbound there. Gateway is unchanged; no public rollout is approved.
+
+The existing actual cashier refund command now returns only unused cash from that original deposit,
+even when some of it has already been allocated. Original amount - completed original REFUND/REVERSAL
+- remaining original funded allocations must be nonnegative after the new refund. Thus deposit 100,
+allocation 80 and actual refund 20 preserve funded charges and leave zero unused cash; refund 20.01
+rejects. Other payments cannot subsidize this budget. No allocation reversal or earned credit is
+created by the unused-cash path. Receipt/refund originals stay immutable; actual refund/audit,
+account-version fence and redacted HELD payment.refunded commit atomically. Post-final new refunds
+still require an explicit reopen/correction policy; exact key replay is no-effect.
+
+Initial admission deposit request issuance, top-up, insurance attribution, post-final correction
+and reviewed publication remain separate unfinished work. Initial finalization is specified above.
+
+### Recognition timing — user decision, 2026-10-10
+
+The user chose **recognition only when final settlement completes**, not on performed-service,
+receipt, deposit allocation or non-final reconciliation alone. `settlement.reconciled`
+(`finalSettlement=false`), `payment.completed`, `prescription.filled`, `surgery.completed` and
+medical discharge MUST NOT independently generate earned revenue. Recognition date is final
+completedAt in Report's configured zone. Billing must persist exact recognition operation/revision,
+original charge/allocation references, currency and generating-department amounts; the account
+department is not an earned-revenue split. Refund-due/additional-payment estimates stay non-final.
+Debt/waiver requires real persisted approval. Correction references the original recognition and
+allocations, never repeats cumulative settlement gross as another delta. This closes the timing
+decision, not final writer, projection, replay, historical coverage or publication tasks.
+
+### Local medical charge-close — 2026-10-10
+
+The existing task-scoped Billing override implements exact Inpatient `discharge.medically.approved`
+V1 on the single billing.q dispatcher. Ledger + admission-charge-close gates default OFF
+(`MEDIFLOW_BILLING_ADMISSION_CHARGE_CLOSE_ENABLED=false`); no competing listener or Gateway change.
+Original payload is exactly admissionId/patientId/summaryId/approvedBy/approvedAt, no clinical text,
+guessed account/department, amount or revision. V15 stores minimal immutable source/delivery proof.
+Admission episode -> account -> medical delivery locks serialize close against Rx and both Surgery
+account issuers. OPEN -> CHARGE_CLOSED, account version and receipts commit atomically; audit time
+comes from database after locks. Same source/new delivery and closed-account replay are no-effect.
+Existing matched issuance replays before the new-intake fence; Surgery unchanged performed replay
+is no-effect but new monetary mutation after close rejects. No final event, allocation, payment,
+refund, clearance or revenue is created. This is a local financial fence, not a Pharmacy dispense lease.
+
+Without an account, source commits PENDING_ACCOUNT before ACK without inventing financial context.
+It blocks ordinary late account/charge issuance. A later Pharmacy/Surgery financial issuer cannot
+replace Inpatient's patient authority or mark its proof rejected; mismatch fails closed without
+account creation. Known wrong-patient facts reject before effects.
+Pending proof can recover on exact medical-fact redelivery after an authoritative account exists.
+No automatic account factory, pending scheduler, approval replacement, late-charge/reopen policy or
+finalization is included. Unknown/changed/future facts reject; storage failure rolls back, never ACKs
+partial account effects. Disabling a gate does not remove an already durable broker binding; rollout
+must explicitly manage that binding. A disabled dispatcher rejects rather than silently ACKing it.
 
 | Field | Type | Required | Rule |
 |---|---|---:|---|
@@ -66,8 +188,9 @@ PRESCRIPTION disposition is not a medication order; no status is treated as a cu
 financial grant, inpatient placement or distributed lease. Current Patient existence and descriptive
 Organization active-job/department preflight are now required by the checked caller, independently
 gated and rechecked after receipt/stock waits. They do not replace doctor-eligibility/order policy.
-Authoritative order policy, Billing Rx request issuance/terminal adjustment and reviewed public/held
-activation remain separate gates. No public V1 endpoint or held event is enabled by this read.
+Authoritative order policy, distributed revocation/admission late adjustment and reviewed public/held
+activation remain separate gates. The local Rx creation/terminal issuer is described below; no public V1 endpoint or
+held event is enabled by this read.
 
 Same-byte producer/consumer tests and owned PostgreSQL verification:
 [execution evidence](../../superpowers/plans/2026-10-09-pharmacy-clinical-context.md).
@@ -86,6 +209,88 @@ and [current verification](../../superpowers/plans/2026-10-09-pharmacy-report-v2
 
 Each fact uses the common envelope and an immutable producer-sourced `sourceId`. Redelivery must not
 create another charge.
+
+### Opt-in prescription charge issuance — 2026-10-09
+
+The Billing ledger and `mediflow.billing.prescription-charge-consumer.enabled` gates (default false)
+select a strict V1 handler on the existing single `billing.q` dispatcher. Flat V0 facts retain their
+compatibility handler; malformed V1 never falls back to it. Pharmacy's original five-event fixture
+bytes remain unchanged. No new competing queue, public price/charge command, or shared module exists.
+
+Pharmacy owns the server-captured drug catalogue snapshot in `items[].unitPrice`; Billing validates
+all exact quantities, prices and their sum against `totalAmount` before accepting money. This is
+an explicit prescription-specific pricing specialization, not permission to accept client amounts
+or use Surgery's catalogue policy for drugs. New issuance additionally requires Billing's explicit
+configured `mediflow.billing.prescription-charges.allowed-price-codes` policy (empty by default;
+enabling the issuer without it fails startup). Unknown codes reject, never choose a fallback price;
+matching historical replay does not revalidate today's policy. `priceCode` identifies one bundle:
+`sourceType=PRESCRIPTION`, `sourceId=prescriptionId`, quantity one, unit/gross amount the checked
+immutable bundle total. Durable item receipts retain drug IDs, quantities and prices, not clinical
+notes or names. New zero-total prescriptions reject pending an approved free-care policy. Replay
+does not re-price or rewrite closed accounts; changed source bytes require an explicit adjustment
+contract, not another charge.
+
+OUTPATIENT creates exactly one selected-charge `PRESCRIPTION` payment request, independent invoice
+UUID and singular target; optional recordId is evidence, not an EXAM clearance target. ADMISSION
+posts only to its exact admission account and creates no prepayment request, invoice or clearance.
+The original account department is preserved; each charge keeps its generating department.
+The event has no doctor/account actor field, so Billing never fabricates `created_by`.
+
+Delivery claim, immutable source/items, exact account, charge, outpatient request/target and held
+invoice notice commit atomically. Payment completion reuses the existing classified installment
+writer: partial installments have no clearance, full payment grants only the exact outpatient Rx.
+`invoice.created` V1 for this issuer contains `{invoiceId,paymentRequestId,accountId,patientId,
+departmentId,careEpisodeType,careEpisodeId,purpose=PRESCRIPTION,prescriptionId,totalAmount,currency,
+createdAt,expiresAt}`. This is a request notice, not payment, earned revenue or dispense authority.
+
+**Local continuation:** Notification now accepts the exact PRESCRIPTION purpose through its
+existing guarded request-notice reader and private template; V0 invoice consumers must never
+receive it. V13 adds strict terminal intake/local adjustment as described below. V6's
+held-publication constraint is unchanged. Distributed revocation, admission intake closure,
+public Pharmacy V1 authority and reviewed end-to-end rollout remain separate open gates. This
+slice cannot enable Pharmacy's held outbox or create earned Report facts from a posted charge.
+
+### Prescription terminal adjustment — local opt-in continuation, 2026-10-09
+
+The existing single Billing dispatcher accepts the original Pharmacy V1 `prescription.filled`,
+`prescription.cancelled`, `prescription.expired` and `prescription.dispense.failed` bytes behind
+the same ledger/Rx-issuer gates. V0 keeps its own compatibility handler; V1 failure cannot fall back.
+One Rx has one immutable terminal operation across all four keys. Delivery identity is globally
+fenced across Rx creation and terminal receipt tables, independent of source identity.
+
+The decoder verifies exact context, source, items/server prices/total and business timestamp.
+The common creation-snapshot hash excludes creation/terminal timestamps, reason and dispense ID,
+but includes every identity, item/name/price and context field. Terminal identity separately hashes
+its complete payload and key. Narrative/reason and drug names are not retained in Billing; only
+minimal hash/time/source proof is stored. Existing creation hashes are unchanged. V13 appends a
+nullable snapshot proof: an old receipt remains unverifiable until the actual original creation
+is revalidated, never reconstructed from terminal bytes or present-day catalogue.
+
+Early terminal evidence is durable PENDING. Arrival of exact creation recovers it in the same
+creation transaction; an invalid early fact becomes REJECTED without poisoning valid charge
+issuance. A known source mismatch rolls back delivery/source claims instead. Source locks use the
+same Rx namespace as creation, followed by the account/charge/request locks shared with money
+writers. Matching terminal replay is no-effect even after account closure; changed terminal type,
+source bytes, patient, name, price or chronology conflicts. Future time over five seconds rejects.
+
+FILLED is absorbing operational evidence only: it does not recognize revenue, grant permission,
+cancel a charge or fabricate a payment. Cancellation/expiry/failure on an OPEN account void only
+the exact posted bundle, cancel only its exact singular outpatient request and locally revoke its
+existing grant after all financial lock waits. Admission is charge-only; a later allocated/mixed
+request or closed-account adjustment rejects pending a separate late-adjustment policy.
+
+Refund obligations are immutable per Rx + original completed payment + charge, limited to that
+original's remaining allocation after actual completed refund/reversal lines. No REFUND transaction,
+payment.failed or completed-refund fact is invented. The default-off direct-service GET
+`/api/v1/billing/prescription-adjustments/{id}/refunds-due` is ADMIN/CASHIER only, with unavailable
+ledger distinct from absent adjustment. Its single owned MVCC statement caps outstanding due by
+current original-only net allocations. Actual returned cash uses the existing signed, idempotent
+refund command and emits the unchanged held `payment.refunded` contract consumed by Report and
+Notification. Gateway policy/routes are unchanged and not acceptance for this new GET.
+
+Local void/revoke/due is not distributed revocation/supersession or released public V1 authority.
+Creation/terminal outboxes remain held. Public medication-order/admission authority, finance
+recognition/settlement, reviewed release and packaged V1 cutover remain open.
 
 ## `financial.clearance.granted`
 
@@ -139,6 +344,93 @@ Rules:
    its internal payment request to that public identifier; renaming the wire field requires v2.
 
 ## Deposit, top-up and settlement
+
+### Non-final versioned reconciliation — 2026-10-10
+
+Under the existing user-scoped Billing override, the new engineering contract is
+**`settlement.reconciled`**, envelope **version 1**, producer **`billing-service`**, source
+**`settlementId`**. It is NOT `settlement.completed`. Inpatient and Notification must not consume
+it as discharge permission or a final-settlement notice. Its sole current consumer is Report's
+internal versioned account-receivable stock.
+
+Actual issuer: `POST /api/v1/billing/accounts/{id}/settlement-reconciliations`, ADMIN/CASHIER only.
+All three Billing gates `ledger.enabled`, `settlement-preview.enabled`, `reconciliation.enabled`
+under `mediflow.billing` must be explicitly true; defaults remain false. `Idempotency-Key` is
+required, 1..120 ASCII letters/digits/`._:-`. Actor comes from signed unexpired human access JWT
+with UUID subject, never a request field. Missing header is 400, invalid key/state is 422,
+conflicting key/account/actor is 409, storage/serialization contention is safe 503. Retry the
+same key, not a new operation. No caller-supplied money, insurance, allocation or approval exists.
+
+Only persisted ADMISSION accounts in CHARGE_CLOSED/SETTLEMENT_PENDING qualify. The bounded
+REPEATABLE READ command derives amounts from the existing ledger. Key fence, account write fence,
+immutable reconciliation and held outbox commit together. Exact replay returns the original result
+without reading changed ledger rows or emitting again, even after subsequent final account-state
+changes. New successful keys create consecutive revisions with exact prior UUID. No payment,
+allocation, insurance, charge amount or final account status is changed.
+
+Exact payload fields (English camelCase):
+
+| Fields | Semantics |
+|---|---|
+| `settlementId`, `settlementVersion`, `supersedesSettlementId` | UUID; positive integral account-local reconciliation revision; first predecessor null, subsequent exact previous UUID |
+| `accountId`, `admissionId`, `patientId`, `departmentId`, `currency` | exact persisted references and three-uppercase-letter currency; department is account department, NOT multi-department earned allocation |
+| `grossAmount`, `insuranceAmount`, `patientLiability` | persisted POSTED gross and original-linked insurance; liability = gross − insurance |
+| `completedPayments`, `completedRefunds`, `completedReversals` | separate completed inventories, NOT new cash operations |
+| `netAllocatedPayments`, `balance` | persisted net charge allocations; balance = liability − net allocated, NOT liability − gross receipts |
+| `estimatedOutcome` | ADDITIONAL_PAYMENT_REQUIRED / PAID_IN_FULL / REFUND_DUE matching sign; not approved debt/waiver |
+| `reconciledAt`, `finalSettlement` | exact observed Instant equals envelope occurredAt; finalSettlement=false even when balance zero |
+
+All amounts are exact NUMERIC(19,2), never floating-point. V14 `admission_reconciliation` is a
+separate non-final namespace, NOT the final `SETTLEMENT` table. Future finalization requires a
+reviewed namespace transition; never conflate equal version numbers across these event types.
+V6 keeps events HELD (`publication_enabled=false`), with no automatic release.
+
+Actual use-case serialization verifies producer-owned
+`ledger-v1/settlement-reconciled-{1,2,3,4}.json`; Report reads those same files without copies.
+Installments, original-linked refund and persisted insurance produce balances 40 / 0 / 15 / −5.
+This implements no medical charge-close writer, deposit/top-up/allocation command, final
+settlement, discharge, recognition, financial history/coverage or public cutover.
+Report's revision/stock semantics are canonical in
+[CARE-PROJECTIONS](CONTRACT-CARE-PROJECTIONS-01.md#versioned-non-final-receivable-stock--2026-10-10).
+
+### Read-only admission ledger reconciliation — 2026-10-09
+
+Under the existing user-scoped implementation override, Billing now supplies the default-off
+`GET /api/v1/billing/accounts/{id}/settlement-preview`, ADMIN/CASHIER only, requiring both
+`mediflow.billing.ledger.enabled` and `mediflow.billing.settlement-preview.enabled`. This is a
+human diagnostic read, not an internal authority lookup, charge-close command or financial event.
+Only a signed human access credential with canonical UUID subject and expiry is accepted;
+refresh/service credentials are rejected before reading ledger amounts.
+Gateway is unchanged; Report must never call this endpoint or use it as its event source.
+
+The adapter reads only Billing-owned rows in one read-only REPEATABLE READ transaction. It starts
+its own transaction even under a weaker outer caller; source account identity, ADMISSION episode,
+closed-charge state/time, currency, original payment/refund/allocation/insurance relationships and
+NUMERIC(19,2) totals are validated before returning any amount. Missing account is 404; open charges,
+inconsistent evidence or a 10,000-row-per-table budget breach are 422, never a partial/zero total.
+Database/time-budget failures are 503 BILLING_LEDGER_UNAVAILABLE. Each data statement is limited
+to three seconds and the transaction to five; this is not a whole-request latency SLA.
+
+`grossAmount` excludes VOIDED charges. Insurance is the persisted APPROVAL minus exact linked
+REVERSAL amounts, not a caller-entered approval. `netAllocatedPayments` is completed PAYMENT
+allocations minus completed REFUND/REVERSAL allocations to POSTED charges. Cumulative return and
+allocation limits apply per original transaction/charge, including the original's unallocated
+portion; another deposit cannot mask an invalid refund. `balance = patientLiability -
+netAllocatedPayments`, with `patientLiability = grossAmount - insuranceAmount`.
+
+Gross completed payments, physical refunds and transaction reversals are separate values.
+`unappliedNetPayments` also keeps unreturned funds on VOIDED charges visible; it does not grant
+permission to reallocate or return them. `unallocatedDeposit` is remaining unallocated completed
+deposit cash, not a complete liability/revenue projection. An unallocated deposit never reduces
+the allocation balance. `estimatedOutcome` is arithmetic only: even PAID_IN_FULL is explicitly
+`snapshotOnly=true, finalSettlement=false`, and can coexist with unapplied money. No debt/waiver
+approval, recognized amount, settlement revision or final event is inferred. No ledger rows,
+clearances, outboxes or earlier migration checksums change on this GET.
+
+The medical-discharge charge-close writer, authoritative deposit allocation/recognition,
+immutable final settlement/version/supersedes producer, Report five-metric mapping/replay and
+public/held release remain implementation work, not waiting on this preview or closed by it.
+[Implementation and verification](../../superpowers/plans/2026-10-09-admission-ledger-reconciliation.md).
 
 - `admission.deposit.requested`: Inpatient → Billing; includes `admissionId`, episode fields,
   `suggestedAmount`, `reason`.

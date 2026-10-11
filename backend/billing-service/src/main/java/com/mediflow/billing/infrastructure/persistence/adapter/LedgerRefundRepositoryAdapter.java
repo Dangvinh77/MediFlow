@@ -55,6 +55,12 @@ public class LedgerRefundRepositoryAdapter implements LedgerRefundRepositoryPort
 
     @Override
     public void append(PaymentTransaction refund, String reason, UUID actor) {
+        // RR allocation/finalization callers must retry if cash changed while they waited.
+        // Replays never enter this method; a later failure rolls back this fence too.
+        if (jdbc.update("""
+                UPDATE BILLING_ACCOUNT SET version=version+1 WHERE account_id=?
+                    AND status NOT IN ('CLOSED','SETTLED')
+                """, refund.getAccountId()) != 1) throw rule("BILLING_REFUND_REQUIRES_ACCOUNT_REOPEN");
         jdbc.update("""
                 INSERT INTO PAYMENT_TRANSACTION(transaction_id,account_id,payment_request_id,transaction_type,
                     classification,status,amount,currency,payment_method,provider_reference,idempotency_key,
@@ -79,19 +85,29 @@ public class LedgerRefundRepositoryAdapter implements LedgerRefundRepositoryPort
                          WHERE r.charge_id=a.charge_id AND t.original_transaction_id=a.transaction_id
                            AND t.status='COMPLETED' AND t.transaction_type IN ('REFUND','REVERSAL')),0) AS available
                 FROM PAYMENT_ALLOCATION a JOIN CHARGE c ON c.charge_id=a.charge_id
-                WHERE a.transaction_id=? ORDER BY a.charge_id
+                WHERE a.transaction_id=? ORDER BY a.charge_id LIMIT 10001
                 """, (rs, row) -> new Budget(id(rs, "charge_id"), id(rs, "account_id"), id(rs, "patient_id"),
                         rs.getBigDecimal("available")), original.getTransactionId());
-        if (original.getClassification() == PaymentClassification.ADMISSION_DEPOSIT) {
-            if (!budgets.isEmpty()) throw rule("BILLING_DEPOSIT_REFUND_ALLOCATION_UNSUPPORTED");
-            return;
-        }
-        // Reverse only this original payment's actual lines, never another payment's allocations.
-        var remaining = refund.getAmount();
+        if (budgets.size() > 10000) throw rule("BILLING_REFUND_ALLOCATION_CAPACITY_EXCEEDED");
         var patient = jdbc.queryForObject("SELECT patient_id FROM BILLING_ACCOUNT WHERE account_id=?", UUID.class, original.getAccountId());
         for (var budget : budgets) {
             if (!original.getAccountId().equals(budget.accountId()) || !patient.equals(budget.patientId()) || budget.available().signum() < 0)
                 throw rule("BILLING_REFUND_ALLOCATION_MISMATCH");
+        }
+        if (original.getClassification() == PaymentClassification.ADMISSION_DEPOSIT) {
+            var returned = jdbc.queryForObject("""
+                    SELECT COALESCE(SUM(amount),0) FROM PAYMENT_TRANSACTION
+                    WHERE original_transaction_id=? AND status='COMPLETED'
+                        AND transaction_type IN ('REFUND','REVERSAL')
+                    """, BigDecimal.class, original.getTransactionId());
+            var netAllocated = budgets.stream().map(Budget::available).reduce(BigDecimal.ZERO, BigDecimal::add);
+            DepositRefundBudget.remaining(original.getAmount(), returned, netAllocated);
+            // Only unused cash returns here: funded charge rows remain append-only and unchanged.
+            return;
+        }
+        // Reverse only this original payment's actual lines, never another payment's allocations.
+        var remaining = refund.getAmount();
+        for (var budget : budgets) {
             var amount = remaining.min(budget.available());
             if (amount.signum() > 0) {
                 jdbc.update("INSERT INTO PAYMENT_ALLOCATION(allocation_id,transaction_id,charge_id,amount) VALUES (?,?,?,?)",

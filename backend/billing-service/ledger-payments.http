@@ -42,3 +42,29 @@ X-Correlation-ID: 9e6c524e-a2e0-4ca9-ac20-6c61f93ae091
   "reason": "Approved cashier refund; internal audit only",
   "paymentMethod": "CASH"
 }
+### Rx terminal adjustment: ADMIN/CASHIER, opt-in ledger + Rx issuer; not a completed refund
+### Gateway policy is unchanged; this route needs its owner's routing acceptance before gateway use.
+@prescriptionId = replace-with-authoritative-prescription-uuid
+GET {{host}}/api/v1/billing/prescription-adjustments/{{prescriptionId}}/refunds-due
+Authorization: Bearer {{token}}
+X-Correlation-Id: rx-adjustment-read
+
+### Read-only admission reconciliation: ADMIN/CASHIER signed access token, NOT a settlement.
+### Requires ledger + MEDIFLOW_BILLING_SETTLEMENT_PREVIEW_ENABLED=true. Flags default false.
+### Manual developer diagnostic directly against Billing; no new Gateway route is approved here.
+### Report must not call this endpoint. No payment, approval, allocation or outbox is written.
+### snapshotOnly=true / finalSettlement=false even when estimatedOutcome=PAID_IN_FULL.
+@billingDiagnosticHost = http://localhost:8086
+@accountId = replace-with-authoritative-admission-billing-account-uuid
+GET {{billingDiagnosticHost}}/api/v1/billing/accounts/{{accountId}}/settlement-preview
+Authorization: Bearer {{token}}
+X-Correlation-Id: admission-settlement-preview
+
+### Non-final immutable reconciliation: ADMIN/CASHIER, signed UUID access token.
+### Requires ledger + settlement-preview + MEDIFLOW_BILLING_RECONCILIATION_ENABLED=true (all off by default).
+### Manual Billing diagnostic; Gateway policy/route acceptance is not changed here.
+### Persisted ledger amounts only: no caller money/approval input. Held event is settlement.reconciled, NOT settlement.completed.
+### Retry SAME key on 503; a different successful key creates another account-local reconciliation revision.
+POST {{billingDiagnosticHost}}/api/v1/billing/accounts/{{accountId}}/settlement-reconciliations
+Authorization: Bearer {{token}}
+Idempotency-Key: replace-with-unique-cashier-reconciliation-key

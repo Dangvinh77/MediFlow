@@ -94,7 +94,12 @@ The second full Pharmacy run includes the subsequently added clock-boundary and 
 regressions; totals must not sum overlapping full/targeted runs. Module tests are local integration
 evidence, not packaged full V1 distributed workflow, producer release or production rollout.
 
-## Still required for complete V2
+## Remaining at the end of this batch (superseded only where stated below)
+
+The next [Rx issuance continuation](2026-10-09-pharmacy-report-rx-issuance.md) implements Billing's
+local exact creation issuer and selected outpatient request. That item is no longer missing code;
+the remaining authority/terminal finance/full Report/cutover gates below are unchanged. Verification
+counts above belong to this earlier batch, not the newer run.
 
 1. Pharmacy: authoritative prescribing/order policy, Billing exact Rx charge/payment-request
    issuance, revoke/supersede and cancelled/expired/failed adjustment; public adapters and reviewed

@@ -38,6 +38,7 @@ public class SurgeryPlannedRequestRepositoryAdapter implements SurgeryPlannedReq
         return Optional.of((UUID) source.get("payment_request_id"));
     }
     @Override public UUID openAndLockExactAccount(SurgeryChargeCommand command) {
+        AdmissionChargeIntakeFence.requireOpen(jdbc, command.careEpisodeType(), command.careEpisodeId(), command.patientId());
         jdbc.update("""
                 INSERT INTO BILLING_ACCOUNT(account_id,patient_id,department_id,care_episode_type,care_episode_id,currency,opened_at)
                 VALUES (?,?,?,?,?,'VND',?) ON CONFLICT(care_episode_type,care_episode_id) DO NOTHING

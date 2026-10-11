@@ -2,6 +2,44 @@
 
 **Owner:** Huy (`LQHuy0210`)
 
+Current supported-release decision 2026-10-11 supersedes earlier dated mandatory unavailable
+pre-V2 history and missing finite financial publisher statements below. Available exact sources
+may be rebuilt, reconciled and explicitly published through V25; missing historical periods remain
+unavailable, not zero. Shared writer/exclusive publication fencing, fresh local manifest check,
+immutable acceptance/audit, expected-pointer switch and rollback are implemented behind separate
+default-off operator gates. Supported source/revision/correction policy is explicit in capability
+metadata. Full target corrections, clinical KPIs and operational/Gateway rollout are preserved,
+not silently redefined by the initial supported release.
+[Canonical current workflow](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#supported-available-history-release-and-controlled-publication--2026-10-11).
+
+2026-10-11 local recovery: V23 sources can be backed up/exported with exact immutable evidence and
+restored into a new isolated generation, audited in V24. ADMIN-only dual-gated routes default OFF.
+This is not a producer historical import, source completeness approval or V20 publication.
+[Canonical portable archive contract](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#portable-local-financial-evidence-archive--2026-10-11).
+
+2026-10-11: local contribution/pending acceptance now includes shared financial account-first
+fences, hospital-first/sorted final scopes and all six actual PG/Rabbit receipt/refund/final arrival
+orders. The user requires pre-V2 history: local activation-era coverage alone is insufficient.
+Actual source archives/exports, explicit legacy conversion and historical backup/coverage remain
+required before publication; neither invoice aggregates nor test fixtures stand in for that history.
+[Canonical acceptance and history boundary](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-account-fencing-and-historical-evidence--2026-10-11).
+
+Finite-source continuation 2026-10-11: internal V23 rebuilds supported initial five-metric sources
+with a frozen local manifest, durable bounded day batches and source/scope reconciliation. This is
+not post-final correction replay, complete historical export or V20 publication/activation.
+[Canonical rebuild scope](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#finite-initial-financial-source-rebuild--2026-10-11).
+
+Initial-final continuation 2026-10-10: V22 stores exact final operation/source/delivery, waits for
+local accepted cash originals/refunds, then projects explicit earned and original-deposit release
+atomically into separate department/hospital scopes. No foreign lookup/DB access is introduced.
+Full five-metric replay/publication and post-final correction/reversal remain separate open work.
+[Canonical final intake](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#initial-final-only-recognition-intake--2026-10-10).
+
+**User decision 2026-10-10:** earned recognition is final-settlement-only; payment, performed
+care and non-final stock do not recognize it. V21 completed-stay minutes/days are separate
+from unavailable census inpatientDays/bed utilization. No missing capacity or publication is invented.
+[Canonical decision and metrics](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#final-only-earned-recognition--user-decision-2026-10-10).
+
 **Module:** `backend/report-service`
 
 **Base path:** `/api/v1/reports`
@@ -10,6 +48,21 @@
 and durable replay remain gated by the canonical producer contracts
 
 ## 1. Sources and boundary
+
+Non-final receivable stock continuation 2026-10-10: V19 adds isolated immutable Billing
+reconciliation revisions and current account/currency/zone/department stock. Dedicated two-gate
+`settlement.reconciled` V1 intake is separate from final settlement and five-metric publication.
+Stale delivery cannot downgrade balances; source/delivery/two scopes are atomic, and snapshot
+payments/refunds never become another cash effect. Exact fields, namespace, correction/order and
+source-proof rules are canonical in
+[CARE-PROJECTIONS](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#versioned-non-final-receivable-stock--2026-10-10).
+
+**Rx refund acceptance continuation 2026-10-09:** actual Billing producer-service fixtures cover
+two prescription installments and three completed original-linked refunds. Existing live cash
+intake and isolated finite paired replay must reconcile gross receipts 2000 / cash refunds 2000,
+including refund-before-original recovery and dedupe. This adds no earned recognition, liability
+release, settlement or automatic financial publication; five-metric finance remains open.
+[Current verification](../../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 
 **Cash-refund follow-up 2026-10-08:** actual V15 adds minimal completed-refund evidence
 and separate refund-day cash-out. Early delivery is durable PENDING; receipt/worker recovery
@@ -263,6 +316,15 @@ event was delivered later.
 
 ## 8. REST endpoints and roles
 
+Local read implementation 2026-10-10: both financial GETs below now use an isolated complete
+five-metric immutable generation with explicit accepted coverage, currency/zone, as-of evidence
+and every requested day/scope present. Monthly financial flows sum; liability/receivable are
+month-end stock. Both feature/read gates default false. V20 is empty read-boundary storage, not
+a financial source/replay/publication writer; absent complete accepted data remains 404.
+Gateway code is unmodified. R-03.3/.4 and financial rebuild/coverage/live switch remain separate.
+All exact reader, security and availability semantics are canonical in
+[CARE-PROJECTIONS](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-snapshot-read-boundary--2026-10-10).
+
 | Method | Path | Roles |
 |---|---|---|
 | GET | `/api/v1/reports/financial/daily?from&to&departmentId` | ADMIN, MANAGER |
@@ -378,6 +440,13 @@ and upgrade/shape tests remain VERIFY OPEN without Docker.
 | all fixtures deserialize | `careFinanceFixtures_roundTrip` |
 
 ## 11. Rollout and Definition of Done
+
+Rx cash follow-up 2026-10-09: actual Billing installment-service fixtures for the new Rx issuer
+are read without copies by Report's intake/replay tests. Two payments remain two cash receipts
+on one invoice, never earned/liability/receivable. Optional canonical target checks reject malformed,
+duplicate or mixed Rx/Lab IDs and deposit service targets before claims. No historical hash,
+equation, public financial route, publication approval or feature default changes.
+[Evidence](../../../superpowers/plans/2026-10-09-pharmacy-report-rx-issuance.md).
 
 Cash intake follow-up 2026-10-08: the cash-only receipt kernel has a separate default-off two-gate
 broker adapter for actual Billing V1 service/deposit receipts. It preserves transaction/delivery

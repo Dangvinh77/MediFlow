@@ -31,10 +31,15 @@ public class CareFinanceEnvelopeDecoder implements CareFinanceWirePort {
                     new SourceContract("billing-service", "refundTransactionId")),
             Map.entry("settlement.completed",
                     new SourceContract("billing-service", "settlementId")),
+            Map.entry("settlement.reconciled",
+                    new SourceContract("billing-service", "settlementId")),
+            Map.entry("settlement.recognition.completed",
+                    new SourceContract("billing-service", "recognitionOperationId")),
             Map.entry("medicalrecord.completed",
                     new SourceContract("clinical-service", "recordId")),
             Map.entry("admission.started", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("admission.closed", new SourceContract("inpatient-service", "admissionId")),
+            Map.entry("discharge.medically.approved", new SourceContract("inpatient-service", "admissionId")),
             Map.entry("lab.result.created", new SourceContract("lab-service", "labId")),
             Map.entry("prescription.filled", new SourceContract("pharmacy-service", "dispenseId")),
             Map.entry("surgery.completed", new SourceContract("surgery-service", "resultId")),
@@ -59,7 +64,8 @@ public class CareFinanceEnvelopeDecoder implements CareFinanceWirePort {
             // Financial values must never pass through double. Keep the existing operational
             // representation stable: V11 hashes historical normalized payloads, not raw bytes.
             boolean financial = "payment.completed".equals(routingKey) || "payment.refunded".equals(routingKey)
-                    || "settlement.completed".equals(routingKey);
+                    || "settlement.completed".equals(routingKey) || "settlement.reconciled".equals(routingKey)
+                    || "settlement.recognition.completed".equals(routingKey);
             var treeReader = objectMapper.reader();
             if (financial) {
                 treeReader = treeReader.with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
@@ -67,6 +73,13 @@ public class CareFinanceEnvelopeDecoder implements CareFinanceWirePort {
             JsonNode root = treeReader.readTree(body);
             if (root == null || !root.isObject()) {
                 throw invalid("Care-finance envelope must be a JSON object");
+            }
+            if ("settlement.recognition.completed".equals(routingKey)) {
+                var fields = new java.util.HashSet<String>();
+                root.fieldNames().forEachRemaining(fields::add);
+                if (!java.util.Set.of("eventId", "eventType", "version", "occurredAt", "correlationId", "producer", "payload").equals(fields)) {
+                    throw invalid("Exact final recognition envelope fields are required");
+                }
             }
 
             String eventType = requiredText(root, "eventType");

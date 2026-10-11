@@ -251,6 +251,130 @@ class OperationalReplayPostgresTest {
                 """, generationId);
     }
 
+    @Test void read_midnightAndLeapDay_twoDepartmentsReconcileExactlyWithHospital() {
+        UUID otherDepartment = UUID.randomUUID();
+        Instant before = Instant.parse("2028-02-28T16:59:59.999999999Z");
+        Instant after = Instant.parse("2028-02-28T17:00:00Z");
+        UUID source = UUID.randomUUID();
+        live.apply(datedCommand(source, department, before));
+        live.apply(datedCommand(source, department, before)); // Same operation, fresh delivery ID.
+        live.apply(datedCommand(UUID.randomUUID(), department, after));
+        live.apply(datedCommand(UUID.randomUUID(), otherDepartment, after));
+        UUID generation = replay.start().generationId();
+        assertThat(replay.advance(generation, 100).status()).isEqualTo(Status.VERIFIED);
+        publishTestCoverage(generation);
+        jdbc.update("UPDATE operational_report_publication SET covered_from=DATE '2028-02-28',covered_to=DATE '2028-03-01'");
+        LocalDate from = LocalDate.of(2028, 2, 28);
+        var hospital = reader.daily(from, from.plusDays(2), null);
+        var first = reader.daily(from, from.plusDays(2), department);
+        var second = reader.daily(from, from.plusDays(2), otherDepartment);
+        assertThat(hospital.days()).extracting(day -> day.metrics().get("completedVisits")).containsExactly(1L, 2L, 0L);
+        assertThat(first.days()).extracting(day -> day.metrics().get("completedVisits")).containsExactly(1L, 1L, 0L);
+        assertThat(second.days()).extracting(day -> day.metrics().get("completedVisits")).containsExactly(0L, 1L, 0L);
+        for (int i = 0; i < 3; i++) {
+            assertThat(hospital.days().get(i).metrics().get("completedVisits"))
+                    .isEqualTo(first.days().get(i).metrics().get("completedVisits") + second.days().get(i).metrics().get("completedVisits"));
+        }
+        assertThat(count("operational_contribution")).isEqualTo(3);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void read_accessExclusiveLockTimesOutThenRecoversWithoutZero(boolean publicationLock) throws Exception {
+        live.apply(command(UUID.randomUUID()));
+        UUID generation = replay.start().generationId();
+        replay.advance(generation, 100);
+        publishTestCoverage(generation);
+        try (var blocker = POSTGRES.createConnection("")) {
+            blocker.setAutoCommit(false);
+            try (var statement = blocker.createStatement()) {
+                statement.execute("LOCK TABLE " + (publicationLock ? "operational_report_publication" : "operational_replay_scope") + " IN ACCESS EXCLUSIVE MODE");
+            }
+            long started = System.nanoTime();
+            LocalDate date = LocalDate.of(2026, 10, 1);
+            assertThatThrownBy(() -> reader.daily(date, date, null))
+                    .isInstanceOf(com.mediflow.report.application.exception.ReportProjectionUnavailableException.class);
+            assertThat(java.time.Duration.ofNanos(System.nanoTime() - started).toSeconds()).isLessThan(8);
+            blocker.rollback();
+        }
+        LocalDate date = LocalDate.of(2026, 10, 1);
+        assertThat(reader.daily(date, date, null).days().getFirst().metrics().get("completedVisits")).isOne();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void read_largeGenerationUsesCoveringIndexForDepartmentAndHospital(boolean hospital) throws Exception {
+        UUID generation = replay.start().generationId();
+        // Synthetic SQL volume only: not source coverage or an end-to-end producer fixture.
+        jdbc.update("""
+                INSERT INTO operational_replay_scope(generation_id,metric_date,department_id,metric_type,numeric_value)
+                SELECT ?, DATE '2000-01-01' + d, scope.department_id, 'COMPLETED_VISITS', 1
+                FROM generate_series(0,36000) d CROSS JOIN (VALUES (CAST(? AS UUID)),(CAST(? AS UUID)),(NULL::UUID)) scope(department_id)
+                """, generation, department, UUID.randomUUID());
+        jdbc.execute("ANALYZE operational_replay_scope");
+        String scope = hospital ? "department_id IS NULL" : "department_id = '" + department + "'::UUID";
+        var plan = String.join("\n", jdbc.queryForList("EXPLAIN (ANALYZE, BUFFERS) SELECT metric_date,metric_type,numeric_value"
+                + " FROM operational_replay_scope WHERE generation_id = '" + generation + "'::UUID AND " + scope
+                + " AND metric_date BETWEEN DATE '2028-02-28' AND DATE '2028-03-01'"
+                + " AND metric_type IN ('COMPLETED_VISITS') ORDER BY metric_date,metric_type", String.class));
+        // Either natural-key or covering index is valid: PostgreSQL chooses by statistics/visibility.
+        // The invariant is a bounded index condition on generation, scope AND inclusive dates.
+        assertThat(plan).contains("Index", "Index Cond:", "generation_id =", "department_id", "metric_date >=", "metric_date <=")
+                .doesNotContain("Seq Scan", "Rows Removed by Filter");
+        assertThat(jdbc.queryForObject("SELECT indexdef FROM pg_indexes WHERE indexname='ix_operational_snapshot_read'", String.class))
+                .contains("generation_id, department_id, metric_date, metric_type", "INCLUDE (numeric_value)");
+        var values = new OperationalSnapshotReadPersistenceAdapter(jdbc).read(generation,
+                LocalDate.of(2028, 2, 28), LocalDate.of(2028, 3, 1), hospital ? null : department,
+                java.util.Set.of(OperationalContribution.Metric.COMPLETED_VISITS));
+        assertThat(values).hasSize(3).allSatisfy(value -> assertThat(value.value()).isOne());
+    }
+
+    private ApplyOperationalContributionCommand datedCommand(UUID source, UUID scope, Instant at) {
+        UUID eventId = UUID.randomUUID();
+        var event = new DecodedCareFinanceEvent(new CareFinanceEventMetadata(eventId, "medicalrecord.completed", 1,
+                at, "boundary-test", "clinical-service", "recordId", source), Map.of("recordId", source.toString()));
+        return new ApplyOperationalContributionCommand(event, new OperationalContribution(eventId, "MEDICAL_RECORD", source, 1,
+                OperationalContribution.Metric.COMPLETED_VISITS, scope, null, null,
+                at.atZone(java.time.ZoneId.of("Asia/Bangkok")).toLocalDate(), BigDecimal.ONE, null, at));
+    }
+
+    @Test void read_unknownAcceptedMetricIsUnavailableRatherThanLeakingStorageMetadata() {
+        UUID generation = replay.start().generationId();
+        publishTestCoverage(generation);
+        jdbc.update("UPDATE operational_report_publication SET metrics=array_append(metrics,'UNSUPPORTED_PRIVATE_METRIC')");
+        LocalDate date = LocalDate.of(2026, 10, 1);
+        assertThatThrownBy(() -> reader.daily(date, date, null))
+                .isInstanceOf(com.mediflow.report.application.exception.ReportProjectionUnavailableException.class)
+                .hasMessageNotContaining("PRIVATE");
+    }
+
+    @Test void read_realJdbcQueryCountStaysTwoForOneDayAnd366Days() {
+        UUID generation = replay.start().generationId();
+        publishTestCoverage(generation);
+        jdbc.update("UPDATE operational_report_publication SET covered_from=DATE '2028-01-01',covered_to=DATE '2028-12-31'");
+        var queries = new java.util.concurrent.atomic.AtomicInteger();
+        var dataSource = new org.springframework.jdbc.datasource.DelegatingDataSource(jdbc.getDataSource()) {
+            @Override public java.sql.Connection getConnection() throws java.sql.SQLException {
+                var actual = super.getConnection();
+                return (java.sql.Connection) java.lang.reflect.Proxy.newProxyInstance(java.sql.Connection.class.getClassLoader(),
+                        new Class<?>[]{java.sql.Connection.class}, (proxy, method, args) -> {
+                            if (method.getName().equals("prepareStatement") && args[0] instanceof String sql
+                                    && sql.stripLeading().startsWith("SELECT")) queries.incrementAndGet();
+                            try { return method.invoke(actual, args); }
+                            catch (java.lang.reflect.InvocationTargetException exception) { throw exception.getCause(); }
+                        });
+            }
+        };
+        // Instrument real connections/statements, not a mocked store or a substituted database.
+        var measured = new OperationalSnapshotReadService(new OperationalSnapshotReadPersistenceAdapter(new JdbcTemplate(dataSource)),
+                java.time.ZoneId.of("Asia/Bangkok"));
+        var from = LocalDate.of(2028, 1, 1);
+        assertThat(measured.daily(from, from, null).days()).hasSize(1);
+        assertThat(queries.getAndSet(0)).isEqualTo(2);
+        assertThat(measured.daily(from, LocalDate.of(2028, 12, 31), department).days()).hasSize(366);
+        assertThat(queries.get()).isEqualTo(2);
+    }
+
     private ApplyOperationalContributionCommand command(UUID source) {
         UUID event = UUID.randomUUID();
         Instant time = Instant.parse("2026-10-01T08:00:00.123456789Z");

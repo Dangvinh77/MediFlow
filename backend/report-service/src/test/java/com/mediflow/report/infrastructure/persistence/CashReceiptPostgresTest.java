@@ -134,7 +134,8 @@ class CashReceiptPostgresTest {
         var payload = new LinkedHashMap<>(event.payload());
         payload.put("futureAmount", new BigDecimal("1E+1000000"));
         var invalid = new DecodedCareFinanceEvent(event.metadata(), payload);
-        assertThatThrownBy(() -> service.apply(invalid)).hasMessageContaining("fingerprint bounds");
+        // Strict receipt field acceptance now rejects the unknown extension before persistence hashing.
+        assertThatThrownBy(() -> service.apply(invalid)).hasMessageContaining("unknown receipt fields");
         assertThat(count("report_cash_receipt")).isZero();
         assertThat(count("report_cash_delivery")).isZero();
         assertThat(count("report_gross_cash_daily")).isZero();

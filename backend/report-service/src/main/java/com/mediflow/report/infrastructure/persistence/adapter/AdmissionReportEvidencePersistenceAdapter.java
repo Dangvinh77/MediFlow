@@ -43,6 +43,9 @@ public class AdmissionReportEvidencePersistenceAdapter implements AdmissionRepor
     @Override
     public boolean claimDelivery(DecodedCareFinanceEvent event) {
         var metadata = event.metadata();
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "report-inpatient-delivery:" + metadata.eventId());
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM report_medical_discharge_delivery WHERE event_id=?)", Boolean.class, metadata.eventId())))
+            throw new ReportRuleException("REPORT_ADMISSION_EVENT_CONFLICT", "Delivery identity belongs to a medical-discharge operation");
         var envelope = new LinkedHashMap<String, Object>();
         envelope.put("eventId", metadata.eventId());
         envelope.put("eventType", metadata.eventType());

@@ -24,6 +24,7 @@ import com.mediflow.billing.application.port.in.AccrueFeeUseCase;
 import com.mediflow.billing.application.port.in.SagaCompensationUseCase;
 import com.mediflow.billing.application.port.in.SurgeryChargeUseCase;
 import com.mediflow.billing.infrastructure.config.RabbitConfig;
+import com.mediflow.billing.application.port.in.ConsumePrescriptionChargeFactUseCase;
 
 /**
  * Driving adapter nhận toàn bộ 8 routing key mà billing subscribe, trên <b>một</b> queue
@@ -52,6 +53,9 @@ public class BillingEventConsumer {
     private final ObjectMapper objectMapper;
     private final SurgeryChargeConsumer plannedRequestConsumer;
     private final SurgeryCancellationConsumer cancellationConsumer;
+    private final ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer;
+    private final com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose;
+    private final com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
@@ -64,24 +68,66 @@ public class BillingEventConsumer {
         this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer, null);
     }
 
-    @Autowired
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
                                 @Nullable SurgeryChargeConsumer plannedRequestConsumer,
                                 @Nullable SurgeryCancellationConsumer cancellationConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer, cancellationConsumer, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper,
+                plannedRequestConsumer, cancellationConsumer, prescriptionChargeConsumer, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose) {
+        this(accrueFeeUseCase,sagaCompensationUseCase,surgeryChargeUseCase,objectMapper,plannedRequestConsumer,
+                cancellationConsumer,prescriptionChargeConsumer,admissionChargeClose,null);
+    }
+
+    @Autowired
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
         this.objectMapper = objectMapper;
         this.plannedRequestConsumer = plannedRequestConsumer;
         this.cancellationConsumer = cancellationConsumer;
+        this.prescriptionChargeConsumer = prescriptionChargeConsumer;
+        this.admissionChargeClose = admissionChargeClose;
+        this.surgeryCompletionProof = surgeryCompletionProof;
     }
 
     @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
     public void onMessage(Message message) throws IOException {
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         byte[] body = message.getBody();
+        // Versioned lifecycle facts use exactly one strict issuer/adjustment path;
+        // none may enter V0 compensation as a fallback.
+        if (prescriptionChargeConsumer != null && routingKey != null && routingKey.startsWith("prescription.")
+                && prescriptionChargeConsumer.receiveIfVersioned(routingKey, body)) return;
         switch (routingKey) {
+            case "discharge.medically.approved" -> {
+                if (admissionChargeClose == null) {
+                    throw new IllegalStateException("Admission charge-close consumer is disabled");
+                }
+                admissionChargeClose.receive(routingKey, body);
+            }
             case RabbitConfig.RK_MEDICAL_RECORD_CREATED ->
                     accrueFeeUseCase.onMedicalRecordCreated(read(body, MedicalRecordCreatedEvent.class));
             case RabbitConfig.RK_LAB_RESULT_CREATED ->
@@ -104,8 +150,10 @@ public class BillingEventConsumer {
                 if (plannedRequestConsumer != null) plannedRequestConsumer.receive(message);
                 else surgeryChargeUseCase.onSurgeryCaseCreated(read(body, SurgeryCaseCreatedEvent.class));
             }
-            case RabbitConfig.RK_SURGERY_COMPLETED ->
-                    surgeryChargeUseCase.onSurgeryCompleted(read(body, SurgeryCompletedEvent.class));
+            case RabbitConfig.RK_SURGERY_COMPLETED -> {
+                if(surgeryCompletionProof!=null)surgeryCompletionProof.receive(routingKey,body);
+                else surgeryChargeUseCase.onSurgeryCompleted(read(body, SurgeryCompletedEvent.class));
+            }
             case RabbitConfig.RK_SURGERY_CANCELLED -> {
                 if (cancellationConsumer != null) cancellationConsumer.receive(message);
                 else surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));

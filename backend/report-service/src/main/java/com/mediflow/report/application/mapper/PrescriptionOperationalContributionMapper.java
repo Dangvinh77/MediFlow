@@ -21,6 +21,8 @@ public class PrescriptionOperationalContributionMapper {
         if(metadata.version()!=1 || !"prescription.filled".equals(metadata.eventType())
                 || !"pharmacy-service".equals(metadata.producer()) || !"dispenseId".equals(metadata.sourceField())) throw invalid("Pharmacy envelope");
         var payload=event.payload();
+        rejectCorrectionMarkers(payload);
+        if (payload.containsKey("sourceRevision")) throw invalid("unsupported Pharmacy revision");
         if(!metadata.sourceId().equals(uuid(payload,"dispenseId"))) throw invalid("dispenseId");
         if(!uuid(payload,"prescriptionId").equals(uuid(payload,"sourceId")) || !"PRESCRIPTION".equals(text(payload,"sourceType"))) throw invalid("prescription source");
         episode(payload);

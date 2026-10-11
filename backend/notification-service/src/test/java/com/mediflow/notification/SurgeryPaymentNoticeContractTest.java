@@ -19,17 +19,19 @@ import static org.mockito.Mockito.*;
 class SurgeryPaymentNoticeContractTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final SurgeryPaymentNoticeDecoder decoder = new SurgeryPaymentNoticeDecoder(mapper);
-    @ParameterizedTest @ValueSource(strings = {"admission", "outpatient"})
+    @ParameterizedTest @ValueSource(strings = {"admission", "outpatient", "prescription"})
     void decode_actualBillingFixture_privateRequestNotReceipt(String context) throws Exception {
         var command = decoder.decode("invoice.created", fixture(context));
-        assertThat(command.totalAmount()).isEqualByComparingTo("100.00"); assertThat(command.currency()).isEqualTo("VND");
+        assertThat(command.totalAmount()).isEqualByComparingTo(context.equals("prescription") ? "2000.00" : "100.00"); assertThat(command.currency()).isEqualTo("VND");
         var history = mock(CareNotificationRepositoryPort.class); var sources = mock(NotificationSourcePort.class);
         when(history.claim(command.eventId(), "invoice.created", command.deliveryFingerprint())).thenReturn(true);
         when(sources.claim("invoice.created", command.paymentRequestId(), command.sourceFingerprint())).thenReturn(true);
         new SurgeryPaymentNoticeService(history, sources).receive(command);
         var capture = org.mockito.ArgumentCaptor.forClass(CareNotificationIntent.class); verify(history).deliverInApp(capture.capture());
-        assertThat(capture.getValue().templateKey()).isEqualTo("SURGERY_PAYMENT_REQUEST");
-        assertThat(capture.getValue().content()).contains("không phải biên nhận", "xác nhận lịch mổ");
+        assertThat(capture.getValue().templateKey()).isEqualTo(context.equals("prescription") ? "PRESCRIPTION_PAYMENT_REQUEST" : "SURGERY_PAYMENT_REQUEST");
+        assertThat(capture.getValue().content()).contains("không phải biên nhận");
+        if (context.equals("prescription")) assertThat(capture.getValue().content()).contains("không xác nhận thuốc đã được cấp").doesNotContain("phẫu thuật", "lịch mổ");
+        else assertThat(capture.getValue().content()).contains("xác nhận lịch mổ");
         assertThat(capture.getValue().patientId()).isEqualTo(command.patientId());
     }
     @ParameterizedTest @ValueSource(strings = {"version", "producer", "purpose", "admissionId", "patientId", "totalAmount", "currency", "occurredAt", "expiresAt", "paymentRequestId"})
@@ -64,7 +66,24 @@ class SurgeryPaymentNoticeContractTest {
         for (String invalid : new String[]{body.replace("\"version\": 1", "\"version\": 1, \"version\": 1"), body + " {}", "{\"invoiceId\":\"00000000-0000-4000-8000-000000000012\"}"})
             assertThatThrownBy(() -> decoder.decode("invoice.created", invalid.getBytes(java.nio.charset.StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
     }
+    @ParameterizedTest @ValueSource(strings = {"missingRx", "foreignSurgery", "admission", "wrongEpisode", "foreignLab", "foreignExam", "correction", "shortRx", "controlCorrelation"})
+    void decode_prescriptionMustHaveOneExactOutpatientTarget(String mutation) throws Exception {
+        var root = (ObjectNode)mapper.readTree(fixture("prescription")); var p = (ObjectNode)root.path("payload");
+        switch (mutation) {
+            case "missingRx" -> p.remove("prescriptionId");
+            case "foreignSurgery" -> p.put("surgeryCaseId", UUID.randomUUID().toString());
+            case "admission" -> p.put("admissionId", p.path("careEpisodeId").asText());
+            case "wrongEpisode" -> p.put("careEpisodeType", "ADMISSION");
+            case "foreignLab" -> p.putArray("labTestIds").add(UUID.randomUUID().toString());
+            case "foreignExam" -> p.put("recordId", UUID.randomUUID().toString());
+            case "correction" -> p.put("supersedesEventId", UUID.randomUUID().toString());
+            case "shortRx" -> p.put("prescriptionId", "1-1-1-1-1");
+            case "controlCorrelation" -> root.put("correlationId", "bad\ntrace");
+        }
+        assertThatThrownBy(() -> decoder.decode("invoice.created", mapper.writeValueAsBytes(root))).isInstanceOf(IllegalArgumentException.class);
+    }
     static byte[] fixture(String context) throws Exception {
+        if (context.equals("prescription")) return Files.readAllBytes(Path.of("../billing-service/src/test/resources/contracts/ledger-v1/invoice-prescription.json"));
         Path path = Path.of("../billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-" + context + ".json");
         if (!Files.exists(path)) path = Path.of("backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-" + context + ".json");
         return Files.readAllBytes(path);

@@ -39,12 +39,12 @@ class ReportOperationalConsumerConfigurationTest {
         runner().run(context -> assertThat(context).doesNotHaveBean(OperationalReportFactConsumer.class));
     }
 
-    @Test void topology_sevenExactOperationalKeysNoFinancialBindingsOrLegacyQueue() {
+    @Test void topology_eightExactOperationalKeysNoFinancialBindingsOrLegacyQueue() {
         var topology = new ReportOperationalConsumerConfiguration().reportOperationalTopology();
         assertThat(topology.getDeclarablesByType(Binding.class).stream()
                 .filter(b -> b.getExchange().equals("mediflow.events")).map(Binding::getRoutingKey)
                 .collect(Collectors.toSet())).containsExactlyInAnyOrder("medicalrecord.completed", "lab.result.created",
-                        "prescription.filled", "surgery.completed", "surgery.cancelled", "admission.started", "admission.closed");
+                        "prescription.filled", "surgery.completed", "surgery.cancelled", "admission.started", "admission.closed", "discharge.medically.approved");
         var queues = topology.getDeclarablesByType(Queue.class);
         assertThat(queues).hasSize(2).allMatch(Queue::isDurable);
         assertThat(queues.stream().map(Queue::getName)).containsExactlyInAnyOrder("report.operational-v2.q", "report.operational-v2.dlq");
@@ -58,6 +58,8 @@ class ReportOperationalConsumerConfigurationTest {
                 .withBean(CareFinanceWirePort.class, () -> mock(CareFinanceWirePort.class))
                 .withBean(ApplyOperationalContributionUseCase.class, () -> mock(ApplyOperationalContributionUseCase.class))
                 .withBean(ProjectAdmissionReportEvidenceUseCase.class, () -> mock(ProjectAdmissionReportEvidenceUseCase.class))
+                .withBean(com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase.class,
+                        () -> mock(com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase.class))
                 .withBean(ZoneId.class, () -> ZoneId.of("Asia/Bangkok"))
                 .withPropertyValues("spring.rabbitmq.listener.simple.auto-startup=false");
     }

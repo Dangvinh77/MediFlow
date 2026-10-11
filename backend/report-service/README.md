@@ -15,6 +15,17 @@ Reference: [`docs/ai/services/report.md`](../../docs/ai/services/report.md) · d
 
 ## Status
 
+Current 2026-10-11 supported release: V25 implements finite five-metric publication, exact local
+catch-up/final fence, provenance/row reconciliation, immutable acceptance/audit, expected-pointer
+switch and rollback. New capability/coverage/bounded rebuild/publish management APIs are ADMIN-only
+(coverage additionally MANAGER), separately gated by `MEDIFLOW_CARE_FINANCE_V2` AND
+`MEDIFLOW_REPORT_FINANCIAL_PUBLICATION_ENABLED`, both false. Missing historical periods stay
+unavailable; no transaction is fabricated. Unsupported correction/replacement facts reject before
+effects; new refunds after an APPLIED final account require a future original-allocation earned
+reversal contract. No source-retention purge, Gateway changes, gate enablement or HELD release.
+Dated publisher/history absence notes below are earlier tranches, not the current finite financial
+workflow. [Canonical release and limits](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#supported-available-history-release-and-controlled-publication--2026-10-11).
+
 2026-10-09 admission follow-up: the existing opt-in operational receiver now counts actual
 `admission.started` once at admittedAt/start department, with exact admission evidence, delivery/
 source claims, minimal replay journal and hospital/department scopes in one transaction. Close-before-
@@ -145,6 +156,19 @@ pulling: source acceptance, approved coverage, controlled publish/rollback, live
 DOCTOR routing, inpatient-day/surgery-category/occupancy facts and classified finance remain gates.
 These routes are a local finite-snapshot slice, not the complete live operations/financial dashboard.
 Matching gated requests are in `report.http`.
+
+## Local financial evidence backup and recovery (default OFF)
+
+Sealed V23 manifests can be downloaded/restored through ADMIN-only `financial/source-archives`
+routes when BOTH `MEDIFLOW_CARE_FINANCE_V2` and `MEDIFLOW_REPORT_FINANCIAL_ARCHIVE_ENABLED`
+are explicitly enabled. Gateway is unchanged; this implementation does not enable either gate.
+Backups contain sensitive minimal patient references. Restrict operator access, use encrypted
+backup storage and never publish them in logs/Git. Exact source/delivery IDs, business-time nanos,
+hashes and unresolved state survive. V24 records immutable restore actor/origin/new generation.
+Restore starts a separate BUILDING generation, never mutates live sources or creates a report
+publication. Advance/reconcile still uses the existing bounded rebuild use case.
+This supplies local recovery only: digests are not signatures, and verified replay is not accepted
+pre-V2 history. [Canonical archive contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#portable-local-financial-evidence-archive--2026-10-11).
 
 ## Tests
 

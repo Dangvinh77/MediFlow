@@ -23,20 +23,24 @@ public class BillingOutboxMaintenance implements ReplayBillingOutboxUseCase {
     private final BillingOutboxClaimService claimService;
     private final Clock clock;
     private final Duration retention;
+    private final boolean purgePublishedEnabled;
 
     public BillingOutboxMaintenance(BillingOutboxClaimService claimService,
                                     Clock clock,
-                                    @Value("${mediflow.billing.outbox.retention:PT168H}") Duration retention) {
+                                    @Value("${mediflow.billing.outbox.retention:PT168H}") Duration retention,
+                                    @Value("${mediflow.billing.outbox.purge-published-enabled:false}") boolean purgePublishedEnabled) {
         if (retention.isNegative() || retention.isZero()) {
             throw new IllegalArgumentException("Billing outbox retention must be positive");
         }
         this.claimService = claimService;
         this.clock = clock;
         this.retention = retention;
+        this.purgePublishedEnabled = purgePublishedEnabled;
     }
 
     @Scheduled(fixedDelayString = "${mediflow.billing.outbox.retention-sweep-ms:3600000}")
     public void purgePublished() {
+        if (!purgePublishedEnabled) return;
         claimService.deletePublishedBefore(Instant.now(clock).minus(retention));
     }
 

@@ -75,6 +75,22 @@ class OperationalSnapshotReadServiceTest {
         when(store.read(generation, date, date, null, SURGERY)).thenReturn(List.of(new OperationalSnapshotReadPort.Value(date, Metric.SURGERIES_COMPLETED, -1)));
         assertThatThrownBy(() -> service.surgery(date, date, null)).isInstanceOf(ReportProjectionUnavailableException.class);
     }
+
+    @Test void read_maximumLeapYearWindow_usesTwoPortCallsNotOneQueryPerDay() {
+        LocalDate from = LocalDate.of(2028, 1, 1);
+        LocalDate to = LocalDate.of(2028, 12, 31);
+        when(store.publication("SURGERY")).thenReturn(Optional.of(new OperationalReportPublication(generation,
+                from, to, "Asia/Bangkok", SURGERY, Instant.parse("2029-01-01T00:00:00Z"), "TEST-ONLY-COVERAGE")));
+        when(store.read(generation, from, to, null, SURGERY)).thenReturn(List.of());
+        var response = service.surgery(from, to, null);
+        assertThat(response.days()).hasSize(366);
+        assertThat(response.days().getFirst().date()).isEqualTo(from);
+        assertThat(response.days().getLast().date()).isEqualTo(to);
+        assertThat(response.days()).allSatisfy(day -> assertThat(day.metrics().values()).containsOnly(0L));
+        verify(store).publication("SURGERY");
+        verify(store).read(generation, from, to, null, SURGERY);
+        verifyNoMoreInteractions(store);
+    }
     private void publication(Set<Metric> metrics, String zone) {
         when(store.publication("SURGERY")).thenReturn(Optional.of(new OperationalReportPublication(generation, date, date.plusDays(10),
                 zone, metrics, Instant.parse("2028-03-10T00:00:00Z"), "TEST-ONLY-SOURCE-ACCEPTANCE")));

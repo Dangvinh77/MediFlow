@@ -24,6 +24,17 @@ class PrescriptionCareEventCodecTest {
     private final PrescriptionCareEventCodec codec = new PrescriptionCareEventCodec(mapper);
     private final Instant now = Instant.parse("2026-10-01T08:00:00Z");
 
+    @Test void outpatientCreationFixture_realProducerCodec_preservesRecordDistinctFromEpisode() throws Exception {
+        try (var stream = getClass().getResourceAsStream("/contracts/care-finance-v1/prescription.created.outpatient.v1.json")) {
+            assertThat(stream).isNotNull(); byte[] body = stream.readAllBytes();
+            var event = codec.decode("prescription.created", body);
+            assertThat(event.payload().careContext()).isEqualTo(CareContext.OUTPATIENT);
+            assertThat(event.payload().recordId()).isNotEqualTo(event.payload().careEpisodeId());
+            assertThat(event.payload().admissionId()).isNull();
+            assertThat(mapper.readTree(codec.encode(event))).isEqualTo(mapper.readTree(body));
+        }
+    }
+
     @ParameterizedTest @EnumSource(EventType.class)
     void proposedCanonicalFixtureBytes_roundTripThroughRealCodec(EventType type) throws Exception {
         String path = "/contracts/care-finance-v1/" + type.routingKey() + ".v1.json";

@@ -1,5 +1,23 @@
 # Service: pharmacy (Khoa Dược)
 
+Historical evidence protection 2026-10-11: published-outbox purge is independently default OFF
+(`mediflow.pharmacy.outbox.purge-published-enabled`, env
+`MEDIFLOW_PHARMACY_OUTBOX_PURGE_PUBLISHED_ENABLED`). Maintenance/dispatch/replay are unchanged;
+the existing 168-hour retention only acts after explicit purge opt-in. Review archive completeness,
+backup/restore and retention before opting in. Keeping rows does not prove pre-V2 history coverage
+or recover previously deleted bytes; full history is required for Report acceptance.
+[Canonical rule](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-account-fencing-and-historical-evidence--2026-10-11).
+
+Rx dependency follow-up 2026-10-09: Billing now has a default-off V1 creation issuer accepting
+actual Pharmacy outpatient/admission creation bytes. It persists an exact bundle charge; outpatient
+alone gets a selected request and held invoice. Pharmacy/Report check the same producer-owned
+installment/grant files. Billing additionally has local guarded terminal adjustment, original-only
+refund obligations and exact request/grant revocation. Pharmacy never manufactures a refund;
+only actual Billing refund commands produce cash-out. Distributed revoke/supersede, public
+prescribing/admission authority, closed-account late adjustment and held rollout remain open.
+[Canonical boundary](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#opt-in-prescription-charge-issuance--2026-10-09),
+[current evidence](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+
 **Module:** `backend/pharmacy-service/` · **Cổng chạy:** 8085 · **Base path:** `/api/v1/pharmacy` · **Database:** `mediflow_pharmacy`
 
 **Nguồn chuẩn:** `docs/eproject_general_plan/pharmacy-service.html` và `docs/eproject_general_plan/backend-spec/05-pharmacy.md`.
@@ -393,8 +411,8 @@ and is rechecked after all remote calls and receipt/stock waits, including comma
 and identity proofs must both be non-null in the checked writer. V0 and trusted internal test/kernel
 entry points are unchanged; no public V1 API or held delivery is opened.
 
-Remaining: authoritative prescribing/order policy, Billing Rx issuance and terminal adjustment,
-admission command authorization/races and reviewed activation. Verification is recorded in the
+Remaining: authoritative prescribing/order policy, distributed Billing revocation/current authority,
+admission late adjustment/command authorization/races and reviewed activation. Verification is recorded in the
 [Pharmacy/Report priority batch](../../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
 
 ### Opt-in admission intake and current-state lookup — 2026-10-08
