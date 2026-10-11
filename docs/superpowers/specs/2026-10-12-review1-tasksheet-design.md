@@ -14,6 +14,11 @@ The deliverable is:
 
 It must remain a standalone Markdown file that can be copied or converted to Word.
 
+The canonical frontend ownership matrix and service-guide registry may also be updated when needed
+to make an already approved project-level owner assignment explicit. For this task, planned Surgery
+frontend ownership is recorded for Huy and documented in a dedicated service guide; this does not
+activate the route or claim that its blocked contracts are complete.
+
 ## Header Structure
 
 Use an HTML table inside the Markdown file so the two-level header has real merged cells:

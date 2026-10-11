@@ -145,15 +145,15 @@
     <tr>
       <td>15</td>
       <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add operational, Inpatient, and Surgery snapshots after verifying the available conditional Report controllers, DTOs, roles, activation settings, and Gateway routing.</td>
-      <td>Planned: <code>/reports/operations</code></td>
+      <td>Add operational Inpatient/Surgery snapshots, financial daily/monthly views, and capability/coverage indicators after verifying the available conditional Report controllers, DTOs, roles, activation settings, and Gateway routing.</td>
+      <td>Planned: <code>/reports/operations</code><br>Planned: <code>/reports/financial</code></td>
       <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
       <td>16</td>
       <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add administrator financial source-archive export/restore after verifying the available conditional binary contract, size limit, authorization, activation settings, and Gateway behavior; do not present it as an ordinary report export.</td>
-      <td>Planned: <code>/reports/financial-archives</code></td>
+      <td>Add administrator financial rebuild, progress, publication/rollback, and source-archive export/restore after verifying the conditional command contracts, binary size limit, authorization, activation settings, and Gateway behavior.</td>
+      <td>Planned: <code>/reports/financial-operations</code></td>
       <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
@@ -238,7 +238,7 @@
     <tr>
       <td>28</td>
       <td>Lộc<br><code>locgit-89</code></td>
-      <td>Billing patient invoice lookup, invoice detail, invoice creation from server-owned fees, payment, receipt state, and fee breakdown without client-side authoritative totals.</td>
+      <td>Billing patient invoice lookup, invoice detail, invoice creation from server-owned fees, payment state, and fee breakdown without client-side authoritative totals.</td>
       <td><code>/billing</code><br><code>/billing/new</code><br><code>/billing/[invoiceId]</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
     </tr>
@@ -293,10 +293,10 @@
     </tr>
     <tr>
       <td>36</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Run authenticated Gateway smoke tests for Billing and Notification roles, privacy boundaries, error correlation IDs, and completed finance/notification workflows.</td>
-      <td>Release verification for <code>/billing</code> and <code>/notifications</code></td>
-      <td>2026-10-29</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
+      <td>Vinh<br><code>SHARED coordinator</code></td>
+      <td>SHARED release verification: run authenticated browser smoke tests for every role across all delivered dashboard contexts, including role denial, ownership/privacy boundaries, error correlation IDs, and critical end-to-end workflows.</td>
+      <td>All delivered dashboard routes</td>
+      <td>2026-11-02</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
   </tbody>
 </table>

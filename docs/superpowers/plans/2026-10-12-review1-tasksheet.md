@@ -1,6 +1,6 @@
 # Review 1 Tasksheet Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Completed steps use checked boxes for tracking.
 
 **Goal:** Create a source-backed English Review 1 task sheet that records delivered frontend work and assigns future frontend functions to the correct MediFlow developers.
 
@@ -8,14 +8,21 @@
 
 **Tech Stack:** Markdown, HTML table markup, Git history, PowerShell validation.
 
+**Execution status:** Completed on 2026-10-12, including the pre-merge review follow-up that aligned
+planned Surgery ownership and its frontend service guide with the project-level ownership rules.
+
 ---
 
 ## File Structure
 
 - Create: `docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md`
   - Owns the complete Review 1 task sheet, evidence rules, status legend, and grouped member rows.
-- Reference only: `docs/ai/15-frontend-ownership.md`
+- Modify: `docs/ai/15-frontend-ownership.md`
   - Canonical developer-to-context ownership.
+- Modify: `frontend/docs/services/README.md`
+  - Register the planned Surgery frontend guide.
+- Create: `frontend/docs/services/surgery.md`
+  - Record the planned Surgery scope, owner queue, and activation blockers.
 - Reference only: `frontend/docs/frontend-workboard.md`
   - Current shipped, in-progress, unavailable, and next-task state.
 - Reference only: `frontend/docs/services/*.md`
@@ -30,7 +37,7 @@
 - Read: `frontend/docs/services/*.md`
 - Read: `docs/ai/15-frontend-ownership.md`
 
-- [ ] **Step 1: List the current frontend route files**
+- [x] **Step 1: List the current frontend route files**
 
 Run:
 
@@ -41,7 +48,7 @@ rg --files frontend/src/app frontend/src/features | Sort-Object
 Expected: route and feature files for appointment, medical record, Laboratory, Inpatient,
 Organization, Patient, Pharmacy, Billing, Notification, and Report; no Surgery route.
 
-- [ ] **Step 2: Extract first author date and distinct active dates per owned context**
+- [x] **Step 2: Extract first author date and distinct active dates per owned context**
 
 Run:
 
@@ -72,7 +79,7 @@ foreach($name in $groups.Keys){
 Expected: ten context rows with reproducible start dates and distinct active-day counts. Use the
 earliest date as `Actual Start Date`; do not use elapsed calendar days.
 
-- [ ] **Step 3: Build the current/future task inventory**
+- [x] **Step 3: Build the current/future task inventory**
 
 Record rows under these owner groups:
 
@@ -91,7 +98,7 @@ Expected: every delivered route is represented and every future function stays w
 **Files:**
 - Create: `docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md`
 
-- [ ] **Step 1: Add the document title, evidence note, and status legend**
+- [x] **Step 1: Add the document title, evidence note, and status legend**
 
 The introduction must state:
 
@@ -101,7 +108,7 @@ The introduction must state:
 - future work begins on or after `2026-10-12`;
 - statuses are `DONE`, `IN PROGRESS`, `PLANNED`, `VERIFY CONTRACT`, and `BLOCKED`.
 
-- [ ] **Step 2: Add the approved two-level HTML header**
+- [x] **Step 2: Add the approved two-level HTML header**
 
 Use this exact structure:
 
@@ -124,7 +131,7 @@ Use this exact structure:
 </thead>
 ```
 
-- [ ] **Step 3: Add rows grouped by member**
+- [x] **Step 3: Add rows grouped by member**
 
 For each row:
 
@@ -135,12 +142,12 @@ For each row:
 - describe the exact dependency in `Contents` when status is `BLOCKED` or `VERIFY CONTRACT`;
 - schedule future tasks in a dependency-aware sequence beginning `2026-10-12`.
 
-- [ ] **Step 4: Review ownership and claims**
+- [x] **Step 4: Review ownership and claims**
 
 Confirm that Surgery is assigned to Huy, Inpatient to Vinh, identity liaison to Hoàng Anh, and
 Billing/Notification to Lộc. Confirm no blocked feature is worded as delivered.
 
-- [ ] **Step 5: Commit the task sheet**
+- [x] **Step 5: Commit the task sheet**
 
 Run:
 
@@ -156,7 +163,7 @@ Expected: one new Markdown deliverable committed.
 **Files:**
 - Verify: `docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md`
 
-- [ ] **Step 1: Run structural checks**
+- [x] **Step 1: Run structural checks**
 
 Run:
 
@@ -171,13 +178,13 @@ foreach($status in 'DONE','IN PROGRESS','PLANNED','VERIFY CONTRACT','BLOCKED') {
 }
 if($text -notmatch 'rowspan="2"'){ throw 'Missing two-level row header' }
 if($text -notmatch 'colspan="3"'){ throw 'Missing Plan Preparation Date group' }
-if($text -match '\bV0\b|\bV1\b|\bV2\b|Care-Finance'){ throw 'Internal version terminology found' }
+if($text -match '\bV\d+\b|Care.Finance'){ throw 'Internal version terminology found' }
 'TASKSHEET_STRUCTURE_OK'
 ```
 
 Expected: `TASKSHEET_STRUCTURE_OK`.
 
-- [ ] **Step 2: Verify the change is documentation-only and whitespace-clean**
+- [x] **Step 2: Verify the change is documentation-only and whitespace-clean**
 
 Run:
 
@@ -186,9 +193,9 @@ git diff --check HEAD^..HEAD
 git diff --name-only HEAD^..HEAD
 ```
 
-Expected: no whitespace errors and only `Tasksheet_review1.md` in the implementation commit.
+Expected: no whitespace errors and only Markdown documentation changes on the completed branch.
 
-- [ ] **Step 3: Inspect final Git state**
+- [x] **Step 3: Inspect final Git state**
 
 Run:
 
