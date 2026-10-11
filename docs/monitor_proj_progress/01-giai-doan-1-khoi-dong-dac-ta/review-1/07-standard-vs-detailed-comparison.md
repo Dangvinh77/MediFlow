@@ -28,7 +28,7 @@
 | Data-processing model / Mô hình xử lý dữ liệu | One consolidated actor-input-process-output-owner table / Một bảng tổng hợp actor-input-process-output-owner | Consolidated table plus detailed workflow steps / Bảng tổng hợp và các bước chi tiết theo quy trình |
 | Cross-service design / Thiết kế chéo dịch vụ | Explains REST, events, outbox, idempotency / Giải thích REST, event, outbox, idempotency | Defines explicit API and asynchronous requirements / Xác định yêu cầu API và bất đồng bộ tường minh |
 | Hardware/software / Phần cứng/phần mềm | Concise client/server recommendations / Khuyến nghị client/server cô đọng | Separate client/server profiles with verification caveats / Tách cấu hình client/server cùng điều kiện xác minh |
-| Limitations / Giới hạn | Clear list of incomplete or unproven areas / Danh sách rõ phần chưa hoàn tất/chưa chứng minh | Risk IDs, current mitigation, and future action / Mã rủi ro, giảm thiểu hiện tại và hành động tương lai |
+| Limitations / Giới hạn | Clear list of incomplete or unproven Review 1 outcomes / Danh sách rõ kết quả Review 1 chưa hoàn tất/chưa chứng minh | Risk IDs, current mitigation, and required completion / Mã rủi ro, giảm thiểu hiện tại và phần cần hoàn tất |
 | Acceptance / Nghiệm thu | Fifteen narrative acceptance checks / Mười lăm kiểm tra nghiệm thu dạng mô tả | Fifteen traceable acceptance rows linked to requirements / Mười lăm dòng nghiệm thu liên kết yêu cầu |
 | Best audience / Đối tượng phù hợp | Lecturer, supervisor, general customer representative / Giảng viên, hướng dẫn, đại diện khách hàng tổng quát | Technical panel, architect, tester, procurement or formal reviewer / Hội đồng kỹ thuật, kiến trúc sư, kiểm thử, mua sắm hoặc thẩm định chính thức |
 | Editing effort / Công sức chỉnh sửa | Lower / Thấp hơn | Higher because references must remain consistent / Cao hơn vì tham chiếu phải nhất quán |
@@ -45,7 +45,7 @@
 | A4. Scope / Phạm vi | A6 business, platform, and excluded scope / Phạm vi nghiệp vụ, nền tảng và loại trừ |
 | A5. Users and functions / Người dùng và chức năng | A7 create/read/prohibited responsibility matrix / Ma trận trách nhiệm tạo/đọc/bị kiểm soát |
 | A6. Proposed solution / Giải pháp đề xuất | A8 architecture and component constraints / Kiến trúc và ràng buộc thành phần |
-| A7. Limitations / Giới hạn | A9 assumptions/dependencies and A10 risks/future work / Giả định/phụ thuộc và rủi ro/công việc tương lai |
+| A7. Limitations / Giới hạn | A9 assumptions/dependencies and A10 risks/remaining work / Giả định/phụ thuộc và rủi ro/công việc còn lại |
 | B1. Stakeholders / Các bên liên quan | A3 stakeholder mapping plus B1 conventions / Ánh xạ stakeholder và quy ước yêu cầu |
 | B2. Role data cycles / Chu trình vai trò | B2 functional requirements and B3 actor cycles / Yêu cầu chức năng và chu trình actor |
 | B3. Cross-department flows / Luồng liên khoa | B4–B10 step-by-step workflow specifications / Đặc tả từng bước cho các quy trình |
@@ -67,7 +67,7 @@ Cả hai phiên bản bám cùng một đường cơ sở mã nguồn. Khác bi�
 | Java/Spring baseline | Listed in software requirements / Liệt kê trong yêu cầu phần mềm | Listed with platform separation and operational needs / Liệt kê cùng phân tách nền tảng và nhu cầu vận hành |
 | Frontend baseline | Next.js, React, TypeScript, Tailwind, pnpm / Công nghệ frontend hiện tại | Same baseline plus gateway/API boundary requirements / Cùng baseline và yêu cầu ranh giới gateway/API |
 | PostgreSQL/RabbitMQ/Eureka | Architecture and server software tables / Bảng kiến trúc và phần mềm server | Component constraints, events, recovery, and observability / Ràng buộc thành phần, sự kiện, khôi phục, quan sát |
-| Mobile status | Explicit limitation / Nêu rõ giới hạn | Limitation with mitigation and future action / Giới hạn cùng giảm thiểu và hành động tương lai |
+| Mobile status | Explicit limitation / Nêu rõ giới hạn | Limitation with mitigation and required completion / Giới hạn cùng giảm thiểu và phần cần hoàn tất |
 | Production sizing | Planning recommendation warning / Cảnh báo chỉ là khuyến nghị | Planning profiles plus validation requirements / Cấu hình lập kế hoạch và yêu cầu xác minh |
 
 ## 5. When to Choose Each Version / Khi nào chọn từng bản
@@ -91,14 +91,14 @@ Cả hai phiên bản bám cùng một đường cơ sở mã nguồn. Khác bi�
 - The reviewer expects formal and traceable requirements.
 - Architecture, event reliability, security, or service ownership may be challenged.
 - Testers need requirement IDs for acceptance planning.
-- The team needs a reference for future implementation and review.
-- A customer representative must distinguish implemented behavior from future integrations.
+- The team needs a reference for implementation, integration, and review of the complete final system.
+- A customer representative must distinguish final-system requirements from Review 1 completion gaps.
 
 - Người đánh giá cần yêu cầu chính thức và truy vết được.
 - Kiến trúc, độ tin cậy sự kiện, bảo mật hoặc quyền sở hữu dịch vụ có thể bị chất vấn.
 - Kiểm thử viên cần mã yêu cầu để lập kế hoạch nghiệm thu.
-- Nhóm cần tài liệu tham chiếu cho triển khai và review sau này.
-- Đại diện khách hàng cần phân biệt chức năng đã triển khai và tích hợp tương lai.
+- Nhóm cần tài liệu tham chiếu cho triển khai, tích hợp và review hệ thống cuối cùng đầy đủ.
+- Đại diện khách hàng cần phân biệt yêu cầu hệ thống cuối cùng với khoảng trống cần hoàn tất tại Review 1.
 
 ## 6. Recommended Submission Package / Gói nộp khuyến nghị
 

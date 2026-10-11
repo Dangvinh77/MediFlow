@@ -57,29 +57,29 @@ MediFlow is not only a collection of forms. It models how information moves from
 |---|---|
 | Organization | Staff, roles, departments, facilities, rooms |
 | Patient | Staff-operated profiles and identifiers |
-| Clinical | Appointments, medical records, diagnoses, disposition/references; active V0 is role-authorized and default-off V2 adds the EXAM proof gate |
-| Laboratory | Direct `ADMIN`/`DOCTOR` test creation and active V0 processing/results; V2 adds the LAB_TEST clearance gate |
-| Pharmacy | Pharmacy-owned prescriptions, payment-proof-gated dispensing, medicines, stock |
-| Billing | Active compatibility invoice read/create/pay; other ledger/deposit/refund/settlement/clearance slices are gated |
+| Clinical | Appointments, medical records, diagnoses, disposition/references; examination requires EXAM clearance or audited override |
+| Laboratory | Authorized test requests, specimens, processing, verified results, and publication; processing requires LAB_TEST clearance or audited override |
+| Pharmacy | Pharmacy-owned prescriptions, payment-proof-controlled dispensing, medicines, and stock |
+| Billing | Charges, invoices, deposits, payments, receipts, refunds, settlement, and service clearance |
 | Notification | Event-based notification processing and delivery status |
 | Report | Operational and financial read models |
-| Inpatient | Locally complete Core V1 for admissions, owned beds, stays, treatment, transfers, discharge; event integration remains gated |
-| Surgery | Default-off feature-gated foundation and selected local routes; full lifecycle is not active |
+| Inpatient | Admission, clearance, owned beds, stays, treatment, transfers, medical discharge, settlement, and administrative close |
+| Surgery | Request, readiness, clearance, schedule, execution, recovery, outcome, and charge handoff |
 
-*Presenter cue: Distinguish status carefully: Inpatient Core V1 is locally complete but cross-service event activation is gated; Surgery is a default-off foundation with selected local routes, not a complete lifecycle.*
+*Presenter cue: Explain the final business boundaries: Inpatient owns the stay and beds, Surgery owns the surgical case, and Billing supplies the financial decisions required by both workflows.*
 
 ## Section 4 — Users and Functions
 
 | Role | Main functions |
 |---|---|
 | `ADMIN` | Configure Organization data and permitted Inpatient bed records |
-| `DOCTOR` | Write proof-gated Clinical records; directly create Lab tests and Pharmacy prescriptions; perform permitted Inpatient actions |
+| `DOCTOR` | Write clearance-controlled Clinical records; request Laboratory tests; create Pharmacy prescriptions; perform permitted Inpatient and Surgery actions |
 | `NURSE` | Create/update appointments, read Clinical records, and perform permitted Inpatient bed/admit/treatment-observation operations |
-| `LAB_TECH` | Process existing tests through active V0, or proof-authorized V2; record, verify, and publish results; cannot create tests |
+| `LAB_TECH` | Process existing proof-authorized tests; record, verify, and publish results; cannot create tests |
 | `PHARMACIST` | Validate prescriptions, dispense medicines, control stock |
-| `CASHIER` | Handle active compatibility invoice/pay and only explicitly enabled ledger/deposit/refund/settlement/clearance slices |
+| `CASHIER` | Handle charges, invoices, deposits, payments, receipts, authorized refunds, settlement, and service clearance |
 | `MANAGER` | Review operational and financial reports |
-| `PATIENT` | Read owned notifications; broader profile, appointment, clinical, and financial self-service is future-facing |
+| `PATIENT` | Use authorized self-service for owned profile, appointments, results, prescriptions, invoices, receipts, payments, and notifications |
 | `SYSTEM` | Publish/consume events, retry failures, update reports, create notifications |
 
 *Presenter cue: Explain that hiding a button is only user experience; the backend independently checks roles at protected endpoints.*
@@ -108,14 +108,14 @@ Architecture rule: `infrastructure → application → domain`. The domain does 
 |---|---|---|---|---|---|
 | Staff-operated registration | `ADMIN`, `NURSE` | Demographics, contact, identifiers | Validate identity data | Patient profile | Patient |
 | Appointment creation | `ADMIN`, `NURSE` | Patient UUID, service/time | Validate scheduling data | Appointment | Clinical |
-| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment and findings; EXAM clearance/override for default-off V2 | V0 validates role/context; V2 also validates proof; write record/diagnosis | Medical record and disposition | Clinical |
+| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance/override | Validate role, context, state, and proof; write record/diagnosis | Medical record and disposition | Clinical |
 | Lab test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create test directly; no Clinical order contract | Lab test | Laboratory |
-| Lab processing | `ADMIN`, `LAB_TECH` | Existing test and specimen/values; LAB_TEST clearance/override for V2 | V0 validates lifecycle; V2 also validates proof; process/publish | Result and result event | Laboratory |
+| Lab processing | `ADMIN`, `LAB_TECH` | Existing test, specimen/values, LAB_TEST clearance/override | Validate lifecycle and proof; process, verify, publish | Result and result event | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical reference and medicine lines | Pharmacy validates/prices and creates its prescription | Pharmacy prescription | Pharmacy |
 | Dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock | Validate proof and stock; dispense | Dispense and stock state | Pharmacy |
-| Compatibility invoice/pay | Authorized Billing staff | Patient/source, invoice/payment data | Apply active compatibility rules | Invoice/payment state | Billing |
-| Inpatient Core V1 | Route-authorized staff | Admission, bed, deposit proof/override, treatment, discharge/settlement close proof | Apply explicit route gates and states | Admission, treatment, discharge and bed state | Inpatient |
-| Surgery gated foundation | Authorized staff under default-off flags | Selected case/pre-op/cancel/read/draft-schedule input | Execute only an enabled local slice | Local result, not a complete outcome lifecycle | Surgery |
+| Financial processing | Authorized Billing staff | Charge/invoice/payment or exact deposit/refund/settlement/clearance purpose | Validate authority, state, amount, idempotency, totals, and purpose | Auditable financial record and clearance decision | Billing |
+| Inpatient lifecycle | Authorized staff per operation | Admission, bed, deposit proof/override, treatment, discharge, and settlement/close proof | Apply explicit authority, proof, and state rules | Admission, treatment, discharge, close, and bed state | Inpatient |
+| Surgery lifecycle | Authorized surgery staff | Request, readiness, clearance, schedule, procedure, recovery, and outcome | Validate prerequisites; execute lifecycle; publish outcome and charge handoff | Auditable case, outcome, and charge event | Surgery |
 | Notification delivery | `SYSTEM`, `PATIENT` read | Approved events and recipient identity | Deliver idempotently; enforce owned reads | Delivery status/owned notification | Notification |
 | Reporting | `SYSTEM`, `MANAGER` | Approved events and report criteria | Update/query projection | Authorized report | Report |
 
@@ -124,11 +124,11 @@ Architecture rule: `infrastructure → application → domain`. The domain does 
 ## Section 7 — Main Cross-Department Flows
 
 1. Staff-operated Patient registration → Clinical appointment → clinical encounter.
-2. `ADMIN`/`DOCTOR` directly creates a Laboratory test → clearance/override → processing/result; Clinical-to-Lab ordering is future work.
+2. Clinical test request with explicit test code/order ID → Laboratory acceptance → clearance/override → processing/result.
 3. Doctor creates a Pharmacy-owned prescription → durable payment proof → dispense → stock movement.
-4. Active compatibility invoice → payment; ledger/deposit/refund/settlement/clearance remains default-off or incomplete unless explicitly enabled.
+4. Billable care event → charge/invoice → deposit/payment/receipt → refund or settlement/service clearance as required.
 5. Local Inpatient admission → bed → matching deposit clearance/override → explicit admit → treatment → medical discharge → settlement/override → administrative close.
-6. Surgery request → readiness → clearance → schedule → execution → outcome is the target flow, not current acceptance; the source exposes only selected default-off local slices.
+6. Surgery request → readiness → clearance → schedule → execution → recovery/outcome → charge handoff.
 7. Completed domain event → notification delivery and report projection update.
 
 Key controls:
@@ -140,7 +140,7 @@ Key controls:
 - Idempotent event consumption.
 - Bounded retry and visible dead-letter processing.
 
-*Presenter cue: Use Inpatient to show local route ownership and explain that its financial event chain remains gated. Present Surgery as a target workflow, not active end-to-end behavior.*
+*Presenter cue: Use Inpatient and Surgery to show how clinical ownership, resource control, and Billing clearance cooperate without sharing databases.*
 
 ## Section 8 — Hardware and Software Requirements
 
@@ -172,34 +172,34 @@ These hardware values are planning recommendations. Production sizing requires l
 | Limitation | Current status |
 |---|---|
 | Native mobile application | Only a Flutter loader package exists; no complete runnable mobile app |
-| Patient self-service | Current `PATIENT` access is limited to owned notification reads |
-| Inpatient cross-service integration | Core V1 local APIs exist; RabbitMQ producer/consumer activation defaults off |
-| Surgery lifecycle | Business/API flags default off and the complete lifecycle/outcome event is not implemented |
-| Clinical-to-Lab order | Not implemented; Lab tests are directly created by `ADMIN`/`DOCTOR` |
-| Billing migration slices | Ledger, deposit, refund, settlement, and clearance are default-off or incomplete; compatibility invoice read/create/pay remains active |
-| Conditional and mandatory proofs | EXAM/LAB_TEST clearance applies only to default-off V2 protected paths; Pharmacy payment proof and Inpatient deposit/settlement proof remain mandatory for their guarded operations unless an allowed audited override exists |
+| Patient self-service | Direct patient access is currently limited; complete profile, appointment, result, prescription, invoice, receipt, and payment access needs secure end-to-end acceptance |
+| Inpatient departmental integration | Core admission, bed, treatment, and discharge operations exist; the complete finance, Pharmacy, Surgery, Report, and Notification handoff still needs integrated acceptance |
+| Surgery lifecycle | Request/preparation/scheduling are partially demonstrable; readiness-to-outcome and charge handoff still need end-to-end acceptance |
+| Clinical-to-Lab order | Automated handoff is incomplete; Lab tests are currently created directly by `ADMIN`/`DOCTOR` |
+| Billing completeness | Basic invoice/payment is demonstrable; deposit, refund, settlement, clearance, and care-workflow handoffs still need complete acceptance |
+| Mandatory proofs | EXAM clearance, LAB_TEST clearance, Pharmacy payment proof, and Inpatient deposit/settlement proof are required unless an allowed audited override exists |
 | Insurance and national identity | No certified production integration is demonstrated |
 | Bank/payment gateway | Internal finance exists; commercial provider integration is not proven complete |
 | Medical devices/external labs/PACS/EHR | No certified external interoperability is claimed |
 | SMS/email/push provider | Internal notification workflow exists; production vendor contract is pending |
 | Production SLO, RTO, RPO, retention | Must be agreed and validated for the target hospital |
 | Capacity and disaster recovery | Require load, failure, backup, and restore testing |
-| Accessibility and regulation | Formal targets and certifications remain future governance work |
+| Accessibility and regulation | Formal targets and certifications remain governance work requiring customer approval |
 | Automated diagnosis/treatment | Explicitly outside current scope; clinical decisions remain human |
 
-*Presenter cue: Frame limitations as controlled project boundaries. The report distinguishes future work from implemented capability so the review remains credible.*
+*Presenter cue: Frame limitations as Review 1 completion gaps while keeping the requirements focused on the complete final hospital workflow.*
 
 ## Section 10 — Acceptance and Conclusion
 
 Review 1 can be demonstrated through the following acceptance story:
 
 1. As `ADMIN`/`NURSE`, register a patient in Patient and schedule an appointment in Clinical.
-2. Open a Clinical record as `ADMIN`/`DOCTOR` through active V0; separately demonstrate matching EXAM clearance/override when default-off V2 is enabled.
-3. Directly create a Lab test as `ADMIN`/`DOCTOR`; demonstrate active V0 processing and, separately, LAB_TEST clearance/override enforcement on V2.
+2. Open a Clinical record as `ADMIN`/`DOCTOR` only with valid encounter state and matching EXAM clearance/override.
+3. Transfer a Clinical test request with explicit test code/order ID; require LAB_TEST clearance/override before Laboratory processing/publication.
 4. Create the prescription through Pharmacy and require durable payment proof before dispensing/stock update.
-5. Demonstrate active compatibility invoice read/create/pay; verify gated Billing migration features reject while disabled.
-6. Demonstrate Inpatient bed + deposit gate, explicit admit, medical discharge, and settlement/override-gated close while event flags remain off.
-7. Verify Surgery is default-off and demonstrate only an explicitly enabled, selected local slice; exclude full lifecycle acceptance.
+5. Demonstrate traceable charge/invoice/payment/receipt plus authorized deposit, refund, settlement, and service clearance.
+6. Demonstrate Inpatient bed + deposit proof, explicit admit, treatment/transfer, medical discharge, settlement/override-controlled close, and departmental handoffs.
+7. Demonstrate Surgery request, readiness, clearance, scheduling, execution/cancellation, recovery, outcome, and charge handoff.
 8. Generate notification and reporting updates from committed events.
 9. Reject unauthorized operations and repeated business effects.
 10. Execute the agreed automated verification suite successfully.
@@ -215,6 +215,6 @@ Review 1 can be demonstrated through the following acceptance story:
 | Why microservices? | The hospital domains have distinct rules and ownership; independent services keep those boundaries explicit. |
 | Why both REST and events? | REST confirms information needed now; events distribute facts that already happened. |
 | Is mobile complete? | No. Only a shared Flutter loader package is present; responsive web is the current delivery assumption. |
-| What is the status of Inpatient and Surgery? | Inpatient Core V1 is locally complete with event integrations off by default. Surgery is a default-off foundation with selected local routes; its full lifecycle is not implemented. |
+| What is the status of Inpatient and Surgery? | The final system includes complete Inpatient and Surgery lifecycles. At Review 1, core Inpatient operations are demonstrable, while departmental Inpatient handoffs and the full Surgery readiness-to-outcome flow still require integrated acceptance. |
 | Is production capacity guaranteed? | No. Hardware figures are planning baselines and require representative testing. |
 | How are duplicate charges prevented? | Billing consumers use event identity/idempotency so repeated delivery does not repeat the business effect. |
