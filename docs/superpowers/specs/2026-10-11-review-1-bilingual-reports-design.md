@@ -4,7 +4,7 @@
 
 **Source baseline:** `1cc014e`
 
-**Status:** Approved for specification authoring
+**Status:** Approved for final-system report revision
 
 ## Purpose
 
@@ -41,7 +41,7 @@ The reports will use the current repository as the implementation baseline and t
 - the source-defined roles `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, and `SYSTEM`;
 - the latest documented full-suite result of 3,612 tests with zero failures, errors, or skips.
 
-The reports must distinguish implemented behavior from customer decisions or production targets that remain unconfirmed.
+The requirements and CRS sections describe the complete intended MediFlow business system. They must use stakeholder-facing domain language and must not expose internal implementation generations, compatibility labels, feature flags, or code-oriented version names. Review 1 implementation gaps remain visible only in the limitations and acceptance-evidence sections, where they are described as incomplete business capabilities rather than internal code versions.
 
 ## Shared Content Model
 
@@ -162,13 +162,15 @@ The reports will separate requirements by environment and avoid presenting unsup
 
 ## Limitations Section
 
-The reports will separate three types of limitation:
+The reports will separate three types of limitation using business language only:
 
 1. **Not finalized:** production SLOs, RTO/RPO, retention periods, accessibility target, and customer governance decisions.
 2. **External dependency not integrated:** insurance, payment gateway, national identity, external laboratory, medical-device, SMS, or email vendor contracts unless current source proves otherwise.
 3. **Demonstration constraint:** local Docker topology and baseline resource recommendations are not a production capacity certification.
 
 The reports must not describe an implemented service as missing merely because an external integration or production policy is incomplete.
+
+The core functional and CRS sections describe the final system behavior. Terms such as `V0`, `V1`, `V2`, `Core V1`, `compatibility`, `default-off`, and implementation feature-flag names are prohibited in the seven report files. Where a final capability is not complete at Review 1, the limitations section states the missing business outcome plainly.
 
 ## Consistency Rules
 
@@ -194,5 +196,5 @@ The reports must not describe an implemented service as missing merely because a
 
 - Creating or modifying Word or PDF files.
 - Changing application source code or canonical `docs/ai` rules.
-- Adding new business capabilities that are not supported by source or clearly labeled as future work.
+- Adding business capabilities outside the approved MediFlow project scope.
 - Producing infrastructure sizing guarantees without measured workload data.
