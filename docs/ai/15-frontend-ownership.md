@@ -19,7 +19,7 @@ matching feature folder, subject to the shared-scope and contract rules below.
 | Owner | Frontend contexts | Route paths | Feature paths |
 |---|---|---|---|
 | Vinh (`Dangvinh77` / `Harori`) | appointment, medical-record, lab, inpatient | `/appointments`, `/records`, `/lab`, `/inpatient` | `features/appointment`, `features/medical-record`, `features/lab`, `features/inpatient` |
-| Huy (`LQHuy0210`) | pharmacy, report | `/pharmacy`, `/reports` | `features/pharmacy`, `features/report` |
+| Huy (`LQHuy0210`) | pharmacy, report, planned surgery | `/pharmacy`, `/reports`, planned `/surgery` | `features/pharmacy`, `features/report`, planned `features/surgery` |
 | Hoàng Anh (`TranHoangAnh94`) | organization, patient; Gateway-facing identity liaison | `/organization`, `/patients` | `features/organization`, `features/patient`; identity integration in shared files below |
 | Lộc (`locgit-89`) | billing, notification | `/billing`, `/notifications` | `features/billing`, `features/notification` |
 

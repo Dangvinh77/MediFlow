@@ -15,6 +15,7 @@ handoffs. Backend controllers and DTOs remain the wire-contract authority.
 | Inpatient | Vinh (`Dangvinh77` / `Harori`) | Admission and bed read workspace | [inpatient.md](inpatient.md) |
 | Pharmacy | Huy (`LQHuy0210`) | Drug and prescription workflows | [pharmacy.md](pharmacy.md) |
 | Report | Huy (`LQHuy0210`) | Daily, monthly and top-medicine reports | [report.md](report.md) |
+| Surgery | Huy (`LQHuy0210`) | No frontend route; backend and Gateway activation remain gated | [surgery.md](surgery.md) |
 | Organization | Hoàng Anh (`TranHoangAnh94`) | Department, staff and account administration | [organization.md](organization.md) |
 | Patient | Hoàng Anh (`TranHoangAnh94`) | Patient list/detail/create/update/delete | [patient.md](patient.md) |
 | Billing | Lộc (`locgit-89`) | Invoice lookup/detail/create/payment | [billing.md](billing.md) |
