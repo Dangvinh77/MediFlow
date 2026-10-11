@@ -99,10 +99,10 @@ Giải pháp phải trả lời năm câu hỏi cho mọi hành động quan tr�
 |---|---|---|
 | Organization | Tham chiếu tổ chức, nhân viên, vai trò, khoa, cơ sở và phòng | Tham chiếu nhân viên/người dùng, gán vai trò, phân cấp cơ sở, phòng |
 | Patient | Đăng ký do nhân viên thực hiện, hồ sơ, định danh và liên hệ | Hồ sơ người bệnh và trạng thái nhân khẩu học |
-| Clinical | Lịch khám, lượt khám, quan sát, chẩn đoán, chỉ định và đơn thuốc | Lịch khám, lượt khám, ghi chú, chẩn đoán, yêu cầu xét nghiệm, đơn thuốc |
-| Laboratory | Danh mục test, vòng đời phiếu, mẫu, kết quả, xác minh | Phiếu, mẫu, kết quả, sự kiện công bố kết quả |
-| Pharmacy | Danh mục thuốc, tồn kho, xác minh đơn, cấp phát | Thuốc, mức/biến động kho, hồ sơ cấp phát |
-| Billing | Phí, hóa đơn, tạm ứng, thanh toán, biên lai, hoàn tiền, xác nhận | Phí, hóa đơn, giao dịch, biên lai, trạng thái xác nhận |
+| Clinical | Lịch khám, medical record, diagnosis, disposition và admission reference; examination cần EXAM clearance khớp hoặc override audit | Appointment, medical record, diagnosis, disposition/reference |
+| Laboratory | Vòng đời test do `ADMIN`/`DOCTOR` tạo, mẫu, kết quả, xác minh; xử lý cần LAB_TEST clearance hoặc override audit | Lab test, mẫu, kết quả, sự kiện công bố |
+| Pharmacy | Danh mục thuốc, tạo đơn do Pharmacy sở hữu, tồn kho, kiểm tra payment proof bền vững và cấp phát | Đơn, thuốc, biến động kho, hồ sơ cấp phát |
+| Billing | Invoice read/create/pay tương thích đang hoạt động cùng ledger/deposit/refund/settlement/clearance mặc định tắt hoặc mục tiêu | Invoice/payment hoạt động và hồ sơ tài chính bị gate rõ ràng |
 | Notification | Chọn mẫu, xử lý người nhận/kênh, lần gửi | Yêu cầu và trạng thái gửi thông báo |
 | Report | Mô hình đọc từ sự kiện và báo cáo quản trị có lọc | Projection vận hành và tài chính |
 | Inpatient | Core V1 hoàn tất cục bộ cho nhập viện, sở hữu/phân giường, đợt hoạt động, điều trị/chuyển và xuất viện; tích hợp sự kiện còn bị khóa | Admission, giường, đợt, treatment entry, trạng thái xuất viện/đóng |
@@ -136,11 +136,11 @@ Giải pháp phải trả lời năm câu hỏi cho mọi hành động quan tr�
 | Vai trò | Tạo hoặc thay đổi | Đọc hoặc xem xét | Ranh giới bị cấm/kiểm soát |
 |---|---|---|---|
 | `ADMIN` | Người dùng, tham chiếu nhân viên, vai trò, khoa, cơ sở, phòng, cấu hình và hồ sơ giường Inpatient được phép | Trạng thái quản trị và dữ liệu tham chiếu | Không tự động có toàn quyền lâm sàng chỉ vì là quản trị viên |
-| `DOCTOR` | Lượt khám, chẩn đoán, chỉ định, đơn, admission được phép, quyết định lâm sàng và ngữ cảnh Surgery tương lai | Bệnh sử, kết quả, thuốc và trạng thái cục bộ được phép | Không sửa kho/tài chính đã quyết toán hoặc hàm ý referral/lifecycle Surgery đầy đủ đang hoạt động |
-| `NURSE` | Tạo patient/appointment được phép, quan sát, chăm sóc và hỗ trợ giường/chuyển/treatment Inpatient | Lịch khám, lượt khám, chỉ định, đợt nằm viện | Không tạo admission, medical discharge, administrative close, chẩn đoán hoặc phê duyệt tài chính trái route |
+| `DOCTOR` | Medical record/diagnosis Clinical, tạo Lab test trực tiếp, tạo đơn do Pharmacy sở hữu, admission được phép và ngữ cảnh Surgery tương lai | Bệnh sử, kết quả, thuốc và trạng thái cục bộ | Không sửa kho/tài chính hoặc hàm ý Clinical-to-Lab/Surgery integration chưa làm đang hoạt động |
+| `NURSE` | Tạo/status patient/appointment được phép, read access và observation trong treatment/bed/transfer Inpatient | Appointment, clinical record, đợt nội trú | Không ghi Clinical record/diagnosis, tạo Lab test/admission, medical discharge, administrative close hoặc duyệt tài chính |
 | `PHARMACIST` | Cấp phát và biến động tồn kho | Đơn được duyệt và tồn kho | Không viết lại đơn lâm sàng nguồn |
 | `CASHIER` | Tạm ứng, thanh toán, biên lai, hoàn tiền được phép, xác nhận tài chính | Phí, hóa đơn, số dư, yêu cầu clearance | Không sửa kết quả lâm sàng hoặc tạo chỉ định |
-| `LAB_TECH` | Mẫu, xử lý, kết quả, trạng thái xác minh/công bố | Phiếu xét nghiệm và ngữ cảnh người bệnh được phép | Không đổi lý do lâm sàng hoặc lượt khám nguồn |
+| `LAB_TECH` | Start/cancel/status/result/publication cho Lab test đã tồn tại | Test Laboratory và ngữ cảnh patient được phép | Không tạo Lab test hoặc thay đổi ngữ cảnh lâm sàng nguồn |
 | `MANAGER` | Tiêu chí báo cáo và góc nhìn quản trị được phép | Thông tin vận hành/tài chính tổng hợp | Báo cáo không được sửa hồ sơ nguồn |
 | `PATIENT` | Không có mutation đăng ký, lịch, lâm sàng hoặc tài chính do nhân viên sở hữu | Thông báo thuộc chính mình qua ranh giới quyền Notification đã triển khai | Tự phục vụ hồ sơ, lịch, kết quả, đơn, hóa đơn, biên lai và thanh toán là yêu cầu tương lai, không được trình bày như đã làm |
 | `SYSTEM` | Hồ sơ gửi sự kiện, retry, cập nhật read model, thông báo tự động | Dữ liệu sự kiện/vận hành được máy cấp quyền | Không tự tạo quyết định nghiệp vụ hay bỏ qua xác minh của dịch vụ sở hữu |
@@ -195,6 +195,8 @@ REST đồng bộ được chọn khi không thể hoàn tất yêu cầu an to�
 | LR-10 | Chưa xác lập trạng thái pháp quy | Không đưa tuyên bố chứng nhận thiếu căn cứ | Đánh giá pháp lý và tuân thủ theo khu vực triển khai |
 | LR-11 | Kích hoạt chéo dịch vụ Inpatient còn bị khóa | API Core V1 cục bộ dùng được, producer/consumer RabbitMQ mặc định tắt | Hoàn tất hợp đồng same-byte và Docker acceptance trước khi kích hoạt |
 | LR-12 | Surgery là nền tảng mặc định tắt | Một số route và slice domain/persistence nằm sau business/API flags | Hoàn tất authority provider, lifecycle, event, gateway và nghiệm thu chéo dịch vụ |
+| LR-13 | Chưa triển khai Clinical-to-Lab order | `ADMIN`/`DOCTOR` hiện tạo test trực tiếp trong Laboratory | Xác định hợp đồng test-code/order-ID tường minh trước khi tuyên bố bàn giao tự động |
+| LR-14 | Các slice tài chính migration bị gate | Invoice read/create/pay tương thích hoạt động; ledger/deposit/refund/settlement/clearance mặc định tắt hoặc chưa hoàn tất | Chỉ bật sau bằng chứng hợp đồng/nghiệm thu riêng |
 
 ## Phần B — Đặc tả yêu cầu khách hàng (CRS)
 
@@ -213,14 +215,15 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | FR-INP-00 | Must | Hệ thống phải quản lý giường do Inpatient sở hữu qua route quản trị được phép | Inpatient | `ADMIN`, `MANAGER` |
 | FR-PAT-01 | Must | Hệ thống phải đăng ký người bệnh với UUID ổn định và nhân khẩu học hợp lệ | Patient | `ADMIN`, `NURSE` |
 | FR-CLI-00 | Must | Hệ thống phải tạo/theo dõi lịch khám gắn đúng người bệnh | Clinical | `ADMIN`, `NURSE` |
-| FR-CLI-01 | Must | Hệ thống phải ghi lượt khám, quan sát, chẩn đoán và ghi chú | Clinical | `DOCTOR`, `NURSE` |
-| FR-CLI-02 | Must | Hệ thống phải cho bác sĩ được phép tạo yêu cầu xét nghiệm và đơn thuốc | Clinical | `DOCTOR` |
-| FR-LAB-01 | Must | Hệ thống phải đưa phiếu xét nghiệm qua vòng đời có kiểm soát | Laboratory | `LAB_TECH` |
+| FR-CLI-01 | Must | Ghi Clinical record/diagnosis cần `ADMIN`/`DOCTOR` và EXAM clearance khớp hoặc emergency override audit trước examination | Clinical | `ADMIN`, `DOCTOR` |
+| FR-LAB-00 | Must | `ADMIN`/`DOCTOR` tạo test do Laboratory sở hữu trực tiếp; không hàm ý hợp đồng Clinical-to-Lab hiện tại | Laboratory | `ADMIN`, `DOCTOR` |
+| FR-PHA-00 | Must | `ADMIN`/`DOCTOR` tạo đơn do Pharmacy sở hữu qua Pharmacy | Pharmacy | `ADMIN`, `DOCTOR` |
+| FR-LAB-01 | Must | Test Laboratory đã có chỉ chuyển trạng thái khi có LAB_TEST clearance khớp hoặc override audit | Laboratory | `ADMIN`, `LAB_TECH` |
 | FR-LAB-02 | Must | Hệ thống phải lưu mẫu, kết quả, xác minh và công bố | Laboratory | `LAB_TECH`, `DOCTOR` |
-| FR-PHA-01 | Must | Hệ thống phải xác minh đơn đã duyệt trước khi cấp phát | Pharmacy | `PHARMACIST` |
+| FR-PHA-01 | Must | Cấp phát phải xác minh đơn Pharmacy, payment proof bền vững và tồn kho | Pharmacy | `ADMIN`, `PHARMACIST` |
 | FR-PHA-02 | Must | Hệ thống phải ghi biến động kho và cấp phát một cách nhất quán | Pharmacy | `PHARMACIST` |
-| FR-BIL-01 | Must | Hệ thống phải tạo phí có thể truy vết, không tác động trùng | Billing | `SYSTEM`, `CASHIER` |
-| FR-BIL-02 | Must | Hệ thống phải hỗ trợ hóa đơn, tạm ứng, thanh toán, biên lai và hoàn tiền qua thao tác nhân viên được phép | Billing | `CASHIER` |
+| FR-BIL-01 | Must | Invoice read/create/pay tương thích đang hoạt động phải truy vết được | Billing | Nhân viên Billing được phép |
+| FR-BIL-02 | Must | Ledger, deposit, refund, settlement và clearance mặc định tắt phải từ chối nếu feature/hợp đồng chưa bật | Billing | `ADMIN`, `CASHIER` khi bật |
 | FR-NOT-01 | Must | Hệ thống phải tạo yêu cầu thông báo từ domain event hợp lệ | Notification | `SYSTEM` |
 | FR-NOT-02 | Should | Hệ thống nên lưu lần gửi, trạng thái và lý do lỗi | Notification | `SYSTEM`, nhân viên hỗ trợ |
 | FR-REP-01 | Must | Hệ thống phải cập nhật projection báo cáo từ sự kiện tin cậy | Report | `SYSTEM` |
@@ -242,47 +245,50 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 #### B2.2 Bác sĩ
 
-**Trách nhiệm:** Ghi quyết định lâm sàng, tạo chỉ định/đơn và thao tác admission/medical discharge được phép. **Giới hạn:** Không sửa kho, quyết toán tài chính hoặc bỏ qua Surgery gate.
+**Trách nhiệm:** Ghi Clinical record với EXAM proof, tạo Lab test trực tiếp, tạo đơn do Pharmacy sở hữu và thao tác Inpatient được phép. **Giới hạn:** Không sửa kho/tài chính hoặc tuyên bố hợp đồng Clinical-to-Lab chưa làm.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-DOC-01 | Khám và tạo chỉ định | Ngữ cảnh patient/appointment và phát hiện | Kiểm tra trạng thái lượt/role | Lượt khám, chẩn đoán, yêu cầu, đơn | Clinical | Trạng thái/tham chiếu sai bị từ chối |
-| CRS-DOC-02 | Tạo hoặc medical discharge admission | Patient/encounter hoặc admission hoạt động | Áp dụng quy tắc Inpatient theo route | Admission chờ hoặc đã medical discharge | Inpatient | Không suy diễn tích hợp tài chính/sự kiện khi gate đang tắt |
+| CRS-DOC-01 | Khám và ghi record | Appointment, phát hiện, EXAM clearance khớp hoặc override audit | Kiểm tra proof/trạng thái/role | Medical record, diagnosis, disposition/reference | Clinical | `ARRIVED` thiếu proof không cho phép examination |
+| CRS-DOC-02 | Tạo Lab test trực tiếp | Patient/record, khoa, loại test/ngày | Laboratory kiểm tra và tạo test của mình | Lab test trạng thái đầu | Laboratory | Không suy diễn hợp đồng Clinical-to-Lab |
+| CRS-DOC-03 | Tạo đơn Pharmacy | Tham chiếu clinical record, dòng thuốc/hướng dẫn | Pharmacy kiểm tra thuốc/giá server và tạo đơn | Đơn Pharmacy và pending slip | Pharmacy | Dòng rỗng/sai bị từ chối |
+| CRS-DOC-04 | Tạo hoặc medical discharge admission | Patient/encounter hoặc admission hoạt động | Áp dụng quy tắc Inpatient theo route | Admission chờ hoặc đã medical discharge | Inpatient | Không suy diễn tích hợp tài chính/sự kiện khi gate đang tắt |
 
 #### B2.3 Điều dưỡng
 
-**Trách nhiệm:** Tạo patient/appointment được phép, ghi quan sát, thao tác admit, giường, treatment và transfer được phép. **Giới hạn:** Không tạo admission, medical discharge hoặc administrative close.
+**Trách nhiệm:** Tạo patient/appointment, cập nhật appointment/check-in, đọc Clinical record và thao tác bed/admit/treatment observation/transfer Inpatient được phép. **Giới hạn:** Không ghi Clinical record/diagnosis, tạo Lab test/admission, medical discharge hoặc administrative close.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
 | CRS-NUR-01 | Đăng ký người bệnh | Nhân khẩu học và định danh | Kiểm tra và tạo patient | UUID/hồ sơ người bệnh | Patient | Dữ liệu sai hoặc trùng bị từ chối |
 | CRS-NUR-02 | Tạo lịch khám | UUID người bệnh và dữ liệu lịch | Kiểm tra và tạo appointment | UUID/trạng thái lịch | Clinical | Tham chiếu hoặc trạng thái lịch sai bị từ chối |
-| CRS-NUR-03 | Phân/chuyển giường hoặc thêm treatment | Admission và dữ liệu giường/treatment | Thực thi role/trạng thái route | Admission, giường hoặc lịch sử điều trị cập nhật | Inpatient | Giường bận, trạng thái cũ hoặc chuyển cấm bị từ chối |
+| CRS-NUR-03 | Phân/chuyển giường, admit tường minh hoặc thêm observation Inpatient | Admission, giường, deposit clearance/override khớp, treatment | Thực thi role/proof/trạng thái route | Admission, giường hoặc lịch sử điều trị cập nhật | Inpatient | Thiếu proof/giường, stale hoặc chuyển cấm bị từ chối |
 
 #### B2.4 Kỹ thuật viên xét nghiệm
 
-**Trách nhiệm:** Tiếp nhận công việc, quản lý mẫu, ghi, xác minh và công bố kết quả. **Giới hạn:** Không thay đổi lý do lâm sàng hoặc lượt khám nguồn.
+**Trách nhiệm:** Start/cancel test đã có, quản lý mẫu, ghi status/result, xác minh và công bố. **Giới hạn:** Không tạo Lab test hoặc thay đổi ngữ cảnh lâm sàng.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-LAB-01 | Xử lý và công bố kết quả | Tham chiếu yêu cầu, mẫu, giá trị đo | Kiểm tra vòng đời và dữ liệu bắt buộc | Kết quả công bố | Laboratory | Chuyển sai hoặc kết quả thiếu không được công bố |
+| CRS-LAB-01 | Xử lý/công bố test đã có | Lab test, LAB_TEST clearance khớp hoặc override audit, mẫu, giá trị | Kiểm tra proof, vòng đời và dữ liệu | Kết quả công bố | Laboratory | Thiếu proof, chuyển sai hoặc kết quả thiếu sẽ chặn xử lý/công bố |
 
 #### B2.5 Dược sĩ
 
-**Trách nhiệm:** Xác minh đơn, cấp thuốc và quản lý biến động kho. **Giới hạn:** Không viết lại đơn do Clinical sở hữu.
+**Trách nhiệm:** Xác minh đơn Pharmacy, payment proof bền vững, cấp thuốc và biến động kho. **Giới hạn:** Không viết lại ý định kê đơn do bác sĩ tạo.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-PHA-01 | Cấp đơn được phép | Tham chiếu đơn, thuốc, số lượng | Kiểm tra đơn/kho; lưu biến động | Hồ sơ cấp phát và số dư kho | Pharmacy | Đơn sai hoặc thiếu tồn làm cấp phát bị từ chối |
+| CRS-PHA-01 | Cấp đơn được phép | Đơn Pharmacy, payment proof bền vững, thuốc, số lượng | Kiểm tra proof/đơn/kho; lưu biến động | Hồ sơ cấp phát và số dư kho | Pharmacy | Thiếu proof, đơn sai hoặc thiếu tồn làm cấp phát bị từ chối |
 
 #### B2.6 Thu ngân
 
-**Trách nhiệm:** Hóa đơn, tạm ứng, thanh toán, biên lai, hoàn tiền, clearance và administrative close được phép. **Giới hạn:** Không đưa quyết định lâm sàng hoặc medical discharge.
+**Trách nhiệm:** Invoice create/pay tương thích và, chỉ khi bật, ledger/deposit/refund/settlement/clearance cùng Inpatient close. **Giới hạn:** Không dùng route mặc định tắt như hành vi phổ quát hoặc medical discharge.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-CAS-01 | Ghi giao dịch tài chính | Tham chiếu hóa đơn/admission, số thập phân, phương thức | Kiểm tra trạng thái/số tiền và lưu | Số dư, biên lai, hoàn tiền hoặc clearance | Billing | Số tiền/trạng thái sai bị từ chối; sự kiện nguồn lặp được xử lý idempotent |
-| CRS-CAS-02 | Administrative close admission | Admission đã medical discharge và dữ liệu close | Kiểm tra chuyển close cục bộ | Admission đóng | Inpatient | Admission chưa discharge hoặc stale bị từ chối |
+| CRS-CAS-01 | Tạo/thanh toán invoice tương thích | Ngữ cảnh patient/source và dữ liệu invoice/payment | Kiểm tra trạng thái tương thích hoạt động và lưu | Trạng thái invoice/payment | Billing | Số tiền/trạng thái sai bị từ chối |
+| CRS-CAS-02 | Dùng ledger operation opt-in | Feature bật và target payment/deposit/refund/settlement/clearance chính xác | Kiểm tra feature, idempotency, append-only | Hồ sơ tài chính bị gate | Billing | Feature tắt hoặc target sai bị từ chối |
+| CRS-CAS-03 | Administrative close admission | Medical discharge cùng settlement khớp hoặc override được duyệt | Kiểm tra Inpatient close gate | Admission đóng | Inpatient | Thiếu settlement/override hoặc admission stale bị từ chối |
 
 #### B2.7 Nhà quản lý
 
@@ -291,6 +297,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
 | CRS-MAN-01 | Truy vấn báo cáo quản trị | Loại báo cáo, bộ lọc, phạm vi quyền | Truy vấn projection từ sự kiện | Báo cáo vận hành/tài chính | Report | Phạm vi trái quyền bị từ chối; độ trễ projection được báo vận hành |
+| CRS-MAN-02 | Tạo/cập nhật giường Inpatient | Tham chiếu khoa/phòng và dữ liệu giường | Kiểm tra Manager role, tham chiếu và quy tắc giường | Hồ sơ giường Inpatient | Inpatient | Tham chiếu/trạng thái sai bị từ chối |
 
 #### B2.8 Người bệnh
 
@@ -307,7 +314,9 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-SYS-01 | Phân phối domain event đã duyệt | Outbox và event/correlation identity | Phát và xử lý idempotent | Trạng thái hạ nguồn hoặc hồ sơ gửi | Producer/consumer tương ứng | Retry lỗi tạm thời; đưa lỗi cuối vào dead-letter quan sát được |
+| CRS-SYS-01 | Phát domain event đã duyệt | Outbox của owner và event/correlation identity | Phát đúng sự kiện đã commit | Bằng chứng broker delivery | Dịch vụ producer | Retry lỗi transport mà không tạo trạng thái nghiệp vụ |
+| CRS-SYS-02 | Xử lý notification event | Event/correlation identity và dữ liệu người nhận | Xử lý idempotent và thử gửi | Delivery record | Notification | Retry lỗi tạm thời; lỗi cuối quan sát được |
+| CRS-SYS-03 | Xử lý reporting event | Event/correlation identity và projection data | Xử lý idempotent, cập nhật read model | Reporting projection | Report | Retry/dead-letter mà không sửa hồ sơ nguồn |
 
 ### B3. Chu trình xử lý dữ liệu theo vai trò
 
@@ -316,10 +325,13 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | Quản trị nền tảng | `ADMIN` | Định danh nhân viên, vai trò, khoa, dữ liệu cơ sở/tài nguyên | Kiểm tra quyền và duy nhất; lưu trạng thái tổ chức | Tham chiếu người dùng/tài nguyên và dữ liệu kiểm toán | Organization |
 | Đăng ký người bệnh do nhân viên thực hiện | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh, đầu vào đồng thuận | Kiểm tra trường và trùng; cấp UUID | Hồ sơ và xác nhận người bệnh | Patient |
 | Quản lý lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, dịch vụ/bác sĩ, thời gian, lý do | Kiểm tra điều kiện lịch; tạo/cập nhật trạng thái | Lịch khám và trạng thái hiển thị | Clinical |
-| Chăm sóc lâm sàng | `DOCTOR`, `NURSE` | Ngữ cảnh người bệnh, triệu chứng, quan sát, lịch/tham chiếu | Mở/cập nhật lượt; áp dụng quy tắc lâm sàng | Ghi chú, quan sát, chẩn đoán, chỉ định | Clinical |
-| Xét nghiệm chẩn đoán | `LAB_TECH` | Phiếu, test, mẫu, giá trị đo | Chuyển vòng đời; xác minh quyền/độ đầy đủ | Kết quả xác minh và sự kiện công bố | Laboratory |
-| Cấp phát thuốc | `PHARMACIST` | Đơn, thuốc, số lượng, tồn kho | Kiểm tra đơn/kho; lưu cấp phát và biến động | Hồ sơ cấp phát và vị thế kho mới | Pharmacy |
-| Giao dịch tài chính | `CASHIER` | Tham chiếu phí/hóa đơn/nhập viện, số tiền, phương thức, lý do | Kiểm tra trạng thái và số thập phân; ghi giao dịch | Số dư, biên lai, hoàn tiền hoặc clearance | Billing |
+| Khám lâm sàng | `ADMIN`, `DOCTOR` | Patient/appointment, phát hiện, EXAM clearance hoặc override audit | Kiểm tra proof và ghi record/diagnosis | Medical record và disposition/reference | Clinical |
+| Tạo Laboratory test | `ADMIN`, `DOCTOR` | Patient/record, khoa, loại test/ngày | Tạo test do Laboratory sở hữu trực tiếp | Lab test trạng thái đầu | Laboratory |
+| Xử lý chẩn đoán | `ADMIN`, `LAB_TECH` | Test đã có, LAB_TEST clearance/override, mẫu, giá trị | Thực thi proof và vòng đời | Kết quả xác minh và sự kiện công bố | Laboratory |
+| Tạo đơn thuốc | `ADMIN`, `DOCTOR` | Tham chiếu record, dòng thuốc, hướng dẫn | Pharmacy kiểm tra và tạo đơn của mình | Đơn Pharmacy và pending slip | Pharmacy |
+| Cấp phát thuốc | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof, số lượng, tồn | Kiểm tra proof/đơn/kho; lưu biến động | Hồ sơ cấp phát và vị thế kho mới | Pharmacy |
+| Invoice create/pay tương thích | Nhân viên Billing được phép | Patient/source và dữ liệu invoice/payment | Áp dụng quy tắc tương thích đang hoạt động | Trạng thái invoice/payment | Billing |
+| Tài chính opt-in | `ADMIN`, `CASHIER` khi bật | Target ledger/deposit/refund/settlement/clearance chính xác | Từ chối nếu tắt; nếu bật áp dụng append-only/idempotent | Trạng thái tài chính bị gate | Billing |
 | Inpatient Core V1 cục bộ | `ADMIN`, `DOCTOR`, `NURSE` hoặc `CASHIER` theo route | Admission, giường, treatment, medical-discharge hoặc close | Áp dụng role và trạng thái riêng của route | Hồ sơ admission/giường/treatment/discharge | Inpatient |
 | Nền tảng Surgery bị gate | Vai trò được phép dưới các cờ mặc định tắt | Đầu vào case/pre-op/cancel/read/draft schedule được chọn | Chỉ chạy slice cục bộ đã làm và được bật | Kết quả cục bộ bị gate; không phải vòng đời đầy đủ | Surgery |
 | Báo cáo quản trị | `MANAGER` | Loại báo cáo, thời gian/bộ lọc, phạm vi quyền | Truy vấn projection; tổng hợp/định dạng | Báo cáo vận hành hoặc tài chính | Report |
@@ -333,28 +345,30 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | 1 | `ADMIN` hoặc `NURSE` | Nhân khẩu học và liên hệ | Patient kiểm tra dữ liệu bắt buộc và tính duy nhất | UUID và hồ sơ người bệnh |
 | 2 | `ADMIN` hoặc `NURSE` | UUID người bệnh, dịch vụ/thời gian | Clinical kiểm tra lịch và ghi trạng thái | UUID/trạng thái lịch khám |
 | 3 | Điều dưỡng/tiếp nhận | Lịch và thông tin đến khám | Chuyển lịch qua trạng thái check-in hợp lệ | Ngữ cảnh lịch sẵn sàng |
-| 4 | Bác sĩ/điều dưỡng | Tham chiếu người bệnh/lịch | Clinical xác nhận ngữ cảnh và mở lượt khám | UUID lượt khám |
-| 5 | Bác sĩ/điều dưỡng | Triệu chứng, quan sát, ghi chú | Clinical kiểm tra và ghi thông tin chăm sóc | Lượt khám cập nhật |
-| 6 | Bác sĩ | Đánh giá và chẩn đoán | Clinical lưu chẩn đoán và xác định bước chỉ định được phép | Chẩn đoán, xét nghiệm, đơn, yêu cầu nhập viện/phẫu thuật |
+| 4 | `ADMIN`/`DOCTOR` | Patient/appointment và EXAM clearance khớp hoặc override audit | Clinical xác minh proof/ngữ cảnh và mở medical record | UUID medical record |
+| 5 | `ADMIN`/`DOCTOR` | Triệu chứng, phát hiện, ghi chú | Clinical kiểm tra và ghi thông tin y khoa | Record và diagnosis cập nhật |
+| 6 | `DOCTOR` | Đánh giá và chẩn đoán | Clinical ghi disposition/reference; command Lab/Pharmacy sau đó đi tới owner tương ứng | Diagnosis và disposition/reference |
 
-### B5. Luồng Clinical đến Laboratory
+### B5. Luồng tạo và trả kết quả Laboratory hiện tại
+
+Chưa có hợp đồng Clinical-to-Lab order. Hợp đồng tương lai cần test code và order ID do producer tạo. Hiện `ADMIN` hoặc `DOCTOR` tạo trực tiếp trong Laboratory.
 
 | Bước | Thông tin đầu vào | Xử lý | Thông tin đầu ra | Kiểm soát |
 |---:|---|---|---|---|
-| 1 | UUID lượt khám/người bệnh, mã test | Clinical kiểm tra lượt khám và quyền bác sĩ | Yêu cầu xét nghiệm lâm sàng | Chỉ bác sĩ được phép chỉ định |
-| 2 | Yêu cầu và chi tiết test | Laboratory tiếp nhận hợp đồng đầy đủ | UUID phiếu và trạng thái đầu | Chống trùng/tương quan |
-| 3 | Phiếu và dữ liệu mẫu | Ghi lấy/nhận mẫu và trạng thái xử lý | Hồ sơ mẫu và thời gian | Kiểm tra chuyển trạng thái |
-| 4 | Giá trị đo, tham chiếu, nhận xét | `LAB_TECH` nhập kết quả và kiểm tra độ đầy đủ | Kết quả nháp/hoàn tất | Trường, đơn vị, khoảng theo định nghĩa |
-| 5 | Kết quả hoàn tất | Xác minh được phép đổi trạng thái công bố | Kết quả công bố và sự kiện | Dữ liệu công bố chỉ sửa theo quy trình kiểm soát |
-| 6 | Sự kiện kết quả | Notification, Report và Billing đủ điều kiện xử lý idempotent | Thông báo, projection, khoản phí hợp lệ | Quan sát retry/dead-letter |
+| 1 | Tham chiếu patient/record, khoa, loại test/ngày | Laboratory kiểm tra lệnh tạo trực tiếp của `ADMIN`/`DOCTOR` | UUID Lab test và trạng thái đầu | Không suy diễn Clinical order |
+| 2 | Test đã có cùng LAB_TEST clearance hoặc override audit | Laboratory kiểm tra proof trước xử lý bảo vệ | Ngữ cảnh xử lý được phép | Proof thiếu/sai chặn start/result/complete |
+| 3 | Test được phép và dữ liệu mẫu | `ADMIN`/`LAB_TECH` ghi trạng thái xử lý | Mẫu/status time | Kiểm tra chuyển trạng thái |
+| 4 | Giá trị đo, tham chiếu, nhận xét | `ADMIN`/`LAB_TECH` ghi kết quả và kiểm tra đầy đủ | Kết quả nháp/hoàn tất | Trường/đơn vị/khoảng theo định nghĩa |
+| 5 | Kết quả hoàn tất | Công bố được phép đổi trạng thái cuối | Kết quả công bố và event | Chỉ sửa theo correction kiểm soát |
+| 6 | Sự kiện kết quả | Consumer chỉ xử lý hợp đồng hoạt động đã duyệt idempotent | Notification/projection hoặc kết quả Billing tương thích hoạt động | Consumer bị gate vẫn tắt; retry/dead-letter quan sát được |
 
 ### B6. Luồng đơn thuốc đến cấp phát
 
 | Bước | Đối tượng | Đầu vào | Xử lý | Đầu ra |
 |---:|---|---|---|---|
-| 1 | `DOCTOR` | Lượt khám, người bệnh, UUID thuốc, liều, tần suất, thời gian, số lượng, hướng dẫn | Clinical kiểm tra đơn và trạng thái lượt khám | Đơn thuốc được phép |
-| 2 | `PHARMACIST` | UUID đơn và dòng thuốc | Pharmacy kiểm tra trạng thái đơn và tham chiếu thuốc | Quyết định cấp phát |
-| 3 | `PHARMACIST` | Số lượng yêu cầu và tồn hiện tại | Bắt buộc số lượng hợp lệ và đủ tồn | Số lượng cấp được duyệt |
+| 1 | `ADMIN`, `DOCTOR` | Tham chiếu record, patient, UUID thuốc, liều, tần suất, thời gian, số lượng, hướng dẫn | Pharmacy kiểm tra thuốc/giá server và tạo đơn của mình | Đơn Pharmacy và pending dispense slip |
+| 2 | `ADMIN`, `PHARMACIST` | UUID đơn, dòng thuốc, payment proof bền vững | Pharmacy kiểm tra proof, trạng thái đơn và thuốc | Quyết định cấp phát |
+| 3 | `ADMIN`, `PHARMACIST` | Số lượng yêu cầu và tồn hiện tại | Bắt buộc số lượng hợp lệ và đủ tồn | Số lượng cấp được duyệt |
 | 4 | Giao dịch Pharmacy | Hồ sơ đơn và kho | Lưu nhất quán cấp phát và biến động | Hồ sơ cấp phát và kho giảm |
 | 5 | Consumer sự kiện | Sự kiện cấp phát | Billing/Notification/Report xử lý sự kiện hợp lệ idempotent | Cập nhật tài chính/truyền thông/báo cáo |
 
@@ -362,26 +376,26 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 | Bước | Đối tượng/nguồn | Đầu vào | Quy tắc xử lý | Đầu ra |
 |---:|---|---|---|---|
-| 1 | Sự kiện dịch vụ vận hành | Event ID, người bệnh, hồ sơ nguồn, hạng mục, số tiền thập phân | Billing kiểm tra event/idempotency key | Phí mới hoặc nhận biết trùng |
-| 2 | Billing | Phí mở và ngữ cảnh tài khoản/người bệnh | Gắn phí vào hóa đơn theo quy tắc | Hóa đơn và số dư |
-| 3 | `CASHIER` | Tham chiếu hóa đơn/admission cùng số tiền/phương thức do người trả cung cấp | Kiểm tra số dương và trạng thái cho phép | Giao dịch tạm ứng/thanh toán |
-| 4 | Billing | Giao dịch thành công | Cập nhật số dư/clearance và tạo dữ liệu biên lai | Biên lai và trạng thái tài chính |
-| 5 | `CASHIER` | Giao dịch gốc, lý do và số tiền được duyệt | Kiểm tra số có thể hoàn và quyền | Hoàn tiền và số dư điều chỉnh |
-| 6 | `SYSTEM` | Sự kiện trạng thái tài chính | Thông báo Inpatient/Surgery/Report phụ thuộc | Cập nhật clearance hoặc báo cáo |
+| 1 | Yêu cầu tương thích được phép | Patient/source và dữ liệu invoice | Billing áp dụng create/read invoice hoạt động | Invoice tương thích |
+| 2 | `CASHIER` | Invoice tương thích và số tiền/phương thức | Kiểm tra và áp dụng pay tương thích hoạt động | Trạng thái invoice đã trả/cập nhật |
+| 3 | Ledger feature được bật | Payment-request target chính xác và số tiền | Áp dụng ledger payment append-only/idempotent | Payment/receipt và clearance theo mục đích bị gate |
+| 4 | Deposit feature được bật | Admission target và số tiền đề xuất/yêu cầu | Áp dụng deposit, không xem tiền mặt là doanh thu | Deposit/payment-request state bị gate |
+| 5 | Refund feature được bật | Giao dịch gốc completed, lý do, số tiền | Thực thi feature/quyền/giới hạn hoàn tích lũy | Refund append-only bị gate |
+| 6 | Settlement/clearance feature | Mục đích/target và tổng persisted | Từ chối nếu thiếu/tắt; nếu có áp dụng slice đã duyệt | Settlement hoặc clearance bị gate |
 
-Hồ sơ tài chính không được dùng số dấu phẩy động nhị phân. Giá trị tiền dùng `BigDecimal` tại biên nghiệp vụ backend. Phân phối lặp cùng sự kiện tính phí không được tạo thêm khoản phí.
+Hồ sơ tài chính dùng `BigDecimal`, không dùng số dấu phẩy động nhị phân. Invoice create/pay tương thích đang hoạt động; ledger, deposit, refund, settlement và clearance không được xem là phổ quát khi flag/hợp đồng còn tắt hoặc thiếu.
 
 ### B8. Luồng nội trú
 
 | Bước | Đối tượng | Đầu vào | Xử lý | Đầu ra |
 |---:|---|---|---|---|
 | 1 | `ADMIN`, `DOCTOR` | Người bệnh/lượt khám, lý do, chi tiết nhập viện | Inpatient xác minh tham chiếu và tạo admission cục bộ | Admission chờ xử lý |
-| 2 | `CASHIER`/Billing | Tham chiếu admission và điều kiện tài chính | Billing có thể ghi giao dịch cục bộ; kích hoạt sự kiện chéo dịch vụ còn bị gate | Hồ sơ tài chính cục bộ; không suy diễn event chain hoạt động |
-| 3 | `ADMIN`, `NURSE` | Admission và nhu cầu khoa/giường | Inpatient kiểm tra giường phù hợp còn trống và phân | Admission cập nhật, giường bị chiếm |
-| 4 | `ADMIN`, `DOCTOR`, `NURSE` | Admission hoạt động và dữ liệu treatment/quan sát | Thêm hoặc sửa treatment entry được phép | Lịch sử điều trị |
-| 5 | `ADMIN`, `NURSE` | Nhu cầu chuyển và giường đích | Kiểm tra đích và chuyển có kiểm soát | Lịch sử chuyển và sử dụng cập nhật |
-| 6 | `ADMIN`, `DOCTOR` | Quyết định và tóm tắt xuất viện | Áp dụng medical-discharge transition | Admission đã medical discharge |
-| 7 | `ADMIN`, `CASHIER` | Admission đã medical discharge và dữ liệu close | Áp dụng administrative close; giải phóng giường theo luồng cục bộ được phép | Admission đóng và giường trống |
+| 2 | `ADMIN`, `NURSE` | Admission và nhu cầu khoa/giường | Inpatient kiểm tra và phân giường phù hợp | Admission cập nhật và active bed assignment |
+| 3 | `ADMIN`, `DOCTOR`, `NURSE` | Admission chờ, active bed, deposit clearance khớp hoặc emergency override audit | Gọi `/admit` tường minh | Trạng thái `ADMITTED` |
+| 4 | `ADMIN`, `DOCTOR`, `NURSE` | Stay admitted và dữ liệu treatment/observation | Thêm/sửa treatment entry được phép | Lịch sử điều trị |
+| 5 | `ADMIN`, `NURSE` | Nhu cầu chuyển và giường đích | Kiểm tra và chuyển có kiểm soát | Lịch sử chuyển/sử dụng cập nhật |
+| 6 | `ADMIN`, `DOCTOR` | Quyết định và summary được duyệt | Áp dụng medical-discharge transition | Trạng thái `MEDICALLY_DISCHARGED` |
+| 7 | `ADMIN`, `CASHIER` | Medical discharge cùng `settlement.completed` khớp hoặc debt/emergency override được duyệt | Kiểm tra close gate và administrative close | Admission `CLOSED` và giường trống |
 
 ### B9. Luồng Surgery mục tiêu và gate hiện tại
 
@@ -425,30 +439,30 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 - **Đầu ra:** Encounter, quan sát, chẩn đoán và chỉ định tiếp theo được phép.
 - **Lỗi/ngoại lệ:** Clinical từ chối trạng thái, role hoặc tham chiếu sai.
 
-#### Quy trình 3 — Chỉ định và kết quả xét nghiệm
+#### Quy trình 3 — Tạo trực tiếp Laboratory test và kết quả
 
-- **Kích hoạt:** Bác sĩ được phép tạo yêu cầu xét nghiệm.
-- **Thẩm quyền chính:** Clinical sở hữu yêu cầu; Laboratory sở hữu order/specimen/result.
-- **Đầu vào:** Tham chiếu encounter/patient, test, mẫu và giá trị đo.
-- **Xử lý:** Chuyển hợp đồng yêu cầu tường minh; Laboratory xử lý, xác minh, công bố.
+- **Kích hoạt:** `ADMIN` hoặc `DOCTOR` tạo trực tiếp test trong Laboratory.
+- **Thẩm quyền chính:** Laboratory; chưa có hợp đồng Clinical-to-Lab order.
+- **Đầu vào:** Tham chiếu patient/record, khoa, loại test/ngày, sau đó clearance/override, mẫu, giá trị.
+- **Xử lý:** Laboratory tạo test; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc override audit trước khi ghi/công bố.
 - **Đầu ra:** Kết quả Laboratory công bố và sự kiện đủ điều kiện.
-- **Lỗi/ngoại lệ:** Yêu cầu/kết quả thiếu hoặc sai trạng thái bị owner từ chối, không công bố.
+- **Lỗi/ngoại lệ:** Thiếu proof, kết quả thiếu hoặc trạng thái sai chặn xử lý/công bố.
 
 #### Quy trình 4 — Kết quả Laboratory đến khoản phí Billing
 
 - **Kích hoạt:** Sự kiện xét nghiệm tính phí đủ điều kiện được duyệt và phát.
 - **Thẩm quyền chính:** Billing sở hữu phí; Laboratory sở hữu kết quả nguồn.
 - **Đầu vào:** Event ID, tham chiếu order/result, patient, item và hợp đồng số tiền thập phân.
-- **Xử lý:** Billing xử lý idempotent và tạo nhiều nhất một khoản phí.
-- **Đầu ra:** Trạng thái phí/hóa đơn.
-- **Lỗi/ngoại lệ:** Phân phối trùng là no-op; hợp đồng sai theo retry/dead-letter policy.
+- **Xử lý:** Billing chỉ xử lý idempotent hợp đồng tương thích đang hoạt động hoặc opt-in đã bật/duyệt.
+- **Đầu ra:** Kết quả invoice tương thích hoặc trạng thái ledger charge bị gate rõ ràng.
+- **Lỗi/ngoại lệ:** Consumer mặc định tắt vẫn không hoạt động; delivery trùng là no-op khi bật.
 
 #### Quy trình 5 — Đơn thuốc đến cấp phát
 
-- **Kích hoạt:** Clinical cho phép đơn thuốc.
-- **Thẩm quyền chính:** Clinical sở hữu đơn; Pharmacy sở hữu cấp phát và kho.
-- **Đầu vào:** Tham chiếu đơn/thuốc, hướng dẫn liều, số lượng, tồn kho.
-- **Xử lý:** Pharmacy kiểm tra hợp đồng/kho rồi ghi cấp phát/biến động nhất quán.
+- **Kích hoạt:** `ADMIN` hoặc `DOCTOR` tạo đơn qua Pharmacy.
+- **Thẩm quyền chính:** Pharmacy sở hữu đơn, cấp phát và kho; Clinical chỉ cung cấp record context/reference.
+- **Đầu vào:** Tham chiếu record/patient, dòng thuốc/hướng dẫn, sau đó payment proof bền vững, số lượng, tồn.
+- **Xử lý:** Pharmacy tạo đơn dùng giá server; cấp phát kiểm tra riêng payment proof và tồn trước biến động nhất quán.
 - **Đầu ra:** Hồ sơ cấp phát và tồn kho cập nhật.
 - **Lỗi/ngoại lệ:** Đơn sai hoặc thiếu tồn ngăn cấp phát.
 
@@ -456,19 +470,19 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 
 - **Kích hoạt:** Sự kiện tính phí hợp lệ hoặc yêu cầu thu ngân được phép.
 - **Thẩm quyền chính:** Billing.
-- **Đầu vào:** Tham chiếu phí/hóa đơn/admission, số thập phân, phương thức, lý do hoàn.
-- **Xử lý:** Kiểm tra trạng thái; ghi hóa đơn, tạm ứng/thanh toán, biên lai hoặc hoàn.
-- **Đầu ra:** Số dư, giao dịch, biên lai, hoàn tiền hoặc clearance.
-- **Lỗi/ngoại lệ:** Số tiền/trạng thái sai bị từ chối; role `PATIENT` chưa có payment endpoint.
+- **Đầu vào:** Invoice/payment tương thích hoặc target ledger/deposit/refund/settlement/clearance đã bật chính xác.
+- **Xử lý:** Áp dụng invoice create/pay hoạt động; từ chối thao tác bị gate khi feature/hợp đồng tắt.
+- **Đầu ra:** Trạng thái invoice/payment hoặc hồ sơ tài chính bị gate đã bật rõ ràng.
+- **Lỗi/ngoại lệ:** Feature tắt/target sai bị từ chối; `PATIENT` chưa có payment endpoint.
 
 #### Quy trình 7 — Nhập viện và xuất viện Inpatient cục bộ
 
 - **Kích hoạt:** Command Inpatient cục bộ được phép được gửi.
 - **Thẩm quyền chính:** Inpatient.
-- **Đầu vào:** Admission, giường, treatment, medical-discharge hoặc administrative-close.
-- **Xử lý:** Áp dụng role/trạng thái theo route; kích hoạt sự kiện tài chính vẫn tắt.
-- **Đầu ra:** Admission, sử dụng giường, treatment, medical discharge hoặc close cục bộ.
-- **Lỗi/ngoại lệ:** Chuyển stale/cấm bị từ chối; không suy diễn sự kiện chéo dịch vụ đang tắt.
+- **Đầu vào:** Admission, active bed, deposit clearance/override khớp, treatment, discharge summary, settlement/close override.
+- **Xử lý:** Áp dụng role: create/assign, `/admit` tường minh, treatment, medical discharge, rồi administrative close có settlement gate.
+- **Đầu ra:** Trạng thái requested/admitted/treatment/medical-discharge/closed cục bộ.
+- **Lỗi/ngoại lệ:** Thiếu bed/clearance/settlement, stale hoặc cấm bị từ chối; không suy diễn event delivery đang tắt.
 
 #### Quy trình 8 — Vòng đời Surgery mục tiêu
 
@@ -505,9 +519,9 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 | Giường và tình trạng sử dụng | Inpatient | API/hợp đồng cục bộ có kiểm soát | UUID, khả dụng, quyền chuyển trạng thái |
 | Hồ sơ người bệnh | Patient | Hợp đồng REST/sự kiện được phép | Khớp định danh, riêng tư, UUID ổn định |
 | Lịch khám | Clinical | Hợp đồng REST/sự kiện được phép | UUID người bệnh, trạng thái lịch, quyền |
-| Lượt khám, chẩn đoán, chỉ định, đơn | Clinical | Hợp đồng/sự kiện lâm sàng kiểm soát | Quyền bác sĩ, kiểm tra trạng thái |
-| Mẫu và kết quả xét nghiệm | Laboratory | Hợp đồng/sự kiện kết quả | Xác minh, công bố, kiểm soát chỉnh sửa |
-| Tồn kho và cấp phát | Pharmacy | Hợp đồng/sự kiện cấp phát/kho | Quy tắc số lượng, biến động nhất quán, truy vết |
+| Medical record, diagnosis, disposition/reference | Clinical | Hợp đồng/sự kiện lâm sàng kiểm soát | `ADMIN`/`DOCTOR`, EXAM proof, trạng thái |
+| Lab test, mẫu và kết quả | Laboratory | API create trực tiếp và result event | `ADMIN`/`DOCTOR` tạo; clearance/override; trạng thái kết quả |
+| Đơn, tồn kho và cấp phát | Pharmacy | Hợp đồng đơn/cấp phát/kho | Doctor actor, Pharmacy ownership, payment proof, biến động nhất quán |
 | Phí, hóa đơn, giao dịch, biên lai, hoàn tiền, clearance | Billing | Hợp đồng/sự kiện trạng thái tài chính | Tiền thập phân, idempotency, kiểm toán |
 | Gửi thông báo | Notification | Chỉ truy vấn vận hành | Riêng tư người nhận, trạng thái, bằng chứng retry |
 | Projection báo cáo | Report | Truy vấn quản lý được phép | Chỉ đọc, idempotency sự kiện |
@@ -628,12 +642,13 @@ Thiết kế production nên tách hoặc phân phối workload ứng dụng, c�
 
 | Mã yêu cầu | Actor hoặc quy trình | Dịch vụ sở hữu | Khu vực bằng chứng nguồn | Phương pháp nghiệm thu |
 |---|---|---|---|---|
-| AC-01 / FR-PAT-01 / FR-CLI-00 | Đăng ký và lịch do nhân viên thực hiện | Patient; Clinical riêng biệt | Controller/tài liệu dịch vụ Patient và Clinical | Trình diễn thao tác `ADMIN`/`NURSE` và tách quyền sở hữu |
+| AC-01A / FR-PAT-01 | Đăng ký do nhân viên thực hiện | Patient | Controller/tài liệu Patient | Trình diễn `ADMIN`/`NURSE` đăng ký |
+| AC-01B / FR-CLI-00 | Tạo appointment | Clinical | Controller/tài liệu appointment Clinical | Trình diễn `ADMIN`/`NURSE` tạo lịch |
 | AC-02 / FR-CLI-01 | Lượt khám lâm sàng | Clinical | Controller/domain test Clinical | Trình diễn lượt khám/chẩn đoán được phép |
-| AC-03 / FR-LAB-01 | Vòng đời xét nghiệm | Laboratory | API, quy tắc trạng thái và test Laboratory | Chỉ định, xử lý, xác minh, công bố kết quả |
-| AC-04 / FR-PHA-01 | Cấp phát đơn | Pharmacy | Hợp đồng và inventory test Pharmacy | Xác minh đơn, cấp và kiểm tra biến động kho |
-| AC-05 / FR-BIL-01 | Sự kiện tính phí | Billing | Consumer/idempotency test Billing | Gửi lặp cùng sự kiện và quan sát một tác động |
-| AC-06 / FR-BIL-02 | Giao dịch nhân viên | Billing | API/domain test Billing | Ghi giao dịch, biên lai và hoàn tiền được phép |
+| AC-03 / FR-LAB-00..01 | Tạo trực tiếp và vòng đời Lab có proof | Laboratory | Controller/quy tắc/test Lab | Tạo bằng `ADMIN`/`DOCTOR`; cần clearance/override; không tuyên bố Clinical order |
+| AC-04 / FR-PHA-00..01 | Đơn Pharmacy và cấp phát | Pharmacy | Controller/payment-proof/inventory test Pharmacy | Tạo qua Pharmacy; cần payment proof và tồn trước cấp |
+| AC-05 / FR-BIL-01 | Invoice tương thích | Billing | API/test invoice hiện tại | Trình diễn invoice read/create/pay hoạt động |
+| AC-06 / FR-BIL-02 | Finance slice opt-in | Billing | Cấu hình feature và slice test Billing | Xác minh mặc định tắt; chỉ test slice được bật/nghiệm thu |
 | AC-07 / FR-INP-01..03 | Inpatient Core V1 cục bộ | Inpatient | Controller và tài liệu trạng thái Inpatient | Trình diễn trạng thái cục bộ theo route; xác minh event flag tắt |
 | AC-08 / FR-SUR-01..02 | Nền tảng Surgery bị gate | Surgery | Cấu hình, tài liệu trạng thái, gated-route test | Xác minh mặc định tắt và chỉ slice cục bộ được bật; loại vòng đời đầy đủ khỏi nghiệm thu |
 | AC-09 / FR-NOT-01..02 | Gửi thông báo | Notification | Controller/consumer test Notification | Sinh/theo dõi thông báo hợp lệ và quyền sở hữu patient |

@@ -57,10 +57,10 @@ MediFlow is not only a collection of forms. It models how information moves from
 |---|---|
 | Organization | Staff, roles, departments, facilities, rooms |
 | Patient | Staff-operated profiles and identifiers |
-| Clinical | Appointments, encounters, diagnoses, orders, prescriptions |
-| Laboratory | Orders, specimens, results, publication |
-| Pharmacy | Medicines, stock, dispensing |
-| Billing | Charges, invoices, payments, deposits, receipts, refunds, clearance |
+| Clinical | Appointments, medical records, diagnoses, disposition/references; EXAM proof gates examination |
+| Laboratory | Direct `ADMIN`/`DOCTOR` test creation, clearance-gated processing, results/publication |
+| Pharmacy | Pharmacy-owned prescriptions, payment-proof-gated dispensing, medicines, stock |
+| Billing | Active compatibility invoice read/create/pay; other ledger/deposit/refund/settlement/clearance slices are gated |
 | Notification | Event-based notification processing and delivery status |
 | Report | Operational and financial read models |
 | Inpatient | Locally complete Core V1 for admissions, owned beds, stays, treatment, transfers, discharge; event integration remains gated |
@@ -73,11 +73,11 @@ MediFlow is not only a collection of forms. It models how information moves from
 | Role | Main functions |
 |---|---|
 | `ADMIN` | Configure Organization data and permitted Inpatient bed records |
-| `DOCTOR` | Document encounters, diagnose, order tests, prescribe, create permitted admissions, and prepare future Surgery context |
-| `NURSE` | Record observations, coordinate care, support inpatient and bed workflows |
-| `LAB_TECH` | Process orders/specimens, record, verify, and publish results |
+| `DOCTOR` | Write proof-gated Clinical records; directly create Lab tests and Pharmacy prescriptions; perform permitted Inpatient actions |
+| `NURSE` | Create/update appointments, read Clinical records, and perform permitted Inpatient bed/admit/treatment-observation operations |
+| `LAB_TECH` | Process existing proof-authorized Lab tests; record, verify, and publish results; cannot create tests |
 | `PHARMACIST` | Validate prescriptions, dispense medicines, control stock |
-| `CASHIER` | Handle invoices, deposits, payments, receipts, refunds, and clearance |
+| `CASHIER` | Handle active compatibility invoice/pay and only explicitly enabled ledger/deposit/refund/settlement/clearance slices |
 | `MANAGER` | Review operational and financial reports |
 | `PATIENT` | Read owned notifications; broader profile, appointment, clinical, and financial self-service is future-facing |
 | `SYSTEM` | Publish/consume events, retry failures, update reports, create notifications |
@@ -108,23 +108,26 @@ Architecture rule: `infrastructure → application → domain`. The domain does 
 |---|---|---|---|---|---|
 | Staff-operated registration | `ADMIN`, `NURSE` | Demographics, contact, identifiers | Validate identity data | Patient profile | Patient |
 | Appointment creation | `ADMIN`, `NURSE` | Patient UUID, service/time | Validate scheduling data | Appointment | Clinical |
-| Clinical encounter | `DOCTOR`, `NURSE` | Patient, appointment, symptoms, observations | Document assessment and allowed states | Encounter, diagnosis, orders | Clinical |
-| Laboratory | `LAB_TECH` | Order, specimen, measured values | Process, verify, publish | Result and result event | Laboratory |
-| Dispensing | `PHARMACIST` | Authorized prescription and stock | Validate, dispense, move inventory | Dispense record and stock state | Pharmacy |
-| Finance | `CASHIER`, `SYSTEM` | Charge/invoice reference, amount, method | Validate and record transaction | Balance, receipt, clearance/refund | Billing |
-| Inpatient Core V1 | Route-authorized staff | Admission, bed, treatment, discharge/close data | Apply route-specific local state rules | Admission, treatment, discharge and bed state | Inpatient |
+| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance/override | Validate proof and write record/diagnosis | Medical record and disposition | Clinical |
+| Lab test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create test directly; no Clinical order contract | Lab test | Laboratory |
+| Lab processing | `ADMIN`, `LAB_TECH` | Existing test, LAB_TEST clearance/override, specimen/values | Process, verify, publish | Result and result event | Laboratory |
+| Prescription creation | `ADMIN`, `DOCTOR` | Clinical reference and medicine lines | Pharmacy validates/prices and creates its prescription | Pharmacy prescription | Pharmacy |
+| Dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock | Validate proof and stock; dispense | Dispense and stock state | Pharmacy |
+| Compatibility invoice/pay | Authorized Billing staff | Patient/source, invoice/payment data | Apply active compatibility rules | Invoice/payment state | Billing |
+| Inpatient Core V1 | Route-authorized staff | Admission, bed, deposit proof/override, treatment, discharge/settlement close proof | Apply explicit route gates and states | Admission, treatment, discharge and bed state | Inpatient |
 | Surgery gated foundation | Authorized staff under default-off flags | Selected case/pre-op/cancel/read/draft-schedule input | Execute only an enabled local slice | Local result, not a complete outcome lifecycle | Surgery |
-| Notifications/reports | `SYSTEM`, `MANAGER` | Trusted events and criteria | Deliver/update projection/query | Delivery status and reports | Notification / Report |
+| Notification delivery | `SYSTEM`, `PATIENT` read | Approved events and recipient identity | Deliver idempotently; enforce owned reads | Delivery status/owned notification | Notification |
+| Reporting | `SYSTEM`, `MANAGER` | Approved events and report criteria | Update/query projection | Authorized report | Report |
 
 *Presenter cue: Read one row using the five-part pattern: actor, input, process, output, owner. State that the same pattern is applied to every major workflow in the full reports.*
 
 ## Section 7 — Main Cross-Department Flows
 
 1. Staff-operated Patient registration → Clinical appointment → clinical encounter.
-2. Clinical encounter → laboratory order → specimen → verified result.
-3. Clinical prescription → pharmacy validation → dispense → stock movement.
-4. Billable care event → charge → invoice → payment/deposit → receipt/refund.
-5. Local Inpatient admission → bed allocation → treatment → medical discharge → administrative close; cross-service event activation remains gated.
+2. `ADMIN`/`DOCTOR` directly creates a Laboratory test → clearance/override → processing/result; Clinical-to-Lab ordering is future work.
+3. Doctor creates a Pharmacy-owned prescription → durable payment proof → dispense → stock movement.
+4. Active compatibility invoice → payment; ledger/deposit/refund/settlement/clearance remains default-off or incomplete unless explicitly enabled.
+5. Local Inpatient admission → bed → matching deposit clearance/override → explicit admit → treatment → medical discharge → settlement/override → administrative close.
 6. Surgery request → readiness → clearance → schedule → execution → outcome is the target flow, not current acceptance; the source exposes only selected default-off local slices.
 7. Completed domain event → notification delivery and report projection update.
 
@@ -172,6 +175,9 @@ These hardware values are planning recommendations. Production sizing requires l
 | Patient self-service | Current `PATIENT` access is limited to owned notification reads |
 | Inpatient cross-service integration | Core V1 local APIs exist; RabbitMQ producer/consumer activation defaults off |
 | Surgery lifecycle | Business/API flags default off and the complete lifecycle/outcome event is not implemented |
+| Clinical-to-Lab order | Not implemented; Lab tests are directly created by `ADMIN`/`DOCTOR` |
+| Billing migration slices | Ledger, deposit, refund, settlement, and clearance are default-off or incomplete; compatibility invoice read/create/pay remains active |
+| Mandatory proofs | EXAM clearance, LAB_TEST clearance, Pharmacy payment proof, Inpatient deposit/settlement proof must be supplied or an allowed audited override must exist |
 | Insurance and national identity | No certified production integration is demonstrated |
 | Bank/payment gateway | Internal finance exists; commercial provider integration is not proven complete |
 | Medical devices/external labs/PACS/EHR | No certified external interoperability is claimed |
@@ -188,11 +194,11 @@ These hardware values are planning recommendations. Production sizing requires l
 Review 1 can be demonstrated through the following acceptance story:
 
 1. As `ADMIN`/`NURSE`, register a patient in Patient and schedule an appointment in Clinical.
-2. Open an authorized clinical encounter.
-3. Order, process, verify, and publish a laboratory result.
-4. Prescribe and dispense medicine with stock update.
-5. Create one financial charge from one eligible event and process payment/receipt.
-6. Demonstrate route-authorized local Inpatient Core V1 states and verify cross-service event flags remain off.
+2. Open a Clinical examination only with matching EXAM clearance/override under `ADMIN`/`DOCTOR`.
+3. Directly create a Lab test as `ADMIN`/`DOCTOR`, then require LAB_TEST clearance/override before authorized processing/result publication.
+4. Create the prescription through Pharmacy and require durable payment proof before dispensing/stock update.
+5. Demonstrate active compatibility invoice read/create/pay; verify gated Billing migration features reject while disabled.
+6. Demonstrate Inpatient bed + deposit gate, explicit admit, medical discharge, and settlement/override-gated close while event flags remain off.
 7. Verify Surgery is default-off and demonstrate only an explicitly enabled, selected local slice; exclude full lifecycle acceptance.
 8. Generate notification and reporting updates from committed events.
 9. Reject unauthorized operations and repeated business effects.
