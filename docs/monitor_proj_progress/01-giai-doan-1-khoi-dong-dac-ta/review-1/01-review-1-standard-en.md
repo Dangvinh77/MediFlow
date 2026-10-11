@@ -77,7 +77,7 @@ Specific objectives are:
 | Organization | Users, staff, departments, roles, facilities, rooms, and organization reference data |
 | Patient | Patient profiles, identifiers, contact information, and demographic records |
 | Clinical | Appointments, encounters, medical records, diagnoses, and admission-referral references; examination requires matching EXAM clearance or an audited emergency override |
-| Laboratory | Doctor/Admin-created tests, specimens, processing states, results, and publication; protected processing requires matching LAB_TEST clearance or an audited emergency override |
+| Laboratory | Tests accepted from explicit Clinical requests, specimens, processing states, results, and publication; protected processing requires matching LAB_TEST clearance or an audited emergency override |
 | Pharmacy | Medicine catalogue, Pharmacy-owned prescription creation, inventory, payment-proof validation, stock movement, and dispensing |
 | Billing | Charges, invoices, deposits, payments, receipts, refunds, settlement, and purpose-specific service clearance |
 | Notification | Event-driven notification requests, templates, delivery attempts, and delivery status |
@@ -106,7 +106,7 @@ Specific objectives are:
 | `NURSE` | Coordinate permitted patient and ward workflows | Create permitted patient/appointment records; support appointment/check-in/read operations; record permitted Inpatient treatment observations; perform authorized bed operations |
 | `PHARMACIST` | Validate and dispense medication | Review authorized prescriptions; verify medicines and quantities; manage stock; record dispensing and inventory movement |
 | `CASHIER` | Process authorized financial transactions | Create and settle invoices; receive deposits and payments; issue receipts; process authorized refunds; confirm settlement and service clearance |
-| `LAB_TECH` | Process existing diagnostic tests | Start/cancel permitted tests; manage specimens; record status/results; verify and publish results; Lab creation belongs to `ADMIN`/`DOCTOR` |
+| `LAB_TECH` | Process existing diagnostic tests | Start/cancel permitted tests; manage specimens; record status/results; verify and publish results; test creation follows an authorized Clinical request and belongs to Laboratory |
 | `MANAGER` | Monitor hospital operations | View operational and financial reports, service activity, workloads, trends, and management indicators |
 | `PATIENT` | Access personal healthcare information and services | Manage permitted profile data; request and review appointments; view authorized results, prescriptions, invoices, receipts, payments, and notifications |
 | `SYSTEM` | Execute trusted automation | Publish and consume events; retry failed delivery; update read models; initiate notifications; preserve idempotency and traceability |

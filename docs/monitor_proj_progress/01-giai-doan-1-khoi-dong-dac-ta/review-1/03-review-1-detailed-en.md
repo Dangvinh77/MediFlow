@@ -100,7 +100,7 @@ The solution must answer five questions for every important action:
 | Organization | Identity-related organization records, staff, roles, departments, facilities, and rooms | Staff/user reference, role assignment, facility hierarchy, room reference |
 | Patient | Staff-operated patient registration, profile, identifiers, and contact data | Patient profile and demographic status |
 | Clinical | Appointments, medical records, diagnoses, dispositions, and admission-referral references; examination requires matching EXAM clearance or audited override | Appointment, medical record, diagnosis, disposition/reference |
-| Laboratory | `ADMIN`/`DOCTOR`-created test lifecycle, specimen, result, verification, and publication; protected processing requires matching LAB_TEST clearance or audited override | Lab test, specimen, result, published result event |
+| Laboratory | Test lifecycle accepted from an explicit Clinical request, specimen, result, verification, and publication; protected processing requires matching LAB_TEST clearance or audited override | Lab test, specimen, result, published result event |
 | Pharmacy | Medicine catalogue, Pharmacy-owned prescription creation, inventory, durable payment-proof validation, dispensing | Prescription, medicine, stock movement, dispense record |
 | Billing | Charges, invoices, deposits, payments, receipts, refunds, settlement, and purpose-specific service clearance | Auditable charge, invoice, payment, refund, settlement, and clearance records |
 | Notification | Template selection, recipient/channel processing, delivery attempts | Notification request and delivery status |
@@ -238,84 +238,84 @@ The requirement summary is followed by one subsection per actor and describes th
 
 **Responsibilities:** Govern Organization data and perform expressly authorized operations in other services. **Restrictions:** `ADMIN` is not an automatic substitute for clinical judgment, and Organization does not own appointments or beds.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-ADM-01 | Maintain staff, roles, departments, facilities, and rooms | Authorized organization data | Validate role, uniqueness, and hierarchy | Updated organization reference | Organization | Invalid or duplicate data is rejected without partial change |
-| CRS-ADM-02 | Maintain the bed catalogue where permitted | Room/department references and bed data | Validate references and bed state | Inpatient-owned bed record | Inpatient | Invalid relationship or forbidden transition is rejected |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-ADM-01 | Maintain staff, roles, departments, facilities, and rooms; validate role, uniqueness, and hierarchy | Authorized organization data | Updated organization reference | Organization | Invalid or duplicate data is rejected without partial change |
+| CRS-ADM-02 | Maintain the bed catalogue where permitted; validate references and bed state | Room/department references and bed data | Inpatient-owned bed record | Inpatient | Invalid relationship or forbidden transition is rejected |
 
 #### B2.2 Doctor
 
 **Responsibilities:** Write Clinical records with required EXAM proof, submit Laboratory test requests, create Pharmacy-owned prescriptions, and perform permitted Inpatient/Surgery actions. **Restrictions:** The doctor cannot alter stock or settled finance and must use each owning service's contract.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-DOC-01 | Conduct examination and write record | Appointment, findings, matching EXAM clearance or audited override | Validate state, role, and proof | Medical record, diagnosis, disposition/reference | Clinical | Missing/mismatched proof or an invalid encounter state blocks examination |
-| CRS-DOC-02 | Submit a Laboratory test request | Patient/record, department, test code/date, producer-generated order ID | Validate clinical authority; Laboratory validates the order and creates its test | Accepted Lab test in initial state | Laboratory | Invalid/duplicate order identity or unauthorized context is rejected |
-| CRS-DOC-03 | Create a Pharmacy prescription | Clinical record reference, medicine lines/instructions | Pharmacy validates medicines/server prices and creates its prescription | Pharmacy-owned prescription and pending slip | Pharmacy | Empty/invalid lines are rejected |
-| CRS-DOC-04 | Create or medically discharge an admission | Patient/encounter or active admission | Apply route-specific Inpatient rules | Pending admission or medically discharged state | Inpatient | Financial/event integration is not inferred while gates remain off |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-DOC-01 | Conduct examination and write record; validate state, role, and proof | Appointment, findings, matching EXAM clearance or audited override | Medical record, diagnosis, disposition/reference | Clinical | Missing/mismatched proof or an invalid encounter state blocks examination |
+| CRS-DOC-02 | Submit a Laboratory test request; validate clinical authority, then Laboratory validates the order and creates its test | Patient/record, department, test code/date, producer-generated order ID | Accepted Lab test in initial state | Laboratory | Invalid/duplicate order identity or unauthorized context is rejected |
+| CRS-DOC-03 | Create a Pharmacy prescription; Pharmacy validates medicines/server prices and creates its prescription | Clinical record reference, medicine lines/instructions | Pharmacy-owned prescription and pending slip | Pharmacy | Empty/invalid lines are rejected |
+| CRS-DOC-04 | Create or medically discharge an admission; apply route-specific Inpatient rules | Patient/encounter or active admission | Pending admission or medically discharged state | Inpatient | Missing admission prerequisites or a forbidden transition is rejected |
 
 #### B2.3 Nurse
 
 **Responsibilities:** Create permitted patient/appointment records, update permitted appointment/check-in state, read Clinical records, and perform permitted Inpatient bed/admit/treatment-observation/transfer operations. **Restrictions:** The nurse cannot write Clinical records/diagnoses, create a Lab test/admission, perform medical discharge, or administratively close.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-NUR-01 | Register a patient | Demographics and identity data | Validate and create the patient | Patient UUID/profile | Patient | Invalid or duplicate identity data is rejected |
-| CRS-NUR-02 | Create an appointment | Patient UUID and schedule data | Validate and create the appointment | Appointment UUID/state | Clinical | Invalid patient reference or schedule state is rejected |
-| CRS-NUR-03 | Assign/transfer bed, explicitly admit, or append Inpatient treatment observation | Admission, bed, matching deposit clearance/override, treatment input | Enforce route role, proof, and transition | Updated admission, bed, or treatment history | Inpatient | Missing clearance/bed, stale state, or forbidden transition is rejected |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-NUR-01 | Register a patient; validate and create the patient | Demographics and identity data | Patient UUID/profile | Patient | Invalid or duplicate identity data is rejected |
+| CRS-NUR-02 | Create an appointment; validate and create the appointment | Patient UUID and schedule data | Appointment UUID/state | Clinical | Invalid patient reference or schedule state is rejected |
+| CRS-NUR-03 | Assign/transfer bed, explicitly admit, or append Inpatient treatment observation; enforce route role, proof, and transition | Admission, bed, matching deposit clearance/override, treatment input | Updated admission, bed, or treatment history | Inpatient | Missing clearance/bed, stale state, or forbidden transition is rejected |
 
 #### B2.4 Laboratory Technician
 
 **Responsibilities:** Start/cancel permitted existing Lab tests, manage specimens, record status/results, verify, and publish. **Restrictions:** The technician cannot create a Lab test or change the clinical context.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-LAB-01 | Process and publish an existing Lab test | Lab test, specimen, values, matching LAB_TEST clearance or audited override | Validate lifecycle, proof, and required result data | Published laboratory result | Laboratory | Invalid state/data or missing/mismatched proof blocks processing/publication |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-LAB-01 | Process and publish an existing Lab test; validate lifecycle, proof, and required result data | Lab test, specimen, values, matching LAB_TEST clearance or audited override | Published laboratory result | Laboratory | Invalid state/data or missing/mismatched proof blocks processing/publication |
 
 #### B2.5 Pharmacist
 
 **Responsibilities:** Validate Pharmacy-owned prescriptions, durable payment proof, dispense medicines, and maintain stock movements. **Restrictions:** The pharmacist cannot rewrite the doctor-authored prescription intent.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-PHA-01 | Dispense an authorized prescription | Pharmacy prescription, durable payment proof, medicine, quantity | Validate proof/prescription/stock; persist movement | Dispense record and stock balance | Pharmacy | Missing proof, invalid prescription, or insufficient stock rejects dispensing |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-PHA-01 | Dispense an authorized prescription; validate proof/prescription/stock and persist movement | Pharmacy prescription, durable payment proof, medicine, quantity | Dispense record and stock balance | Pharmacy | Missing proof, invalid prescription, or insufficient stock rejects dispensing |
 
 #### B2.6 Cashier
 
 **Responsibilities:** Process charges, invoices, deposits, payments, receipts, authorized refunds, settlement, service clearance, and permitted Inpatient administrative close. **Restrictions:** The cashier cannot perform medical discharge or change clinical decisions.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-CAS-01 | Create and pay an invoice | Patient/source context, charge, invoice, and payment data | Validate financial state and persist payment/receipt | Invoice, payment, and receipt state | Billing | Invalid amount, authority, or state is rejected |
-| CRS-CAS-02 | Process deposit/refund/settlement/clearance | Exact business purpose, original transaction when required, amount, and care/admission reference | Validate authority, idempotency, append-only rules, totals, and purpose | Deposit, refund, settlement, or clearance record | Billing | Invalid purpose, target, amount, cumulative limit, or authority is rejected |
-| CRS-CAS-03 | Administratively close an admission | Medical discharge plus matching settlement or approved override | Validate the Inpatient close gate | Closed admission | Inpatient | Missing settlement/override or stale admission is rejected |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-CAS-01 | Create and pay an invoice; validate financial state and persist payment/receipt | Patient/source context, charge, invoice, and payment data | Invoice, payment, and receipt state | Billing | Invalid amount, authority, or state is rejected |
+| CRS-CAS-02 | Process deposit/refund/settlement/clearance; validate authority, idempotency, append-only rules, totals, and purpose | Exact business purpose, original transaction when required, amount, and care/admission reference | Deposit, refund, settlement, or clearance record | Billing | Invalid purpose, target, amount, cumulative limit, or authority is rejected |
+| CRS-CAS-03 | Administratively close an admission; validate the Inpatient close condition | Medical discharge plus matching settlement or approved override | Closed admission | Inpatient | Missing settlement/override or stale admission is rejected |
 
 #### B2.7 Manager
 
 **Responsibilities:** Query authorized reports and manage Inpatient beds where permitted. **Restrictions:** Reporting is read-only and does not modify source records.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-MAN-01 | Query a management report | Report type, filters, authorized scope | Query the event-fed projection | Operational or financial report | Report | Unauthorized scope is rejected; projection delay is reported operationally |
-| CRS-MAN-02 | Create/update an Inpatient bed | Department/room references and bed data | Validate Manager role, references, and local bed rules | Inpatient-owned bed record | Inpatient | Invalid reference/state is rejected |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-MAN-01 | Query a management report from the event-fed projection | Report type, filters, authorized scope | Operational or financial report | Report | Unauthorized scope is rejected; projection delay is reported operationally |
+| CRS-MAN-02 | Create/update an Inpatient bed; validate Manager role, references, and local bed rules | Department/room references and bed data | Inpatient-owned bed record | Inpatient | Invalid reference/state is rejected |
 
 #### B2.8 Patient
 
 **Responsibilities:** Use authorized self-service for the patient's own profile, appointments, results, prescriptions, invoices, receipts, payments, and notifications. **Restrictions:** The patient cannot access another patient's data or perform staff-only clinical and financial operations.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-PAT-01 | Use authorized self-service | Verified patient identity and ownership/relationship context | Enforce ownership and expose permitted profile, appointment, result, prescription, invoice, receipt, payment, and notification data | Personal self-service view and permitted requests | Owning service for each record | Cross-patient access and staff-only mutations are rejected |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-PAT-01 | Use authorized self-service; enforce ownership and expose permitted profile, appointment, result, prescription, invoice, receipt, payment, and notification data | Verified patient identity and ownership/relationship context | Personal self-service view and permitted requests | Owning service for each record | Cross-patient access and staff-only mutations are rejected |
 
 #### B2.9 Internal System Actor
 
 **Responsibilities:** Publish outbox records, consume messages idempotently, retry bounded failures, update projections, and create notifications. **Restrictions:** Automation cannot invent identifiers or bypass an owning service's decision.
 
-| Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
-|---|---|---|---|---|---|---|
-| CRS-SYS-01 | Publish an approved domain event | Owning-service outbox record and event/correlation identity | Publish the exact committed event | Broker delivery evidence | Producing service | Retry transient transport failure without inventing business state |
-| CRS-SYS-02 | Consume an approved notification event | Event/correlation identity and recipient data | Consume idempotently and attempt delivery | Notification delivery record | Notification | Retry transient failure; terminal failure is observable |
-| CRS-SYS-03 | Consume an approved reporting event | Event/correlation identity and projection data | Consume idempotently and update read model | Reporting projection | Report | Retry/dead-letter without modifying the source record |
+| Requirement ID | Flow and process | Input | Output | Owning service | Alternative or failure outcome |
+|---|---|---|---|---|---|
+| CRS-SYS-01 | Publish the exact approved domain event committed by the owning service | Owning-service outbox record and event/correlation identity | Broker delivery evidence | Producing service | Retry transient transport failure without inventing business state |
+| CRS-SYS-02 | Consume an approved notification event idempotently and attempt delivery | Event/correlation identity and recipient data | Notification delivery record | Notification | Retry transient failure; terminal failure is observable |
+| CRS-SYS-03 | Consume an approved reporting event idempotently and update the read model | Event/correlation identity and projection data | Reporting projection | Report | Retry/dead-letter without modifying the source record |
 
 ### B3. Data-Processing Cycles by Role
 
@@ -350,7 +350,7 @@ The requirement summary is followed by one subsection per actor and describes th
 
 ### B5. Laboratory Request and Result Flow
 
-The final workflow transfers a Clinical test request to Laboratory with an explicit test code and producer-generated order ID. Review 1 currently relies on direct Laboratory creation by `ADMIN` or `DOCTOR`; completing the automated handoff remains recorded as a limitation.
+The final workflow transfers a Clinical test request to Laboratory with an explicit test code and producer-generated order ID. Laboratory validates the request, creates and owns the test lifecycle, and publishes the verified result.
 
 | Step | Input information | Processing | Output information | Control |
 |---:|---|---|---|---|

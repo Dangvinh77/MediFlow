@@ -109,7 +109,7 @@ Architecture rule: `infrastructure → application → domain`. The domain does 
 | Staff-operated registration | `ADMIN`, `NURSE` | Demographics, contact, identifiers | Validate identity data | Patient profile | Patient |
 | Appointment creation | `ADMIN`, `NURSE` | Patient UUID, service/time | Validate scheduling data | Appointment | Clinical |
 | Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance/override | Validate role, context, state, and proof; write record/diagnosis | Medical record and disposition | Clinical |
-| Lab test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create test directly; no Clinical order contract | Lab test | Laboratory |
+| Clinical request to Lab test | `ADMIN`, `DOCTOR` | Patient/record, department, test code/date, order ID | Clinical submits the explicit request; Laboratory validates and creates its test | Accepted Lab test | Laboratory |
 | Lab processing | `ADMIN`, `LAB_TECH` | Existing test, specimen/values, LAB_TEST clearance/override | Validate lifecycle and proof; process, verify, publish | Result and result event | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical reference and medicine lines | Pharmacy validates/prices and creates its prescription | Pharmacy prescription | Pharmacy |
 | Dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock | Validate proof and stock; dispense | Dispense and stock state | Pharmacy |

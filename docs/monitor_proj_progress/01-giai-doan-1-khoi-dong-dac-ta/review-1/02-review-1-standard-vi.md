@@ -77,7 +77,7 @@ Các mục tiêu cụ thể gồm:
 | Organization | Người dùng, nhân viên, khoa, vai trò, cơ sở, phòng và dữ liệu tham chiếu tổ chức |
 | Patient | Hồ sơ người bệnh, định danh, liên hệ và dữ liệu nhân khẩu học |
 | Clinical | Lịch khám, lượt khám, medical record, chẩn đoán và tham chiếu admission; examination cần EXAM clearance khớp hoặc emergency override được audit |
-| Laboratory | Test do `ADMIN`/`DOCTOR` tạo, mẫu, xử lý, kết quả và công bố; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc emergency override được audit |
+| Laboratory | Test được tiếp nhận từ yêu cầu Clinical tường minh, mẫu, xử lý, kết quả và công bố; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc emergency override được audit |
 | Pharmacy | Danh mục thuốc, tạo đơn do Pharmacy sở hữu, tồn kho, kiểm tra payment proof, biến động và cấp phát |
 | Billing | Khoản thu, invoice, deposit, payment, receipt, refund, settlement và service clearance theo mục đích |
 | Notification | Yêu cầu thông báo từ sự kiện, mẫu thông báo, lần gửi và trạng thái gửi |
@@ -106,7 +106,7 @@ Các mục tiêu cụ thể gồm:
 | `NURSE` | Điều phối quy trình người bệnh và khoa được phép | Tạo patient/appointment được phép; hỗ trợ check-in/read; ghi observation trong treatment Inpatient được phép; thực hiện thao tác giường có quyền |
 | `PHARMACIST` | Xác minh và cấp thuốc | Xem đơn đã được duyệt; kiểm tra thuốc và số lượng; quản lý tồn kho; ghi nhận cấp phát và biến động kho |
 | `CASHIER` | Xử lý giao dịch tài chính được phép | Tạo và quyết toán invoice; nhận deposit/payment; phát hành receipt; xử lý refund được duyệt; xác nhận settlement và service clearance |
-| `LAB_TECH` | Xử lý test chẩn đoán đã tồn tại | Start/cancel được phép; quản lý mẫu; ghi status/result; xác minh/công bố; tạo Lab test thuộc `ADMIN`/`DOCTOR` |
+| `LAB_TECH` | Xử lý test chẩn đoán đã tồn tại | Start/cancel được phép; quản lý mẫu; ghi status/result; xác minh/công bố; Laboratory tạo test theo yêu cầu Clinical được phép |
 | `MANAGER` | Theo dõi vận hành bệnh viện | Xem báo cáo vận hành và tài chính, hoạt động dịch vụ, tải công việc, xu hướng và chỉ số quản trị |
 | `PATIENT` | Truy cập thông tin và dịch vụ y tế cá nhân | Quản lý dữ liệu hồ sơ được phép; yêu cầu/xem appointment; xem result, prescription, invoice, receipt, payment và notification được phân quyền |
 | `SYSTEM` | Thực hiện tự động hóa đáng tin cậy | Phát và nhận sự kiện; thử lại khi gửi thất bại; cập nhật mô hình đọc; khởi tạo thông báo; duy trì idempotency và khả năng truy vết |

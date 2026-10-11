@@ -109,7 +109,7 @@ Quy tắc kiến trúc: `infrastructure → application → domain`. Domain khô
 | Đăng ký do nhân viên thực hiện | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh | Kiểm tra dữ liệu định danh | Hồ sơ người bệnh | Patient |
 | Tạo lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, dịch vụ/thời gian | Kiểm tra dữ liệu lịch | Lịch khám | Clinical |
 | Examination Clinical | `ADMIN`, `DOCTOR` | Patient/appointment, phát hiện, EXAM clearance/override | Kiểm tra role, ngữ cảnh, trạng thái và proof; ghi record/diagnosis | Medical record và disposition | Clinical |
-| Tạo Lab test | `ADMIN`, `DOCTOR` | Patient/record, khoa, loại test/ngày | Tạo trực tiếp; không có Clinical order contract | Lab test | Laboratory |
+| Clinical request đến Lab test | `ADMIN`, `DOCTOR` | Patient/record, khoa, test code/ngày, order ID | Clinical gửi yêu cầu tường minh; Laboratory kiểm tra và tạo test của mình | Lab test được tiếp nhận | Laboratory |
 | Xử lý Lab | `ADMIN`, `LAB_TECH` | Test đã có, mẫu/giá trị, LAB_TEST clearance/override | Kiểm tra vòng đời và proof; xử lý, xác minh, công bố | Kết quả và event | Laboratory |
 | Tạo đơn | `ADMIN`, `DOCTOR` | Tham chiếu Clinical và dòng thuốc | Pharmacy kiểm tra/định giá và tạo đơn | Đơn Pharmacy | Pharmacy |
 | Cấp phát | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof bền vững, tồn | Kiểm tra proof/tồn, cấp | Hồ sơ cấp và kho | Pharmacy |
@@ -198,7 +198,7 @@ Review 1 có thể trình diễn qua câu chuyện nghiệm thu sau:
 3. Chuyển Clinical test request bằng test code/order ID tường minh; cần LAB_TEST clearance/override trước khi Laboratory xử lý/công bố.
 4. Tạo đơn qua Pharmacy và cần payment proof bền vững trước cấp/kho.
 5. Trình diễn charge/invoice/payment/receipt truy vết được cùng deposit, refund, settlement và service clearance được phân quyền.
-6. Trình diễn gate bed + deposit, admit tường minh, medical discharge và close có settlement/override, trong khi event flag vẫn tắt.
+6. Trình diễn giường + deposit proof, admit tường minh, treatment/transfer, medical discharge, close được kiểm soát bằng settlement/override và các bàn giao liên khoa.
 7. Trình diễn Surgery request, readiness, clearance, scheduling, execution/cancellation, recovery, outcome và charge handoff.
 8. Sinh thông báo và cập nhật báo cáo từ sự kiện đã commit.
 9. Từ chối thao tác trái quyền và tác động nghiệp vụ lặp.

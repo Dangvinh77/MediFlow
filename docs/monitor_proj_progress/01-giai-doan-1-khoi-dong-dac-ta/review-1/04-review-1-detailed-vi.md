@@ -100,7 +100,7 @@ Giải pháp phải trả lời năm câu hỏi cho mọi hành động quan tr�
 | Organization | Tham chiếu tổ chức, nhân viên, vai trò, khoa, cơ sở và phòng | Tham chiếu nhân viên/người dùng, gán vai trò, phân cấp cơ sở, phòng |
 | Patient | Đăng ký do nhân viên thực hiện, hồ sơ, định danh và liên hệ | Hồ sơ người bệnh và trạng thái nhân khẩu học |
 | Clinical | Appointment, medical record, diagnosis, disposition và admission reference; examination cần EXAM clearance khớp hoặc override audit | Appointment, medical record, diagnosis, disposition/reference |
-| Laboratory | Vòng đời test do `ADMIN`/`DOCTOR` tạo, mẫu, kết quả, xác minh và công bố; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc override audit | Lab test, mẫu, kết quả, sự kiện công bố |
+| Laboratory | Vòng đời test được tiếp nhận từ yêu cầu Clinical tường minh, mẫu, kết quả, xác minh và công bố; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc override audit | Lab test, mẫu, kết quả, sự kiện công bố |
 | Pharmacy | Danh mục thuốc, tạo đơn do Pharmacy sở hữu, tồn kho, kiểm tra payment proof bền vững và cấp phát | Đơn, thuốc, biến động kho, hồ sơ cấp phát |
 | Billing | Charge, invoice, deposit, payment, receipt, refund, settlement và service clearance theo mục đích | Hồ sơ charge, invoice, payment, refund, settlement và clearance kiểm toán được |
 | Notification | Chọn mẫu, xử lý người nhận/kênh, lần gửi | Yêu cầu và trạng thái gửi thông báo |
@@ -238,84 +238,84 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 **Trách nhiệm:** Quản trị dữ liệu Organization và thực hiện thao tác được cấp quyền rõ ràng ở dịch vụ khác. **Giới hạn:** `ADMIN` không thay thế quyết định lâm sàng; Organization không sở hữu lịch khám hoặc giường.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-ADM-01 | Quản lý nhân viên, vai trò, khoa, cơ sở, phòng | Dữ liệu tổ chức được phép | Kiểm tra role, duy nhất, phân cấp | Tham chiếu tổ chức cập nhật | Organization | Dữ liệu sai/trùng bị từ chối, không đổi một phần |
-| CRS-ADM-02 | Quản lý danh mục giường khi được phép | Tham chiếu phòng/khoa và dữ liệu giường | Kiểm tra tham chiếu/trạng thái | Hồ sơ giường do Inpatient sở hữu | Inpatient | Quan hệ sai hoặc chuyển trạng thái cấm bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-ADM-01 | Quản lý nhân viên, vai trò, khoa, cơ sở, phòng; kiểm tra role, duy nhất và phân cấp | Dữ liệu tổ chức được phép | Tham chiếu tổ chức cập nhật | Organization | Dữ liệu sai/trùng bị từ chối, không đổi một phần |
+| CRS-ADM-02 | Quản lý danh mục giường khi được phép; kiểm tra tham chiếu và trạng thái | Tham chiếu phòng/khoa và dữ liệu giường | Hồ sơ giường do Inpatient sở hữu | Inpatient | Quan hệ sai hoặc chuyển trạng thái cấm bị từ chối |
 
 #### B2.2 Bác sĩ
 
 **Trách nhiệm:** Ghi Clinical record với EXAM proof, gửi Laboratory test request, tạo đơn do Pharmacy sở hữu và thao tác Inpatient/Surgery được phép. **Giới hạn:** Không sửa kho hoặc tài chính đã quyết toán và phải dùng hợp đồng của từng dịch vụ sở hữu.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-DOC-01 | Khám và ghi record | Appointment, phát hiện, EXAM clearance khớp hoặc override audit | Kiểm tra trạng thái, role và proof | Medical record, diagnosis, disposition/reference | Clinical | Proof thiếu/sai hoặc trạng thái encounter không hợp lệ sẽ chặn examination |
-| CRS-DOC-02 | Gửi Laboratory test request | Patient/record, khoa, test code/ngày, order ID do producer tạo | Kiểm tra quyền lâm sàng; Laboratory kiểm tra order và tạo test của mình | Lab test được tiếp nhận ở trạng thái đầu | Laboratory | Order identity sai/trùng hoặc ngữ cảnh không được phép bị từ chối |
-| CRS-DOC-03 | Tạo đơn Pharmacy | Tham chiếu clinical record, dòng thuốc/hướng dẫn | Pharmacy kiểm tra thuốc/giá server và tạo đơn | Đơn Pharmacy và pending slip | Pharmacy | Dòng rỗng/sai bị từ chối |
-| CRS-DOC-04 | Tạo hoặc medical discharge admission | Patient/encounter hoặc admission hoạt động | Áp dụng quy tắc Inpatient theo route | Admission chờ hoặc đã medical discharge | Inpatient | Không suy diễn tích hợp tài chính/sự kiện khi gate đang tắt |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-DOC-01 | Khám và ghi record; kiểm tra trạng thái, role và proof | Appointment, phát hiện, EXAM clearance khớp hoặc override audit | Medical record, diagnosis, disposition/reference | Clinical | Proof thiếu/sai hoặc trạng thái encounter không hợp lệ sẽ chặn examination |
+| CRS-DOC-02 | Gửi Laboratory test request; kiểm tra quyền lâm sàng, sau đó Laboratory kiểm tra order và tạo test của mình | Patient/record, khoa, test code/ngày, order ID do producer tạo | Lab test được tiếp nhận ở trạng thái đầu | Laboratory | Order identity sai/trùng hoặc ngữ cảnh không được phép bị từ chối |
+| CRS-DOC-03 | Tạo đơn Pharmacy; Pharmacy kiểm tra thuốc/giá server và tạo đơn | Tham chiếu clinical record, dòng thuốc/hướng dẫn | Đơn Pharmacy và pending slip | Pharmacy | Dòng rỗng/sai bị từ chối |
+| CRS-DOC-04 | Tạo hoặc medical discharge admission; áp dụng quy tắc Inpatient theo route | Patient/encounter hoặc admission hoạt động | Admission chờ hoặc đã medical discharge | Inpatient | Thiếu điều kiện admission hoặc chuyển trạng thái bị cấm sẽ bị từ chối |
 
 #### B2.3 Điều dưỡng
 
 **Trách nhiệm:** Tạo patient/appointment, cập nhật appointment/check-in, đọc Clinical record và thao tác bed/admit/treatment observation/transfer Inpatient được phép. **Giới hạn:** Không ghi Clinical record/diagnosis, tạo Lab test/admission, medical discharge hoặc administrative close.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-NUR-01 | Đăng ký người bệnh | Nhân khẩu học và định danh | Kiểm tra và tạo patient | UUID/hồ sơ người bệnh | Patient | Dữ liệu sai hoặc trùng bị từ chối |
-| CRS-NUR-02 | Tạo lịch khám | UUID người bệnh và dữ liệu lịch | Kiểm tra và tạo appointment | UUID/trạng thái lịch | Clinical | Tham chiếu hoặc trạng thái lịch sai bị từ chối |
-| CRS-NUR-03 | Phân/chuyển giường, admit tường minh hoặc thêm observation Inpatient | Admission, giường, deposit clearance/override khớp, treatment | Thực thi role/proof/trạng thái route | Admission, giường hoặc lịch sử điều trị cập nhật | Inpatient | Thiếu proof/giường, stale hoặc chuyển cấm bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-NUR-01 | Đăng ký người bệnh; kiểm tra và tạo patient | Nhân khẩu học và định danh | UUID/hồ sơ người bệnh | Patient | Dữ liệu sai hoặc trùng bị từ chối |
+| CRS-NUR-02 | Tạo lịch khám; kiểm tra và tạo appointment | UUID người bệnh và dữ liệu lịch | UUID/trạng thái lịch | Clinical | Tham chiếu hoặc trạng thái lịch sai bị từ chối |
+| CRS-NUR-03 | Phân/chuyển giường, admit tường minh hoặc thêm observation Inpatient; thực thi role, proof và trạng thái route | Admission, giường, deposit clearance/override khớp, treatment | Admission, giường hoặc lịch sử điều trị cập nhật | Inpatient | Thiếu proof/giường, stale hoặc chuyển cấm bị từ chối |
 
 #### B2.4 Kỹ thuật viên xét nghiệm
 
 **Trách nhiệm:** Start/cancel test đã có, quản lý mẫu, ghi status/result, xác minh và công bố. **Giới hạn:** Không tạo Lab test hoặc thay đổi ngữ cảnh lâm sàng.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-LAB-01 | Xử lý/công bố test đã có | Lab test, mẫu, giá trị, LAB_TEST clearance khớp hoặc override audit | Kiểm tra vòng đời, proof và dữ liệu kết quả bắt buộc | Kết quả công bố | Laboratory | Sai trạng thái/dữ liệu hoặc proof thiếu/sai sẽ chặn xử lý/công bố |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-LAB-01 | Xử lý/công bố test đã có; kiểm tra vòng đời, proof và dữ liệu kết quả bắt buộc | Lab test, mẫu, giá trị, LAB_TEST clearance khớp hoặc override audit | Kết quả công bố | Laboratory | Sai trạng thái/dữ liệu hoặc proof thiếu/sai sẽ chặn xử lý/công bố |
 
 #### B2.5 Dược sĩ
 
 **Trách nhiệm:** Xác minh đơn Pharmacy, payment proof bền vững, cấp thuốc và biến động kho. **Giới hạn:** Không viết lại ý định kê đơn do bác sĩ tạo.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-PHA-01 | Cấp đơn được phép | Đơn Pharmacy, payment proof bền vững, thuốc, số lượng | Kiểm tra proof/đơn/kho; lưu biến động | Hồ sơ cấp phát và số dư kho | Pharmacy | Thiếu proof, đơn sai hoặc thiếu tồn làm cấp phát bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-PHA-01 | Cấp đơn được phép; kiểm tra proof/đơn/kho và lưu biến động | Đơn Pharmacy, payment proof bền vững, thuốc, số lượng | Hồ sơ cấp phát và số dư kho | Pharmacy | Thiếu proof, đơn sai hoặc thiếu tồn làm cấp phát bị từ chối |
 
 #### B2.6 Thu ngân
 
 **Trách nhiệm:** Xử lý charge, invoice, deposit, payment, receipt, refund được duyệt, settlement, service clearance và administrative close Inpatient được phép. **Giới hạn:** Không thực hiện medical discharge hoặc thay đổi quyết định lâm sàng.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-CAS-01 | Tạo và thanh toán invoice | Ngữ cảnh patient/source, charge, invoice và payment | Kiểm tra trạng thái tài chính; lưu payment/receipt | Trạng thái invoice, payment và receipt | Billing | Số tiền, quyền hoặc trạng thái sai bị từ chối |
-| CRS-CAS-02 | Xử lý deposit/refund/settlement/clearance | Mục đích nghiệp vụ, giao dịch gốc khi cần, số tiền và tham chiếu chăm sóc/admission | Kiểm tra quyền, idempotency, append-only, tổng và mục đích | Hồ sơ deposit, refund, settlement hoặc clearance | Billing | Mục đích, target, số tiền, giới hạn tích lũy hoặc quyền sai bị từ chối |
-| CRS-CAS-03 | Administrative close admission | Medical discharge cùng settlement khớp hoặc override được duyệt | Kiểm tra Inpatient close gate | Admission đóng | Inpatient | Thiếu settlement/override hoặc admission stale bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-CAS-01 | Tạo và thanh toán invoice; kiểm tra trạng thái tài chính và lưu payment/receipt | Ngữ cảnh patient/source, charge, invoice và payment | Trạng thái invoice, payment và receipt | Billing | Số tiền, quyền hoặc trạng thái sai bị từ chối |
+| CRS-CAS-02 | Xử lý deposit/refund/settlement/clearance; kiểm tra quyền, idempotency, append-only, tổng và mục đích | Mục đích nghiệp vụ, giao dịch gốc khi cần, số tiền và tham chiếu chăm sóc/admission | Hồ sơ deposit, refund, settlement hoặc clearance | Billing | Mục đích, target, số tiền, giới hạn tích lũy hoặc quyền sai bị từ chối |
+| CRS-CAS-03 | Administrative close admission; kiểm tra điều kiện đóng Inpatient | Medical discharge cùng settlement khớp hoặc override được duyệt | Admission đóng | Inpatient | Thiếu settlement/override hoặc admission stale bị từ chối |
 
 #### B2.7 Nhà quản lý
 
 **Trách nhiệm:** Truy vấn báo cáo được phép và quản lý giường Inpatient khi route cho phép. **Giới hạn:** Báo cáo chỉ đọc, không sửa dữ liệu nguồn.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-MAN-01 | Truy vấn báo cáo quản trị | Loại báo cáo, bộ lọc, phạm vi quyền | Truy vấn projection từ sự kiện | Báo cáo vận hành/tài chính | Report | Phạm vi trái quyền bị từ chối; độ trễ projection được báo vận hành |
-| CRS-MAN-02 | Tạo/cập nhật giường Inpatient | Tham chiếu khoa/phòng và dữ liệu giường | Kiểm tra Manager role, tham chiếu và quy tắc giường | Hồ sơ giường Inpatient | Inpatient | Tham chiếu/trạng thái sai bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-MAN-01 | Truy vấn báo cáo quản trị từ projection sự kiện | Loại báo cáo, bộ lọc, phạm vi quyền | Báo cáo vận hành/tài chính | Report | Phạm vi trái quyền bị từ chối; độ trễ projection được báo vận hành |
+| CRS-MAN-02 | Tạo/cập nhật giường Inpatient; kiểm tra Manager role, tham chiếu và quy tắc giường | Tham chiếu khoa/phòng và dữ liệu giường | Hồ sơ giường Inpatient | Inpatient | Tham chiếu/trạng thái sai bị từ chối |
 
 #### B2.8 Người bệnh
 
 **Trách nhiệm:** Dùng tự phục vụ được phân quyền cho hồ sơ, appointment, result, prescription, invoice, receipt, payment và notification của chính người bệnh. **Giới hạn:** Không truy cập dữ liệu người bệnh khác hoặc thực hiện thao tác lâm sàng/tài chính dành cho nhân viên.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-PAT-01 | Dùng tự phục vụ được phân quyền | Định danh người bệnh đã xác minh và ngữ cảnh sở hữu/quan hệ | Thực thi quyền sở hữu; hiển thị hồ sơ, appointment, result, prescription, invoice, receipt, payment và notification được phép | View tự phục vụ cá nhân và request được phép | Dịch vụ sở hữu từng record | Truy cập chéo người bệnh và mutation dành cho nhân viên bị từ chối |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-PAT-01 | Dùng tự phục vụ được phân quyền; thực thi quyền sở hữu và hiển thị hồ sơ, appointment, result, prescription, invoice, receipt, payment và notification được phép | Định danh người bệnh đã xác minh và ngữ cảnh sở hữu/quan hệ | View tự phục vụ cá nhân và request được phép | Dịch vụ sở hữu từng record | Truy cập chéo người bệnh và mutation dành cho nhân viên bị từ chối |
 
 #### B2.9 Tác nhân hệ thống nội bộ
 
 **Trách nhiệm:** Phát outbox, xử lý idempotent, retry hữu hạn, cập nhật projection và tạo thông báo. **Giới hạn:** Không tự tạo định danh hoặc bỏ qua quyết định dịch vụ sở hữu.
 
-| Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
-|---|---|---|---|---|---|---|
-| CRS-SYS-01 | Phát domain event đã duyệt | Outbox của owner và event/correlation identity | Phát đúng sự kiện đã commit | Bằng chứng broker delivery | Dịch vụ producer | Retry lỗi transport mà không tạo trạng thái nghiệp vụ |
-| CRS-SYS-02 | Xử lý notification event | Event/correlation identity và dữ liệu người nhận | Xử lý idempotent và thử gửi | Delivery record | Notification | Retry lỗi tạm thời; lỗi cuối quan sát được |
-| CRS-SYS-03 | Xử lý reporting event | Event/correlation identity và projection data | Xử lý idempotent, cập nhật read model | Reporting projection | Report | Retry/dead-letter mà không sửa hồ sơ nguồn |
+| Mã yêu cầu | Luồng và xử lý | Đầu vào | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
+|---|---|---|---|---|---|
+| CRS-SYS-01 | Phát đúng domain event đã được dịch vụ sở hữu duyệt và commit | Outbox của owner và event/correlation identity | Bằng chứng broker delivery | Dịch vụ producer | Retry lỗi transport mà không tạo trạng thái nghiệp vụ |
+| CRS-SYS-02 | Xử lý notification event theo idempotency và thử gửi | Event/correlation identity và dữ liệu người nhận | Delivery record | Notification | Retry lỗi tạm thời; lỗi cuối quan sát được |
+| CRS-SYS-03 | Xử lý reporting event theo idempotency và cập nhật read model | Event/correlation identity và projection data | Reporting projection | Report | Retry/dead-letter mà không sửa hồ sơ nguồn |
 
 ### B3. Chu trình xử lý dữ liệu theo vai trò
 
@@ -350,7 +350,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 ### B5. Luồng yêu cầu và trả kết quả Laboratory
 
-Luồng cuối cùng chuyển test request từ Clinical sang Laboratory với test code tường minh và order ID do producer tạo. Review 1 hiện dựa vào việc `ADMIN` hoặc `DOCTOR` tạo trực tiếp trong Laboratory; hoàn tất bàn giao tự động vẫn được ghi là giới hạn.
+Luồng cuối cùng chuyển test request từ Clinical sang Laboratory với test code tường minh và order ID do producer tạo. Laboratory kiểm tra yêu cầu, tạo và sở hữu vòng đời test, rồi công bố kết quả đã xác minh.
 
 | Bước | Thông tin đầu vào | Xử lý | Thông tin đầu ra | Kiểm soát |
 |---:|---|---|---|---|
