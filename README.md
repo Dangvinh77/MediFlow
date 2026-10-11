@@ -1,40 +1,60 @@
-# MediFlow — Hospital Microservices (Spring Boot Monorepo)
+# MediFlow: A Microservices-Based Distributed Hospital Management System
 
 <!-- commit-activity:start -->
 ## Commit activity
 
-Changelog updated through **2026-10-09 00:17:45 Asia/Saigon** · **659 unique commits**
+Changelog updated through **2026-10-11 17:46:22 Asia/Saigon** · **706 unique commits**
 
 | Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
 |---|---:|---:|---:|---|---|---|
-| Harori | 430 | 43 | 10.00 | 2026-09-27 (35) | 18:00 (51) | 2026-10-08 20:21:31 |
-| LQHuy0210 | 158 | 26 | 6.08 | 2026-09-13 (27) | 08:00 (25) | 2026-10-07 16:28:12 |
-| TranHoangAnh94 | 48 | 19 | 2.53 | 2026-09-18 (8) | 23:00 (10) | 2026-10-09 00:17:45 |
-| locgit-89 | 23 | 10 | 2.30 | 2026-09-08 (6) | 14:00 (4) | 2026-10-07 17:23:43 |
+| Harori | 460 | 45 | 10.22 | 2026-09-27 (35) | 18:00 (55) | 2026-10-11 17:46:22 |
+| LQHuy0210 | 164 | 28 | 5.86 | 2026-09-13 (27) | 08:00 (26) | 2026-10-09 09:56:29 |
+| TranHoangAnh94 | 52 | 20 | 2.60 | 2026-09-18 (8) | 23:00 (10) | 2026-10-10 20:45:38 |
+| locgit-89 | 30 | 11 | 2.73 | 2026-10-10 (7) | 15:00 (8) | 2026-10-10 17:18:15 |
 
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=2c6bea5505a2)
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=f3c3daa00058)
 
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=14941a69744c)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=a6c73df225e3)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
 
-**MediFlow** is a hospital/clinic management system built as **Spring Boot microservices** (Maven multi-module, monorepo). This repo ships with a **shared AI coding framework** so everyone — whether they use **Claude Code**, **Codex**, or **Cursor**, on **IntelliJ / VS Code / NetBeans** — produces code to the same standard after a `git pull`.
+## Project overview
+
+**MediFlow** is a distributed hospital management system built on a microservices architecture. It is designed to streamline hospital operations, coordinate healthcare workflows, and enable reliable communication across departments and services.
+
+The system covers the end-to-end care journey: patient registration, appointment scheduling, clinical consultation, laboratory testing, prescription management, billing, medication dispensing, notifications, and operational reporting. This combination of hospital management and healthcare workflow orchestration helps departments coordinate handoffs while keeping each bounded context independently maintainable.
+
+MediFlow uses domain-driven service decomposition, database-per-service ownership, centralized API gateway routing, service discovery, and event-driven communication to promote modularity, scalability, maintainability, and fault isolation.
+
+| | |
+|---|---|
+| **Official title** | Microservices-Based Distributed Hospital Management System |
+| **Extended description** | Distributed Hospital Management and Healthcare Workflow Orchestration System |
+| **Architecture** | Distributed systems, microservices, and event-driven architecture |
+| **Application domain** | Healthcare Information Systems (HIS) and Hospital Management Systems (HMS) |
+| **Technology stack** | Java, Spring Boot, Spring Cloud Gateway, Netflix Eureka, RabbitMQ, PostgreSQL, Next.js, and Flutter |
+
+The repository also includes a shared AI coding framework so contributors using Claude Code, Codex, Cursor, or other AGENTS.md-compatible tools follow the same engineering standards after a `git pull`.
 
 > Repo: `git@github.com:Dangvinh77/MediFlow.git`
 
-> ⚠️ **DEMO / WORK IN PROGRESS.** This is a demonstration skeleton for learning. The code
+> ⚠️ **DEMO / WORK IN PROGRESS.** This is an academic demonstration project. The code
 > (services, gateway stub auth, frontend, configs) is **subject to change** and is **not
-> production-ready** — auth is stubbed, secrets use dev defaults, and only some modules exist.
-> Expect breaking changes as the project evolves.
+> production-ready** — auth is stubbed, secrets use dev defaults, and some contexts are still
+> planned or incomplete. MediFlow belongs to the HIS/HMS domain, but it should not be treated as
+> a complete, compliant hospital information system for real-world deployment.
 >
-> ⚠️ **DEMO / ĐANG PHÁT TRIỂN.** Đây là bộ khung demo để học tập. Toàn bộ code (service, auth
+> ⚠️ **DEMO / ĐANG PHÁT TRIỂN.** Đây là đồ án demo phục vụ học tập. Toàn bộ code (service, auth
 > stub ở gateway, frontend, cấu hình) **có thể thay đổi** và **chưa dùng cho production** — auth
-> mới là bản giả lập, secret dùng giá trị mặc định dev, và mới có một số module. Code sẽ còn đổi.
+> mới là bản giả lập, secret dùng giá trị mặc định dev, và một số bounded context vẫn đang được
+> lên kế hoạch hoặc chưa hoàn thiện. MediFlow thuộc nhóm HIS/HMS nhưng chưa phải hệ thống thông tin
+> bệnh viện hoàn chỉnh, tuân thủ đầy đủ để triển khai thực tế.
 
 - **Design docs (authoritative):** [`docs/eproject_general_plan/`](docs/eproject_general_plan/) — one HTML per service.
 - **AI coding rules (single source of truth):** [`docs/ai/`](docs/ai/README.md).
-- **Services:** gateway, patient, appointment, medical-record, lab, pharmacy, billing, notification, report · **Infra:** Eureka + RabbitMQ.
+- **Business services:** organization, patient, clinical, lab, pharmacy, billing, notification, report; inpatient and surgery are approved planned contexts.
+- **Platform and infrastructure:** API gateway, Netflix Eureka, RabbitMQ, and PostgreSQL with database-per-service ownership.
 
 ---
 

@@ -1,9 +1,11 @@
 package com.mediflow.organization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,16 +31,20 @@ import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.StaffJpaRepository;
 import com.mediflow.organization.infrastructure.persistence.repository.RoomJpaRepository;
+import com.mediflow.organization.infrastructure.persistence.repository.AccountJpaRepository;
 import com.mediflow.organization.infrastructure.persistence.entity.RoomEntity;
+import com.mediflow.organization.infrastructure.persistence.entity.AccountEntity;
+import com.mediflow.organization.infrastructure.persistence.entity.DepartmentEntity;
+import com.mediflow.organization.web.handler.GlobalExceptionHandler;
 import java.time.Instant;
 
 /**
  * Verifies the real Flyway schema, JPA mappings, transaction boundary, and
- * RabbitMQ wiring together. The test is skipped automatically when Docker is
- * unavailable on a developer machine.
+ * RabbitMQ wiring together. Docker is required for this integration gate; a
+ * missing Docker runtime must fail the build instead of silently skipping it.
  */
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 class OrganizationServiceIntegrationTest {
 
     @Container
@@ -98,6 +104,12 @@ class OrganizationServiceIntegrationTest {
 
     @Autowired
     private RoomJpaRepository roomRepository;
+
+    @Autowired
+    private AccountJpaRepository accountRepository;
+
+    @Autowired
+    private GlobalExceptionHandler exceptionHandler;
 
     @Test
     void createsDepartmentAndStaffAgainstFlywaySchema() {
@@ -207,5 +219,44 @@ class OrganizationServiceIntegrationTest {
         assertThat(verified.role()).isEqualTo(Role.PATIENT);
         assertThat(verified.patientId()).isEqualTo(patientId);
         assertThat(verified.staffId()).isNull();
+    }
+
+    @Test
+    void postgresUniqueConstraints_areMappedToStableApiErrors() {
+        String abbreviation = "DUP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        departmentRepository.saveAndFlush(new DepartmentEntity(
+                UUID.randomUUID(), "Constraint Department A", abbreviation,
+                DepartmentType.ADMINISTRATIVE, null, "Building C", true,
+                Instant.now(), Instant.now()));
+
+        DataIntegrityViolationException departmentViolation = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> departmentRepository.saveAndFlush(new DepartmentEntity(
+                        UUID.randomUUID(), "Constraint Department B", abbreviation,
+                        DepartmentType.ADMINISTRATIVE, null, "Building D", true,
+                        Instant.now(), Instant.now())));
+
+        var departmentResponse = exceptionHandler.handleDataIntegrityViolation(departmentViolation);
+        assertThat(departmentResponse.getStatusCode().value()).isEqualTo(409);
+        assertThat(departmentResponse.getBody()).isNotNull();
+        assertThat(departmentResponse.getBody().error().code())
+                .isEqualTo("DEPARTMENT_ABBREVIATION_DUPLICATE");
+
+        String username = "constraint-" + UUID.randomUUID().toString().substring(0, 8);
+        accountRepository.saveAndFlush(new AccountEntity(
+                UUID.randomUUID(), username, "bcrypt-hash", null, null, Role.ADMIN, true,
+                null, Instant.now(), Instant.now()));
+
+        DataIntegrityViolationException accountViolation = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> accountRepository.saveAndFlush(new AccountEntity(
+                        UUID.randomUUID(), username, "bcrypt-hash", null, null, Role.ADMIN, true,
+                        null, Instant.now(), Instant.now())));
+
+        var accountResponse = exceptionHandler.handleDataIntegrityViolation(accountViolation);
+        assertThat(accountResponse.getStatusCode().value()).isEqualTo(409);
+        assertThat(accountResponse.getBody()).isNotNull();
+        assertThat(accountResponse.getBody().error().code())
+                .isEqualTo("ACCOUNT_USERNAME_DUPLICATE");
     }
 }

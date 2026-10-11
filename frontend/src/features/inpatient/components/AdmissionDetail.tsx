@@ -28,7 +28,7 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
   return <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 break-all font-mono text-sm">{value ?? "—"}</dd></div>;
 }
 
-export function AdmissionDetail({ admissionId }: { admissionId: string }) {
+export function AdmissionDetail({ admissionId, notice }: { admissionId: string; notice?: "created" }) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
@@ -64,6 +64,11 @@ export function AdmissionDetail({ admissionId }: { admissionId: string }) {
   const lifecycle = admissionStatusPresentation[admission.status];
   return (
     <section className="mt-6 space-y-6">
+      {notice === "created" ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          Đã tạo đợt nội trú.
+        </p>
+      ) : null}
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div><p className="text-sm text-muted-foreground">Mã đợt nội trú</p><p className="mt-1 break-all font-mono text-sm">{admission.maDotNoiTru}</p></div>
         <div className="flex flex-wrap gap-2"><StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge><StatusBadge tone={admission.capCuu ? "danger" : "neutral"}>{admissionPriorityLabel[admission.doUuTien]}</StatusBadge></div>

@@ -8,10 +8,6 @@ import java.util.UUID;
 /** Immutable producer bytes are stored by the outbox adapter, never rebuilt on replay. */
 public record LedgerIntegrationEvent(UUID eventId, String eventType, int version, Instant occurredAt,
                                      String correlationId, String producer, Object payload) {
-    /** Final discharge authority retains the existing V1 totals payload; no recognition delta inferred. */
-    public record SettlementCompletedPayload(UUID settlementId,UUID admissionId,UUID accountId,UUID patientId,
-            UUID departmentId,BigDecimal grossAmount,BigDecimal insuranceAmount,BigDecimal patientLiability,
-            BigDecimal completedPayments,BigDecimal completedRefunds,BigDecimal balance,String outcome,Instant completedAt) { }
     /** Initial final-only immutable earned operation, separate from non-final reconciliation namespace. */
     public record FinalSettlementRecognitionPayload(UUID recognitionOperationId,int recognitionRevision,UUID supersedesOperationId,
             UUID settlementId,int settlementVersion,UUID supersedesSettlementId,UUID accountId,UUID admissionId,
@@ -58,4 +54,8 @@ public record LedgerIntegrationEvent(UUID eventId, String eventType, int version
     public record PaymentRefundedPayload(UUID refundTransactionId, UUID originalTransactionId, UUID accountId,
             UUID patientId, UUID departmentId, String careEpisodeType, UUID careEpisodeId,
             BigDecimal amount, String currency, String reason, Instant completedAt) { }
+    public record SettlementCompletedPayload(UUID settlementId, UUID admissionId, UUID accountId,
+            UUID patientId, UUID departmentId, BigDecimal grossAmount, BigDecimal insuranceAmount,
+            BigDecimal patientLiability, BigDecimal completedPayments, BigDecimal completedRefunds,
+            BigDecimal balance, String outcome, Instant completedAt) { }
 }

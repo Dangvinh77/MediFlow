@@ -56,6 +56,9 @@ public class BillingEventConsumer {
     private final ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer;
     private final com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose;
     private final com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof;
+    private final LabTestChargeConsumer labTestChargeConsumer;
+    private final AdmissionDepositRequestConsumer admissionDepositRequestConsumer;
+    private final DischargeApprovalConsumer dischargeApprovalConsumer;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
@@ -72,7 +75,8 @@ public class BillingEventConsumer {
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
                                 @Nullable SurgeryChargeConsumer plannedRequestConsumer,
                                 @Nullable SurgeryCancellationConsumer cancellationConsumer) {
-        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer, cancellationConsumer, null);
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, null, null, null, null, null, null);
     }
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
@@ -81,7 +85,7 @@ public class BillingEventConsumer {
                                 @Nullable SurgeryCancellationConsumer cancellationConsumer,
                                 @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer) {
         this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper,
-                plannedRequestConsumer, cancellationConsumer, prescriptionChargeConsumer, null);
+                plannedRequestConsumer, cancellationConsumer, prescriptionChargeConsumer, null, null, null, null, null);
     }
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
@@ -91,7 +95,48 @@ public class BillingEventConsumer {
                                 @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
                                 @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose) {
         this(accrueFeeUseCase,sagaCompensationUseCase,surgeryChargeUseCase,objectMapper,plannedRequestConsumer,
-                cancellationConsumer,prescriptionChargeConsumer,admissionChargeClose,null);
+                cancellationConsumer,prescriptionChargeConsumer,admissionChargeClose,null,null,null,null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, prescriptionChargeConsumer, admissionChargeClose, surgeryCompletionProof, null, null, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, null, null, null, labTestChargeConsumer, null, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer,
+                                @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, null, null, null, labTestChargeConsumer, admissionDepositRequestConsumer, null);
+    }
+
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer,
+                                @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
+                                @Nullable DischargeApprovalConsumer dischargeApprovalConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, null, null, null, labTestChargeConsumer, admissionDepositRequestConsumer, dischargeApprovalConsumer);
     }
 
     @Autowired
@@ -101,7 +146,10 @@ public class BillingEventConsumer {
                                 @Nullable SurgeryCancellationConsumer cancellationConsumer,
                                 @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
                                 @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose,
-                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof) {
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer,
+                                @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
+                                @Nullable DischargeApprovalConsumer dischargeApprovalConsumer) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
@@ -111,6 +159,9 @@ public class BillingEventConsumer {
         this.prescriptionChargeConsumer = prescriptionChargeConsumer;
         this.admissionChargeClose = admissionChargeClose;
         this.surgeryCompletionProof = surgeryCompletionProof;
+        this.labTestChargeConsumer = labTestChargeConsumer;
+        this.admissionDepositRequestConsumer = admissionDepositRequestConsumer;
+        this.dischargeApprovalConsumer = dischargeApprovalConsumer;
     }
 
     @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
@@ -122,12 +173,6 @@ public class BillingEventConsumer {
         if (prescriptionChargeConsumer != null && routingKey != null && routingKey.startsWith("prescription.")
                 && prescriptionChargeConsumer.receiveIfVersioned(routingKey, body)) return;
         switch (routingKey) {
-            case "discharge.medically.approved" -> {
-                if (admissionChargeClose == null) {
-                    throw new IllegalStateException("Admission charge-close consumer is disabled");
-                }
-                admissionChargeClose.receive(routingKey, body);
-            }
             case RabbitConfig.RK_MEDICAL_RECORD_CREATED ->
                     accrueFeeUseCase.onMedicalRecordCreated(read(body, MedicalRecordCreatedEvent.class));
             case RabbitConfig.RK_LAB_RESULT_CREATED ->
@@ -157,6 +202,27 @@ public class BillingEventConsumer {
             case RabbitConfig.RK_SURGERY_CANCELLED -> {
                 if (cancellationConsumer != null) cancellationConsumer.receive(message);
                 else surgeryChargeUseCase.onSurgeryCancelled(read(body, SurgeryCancelledEvent.class));
+            }
+            case RabbitConfig.RK_LAB_REQUEST_CREATED -> {
+                // Bound only when LabTestChargeConfiguration's flags are both true; see RabbitConfig.
+                if (labTestChargeConsumer != null) labTestChargeConsumer.receive(message);
+                else throw new IllegalArgumentException(
+                        "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
+            }
+            case RabbitConfig.RK_ADMISSION_DEPOSIT_REQUESTED -> {
+                // Bound only when AdmissionDepositRequestConfiguration's flags are both true.
+                if (admissionDepositRequestConsumer != null) admissionDepositRequestConsumer.receive(message);
+                else throw new IllegalArgumentException(
+                        "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
+            }
+            case RabbitConfig.RK_DISCHARGE_MEDICALLY_APPROVED -> {
+                // Exactly one writer: the opt-in proof-retaining path also closes charges.
+                // Keep master's freeze-only path when the strict path is not configured;
+                // a strict failure must never fall back and lose its evidence requirements.
+                if (admissionChargeClose != null) admissionChargeClose.receive(routingKey, body);
+                else if (dischargeApprovalConsumer != null) dischargeApprovalConsumer.receive(message);
+                else throw new IllegalArgumentException(
+                        "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);
             }
             default -> throw new IllegalArgumentException(
                     "Routing key không được hỗ trợ trên " + RabbitConfig.QUEUE + ": " + routingKey);

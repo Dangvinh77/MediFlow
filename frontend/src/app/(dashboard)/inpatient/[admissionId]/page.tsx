@@ -6,10 +6,14 @@ import { isUuid } from "@/lib/validation";
 
 export const metadata: Metadata = { title: "Chi tiết nội trú | MediFlow" };
 
-interface AdmissionDetailPageProps { params: Promise<{ admissionId: string }> }
+interface AdmissionDetailPageProps {
+  params: Promise<{ admissionId: string }>;
+  searchParams: Promise<{ notice?: string }>;
+}
 
-export default async function AdmissionDetailPage({ params }: AdmissionDetailPageProps) {
+export default async function AdmissionDetailPage({ params, searchParams }: AdmissionDetailPageProps) {
   const { admissionId } = await params;
+  const { notice } = await searchParams;
   const id = admissionId.trim();
   return (
     <PageShell title="Chi tiết đợt nội trú" description="Thông tin nhập viện và các tham chiếu nghiệp vụ liên quan.">
@@ -20,7 +24,7 @@ export default async function AdmissionDetailPage({ params }: AdmissionDetailPag
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE", "CASHIER"]}>
-          <AdmissionDetail admissionId={id} />
+            <AdmissionDetail admissionId={id} notice={notice === "created" ? "created" : undefined} />
         </RoleGate>
       )}
     </PageShell>

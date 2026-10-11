@@ -1,5 +1,17 @@
 export type AdmissionPriority = "ROUTINE" | "URGENT" | "EMERGENCY";
 
+export interface CreateAdmissionRequest {
+  maYeuCauNoiTru: string;
+  maHoSoNguon: string;
+  maBenhNhan: string;
+  maKhoa: string;
+  nguoiYeuCau: string;
+  tomTatChanDoan: string;
+  doUuTien: AdmissionPriority;
+  capCuu: boolean;
+  thoiGianYeuCau: string;
+}
+
 export type AdmissionStatus =
   | "REQUESTED"
   | "AWAITING_BED"

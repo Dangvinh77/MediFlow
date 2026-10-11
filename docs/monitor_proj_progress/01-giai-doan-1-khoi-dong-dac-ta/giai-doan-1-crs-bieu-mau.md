@@ -1,287 +1,432 @@
-# GIAI ĐOẠN 1 - XÁC ĐỊNH VẤN ĐỀ, GIẢI PHÁP, CRS VÀ BỘ BIỂU MẪU
+# Customer Requirements Specification and Initial Business Forms
 
-**Dự án:** MediFlow - Hệ thống quản lý phân tán bệnh viện/phòng khám  
-**Phiên bản:** 0.9-draft  
-**Ngày tổng hợp:** 02/09/2026  
-**Phạm vi:** Khởi động và đặc tả yêu cầu  
-**Trạng thái:** Bản nháp phục vụ rà soát; chưa thay thế tài liệu đã được nhóm và giáo viên ký duyệt.
+## Document control
 
-## 1. Xác định vấn đề
+| Item | Value |
+|---|---|
+| System | MediFlow Hospital Management System |
+| Phase | Phase 1 — Project initiation and requirements specification |
+| Version | 2.0, source-aligned English edition |
+| Review date | 10 October 2026 |
+| Source baseline | Commit `3f10ea6` |
+| Status | Requirements baseline for stakeholder review |
 
-### 1.1 Bối cảnh
+## 1. Purpose
 
-Bệnh viện/phòng khám phải phối hợp liên tục giữa tiếp nhận, khám bệnh, xét nghiệm, dược, thu ngân, thông báo và quản lý. Khi thông tin nằm ở nhiều biểu mẫu hoặc hệ thống rời rạc, nhân viên phải nhập lại dữ liệu, khó biết trạng thái mới nhất của hồ sơ và khó truy trách nhiệm khi xảy ra sai lệch.
+This document establishes the Phase 1 customer requirements baseline for MediFlow. It defines the business problem, project scope, stakeholders, roles, functional requirements, initial forms, integration rules, non-functional expectations, and acceptance criteria.
 
-MediFlow được đề xuất để quản lý chuỗi nghiệp vụ này trên một nền tảng thống nhất về trải nghiệm, nhưng phân tách rõ trách nhiệm và dữ liệu của từng miền nghiệp vụ theo kiến trúc microservices.
+The document reflects the current repository. It does not replace the canonical architecture and coding rules used by the implementation team, and it does not invent customer policies that are absent from source.
 
-### 1.2 Các vấn đề cần giải quyết
+## 2. Business problem
 
-| Mã | Vấn đề hiện tại | Ảnh hưởng | Nhu cầu cần đáp ứng |
-|---|---|---|---|
-| PRO-01 | Thông tin bệnh nhân có thể bị nhập trùng hoặc thiếu nhất quán | Sai nhận diện, mất thời gian đối chiếu | Một hồ sơ bệnh nhân thống nhất, có ràng buộc dữ liệu và lịch sử cập nhật |
-| PRO-02 | Lịch hẹn, tiếp nhận và trạng thái khám không được theo dõi xuyên suốt | Chậm phục vụ, khó điều phối bác sĩ/phòng khám | Quản lý lịch hẹn và trạng thái theo quy trình rõ ràng |
-| PRO-03 | Hồ sơ khám, chẩn đoán, xét nghiệm và đơn thuốc tách rời | Bác sĩ thiếu thông tin khi ra quyết định | Liên kết nghiệp vụ bằng định danh và sự kiện, không truy cập chéo database |
-| PRO-04 | Kết quả xét nghiệm được chuyển thủ công hoặc thông báo chậm | Chậm chẩn đoán và điều trị | Theo dõi yêu cầu, kết quả và thông báo trạng thái tự động |
-| PRO-05 | Tồn kho thuốc và cấp phát có nguy cơ sai lệch hoặc xuất trùng | Thiếu thuốc, âm kho, thất thoát | Khóa tồn kho khi xuất, chống xử lý trùng và cảnh báo tồn thấp |
-| PRO-06 | Thu phí, thanh toán và cấp thuốc là quy trình nhiều bước | Có thể đã thu tiền nhưng chưa cấp thuốc hoặc ngược lại | Saga thanh toán-cấp thuốc, có trạng thái và bù trừ khi thất bại |
-| PRO-07 | Thông báo cho bệnh nhân phụ thuộc thao tác thủ công | Bỏ lỡ lịch hẹn, kết quả hoặc trạng thái thanh toán | Thông báo chủ động và thông báo phát sinh từ event |
-| PRO-08 | Báo cáo quản trị được tổng hợp thủ công | Số liệu chậm, khó kiểm tra nguồn gốc | Read model báo cáo theo sự kiện, truy vết được dữ liệu nguồn |
-| PRO-09 | Quyền truy cập chưa tách rõ theo vai trò và phạm vi dữ liệu | Rò rỉ dữ liệu y tế hoặc thao tác vượt quyền | JWT, RBAC, ownership check và audit trail |
-| PRO-10 | Hệ thống phân tán có thể lỗi từng phần, gửi event trùng hoặc mất liên kết truy vết | Lỗi dây chuyền và dữ liệu không nhất quán | Timeout, circuit breaker, idempotency, DLQ và correlation ID |
+Hospitals coordinate patient identity, appointments, clinical care, laboratory work, medication, charges, payments, admission, surgery, notifications, and management reporting across multiple departments. When those workflows rely on disconnected tools or manual handoffs, the hospital faces several recurring problems:
 
-### 1.3 Đối tượng liên quan
+- staff enter the same information repeatedly and can create inconsistent records;
+- clinicians lack a clear, current view of orders, results, prescriptions, and care status;
+- financial clearance can be delayed or applied to the wrong operational step;
+- pharmacy, laboratory, inpatient, and surgery teams receive incomplete or late instructions;
+- managers cannot reliably trace operational events into consolidated reports;
+- patients receive inconsistent status information;
+- authorization and audit evidence are difficult to enforce uniformly.
 
-- Ban quản trị hệ thống và quản lý bệnh viện/phòng khám.
-- Bác sĩ, điều dưỡng, kỹ thuật viên xét nghiệm và dược sĩ.
-- Thu ngân và bộ phận tài chính.
-- Bệnh nhân sử dụng Web/Mobile để xem thông tin được cấp quyền.
-- Nhân sự vận hành, hỗ trợ kỹ thuật, kiểm thử và kiểm toán.
+MediFlow addresses these problems by assigning clear ownership to ten business contexts, exposing one secured API entry point, and coordinating cross-context work through current REST decisions and reliable integration events.
 
-### 1.4 Phạm vi giải quyết trong phiên bản đầu
+## 3. Project goals
 
-- Quản lý tổ chức, khoa/phòng, nhân viên và tài khoản.
-- Quản lý bệnh nhân, lịch hẹn, hồ sơ bệnh án và chẩn đoán.
-- Quản lý yêu cầu/kết quả xét nghiệm.
-- Quản lý danh mục thuốc, tồn kho, đơn thuốc và cấp phát.
-- Quản lý hóa đơn, thanh toán và quy trình bù trừ.
-- Gửi thông báo và lập báo cáo quản trị.
-- Web Next.js và Mobile Flutter chỉ truy cập hệ thống thông qua API Gateway.
+MediFlow shall:
 
-Các tích hợp thanh toán thật, bảo hiểm/y tế quốc gia, PACS/DICOM, thiết bị xét nghiệm và triển khai đa vùng chưa thuộc phạm vi đã chốt của phiên bản đầu.
+1. provide one coherent workflow from patient registration through care, payment, admission, surgery, discharge, notification, and reporting;
+2. preserve one accountable owner for each category of hospital data;
+3. enforce role and context authorization at every backend endpoint;
+4. prevent cross-service database coupling;
+5. make completed business facts available to affected departments through reliable events;
+6. make duplicates, retries, and partial failures safe and observable;
+7. support browser, mobile, and authorized API clients through the gateway;
+8. provide traceable records suitable for operational review and later audit requirements.
 
-## 2. Giải pháp đề xuất
+## 4. Scope
 
-### 2.1 Mục tiêu giải pháp
+### 4.1 Included scope
 
-- Số hóa chuỗi nghiệp vụ từ tiếp nhận đến hoàn tất thanh toán/cấp thuốc.
-- Cung cấp dữ liệu đúng vai trò, đúng phạm vi và có thể truy vết.
-- Tách các miền nghiệp vụ để phát triển, kiểm thử và mở rộng độc lập.
-- Hạn chế lỗi dây chuyền khi một dịch vụ tạm thời không khả dụng.
-- Đồng nhất hợp đồng API, event, phản hồi lỗi và trải nghiệm Web/Mobile.
+| Context | Phase 1 capability boundary |
+|---|---|
+| Organization | Users, staff, departments, specialties, rooms, schedules, roles, and organizational authority. |
+| Patient | Patient profile, contacts, insurance, appointments, and patient-facing access. |
+| Clinical | Encounters, medical records, diagnoses, vital signs, prescriptions, and clinical work queues. |
+| Lab | Test catalog, orders, work queues, result entry and publication, and billing triggers. |
+| Pharmacy | Medicine catalog, stock, prescription validation, dispensing, and inventory effects. |
+| Billing | Invoices, charge items, payments, deposits, receipts, refunds, and financial clearance. |
+| Notification | Event-driven messages and delivery status. |
+| Report | Operational and management projections derived from service facts. |
+| Inpatient | Admission requests, room or bed coordination, deposits, stays, and discharge workflow. |
+| Surgery | Requests, readiness, financial clearance, scheduling, execution, and outcomes. |
 
-### 2.2 Kiến trúc đề xuất
+### 4.2 Technical scope
 
-![Kiến trúc tổng quan MediFlow](assets/kien-truc-tong-quan-mediflow.svg)
+- Next.js web client.
+- Flutter mobile client.
+- API gateway and Eureka service discovery.
+- Ten Spring Boot business services.
+- One PostgreSQL database per business service.
+- RabbitMQ integration events.
+- JWT-based authentication context and role-based endpoint authorization.
+- Health, logging, correlation, retry, dead-letter, and automated-test controls.
 
-*Hình 1. Kiến trúc tổng quan: client chỉ đi qua API Gateway; tám business service sở hữu dữ liệu riêng và trao đổi integration event qua RabbitMQ.*
+### 4.3 Out of scope for this baseline
 
-![Luồng REST, Event và Saga](assets/luong-rest-event-va-saga.svg)
+- selection or contracting of external insurance, payment, laboratory, pharmacy, or identity vendors;
+- medical-device integration;
+- production infrastructure sizing and final hosting topology;
+- migration rules for an unidentified legacy hospital system;
+- final legal retention periods and clinical governance policies;
+- changes to generated Word or PDF submissions.
 
-*Hình 2. Quy tắc lựa chọn REST/Event, xử lý lỗi phân tán và saga thanh toán-cấp thuốc.*
+## 5. Stakeholders and users
 
-Quy ước trên sơ đồ:
+| Stakeholder | Interest in the system |
+|---|---|
+| Hospital leadership | Operational visibility, risk control, capacity, financial status, and service quality. |
+| Hospital administrators | Identity, roles, organization structure, rooms, schedules, and configuration. |
+| Doctors | Clinical decisions, diagnoses, orders, prescriptions, admissions, and surgery workflows. |
+| Nurses | Care coordination, vital signs, queues, inpatient operations, and patient status. |
+| Laboratory technicians | Laboratory work queues, specimen or execution status, and result publication. |
+| Pharmacists | Prescription authorization, medication stock, dispensing, and replenishment. |
+| Cashiers | Invoice collection, deposits, receipts, refunds, and financial status. |
+| Managers | Reports and operational oversight within authorized scope. |
+| Patients | Their own profile, appointments, permitted records, notifications, and payment information. |
+| System processes | Trusted service-to-service actions that are not performed by a human account. |
 
-- Mũi tên xanh liền biểu diễn request/response REST hoặc luồng xử lý cần phản hồi tức thời.
-- Mũi tên tím nét đứt biểu diễn integration event bất đồng bộ.
-- Mũi tên xanh lá biểu diễn nhánh saga thành công; mũi tên đỏ nét đứt biểu diễn nhánh lỗi/bù trừ.
-- Khối bo góc là ứng dụng/dịch vụ; hình trụ là database; thanh tím là event backbone.
+## 6. Role model
 
-#### Bản dùng khi chèn vào Microsoft Word
+The application role set is defined by source and must not be expanded by a client application.
 
-| Hình | SVG vector tương thích Word | PNG dự phòng 2× |
+| Role | Primary responsibilities | Key restrictions |
 |---|---|---|
-| Kiến trúc tổng quan | [Word-safe SVG](assets/kien-truc-tong-quan-mediflow-word-safe.svg) | [PNG 3200 × 2080](assets/kien-truc-tong-quan-mediflow-word-safe.png) |
-| REST, Event và Saga | [Word-safe SVG](assets/luong-rest-event-va-saga-word-safe.svg) | [PNG 3200 × 2100](assets/luong-rest-event-va-saga-word-safe.png) |
+| `ADMIN` | Manage users, roles, departments, specialties, rooms, schedules, and authorized configuration. | Administrative access does not automatically grant clinical authority for medical decisions. |
+| `DOCTOR` | Conduct encounters, record diagnoses, create orders and prescriptions, and initiate authorized admission or surgery work. | May act only within authenticated and authorized context. |
+| `NURSE` | Record nursing observations, vital signs, and support clinical and inpatient workflows. | Cannot assume doctor, cashier, pharmacist, or lab authority. |
+| `PHARMACIST` | Maintain medication operations, validate dispensable prescriptions, and record dispensing. | Cannot dispense without valid authority and required financial clearance. |
+| `CASHIER` | Collect payments and deposits, issue receipts, and process authorized refunds. | Cannot change clinical facts or independently create clinical orders. |
+| `LAB_TECH` | Process laboratory work and enter or publish authorized results. | Cannot create unrelated diagnoses, prescriptions, or financial decisions. |
+| `MANAGER` | View authorized operational and management reports. | Reporting access does not grant mutation privileges in source services. |
+| `PATIENT` | View and manage permitted self-service information and workflows. | Access is limited to the authenticated patient's own authorized data. |
+| `SYSTEM` | Perform trusted internal processing such as event-driven projections and coordination. | Not an interactive human role; use is limited to approved service workflows. |
 
-Nên chèn bằng **Insert → Pictures → This Device**. Bản Word-safe dùng màu đặc, thuộc tính màu/nét được nội tuyến và không dùng gradient, bóng đổ hoặc opacity. Nếu phiên bản Word vẫn hiển thị SVG khác màu, dùng PNG 2× để giữ hình thức chính xác.
+## 7. System architecture
 
-- Gateway là điểm vào duy nhất, chịu trách nhiệm xác thực ban đầu, routing và kiểm soát lưu lượng.
-- Eureka hỗ trợ service discovery cho giao tiếp nội bộ.
-- Mỗi service sở hữu database riêng; cấm join hoặc khóa ngoại xuyên service.
-- REST dùng khi cần phản hồi tức thời để hoàn thành request; phải có timeout và circuit breaker.
-- Event dùng để thông báo thay đổi trạng thái; consumer phải idempotent theo `eventId`.
-- Billing điều phối saga thanh toán-cấp thuốc; thất bại phải có bù trừ thay vì transaction phân tán.
+![MediFlow system architecture](assets/mediflow-system-architecture.svg)
 
-### 2.3 Các thành phần nghiệp vụ
+Architecture rules derived from the implementation:
 
-| Thành phần | Trách nhiệm chính | Dữ liệu sở hữu |
+- all client traffic enters through the API gateway;
+- business URLs are versioned under the gateway API surface;
+- each service owns its database and exposes contracts rather than tables;
+- a cross-service identifier is a value, not a database relationship;
+- synchronous REST obtains a current decision needed to complete a request;
+- asynchronous events communicate completed facts;
+- backend authorization is authoritative even when the client hides unavailable actions.
+
+## 8. Functional requirements
+
+### 8.1 Organization
+
+| ID | Requirement | Acceptance outcome |
 |---|---|---|
-| Organization Service | Khoa/phòng, nhân viên, tài khoản và vai trò | Department, staff, account |
-| Patient Service | Hồ sơ hành chính bệnh nhân | Patient |
-| Clinical Service | Lịch hẹn, hồ sơ bệnh án và chẩn đoán | Appointment, medical record, diagnosis |
-| Lab Service | Yêu cầu và kết quả xét nghiệm | Lab request, lab result |
-| Pharmacy Service | Thuốc, tồn kho, đơn thuốc và cấp phát | Medicine, inventory, prescription, dispense slip |
-| Billing Service | Khoản phí, hóa đơn, thanh toán và trạng thái saga | Charge, invoice/payment |
-| Notification Service | Nội dung, kênh và lịch sử gửi thông báo | Notification |
-| Report Service | Read model và số liệu tổng hợp | Daily visit, revenue, medicine statistics |
+| ORG-01 | Authorized administrators shall create, update, activate, and deactivate user and staff records. | Changes are validated, persisted by Organization, and visible only to authorized callers. |
+| ORG-02 | The system shall manage departments, specialties, rooms, and schedules as organizational authority data. | Other services use identifiers or approved contracts and never read Organization tables. |
+| ORG-03 | The system shall assign only source-defined roles to authenticated identities. | Invalid role values are rejected and endpoint rules use the authoritative role set. |
+| ORG-04 | Schedule changes shall preserve valid time ranges and ownership. | Overlapping or invalid schedules receive a controlled validation response. |
+| ORG-05 | Relevant organization changes shall publish versioned facts for dependent projections. | Consumers can process the fact without accessing Organization storage. |
 
-### 2.4 Nguyên tắc thiết kế
+### 8.2 Patient
 
-- Bảo mật mặc định từ chối: endpoint chỉ mở khi có quyền được khai báo rõ.
-- Không trả entity database qua API; dùng DTO và response envelope thống nhất.
-- Thay đổi trạng thái nghiệp vụ phải tạo sự kiện phù hợp sau khi transaction cục bộ commit.
-- Mọi request/event phải có correlation ID để truy vết xuyên dịch vụ.
-- Dữ liệu tiền tệ dùng số thập phân chính xác; định danh dùng UUID; thời gian event dùng UTC.
-- Mọi quy tắc nghiệp vụ và failure path phải có tiêu chí chấp nhận và test tương ứng.
-
-## 3. Đặc tả yêu cầu người dùng (CRS)
-
-### 3.1 Nhóm người dùng và nhu cầu
-
-| Nhóm người dùng cấp cao | Vai trò hệ thống | Nhu cầu chính |
+| ID | Requirement | Acceptance outcome |
 |---|---|---|
-| Quản trị | `ADMIN`, `MANAGER` | Quản lý tổ chức, tài khoản, theo dõi vận hành và xem báo cáo |
-| Nhân sự chuyên môn | `DOCTOR`, `NURSE`, `LAB_TECH`, `PHARMACIST`, `CASHIER` | Thực hiện nghiệp vụ đúng chuyên môn và chỉ truy cập dữ liệu cần thiết |
-| Khách hàng/người bệnh | `PATIENT` | Xem thông tin cá nhân, lịch hẹn, thông báo và kết quả được phép công bố |
-| Hệ thống | `SYSTEM` | Xác thực nội bộ, xử lý event, tác vụ tự động và bù trừ |
+| PAT-01 | Authorized staff shall register a patient with identity, demographic, contact, and optional insurance information. | A unique patient identifier is returned and required fields are validated. |
+| PAT-02 | Authorized users shall search and view patients within their permitted scope. | Results exclude data the caller is not authorized to see. |
+| PAT-03 | Patients shall access only their own self-service information unless another explicit policy applies. | A patient cannot retrieve another patient's protected record by changing an identifier. |
+| PAT-04 | Authorized users shall create, reschedule, and cancel appointments according to current availability and status rules. | Invalid transitions and scheduling conflicts return controlled errors. |
+| PAT-05 | Patient and appointment changes shall publish the facts required by downstream workflows. | Consumers receive versioned events without shared database access. |
 
-> Ba actor tổng quát trong kế hoạch ban đầu (`Administrator`, `Customer`, `Staff/Expert`) được giữ làm nhóm trình bày. Chín vai trò ở trên là danh mục RBAC chi tiết dùng trong đặc tả và triển khai.
+### 8.3 Clinical
 
-### 3.2 Yêu cầu theo từng lớp người dùng
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| CLI-01 | Authorized clinical staff shall open and progress an encounter for an identified patient. | The encounter follows valid status transitions and retains its patient identifier. |
+| CLI-02 | Doctors shall record diagnoses and clinical notes in the medical record. | Records are timestamped, attributable, and protected by clinical authorization. |
+| CLI-03 | Nurses or authorized clinicians shall record vital signs with valid units and observation times. | Invalid values or incomplete observations are rejected. |
+| CLI-04 | Doctors shall create prescriptions containing medication instructions and clinical authority. | A prescription exposes the information required for Pharmacy validation without sharing Clinical tables. |
+| CLI-05 | Authorized clinicians shall create laboratory orders linked to the relevant patient and encounter. | Lab receives a stable, versioned instruction through the approved contract. |
+| CLI-06 | Clinical queues shall reflect relevant appointment, laboratory, prescription, admission, and surgery facts. | Duplicate events do not create duplicate queue mutations. |
 
-Các yêu cầu được nhóm theo bốn lớp người dùng để thể hiện rõ trách nhiệm, phạm vi dữ liệu và kết quả mà từng lớp mong đợi. Trong các bảng dưới đây, **Bắt buộc** là yêu cầu cần có để quy trình nghiệp vụ hoạt động; **Nên có** là yêu cầu nâng cao trải nghiệm hoặc năng lực quản trị.
+### 8.4 Laboratory
 
-#### Lớp 1 - Quản trị và quản lý
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| LAB-01 | Authorized staff shall maintain the laboratory test catalog and active availability. | Orders can reference only valid catalog items. |
+| LAB-02 | Laboratory orders shall enter an authorized work queue with patient, encounter, requester, and requested-test references. | The queue rejects invalid or duplicate instructions safely. |
+| LAB-03 | Lab technicians shall progress work through valid statuses and enter results. | Invalid transitions and unauthorized updates are rejected. |
+| LAB-04 | Publishing a final result shall create a versioned laboratory fact. | Clinical views, billing, notifications, and reports can react through contracts. |
+| LAB-05 | A billable published result shall trigger the appropriate charge exactly once. | Duplicate delivery does not create a second charge. |
 
-Lớp này chịu trách nhiệm thiết lập hệ thống, quản lý nguồn lực và theo dõi hoạt động toàn viện hoặc trong phạm vi khoa được giao.
+### 8.5 Pharmacy
 
-| Vai trò | Nhu cầu và chức năng | Kết quả mong đợi | Ưu tiên |
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| PHA-01 | Authorized pharmacy staff shall maintain medicine and stock information. | Stock quantities and medicine status remain consistent with local rules. |
+| PHA-02 | Pharmacy shall accept only prescriptions with valid current clinical authority. | Cancelled, expired, or otherwise invalid authority prevents dispensing. |
+| PHA-03 | Dispensing shall require the configured financial-clearance decision where applicable. | A non-cleared prescription remains pending or is rejected with a controlled response. |
+| PHA-04 | A successful dispense operation shall update local stock atomically. | Stock is not decremented twice for the same authorized operation. |
+| PHA-05 | Dispense and inventory facts shall be published for notification and reporting consumers. | Consumers can project outcomes without reading Pharmacy tables. |
+
+### 8.6 Billing
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| BIL-01 | Billing shall create and maintain invoices and charge items from authorized requests or source events. | Each business charge is attributable and duplicate inputs do not create duplicate items. |
+| BIL-02 | Cashiers shall record payments and deposits with amount, method, reference, and payer context. | Money uses exact decimal arithmetic and invalid amounts are rejected. |
+| BIL-03 | The system shall issue a receipt for a successful financial transaction. | The receipt is linked to the transaction and can be retrieved by an authorized caller. |
+| BIL-04 | Refunds shall require an authorized request and shall not exceed the refundable amount. | Successful refunds update local financial state and publish a refund fact. |
+| BIL-05 | Billing shall expose current clearance decisions required by Pharmacy, Inpatient, and Surgery. | The requesting service receives a current decision or a controlled failure, never direct table access. |
+| BIL-06 | Payment, deposit, refund, and clearance changes shall publish versioned events. | Operational services, notifications, and reports process each fact idempotently. |
+
+### 8.7 Notification
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| NOT-01 | Notification shall consume approved operational events and create the corresponding delivery work. | Duplicate events do not create duplicate business notifications. |
+| NOT-02 | A notification shall record recipient, channel, template or content reference, status, and timestamps. | Delivery history is traceable within authorized scope. |
+| NOT-03 | Delivery failures shall follow a bounded retry policy and preserve failure evidence. | Exhausted work is visible through controlled failure or dead-letter handling. |
+| NOT-04 | Notification shall not become the authority for clinical, patient, or financial facts. | Messages reflect source events and do not overwrite the owning service. |
+
+### 8.8 Reporting
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| REP-01 | Report shall build operational projections from approved service events. | Projections do not query another service's database. |
+| REP-02 | Managers shall filter reports by authorized dimensions such as period, department, status, or service category. | Results respect caller scope and use consistent time boundaries. |
+| REP-03 | Duplicate or replayed events shall not double-count report facts. | Receipt or projection keys make processing idempotent. |
+| REP-04 | Reports shall expose the timestamp or period represented by the data. | Users can distinguish a current projection from an earlier reporting period. |
+
+### 8.9 Inpatient
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| INP-01 | Authorized clinicians shall submit an admission request for a patient with the required care context. | The request has a stable identifier and follows valid states. |
+| INP-02 | Inpatient shall coordinate room or bed allocation using current organizational authority. | Invalid or unavailable allocation is rejected without reading Organization tables. |
+| INP-03 | Admission shall require the configured deposit or financial clearance. | An uncleared request cannot become an active admission. |
+| INP-04 | Authorized staff shall manage the inpatient stay and discharge workflow. | Status transitions are attributable and invalid transitions are rejected. |
+| INP-05 | Admission and discharge facts shall update affected clinical, notification, billing, and reporting workflows. | Consumers process each event at most once in business effect. |
+
+### 8.10 Surgery
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| SUR-01 | Authorized clinicians shall create a surgery request with patient, clinical reason, procedure context, and responsible parties. | Required information is validated and the request receives a stable identifier. |
+| SUR-02 | Surgery shall maintain clinical-readiness and financial-clearance state from authoritative contracts. | Scheduling cannot proceed when mandatory clearance is absent. |
+| SUR-03 | Authorized staff shall schedule an eligible surgery against valid organizational resources and time. | Conflicts or invalid resources are rejected with a controlled response. |
+| SUR-04 | Authorized surgical staff shall record execution status and outcome. | Outcome changes are attributable and follow valid transitions. |
+| SUR-05 | Readiness, schedule, cancellation, completion, and outcome facts shall notify affected contexts. | Notifications, billing, clinical views, and reports update without shared database access. |
+
+### 8.11 Security and integration
+
+| ID | Requirement | Acceptance outcome |
+|---|---|---|
+| SEC-01 | Every business endpoint shall declare an authorization policy. | An endpoint without an allowed identity or role is denied by default. |
+| SEC-02 | The backend shall enforce role and ownership or context restrictions. | Client-side visibility cannot grant access to a forbidden backend operation. |
+| SEC-03 | Protected data shall not be returned in error details or logs. | Errors use controlled messages and correlation identifiers. |
+| INT-01 | A service shall never read or write another service's database. | Integration occurs through REST or versioned events only. |
+| INT-02 | Aggregate state and its outgoing event shall be committed reliably for critical event paths. | The outbox can dispatch an event after the local transaction commits. |
+| INT-03 | Event consumers shall be idempotent. | An exact duplicate is acknowledged without a second business mutation. |
+| INT-04 | Event processing shall use bounded retry and dead-letter handling. | Transient failures retry; exhausted or invalid messages are retained for controlled investigation. |
+| INT-05 | Requests and events shall carry traceable identifiers. | Operators can correlate an API request with downstream processing. |
+
+## 9. Core use-case catalog
+
+| Use case | Primary actor | Supporting contexts | Successful result |
 |---|---|---|---|
-| `ADMIN` | Đăng nhập; quản lý khoa/phòng; tạo, cập nhật và chuyển khoa nhân viên | Cơ cấu tổ chức và thông tin nhân sự được lưu chính xác, có thể tìm kiếm và truy vết thay đổi | Bắt buộc |
-| `ADMIN` | Tạo tài khoản, gán vai trò, kích hoạt hoặc vô hiệu tài khoản | Chỉ tài khoản hợp lệ và đang hoạt động mới đăng nhập; người dùng không thể thao tác vượt quyền | Bắt buộc |
-| `ADMIN` | Tra cứu và giám sát các nghiệp vụ bệnh nhân, khám, xét nghiệm, dược và viện phí theo quyền quản trị | Có thể hỗ trợ xử lý sự cố mà không làm mất lịch sử hoặc phá vỡ quy trình nghiệp vụ | Bắt buộc |
-| `MANAGER` | Tra cứu cơ cấu khoa/phòng, nhân viên và hoạt động của đơn vị phụ trách | Dữ liệu hiển thị đúng phạm vi quản lý, có lọc và phân trang | Bắt buộc |
-| `ADMIN`, `MANAGER` | Xem báo cáo lượt khám, doanh thu và sử dụng thuốc theo thời gian/khoa | Báo cáo phản ánh dữ liệu đã tổng hợp và truy vết được về nguồn | Nên có |
+| Register patient | Administrator or authorized staff | Patient | A validated patient profile is created. |
+| Book appointment | Patient or authorized staff | Patient, Organization | A valid appointment is reserved. |
+| Start encounter | Doctor or nurse | Clinical, Patient | An authorized clinical encounter becomes active. |
+| Record diagnosis | Doctor | Clinical | The medical record receives an attributable diagnosis. |
+| Submit lab order | Doctor | Clinical, Lab | Lab receives an authorized work item. |
+| Publish lab result | Lab technician | Lab, Clinical, Billing, Notification, Report | A final result is available and downstream facts are emitted. |
+| Issue prescription | Doctor | Clinical, Pharmacy | Pharmacy receives valid prescription authority. |
+| Dispense medicine | Pharmacist | Pharmacy, Billing, Clinical | Medication is dispensed and stock changes once. |
+| Collect payment | Cashier | Billing | Payment and receipt are recorded and clearance is published. |
+| Process refund | Cashier or authorized financial user | Billing, Notification, Report | A valid refundable amount is returned and published. |
+| Admit patient | Doctor, nurse, or authorized inpatient staff | Inpatient, Organization, Billing | An eligible patient begins an inpatient stay. |
+| Discharge patient | Authorized inpatient staff | Inpatient, Clinical, Billing, Notification, Report | The stay closes and affected contexts receive the fact. |
+| Request surgery | Doctor | Surgery, Clinical | A surgery case is created for readiness review. |
+| Schedule surgery | Authorized surgical staff | Surgery, Organization, Billing | An eligible case is assigned valid time and resources. |
+| Record surgery outcome | Authorized surgical staff | Surgery, Clinical, Notification, Report | The outcome is stored and published. |
+| View operational report | Manager | Report | An authorized filtered projection is returned. |
+| Receive status notification | Patient or staff recipient | Notification | A traceable message is delivered or a controlled failure is recorded. |
 
-#### Lớp 2 - Nhân viên nghiệp vụ và chuyên môn
+## 10. Initial business forms
 
-Đây là lớp trực tiếp thực hiện quy trình khám chữa bệnh. Mỗi vai trò chỉ được thao tác trên phần nghiệp vụ cần thiết cho công việc của mình.
+These forms define the minimum Phase 1 information model for user interfaces. Exact wire names and validation remain aligned with each service's DTO contracts.
 
-| Vai trò | Nhu cầu và chức năng | Kết quả mong đợi | Ưu tiên |
-|---|---|---|---|
-| `NURSE` | Tìm kiếm bệnh nhân; tiếp nhận hồ sơ mới; cập nhật thông tin hành chính theo quyền | Không tạo trùng định danh; dữ liệu bắt buộc được kiểm tra trước khi lưu | Bắt buộc |
-| `NURSE` | Tạo lịch hẹn, theo dõi trạng thái tiếp nhận và hỗ trợ điều phối bệnh nhân | Lịch được gắn đúng bệnh nhân, khoa, bác sĩ và thời gian; chỉ chuyển qua trạng thái hợp lệ | Bắt buộc |
-| `DOCTOR` | Tra cứu bệnh nhân, lịch hẹn và lịch sử bệnh án phục vụ khám | Bác sĩ xem được dữ liệu cần thiết nhưng không tự ý sửa hồ sơ hành chính của bệnh nhân | Bắt buộc |
-| `DOCTOR` | Lập hồ sơ bệnh án, ghi chẩn đoán, chỉ định xét nghiệm và kê đơn | Mỗi dữ liệu chuyên môn được liên kết đúng bệnh nhân, bác sĩ, khoa và lần khám | Bắt buộc |
-| `LAB_TECH` | Tiếp nhận chỉ định, cập nhật trạng thái và nhập kết quả xét nghiệm | Kết quả hợp lệ được lưu, công bố đúng quy trình và gửi tới các bên cần nhận | Bắt buộc |
-| `PHARMACIST` | Tra cứu danh mục thuốc, quản lý tồn kho và tiếp nhận đơn đã đủ điều kiện cấp phát | Tồn kho phản ánh đúng số lượng khả dụng; có cảnh báo khi tồn thấp | Bắt buộc |
-| `PHARMACIST` | Khóa tồn và cấp phát thuốc sau khi nhận xác nhận thanh toán | Không âm kho, không xuất trùng; thất bại được trả về để hệ thống thực hiện bù trừ | Bắt buộc |
-| `CASHIER` | Tạo hóa đơn từ các khoản phí chưa thanh toán và tra cứu hóa đơn bệnh nhân | Tổng tiền chính xác, không đưa một khoản phí vào nhiều hóa đơn | Bắt buộc |
-| `CASHIER` | Ghi nhận thanh toán và theo dõi trạng thái hoàn tất hoặc hoàn tiền | Thanh toán thành công được công bố; lỗi cấp phát dẫn đến trạng thái bù trừ rõ ràng | Bắt buộc |
+### 10.1 Patient registration form
 
-#### Lớp 3 - Bệnh nhân
+| Field group | Minimum fields | Validation intent |
+|---|---|---|
+| Identity | Full name, date of birth, sex or gender value used by the service, identity reference where applicable | Required identity fields; valid date; no future birth date. |
+| Contact | Phone, email, address, emergency contact | Format validation; optional fields remain explicit. |
+| Insurance | Provider, member or policy reference, validity period | Valid period and authorized disclosure. |
+| Consent and metadata | Consent indicators where configured, registering staff context | Caller attribution and timestamp. |
 
-Lớp bệnh nhân sử dụng Web hoặc Mobile để theo dõi thông tin cá nhân và nhận thông báo. Mọi dữ liệu phải được giới hạn theo quyền sở hữu.
+### 10.2 Appointment form
 
-| Vai trò | Nhu cầu và chức năng | Kết quả mong đợi | Ưu tiên |
-|---|---|---|---|
-| `PATIENT` | Đăng nhập và sử dụng Web/Mobile thông qua API Gateway | Phiên đăng nhập hợp lệ; client không gọi trực tiếp các service nội bộ | Bắt buộc |
-| `PATIENT` | Xem thông tin cá nhân, lịch hẹn và trạng thái được phép công bố | Chỉ xem được dữ liệu thuộc hồ sơ của chính mình | Bắt buộc |
-| `PATIENT` | Xem kết quả hoặc thông tin y tế đã được nhân viên chuyên môn cho phép công bố | Nội dung nhạy cảm không hiển thị trước khi đủ điều kiện nghiệp vụ và phân quyền | Bắt buộc |
-| `PATIENT` | Nhận và tra cứu thông báo về lịch hẹn, xét nghiệm, thanh toán hoặc cấp thuốc | Thông báo được lưu lịch sử, dễ đọc và không bị tạo trùng khi event được gửi lại | Nên có |
+| Field group | Minimum fields | Validation intent |
+|---|---|---|
+| Patient | Patient identifier | Existing and authorized patient reference. |
+| Service | Department or specialty, practitioner where selected | Current organizational identifiers. |
+| Schedule | Start time, expected duration, reason | Future or permitted time; no invalid conflict. |
+| Status | Requested, confirmed, rescheduled, cancelled, or source-defined equivalent | Only valid status transitions. |
 
-#### Lớp 4 - Hệ thống, vận hành và kiểm thử
+### 10.3 Encounter and medical record form
 
-Lớp này không đại diện cho người dùng nghiệp vụ thông thường, nhưng cần thiết để hệ thống phân tán vận hành an toàn và có thể kiểm chứng.
+| Field group | Minimum fields | Validation intent |
+|---|---|---|
+| Context | Patient, appointment where applicable, encounter identifier | Stable references and caller authorization. |
+| Observation | Symptoms, notes, vital signs, observation time | Valid required values and units. |
+| Assessment | Diagnosis or assessment code and narrative | Doctor authority where required. |
+| Plan | Orders, prescription references, follow-up plan | Contract-valid identifiers and instructions. |
 
-| Vai trò | Nhu cầu và chức năng | Kết quả mong đợi | Ưu tiên |
-|---|---|---|---|
-| `SYSTEM` | Xác minh tài khoản nội bộ, xử lý event và thực hiện tác vụ tự động | Các service giao tiếp theo hợp đồng, có correlation ID và không xử lý trùng về mặt nghiệp vụ | Bắt buộc |
-| `SYSTEM` | Điều phối saga thanh toán-cấp thuốc và thực hiện bù trừ khi một bước thất bại | Quy trình kết thúc ở trạng thái hoàn tất hoặc hoàn tiền/thất bại có thể truy vết | Bắt buộc |
-| Nhân sự vận hành | Theo dõi health, log, trace, hàng đợi và DLQ của các dịch vụ | Xác định được service và bước gây lỗi; hệ thống không chờ vô hạn hoặc lỗi dây chuyền | Bắt buộc |
-| Nhóm phát triển/QA | Kiểm chứng quy tắc nghiệp vụ, phân quyền và các failure path | Có test cho validation, RBAC, idempotency, retry/DLQ và cả hai nhánh saga | Bắt buộc |
+### 10.4 Laboratory order and result forms
 
-#### Yêu cầu chung cho mọi lớp người dùng
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Lab order | Patient, encounter, requested test, requester, priority, clinical note | Active test; authorized requester; complete context. |
+| Work update | Order, current status, technician, processing timestamps | Valid transition and lab authorization. |
+| Result | Order, result value or narrative, unit or reference where applicable, interpretation, result time | Required final data; authorized publication; immutable trace evidence after publication according to policy. |
 
-- Giao diện phải có trạng thái loading, empty, success và error rõ ràng.
-- Mọi thao tác chỉ được thực hiện sau khi backend xác minh danh tính, vai trò và phạm vi dữ liệu.
-- Thông báo lỗi phải dễ hiểu với người dùng nhưng không làm lộ thông tin kỹ thuật hoặc dữ liệu nhạy cảm.
-- Các thao tác làm thay đổi trạng thái phải có thời gian, người thực hiện và correlation ID để phục vụ audit.
-- Web và Mobile sử dụng cùng hợp đồng API qua Gateway; việc ẩn nút trên giao diện không thay thế kiểm tra quyền ở backend.
+### 10.5 Prescription and dispense forms
 
-## 4. Bộ biểu mẫu ban đầu theo các luồng nghiệp vụ lớn
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Prescription | Patient, encounter, medicine reference, dose, route, frequency, duration, instructions, prescriber | Doctor authority; complete directions; valid medicine reference. |
+| Dispense | Prescription, medicine or stock reference, quantity, pharmacist, financial-clearance reference where applicable | Valid current prescription; sufficient stock; no duplicate dispense. |
 
-Phần này gộp Use Case, Task và Process theo từng luồng nghiệp vụ lớn để thể hiện rõ: **ai thực hiện**, **mục tiêu cần đạt**, **công việc phải làm** và **cách hệ thống xử lý**.
+### 10.6 Invoice, payment, deposit, and refund forms
 
-### 4.1 Luồng lớn 1 - Quản trị, tiếp nhận bệnh nhân và xếp lịch khám
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Invoice or charge | Patient or account, source context, source reference, description, quantity, unit price, total | Exact decimal money; traceable source; no duplicate charge key. |
+| Payment | Invoice or account, amount, method, external reference where applicable, payer, cashier | Positive amount; valid outstanding balance; attributable cashier. |
+| Deposit | Admission or surgery reference, amount, method, payer, cashier | Positive amount and valid target case. |
+| Refund | Original transaction, refundable amount, reason, approver or cashier context | Amount not greater than refundable balance; authorization required. |
 
-Luồng này bắt đầu từ việc thiết lập cơ cấu vận hành, tiếp nhận bệnh nhân và kết thúc khi lịch khám hợp lệ đã được tạo hoặc cập nhật.
+### 10.7 Admission and discharge forms
 
-| Vai trò | Use Case | Task | Process |
-|---|---|---|---|
-| Tất cả người dùng | Đăng nhập hệ thống | Nhập thông tin đăng nhập để truy cập đúng chức năng theo vai trò | Gateway tiếp nhận yêu cầu → dịch vụ tổ chức xác minh tài khoản → hệ thống cấp JWT và thông tin vai trò → các yêu cầu sau được kiểm tra quyền truy cập |
-| Quản trị viên (ADMIN) | Quản lý khoa/phòng | Tạo mới, cập nhật và tra cứu khoa/phòng | Nhập thông tin khoa → kiểm tra dữ liệu bắt buộc và trùng lặp → lưu tại dịch vụ tổ chức → công bố sự kiện thay đổi để các thành phần liên quan đồng bộ |
-| Quản trị viên (ADMIN) | Quản lý nhân viên và tài khoản | Tạo hoặc cập nhật hồ sơ nhân viên; phân khoa, gán vai trò; kích hoạt hoặc vô hiệu tài khoản | Kiểm tra khoa và vai trò hợp lệ → lưu hồ sơ nhân viên, tài khoản → cập nhật trạng thái truy cập → ghi nhận thay đổi phục vụ kiểm tra và truy vết |
-| Quản lý (MANAGER) | Tra cứu cơ cấu và nhân sự | Lọc danh sách khoa/phòng, nhân viên theo phạm vi phụ trách | Hệ thống xác định phạm vi dữ liệu theo vai trò → truy vấn có phân trang → trả danh sách hoặc chi tiết được phép xem |
-| Điều dưỡng (NURSE) | Tra cứu và tiếp nhận bệnh nhân | Tìm bệnh nhân theo mã hoặc thông tin định danh; tạo hồ sơ mới nếu chưa tồn tại; cập nhật khi thông tin thay đổi | Kiểm tra định dạng và định danh trùng → tạo/cập nhật hồ sơ tại dịch vụ bệnh nhân → sinh mã bệnh nhân duy nhất → phát `patient.created` hoặc `patient.updated` |
-| Điều dưỡng (NURSE) | Tạo và quản lý lịch hẹn | Chọn bệnh nhân, khoa, bác sĩ, ngày giờ khám; cập nhật hoặc hủy lịch khi cần | Xác minh các định danh liên quan → kiểm tra thời gian và trạng thái hợp lệ → lưu lịch tại dịch vụ lâm sàng → phát `appointment.created` hoặc `appointment.status.changed` |
-| Bác sĩ (DOCTOR) | Xem lịch khám được phân công | Tra cứu danh sách bệnh nhân theo ngày và trạng thái lịch hẹn | Hệ thống kiểm tra quyền và mã bác sĩ → lọc lịch theo bác sĩ, ngày, khoa → trả danh sách phục vụ khám bệnh |
-| Bệnh nhân (PATIENT) | Xem lịch khám cá nhân | Đăng nhập và xem lịch hẹn, trạng thái hoặc thay đổi liên quan | Hệ thống kiểm tra quyền sở hữu dữ liệu → chỉ trả lịch gắn với bệnh nhân hiện tại → hiển thị trạng thái và thông báo liên quan |
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Admission request | Patient, encounter, reason, requesting clinician, care priority, requested department or room class | Authorized clinical request and complete care context. |
+| Allocation | Admission request, room or bed reference, assigned staff where applicable, start time | Current resource validity and availability. |
+| Discharge | Stay, discharge time, responsible clinician, summary or instructions, disposition | Active stay; required clinical authority; valid transition. |
 
-### 4.2 Luồng lớn 2 - Khám bệnh, xét nghiệm và kê đơn
+### 10.8 Surgery forms
 
-Luồng này bắt đầu khi bệnh nhân đến lượt khám và kết thúc khi bác sĩ hoàn thành hồ sơ khám, kết quả xét nghiệm và đơn thuốc cần thiết.
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Surgery request | Patient, encounter, procedure, indication, requester, priority | Authorized requester and complete clinical context. |
+| Readiness | Surgery case, required clinical checks, current financial clearance, readiness decision | Current authority evidence; mandatory checks complete. |
+| Schedule | Surgery case, room, start time, expected duration, team references | Eligible case; valid resources; no scheduling conflict. |
+| Outcome | Surgery case, execution status, actual times, outcome summary, responsible staff | Authorized surgical update and valid status transition. |
 
-| Vai trò | Use Case | Task | Process |
-|---|---|---|---|
-| Điều dưỡng (NURSE) | Xác nhận bệnh nhân đến khám | Kiểm tra lịch hẹn và chuyển bệnh nhân sang trạng thái chờ khám | Tra cứu lịch → xác nhận đúng bệnh nhân và thời gian → cập nhật trạng thái hợp lệ → phát sự kiện thay đổi trạng thái lịch |
-| Bác sĩ (DOCTOR) | Tra cứu hồ sơ bệnh nhân | Xem thông tin hành chính, lịch sử khám và dữ liệu cần thiết trước khi khám | Hệ thống kiểm tra quyền → lấy dữ liệu qua API của dịch vụ sở hữu → tổng hợp trên giao diện; không truy cập chéo cơ sở dữ liệu giữa các dịch vụ |
-| Bác sĩ (DOCTOR) | Lập hồ sơ bệnh án | Ghi triệu chứng, dấu hiệu lâm sàng, kết luận khám và thông tin điều trị | Kiểm tra bệnh nhân, lịch hẹn và dữ liệu bắt buộc → tạo/cập nhật hồ sơ tại dịch vụ lâm sàng → phát `medicalrecord.created` khi tạo mới |
-| Bác sĩ (DOCTOR) | Ghi chẩn đoán | Thêm chẩn đoán vào hồ sơ bệnh án đang xử lý | Kiểm tra hồ sơ tồn tại và quyền cập nhật → lưu chẩn đoán → phát sự kiện thay đổi nghiệp vụ tương ứng |
-| Bác sĩ (DOCTOR) | Chỉ định xét nghiệm | Chọn loại xét nghiệm, nhập ghi chú và gửi yêu cầu cho bộ phận xét nghiệm | Kiểm tra hồ sơ bệnh án → tạo yêu cầu tại dịch vụ xét nghiệm → gắn các định danh liên quan → phát `lab.request.created` |
-| Kỹ thuật viên xét nghiệm (LAB_TECH) | Tiếp nhận và xử lý xét nghiệm | Nhận yêu cầu, xác nhận mẫu và cập nhật trạng thái thực hiện | Tra cứu yêu cầu → kiểm tra chuyển trạng thái → cập nhật tiến độ → lưu thời gian và người thực hiện |
-| Kỹ thuật viên xét nghiệm (LAB_TECH) | Nhập kết quả xét nghiệm | Nhập chỉ số, kết luận và xác nhận công bố kết quả | Kiểm tra cấu trúc và giá trị kết quả → lưu kết quả → hoàn tất yêu cầu → phát `lab.result.created` cho dịch vụ lâm sàng, thông báo và báo cáo |
-| Bác sĩ (DOCTOR) | Xem và đánh giá kết quả xét nghiệm | Mở kết quả mới, đối chiếu với hồ sơ và cập nhật kết luận điều trị | Dịch vụ lâm sàng nhận thông tin qua API hoặc sự kiện phù hợp → hiển thị đúng hồ sơ → bác sĩ cập nhật chẩn đoán hoặc hướng điều trị |
-| Bác sĩ (DOCTOR) | Kê đơn thuốc | Tra cứu thuốc; nhập liều dùng, số lượng và hướng dẫn sử dụng | Kiểm tra thuốc và các dòng đơn → chụp giá tại thời điểm kê → lưu đơn tại dịch vụ dược → phát `prescription.created` để tạo khoản phí liên quan |
-| Hệ thống (SYSTEM) | Thông báo kết quả nghiệp vụ | Tự động tạo thông báo khi có lịch hẹn, kết quả xét nghiệm hoặc thay đổi quan trọng | Nhận sự kiện → kiểm tra trùng theo `eventId` → tạo nội dung đúng người nhận → gửi qua kênh được cấu hình → lưu kết quả gửi |
+### 10.9 Notification and report forms
 
-### 4.3 Luồng lớn 3 - Thanh toán, cấp thuốc và hoàn tất dịch vụ
+| Form | Minimum fields | Validation intent |
+|---|---|---|
+| Notification view | Recipient, category, channel, subject or summary, delivery status, timestamps | Recipient scope and protected-content minimization. |
+| Report filter | Report type, date range, department or service filter, status filter, output option where supported | Authorized dimensions; valid range; bounded query. |
 
-Luồng này bắt đầu khi các khoản phí đã hình thành và kết thúc khi thanh toán, cấp thuốc, thông báo và dữ liệu báo cáo được xử lý đầy đủ.
+## 11. Integration and saga behavior
 
-| Vai trò | Use Case | Task | Process |
-|---|---|---|---|
-| Thu ngân (CASHIER) | Tạo và tra cứu hóa đơn | Tổng hợp các khoản phí của bệnh nhân, kiểm tra chi tiết và lập hóa đơn | Dịch vụ viện phí nhận dữ liệu phí từ các sự kiện nghiệp vụ → chống ghi nhận trùng → tổng hợp các khoản chưa thanh toán → tạo hóa đơn và phát `invoice.created` |
-| Thu ngân (CASHIER) | Ghi nhận thanh toán | Chọn hóa đơn, phương thức thanh toán và xác nhận số tiền đã thu | Kiểm tra hóa đơn chưa được thanh toán và số tiền hợp lệ → ghi nhận giao dịch → chuyển hóa đơn sang đã thanh toán → phát `payment.completed` |
-| Hệ thống (SYSTEM) | Điều phối cấp thuốc sau thanh toán | Khởi động quy trình cấp thuốc khi nhận được thanh toán hợp lệ | Dịch vụ viện phí phát sự kiện → dịch vụ dược kiểm tra đơn thuốc và trạng thái thanh toán → bắt đầu bước giữ tồn, trừ kho và cấp phát; toàn bộ luồng dùng cùng correlation ID |
-| Dược sĩ (PHARMACIST) | Kiểm tra đơn trước khi cấp thuốc | Đối chiếu đơn, bệnh nhân, khoản thanh toán, số lượng và tồn kho | Hệ thống xác minh đơn đủ điều kiện → khóa bản ghi tồn kho cần cập nhật → cảnh báo khi thiếu tồn, đơn đã cấp hoặc dữ liệu không nhất quán |
-| Dược sĩ (PHARMACIST) | Cấp phát thuốc | Xác nhận số lượng thực cấp và hoàn tất đơn thuốc | Trừ tồn kho trong giao dịch nguyên tử → không cho phép tồn âm hoặc cấp trùng → cập nhật đơn đã cấp → phát `prescription.filled` |
-| Hệ thống (SYSTEM) | Bù trừ khi cấp thuốc thất bại | Ghi nhận lỗi thiếu tồn hoặc lỗi xử lý và yêu cầu hoàn tác giao dịch liên quan | Dịch vụ dược phát sự kiện thất bại theo catalog thống nhất → dịch vụ viện phí nhận sự kiện và hoàn tiền hoặc chuyển trạng thái phù hợp → lưu đầy đủ lịch sử saga và nguyên nhân |
-| Bệnh nhân / Điều dưỡng | Theo dõi thông báo | Xem thông báo thanh toán, kết quả và tình trạng cấp thuốc | Dịch vụ thông báo nhận sự kiện → tạo thông báo đúng chủ sở hữu → gửi và lưu trạng thái → giao diện Web/Mobile hiển thị kết quả |
-| Quản trị viên / Quản lý | Xem báo cáo vận hành | Lọc số lượt khám, doanh thu và thuốc sử dụng theo thời gian hoặc khoa | Dịch vụ báo cáo nhận sự kiện từ các dịch vụ nghiệp vụ → cập nhật mô hình dữ liệu đọc → xử lý sự kiện trùng hoặc đến muộn → trả báo cáo đúng phạm vi quyền |
-| Vận hành / Kiểm thử (OPS/QA) | Truy vết và xử lý sự cố | Tra cứu request, event, trạng thái dịch vụ và hàng đợi lỗi | Dùng correlation ID để nối toàn bộ bước xử lý → kiểm tra health, retry và DLQ → xác định dịch vụ, bước lỗi, dữ liệu ảnh hưởng và phương án khôi phục |
+![MediFlow REST and event integration flow](assets/mediflow-integration-and-saga-flow.svg)
 
-### 4.4 Các yêu cầu phi chức năng cho hệ thống phân tán
+The normal cross-context transaction boundary is local to one service. A representative operation follows this sequence:
 
-- Mọi API, ngoại trừ đăng nhập, làm mới token và health check, phải yêu cầu JWT hợp lệ.
-- Mỗi endpoint phải khai báo quyền truy cập; người dùng sai vai trò nhận phản hồi 403; bệnh nhân chỉ được xem dữ liệu thuộc sở hữu của mình.
-- Mật khẩu phải được băm; secret phải lấy từ môi trường; không ghi token, mật khẩu hoặc dữ liệu định danh y tế đầy đủ vào log.
-- Gateway phải giới hạn tối đa 100 request/phút trên mỗi địa chỉ IP khách và trả phản hồi 429 rõ ràng khi vượt ngưỡng.
-- Lời gọi REST liên dịch vụ phải có connect timeout 2 giây, read timeout 3 giây, circuit breaker và phương án fallback phù hợp.
-- API danh sách phải phân trang với mặc định 20 và tối đa 100 bản ghi mỗi trang.
-- Nhóm phải chốt và kiểm thử ngưỡng p95, p99, số người dùng đồng thời và throughput mục tiêu cho từng nhóm API.
-- Mỗi microservice phải sở hữu cơ sở dữ liệu riêng; không join, tạo khóa ngoại hoặc truy cập repository xuyên dịch vụ.
-- Sự kiện chỉ được công bố sau khi giao dịch cục bộ hoàn tất; consumer phải xử lý idempotent theo `eventId`.
-- Exchange và queue phải durable; message lỗi phải được retry có giới hạn và chuyển vào DLQ riêng khi vượt quá số lần cho phép.
-- Mọi sự kiện phải có tối thiểu `eventId`, `occurredAt`, `correlationId`, tên sự kiện, routing key, phiên bản và payload rõ ràng.
-- Consumer phải xử lý an toàn sự kiện trùng, đến chậm hoặc sai thứ tự; dữ liệu tổng hợp phải có khả năng rebuild khi cần.
-- Quy trình nhiều dịch vụ phải dùng saga và có hành động bù trừ khi một bước quan trọng thất bại.
-- Thao tác xuất kho phải dùng khóa ghi hoặc cơ chế kiểm soát tương tranh tương đương; không để tồn kho âm hoặc cấp thuốc hai lần.
-- Nhóm phải chốt uptime, cửa sổ bảo trì, RTO và RPO cho toàn hệ thống và từng dịch vụ quan trọng.
-- Request, event, log và các bước saga phải dùng chung correlation ID để truy vết đầu cuối.
-- Mỗi dịch vụ phải cung cấp `/actuator/health`; Gateway và dịch vụ khám phá phải theo dõi được trạng thái instance.
-- Nhóm phải xác định trường audit bắt buộc, thời gian lưu log, ngưỡng cảnh báo và quyền truy cập dữ liệu giám sát.
-- API phải dùng phiên bản `/api/v1`, response envelope thống nhất; thay đổi phá vỡ tương thích phải chuyển sang phiên bản mới.
-- Mỗi quy tắc nghiệp vụ và nhánh lỗi phải có kiểm thử; consumer cần kiểm thử event trùng, retry, DLQ và bù trừ saga; endpoint cần kiểm thử phân quyền.
-- Web và Mobile phải có đầy đủ trạng thái loading, empty, success và error, đồng thời hiển thị thông báo dễ hiểu trong bối cảnh lâm sàng.
-- Nhóm phải chốt mức WCAG, kích thước màn hình, thiết bị, trình duyệt, hệ điều hành và ngôn ngữ được hỗ trợ.
-- Mỗi cơ sở dữ liệu phải có lịch sao lưu, kiểm tra phục hồi định kỳ và người chịu trách nhiệm xử lý sự cố.
-- Cấu hình phải tách khỏi mã nguồn; migration cơ sở dữ liệu phải có phiên bản; instance chỉ được nhận traffic sau khi health check đạt.
+1. the gateway validates the authenticated request and route access;
+2. the owning service obtains a current REST decision only when the request cannot finish without it;
+3. the owning service commits its aggregate change and outbox record atomically;
+4. the API response is returned without waiting for every downstream projection;
+5. the outbox dispatcher publishes the versioned event and records confirmation;
+6. each consumer checks the event identifier and payload fingerprint;
+7. an exact duplicate is acknowledged without another business mutation;
+8. a new valid event updates only the consumer's local state and stores its receipt;
+9. transient failures retry within bounds and exhausted messages move to the service DLQ.
 
-## 5. Tài liệu tham chiếu và minh chứng
+## 12. Non-functional requirements
 
-- [SRS phục hồi Giai đoạn 1](../giai-doan-1-srs.md).
-- [Báo cáo giải trình Giai đoạn 1](bao-cao-giai-trinh.md).
-- [Kiểm kê source và quality gate](../source-audit.md).
-- [Rà soát ERD, DDL và event](../erd-ddl-events-audit.md).
-- [Backend specification](../../eproject_general_plan/backend-spec/README.md).
-- [Quy chuẩn kiến trúc và triển khai](../../ai/README.md).
+| ID | Requirement | Verification approach |
+|---|---|---|
+| NFR-01 | Security: protected endpoints shall require authenticated and authorized access. | Gateway, controller, and negative authorization tests. |
+| NFR-02 | Privacy: clients and logs shall expose only the data required for the authorized task. | DTO review, error review, and access tests. |
+| NFR-03 | Reliability: critical outgoing events shall survive a service restart after local commit. | Outbox integration tests and restart scenarios. |
+| NFR-04 | Idempotency: duplicate event delivery shall not duplicate business effects. | Replay and fingerprint-mismatch tests. |
+| NFR-05 | Failure handling: transient processing failures shall retry within bounds and exhausted work shall remain inspectable. | Retry and DLQ integration tests. |
+| NFR-06 | Data integrity: money shall use exact decimal representation, identifiers shall use UUIDs, and dates shall use explicit date or instant types. | Static review, persistence tests, and API contract tests. |
+| NFR-07 | Maintainability: dependencies shall point inward through domain, application, and infrastructure boundaries. | Architecture tests and review. |
+| NFR-08 | Interoperability: clients shall use versioned gateway contracts and services shall use versioned event payloads. | Contract and routing tests. |
+| NFR-09 | Observability: requests and downstream work shall be traceable with health information, logs, and correlation identifiers. | Operational smoke tests and log correlation review. |
+| NFR-10 | Testability: each business rule shall have automated verification at the appropriate unit, web, persistence, or integration level. | Build reports and traceability review. |
+| NFR-11 | Usability: role-appropriate clients shall present clear validation, status, and recoverable error feedback. | Scenario-based user acceptance testing. |
+| NFR-12 | Performance targets shall be measured against stakeholder-approved workloads rather than invented in this phase. | Production-like load plan after target volumes are approved. |
 
-## 6. Xác nhận nội bộ
+## 13. Data and contract rules
 
-| Vai trò | Người xác nhận | Phạm vi xác nhận | Ngày | Kết quả |
+- Entities never cross a service boundary; DTOs and versioned events do.
+- A service stores foreign context references as UUID values, never as cross-service ORM relations.
+- API responses use the repository's shared response envelope and correlation behavior.
+- Validation errors and business conflicts use controlled status and error contracts.
+- Money is represented with exact decimal values.
+- Calendar dates and instants use explicit types appropriate to their meaning.
+- Events identify their version, occurrence, aggregate or source, and trace context as required by the shared contract.
+- Consumers validate both event identity and payload consistency before mutation.
+
+## 14. Assumptions and dependencies
+
+1. Hospital stakeholders will approve role responsibilities and any required separation of duties.
+2. Organization remains the authority for users, staff, departments, specialties, rooms, and schedules.
+3. Patient remains the authority for patient identity and appointment data.
+4. Clinical remains the authority for encounters, diagnoses, orders, and prescriptions.
+5. Billing remains the authority for money and financial clearance.
+6. Other services project or reference those facts through contracts; they do not become substitute authorities.
+7. Deployment provides PostgreSQL, RabbitMQ, gateway, and service discovery in the required start order.
+8. External integrations will be added only after their contracts and ownership are approved.
+
+## 15. Risks and controls
+
+| Risk | Control in the baseline |
+|---|---|
+| Unauthorized access to patient or clinical data | Gateway validation, endpoint authorization, ownership checks, and default deny. |
+| Duplicate charges, dispenses, or projections | Stable source identifiers, outbox delivery, and consumer idempotency. |
+| Partial cross-service failure | Local transactions, controlled REST failure, asynchronous events, retries, and DLQs. |
+| Conflicting authority between services | Explicit bounded-context ownership and no cross-service database access. |
+| Reporting divergence | Versioned source facts and idempotent report projections. |
+| Documentation drifting from implementation | Source baseline metadata, stable requirement IDs, Mermaid source assets, and periodic reconciliation. |
+
+## 16. Phase 1 acceptance checklist
+
+- [x] The project problem is documented in English.
+- [x] Ten implemented business contexts are included.
+- [x] All nine source-defined roles are mapped to responsibilities and restrictions.
+- [x] Functional requirements have stable traceability identifiers.
+- [x] Initial forms cover the primary hospital workflows.
+- [x] Architecture and integration diagrams are maintained as Mermaid source.
+- [x] REST, events, outbox, idempotency, retries, and DLQs are represented accurately.
+- [x] Cross-service database access is explicitly prohibited.
+- [x] Non-functional expectations are testable or marked for stakeholder approval.
+- [x] Open customer and operational decisions are not presented as implemented facts.
+
+## 17. Stakeholder approval record
+
+| Role | Name | Decision | Date | Notes |
 |---|---|---|---|---|
-| Nhóm trưởng/Backend | Phạm Đăng Vinh | Phạm vi, giải pháp, CRS và kiến trúc |  |  |
-| Frontend/Mobile | Trần Hoàng Anh | Nhu cầu người dùng, Use Case và khả năng thể hiện trên GUI |  |  |
-| Database/QA | Lê Quang Huy | Process, dữ liệu, NFR và khả năng kiểm thử |  |  |
-| Database/Frontend | Nguyễn Hoàng Phúc | Task, biểu mẫu và truy vết chéo |  |  |
+| Customer representative |  | Pending |  |  |
+| Hospital operations representative |  | Pending |  |  |
+| Clinical representative |  | Pending |  |  |
+| Finance representative |  | Pending |  |  |
+| Project lead |  | Pending |  |  |

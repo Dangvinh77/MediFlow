@@ -48,10 +48,10 @@ public class DepartmentController {
         public ResponseEntity<ApiResponse<DepartmentResponse>> createDepartment(
                         @Valid @RequestBody CreateDepartmentRequest request) {
                 Department department = createDepartmentUseCase.execute(
-                                request.getDepartmentName(),
-                                request.getAbbreviation(),
-                                request.getDepartmentType(),
-                                request.getLocation());
+                                request.departmentName(),
+                                request.abbreviation(),
+                                request.departmentType(),
+                                request.location());
 
                 return ResponseEntity
                                 .created(URI.create("/api/v1/org/departments/"
@@ -101,11 +101,11 @@ public class DepartmentController {
                         @Valid @RequestBody UpdateDepartmentRequest request) {
                 Department department = updateDepartmentUseCase.execute(
                                 id,
-                                request.getDepartmentName(),
-                                request.getDepartmentType(),
-                                request.getLocation(),
-                                request.getDepartmentHeadId(),
-                                request.getActive());
+                                request.departmentName(),
+                                request.departmentType(),
+                                request.location(),
+                                request.departmentHeadId(),
+                                request.active());
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 DepartmentResponse.from(department),

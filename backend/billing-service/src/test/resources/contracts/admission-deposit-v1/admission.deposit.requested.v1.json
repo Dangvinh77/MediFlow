@@ -1,0 +1,20 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000011",
+  "eventType": "admission.deposit.requested",
+  "version": 1,
+  "occurredAt": "2026-09-28T02:05:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "admissionId": "00000000-0000-4000-8000-000000000021",
+    "patientId": "00000000-0000-4000-8000-000000000022",
+    "departmentId": "00000000-0000-4000-8000-000000000023",
+    "careEpisodeType": "ADMISSION",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000021",
+    "sourceType": "ADMISSION_DEPOSIT",
+    "sourceId": "00000000-0000-4000-8000-000000000021",
+    "priceCode": "INPATIENT_DEPOSIT",
+    "suggestedAmount": 150000.00,
+    "reason": "Initial admission deposit"
+  }
+}

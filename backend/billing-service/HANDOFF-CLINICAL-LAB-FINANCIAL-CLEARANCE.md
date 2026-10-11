@@ -22,6 +22,33 @@ Both consumers already reject mismatched purpose, patient, episode and target ID
 3. Preserve one clearance per business operation and idempotent replay by event ID.
 4. Keep the held producer disabled until the same-byte producer/consumer fixtures pass together.
 
+### LAB_TEST planned-request issuance (2026-10-10)
+
+Opt-in `lab.request.created` issuer added: `LabTestPlannedRequestService` opens/reuses the exact
+episode account, posts one `LAB_TEST` charge from the configured price catalog and creates one
+`PAYMENT_REQUEST` (target `recordId`/`labTestIds`) per lab test, mirroring the Surgery planned-request
+pattern. Gated by `mediflow.billing.ledger.enabled` + `mediflow.billing.lab-test-charge-consumer.enabled`
+(both false by default); disabled leaves `lab.request.created` unbound on `billing.q`, unchanged from
+before this slice. Exact replay returns the recorded request without re-pricing; a same-source event
+with different `sourceOrderId`/bytes conflicts. Clearance granting needs no new code: the existing
+generic `LedgerPaymentService` already grants `financial.clearance.granted` for any `PaymentRequestPurpose`,
+including `LAB_TEST`, once the request is paid in full.
+Verified against the real lab-service producer fixture, copied byte-for-byte into
+`backend/billing-service/src/test/resources/contracts/lab-request-v1/lab.request.created.v1.json`
+(mirrors `backend/lab-service/src/test/resources/contracts/lab.request.created.v1.json`).
+Decoder/service/configuration tests pass; Docker-based E2E (check-in/request → charge → payment →
+clearance → execution start) is not run on this machine (Testcontainers cannot reach Docker here —
+pre-existing environment issue, unrelated to this code).
+
+**Still open:** EXAM issuance from `appointment.status.changed`/`medicalrecord.created`. Clinical's
+`AppointmentStatusChangedV2Payload`/`MedicalRecordCreatedV2Payload` and the `ClinicalCareFinanceApplicationService`
+producer code already emit the shared-envelope `sourceType=EXAM`/`sourceId`/`priceCode` fields, but
+Clinical has not yet committed a producer JSON fixture for either event (only asserted via in-memory
+unit tests). Per the no-copied/no-guessed-wire-format rule, Billing cannot build the EXAM consumer
+until that fixture exists — this is not forgotten, it is blocked waiting on Clinical's own fixture
+commit. Also still open: the two Docker acceptance flows above, and deleting this handoff (only after
+both EXAM and LAB_TEST pass their Docker proofs).
+
 ## Acceptance criteria
 
 - Billing serializes the canonical EXAM and LAB_TEST fixtures byte-for-byte with the consumers.

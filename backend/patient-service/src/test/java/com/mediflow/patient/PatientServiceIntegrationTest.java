@@ -35,11 +35,11 @@ import com.mediflow.patient.infrastructure.persistence.PatientJpaRepository;
 
 /**
  * Runs the Patient read/write and event path against the real Flyway schema and
- * RabbitMQ exchange. The test is skipped automatically when Docker is not
- * available on the developer machine.
+ * RabbitMQ exchange. Docker is required for this integration gate; a missing
+ * Docker runtime must fail the build instead of silently skipping it.
  */
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class PatientServiceIntegrationTest {
 

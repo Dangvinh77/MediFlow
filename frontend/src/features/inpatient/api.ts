@@ -1,6 +1,12 @@
 import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
-import type { AdmissionDTO, AdmissionStatus, BedDTO, BedStatus } from "./types";
+import type {
+  AdmissionDTO,
+  AdmissionStatus,
+  BedDTO,
+  BedStatus,
+  CreateAdmissionRequest,
+} from "./types";
 
 export interface AdmissionSearchParams {
   departmentId?: string;
@@ -28,6 +34,8 @@ function pagination(page?: number, size?: number) {
 }
 
 export const inpatientApi = {
+  createAdmission: (body: CreateAdmissionRequest) =>
+    api.post<AdmissionDTO>("/v1/inpatient/admissions", body),
   searchAdmissions: (params: AdmissionSearchParams = {}) => {
     const query = pagination(params.page, params.size);
     if (params.departmentId) query.set("departmentId", params.departmentId);
