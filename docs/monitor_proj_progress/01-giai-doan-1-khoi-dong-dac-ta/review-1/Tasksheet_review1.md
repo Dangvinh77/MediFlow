@@ -75,227 +75,262 @@
       <td>5</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
       <td>SHARED testing work: add focused Clinical, Laboratory, and Inpatient API/component tests for role denial, validation, terminal states, retry, and correlation-ID rendering after the shared harness is available.</td>
-      <td>Test suites for <code>/appointments</code>, <code>/records</code>, <code>/lab</code>, and <code>/inpatient</code></td>
+      <td>Planned: test suites for <code>/appointments</code>, <code>/records</code>, <code>/lab</code>, and <code>/inpatient</code></td>
       <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
       <td>6</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
       <td>Complete Inpatient bed assignment, transfer, and release controls after reconfirming controller roles, request DTOs, transition preconditions, and conflict codes.</td>
-      <td><code>/inpatient/[admissionId]</code><br><code>/inpatient/beds</code> (future controls)</td>
+      <td>Planned: <code>/inpatient/[admissionId]/bed</code></td>
       <td>2026-10-15</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
       <td>7</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Expose Clinical check-in, examination start, record completion, and admission-referral commands only after their backend and Gateway contracts are activated and smoke-tested.</td>
-      <td><code>/appointments/[appointmentId]</code><br><code>/records/[recordId]</code> (future controls)</td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
+      <td>Add Inpatient admit and pre-admission cancellation controls after verifying bed placement, financial-clearance gates, role rules, cancellation policy, transition conflicts, and Gateway routing.</td>
+      <td>Planned: <code>/inpatient/[admissionId]/admission-state</code></td>
+      <td>2026-10-17</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
       <td>8</td>
+      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
+      <td>Expose Clinical check-in, examination start, record completion, and admission-referral commands only after their backend and Gateway contracts are activated and smoke-tested.</td>
+      <td>Planned: controls in <code>/appointments/[appointmentId]</code> and <code>/records/[recordId]</code></td>
+      <td>2026-10-19</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
+    </tr>
+    <tr>
+      <td>9</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
       <td>Add the explicit Clinical-to-Laboratory test-request handoff using test code and producer-generated order ID after the live producer/consumer contract is available.</td>
       <td>Planned: <code>/records/[recordId]/lab-orders</code></td>
       <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>9</td>
+      <td>10</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Add Inpatient treatment observations, bed transfer history, medical discharge, and administrative-close presentation after validating each route contract.</td>
-      <td>Planned: <code>/inpatient/[admissionId]/care</code></td>
+      <td>Add Inpatient treatment entries and immutable corrections, clinical order-reference registration, bed history, medical discharge, and administrative-close presentation after validating each route contract and authority boundary.</td>
+      <td>Planned: <code>/inpatient/[admissionId]/care</code><br>Planned: <code>/inpatient/[admissionId]/order-references</code></td>
       <td>2026-10-26</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
-      <td>10</td>
+      <td>11</td>
+      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
+      <td>Add administrator/manager bed creation and update controls after verifying the exact bed DTOs, department/ward selectors, uniqueness rules, occupied-bed restrictions, and Gateway authorization.</td>
+      <td>Planned: <code>/inpatient/beds/admin</code></td>
+      <td>2026-10-28</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>12</td>
       <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
       <td>Integrate Inpatient deposit, top-up, settlement, Pharmacy, Surgery, Report, and Notification timeline data after the remaining handoffs are approved and same-byte producer/consumer fixtures pass.</td>
-      <td><code>/inpatient/[admissionId]</code> (future integrated timeline)</td>
+      <td>Planned: integrated timeline in <code>/inpatient/[admissionId]</code></td>
       <td>2026-10-29</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
 
     <tr>
-      <td>11</td>
+      <td>13</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Pharmacy drug catalogue/detail/create, stock adjustment, prescription create/lookup/detail, dispense/cancel, and administrator outbox replay.</td>
       <td><code>/pharmacy</code><br><code>/pharmacy/drugs</code><br><code>/pharmacy/prescriptions</code><br><code>/pharmacy/admin/outbox</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>5</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>12</td>
+      <td>14</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Daily metrics, monthly revenue with daily detail, and top-dispensed medicine reports with validation, zero states, errors, and retry.</td>
       <td><code>/reports</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>13</td>
+      <td>15</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>SHARED testing work: add Pharmacy validation, permission, terminal-state, API-error, and replay tests after the common test harness is available.</td>
-      <td>Test suite for <code>/pharmacy</code></td>
+      <td>Planned: test suite for <code>/pharmacy</code></td>
       <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
-      <td>14</td>
+      <td>16</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>SHARED testing work: add Report formatter, filter, permission, zero-value, error, and retry tests after the common test harness is available.</td>
-      <td>Test suite for <code>/reports</code></td>
+      <td>Planned: test suite for <code>/reports</code></td>
       <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
-      <td>15</td>
+      <td>17</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Add operational Inpatient/Surgery snapshots, financial daily/monthly views, and capability/coverage indicators after verifying the available conditional Report controllers, DTOs, roles, activation settings, and Gateway routing.</td>
       <td>Planned: <code>/reports/operations</code><br>Planned: <code>/reports/financial</code></td>
       <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
-      <td>16</td>
+      <td>18</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Add administrator financial rebuild, progress, publication/rollback, and source-archive export/restore after verifying the conditional command contracts, binary size limit, authorization, activation settings, and Gateway behavior.</td>
       <td>Planned: <code>/reports/financial-operations</code></td>
       <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
-      <td>17</td>
+      <td>19</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Create the Surgery case list and detail workspace after the Surgery backend route, authority handoff, DTOs, roles, and Gateway routing are approved.</td>
       <td>Planned: <code>/surgery</code><br>Planned: <code>/surgery/[caseId]</code></td>
       <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>18</td>
+      <td>20</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Add Surgery request, readiness, clearance, schedule, execution, recovery, outcome, cancellation, and charge-handoff controls after each live command contract is verified.</td>
       <td>Planned: <code>/surgery/[caseId]/workflow</code></td>
       <td>2026-10-26</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>19</td>
+      <td>21</td>
       <td>Huy<br><code>LQHuy0210</code></td>
       <td>Add Surgery permission, lifecycle, conflict, retry, and integration tests after the Surgery workspace and approved fixtures exist.</td>
-      <td>Planned Surgery test suite</td>
+      <td>Planned: Surgery test suite</td>
       <td>2026-10-29</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
 
     <tr>
-      <td>20</td>
+      <td>22</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
       <td>Organization department and staff list/detail/create/update, staff transfer, and account create/lock/unlock administration.</td>
       <td><code>/organization</code><br><code>/organization/departments/new</code><br><code>/organization/departments/[departmentId]</code><br><code>/organization/departments/[departmentId]/edit</code><br><code>/organization/staff/new</code><br><code>/organization/staff/[staffId]</code><br><code>/organization/staff/[staffId]/edit</code><br><code>/organization/accounts</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>21</td>
+      <td>23</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
       <td>Patient paged search, detail, create, update, delete, exact Vietnamese wire mapping, and immutable identity-number behavior.</td>
       <td><code>/patients</code><br><code>/patients/new</code><br><code>/patients/[patientId]</code><br><code>/patients/[patientId]/edit</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>6</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>22</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>SHARED testing work: add Organization partial-failure, pagination, empty-state, role-gate, account, and retry tests after the common harness is available.</td>
-      <td>Test suite for <code>/organization</code></td>
-      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>23</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>SHARED testing work: add Patient contract, validation, permission, deletion, empty/error, and retry tests after the common harness is available.</td>
-      <td>Test suite for <code>/patients</code></td>
-      <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
       <td>24</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Provide authorized patient, doctor, and department lookup contracts for human-facing selectors used by Clinical, Laboratory, Billing, and Report; consumers must not use service-only endpoints.</td>
-      <td>Shared consumer forms in <code>/appointments</code>, <code>/lab</code>, <code>/billing</code>, and <code>/reports</code></td>
-      <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+      <td>SHARED testing work: add Organization partial-failure, pagination, empty-state, role-gate, account, and retry tests after the common harness is available.</td>
+      <td>Planned: test suite for <code>/organization</code></td>
+      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
       <td>25</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Define and integrate stable authenticated <code>staffId</code>, patient identity, and account-to-subject mapping across Gateway and Organization without inferring undocumented token claims.</td>
-      <td>Shared: <code>/login</code> and session integration</td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+      <td>SHARED testing work: add Patient contract, validation, permission, deletion, empty/error, and retry tests after the common harness is available.</td>
+      <td>Planned: test suite for <code>/patients</code></td>
+      <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
       <td>26</td>
+      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
+      <td>Provide authorized patient, doctor, and department lookup contracts for human-facing selectors used by Clinical, Laboratory, Billing, and Report; consumers must not use service-only endpoints.</td>
+      <td>Planned: shared consumer forms in <code>/appointments</code>, <code>/lab</code>, <code>/billing</code>, and <code>/reports</code></td>
+      <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>27</td>
+      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
+      <td>Define and integrate stable authenticated <code>staffId</code>, patient identity, and account-to-subject mapping across Gateway and Organization without inferring undocumented token claims.</td>
+      <td>Planned: shared <code>/login</code> and session integration</td>
+      <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>28</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
       <td>Add secure patient self-service for the authenticated patient's own profile after Gateway identity and Patient ownership/mutation contracts are approved.</td>
       <td>Planned: <code>/patients/me</code></td>
       <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>27</td>
+      <td>29</td>
       <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
       <td>Provide the identity handoff required for patient-owned appointments, results, prescriptions, invoices, receipts, payments, and notifications; each consumer retains its own UI ownership.</td>
-      <td>Planned identity contract for patient portal routes</td>
+      <td>Planned: identity contract for patient portal routes</td>
       <td>2026-10-26</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
 
     <tr>
-      <td>28</td>
+      <td>30</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Billing patient invoice lookup, invoice detail, invoice creation from server-owned fees, payment state, and fee breakdown without client-side authoritative totals.</td>
       <td><code>/billing</code><br><code>/billing/new</code><br><code>/billing/[invoiceId]</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>29</td>
+      <td>31</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Notification patient history, privacy-safe secured detail, and administrator manual-send workflow.</td>
       <td><code>/notifications</code><br><code>/notifications/[notificationId]</code><br><code>/notifications/send</code></td>
       <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
     </tr>
     <tr>
-      <td>30</td>
+      <td>32</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>SHARED testing work: add Billing pagination, monetary display, permission, terminal-state, API-error, retry, and payment-flow tests after the common harness is available.</td>
-      <td>Test suite for <code>/billing</code></td>
+      <td>Planned: test suite for <code>/billing</code></td>
       <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
-      <td>31</td>
+      <td>33</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>SHARED testing work: add Notification pagination, channel/status, privacy-boundary, cross-patient denial, error, and retry tests after the common harness is available.</td>
-      <td>Test suite for <code>/notifications</code></td>
+      <td>Planned: test suite for <code>/notifications</code></td>
       <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
     <tr>
-      <td>32</td>
+      <td>34</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Add ledger payment/refund, admission deposit allocation, settlement preview, reconciliation, settlement, and final-settlement controls after verifying the available conditional Billing controllers, DTOs, idempotency headers, roles, activation settings, and Gateway routing.</td>
       <td>Planned: <code>/billing/accounts/[accountId]</code><br>Planned: <code>/billing/transactions/[transactionId]</code></td>
       <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
-      <td>33</td>
+      <td>35</td>
+      <td>Lộc<br><code>locgit-89</code></td>
+      <td>Add administrator/manager revenue filtering by department and date range after confirming the live <code>RevenueByDeptDTO</code>, Gateway routing, validation, empty/error behavior, and non-authoritative display semantics.</td>
+      <td>Planned: <code>/billing/revenue</code></td>
+      <td>2026-10-17</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>36</td>
+      <td>Lộc<br><code>locgit-89</code></td>
+      <td>Add cashier/administrator prescription-adjustment and Surgery-cancellation refund-due read models after verifying both conditional ledger consumers, producer identifiers, DTO fields, roles, error behavior, and Gateway routing; these views must not be presented as refund commands.</td>
+      <td>Planned: <code>/billing/prescription-adjustments/[adjustmentId]/refunds-due</code><br>Planned: <code>/billing/surgery-cancellations/[cancellationId]/refunds-due</code></td>
+      <td>2026-10-18</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>37</td>
+      <td>Lộc<br><code>locgit-89</code></td>
+      <td>Add administrator Billing outbox replay after verifying event-ID discovery, conditional maintenance settings, correlation-ID propagation, not-found behavior, operator feedback, and Gateway routing.</td>
+      <td>Planned: <code>/billing/admin/outbox</code></td>
+      <td>2026-10-20</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
+    </tr>
+    <tr>
+      <td>38</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Add notification read-state and authorized retry commands only after the live Notification contract defines endpoints, roles, lifecycle rules, and privacy-safe responses.</td>
-      <td><code>/notifications/[notificationId]</code> (future controls)</td>
+      <td>Planned: controls in <code>/notifications/[notificationId]</code></td>
       <td>2026-10-19</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>34</td>
+      <td>39</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Add authenticated “My Notifications” after Hoàng Anh's Gateway/Patient identity mapping is available and backend ownership checks are enforced.</td>
       <td>Planned: <code>/notifications/me</code></td>
       <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
     </tr>
     <tr>
-      <td>35</td>
+      <td>40</td>
       <td>Lộc<br><code>locgit-89</code></td>
       <td>Define and expose currency semantics for Billing displays in coordination with Report; the frontend must not infer currency from locale.</td>
-      <td><code>/billing</code> and shared display contract for <code>/reports</code></td>
+      <td>Planned: <code>/billing</code> and shared display contract for <code>/reports</code></td>
       <td>2026-10-26</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
     </tr>
     <tr>
-      <td>36</td>
+      <td>41</td>
       <td>Vinh<br><code>SHARED coordinator</code></td>
       <td>SHARED release verification: run authenticated browser smoke tests for every role across all delivered dashboard contexts, including role denial, ownership/privacy boundaries, error correlation IDs, and critical end-to-end workflows.</td>
-      <td>All delivered dashboard routes</td>
+      <td>Planned: all delivered dashboard routes</td>
       <td>2026-11-02</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
     </tr>
   </tbody>

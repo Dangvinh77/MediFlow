@@ -84,11 +84,13 @@ earliest date as `Actual Start Date`; do not use elapsed calendar days.
 Record rows under these owner groups:
 
 - Vinh: appointment, medical record, Laboratory, Inpatient, focused tests, clearance-enabled
-  Clinical commands, Clinical-to-Laboratory request handoff, Inpatient bed/treatment/discharge.
+  Clinical commands, Clinical-to-Laboratory request handoff, and Inpatient bed placement,
+  admit/cancel, treatment correction, order-reference, discharge, close, and bed administration.
 - Huy: Pharmacy, Report, focused tests, operational reports, export contract, Surgery workspace.
 - Hoàng Anh: Organization, Patient, focused tests, lookup selectors, identity mapping, patient
   self-service.
-- Lộc: Billing, Notification, focused tests, refunds/settlement/clearance, notification read/retry,
+- Lộc: Billing, Notification, focused tests, payments/refunds/settlement/clearance, revenue,
+  Billing outbox replay, prescription/Surgery refund-due reads, notification read/retry, and
   authenticated patient notification access.
 
 Expected: every delivered route is represented and every future function stays with its owner.
@@ -178,7 +180,7 @@ foreach($status in 'DONE','IN PROGRESS','PLANNED','VERIFY CONTRACT','BLOCKED') {
 }
 if($text -notmatch 'rowspan="2"'){ throw 'Missing two-level row header' }
 if($text -notmatch 'colspan="3"'){ throw 'Missing Plan Preparation Date group' }
-if($text -match '\bV\d+\b|Care.Finance'){ throw 'Internal version terminology found' }
+if($text -match '\bV\d+\b|Care[-.]Finance'){ throw 'Internal version terminology found' }
 'TASKSHEET_STRUCTURE_OK'
 ```
 

@@ -22,6 +22,14 @@ unpaid fees, and `/billing/{invoiceId}` renders fee detail and supports payment.
 - `FE-BILLING-03` — `DONE` for payment; refund remains absent because no live controller command exists.
 - `FE-BILLING-04` — `IMPLEMENT`: test pagination, money display, terminal states, errors, and retries
   after the shared harness exists.
+- `FE-BILLING-05` — `VERIFY CONTRACT`: add administrator/manager revenue filtering by department and
+  date range after confirming the Gateway route, `RevenueByDeptDTO`, empty/error behavior, and display
+  semantics.
+- `FE-BILLING-06` — `VERIFY CONTRACT`: add administrator outbox replay after confirming event-ID
+  discovery, the conditional maintenance settings, correlation-ID handling, and not-found behavior.
+- `FE-BILLING-07` — `VERIFY CONTRACT`: add cashier/administrator prescription-adjustment and Surgery-
+  cancellation refund-due views after the two ledger consumer settings, DTOs, producer identifiers,
+  and Gateway behavior are verified. These are read models, not refund commands.
 
 ## Handoffs and blockers
 
@@ -30,6 +38,9 @@ unpaid fees, and `/billing/{invoiceId}` renders fee detail and supports payment.
 - Patient display enrichment requires Patient's live contract. Producer: Patient / Hoàng Anh.
 - Lab/Pharmacy references and saga state must come from Billing DTOs/events; do not query or import
   those frontend features to reconstruct an invoice.
+- Revenue, outbox replay, prescription refund-due, and Surgery cancellation refund-due interfaces
+  must use their live Billing controllers; conditional endpoints remain hidden until their settings
+  and Gateway availability are verified.
 
 ## Contract and verification gate
 

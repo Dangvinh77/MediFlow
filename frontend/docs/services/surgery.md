@@ -26,8 +26,9 @@ authority, DTO, role, error, and producer/consumer contracts pass their release 
 - `FE-SURGERY-02` — `BLOCKED`: implement request, pre-op, checklist, consent, readiness, schedule,
   execution, completion, and cancellation controls only for commands whose contracts and authority
   providers are production-ready.
-- `FE-SURGERY-03` — `PLANNED`: add permission, validation, lifecycle, conflict, idempotency, retry,
-  and integration tests after the shared frontend test harness and exact Surgery fixtures exist.
+- `FE-SURGERY-03` — `BLOCKED`: add permission, validation, lifecycle, conflict, idempotency, retry,
+  and integration tests after the unavailable shared frontend test harness and exact Surgery fixtures
+  exist.
 
 ## Handoffs and blockers
 
