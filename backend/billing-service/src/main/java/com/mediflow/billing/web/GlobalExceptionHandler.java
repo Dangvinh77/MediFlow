@@ -37,7 +37,12 @@ public class GlobalExceptionHandler {
             jakarta.servlet.http.HttpServletRequest request) {
         boolean lookup = request.getRequestURI().startsWith("/api/v1/billing/financial-clearances/");
         boolean ledger = request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
-                || request.getRequestURI().startsWith("/api/v1/billing/transactions/");
+                || request.getRequestURI().startsWith("/api/v1/billing/transactions/")
+                || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-preview")
+                || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-reconciliations")
+                || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/deposit-allocations")
+                || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")
+                || request.getRequestURI().startsWith("/api/v1/billing/prescription-adjustments/");
         if (!lookup && !ledger) return unexpected(ex);
         String correlation = request.getHeader(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID);
         if (correlation == null || correlation.isBlank()) correlation = java.util.UUID.randomUUID().toString();
@@ -91,6 +96,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> accessDenied(AccessDeniedException ex) {
         return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "Bạn không có quyền thực hiện thao tác này");
+    }
+
+    /** A contended transaction is unavailable, never a successful or fabricated financial result. */
+    @ExceptionHandler(org.springframework.dao.ConcurrencyFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> freshSnapshotRequired(org.springframework.dao.ConcurrencyFailureException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        // The new finalizer owns this retry contract; preserve existing endpoint error codes.
+        if (!request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")) {
+            return storageFailure(ex, request);
+        }
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "BILLING_RETRY_FRESH_SNAPSHOT", "Retry the same operation key from a fresh snapshot");
     }
 
     /** 500 — mọi lỗi chưa xử lý riêng; không lộ stack trace ra ngoài. */

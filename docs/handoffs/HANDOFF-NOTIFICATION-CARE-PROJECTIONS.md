@@ -21,6 +21,19 @@ a Notification template unless the canonical contract is amended by its owners.
 
 ## Owner actions
 
+**IMPLEMENTED LOCAL Rx invoice purpose — 2026-10-09:** Billing's opt-in Pharmacy issuer captures
+PRESCRIPTION `invoice.created` V1. Its producer-service fixture is
+`backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-prescription.json`;
+[canonical fields/meaning](care-finance/CONTRACT-CARE-BILLING-01.md#opt-in-prescription-charge-issuance--2026-10-09).
+The existing guarded Surgery request reader now accepts only exact SURGERY/PRESCRIPTION targets
+and chooses the distinct PRESCRIPTION_PAYMENT_REQUEST private template. No competing listener
+or flat legacy reader was added. Same-byte contract and PG/Rabbit tests cover source/delivery
+dedupe/conflicts, rollback and privacy; a request is neither paid nor dispensed. Historical
+queue/flag names stay unchanged. Actual original-linked Rx refund fixtures additionally use the
+existing PAYMENT_REFUNDED private reader, not settlement. Gates and held rows remain OFF.
+[Current verification and remaining limits](../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+This handoff remains active for admission/top-up/settlement and reviewed live publication.
+
 Refund follow-up 2026-10-08: completed-refund template/strict two-gated reader now
 consume actual Billing fixtures directly. Private history, source/delivery claims and held
 sent fact are atomic; PG/Rabbit duplicate/conflict/rollback/DLQ/replay and full **171/171**

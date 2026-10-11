@@ -1,5 +1,45 @@
 # Service: billing
 
+Integration resolution 2026-10-11: the single dispatcher retains both master's Lab/deposit/
+discharge adapters and Huy's versioned Rx/medical-proof/Surgery proof adapters. Shared medical
+discharge selects the proof-retaining handler if configured, otherwise master's freeze-only
+handler; strict failure never falls back and both never write the same delivery. Default gates
+remain unchanged. Duplicate `SettlementCompletedPayload` declarations collapse without wire
+changes. Master V12/V13 remain exact; unchanged prescription SQL is V19/V20. Existing Huy-only
+Rx V12/V13 history requires reviewed reconciliation, never automatic repair/clean or skipped
+validation.
+
+Historical evidence protection 2026-10-11 (user-scoped Huy override): automatic published-outbox
+purge is independently default OFF (`mediflow.billing.outbox.purge-published-enabled`, env
+`MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED`). Dispatch/operator replay remain unchanged;
+168-hour cleanup requires explicit opt-in after archive completeness/backup/restore/retention review.
+This preserves remaining bytes, not already deleted events or approved historical coverage. Legacy
+invoice payment facts cannot be relabeled as V2 transaction/account/episode/allocation operations.
+[Canonical boundary](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-account-fencing-and-historical-evidence--2026-10-11).
+
+Initial-final continuation 2026-10-10: a four-gate ADMIN/CASHIER finalizer now consumes exact local
+medical/performed/ledger proof, persists initial final SETTLED state and both HELD final facts.
+Explicit generating-department amounts and original-deposit releases are separate from non-final
+receivable and cash. Insurance attribution, reversal, debt/waiver and reopening are unsupported.
+[Canonical initial-final API/wire/retry](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10).
+
+Local follow-up 2026-10-10: explicit original-deposit allocation and unused-cash refunds now exist,
+with account fencing, immutable audit and HELD non-final facts. Neither recognizes revenue before
+final settlement. Nonzero insurance attribution remains unsupported rather than guessed; initial
+finalization now follows the separate rule above.
+[Canonical allocation/refund rules](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#local-admission-deposit-allocation-and-unused-cash-refund--2026-10-10).
+
+User decision 2026-10-10: earned recognition is final-settlement-only. Default-off V15 medical
+charge-close now consumes exact Inpatient proof on the single billing.q dispatcher with local
+episode/account fencing and durable early proof, not money/finalization.
+[Canonical boundary](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#recognition-timing--user-decision-2026-10-10).
+
+Non-final reconciliation follow-up 2026-10-10: a three-gate ADMIN/CASHIER POST derives consecutive
+account-balance snapshots from persisted admission ledger rows, with signed actor/idempotency,
+REPEATABLE READ/account fencing and atomic HELD `settlement.reconciled` V1 outbox. It does not
+finalize an admission, change money or grant discharge. Wire/namespace/retry rules are canonical in
+[CARE-BILLING](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#non-final-versioned-reconciliation--2026-10-10).
+
 **Sources of truth:** current behavior in `docs/eproject_general_plan/billing-service.html`; target
 care-finance behavior in [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html).
 **Module:** `backend/billing-service/` · **Base path:** `/api/v1/billing` · **Owner:** Lộc (`locgit-89`)
@@ -96,6 +136,45 @@ not a paid receipt or booking. V6 continues to hold all V1 events. Full evidence
   owner cannot update in the same PR, keep the registry status blocked and retain compatibility.
 
 ## Acceptance gates
+
+### Admission settlement preview — 2026-10-09
+
+Billing provides a two-gate, default-off ADMIN/CASHIER read-only admission reconciliation preview.
+Pure ledger math validates persisted original-linked payments/refunds/reversals/allocations and
+insurance, without counting unallocated deposits as allocated payments or revenue. One bounded
+REPEATABLE READ snapshot prevents mixed totals while another transaction commits. The response
+is explicitly non-final; no settlement, approval, monetary mutation or outbox publication occurs.
+The exact GET shape/limits/errors and remaining finance work are canonical in
+[CARE-BILLING](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#read-only-admission-ledger-reconciliation--2026-10-09).
+This diagnostic cannot replace the event facts required by Report, authorize care, or release
+Inpatient/Pharmacy. Gateway is unchanged.
+
+### Opt-in Pharmacy V1 charge issuer — 2026-10-09
+
+Ledger plus prescription-charge-consumer gates select original Pharmacy V1 bytes on the single
+billing.q dispatcher. V0 retains its handler; invalid V1 never falls back, and unsupported V1
+terminal facts cannot enter legacy compensation. V12 appends immutable delivery/source/item
+receipts. Exact episode/source locks serialize one checked prescription bundle charge. Outpatient
+alone creates a selected request/target and held invoice; admission accrues without fabricated
+prepayment or actor UUID. Replay preserves original IDs after account closure. The explicit
+Pharmacy server-price specialization is not an arbitrary client amount or Surgery catalogue price.
+Payments reuse classified installments and singular full-payment clearance. Pharmacy/Report check
+the same producer-owned files; Notification now accepts the private Rx unpaid-request purpose. No default flag,
+held-publication fence, Gateway or public Pharmacy activation changes. Distributed revocation,
+admission charge-close authority, recognition/settlement and rollout stay open.
+[Canonical semantics](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#opt-in-prescription-charge-issuance--2026-10-09),
+[evidence](../../superpowers/plans/2026-10-09-pharmacy-report-rx-issuance.md).
+
+V13 extends the same guarded dispatcher with strict immutable Rx terminal evidence and early
+PENDING recovery. Exact unchanged creation proof is mandatory; original deliveries must revalidate
+older NULL proof rather than infer it from a terminal. Cancel/expire/fail void the exact charge,
+cancel the selected request and locally revoke its grant under account locks. Original-only refund
+obligations are not cash transactions. Default-off `GET /api/v1/billing/prescription-adjustments/{id}/refunds-due`
+is ADMIN/CASHIER only, reports current remaining obligations after actual refunds and never executes
+one. FILLED is absorbing evidence, not recognition. Closed-account/ambiguous admission adjustment
+is rejected rather than inventing a policy. Gateway is unchanged.
+[Canonical terminal semantics](../../handoffs/care-finance/CONTRACT-CARE-BILLING-01.md#prescription-terminal-adjustment--local-opt-in-continuation-2026-10-09),
+[current verification](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 
 ### Opt-in discharge freeze and admission settlement (2026-10-10)
 

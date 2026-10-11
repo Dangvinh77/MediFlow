@@ -5,6 +5,14 @@
 **Module:** `backend/notification-service/` · **Base path:** `/api/v1/notifications` · **DB tables:** `NOTIFICATION`, `PROCESSED_EVENT`
 
 ## Bounded context
+
+Rx follow-up 2026-10-09: the existing guarded Surgery payment-request reader additionally accepts
+exact PRESCRIPTION / OUTPATIENT_VISIT targets with the distinct PRESCRIPTION_PAYMENT_REQUEST
+private unpaid notice. Historical queue/flag names remain compatible; no competing listener,
+contact lookup, email/SMS or authority was added. Actual original-linked Rx refunds use the
+existing PAYMENT_REFUNDED private notice, never settlement. Both gates stay OFF and sent
+outboxes stay held. [Contract](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#prescription-unpaid-request-notice--additive-v1-purpose-2026-10-09),
+[current verification](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 Owns: notification history (`NOTIFICATION`) and consumer idempotency records (`PROCESSED_EVENT`). Mostly event-driven. Does NOT own core business data.
 
 ## Data

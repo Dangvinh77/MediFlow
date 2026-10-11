@@ -19,6 +19,12 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
     private final JdbcTemplate jdbc;
     private final CashSnapshotCodec codec;
     public CashRefundPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc = jdbc; this.codec = new CashSnapshotCodec(mapper); }
+    @Override public void lockAccount(UUID accountId) {
+        jdbc.execute("SET LOCAL lock_timeout = '3s'");
+        jdbc.execute("SET LOCAL statement_timeout = '5s'");
+        FinancialPublicationFence.writer(jdbc);
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "report-final-account:" + accountId);
+    }
     @Override public void lockOriginal(UUID original) {
         jdbc.execute("SET LOCAL lock_timeout = '3s'");
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "report-cash:" + original);
@@ -60,7 +66,13 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
                 rs.getDate("business_date").toLocalDate(), rs.getString("report_zone")), id).stream().findFirst();
     }
     @Override public BigDecimal appliedTotal(UUID id) {
-        return jdbc.queryForObject("SELECT COALESCE(SUM(amount),0) FROM report_cash_refund WHERE original_transaction_id=? AND state='APPLIED'", BigDecimal.class, id);
+        return jdbc.queryForObject("""
+                SELECT (SELECT COALESCE(SUM(amount),0) FROM report_cash_refund WHERE original_transaction_id=? AND state='APPLIED')
+                    +(SELECT COALESCE(SUM(amount),0) FROM report_final_deposit_release WHERE original_transaction_id=?)
+                """, BigDecimal.class, id, id);
+    }
+    @Override public boolean finalized(UUID accountId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM report_final_recognition WHERE account_id=? AND state='APPLIED')", Boolean.class, accountId));
     }
     @Override public List<CashRefund> pending(UUID original, int limit) {
         require(limit >= 1 && limit <= 20, "CASH_REFUND_BATCH_INVALID");

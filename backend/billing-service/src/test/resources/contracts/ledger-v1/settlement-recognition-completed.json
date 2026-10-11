@@ -1,0 +1,81 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000018",
+  "eventType": "settlement.recognition.completed",
+  "version": 1,
+  "occurredAt": "2026-10-10T00:01:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000015",
+  "producer": "billing-service",
+  "payload": {
+    "recognitionOperationId": "00000000-0000-4000-8000-000000000015",
+    "recognitionRevision": 1,
+    "supersedesOperationId": null,
+    "settlementId": "00000000-0000-4000-8000-000000000016",
+    "settlementVersion": 1,
+    "supersedesSettlementId": null,
+    "accountId": "00000000-0000-4000-8000-000000000001",
+    "admissionId": "00000000-0000-4000-8000-000000000002",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "accountDepartmentId": "00000000-0000-4000-8000-000000000004",
+    "currency": "VND",
+    "grossAmount": 100.00,
+    "insuranceAmount": 0.00,
+    "patientLiability": 100.00,
+    "completedPayments": 120.00,
+    "completedRefunds": 20.00,
+    "completedReversals": 0.00,
+    "netAllocatedPayments": 100.00,
+    "balance": 0.00,
+    "outcome": "PAID_IN_FULL",
+    "completedAt": "2026-10-10T00:01:00Z",
+    "finalSettlement": true,
+    "charges": [
+      {
+        "chargeId": "00000000-0000-4000-8000-000000000005",
+        "departmentId": "00000000-0000-4000-8000-000000000009",
+        "sourceType": "SURGERY",
+        "sourceId": "00000000-0000-4000-8000-000000000007",
+        "performedOperationId": "00000000-0000-4000-8000-000000000019",
+        "performedFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "performedAt": "2026-10-09T23:58:55Z",
+        "earnedAmount": 60.00
+      },
+      {
+        "chargeId": "00000000-0000-4000-8000-000000000006",
+        "departmentId": "00000000-0000-4000-8000-000000000010",
+        "sourceType": "SURGERY",
+        "sourceId": "00000000-0000-4000-8000-000000000008",
+        "performedOperationId": "00000000-0000-4000-8000-000000000020",
+        "performedFingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "performedAt": "2026-10-09T23:58:55Z",
+        "earnedAmount": 40.00
+      }
+    ],
+    "allocations": [
+      {
+        "allocationId": "00000000-0000-4000-8000-000000000013",
+        "transactionId": "00000000-0000-4000-8000-000000000011",
+        "originalTransactionId": null,
+        "chargeId": "00000000-0000-4000-8000-000000000005",
+        "transactionType": "PAYMENT",
+        "classification": "ADMISSION_DEPOSIT",
+        "amount": 60.00
+      },
+      {
+        "allocationId": "00000000-0000-4000-8000-000000000014",
+        "transactionId": "00000000-0000-4000-8000-000000000011",
+        "originalTransactionId": null,
+        "chargeId": "00000000-0000-4000-8000-000000000006",
+        "transactionType": "PAYMENT",
+        "classification": "ADMISSION_DEPOSIT",
+        "amount": 40.00
+      }
+    ],
+    "depositReleases": [
+      {
+        "originalTransactionId": "00000000-0000-4000-8000-000000000011",
+        "receiptDepartmentId": "00000000-0000-4000-8000-000000000004",
+        "amount": 100.00
+      }
+    ]
+  }
+}

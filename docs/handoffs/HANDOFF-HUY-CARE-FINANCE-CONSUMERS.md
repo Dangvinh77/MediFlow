@@ -2,6 +2,66 @@
 
 **Status:** ACTIVE — Pharmacy admission intake/current-state lookup and Report operational intake are implemented behind separate default-off gates; admission command authorization, full finance/live publication and placement policy remain open.
 **Owner:** Huy (`LQHuy0210`), Pharmacy and Report.
+
+Current release 2026-10-11: the user's later decision permits a reasonable available-history
+fallback. It supersedes the earlier mandatory unavailable pre-V2 blocker below; missing periods
+remain unavailable, never reconstructed from fixture/aggregate IDs. Huy now supplies a controlled
+finite financial publisher with local writer/source fence, row/proof reconciliation, immutable
+acceptance/audit, expected-pointer switch and rollback, plus explicit capability/coverage/bounded
+rebuild APIs. All operator gates default OFF. Unsupported post-final/operational corrections,
+operational publication/full KPI rollout and Pharmacy admission authority remain ACTIVE. Hoàng Anh
+must review management-plane operator POST ingress before external exposure; Gateway is unchanged.
+[Current canonical contract](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#supported-available-history-release-and-controlled-publication--2026-10-11)
+and [decision/runbook](../superpowers/plans/2026-10-11-report-supported-release-60.md).
+
+Local discovery/recovery continuation 2026-10-11: the known legacy PostgreSQL volume was cloned
+and inspected read-only: Billing/Report have no public tables and Pharmacy's four relevant tables
+have zero rows. Original volumes are unchanged. This is not proof of historical no-events elsewhere.
+Report now has strict portable local financial evidence export/restore and immutable actor provenance,
+not a producer export or accepted pre-V2 coverage. Historical sources/explicit legacy conversion and
+publication remain ACTIVE. [Discovery and recovery evidence](../superpowers/plans/2026-10-11-report-financial-archive-recovery.md).
+
+2026-10-11 requirement: the user requires history BEFORE V2. Complete local activation-era inputs
+alone are insufficient for historical acceptance/cutover. R-01.3.2 local financial contribution/
+pending behavior now passes all six PG/Rabbit arrival permutations and exact original-linked partial
+payments/refunds. Billing/Pharmacy automatic published-outbox purge is separately default OFF to
+preserve remaining history. Historical archive/source export, explicit legacy identity conversion,
+retention/access/backup/restore and controlled catch-up/publication remain ACTIVE, not inferred from
+tests or current totals. No accepted producer historical export has been found in the sources inspected.
+[Current evidence and source requirements](../superpowers/plans/2026-10-11-financial-pending-and-history.md).
+
+Latest continuation 2026-10-10: an initial final Billing writer and Report's exact final-only
+recognition/original-deposit release kernel are now coded. Report retains missing accepted local
+cash proofs as durable PENDING, deduplicates semantic operations and writes both scopes atomically.
+The canonical initial wire and unsupported corrections/insurance/debt/waiver are defined in
+[CARE-BILLING](care-finance/CONTRACT-CARE-BILLING-01.md#initial-final-settlement-and-explicit-earned-operation--2026-10-10)
+and [CARE-PROJECTIONS](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#initial-final-only-recognition-intake--2026-10-10).
+Full financial rebuild/publication and Pharmacy live medication permission remain ACTIVE; this
+supersedes the earlier initial-final writer/recognition absence notes below, not their open rollout gates.
+
+Medical/finance follow-up 2026-10-10: Report now consumes actual Inpatient medical approval paired
+with original START to project medical discharges, whole LOS minutes and completed 24-hour stay
+periods. This is not staffed-bed census/occupancy or redefined inpatientDays. Under the authorized
+Billing override, local charge-close, original-deposit allocation/unused-cash refunds and canonical
+performed Surgery proof are implemented. User-chosen earned timing is final-settlement-only; final
+writer/recognition/reversal/five-metric publication and Pharmacy live medication permission remain
+ACTIVE. No held release or default-on feature is inferred.
+[Current execution and limits](../superpowers/plans/2026-10-10-medical-discharge-deposit-finalization.md).
+
+Financial read follow-up 2026-10-10: Huy now provides local dual-gated ADMIN/MANAGER
+`financial/daily` and `financial/monthly` aggregate APIs, with complete exact day/scope/currency/
+timezone coverage and correct month-end stocks. The read namespace is EMPTY and has no production
+five-metric rebuild/publication writer. Missing sources/coverage intentionally return 404, not
+fabricated zeros. This removes the reader/RBAC code gap only; Billing recognition/liability release/
+original reversals, durable full-financial replay and approved publication remain ACTIVE.
+[Read boundary](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#financial-snapshot-read-boundary--2026-10-10).
+
+Follow-up 2026-10-10: Billing non-final `settlement.reconciled` V1 and Report's latest-version
+receivable stock now have a local producer/consumer implementation under the existing Billing
+override. They remove the local balance/revision projection gap only. Final settlement, earned
+recognition/liability release, admission authority and approved financial replay/publication remain
+open; no consumer may use the non-final snapshot to close an admission. See
+[canonical contract](care-finance/CONTRACT-CARE-PROJECTIONS-01.md#versioned-non-final-receivable-stock--2026-10-10).
 **Unblocks:** safe Inpatient lifecycle activation and complete operational/financial reporting.
 
 ## Producer
@@ -12,7 +72,7 @@ Inpatient produces approved admission/discharge lifecycle events. Billing produc
 
 - Pharmacy persists exact admission lifecycle evidence through its own opt-in queue. Start is not sufficient medication permission: medical discharge/close dominate late start, and public admission prescribing/dispensing remains closed.
 - Pharmacy has a separately gated service-only current-admission lookup, exact IDs/correlation and bounded freshness, with unavailable distinct from absence. It proves admission state, not placement, prescriber/order authority or a distributed lease.
-- Report has a separate opt-in operational/evidence queue using actual Clinical, Lab, Pharmacy, Surgery and Inpatient bytes. It uses transactional kernels and minimal replay inputs, not the legacy totals or accepted publication. Canonical admission starts now count once in department/hospital scopes; administrative close remains evidence only, not medical discharge/LOS/occupancy.
+- Report has a separate opt-in operational/evidence queue using actual Clinical, Lab, Pharmacy, Surgery and Inpatient bytes. It uses transactional kernels and minimal replay inputs, not the legacy totals or accepted publication. Canonical starts and medical discharges/completed-stay duration now project into department/hospital scopes; administrative close remains evidence only and no occupancy is inferred.
 - Report also has opt-in cash-only `payment.completed` intake into its existing gross receipt kernel
   and finite replay, with a separate queue/DLQ and default-off gate. Actual Billing service/deposit
   bytes commit once; legacy projections do not count these deposits as revenue. Allocation, release,
@@ -39,6 +99,17 @@ Evidence and remaining scope:
 
 ## Owner actions
 
+Rx creation follow-up 2026-10-09: Billing's gated issuer now accepts original Pharmacy creation
+bytes and commits exact episode/bundle charge plus selected outpatient request with held invoice.
+Admission is charge-only, not prepaid. Pharmacy/Report check the same Billing installment/grant
+files. Creation issuance and guarded terminal cancelled/expired/failed local adjustment no longer
+wait for another owner. Billing voids the exact charge/cancels the outpatient request, locally
+revokes its grant and records original-only refund obligations; only actual refund commands
+produce payment.refunded. Notification accepts the private PRESCRIPTION unpaid-request purpose.
+Distributed revoke/supersede, admission charge-close authority and public/held activation remain open.
+[Canonical semantics](care-finance/CONTRACT-CARE-BILLING-01.md#opt-in-prescription-charge-issuance--2026-10-09),
+[current adjustment evidence](../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
+
 Context follow-up 2026-10-09: Clinical now supplies an independently gated, service-only exact
 prescription-context read; Pharmacy has the real Feign consumer and an internal context-checked
 creation caller with post-lock/replay freshness checks. It supplies record/patient/prescriber/
@@ -46,8 +117,9 @@ department/episode relationship facts, not medication-order or current staff lic
 Public V1 and held delivery stay closed. Current Patient existence and Organization descriptive
 active-doctor/department checks are implemented with real REST, outside transactions, and rechecked
 after mutation locks. This is necessary identity evidence, not doctor-license/order permission.
-Authoritative order policy, Billing Rx issuance/terminal adjustment and admission placement/races
-remain required. [Current verification](../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+Authoritative order policy, Billing terminal adjustment and admission placement/races remain
+required. Local Rx creation issuance is now implemented as stated above; activation is still
+separate. [Earlier verification](../superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
 [Canonical contract](care-finance/CONTRACT-CARE-BILLING-01.md#additive-clinical-prescription-context-lookup--2026-10-09).
 
 Finite rebuild follow-up 2026-10-08: Report now has paired receipt/refund manifests and isolated

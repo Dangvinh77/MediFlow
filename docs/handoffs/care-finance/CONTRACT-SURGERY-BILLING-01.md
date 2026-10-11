@@ -9,6 +9,30 @@
 
 ## Price and charge source
 
+### Canonical performed proof — LOCAL, 2026-10-10
+
+Billing's ledger + surgery-charge-consumer + surgery-completion-proof gates (all default OFF)
+select one strict completion branch on the existing dispatcher. The original Surgery V1 envelope
+and exact payload/sourceRevision=1, result, case/request/episode/patient/generating department and
+started/completed/recorded chronology are checked before any compatibility decode. V17 stores
+only immutable minimal source/delivery fingerprints and exact completedAt/recordedAt ISO strings;
+complication narratives and procedure/method text are not persisted in financial proof.
+
+Case -> account -> delivery fencing commits every charge reconciliation/processed receipt/proof
+and account version together. Matched source/new delivery after close is no-effect and does not
+consult the current catalogue. Changed time/context/revision/metadata and source/storage conflicts
+fail closed; bounded retry/DLQ retains original bytes for recovery. Historical compatibility
+completion without canonical proof cannot be upgraded by inventing its original timestamps or hash.
+
+The actual performed-difference producer fixture can update charge quantities/add an explicitly
+priced performed line, but does not rewrite a paid request or issue a final settlement. Unknown
+price and omitted original planned lines reject before an accepted proof; their adjustment/refund
+policy is not guessed. Zero/free-care authorization, additional requests, late correction, distributed
+START fencing and reviewed release remain separate work. Performed proof is NOT earned revenue:
+the user's final-settlement-only recognition rule applies.
+
+[Tests, scope and remaining finalization work](../../superpowers/plans/2026-10-10-medical-discharge-deposit-finalization.md).
+
 ### Huy-owned event identity — fixed for Billing fixtures (2026-10-07)
 
 | Business fact | `eventType` and Rabbit routing key | Envelope `version` | Producer |

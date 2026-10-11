@@ -31,6 +31,9 @@ public class CashReceiptPersistenceAdapter implements CashReceiptStorePort {
     @Override
     public boolean record(DecodedCareFinanceEvent event, CashReceipt receipt) {
         jdbc.execute("SET LOCAL lock_timeout = '3s'");
+        jdbc.execute("SET LOCAL statement_timeout = '5s'");
+        FinancialPublicationFence.writer(jdbc);
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "report-final-account:" + receipt.accountId());
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "report-cash:" + receipt.transactionId());
         var metadata = event.metadata();
         String payloadHash = snapshots.evidenceFingerprint(event.payload());

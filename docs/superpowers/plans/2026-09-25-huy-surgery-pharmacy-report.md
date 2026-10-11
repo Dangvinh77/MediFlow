@@ -1,8 +1,158 @@
 # Kế hoạch code của Huy — Surgery, Pharmacy, Report theo Care–Finance V2
 
-**Cập nhật:** 2026-10-09 · **Owner:** Huy (LQHuy0210).
+**Cập nhật:** 2026-10-11 · **Owner:** Huy (LQHuy0210).
 
-**Pharmacy/Report priority follow-up (2026-10-09):** current Patient/Organization identity preflight
+**Current supported-release milestone (2026-10-11): 60/70 = 85.71%, 10 remaining leaves.**
+Pharmacy **25/32**, Report **35/38**. Later user authorization permits reasonable redesign when
+pre-V2 sources cannot be found: available retained evidence is a finite snapshot; missing older
+history is explicitly unavailable, never synthetic transactions or monetary zeroes. Six existing
+Report leaves below close against explicitly revised supported-release acceptance, not full future
+correction/KPI/production rollout. No new checklist ID or denominator is added.
+Fresh clean full Report **1,151 tests / 108 suites PASS**, zero failure/error/skip, with actual
+PostgreSQL/RabbitMQ. All **351 source/POM files** match the isolated verification checkout.
+[Decision, six-task acceptance, source/history limits, operator runbook and evidence](2026-10-11-report-supported-release-60.md).
+
+Counting retains the existing rule: P-02/P-03 and R-01..R-04 checkbox leaves, excluding legacy
+P-01 and R-02.1/.2 and parents with children; the already-existing P-03.2.3a and R-01.5.3.CASH
+remain included. Ten remaining leaves: P-02.2.4, P-02.5.5, P-03.1.3, P-03.3.2, P-03.4.4,
+P-03.5.5, P-03.6, R-04.2.3, R-04.3, R-04.5.2. Open parent text separately preserves full
+correction/legacy-import, operational publication and rollout targets beyond this leaf milestone.
+
+The dated tranche summaries below are historical. This current decision supersedes their earlier
+mandatory unavailable-pre-V2-history blocker and finite-financial-publication absence statements.
+
+**Latest discovery/recovery (2026-10-11):** known local legacy PostgreSQL volume was inspected
+through a read-only isolated clone: Billing/Report have no public tables and Pharmacy's relevant
+tables contain zero rows. No accepted pre-V2 source was found; empty local data is not global
+no-events approval. Report now has strict portable local financial evidence backup/restore into
+isolated V23 generations with immutable V24 operator provenance and default-off ADMIN-only routes.
+This advances R-01.4.2, not producer historical coverage/publication. Original accounting stays
+**54/70, 16 open, 6 more for 60/70**; no checklist inflation or synthetic history.
+Clean full Report **989 tests / 100 suites PASS**; final affected **93 tests / 6 suites PASS**
+separately, actual PostgreSQL/RabbitMQ, zero skip. **54 distinct new cases**, not new checklist credit.
+[Discovery, implementation and verification](2026-10-11-report-financial-archive-recovery.md).
+
+**Latest pending/contribution acceptance (2026-10-11):** R-01.3.2 closes its LOCAL
+financial contribution/original-linked pending criterion against actual Billing producer bytes.
+Receipt/refund/final/non-final writers now share account-first database fencing; final scopes
+write hospital first, then sorted departments. Six PG and six Rabbit arrival permutations,
+durable recovery, exact replay, two Rx installments/three original refunds and all-five-metric
+reconciliation pass. Original accounting is **54/70 (77.14%), 16 open** (Pharmacy 25/32,
+Report 29/38), **6 more for 60/70**, **9 more for 90%**. No new checklist IDs are counted.
+Clean full Report **932 PASS**, latest affected **117 PASS** separately; overlapping runs are
+not summed. Historical/correction/publication and Pharmacy medication authority remain open.
+
+**Earlier historical requirement — superseded by the current user decision above:** acceptance MUST include history
+before V2; activation-only coverage is insufficient. Missing legacy transactions/allocations/
+settlement operations cannot be inferred from invoice aggregates or test fixtures. R-01.4.2,
+R-01.7.3 and full cutover stay OPEN until real archive/backup/source export is verified.
+Billing/Pharmacy automatic published-outbox purge is now separately default OFF; operator replay
+and dispatch remain unchanged. This preserves remaining evidence, not an already deleted history.
+[Current code, checks and remaining source requirements](2026-10-11-financial-pending-and-history.md).
+
+**Current finite-source continuation (2026-10-11):** Report V23 now rebuilds supported initial
+five-metric finance from a frozen local source manifest, with bounded durable checkpoints and
+database replica fencing. This advances R-01.5.3/R-01.6.2; correction, source export/coverage and
+V20 publication acceptance still prevent closing those original leaves. Original accounting stays
+**53/70 (75.71%), 17 open, 10 more for 90%**; no IDs/denominator or approvals are added.
+Clean full Report **910/910 PASS**; latest manifest/context hardening **88 PASS** separately,
+zero failure/error/skip with actual PostgreSQL/RabbitMQ. Overlapping reruns are not summed.
+[Implementation, verification and exact limits](2026-10-11-financial-source-rebuild.md).
+
+**Latest initial-final continuation (2026-10-10):** Billing initial final writer and isolated
+Report earned/original-deposit release pass same-byte producer/consumer, PostgreSQL, Rabbit and
+full regressions. **R-03.3 closes for its initial local recognition/release criterion**; correction,
+full rebuild and live release remain separate open tasks. Full Billing 859 and Report 869 pass;
+subsequent cash fixture and 82-case Report hardening also pass (not summed reruns).
+Original checklist is **53/70 = 75.71%**, **17 open**, **10** required for 90%
+(Pharmacy 25/32, Report 28/38). No IDs or denominator are added.
+This supersedes earlier initial-final writer/recognition absence notes, not correction/rebuild/live
+activation gaps. [Implementation and current verification](2026-10-10-final-settlement-recognition-source.md).
+
+**Current medical/finance prerequisite continuation (2026-10-10):** Report now projects actual
+medical discharge, whole LOS minutes and completed 24-hour stay periods with durable START pairing,
+atomic scopes and finite replay. Full Report **808/808 PASS**, 88 suites, zero skip. Billing now has
+exact medical charge-close, explicit original-deposit allocation/unused-cash refunds and canonical
+performed Surgery proof behind default-off gates. Full Billing **794/794 PASS**, 88 suites, zero
+skip; four subsequent unit-only cases pass separately (not claimed as a new full run).
+Final-only earned timing is fixed by the user,
+but that earlier tranche had no final writer/earned/release kernel; reversal and full financial
+publication remain absent. Existing inpatientDays/occupancy are not redefined by completedStayDays. No original leaf
+is falsely closed: checklist remains **52/70 = 74.29%**, **18 open**, **11** required for 90%.
+[Implementation, verified runs and precise limits](2026-10-10-medical-discharge-deposit-finalization.md).
+
+**Previous financial read implementation (2026-10-10):** R-03.6 LOCAL daily/monthly reader and
+R-02.3.2 LOCAL financial API/role boundary are implemented and tested separately from financial
+source approval. Exact five-metric amounts, completed-day/currency/zone/department coverage,
+monthly flows vs closing stocks, immutable generations, signed-token/RBAC and unavailable=404
+are enforced. The production source/replay/publication writer is still absent: V20 is EMPTY,
+and no real five-metric report, source approval, held release or live switch is claimed.
+Final clean-compiled full Report **786/786 PASS**, 86 suites, zero failure/error/skip;
+**89** distinct new tests. Unmodified Gateway targeted suites **146/146 PASS** plus 38 separate
+read-only financial-edge checks. Pharmacy/Report/Billing + Common package SUCCESS (tests skipped
+only for that packaging step; Pharmacy/Billing suites are not newly claimed as rerun).
+Current original leaf checklist is **52/70 = 74.29%**, **18 open** (Pharmacy 25/32, Report 27/38).
+The 90% target is 63/70: **11 more existing leaves** must fully close. No denominator or task IDs
+are added. [Read implementation and verification](2026-10-10-financial-read-boundary.md).
+
+**Previous versioned receivable completion (2026-10-10):** R-03.5 local stock/revision criterion is
+complete with actual Billing non-final `settlement.reconciled` V1 writer and separate Report
+latest-account receivable projection. Immutable revision/predecessor, actor/key replay, original
+ledger arithmetic, conflicting/cyclic/forked/stale source validation, replica fencing and both
+scopes/DLQ unchanged-byte recovery are tested. No payment totals are counted as cash again.
+This is NOT final settlement, discharge authority, earned recognition or public financial rollout.
+Fresh clean Billing **641/641 PASS**, Report **697/697 PASS**, actual PostgreSQL/RabbitMQ,
+zero failure/error/skip; **125** new distinct cases, not summed reruns. Existing V2 checklist is
+**50/70 = 71.43%**, **20 open** (Pharmacy 25/32, Report 25/38). The 90% target is still 63/70,
+requiring **13 more original leaves**; no IDs/denominator or approval is invented.
+[Implementation and acceptance evidence](2026-10-10-versioned-receivable-stock.md).
+
+**Previous finance prerequisite (2026-10-09):** Billing now has pure original-linked admission ledger
+reconciliation and a bounded read-only settlement-preview GET under the existing user-scoped
+override. Unallocated deposits are not allocated payments or revenue; refunds and reversals stay
+separate, and totals use one REPEATABLE READ snapshot. The estimated result is explicitly non-final.
+This advances R-03.3/R-03.5 prerequisites, not their event-projection acceptance: medical charge-close,
+recognition/allocation and immutable final settlement/versioned source still need implementation.
+No existing leaf was falsely closed: Pharmacy/Report remain **49/70 = 70%, 21 open**, not 90%.
+Final fresh Billing **593/593 PASS**, including **79** new reconciliation/configuration/security
+tests and actual PostgreSQL/RabbitMQ; three-service package **BUILD SUCCESS**. No Gateway change,
+financial publication or push. Owned-service test counts above/below remain their dated results.
+[Scope, code and verification](2026-10-09-admission-ledger-reconciliation.md).
+
+**Previous operational verification (2026-10-09):** R-04.6 completed for its operational verification
+criteria: role matrix, minimal journal/aggregate-only response, source dedupe/pending pairing,
+midnight/leap-day, department/hospital reconciliation, availability, bounded query count/index plans.
+V18 is index-only; each JDBC statement has a 3-second timeout and resource/cancellation failures
+never become successful zero reports. Fresh clean Pharmacy **595** and Report **620** tests PASS,
+zero failure/error/skip with actual PostgreSQL/RabbitMQ; **1215** distinct tests, not summed reruns.
+The existing Pharmacy/Report V2 leaf checklist is now **49/70 = 70%** (25/32 Pharmacy, 24/38 Report),
+**21 remain open**. The 90% target requires 63/70: **14 more existing leaves** must fully close.
+No new IDs, denominator changes, finance/clinical-policy/source-coverage acceptance or activation
+are inferred. [Criteria mapping and verification](2026-10-09-report-operational-verification.md).
+
+**Latest Rx adjustment continuation (2026-10-09):** default-off Billing terminal intake now records
+one immutable terminal per Rx, recovers early PENDING against exact original creation proof,
+voids only its charge/request, locally revokes its grant and exposes original-only remaining
+refund obligations. Actual refund commands, not cancellation, create cash-out. Notification
+accepts the private Rx unpaid request on the existing guarded reader; Report/Notification check
+actual original-linked Rx refund fixtures. Distributed revoke, admission late adjustment,
+five-metric finance and public/held rollout remain open. P-03.5.5 remains PARTIAL; no task IDs or
+checkbox denominator were added. [Current verification](2026-10-09-pharmacy-report-rx-adjustment.md).
+Fresh clean isolated suites: Pharmacy **595**, Report **596**, Billing **514**, Notification **219**
+PASS, all zero failure/error/skip with actual PostgreSQL/RabbitMQ; **1924** non-overlapping tests.
+Earlier counts below are historical, not added. Full public V1/distributed acceptance remains open.
+
+**Rx continuation (2026-10-09, baseline c4172761):** Billing now has a default-off exact V1
+prescription creation issuer, selected outpatient payment request and charge-only admission path.
+Pharmacy/Report verify the same installment/grant bytes; Report rejects malformed optional service
+targets before cash effects. No Gateway/public V1/held activation. Existing P-03.2.3a and R-03.1/.2/.7
+track the slice; terminal adjustment/revoke, admission authority, full finance and rollout stay open.
+[Current implementation/verification](2026-10-09-pharmacy-report-rx-issuance.md).
+Previous issuance-batch full local suites: Pharmacy **595/595**, Report **594/594**, dependency Billing **465/465**
+PASS with actual PostgreSQL/RabbitMQ, zero failure/error/skip. **1,654** non-overlapping tests;
+earlier counts below are historical and not added. Full V2 acceptance/activation remains open.
+
+**Previous Pharmacy/Report priority batch (2026-10-09):** current Patient/Organization identity preflight
 is mandatory in the internal Clinical-context-checked Pharmacy caller and checked after receipt/
 stock waits. Report now counts actual immutable admission starts atomically with exact start/close
 evidence and the operational replay journal; administrative close is not medical discharge/LOS.
@@ -537,7 +687,7 @@ Acceptance local: dữ liệu cũ không bị đổi ngữ nghĩa, context inval
   - [x] **P-03.2.1 · LOCAL UNIT PASS (2026-10-02):** exact purpose/target/patient/episode, V0/admission reject, immutable grant IDs/snapshot, expiry-exclusive/future grant, numeric money precision, strict duplicate-key/trailing JSON, early pending, duplicate delivery và terminal-prescription denial. 25 domain/application/decoder cases pass; inline consumer examples không phải fixture Billing đã duyệt.
   - [x] **P-03.2.2 · LOCAL POSTGRES PASS (2026-10-02):** pending→late exact match, expiry/patient mismatch, delivery/semantic/nanos conflicts, concurrency, rollback/retry và mandatory transaction chạy thật. Inline grants không phải Billing producer fixture.
   - [ ] **P-03.2.3 · PARTIAL/GATED ACTUAL MQ (2026-10-05):** Pharmacy đã đọc cùng raw PRESCRIPTION bytes của Billing, dual-gated listener (care-finance-v2 + clearance-consumer), strict routing/type/producer/full other-purpose tuple, canonical UUID/payment method và dedicated durable DLQ. PostgreSQL/Rabbit tests phủ duplicate early PENDING, other-purpose no-effect, mismatch rollback/DLQ, storage failure bounded retry và retained-byte replay. Không auto-dispense, không mở held outbox. Request issuance/revoke/cutover và public V1 writer acceptance vẫn OPEN.
-    - [x] **P-03.2.3a · PRODUCER/FIXTURE/LOCAL TEST (override):** Billing payment transaction sinh exact PRESCRIPTION clearance sau full payment và held V1 outbox; Pharmacy decoder đọc cùng producer fixture. Request issuance, revoke, live intake/denial/DLQ/cutover ở task cha vẫn mở.
+    - [x] **P-03.2.3a · PRODUCER/FIXTURE/LOCAL TEST (override):** Billing has V12 strict immutable creation receipts/exact episode bundle charge and selected outpatient request; admission is charge-only. Existing installment writer produces partial receipts and one exact full PRESCRIPTION grant; Pharmacy/Report read the same producer-service fixtures. V13 adds guarded terminal/local adjustment; Notification accepts the private Rx unpaid request. Distributed revoke, admission charge-close authority and public/held cutover remain open in the parent. [Current evidence](2026-10-09-pharmacy-report-rx-adjustment.md).
 - [ ] **P-03.3 · LOCAL/CONTRACT D08/D12:** `admission.started`, `discharge.medically.approved` và `admission.closed` projection bằng exact admissionId; duplicates/out-of-order/late-start không reopen. Khóa patient và department relation; medical discharge chấm dứt eligibility theo fact producer, còn transfer/freshness chưa có fact nên live admission authority vẫn fail-closed. Pending event đã lưu khác applied marker.
   - [x] **P-03.3.1 · LOCAL DOMAIN/DECODER/STORE PASS (2026-10-01):** 15 tests domain/application/actual Inpatient fixture/PG chứng minh exact tuple, duplicate/conflict, close-before-start/reload và start+close concurrent kết thúc CLOSED. Closure được persist như tombstone, không phải claimed-then-dropped pending. Chưa mở queue/authorization; medical-discharge/transfer/freshness vẫn OPEN.
   - [ ] **P-03.3.2 · PARTIAL / GATED PG+MQ INTAKE (2026-10-08):** Huy đã có dedicated admission lifecycle queue/DLQ, two gates default false và actual producer-byte PostgreSQL/Rabbit duplicate/pending/restart/conflict/rollback/retained-byte replay. Intake chỉ ghi evidence, không stock/outbox. Current-state lookup bổ sung freshness necessity; transfer/order/placement authority và close/discharge↔dispense atomic race vẫn mở, không active=true vô thời hạn. [Evidence](2026-10-08-huy-ready-task-completion.md).
@@ -552,7 +702,7 @@ Acceptance local: dữ liệu cũ không bị đổi ngữ nghĩa, context inval
   - [x] **P-03.5.2 · LOCAL UNIT PASS (2026-10-02):** chặn direct V1 cancel/failure/late-payment compensation trước slip/reservation/claim/outbox V0; expiry job V0 skip V1 không effect. Terminal transitions lưu explicit lifecycleAt riêng và validate timestamp trước state mutation; factory từ chối audit-time fallback. Không tự sinh invoice/refund hoặc mở quyền dispense. Full V1 workflow/adjustment acceptance còn OPEN.
   - [x] **P-03.5.3 · LOCAL HELD CANCEL/EXPIRY:** author-owned cancel + whole-order expiry sau lock waits; reservations/Rx/slip/held terminal cùng commit, retry cần matching proof, changed cancellation actor/reason conflict. No stock increment/refund. PG success/rollback/nanos retry/cancel-dispense race; expiry không dùng stale batch clock.
   - [x] **P-03.5.4 · LOCAL STOCK FAILURE:** REQUIRES_NEW command sau rollback re-lock/re-authorize/re-evaluate definitive current shortage/expiry, không nhận exception text/reason tùy ý. Healthy stock/terminal winner không bị stale failure overwrite; missing grant/structure không FAILED. Whole release/proof/held failed atomic, writer failure rollback; không V0 receipt/refund/decrement.
-  - [ ] **P-03.5.5 · CONTRACT/G1:** Billing/consumers duyệt adjustment semantics cho held cancelled/expired/failed; admission live terminal/late compensation sau D08. Local failure fact không chứng minh đã hoàn tiền.
+  - [ ] **P-03.5.5 · PARTIAL / LOCAL BILLING ADJUSTMENT (2026-10-09):** same-byte strict cancelled/expired/failed intake; immutable terminal/source+delivery, early recovery/quarantine and exact creation proof. Under account locks Billing voids only the exact charge, cancels its request, locally revokes its grant and records original-only refund obligations; actual partial/full refunds reduce observable dues. FILLED is absorbing evidence only. Known closed account/mixed admission payment rejects; distributed revoke, admission live/late compensation and public/held release remain open. Failure/cancellation fact never proves a refund. [Current verification](2026-10-09-pharmacy-report-rx-adjustment.md).
 - [ ] **P-03.6 · VERIFY:** spec tests outpatientWithoutClearance, admissionContextMismatch, closedAdmission, duplicateClearance, repeatedCommand, stockOutboxAtomic; thêm wrong purpose/expired grant, payment+clearance race theo version, close/dispense race, pending restart, context event round-trip và DLQ.
 
 Acceptance: một prescription chỉ một stock effect, không nhầm episode/permission; compensation là fact cho Billing quyết định, không Pharmacy tự hoàn tiền. Outpatient v0 suite phải giữ xanh.
@@ -571,17 +721,25 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
 - [ ] **R-01.2 · PARTIAL/LOCAL sau H-01.5:** V6/V7 đã chạy PostgreSQL, tách event provenance và business key; hospital NULL scope không sentinel. Operational global source/revision/metric key ngăn changed department đếm lần hai; financial allocation keys không đổi. Parent còn H-01.5 producer source/revision/correction và financial expected totals.
   - [x] **R-01.2.1 · LOCAL SCHEMA/STATIC PASS (2026-10-01):** `V6__care_finance_projections.sql` thêm bốn bảng V2; unique semantic keys không dựa riêng vào eventId; daily department/hospital scope dùng `NULLS NOT DISTINCT`, không dùng UUID sentinel; source revision phải dương và episode tuple được kiểm tra. `ReportMigrationSchemaTest` 3/3 pass. Đây là Huy-local persistence shape, không phải producer contract approval.
   - [x] **R-01.2.2 · LOCAL POSTGRES PASS (2026-10-01):** `ReportMigrationPostgresTest` 5/5 pass V6/V7 fresh/compatibility, business uniqueness/revision/null-vs-zero scope và cả hai hướng incomplete episode tuple. Fix SQL CHECK UNKNOWN loophole khi có episodeId nhưng thiếu type. Owner source/revision mapping và producer expected totals là gate riêng, chưa đóng.
-  - [ ] **R-01.2.3 · CONTRACT/MAPPING:** Lộc/Vinh xác nhận exact transaction/refund/settlement/result/dispense IDs, revision/supersedes, first-operation vs correction và expected totals. Typed kernel input không thay cho actual accepted producer mapper.
+  - [x] **R-01.2.3 · SUPPORTED-RELEASE CONTRACT/MAPPING VERIFIED (2026-10-11):** twelve actual producer event types identify exact source IDs, producers, envelope versions and accepted revision policies; eight operational producer fixtures pass their actual mappers. Initial singleton/result/source revision 1 and contiguous non-final settlement predecessor contracts are explicit in the capability API. Unsupported correction/replacement/supersedes extensions reject before effects; no guessed revision or owner sign-off. Existing original-linked cash/final/non-final tests reconcile expected amounts. Full producer corrections/legacy conversion remain target work. [Revised acceptance and full verification](2026-10-11-report-supported-release-60.md).
 - [ ] **R-01.3 · LOCAL sau keys:** transaction claim + contribution + hai scopes department/hospital; atomic insert/upsert và lock order ổn định; no JVM mutex. Refund-before-original/close-before-start vào pending có exact original ref và retry/checkpoint, không FK lỗi lặp vô hạn hoặc invent date/department.
   - [x] **R-01.3.1 · LOCAL OPERATIONAL KERNEL PASS (2026-10-01):** typed immutable contribution/batch command + in/out port/service/JDBC writer commit minimal journal, metric claims, semantic insert và hai scopes atomically; stable key/scope order, multi-metric batch, no JVM mutex. Same key/different fact conflict, correction revision >1 fail-closed. Source mapper/listener, financial writer và admission pairing/pending vẫn OPEN.
-  - [ ] **R-01.3.2 · SOURCE/LOCAL:** financial contribution/pending refund-before-original từ approved transaction/allocation references và equations; pending admission evidence đã có nhưng metric application còn R-04.2.3.
+  - [x] **R-01.3.2 · DONE_LOCAL / FINANCIAL CONTRIBUTION+PENDING (2026-10-11):** actual Billing transaction/refund/initial-final allocation bytes feed durable semantic sources, delivery claims, original budgets/releases and department/hospital contributions atomically. Refund/final-before-original stay PENDING, recover from retained DB evidence and apply once; no invented department/date/classification or cash→earned shortcut. Account→sorted originals and hospital→sorted departments are now consistent database lock protocols. Six PG + six Rabbit receipt/refund/final permutations and actual two-installment/three-refund cases reconcile supported five-metric equations. Clean Report 932 + latest affected 117 PASS separately, zero failure/error/skip. This closes this LOCAL contribution/pending criterion only; post-final reversals/corrections, approved historical export and publication remain R-03.4/R-01.2.3/.4/.5/.6/.7; inpatientDays remains R-04.2.3. [Evidence](2026-10-11-financial-pending-and-history.md).
 - [ ] **R-01.4 · CONTRACT D11:** chọn durable replay source (Report minimal journal từ activation hoặc archive/outbox retention do owner cung cấp), schema/projector version, retention/access/redaction, horizon dữ liệu có thể rebuild. Queue ACK không phải archive; lịch sử trước source activation phải có export hoặc ghi unavailable.
   - [x] **R-01.4.1 · HUY LOCAL SOURCE CHOICE/STORE PASS (2026-10-01):** minimal accepted-input `operational_event_journal` từ activation, projector version 1, normalized envelope+projection fingerprints; chỉ lưu metadata/source ref và aggregate snapshot, không raw clinical/results. Không public API/automatic purge; historical export/retention approval và finite watermark/catch-up còn OPEN. Không gọi durable storage là replay đã DONE.
-  - [ ] **R-01.4.2 · CONTRACT/OWNER:** accepted source export/historical horizon + redacted journal retention/access/backup agreement; không tự purge hoặc tuyên bố no-events trước activation.
+  - [x] **R-01.4.2 · AVAILABLE-HISTORY POLICY/RECOVERY VERIFIED (2026-10-11):** later user authorization adopts explicit AVAILABLE_EVIDENCE_ONLY instead of fabricating missing pre-V2 transactions. Exact bounded V23/V24 archive recovery and immutable operator provenance remain; ADMIN-only access, retained minimal sources with no automatic purge and encrypted operator backup/verified-restore prerequisites are documented. Publication rejects empty manifests and coverage before the earliest retained source business day; coverage API and readers distinguish unavailable history from zero. Full missing producer-history reconstruction is not claimed. [Revised policy and acceptance](2026-10-11-report-supported-release-60.md).
+    - Billing/Pharmacy automatic published-outbox purge remains default OFF. Known local legacy
+      discovery found no relevant rows, not global no-events proof. Fixtures and invoice aggregates
+      never become historical transaction/allocation IDs. Wider legacy conversion remains target work.
 - [ ] **R-01.5 · LOCAL sau R-01.4:** journal/processing ledger tách RECEIVED/PENDING/APPLIED/REJECTED và generation. Replay vào generation mới hoặc projection offline riêng; không truncate live tables/xóa live inbox để “chạy lại”. Dùng cùng pure projector, không re-publish command/notification.
   - [x] **R-01.5.1 · LOCAL CODE/UNIT/STATIC PASS (2026-10-02):** V8 finite generation + immutable copied manifest + isolated semantic facts/scopes. Start materializes statement-visible committed journal set (không MAX sequence/wall-clock watermark). Bounded 1..500 batch dưới DB generation lock; fact/effect/applied/progress chung transaction, processing failure rollback để resume. Live/replay dùng cùng pure scope planner và V7-compatible canonical snapshot codec; exact source time/fingerprint/version validation. Chỉ replay accepted revision-1 inputs; không raw clinical payload/republish/read cutover. 13 codec/service + một migration static case pass. Pending finance/admission journal states không nằm trong slice này.
   - [x] **R-01.5.2 · LOCAL POSTGRES PASS (2026-10-02):** finite set/late/in-flight exclusion, bounded resume, dedupe, rollback/retry, concurrent workers, corrupt snapshot, failed reconciliation và isolated generations/mandatory transaction chạy thật. Không phải live catch-up/historical completeness.
   - [ ] **R-01.5.3 · SOURCE/LOCAL:** financial/reversal pending journal/processing ledger và accepted correction projection sau D09/D11; V8 chỉ rebuild accepted operational revision-1 inputs.
+    - Continuation 2026-10-11: V23 freezes supported receipt/refund/initial-final/non-final-history
+      sources, including unresolved states; rebuilds all five amounts with opening/closing stocks,
+      durable day checkpoints and isolated local reconciliation. Frozen pending/rejected sources
+      cannot be silently upgraded by live recovery. Post-final corrections/approved source history
+      remain open; this is not V20 publication. [Evidence](2026-10-11-financial-source-rebuild.md).
     - Follow-up 2026-10-08 after master sync: V17 adds paired receipt/refund finite manifests,
       internal bounded cash-out rebuild and isolated facts/scopes. Both source freezes share a
       REPEATABLE READ snapshot; copied PENDING/REJECTED remain explicit without live recovery.
@@ -592,22 +750,22 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
     - [x] **R-01.5.3.CASH · TEN LOCAL SUBTASKS + FULL REPORT PASS (2026-10-07):** ten cash-only subtasks CR-01..CR-10 completed in [batch plan](2026-10-07-report-cash-replay-batch.md): V12 minimal source/first-delivery proof, strict compatible codec/shared planner, V13 isolated MVCC manifest/generation/facts/scopes, bounded resume/DB generation fencing, corruption guard/dedupe, bidirectional reconcile and real PG upgrade/race/rollback/determinism. Full Report **361 tests, zero failure/error/skip** with real PG/Rabbit; 51 added cases. Receipt-only rebuild does not close parent refund/settlement/pending/correction/historical export/coverage/live catch-up; no read publication/listener/API/held release or Gateway change. DONE_LOCAL is not producer-owner/live acceptance.
 - [ ] **R-01.6 · VERIFY:** same event/different bytes conflict, cùng operation/new eventId no double, two valid partial transactions both apply, rollback giữa hai scopes, concurrent new scope, pending resume once sau restart, shuffled replay deterministic.
   - [x] **R-01.6.1 · LOCAL OPERATIONAL POSTGRES PASS (2026-10-01):** 7 PG tests duplicate event/source/new ID, conflicting envelope/department/nanosecond, rollback injected ở scope thứ hai, concurrent same/different business sources, batch prescription metrics, journal privacy/minimal snapshot. 5 domain/application tests cũng pass. Chưa phải replay, two financial partial payments hoặc pending lifecycle test.
-  - [ ] **R-01.6.2 · VERIFY sau approved sources:** partial financial payments/refund pending, correction replay/shuffle và cross-owner metric totals; không đóng theo operational revision-1 subset.
+  - [x] **R-01.6.2 · SUPPORTED FINANCIAL REPLAY VERIFIED (2026-10-11):** actual two installment/three original-refund producer cases and six PG/six Rabbit receipt/refund/final permutations reconcile all five metrics and hospital/department scopes. Durable pending recovery, exact redelivery, bounded frozen replay, restart/resume, stale manifest and second-scope rollback pass. Current unsupported correction contracts explicitly reject instead of becoming first-operation contributions; full earned-correction replay remains target work. This is financial, not merely operational revision-1 evidence. [Acceptance and clean full run](2026-10-11-report-supported-release-60.md).
 - [ ] **R-01.7 · CONTRACT/VERIFY:** watermark/live catch-up, reconcile và atomic read switch/rollback; failed replay giữ generation cũ. Legacy test redelivery không được ghi thành bằng chứng rebuild từ durable journal.
   - [x] **R-01.7.1 · LOCAL RECONCILE POSTGRES PASS (2026-10-02):** bidirectional manifest facts + derived scopes/progress; mismatch→FAILED, match→VERIFIED đã chạy thật. Không chứng nhận historical completeness/live catch-up/source availability/D11.
   - [x] **R-01.7.2 · LOCAL READ GATE:** V10 empty accepted-coverage publication + immutable VERIFIED generation reader. Missing publication/partial metrics/wrong zone/outside history/BUILDING/FAILED → unavailable. VERIFIED replay không tự tạo coverage; snapshotOnly/reconciledAt rõ, legacy reader không đổi.
-  - [ ] **R-01.7.3 · CONTRACT + LOCAL ACTIVATION:** live catch-up/final fence, controlled publish/switch/rollback workflow, retention/export completeness và approved coverage manifest. Read-only V10 không thay activation workflow; không insert publication bằng tay.
+  - [x] **R-01.7.3 · CONTROLLED FINANCIAL PUBLICATION VERIFIED (2026-10-11):** V25 production operator workflow waits on an exclusive Report-local source fence, re-reads committed manifest and requires a new freeze after changes. Exact all-five rows/provenance reconcile before and after V23→V20 copy; immutable acceptance/audit and expected-pointer switch commit atomically. Same command retry never undoes a later switch; changed actor/request, stale pointer, corrupt/unresolved/empty/pre-history generations reject. Failure rollback and previously accepted target rollback pass real PG races and reader integration. ADMIN only, strict JSON, signed UUID subject, correlation/no-store and dual gates default OFF; no manual SQL promotion. Upstream completeness, Gateway ingress and live release are not implied. [Runbook and evidence](2026-10-11-report-supported-release-60.md).
 
 ### R-02 — security hiện có, bổ sung đúng role của endpoint V2
 
-**Trạng thái:** strict JWT và hai gated operations snapshot endpoint đã có; Gateway exact operations DOCTOR rules/tests được bổ sung 2026-10-05. Financial source/API và live activation còn mở.
+**Trạng thái:** strict JWT, operations reader và financial daily/monthly API/RBAC đã có; finite supported-source financial rebuild/coverage/publication now has a separately default-off ADMIN operator workflow. Gateway hiện có GET reports ADMIN/MANAGER và exact operations DOCTOR exception; không sửa Gateway. Full corrections/operational KPI publication, reviewed operator ingress and live release remain separate target work.
 **Files:** JwtAuthFilter/SecurityConfig, report controllers/web tests, report.http.
 
 - [x] **R-02.1 · ĐÃ CÓ:** human type=access strict, refresh/service/missing type bị reject; legacy daily/monthly/top-medicines ADMIN/MANAGER.
 - [x] **R-02.2 · DONE/VERIFY:** Report JwtAuthFilterTest chạy 4/4, 0 skip/fail/error trong full suite; không sửa filter, Common hay Gateway.
-- [ ] **R-02.3 · PARTIAL:** operations mới ADMIN/MANAGER/DOCTOR được kiểm thử direct-service và Gateway; legacy revenue vẫn ADMIN/MANAGER. Financial ADMIN/MANAGER API còn chờ source/projection equations, không đóng parent theo Gateway subset.
+- [x] **R-02.3 · DONE_LOCAL API/RBAC:** operations ADMIN/MANAGER/DOCTOR; legacy và financial ADMIN/MANAGER. Financial dual-gated aggregate reader verifies complete explicit five-metric publication/coverage or returns 404. This closes only API/security code, not missing finance producer/projector/publication acceptance tracked in R-01/R-03.
   - [x] **R-02.3.1 · LOCAL DIRECT-SERVICE API/AUTH:** gated operations daily/surgery, ADMIN/MANAGER/DOCTOR; all-other-role/unauthenticated deny trước use case; period 400 REPORT_VALIDATION_ERROR, missing coverage 404 REPORT_NOT_FOUND; correlation + aggregate-only DTO + report.http. Không mở DOCTOR cho legacy revenue.
-  - [ ] **R-02.3.2 · PARTIAL (2026-10-05 override):** Gateway DOCTOR chỉ được GET hai endpoint `/operations/daily` và `/operations/surgery`, tests giữ deny legacy revenue. Financial ADMIN/MANAGER APIs vẫn mở khi source/projection equations chưa đủ dữ liệu.
+  - [x] **R-02.3.2 · DONE_LOCAL / FINANCIAL API-ROLE BOUNDARY (2026-10-10):** both financial GETs enforce ADMIN/MANAGER, deny all seven other roles/anonymous and invalid signed tokens before reader; malformed queries 400, missing accepted complete snapshot 404. Existing unmodified Gateway reports GET policy matches these roles; DOCTOR remains operations-only. No finance source/recognition/coverage/release approval is inferred from synthetic query tests. [Evidence](2026-10-10-financial-read-boundary.md).
 
 ### R-03 — projection tài chính theo fact đủ dữ liệu
 
@@ -623,7 +781,7 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
 | Outstanding receivable | persisted Billing balance/outcome | Settlement version/supersedes/order; số dư as-of khác daily flow. Monthly không cộng số dư của mọi ngày như revenue. |
 
 - [ ] **R-03.1 · LOCAL/CONTRACT D09:** mapper/version validation cho payment/refund/settlement payload; classification unknown/missing allocation không default SERVICE_PAYMENT. Ghi expected-results fixtures Billing xác nhận, không gọi fixture tự dựng là producer evidence.
-  - [x] **R-03.1.1 · LOCAL CASH INPUT PASS (2026-10-07):** actual Billing ledger V1 service/deposit receipt bytes → strict offline `BillingCashReceiptMapper`/`CashReceipt`. Exact BigDecimal từ JSON tree/map, NUMERIC(19,2), currency/CASH/TRANSFER, explicit IDs/episode/classification và completedAt/report timezone; không invoice total=earned, deposit=liability, hoặc event version=source revision. Unsupported classification/insurance/missing dimensions/correction markers fail closed. Financial precision change không đổi historical operational V11 hash representation. Parent còn refund/settlement/allocation expected totals và runtime acceptance.
+  - [x] **R-03.1.1 · LOCAL CASH INPUT PASS (2026-10-07; hardened 2026-10-09):** actual Billing ledger service/deposit plus exact Rx installment files → strict mapper/cash intake. NUMERIC(19,2), business time/zone/classification stay exact; malformed/duplicate/mixed optional Rx/Lab targets and deposit service targets now reject before claims/scopes, including PG/Rabbit DLQ. Same Rx invoice has two real producer-service receipt operations, not earned revenue. Historical hashes unchanged. Parent remains open for full allocation/recognition/settlement and publication. [Evidence](2026-10-09-pharmacy-report-rx-issuance.md).
 - [ ] **R-03.2 · LOCAL khi source đủ:** cash/deposit projector keyed transaction/allocation operation; BigDecimal/currency/scale, business completedAt theo timezone. Một invoice có hai giao dịch hợp lệ là hai contributions, không dùng invoiceId làm unique V2.
   - Cash-only runtime follow-up 2026-10-08: separate two-gated `payment.completed` queue/DLQ now
     invokes the actual V12 receipt kernel; both scope writes, source/delivery dedupe and ACK follow
@@ -631,10 +789,17 @@ Acceptance: một prescription chỉ một stock effect, không nhầm episode/p
     compatibility coexistence and finite V13 rebuild verified in the [cash intake batch](2026-10-08-report-cash-intake.md).
     Parent remains open for unallocated deposit/release/net cash/refund/full finance and producer rollout.
   - [x] **R-03.2.1 · LOCAL GROSS CASH KERNEL + PG PASS (2026-10-07):** V12 isolated minimal transaction evidence/delivery hashes và gross receipt scopes; transactionId semantic PK, same source/new delivery không đếm lại, changed source/delivery conflict. Internal in/out-port/service/adapter ghi source, claim và hospital/account-department scopes cùng transaction; stable hospital-first lock order, currency/zone/classification isolation. Gross receipt là inflow trước refund, department là Billing account department chứ không earned allocation. Không đổi V6 financial/legacy tables; không listener/API/publication/backfill. Parent còn unallocated deposit/release/net cash/refund và full financial projection.
-- [ ] **R-03.3 · CONTRACT:** recognition/liability release projector chỉ nhận amount + operation/revision rõ; không totalAmount=earned hay settlement.grossAmount=delta. Chốt department/hospital reconciliation khi account nhiều khoa.
-- [ ] **R-03.4 · CONTRACT/LOCAL:** refund liên kết original theo transaction/allocation, partial amount giới hạn source fact; đảo original scope đúng contract, không ngày ingest. V2 payment.failed không tự biến thành completed refund.
-- [ ] **R-03.5 · CONTRACT/LOCAL:** settlement snapshot/version replaces prior receivable contribution hoặc computes delta từ persisted prior snapshot; out-of-order revision không hạ về cũ. Không cộng completedPayments lần nữa vào cash.
-- [ ] **R-03.6 · LOCAL sau metric:** GET financial/daily?from&to&departmentId và financial/monthly?year&departmentId; bounded period, availability/freshness thật, không đổi legacy DTO. Unavailable projection theo spec trả 404 REPORT_NOT_FOUND, lỗi period 400.
+- [x] **R-03.3 · DONE_LOCAL / INITIAL FINAL SOURCE VERIFIED (2026-10-10):** actual Billing initial finalizer emits an explicit recognitionOperationId/revision=1, recognized POSTED-charge amounts, original allocation IDs and deposit releases; non-final snapshots/receipts never become earned deltas. Report requires actual accepted local cash/refund originals, retains missing evidence PENDING and writes source/delivery/APPLIED/contributions/original release/two scopes atomically. Actual unchanged 120 receipt / 20 cash refund / 100 final gives generating-department earned 60/40 and original receipt-department release 100; hospital totals reconcile once. Same source/new delivery, changed intent, replicas, rollback, quarantine, released-original refund cap, bounded recovery and retained-byte Rabbit retry pass. Full Billing 859 + Report 869, later exact cash fixture + 82-case hardening pass separately. Initial revisions only; post-final correction/reversal, five-metric rebuild/publication and public/HELD release remain OPEN under their existing tasks. [Evidence](2026-10-10-final-settlement-recognition-source.md).
+- [x] **R-03.4 · SUPPORTED ORIGINAL-LINKED REFUND VERIFIED (2026-10-11):** actual partial refunds use original transaction identity/budget/classification/department and refund business date, never failed-payment-as-refund. Unused pre-final deposit reduces liability; initial final checks exact original allocation/refund/release evidence before earned recognition. New cash refund on an APPLIED final account fails atomically with CASH_REFUND_FINAL_CORRECTION_UNSUPPORTED; pending recovery quarantines it, exact already-accepted refund retry stays harmless. SERVICE_PAYMENT partial-refund/final/post-final-negative PG case proves no extra source or totals. Full post-final original-allocation earned reversal remains explicit unsupported target work, not guessed. [Revised acceptance](2026-10-11-report-supported-release-60.md).
+- [x] **R-03.5 · DONE_LOCAL / VERIFIED (2026-10-10):** actual Billing `settlement.reconciled` V1 non-final snapshot/version replaces prior receivable stock via persisted prior delta; latest revision wins, stale delivery never downgrades, snapshot completedPayments never adds cash again. Same actual producer-service bytes are verified at mapper/PG/Rabbit; source/version/delivery/context/predecessor/cycle/fork conflicts, nano chronology, replicas, currency isolation, second-scope rollback and retained-byte retry pass. Fresh full Billing 641 + Report 697, zero skip. [Evidence](2026-10-10-versioned-receivable-stock.md).
+  - Engineering source choice is a separate non-final reconciliation namespace, NOT final
+    `settlement.completed` or permission for discharge. Final source mapping/recognition/five-metric
+    publication remain open under H-01.5, R-01.2.3, R-03.4, R-01.4/.7 and integration acceptance;
+    the separate R-03.6 LOCAL reader was completed later without approving these sources.
+    The 2026-10-09 [read-only prerequisite](2026-10-09-admission-ledger-reconciliation.md) is preserved;
+    Report still must not call its GET for enrichment. No final producer acceptance or live release
+    is inferred from local stock completion. Initial recognition/release was later completed under R-03.3.
+- [x] **R-03.6 · DONE_LOCAL / FINANCIAL READ CODE (2026-10-10):** both target GETs are dual-gated, bounded and aggregate-only; exact currency/zone/complete day+scope and explicit VERIFIED accepted snapshot required. Exposes sourceObservedAt/reconciledAt/publishedAt/snapshotOnly, no invented live freshness. Month flows sum, closing liability/receivable do not. Unknown metric/day/coverage returns 404; invalid period/format 400; legacy DTO unchanged. V20 stays EMPTY and has no producer/rebuild/publication writer: real data/source/reversal/rollout acceptance remains open under R-01 and R-03.3/.4, not closed by this reader. [Evidence](2026-10-10-financial-read-boundary.md).
 - [ ] **R-03.7 · VERIFY:** deposit→allocation/recognition→refund, split 60/40 department, two partial payments, refund-before-original, duplicate new eventId, settlement correction, midnight/year boundary/replay. Đối soát tất cả 5 chỉ tiêu, không chỉ revenue.
   - [x] **R-03.7.1 · LOCAL CASH-ONLY UNIT + PG PASS (2026-10-07):** actual two Billing fixtures; strict mapping/large-cent precision/year-zone boundary; service ordering/no-effect rejection; real PG exact/source redelivery, two distinct 60/40 receipt mutation scenarios on one invoice, currency isolation, changed noncash evidence/event-source conflict, concurrent duplicate/new transactions, second-scope rollback + retry và V11→V12 upgrade preserving legacy data without invented history. Consumer mutation scenarios không được gọi là additional producer fixtures hoặc full finance acceptance. Full five-metric/reversal/settlement/replay/E2E matrix còn OPEN; latest run evidence nằm trong [cash-only continuation](2026-10-07-report-cash-receipts.md).
 
@@ -648,18 +813,18 @@ Ví dụ nghiệm thu cần Billing xác nhận bằng fact: nhận deposit 100,
 - [ ] **R-04.1 · LOCAL khi có fixture Clinical/Lab/Pharmacy:** medicalrecord.completed/disposition tách created legacy; Lab completed theo order/result version và requesting department; prescription.filled theo dispenseId/context, tách số đơn/số slip/số lượng thuốc. Không đếm created+completed thành hai lượt trong cùng metric.
   - [x] **R-04.1.1 · LOCAL LAB MAPPING UNIT PASS (2026-10-02):** 10 cases dùng actual Lab fixture bytes, exact labId/resultVersion/requesting department/episode/completedAt; date theo configured report zone, không delivery/performedDate fallback. Chỉ source revision 1; actual admission fixture resultVersion=3 reject, không đổi thành envelope version=1. Clinical/Pharmacy thiếu accepted revision mapping và correction semantics còn OPEN.
   - [x] **R-04.1.2 · LOCAL POSTGRES PASS (2026-10-02):** actual Lab bytes→mapper→kernel/two scopes/journal, semantic duplicate/new event ID và revision-3 rejection/no claim chạy thật. Owner acceptance/live listener vẫn mở.
-  - [ ] **R-04.1.3 · PARTIAL / GATED OPERATIONAL INTAKE PG+MQ PASS (2026-10-08):** Clinical/Lab/Pharmacy/Surgery mappers nay có separate seven-key operational/evidence queue default OFF, ACK sau kernel commit, strict source/version, source-payload conflict fence, bounded retry/DLQ replay và finite rebuild. Actual producer-byte effects/two scopes/minimal journal pass; Report full clean **458/458**. Admission vẫn evidence-only, legacy untouched; correction/import/historical coverage/cutover acceptance vẫn mở. [Evidence](2026-10-08-huy-ready-task-completion.md).
+  - [x] **R-04.1.3 · SUPPORTED OPERATIONAL INTAKE VERIFIED (2026-10-11):** eight actual Clinical/Lab/Pharmacy/Surgery/Inpatient source types map through the current minimal evidence/contribution paths; source identity, immutable first operation and result/source revision 1 are explicit. Eight fixtures × six unsupported correction markers reject before effects; strict Rx/Lab source-revision extensions also reject. Existing PostgreSQL/Rabbit source conflict, atomic two-scope effects/journal, retry/DLQ retained-byte replay and finite rebuild pass in clean full Report 1,151 tests. Default-off gates and legacy paths remain; operational correction/import/full KPI publication remain target work under the revised supported-release decision. [Acceptance and evidence](2026-10-11-report-supported-release-60.md).
 - [ ] **R-04.2 · LOCAL/CONTRACT D10:** started/closed paired theo admissionId, closed thiếu department dùng stored matching start, close-before-start pending. Chốt discharge counter/administrative duration, timezone/cutoff/denominator và inpatient-days rounding; không gọi closedAt là medicalDischargedAt.
   - [x] **R-04.2.1 · LOCAL EVIDENCE CODE / UNIT PASS (2026-10-02):** V9 minimal STARTED/CLOSED fact + event fingerprint ledger, actual producer-byte mapper, exact admission/patient pairing và durable close-before-start. Late start không reopen; changed patient/department/nanos/proof hoặc close<start conflict. Không fallback envelope time/source revision, không contribution/count/LOS/occupancy hoặc listener/API mới. 15 domain/application cases; metric mapping/semantics parent còn OPEN.
   - [x] **R-04.2.2 · LOCAL POSTGRES PASS (2026-10-02):** pending/reload/dedupe/conflicts/nanos/patient+chronology rollback/caller rollback/race/mandatory transaction và V8→V9 upgrade/constraints chạy thật. Source business revision/correction/discharge acceptance không đóng theo DB tests.
-  - [ ] **R-04.2.3 · PARTIAL / START COUNT IMPLEMENTED:** actual `admission.started` maps immutable-operation revision 1, exact admission/department/episode and admittedAt to one ADMISSIONS contribution. Evidence/journal/claims/two scopes commit together; duplicates, close-before-start, conflicting source, rollback/races and finite replay are tested. No new IDs. Medical-discharge count, medical LOS/time rounding and occupancy require their exact source semantics; administrative closedAt supplies none of these, so the overall subtask remains open. [Evidence](2026-10-09-pharmacy-report-v2-priority.md).
+  - [ ] **R-04.2.3 · PARTIAL / START + MEDICAL COMPLETED-STAY CODE:** actual START counts once; exact Inpatient medical approval now adds medical discharge count, whole LOS minutes and whole completed 24-hour periods, paired to original START/department. Durable early proof, source/delivery/chronology conflicts, atomic journal/claims/two scopes, replicas, retained-byte retry and finite replay pass. Administrative closedAt is not a medical endpoint. CompletedStayDays is not the original inpatientDays/census/occupancy requirement; those semantics, corrections and accepted publication remain open. No new checklist IDs or artificial closure. [Current evidence](2026-10-10-medical-discharge-deposit-finalization.md).
 - [ ] **R-04.3 · CONTRACT D10:** bed occupancy chỉ sau bed assignment/transfer/release intervals và staffed/available capacity theo kỳ. Hiện không đủ facts: metric unavailable/deferred, không activeAdmissions/capacity giả. Không chặn admissions/administrative duration đủ source.
 - [ ] **R-04.4 · LOCAL/CONTRACT D07:** completed/cancelled surgery theo result/outcome identity/revision, actual started/completed duration, complication category và stage/reason taxonomy đã khóa. Không lấy plannedAt thay actual hoặc đoán category từ text; correction/partial abort chưa hỗ trợ không âm thầm đếm như completed.
   - [x] **R-04.4.1 · LOCAL UNIT+POSTGRES PASS (2026-10-07):** Surgery outcome mapper đọc actual producer bytes; canonical result/cancellation revision/time/category và V11 raw-payload hash fence. Duration floor actual whole minutes; không raw patient/narrative vào journal. PG dedupe/conflict/rebuild và hồi quy ba module 920 tests không failure/error/skip ở [execution](2026-10-07-huy-outbound-contracts.md), không tự bật listener/publication; parent R-04.4 còn mở cho runtime/correction acceptance.
 - [ ] **R-04.5 · LOCAL sau source/query semantics:** GET operations/daily và operations/surgery theo target; aggregate-only, bounded from/to, stable sort, null-department hospital scope; phân biệt no-events zero với source chưa sẵn sàng. Không REST join để fill missing event data.
   - [x] **R-04.5.1 · LOCAL FINITE SNAPSHOT READ/API:** hai gated GET, accepted date/zone/metric coverage + immutable generation, hospital NULL/exact department, stable days/camelCase counters, max 366 days, leap-day zero-fill chỉ khi coverage đủ. Migration/replay không tạo publication. PG: snapshot không đọc thêm live facts sau freeze, unavailable khác zero.
   - [ ] **R-04.5.2 · SOURCE/LOCAL ACTIVATION:** accepted source maps/corrections + inpatient-days/LOS, surgery categories và staffed-bed metrics; live catch-up/read publication workflow/Gateway trước full target cutover. Basic snapshot counters không đóng mọi KPI của parent.
-- [ ] **R-04.6 · VERIFY:** role matrix R-02, no clinical payload, same source/new eventId, close-before-start, midnight/leap-day, two departments/hospital reconciliation, zero-fill đúng availability, query count/index plan có giới hạn. Không sửa legacy endpoints.
+- [x] **R-04.6 · LOCAL OPERATIONS VERIFY PASS (2026-10-09):** role matrix R-02, no clinical payload, same source/new eventId, close-before-start, midnight/leap-day, two departments/hospital reconciliation, zero-fill đúng availability, query count/index plan có giới hạn. Không sửa legacy endpoints. Fresh Report 620/620; real JDBC two SELECTs for 1/366 days, indexed bounded scopes over 108,003 diagnostic rows, actual lock cancellation/recovery, V17→V18 preservation/no-op upgrade. [Full mapping](2026-10-09-report-operational-verification.md). This closes operations verification, not financial APIs R-02.3.2/R-03.6, source corrections/coverage R-04.1.3/R-04.5.2 or LOS/occupancy R-04.2.3/R-04.3.
 
 ## 9. Handoff, thứ tự triển khai và nghiệm thu liên service
 

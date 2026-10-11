@@ -68,6 +68,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
                 return;
             }
+            if (request.getRequestURI().startsWith("/api/v1/reports/financial/")) {
+                if (claims.getExpiration()==null || !java.util.UUID.fromString(subject).toString().equals(subject)) {
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
+            }
             var authentication = new UsernamePasswordAuthenticationToken(
                     subject, null, List.of(new SimpleGrantedAuthority(ROLE_PREFIX + role)));
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

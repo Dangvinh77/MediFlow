@@ -33,6 +33,26 @@ class HuyOperationalProducerContractTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"2028-02-28T16:59:59.999999999Z", "2028-02-28T17:00:00Z"})
+    void clinical_boundaryMutationOfProducerFixture_usesBusinessInstantNotLaterDelivery(String timestamp) throws Exception {
+        // Consumer-side boundary scenarios; the original producer fixture is not changed/approved anew.
+        var original = decoder.decode("medicalrecord.completed", Files.readAllBytes(Path.of(
+                "../clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json")));
+        var at = java.time.Instant.parse(timestamp);
+        var meta = original.metadata();
+        var payload = new LinkedHashMap<>(original.payload());
+        payload.put("completedAt", timestamp);
+        var event = new DecodedCareFinanceEvent(new com.mediflow.report.application.dto.command.carefinance.CareFinanceEventMetadata(
+                meta.eventId(), meta.eventType(), meta.version(), at.plusSeconds(86400), meta.correlationId(),
+                meta.producer(), meta.sourceField(), meta.sourceId()), payload);
+        var fact = new ClinicalOperationalContributionMapper(ZoneId.of("Asia/Bangkok")).map(event).contributions().getFirst();
+        assertThat(fact.occurredAt()).isEqualTo(at);
+        assertThat(fact.metricDate()).isEqualTo(timestamp.startsWith("2028-02-28T16")
+                ? LocalDate.of(2028, 2, 28) : LocalDate.of(2028, 2, 29));
+        assertThat(fact.metricDate()).isNotEqualTo(event.metadata().occurredAt().atZone(ZoneId.of("Asia/Bangkok")).toLocalDate());
+    }
+
     @ParameterizedTest @ValueSource(strings={"admission","outpatient"})
     void completed_actualProducerBytes_mapsOneCountAndWholeActualMinutes(String mode) throws Exception {
         var event=surgery("completed",mode);

@@ -31,6 +31,8 @@ public class LabOperationalContributionMapper {
             throw new IllegalArgumentException("Only canonical V1 Lab result facts can map to LAB_TESTS");
         }
         var payload = event.payload();
+        OperationalSourceFields.rejectCorrectionMarkers(payload);
+        if (payload.containsKey("sourceRevision")) throw new IllegalArgumentException("Lab uses only explicit resultVersion");
         UUID sourceId = uuid(payload, "labId");
         if (!sourceId.equals(metadata.sourceId())) {
             throw new IllegalArgumentException("Lab source identity differs from decoded metadata");
@@ -52,7 +54,7 @@ public class LabOperationalContributionMapper {
         }
         try {
             int revision = new BigInteger(value.toString()).intValueExact();
-            if (revision < 1) throw new ArithmeticException("Nonpositive revision");
+            if (revision != 1) throw new IllegalArgumentException("Lab corrections require a versioned source contract");
             return revision;
         } catch (ArithmeticException exception) {
             throw new IllegalArgumentException("Lab resultVersion must be a positive bounded source revision", exception);

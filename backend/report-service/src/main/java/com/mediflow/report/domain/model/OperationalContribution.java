@@ -16,7 +16,8 @@ public record OperationalContribution(
 
     public enum Metric {
         COMPLETED_VISITS, ADMISSIONS, DISCHARGES, LAB_TESTS, DISPENSED_PRESCRIPTIONS, DISPENSED_UNITS,
-        SURGERIES_COMPLETED, SURGERIES_CANCELLED, SURGERY_DURATION_MINUTES;
+        SURGERIES_COMPLETED, SURGERIES_CANCELLED, SURGERY_DURATION_MINUTES,
+        MEDICAL_DISCHARGES, MEDICAL_LOS_MINUTES, COMPLETED_STAY_DAYS;
 
         /** DTO field keys remain English camelCase; storage/source enum tags do not change. */
         public String wireName() {
@@ -30,6 +31,9 @@ public record OperationalContribution(
                 case SURGERIES_COMPLETED -> "surgeriesCompleted";
                 case SURGERIES_CANCELLED -> "surgeriesCancelled";
                 case SURGERY_DURATION_MINUTES -> "surgeryDurationMinutes";
+                case MEDICAL_LOS_MINUTES -> "medicalLosMinutes";
+                case MEDICAL_DISCHARGES -> "medicalDischarges";
+                case COMPLETED_STAY_DAYS -> "completedStayDays";
             };
         }
     }
@@ -55,6 +59,7 @@ public record OperationalContribution(
         }
         // These are one business operation, not arbitrary client-supplied counters.
         if (metric != Metric.DISPENSED_UNITS && metric != Metric.SURGERY_DURATION_MINUTES
+                && metric != Metric.MEDICAL_LOS_MINUTES && metric != Metric.COMPLETED_STAY_DAYS
                 && value.compareTo(BigDecimal.ONE) != 0) {
             throw invalid("A completed business operation contributes exactly one count");
         }

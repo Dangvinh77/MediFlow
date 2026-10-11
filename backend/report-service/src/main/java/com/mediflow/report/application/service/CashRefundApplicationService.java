@@ -16,24 +16,41 @@ public class CashRefundApplicationService implements ApplyCashRefundUseCase {
     public CashRefundApplicationService(CashRefundStorePort store, BillingCashRefundMapper mapper) { this.store = store; this.mapper = mapper; }
     @Override @Transactional(timeout = 5)
     public void apply(DecodedCareFinanceEvent event) {
-        var refund = mapper.map(event); store.lockOriginal(refund.originalTransactionId());
+        var refund = mapper.map(event);
+        // All financial writers acquire account before original, including final recognition.
+        store.lockAccount(refund.accountId()); store.lockOriginal(refund.originalTransactionId());
         if (!store.record(event, refund)) return;
         var original = store.original(refund.originalTransactionId());
-        if (original.isEmpty()) return; // Durable PENDING, no department/date/classification invention.
+        if (original.isEmpty()) {
+            requireSupportedAccount(refund.accountId());
+            return; // Durable PENDING, no department/date/classification invention.
+        }
         refund.verifyOriginal(original.get(), store.appliedTotal(refund.originalTransactionId()));
+        requireSupportedAccount(refund.accountId());
         store.apply(refund, original.get());
     }
     @Override @Transactional(timeout = 5)
     public void recover(UUID originalId) {
-        store.lockOriginal(originalId);
+        // Original identity is immutable. Resolve it before locking, then re-read under both
+        // fences; acquiring account after original would deadlock against the final writer.
+        var identity = store.original(originalId); if (identity.isEmpty()) return;
+        store.lockAccount(identity.get().accountId()); store.lockOriginal(originalId);
         var original = store.original(originalId); if (original.isEmpty()) return;
         for (var refund : store.pending(originalId, 20)) {
-            try { refund.verifyOriginal(original.get(), store.appliedTotal(originalId)); }
+            try {
+                refund.verifyOriginal(original.get(), store.appliedTotal(originalId));
+                requireSupportedAccount(original.get().accountId());
+            }
             catch (ReportRuleException invalid) {
                 // Early invalid evidence was already ACKed. Quarantine it durably, do not poison its valid receipt.
                 store.reject(refund.refundTransactionId(), invalid.getCode()); continue;
             }
             store.apply(refund, original.get());
+        }
+    }
+    private void requireSupportedAccount(UUID accountId) {
+        if (store.finalized(accountId)) {
+            throw new ReportRuleException("CASH_REFUND_FINAL_CORRECTION_UNSUPPORTED", "A final earned correction requires explicit original allocation evidence");
         }
     }
 }

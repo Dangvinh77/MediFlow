@@ -41,6 +41,7 @@ public record ApplyOperationalContributionCommand(
                 case COMPLETED_VISITS -> "medicalrecord.completed";
                 case ADMISSIONS -> "admission.started";
                 case DISCHARGES -> "admission.closed";
+                case MEDICAL_DISCHARGES, MEDICAL_LOS_MINUTES, COMPLETED_STAY_DAYS -> "discharge.medically.approved";
                 case LAB_TESTS -> "lab.result.created";
                 case DISPENSED_PRESCRIPTIONS, DISPENSED_UNITS -> "prescription.filled";
                 case SURGERIES_COMPLETED, SURGERY_DURATION_MINUTES -> "surgery.completed";
@@ -48,7 +49,7 @@ public record ApplyOperationalContributionCommand(
             };
             String expectedSourceType = switch (contribution.metric()) {
                 case COMPLETED_VISITS -> "MEDICAL_RECORD";
-                case ADMISSIONS, DISCHARGES -> "ADMISSION";
+                case ADMISSIONS, DISCHARGES, MEDICAL_DISCHARGES, MEDICAL_LOS_MINUTES, COMPLETED_STAY_DAYS -> "ADMISSION";
                 case LAB_TESTS -> "LAB_RESULT";
                 case DISPENSED_PRESCRIPTIONS, DISPENSED_UNITS -> "DISPENSE";
                 case SURGERIES_COMPLETED, SURGERIES_CANCELLED, SURGERY_DURATION_MINUTES -> "SURGERY_OUTCOME";

@@ -93,6 +93,51 @@ class CashReceiptRabbitIntegrationTest {
                 .hasSize(2).allSatisfy(amount -> assertThat(amount).isEqualByComparingTo("200.00"));
     }
 
+    @Test void consume_actualPrescriptionInstallmentFixtures_count2000OnceAndReplayWithoutEarnedRevenue() throws Exception {
+        byte[] first = fixture("payment-prescription-first.json"), last = fixture("payment-prescription-last.json");
+        send(first); send(last); send(first); send(last); drain(2);
+        assertThat(count("report_cash_receipt")).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(DISTINCT invoice_id) FROM report_cash_receipt", Long.class)).isOne();
+        assertThat(jdbc.queryForList("SELECT gross_receipts FROM report_gross_cash_daily", java.math.BigDecimal.class))
+                .hasSize(2).allSatisfy(amount -> assertThat(amount).isEqualByComparingTo("2000.00"));
+        var progress = replay.start();
+        for (int i = 0; i < 3 && progress.status() == CashReplayProgress.Status.BUILDING; i++) progress = replay.advance(progress.generationId(), 1);
+        assertThat(progress.status()).isEqualTo(CashReplayProgress.Status.VERIFIED);
+        assertNoLegacyOrFinancialPublication();
+    }
+
+    @Test void consume_actualPrescriptionRefundsBeforeReceipts_recoverExactlyOnceAndNetCashZero() throws Exception {
+        for (String part : new String[]{"last", "remainder", "first"}) {
+            byte[] bytes = fixture("refund-prescription-" + part + ".json");
+            sendRefund(bytes); sendRefund(bytes);
+        }
+        refundDrain(3);
+        assertThat(jdbc.queryForList("SELECT state FROM report_cash_refund", String.class)).containsOnly("PENDING");
+        assertThat(count("report_refund_cash_daily")).isZero();
+        send(fixture("payment-prescription-last.json")); send(fixture("payment-prescription-first.json")); drain(2);
+        assertThat(jdbc.queryForList("SELECT state FROM report_cash_refund", String.class)).hasSize(3).containsOnly("APPLIED");
+        var duplicate = tree(fixture("refund-prescription-first.json")); duplicate.put("eventId", UUID.randomUUID().toString());
+        refundListener().start(); sendRefund(mapper.writeValueAsBytes(duplicate)); refundDrain(4);
+        assertThat(jdbc.queryForList("SELECT completed_refunds FROM report_refund_cash_daily", java.math.BigDecimal.class))
+                .hasSize(2).allSatisfy(amount -> assertThat(amount).isEqualByComparingTo("2000.00"));
+        assertThat(jdbc.queryForList("SELECT gross_receipts FROM report_gross_cash_daily", java.math.BigDecimal.class))
+                .hasSize(2).allSatisfy(amount -> assertThat(amount).isEqualByComparingTo("2000.00"));
+        assertThat(jdbc.queryForList("SELECT refund_count FROM report_refund_cash_daily", Long.class)).containsOnly(3L);
+        assertNoLegacyOrFinancialPublication();
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"abbreviatedPrescription", "mixedTargets", "depositPrescription"})
+    void consume_malformedOperationalTargets_dlqWithNoEvidenceOrScope(String mutation) throws Exception {
+        var root = tree(fixture(mutation.startsWith("deposit") ? "payment-deposit.json" : "payment-service.json"));
+        var p = payload(root);
+        if (mutation.equals("abbreviatedPrescription")) p.put("prescriptionId", "1-1-1-1-1");
+        else if (mutation.equals("mixedTargets")) p.putArray("labTestIds").add("20000000-0000-4000-8000-000000000001");
+        else p.put("prescriptionId", "20000000-0000-4000-8000-000000000001");
+        byte[] invalid = mapper.writeValueAsBytes(root); send(invalid); retainedDlq(invalid);
+        assertThat(count("report_cash_receipt")).isZero(); assertThat(count("report_cash_delivery")).isZero();
+        assertThat(count("report_gross_cash_daily")).isZero(); assertNoLegacyOrFinancialPublication();
+    }
+
     @Test void consume_depositAndServiceKeepSeparateClassifications() throws Exception {
         send(fixture("payment-service.json")); send(fixture("payment-deposit.json")); drain(2);
         assertThat(count("report_cash_receipt")).isEqualTo(2);

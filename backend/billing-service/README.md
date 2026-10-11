@@ -1,5 +1,11 @@
 # billing-service
 
+2026-10-11 integration: master's Lab/deposit V12/V13 are retained; unchanged prescription SQL is
+V19/V20. One dispatcher keeps both groups; shared medical discharge chooses the proof-retaining
+handler if present, otherwise master's freeze-only handler, never both or a failure fallback.
+Huy-only databases with Rx V12/V13 need reviewed history handling before reuse; no automatic
+database repair/reset is performed.
+
 Compatibility fees/invoices and episode-isolated Care-Finance ledger. Billing owns all money.
 
 Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Billing contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md).
@@ -9,6 +15,10 @@ Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Bil
 - **Architecture:** clean architecture (hexagonal) per [blueprint](../../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
 ## Status
+
+Automatic published-outbox cleanup defaults OFF via `MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED`.
+Review archived source completeness and backup/restore before enabling it; 7-day retention is not a
+historical replay archive. Dispatch and operator replay remain available with cleanup disabled.
 
 Opt-in pre-start cancellation adjustment now uses the same `billing.q` dispatcher/issuer gates.
 V10 durable cancellation receipts and pending recovery atomically void exact unperformed charges,

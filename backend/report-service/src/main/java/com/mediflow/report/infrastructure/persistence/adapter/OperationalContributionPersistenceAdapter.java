@@ -131,6 +131,9 @@ public class OperationalContributionPersistenceAdapter implements OperationalCon
             case SURGERIES_COMPLETED -> "surgeries_completed";
             case SURGERIES_CANCELLED -> "surgeries_cancelled";
             case SURGERY_DURATION_MINUTES -> "surgery_duration_minutes";
+            case MEDICAL_LOS_MINUTES -> "medical_los_minutes";
+            case MEDICAL_DISCHARGES -> "medical_discharges";
+            case COMPLETED_STAY_DAYS -> "completed_stay_days";
         };
         jdbc.update("INSERT INTO daily_operational_report(report_id, report_date, department_id, " + column
                 + ") VALUES (?, ?, ?, ?) ON CONFLICT (report_date, department_id) DO UPDATE SET "

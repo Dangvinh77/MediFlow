@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RefundNoticeContractTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final RefundNoticeDecoder decoder = new RefundNoticeDecoder(mapper);
-    @ParameterizedTest @ValueSource(strings = {"service", "deposit"})
+    @ParameterizedTest @ValueSource(strings = {"service", "deposit", "prescription-first", "prescription-remainder", "prescription-last"})
     void consume_actualBillingBytes_privateLinkedRefundNotFinalSettlement(String context) throws Exception {
         var command = decoder.decode("payment.refunded", fixture(context));
         var history = mock(CareNotificationRepositoryPort.class); var sources = mock(NotificationSourcePort.class);
@@ -27,7 +27,7 @@ class RefundNoticeContractTest {
         new RefundNoticeService(history, sources).receive(command);
         var captured = org.mockito.ArgumentCaptor.forClass(CareNotificationIntent.class); verify(history).deliverInApp(captured.capture());
         assertThat(captured.getValue().templateKey()).isEqualTo("PAYMENT_REFUNDED");
-        assertThat(captured.getValue().content()).contains(command.originalTransactionId().toString(), "20.00", "không phải quyết toán");
+        assertThat(captured.getValue().content()).contains(command.originalTransactionId().toString(), command.amount().toPlainString(), "không phải quyết toán");
         assertThat(captured.getValue().patientId()).isEqualTo(command.patientId());
     }
     @ParameterizedTest @ValueSource(strings = {"version", "producer", "amount", "currency", "reason", "occurredAt", "patientId", "originalTransactionId", "careEpisodeType", "sourceRevision", "supersedesTransactionId"})

@@ -41,6 +41,33 @@ class BillingCashReceiptMapperTest {
         assertThat(receipt.businessDate()).isEqualTo(LocalDate.of(2026, 10, 5));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"abbreviatedPrescription", "nonStringPrescription", "twoPurposes", "duplicateLab", "abbreviatedLab", "nonArrayLab", "depositPrescription", "depositLab"})
+    void map_invalidOperationalTargets_rejectsRatherThanCountingMalformedCash(String mutation) throws Exception {
+        var event = fixture(mutation.startsWith("deposit") ? "deposit" : "service");
+        var payload = new LinkedHashMap<>(event.payload());
+        String lab = "20000000-0000-4000-8000-000000000001";
+        switch (mutation) {
+            case "abbreviatedPrescription" -> payload.put("prescriptionId", "1-1-1-1-1");
+            case "nonStringPrescription" -> payload.put("prescriptionId", 1);
+            case "twoPurposes" -> payload.put("labTestIds", java.util.List.of(lab));
+            case "duplicateLab" -> { payload.put("prescriptionId", null); payload.put("labTestIds", java.util.List.of(lab, lab)); }
+            case "abbreviatedLab" -> { payload.put("prescriptionId", null); payload.put("labTestIds", java.util.List.of("1-1-1-1-1")); }
+            case "nonArrayLab" -> payload.put("labTestIds", lab);
+            case "depositPrescription" -> payload.put("prescriptionId", lab);
+            case "depositLab" -> payload.put("labTestIds", java.util.List.of(lab));
+        }
+        assertThatThrownBy(() -> mapper.map(new DecodedCareFinanceEvent(event.metadata(), payload)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test void map_labReceiptWithoutPrescription_keepsCashOnlyAndNoPermissionInference() throws Exception {
+        var event = fixture("service"); var payload = new LinkedHashMap<>(event.payload());
+        payload.put("prescriptionId", null);
+        payload.put("labTestIds", java.util.List.of("20000000-0000-4000-8000-000000000001"));
+        assertThat(mapper.map(new DecodedCareFinanceEvent(event.metadata(), payload)).classification()).isEqualTo(Classification.SERVICE_PAYMENT);
+    }
+
     @Test
     void decode_largeDecimal_preservesCentsBeforeTreeOrMapConversion() throws Exception {
         String json = Files.readString(path("service")).replace("100.00", "99999999999999999.99");

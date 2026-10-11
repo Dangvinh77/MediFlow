@@ -129,7 +129,8 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ApiResponse<Void>> validationResponse(List<ErrorDetail> details,
                                                                  HttpServletRequest request) {
         return ResponseEntity.badRequest().body(ApiResponse.fail(
-                new ApiError(request.getRequestURI().startsWith("/api/v1/reports/operations/")
+                new ApiError((request.getRequestURI().startsWith("/api/v1/reports/operations/")
+                        || request.getRequestURI().startsWith("/api/v1/reports/financial/"))
                         ? "REPORT_VALIDATION_ERROR" : "VALIDATION_ERROR", "Dữ liệu không hợp lệ", details),
                 correlationId(request)));
     }

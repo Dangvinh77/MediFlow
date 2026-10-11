@@ -1,0 +1,23 @@
+{
+  "eventId": "40000000-0000-4000-8000-000000000024",
+  "eventType": "deposit.allocated",
+  "version": 1,
+  "occurredAt": "2026-10-10T03:00:00Z",
+  "correlationId": "40000000-0000-4000-8000-000000000023",
+  "producer": "billing-service",
+  "payload": {
+    "allocationOperationId": "40000000-0000-4000-8000-000000000023",
+    "accountId": "40000000-0000-4000-8000-000000000001",
+    "admissionId": "40000000-0000-4000-8000-000000000002",
+    "patientId": "40000000-0000-4000-8000-000000000003",
+    "originalTransactionId": "40000000-0000-4000-8000-000000000010",
+    "currency": "VND",
+    "allocatedAmount": 80.00,
+    "allocations": [
+      { "allocationId": "40000000-0000-4000-8000-000000000021", "chargeId": "40000000-0000-4000-8000-000000000005", "amount": 48.00 },
+      { "allocationId": "40000000-0000-4000-8000-000000000022", "chargeId": "40000000-0000-4000-8000-000000000006", "amount": 32.00 }
+    ],
+    "allocatedAt": "2026-10-10T03:00:00Z",
+    "finalSettlement": false
+  }
+}

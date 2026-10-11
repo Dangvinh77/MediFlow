@@ -11,6 +11,8 @@ public class BillingCashRefundMapper {
     public BillingCashRefundMapper(ZoneId zone) { this.zone = Objects.requireNonNull(zone); }
     public CashRefund map(DecodedCareFinanceEvent event) {
         var m = event.metadata(); var p = event.payload();
+        if (!Set.of("refundTransactionId", "originalTransactionId", "accountId", "patientId", "departmentId",
+                "careEpisodeType", "careEpisodeId", "amount", "currency", "reason", "completedAt").equals(p.keySet())) throw invalid();
         if (m.version() != 1 || !"payment.refunded".equals(m.eventType()) || !"billing-service".equals(m.producer())
                 || !"refundTransactionId".equals(m.sourceField()) || !m.sourceId().equals(uuid(p, "refundTransactionId"))
                 || p.containsKey("sourceRevision") || p.containsKey("supersedesTransactionId")

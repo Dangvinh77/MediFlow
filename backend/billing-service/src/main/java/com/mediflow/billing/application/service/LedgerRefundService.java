@@ -67,11 +67,13 @@ public class LedgerRefundService implements RefundLedgerPaymentUseCase {
                 "BILLING_REFUND_REQUIRES_ACCOUNT_REOPEN");
         require(context.completedRefunds().add(command.amount()).compareTo(original.getAmount()) <= 0,
                 "BILLING_REFUND_EXCEEDS_PAYMENT");
-        var now = clock.instant();
+        // New server-recorded cash time must match PostgreSQL TIMESTAMPTZ precision on replay.
+        // Producer-supplied clinical/source times are never truncated by this command.
+        var now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         require(original.getCompletedAt() != null && !now.isBefore(original.getCompletedAt()), "BILLING_REFUND_TIME_INVALID");
         var refund = PaymentTransaction.restore(UUID.randomUUID(), original.getAccountId(), original.getPaymentRequestId(),
                 PaymentTransactionType.REFUND, original.getClassification(), PaymentTransactionStatus.PENDING,
-                command.amount(), original.getCurrency(), command.paymentMethod().name(), null, command.idempotencyKey(),
+                command.amount().setScale(2, java.math.RoundingMode.UNNECESSARY), original.getCurrency(), command.paymentMethod().name(), null, command.idempotencyKey(),
                 originalId, null, now);
         refund.complete(now);
         refunds.append(refund, command.reason(), actor);

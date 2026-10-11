@@ -97,6 +97,8 @@ mediflow:
       enabled: ${MEDIFLOW_PHARMACY_OUTBOX_ENABLED:true}
       metrics-enabled: ${MEDIFLOW_PHARMACY_OUTBOX_METRICS_ENABLED:true}
       maintenance-enabled: ${MEDIFLOW_PHARMACY_OUTBOX_MAINTENANCE_ENABLED:true}
+      # Preserve historical evidence until archive completeness and retention are reviewed.
+      purge-published-enabled: ${MEDIFLOW_PHARMACY_OUTBOX_PURGE_PUBLISHED_ENABLED:false}
       batch-size: ${MEDIFLOW_PHARMACY_OUTBOX_BATCH_SIZE:100}
       dispatch-delay-ms: ${MEDIFLOW_PHARMACY_OUTBOX_DISPATCH_DELAY_MS:1000}
       dispatch-initial-delay-ms: ${MEDIFLOW_PHARMACY_OUTBOX_DISPATCH_INITIAL_DELAY_MS:1000}

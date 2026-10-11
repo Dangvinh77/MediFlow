@@ -78,4 +78,44 @@ class OperationalSnapshotReportControllerTest {
         }
         verifyNoInteractions(reader);
     }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR"})
+    void operations_eachAuthorizedRole_canReadBothAggregateRoutes(String role) throws Exception {
+        UUID department = UUID.randomUUID();
+        var response = new OperationalSnapshotReportDTO(date, date, department, UUID.randomUUID(),
+                Instant.parse("2026-10-02T00:00:00Z"), true,
+                List.of(new OperationalSnapshotReportDTO.Day(date, java.util.Map.of("admissions", 2L))));
+        when(reader.daily(date, date, department)).thenReturn(response);
+        when(reader.surgery(date, date, department)).thenReturn(response);
+        for (String route : List.of("daily", "surgery")) {
+            mvc.perform(get("/api/v1/reports/operations/" + route).param("from", date.toString())
+                            .param("to", date.toString()).param("departmentId", department.toString())
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("reader").roles(role)))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.departmentId").value(department.toString()))
+                    .andExpect(jsonPath("$.data.days[0].metrics.admissions").value(2))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("patientId"))))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("diagnosis"))))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("consent"))));
+        }
+        verify(reader).daily(date, date, department);
+        verify(reader).surgery(date, date, department);
+        verifyNoMoreInteractions(reader);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"daily", "surgery"})
+    void operations_anonymousDeniedForEachRoute(String route) throws Exception {
+        mvc.perform(get("/api/v1/reports/operations/" + route).param("from", date.toString()).param("to", date.toString()))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(reader);
+    }
+
+    @Test @WithMockUser(roles = "DOCTOR")
+    void operations_invalidDepartmentRejectsBeforeReader() throws Exception {
+        mvc.perform(get("/api/v1/reports/operations/daily").param("from", date.toString()).param("to", date.toString())
+                        .param("departmentId", "not-a-uuid"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("REPORT_VALIDATION_ERROR"));
+        verifyNoInteractions(reader);
+    }
 }

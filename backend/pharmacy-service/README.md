@@ -27,10 +27,14 @@ HELD rows remain blocked. [Canonical contract](../../docs/handoffs/care-finance/
 **In progress.** Domain, application ports/services, persistence adapters, stock reservations,
 expiry scheduler, HTTP/JWT security and RabbitMQ consumer/topology are implemented. The
 transactional outbox is enabled for durable event delivery; cross-service E2E gates remain before release.
-Outbox delivery now supports bounded exponential retry, per-row replay, retention cleanup and
+Outbox delivery now supports bounded exponential retry, per-row replay, opt-in retention cleanup and
 per-aggregate causal ordering. Administrators can replay quarantined rows, and Micrometer exposes
 pending/quarantine count and age gauges. Stock adjustments persist an immutable audit row in the same
 transaction as the drug mutation and `stock.adjusted` outbox event.
+
+Automatic published-row cleanup defaults OFF via `MEDIFLOW_PHARMACY_OUTBOX_PURGE_PUBLISHED_ENABLED`.
+Review archived source completeness and backup/restore before enabling it; 7-day retention is not a
+historical replay archive. Dispatch and operator replay remain available with cleanup disabled.
 
 Package layout (already created, each folder holds a `.gitkeep` until you fill it):
 

@@ -157,6 +157,52 @@ class OperationalReportRabbitIntegrationTest {
         for (String table : new String[]{"processed_event", "daily_visit_report", "monthly_revenue_report", "drug_statistic", "operational_report_publication", "financial_contribution", "daily_financial_report"})
             assertThat(count(table)).as(table).isZero();
     }
+
+    @Test void medicalDischargeBeforeStart_survivesListenerRestartAndProjectsExactCompletedStayOnce() throws Exception {
+        byte[] medical = admission("discharge.medically.approved");
+        send("discharge.medically.approved", medical); drain("report_medical_discharge_delivery", 1);
+        assertThat(count("operational_event_journal")).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM report_medical_discharge", String.class)).isEqualTo("PENDING_START");
+        listener().start(); send("admission.started", admission("admission.started")); drain("operational_event_journal", 2);
+        assertThat(count("operational_contribution")).isEqualTo(4);
+        assertThat(jdbc.queryForList("SELECT medical_discharges,medical_los_minutes,completed_stay_days,inpatient_days FROM daily_operational_report WHERE report_date='2026-09-30'"))
+                .hasSize(2).allSatisfy(row -> {
+                    assertThat(row.get("medical_discharges")).isEqualTo(1L);
+                    assertThat(row.get("medical_los_minutes")).isEqualTo(3290L);
+                    assertThat(row.get("completed_stay_days")).isEqualTo(2L);
+                    assertThat(row.get("inpatient_days")).isEqualTo(0L);
+                });
+        var duplicate = (ObjectNode) mapper.readTree(medical); duplicate.put("eventId", UUID.randomUUID().toString());
+        listener().start(); send("discharge.medically.approved", medical);
+        send("discharge.medically.approved", mapper.writeValueAsBytes(duplicate)); drain("report_medical_discharge_delivery", 2);
+        assertThat(count("operational_event_journal")).isEqualTo(2); assertThat(count("operational_contribution")).isEqualTo(4);
+        assertNoLegacyOrPublicationEffects();
+    }
+
+    @Test void medicalDischargePoison_durableOriginalBytesDlqWithoutSourceOrEffect() throws Exception {
+        var medical = (ObjectNode) mapper.readTree(admission("discharge.medically.approved"));
+        ((ObjectNode)medical.get("payload")).put("sourceRevision", 2);
+        byte[] poison = mapper.writeValueAsBytes(medical);
+        send("discharge.medically.approved", poison); retainedDlq(poison);
+        assertThat(count("report_medical_discharge_delivery")).isZero();
+        assertThat(count("report_medical_discharge")).isZero(); assertThat(count("operational_event_journal")).isZero();
+    }
+
+    @Test void medicalDischargeSqlFailure_rollsBackThenReplaysUnchangedDlqBytes() throws Exception {
+        send("admission.started", admission("admission.started")); drain("operational_event_journal", 1);
+        jdbc.execute("CREATE FUNCTION fail_medical_mq_scope() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.medical_discharges > 0 THEN RAISE EXCEPTION 'injected'; END IF; RETURN NEW; END $$");
+        jdbc.execute("CREATE TRIGGER fail_medical_mq_scope BEFORE INSERT OR UPDATE ON daily_operational_report FOR EACH ROW EXECUTE FUNCTION fail_medical_mq_scope()");
+        byte[] medical = admission("discharge.medically.approved"), retained;
+        try {
+            listener().start(); send("discharge.medically.approved", medical); retained = retainedDlq(medical);
+            assertThat(count("report_medical_discharge")).isZero(); assertThat(count("report_medical_discharge_delivery")).isZero();
+            assertThat(count("operational_contribution")).isOne(); assertThat(count("operational_event_journal")).isOne();
+        } finally {
+            jdbc.execute("DROP TRIGGER fail_medical_mq_scope ON daily_operational_report"); jdbc.execute("DROP FUNCTION fail_medical_mq_scope()");
+        }
+        listener().start(); send("discharge.medically.approved", retained); drain("operational_event_journal", 2);
+        assertThat(count("operational_contribution")).isEqualTo(4); assertNoLegacyOrPublicationEffects();
+    }
     private org.springframework.amqp.rabbit.listener.MessageListenerContainer listener() { return registry.getListenerContainer("reportOperationalFacts"); }
     private long count(String table) { return jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class); }
     private void drain(String table, long expected) {

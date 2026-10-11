@@ -153,18 +153,19 @@ class SurgeryNoticeRabbitIntegrationTest {
         } finally { jdbc.execute("DROP TRIGGER reject_surgery_notice ON NOTIFICATION_EVENT_OUTBOX"); jdbc.execute("DROP FUNCTION reject_surgery_notice()"); }
         listener().start(); send("surgery.ready", retained); drain(1); assertThat(count("NOTIFICATION")).isOne();
     }
-    @ParameterizedTest @ValueSource(strings = {"admission", "outpatient"})
+    @ParameterizedTest @ValueSource(strings = {"admission", "outpatient", "prescription"})
     void consume_actualBillingRequest_privateOneNoticeNotReceipt(String context) throws Exception {
         byte[] body = SurgeryPaymentNoticeContractTest.fixture(context); send("invoice.created", body);
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(count("NOTIFICATION")).isOne());
         paymentListener().stop();
-        assertThat(jdbc.queryForObject("SELECT template_key FROM NOTIFICATION", String.class)).isEqualTo("SURGERY_PAYMENT_REQUEST");
+        assertThat(jdbc.queryForObject("SELECT template_key FROM NOTIFICATION", String.class)).isEqualTo(context.equals("prescription") ? "PRESCRIPTION_PAYMENT_REQUEST" : "SURGERY_PAYMENT_REQUEST");
         assertThat(jdbc.queryForObject("SELECT content FROM NOTIFICATION", String.class)).contains("không phải biên nhận");
         assertThat(jdbc.queryForObject("SELECT recipient_address FROM NOTIFICATION", String.class)).isNull();
         assertThat(jdbc.queryForObject("SELECT publication_enabled FROM NOTIFICATION_EVENT_OUTBOX", Boolean.class)).isFalse();
     }
-    @Test void consume_requestSameSourceNewDelivery_oneNoticeAndConflictingAmountRejects() throws Exception {
-        byte[] body = SurgeryPaymentNoticeContractTest.fixture("admission"); send("invoice.created", body);
+    @ParameterizedTest @ValueSource(strings = {"admission", "prescription"})
+    void consume_requestSameSourceNewDelivery_oneNoticeAndConflictingAmountRejects(String context) throws Exception {
+        byte[] body = SurgeryPaymentNoticeContractTest.fixture(context); send("invoice.created", body);
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(count("PROCESSED_EVENT")).isOne());
         var root = tree(body); root.put("eventId", UUID.randomUUID().toString()); send("invoice.created", mapper.writeValueAsBytes(root));
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(count("PROCESSED_EVENT")).isEqualTo(2)); paymentListener().stop();
@@ -178,10 +179,11 @@ class SurgeryNoticeRabbitIntegrationTest {
         byte[] invalid = mapper.writeValueAsBytes(root); send("invoice.created", invalid); paymentRetainedDlq(invalid);
         assertThat(count("PROCESSED_EVENT")).isZero(); assertThat(count("NOTIFICATION")).isZero(); assertThat(count("care_notification_source")).isZero();
     }
-    @Test void consume_requestOutboxFailure_rollsBackSourceAndDeliveryThenReplaysRetainedBytes() throws Exception {
+    @ParameterizedTest @ValueSource(strings = {"admission", "prescription"})
+    void consume_requestOutboxFailure_rollsBackSourceAndDeliveryThenReplaysRetainedBytes(String context) throws Exception {
         jdbc.execute("CREATE FUNCTION reject_payment_notice() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected'; END $$");
         jdbc.execute("CREATE TRIGGER reject_payment_notice BEFORE INSERT ON NOTIFICATION_EVENT_OUTBOX FOR EACH ROW EXECUTE FUNCTION reject_payment_notice()");
-        byte[] body = SurgeryPaymentNoticeContractTest.fixture("admission"), retained;
+        byte[] body = SurgeryPaymentNoticeContractTest.fixture(context), retained;
         try {
             send("invoice.created", body); retained = paymentRetainedDlq(body);
             assertThat(count("PROCESSED_EVENT")).isZero(); assertThat(count("care_notification_source")).isZero(); assertThat(count("NOTIFICATION")).isZero();
@@ -190,7 +192,7 @@ class SurgeryNoticeRabbitIntegrationTest {
         await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(count("NOTIFICATION")).isOne()); paymentListener().stop();
     }
     private org.springframework.amqp.rabbit.listener.MessageListenerContainer paymentListener() { return registry.getListenerContainer("notificationSurgeryPaymentRequests"); }
-    @ParameterizedTest @ValueSource(strings = {"service", "deposit"})
+    @ParameterizedTest @ValueSource(strings = {"service", "deposit", "prescription-first", "prescription-remainder", "prescription-last"})
     void consume_actualRefund_privateLinkedNoticeAndHeldDelivery(String context) throws Exception {
         send("payment.refunded", RefundNoticeContractTest.fixture(context)); refundDrain(1);
         assertThat(jdbc.queryForObject("SELECT template_key FROM NOTIFICATION", String.class)).isEqualTo("PAYMENT_REFUNDED");

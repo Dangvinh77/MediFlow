@@ -1,0 +1,15 @@
+{
+  "eventId":"98000000-0000-0000-0000-000000000001",
+  "eventType":"settlement.reconciled","version":1,
+  "occurredAt":"2026-10-10T10:00:00.123456789Z",
+  "correlationId":"90000000-0000-0000-0000-000000000001","producer":"billing-service",
+  "payload": {
+    "settlementId":"90000000-0000-0000-0000-000000000001","settlementVersion":1,"supersedesSettlementId":null,
+    "accountId":"91000000-0000-0000-0000-000000000001","admissionId":"92000000-0000-0000-0000-000000000001",
+    "patientId":"93000000-0000-0000-0000-000000000001","departmentId":"94000000-0000-0000-0000-000000000001",
+    "currency":"VND","grossAmount":100.00,"insuranceAmount":0.00,"patientLiability":100.00,
+    "completedPayments":60.00,"completedRefunds":0.00,"completedReversals":0.00,"netAllocatedPayments":60.00,
+    "balance":40.00,"estimatedOutcome":"ADDITIONAL_PAYMENT_REQUIRED",
+    "reconciledAt":"2026-10-10T10:00:00.123456789Z","finalSettlement":false
+  }
+}

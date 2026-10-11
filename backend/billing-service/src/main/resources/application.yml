@@ -49,8 +49,24 @@ mediflow:
       enabled: ${MEDIFLOW_BILLING_LEDGER_ENABLED:false}
     refunds:
       enabled: ${MEDIFLOW_BILLING_REFUNDS_ENABLED:false}
+    settlement-preview:
+      enabled: ${MEDIFLOW_BILLING_SETTLEMENT_PREVIEW_ENABLED:false}
+    reconciliation:
+      enabled: ${MEDIFLOW_BILLING_RECONCILIATION_ENABLED:false}
+    admission-charge-close:
+      enabled: ${MEDIFLOW_BILLING_ADMISSION_CHARGE_CLOSE_ENABLED:false}
+    deposit-allocation:
+      enabled: ${MEDIFLOW_BILLING_DEPOSIT_ALLOCATION_ENABLED:false}
+    final-settlement:
+      enabled: ${MEDIFLOW_BILLING_FINAL_SETTLEMENT_ENABLED:false}
     surgery-charge-consumer:
       enabled: ${MEDIFLOW_BILLING_SURGERY_CHARGE_CONSUMER_ENABLED:false}
+    surgery-completion-proof:
+      enabled: ${MEDIFLOW_BILLING_SURGERY_COMPLETION_PROOF_ENABLED:false}
+    prescription-charge-consumer:
+      enabled: ${MEDIFLOW_BILLING_PRESCRIPTION_CHARGE_CONSUMER_ENABLED:false}
+    prescription-charges:
+      allowed-price-codes: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:}
     rabbit:
       retry:
         max-attempts: ${MEDIFLOW_BILLING_RABBIT_RETRY_MAX_ATTEMPTS:3}
@@ -60,6 +76,8 @@ mediflow:
       enabled: ${MEDIFLOW_BILLING_OUTBOX_ENABLED:true}
       metrics-enabled: ${MEDIFLOW_BILLING_OUTBOX_METRICS_ENABLED:true}
       maintenance-enabled: ${MEDIFLOW_BILLING_OUTBOX_MAINTENANCE_ENABLED:true}
+      # Preserve historical evidence until archive completeness and retention are reviewed.
+      purge-published-enabled: ${MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED:false}
       batch-size: ${MEDIFLOW_BILLING_OUTBOX_BATCH_SIZE:100}
       dispatch-delay-ms: ${MEDIFLOW_BILLING_OUTBOX_DISPATCH_DELAY_MS:1000}
       dispatch-initial-delay-ms: ${MEDIFLOW_BILLING_OUTBOX_DISPATCH_INITIAL_DELAY_MS:1000}
