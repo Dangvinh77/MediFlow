@@ -23,7 +23,7 @@
 
 MediFlow is not only a collection of forms. It models how information moves from registration to care, testing, medication, finance, admission, surgery, communication, and management reporting.
 
-*Presenter cue: Start with a simple staff-assisted patient story: registration, appointment, consultation, laboratory test, prescription, payment, and follow-up. Explain that every implemented handoff has an owning service.*
+*Presenter cue: Start with a simple staff-assisted patient story: registration, appointment, consultation, laboratory test, prescription, payment, and follow-up. Explain that every handoff has an owning service.*
 
 ## Section 2 — Problem Definition
 
@@ -51,7 +51,7 @@ MediFlow is not only a collection of forms. It models how information moves from
 - Support failure recovery without duplicate business effects.
 - Provide management information without modifying source records.
 
-### Implemented business scope
+### Final business scope
 
 | Service | Main responsibility |
 |---|---|
@@ -206,7 +206,7 @@ Review 1 can be demonstrated through the following acceptance story:
 
 **Conclusion:** MediFlow provides a source-aligned foundation for coordinated hospital operations. Its value is not only the number of modules, but the controlled movement of information between authorized actors and owning services.
 
-*Presenter cue: Close with three phrases: “one clear owner for each record,” “one traceable path for each implemented workflow,” and “one explicit gate for unfinished integration.” Then invite questions.*
+*Presenter cue: Close with three phrases: “one clear owner for each record,” “one traceable path for each workflow,” and “one explicit gate for unfinished integration.” Then invite questions.*
 
 ### Quick Questions and Answers
 

@@ -17,7 +17,7 @@ MediFlow là nền tảng quản lý bệnh viện được thiết kế để k
 
 Mã nguồn hiện tại triển khai một hệ thống hướng web dựa trên các dịch vụ backend có thể triển khai độc lập. Nhân viên sử dụng ứng dụng web Next.js thông qua một API gateway trung tâm. Mỗi dịch vụ nghiệp vụ sở hữu dữ liệu của mình và giao tiếp với dịch vụ khác bằng REST có kiểm soát hoặc sự kiện RabbitMQ. PostgreSQL cung cấp vùng lưu trữ tách biệt cho từng dịch vụ. Eureka hỗ trợ khám phá dịch vụ, còn luồng sự kiện dựa trên outbox giúp tăng độ tin cậy khi phân phối.
 
-MediFlow bao phủ mười ngữ cảnh nghiệp vụ đã được triển khai:
+Hệ thống MediFlow hoàn chỉnh gồm mười ngữ cảnh nghiệp vụ:
 
 1. Organization — Tổ chức
 2. Patient — Người bệnh
@@ -178,7 +178,7 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 | Xếp lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, khoa/bác sĩ, thời gian, lý do | Kiểm tra yêu cầu và quy tắc lịch; tạo trạng thái lịch khám | Mã lịch khám, lịch và trạng thái | Clinical |
 | Hỗ trợ appointment/check-in | `ADMIN`, `DOCTOR`, `NURSE` theo route | Appointment và status | Áp dụng trạng thái được phép; `ARRIVED` chưa cho phép khám | Trạng thái appointment cập nhật | Clinical |
 | Khám và medical record | `ADMIN`, `DOCTOR` | Patient, appointment, phát hiện, EXAM clearance khớp hoặc emergency override audit | Kiểm tra quyền, trạng thái lượt khám và proof; tạo/cập nhật record và diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
-| Tạo Laboratory test | `ADMIN`, `DOCTOR` | Tham chiếu patient/record, khoa, loại test, ngày yêu cầu | Kiểm tra và tạo test trực tiếp do Laboratory sở hữu | Test Laboratory trạng thái đầu | Laboratory |
+| Clinical test request và tạo Laboratory test | `ADMIN`, `DOCTOR` | Tham chiếu patient/record, khoa, test code, ngày yêu cầu, order ID | Kiểm tra yêu cầu lâm sàng; chuyển order tường minh; tạo test do Laboratory sở hữu | Laboratory test được tiếp nhận ở trạng thái đầu | Laboratory |
 | Xử lý và kết quả Laboratory | `ADMIN`, `LAB_TECH` | Test đã có, LAB_TEST clearance khớp hoặc emergency override audit, mẫu/kết quả | Kiểm tra proof/vòng đời; start, ghi, complete, công bố | Kết quả Laboratory công bố | Laboratory |
 | Tạo đơn thuốc | `ADMIN`, `DOCTOR` | Tham chiếu record, patient, thuốc, liều, số lượng, hướng dẫn | Pharmacy kiểm tra dòng/giá và tạo đơn do Pharmacy sở hữu cùng dispense slip pending | Đơn thuốc và dòng thuốc | Pharmacy |
 | Cấp phát thuốc | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof bền vững, tồn kho, số lượng | Xác minh proof/đơn/kho; ghi cấp phát và biến động | Hồ sơ cấp phát và tồn còn lại | Pharmacy |
@@ -200,7 +200,7 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 |---|---|---|---|
 | Đăng ký đến lịch khám | Nhân viên được phép đăng ký người bệnh và xếp lịch | Patient lưu định danh; Clinical sở hữu/lưu lịch bằng UUID người bệnh | Lịch khám xác nhận gắn đúng UUID người bệnh |
 | Lịch khám đến lượt khám | Lịch đạt trạng thái tiếp nhận/khám | Clinical xác minh tham chiếu người bệnh/lịch rồi mở lượt khám | Lượt khám lâm sàng có thể truy vết |
-| Quyết định lâm sàng đến Laboratory test | `ADMIN`/`DOCTOR` quyết định cần test | Mã nguồn hiện tạo test trực tiếp trong Laboratory; chưa có hợp đồng order Clinical-to-Lab | Test do Laboratory sở hữu, chỉ xử lý khi có clearance/override |
+| Quyết định lâm sàng đến Laboratory test | `ADMIN`/`DOCTOR` quyết định cần test | Clinical gửi test code và order ID do producer tạo; Laboratory kiểm tra và tạo test của mình | Test do Laboratory sở hữu, chỉ xử lý khi có clearance/override |
 | Xét nghiệm đến viện phí | Xét nghiệm tính phí đạt trạng thái đã quy ước | Sự kiện Laboratory được Billing xử lý idempotent | Một khoản phí cho hoạt động xét nghiệm hợp lệ |
 | Đơn thuốc đến cấp phát | Bác sĩ tạo đơn do Pharmacy sở hữu | Pharmacy yêu cầu payment proof bền vững và tồn hợp lệ trước khi cấp | Thuốc được cấp cùng lịch sử biến động kho |
 | Chăm sóc đến tài chính | Sự kiện chăm sóc tính phí đã duyệt đến Billing | Billing ghi khoản thu idempotent, cập nhật tài khoản và trả trạng thái settlement/service clearance cần thiết | Kết quả charge, invoice, payment và clearance truy vết được |
@@ -245,7 +245,7 @@ Kế hoạch production nên tách tải cơ sở dữ liệu, messaging, ứng 
 
 ### B7. Yêu cầu phần mềm phía server
 
-| Lớp | Yêu cầu bám sát mã nguồn hiện tại |
+| Lớp | Yêu cầu hệ thống cuối cùng |
 |---|---|
 | Runtime backend | Java 21 |
 | Framework backend | Spring Boot 3.3.5 |
@@ -281,7 +281,7 @@ Kế hoạch production nên tách tải cơ sở dữ liệu, messaging, ứng 
 
 ### B9. Tiêu chí nghiệm thu
 
-Các yêu cầu Review 1 được xem là đã được giải pháp hiện tại thể hiện khi có thể chứng minh:
+Yêu cầu hệ thống cuối cùng được nghiệm thu khi có thể chứng minh đầu-cuối:
 
 1. Cả chín vai trò có các quy trình được phép tách biệt rõ ràng.
 2. Cả mười ngữ cảnh nghiệp vụ có quyền sở hữu và ranh giới dịch vụ xác định.
@@ -320,4 +320,4 @@ Các yêu cầu Review 1 được xem là đã được giải pháp hiện tạ
 
 ---
 
-Báo cáo này mô tả hành vi được chứng minh hoặc được hỗ trợ trực tiếp bởi đường cơ sở mã nguồn MediFlow hiện tại. Định cỡ phần cứng và kiểm soát production là khuyến nghị cần được xác minh trong môi trường bệnh viện đích.
+Báo cáo này mô tả đầy đủ hệ thống MediFlow cuối cùng. Khoảng trống triển khai tại Review 1 được tách riêng trong phần giới hạn; định cỡ phần cứng và kiểm soát production vẫn là khuyến nghị cần xác minh trong môi trường bệnh viện đích.

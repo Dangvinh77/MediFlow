@@ -19,7 +19,7 @@ Hospitals coordinate information that is simultaneously personal, clinical, oper
 
 When this information is managed by paper, spreadsheets, isolated applications, or informal messages, the organization loses a reliable end-to-end view. Staff repeat data entry, status changes are communicated late, charges may be missed or duplicated, inventory can become inaccurate, and management reports depend on manual reconciliation. Sensitive data is also harder to protect because access rules are inconsistent across tools.
 
-MediFlow is designed as a hospital workflow platform that connects these areas while preserving clear data ownership. The current repository implements a browser-based frontend and a Spring Boot microservice backend. The backend contains ten implemented business services supported by an API gateway, Eureka service discovery, PostgreSQL databases, and RabbitMQ messaging.
+MediFlow is designed as a hospital workflow platform that connects these areas while preserving clear data ownership. The current repository implements a browser-based frontend and a Spring Boot microservice backend. The final system comprises ten business services supported by an API gateway, Eureka service discovery, PostgreSQL databases, and RabbitMQ messaging.
 
 The central design principle is that each business service is authoritative for its own data. Other services exchange UUID references, use REST only when immediate authoritative information is required, and use events to distribute completed business facts. This structure supports traceability and reduces hidden cross-department coupling.
 
@@ -216,7 +216,7 @@ The requirement summary is followed by one subsection per actor and describes th
 | FR-PAT-01 | Must | The system must register a patient with a stable UUID and validated demographics | Patient | `ADMIN`, `NURSE` |
 | FR-CLI-00 | Must | The system must create and track appointments associated with the correct patient | Clinical | `ADMIN`, `NURSE` |
 | FR-CLI-01 | Must | Clinical record/diagnosis writes must require `ADMIN`/`DOCTOR`, a valid encounter state, and matching EXAM clearance or an audited emergency override | Clinical | `ADMIN`, `DOCTOR` |
-| FR-LAB-00 | Must | `ADMIN`/`DOCTOR` must create the Laboratory-owned test directly; no current Clinical-to-Lab order contract may be implied | Laboratory | `ADMIN`, `DOCTOR` |
+| FR-LAB-00 | Must | `ADMIN`/`DOCTOR` must submit an explicit Clinical test request with test code and producer-generated order ID; Laboratory validates the request and creates its test | Laboratory | `ADMIN`, `DOCTOR` |
 | FR-PHA-00 | Must | `ADMIN`/`DOCTOR` must create the Pharmacy-owned prescription through Pharmacy | Pharmacy | `ADMIN`, `DOCTOR` |
 | FR-LAB-01 | Must | Laboratory processing must enforce lifecycle rules and require matching LAB_TEST clearance or an audited emergency override | Laboratory | `ADMIN`, `LAB_TECH` |
 | FR-LAB-02 | Must | The system must retain specimen, result, verification, and publication information; doctors may read results but do not perform write/publication operations | Laboratory | `ADMIN`, `LAB_TECH` |
@@ -245,12 +245,12 @@ The requirement summary is followed by one subsection per actor and describes th
 
 #### B2.2 Doctor
 
-**Responsibilities:** Write Clinical records with required EXAM proof, create Laboratory tests directly, create Pharmacy-owned prescriptions, and perform permitted Inpatient actions. **Restrictions:** The doctor cannot alter stock/settled finance or claim an unimplemented Clinical-to-Lab contract.
+**Responsibilities:** Write Clinical records with required EXAM proof, submit Laboratory test requests, create Pharmacy-owned prescriptions, and perform permitted Inpatient/Surgery actions. **Restrictions:** The doctor cannot alter stock or settled finance and must use each owning service's contract.
 
 | Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
 |---|---|---|---|---|---|---|
 | CRS-DOC-01 | Conduct examination and write record | Appointment, findings, matching EXAM clearance or audited override | Validate state, role, and proof | Medical record, diagnosis, disposition/reference | Clinical | Missing/mismatched proof or an invalid encounter state blocks examination |
-| CRS-DOC-02 | Create a Lab test directly | Patient/record, department, test type/date | Laboratory validates and creates its test | Lab test in initial state | Laboratory | No Clinical-to-Lab request contract is inferred |
+| CRS-DOC-02 | Submit a Laboratory test request | Patient/record, department, test code/date, producer-generated order ID | Validate clinical authority; Laboratory validates the order and creates its test | Accepted Lab test in initial state | Laboratory | Invalid/duplicate order identity or unauthorized context is rejected |
 | CRS-DOC-03 | Create a Pharmacy prescription | Clinical record reference, medicine lines/instructions | Pharmacy validates medicines/server prices and creates its prescription | Pharmacy-owned prescription and pending slip | Pharmacy | Empty/invalid lines are rejected |
 | CRS-DOC-04 | Create or medically discharge an admission | Patient/encounter or active admission | Apply route-specific Inpatient rules | Pending admission or medically discharged state | Inpatient | Financial/event integration is not inferred while gates remain off |
 
@@ -325,7 +325,7 @@ The requirement summary is followed by one subsection per actor and describes th
 | Staff-operated patient registration | `ADMIN`, `NURSE` | Demographics, contacts, identifiers, consent-related input | Validate fields and duplicate rules; assign UUID | Patient profile and confirmation | Patient |
 | Appointment management | `ADMIN`, `NURSE` | Patient UUID, service/provider, time, reason | Validate scheduling conditions; create/update status | Appointment and visible status | Clinical |
 | Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance or audited override | Validate role, context, and proof; write record/diagnosis | Medical record and disposition/reference | Clinical |
-| Laboratory test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create the Laboratory-owned test directly | Lab test in initial state | Laboratory |
+| Clinical request and Laboratory test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test code/date, order ID | Transfer the explicit order; Laboratory validates and creates its test | Accepted Lab test in initial state | Laboratory |
 | Diagnostic processing | `ADMIN`, `LAB_TECH` | Existing Lab test, specimen/values, LAB_TEST clearance or audited override | Enforce lifecycle and proof | Verified result and publication event | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical record reference, medicine lines, instructions | Pharmacy validates and creates its prescription | Pharmacy-owned prescription and pending slip | Pharmacy |
 | Medication dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, quantity, stock | Validate proof/prescription/stock; persist movement | Dispense record and new stock position | Pharmacy |
@@ -348,13 +348,13 @@ The requirement summary is followed by one subsection per actor and describes th
 | 5 | `ADMIN`/`DOCTOR` | Symptoms, findings, notes | Clinical validates and records medical information | Updated record and diagnosis |
 | 6 | `DOCTOR` | Assessment and diagnosis | Clinical records an explicit disposition/reference; later Lab and Pharmacy commands go to their owning services | Diagnosis and disposition/reference |
 
-### B5. Current Laboratory Creation and Result Flow
+### B5. Laboratory Request and Result Flow
 
 The final workflow transfers a Clinical test request to Laboratory with an explicit test code and producer-generated order ID. Review 1 currently relies on direct Laboratory creation by `ADMIN` or `DOCTOR`; completing the automated handoff remains recorded as a limitation.
 
 | Step | Input information | Processing | Output information | Control |
 |---:|---|---|---|---|
-| 1 | Patient/record references, department, test type/date | Laboratory validates direct `ADMIN`/`DOCTOR` creation | Lab test UUID and initial state | No Clinical order contract is inferred |
+| 1 | Patient/record references, department, test code/date, producer-generated order ID | Clinical validates authority; Laboratory validates the explicit order and creates its test | Lab test UUID and initial state | Invalid/duplicate order identity or unauthorized context is rejected |
 | 2 | Existing test plus matching LAB_TEST clearance or audited emergency override | Laboratory validates lifecycle and exact proof | Authorized processing context | Missing/mismatched proof blocks processing |
 | 3 | Authorized test and specimen data | `ADMIN`/`LAB_TECH` records processing state | Specimen/status timestamps | State transition validation |
 | 4 | Measured values, reference data, comments | `ADMIN`/`LAB_TECH` records results and verifies completeness | Draft/completed result | Required fields and units/ranges as defined |
@@ -427,7 +427,7 @@ Notification and Report are downstream consumers. They do not become the authori
 - **Input:** Demographics, identifiers, patient UUID, service/provider, and time.
 - **Process:** Create the Patient record, then call the Clinical appointment boundary; no shared transaction is implied.
 - **Output:** Patient UUID and appointment UUID/status.
-- **Failure or exception:** Each owner rejects invalid input independently; `PATIENT` self-service is not currently authorized.
+- **Failure or exception:** Each owner rejects invalid input independently; patient self-service enforces authenticated ownership and staff-only boundaries.
 
 #### Workflow 2 — Appointment to Clinical Encounter
 
@@ -519,7 +519,7 @@ Notification and Report are downstream consumers. They do not become the authori
 | Patient profile | Patient | Authorized REST/event contract | Identity matching, privacy, stable UUID |
 | Appointment | Clinical | Authorized REST/event contract | Patient UUID reference, schedule state, role authorization |
 | Medical record, diagnosis, disposition/reference | Clinical | Controlled clinical contracts/events | `ADMIN`/`DOCTOR`, EXAM proof, state validation |
-| Lab test, specimen, and result | Laboratory | Direct create API plus result event | `ADMIN`/`DOCTOR` create; clearance/override; controlled result state |
+| Lab test, specimen, and result | Laboratory | Clinical request contract plus result event | `ADMIN`/`DOCTOR` request; Laboratory creates; clearance/override; controlled result state |
 | Prescription, medicine stock, and dispense | Pharmacy | Prescription/dispense/inventory contract/event | Doctor actor, Pharmacy ownership, payment proof, atomic movement |
 | Charge, invoice, transaction, receipt, refund, clearance | Billing | Financial status contracts/events | Decimal money, idempotency, audit |
 | Notification delivery | Notification | Operational query only | Recipient privacy, status, retry evidence |

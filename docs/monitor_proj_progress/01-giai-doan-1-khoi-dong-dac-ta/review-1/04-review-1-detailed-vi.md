@@ -19,7 +19,7 @@ Bệnh viện điều phối thông tin vừa mang tính cá nhân, lâm sàng, 
 
 Khi thông tin được quản lý bằng giấy, bảng tính, ứng dụng rời rạc hoặc tin nhắn không chính thức, tổ chức mất góc nhìn xuyên suốt đáng tin cậy. Nhân viên nhập lại dữ liệu, thay đổi trạng thái được báo chậm, phí có thể bị thiếu hoặc trùng, tồn kho thiếu chính xác và báo cáo quản trị phụ thuộc đối soát thủ công. Dữ liệu nhạy cảm cũng khó bảo vệ vì quy tắc truy cập giữa các công cụ không nhất quán.
 
-MediFlow được thiết kế như một nền tảng quy trình bệnh viện kết nối các khu vực này nhưng vẫn duy trì quyền sở hữu dữ liệu rõ ràng. Kho mã hiện tại triển khai frontend trên trình duyệt và backend microservice Spring Boot. Backend có mười dịch vụ nghiệp vụ đã triển khai, được hỗ trợ bởi API gateway, khám phá dịch vụ Eureka, cơ sở dữ liệu PostgreSQL và messaging RabbitMQ.
+MediFlow được thiết kế như một nền tảng quy trình bệnh viện kết nối các khu vực này nhưng vẫn duy trì quyền sở hữu dữ liệu rõ ràng. Kho mã hiện tại triển khai frontend trên trình duyệt và backend microservice Spring Boot. Hệ thống hoàn chỉnh gồm mười dịch vụ nghiệp vụ, được hỗ trợ bởi API gateway, khám phá dịch vụ Eureka, cơ sở dữ liệu PostgreSQL và messaging RabbitMQ.
 
 Nguyên tắc trung tâm là mỗi dịch vụ nghiệp vụ có thẩm quyền đối với dữ liệu của mình. Các dịch vụ khác trao đổi tham chiếu UUID, chỉ dùng REST khi cần thông tin có thẩm quyền ngay lập tức và dùng sự kiện để phân phối sự kiện nghiệp vụ đã hoàn tất. Cấu trúc này hỗ trợ truy vết và giảm coupling ẩn giữa các khoa.
 
@@ -216,7 +216,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | FR-PAT-01 | Must | Hệ thống phải đăng ký người bệnh với UUID ổn định và nhân khẩu học hợp lệ | Patient | `ADMIN`, `NURSE` |
 | FR-CLI-00 | Must | Hệ thống phải tạo/theo dõi lịch khám gắn đúng người bệnh | Clinical | `ADMIN`, `NURSE` |
 | FR-CLI-01 | Must | Ghi Clinical record/diagnosis phải cần `ADMIN`/`DOCTOR`, trạng thái encounter hợp lệ và EXAM clearance khớp hoặc emergency override audit | Clinical | `ADMIN`, `DOCTOR` |
-| FR-LAB-00 | Must | `ADMIN`/`DOCTOR` tạo test do Laboratory sở hữu trực tiếp; không hàm ý hợp đồng Clinical-to-Lab hiện tại | Laboratory | `ADMIN`, `DOCTOR` |
+| FR-LAB-00 | Must | `ADMIN`/`DOCTOR` gửi Clinical test request tường minh với test code và order ID do producer tạo; Laboratory kiểm tra request và tạo test của mình | Laboratory | `ADMIN`, `DOCTOR` |
 | FR-PHA-00 | Must | `ADMIN`/`DOCTOR` tạo đơn do Pharmacy sở hữu qua Pharmacy | Pharmacy | `ADMIN`, `DOCTOR` |
 | FR-LAB-01 | Must | Xử lý Laboratory phải thực thi quy tắc vòng đời và cần LAB_TEST clearance khớp hoặc override audit | Laboratory | `ADMIN`, `LAB_TECH` |
 | FR-LAB-02 | Must | Hệ thống phải lưu mẫu, kết quả, xác minh và công bố; bác sĩ chỉ đọc kết quả, không thực hiện thao tác ghi/công bố | Laboratory | `ADMIN`, `LAB_TECH` |
@@ -245,12 +245,12 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 #### B2.2 Bác sĩ
 
-**Trách nhiệm:** Ghi Clinical record với EXAM proof, tạo Lab test trực tiếp, tạo đơn do Pharmacy sở hữu và thao tác Inpatient được phép. **Giới hạn:** Không sửa kho/tài chính hoặc tuyên bố hợp đồng Clinical-to-Lab chưa làm.
+**Trách nhiệm:** Ghi Clinical record với EXAM proof, gửi Laboratory test request, tạo đơn do Pharmacy sở hữu và thao tác Inpatient/Surgery được phép. **Giới hạn:** Không sửa kho hoặc tài chính đã quyết toán và phải dùng hợp đồng của từng dịch vụ sở hữu.
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
 | CRS-DOC-01 | Khám và ghi record | Appointment, phát hiện, EXAM clearance khớp hoặc override audit | Kiểm tra trạng thái, role và proof | Medical record, diagnosis, disposition/reference | Clinical | Proof thiếu/sai hoặc trạng thái encounter không hợp lệ sẽ chặn examination |
-| CRS-DOC-02 | Tạo Lab test trực tiếp | Patient/record, khoa, loại test/ngày | Laboratory kiểm tra và tạo test của mình | Lab test trạng thái đầu | Laboratory | Không suy diễn hợp đồng Clinical-to-Lab |
+| CRS-DOC-02 | Gửi Laboratory test request | Patient/record, khoa, test code/ngày, order ID do producer tạo | Kiểm tra quyền lâm sàng; Laboratory kiểm tra order và tạo test của mình | Lab test được tiếp nhận ở trạng thái đầu | Laboratory | Order identity sai/trùng hoặc ngữ cảnh không được phép bị từ chối |
 | CRS-DOC-03 | Tạo đơn Pharmacy | Tham chiếu clinical record, dòng thuốc/hướng dẫn | Pharmacy kiểm tra thuốc/giá server và tạo đơn | Đơn Pharmacy và pending slip | Pharmacy | Dòng rỗng/sai bị từ chối |
 | CRS-DOC-04 | Tạo hoặc medical discharge admission | Patient/encounter hoặc admission hoạt động | Áp dụng quy tắc Inpatient theo route | Admission chờ hoặc đã medical discharge | Inpatient | Không suy diễn tích hợp tài chính/sự kiện khi gate đang tắt |
 
@@ -325,7 +325,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | Đăng ký người bệnh do nhân viên thực hiện | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh, đầu vào đồng thuận | Kiểm tra trường và trùng; cấp UUID | Hồ sơ và xác nhận người bệnh | Patient |
 | Quản lý lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, dịch vụ/bác sĩ, thời gian, lý do | Kiểm tra điều kiện lịch; tạo/cập nhật trạng thái | Lịch khám và trạng thái hiển thị | Clinical |
 | Khám lâm sàng | `ADMIN`, `DOCTOR` | Patient/appointment, phát hiện, EXAM clearance hoặc override audit | Kiểm tra role, ngữ cảnh và proof; ghi record/diagnosis | Medical record và disposition/reference | Clinical |
-| Tạo Laboratory test | `ADMIN`, `DOCTOR` | Patient/record, khoa, loại test/ngày | Tạo test do Laboratory sở hữu trực tiếp | Lab test trạng thái đầu | Laboratory |
+| Clinical request và tạo Laboratory test | `ADMIN`, `DOCTOR` | Patient/record, khoa, test code/ngày, order ID | Chuyển order tường minh; Laboratory kiểm tra và tạo test của mình | Lab test được tiếp nhận ở trạng thái đầu | Laboratory |
 | Xử lý chẩn đoán | `ADMIN`, `LAB_TECH` | Test đã có, mẫu/giá trị, LAB_TEST clearance hoặc override audit | Thực thi vòng đời và proof | Kết quả xác minh và sự kiện công bố | Laboratory |
 | Tạo đơn thuốc | `ADMIN`, `DOCTOR` | Tham chiếu record, dòng thuốc, hướng dẫn | Pharmacy kiểm tra và tạo đơn của mình | Đơn Pharmacy và pending slip | Pharmacy |
 | Cấp phát thuốc | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof, số lượng, tồn | Kiểm tra proof/đơn/kho; lưu biến động | Hồ sơ cấp phát và vị thế kho mới | Pharmacy |
@@ -348,13 +348,13 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | 5 | `ADMIN`/`DOCTOR` | Triệu chứng, phát hiện, ghi chú | Clinical kiểm tra và ghi thông tin y khoa | Record và diagnosis cập nhật |
 | 6 | `DOCTOR` | Đánh giá và chẩn đoán | Clinical ghi disposition/reference; command Lab/Pharmacy sau đó đi tới owner tương ứng | Diagnosis và disposition/reference |
 
-### B5. Luồng tạo và trả kết quả Laboratory hiện tại
+### B5. Luồng yêu cầu và trả kết quả Laboratory
 
 Luồng cuối cùng chuyển test request từ Clinical sang Laboratory với test code tường minh và order ID do producer tạo. Review 1 hiện dựa vào việc `ADMIN` hoặc `DOCTOR` tạo trực tiếp trong Laboratory; hoàn tất bàn giao tự động vẫn được ghi là giới hạn.
 
 | Bước | Thông tin đầu vào | Xử lý | Thông tin đầu ra | Kiểm soát |
 |---:|---|---|---|---|
-| 1 | Tham chiếu patient/record, khoa, loại test/ngày | Laboratory kiểm tra lệnh tạo trực tiếp của `ADMIN`/`DOCTOR` | UUID Lab test và trạng thái đầu | Không suy diễn Clinical order |
+| 1 | Tham chiếu patient/record, khoa, test code/ngày, order ID do producer tạo | Clinical kiểm tra quyền; Laboratory kiểm tra order tường minh và tạo test | UUID Lab test và trạng thái đầu | Order identity sai/trùng hoặc ngữ cảnh không được phép bị từ chối |
 | 2 | Test đã có cùng LAB_TEST clearance hoặc emergency override audit | Laboratory kiểm tra vòng đời và proof chính xác | Ngữ cảnh xử lý được phép | Proof thiếu/sai chặn xử lý |
 | 3 | Test được phép và dữ liệu mẫu | `ADMIN`/`LAB_TECH` ghi trạng thái xử lý | Mẫu/status time | Kiểm tra chuyển trạng thái |
 | 4 | Giá trị đo, tham chiếu, nhận xét | `ADMIN`/`LAB_TECH` ghi kết quả và kiểm tra đầy đủ | Kết quả nháp/hoàn tất | Trường/đơn vị/khoảng theo định nghĩa |
@@ -427,7 +427,7 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 - **Đầu vào:** Nhân khẩu học, định danh, UUID người bệnh, dịch vụ/bác sĩ, thời gian.
 - **Xử lý:** Tạo hồ sơ Patient rồi gọi biên appointment Clinical; không hàm ý shared transaction.
 - **Đầu ra:** UUID người bệnh và UUID/trạng thái appointment.
-- **Lỗi/ngoại lệ:** Mỗi owner từ chối đầu vào sai độc lập; `PATIENT` chưa được quyền tự phục vụ.
+- **Lỗi/ngoại lệ:** Mỗi owner từ chối đầu vào sai độc lập; tự phục vụ của `PATIENT` chỉ được phép với chính hồ sơ thuộc quyền của người đó.
 
 #### Quy trình 2 — Appointment đến lượt khám
 
@@ -519,7 +519,7 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 | Hồ sơ người bệnh | Patient | Hợp đồng REST/sự kiện được phép | Khớp định danh, riêng tư, UUID ổn định |
 | Lịch khám | Clinical | Hợp đồng REST/sự kiện được phép | UUID người bệnh, trạng thái lịch, quyền |
 | Medical record, diagnosis, disposition/reference | Clinical | Hợp đồng/sự kiện lâm sàng kiểm soát | `ADMIN`/`DOCTOR`, EXAM proof, trạng thái |
-| Lab test, mẫu và kết quả | Laboratory | API create trực tiếp và result event | `ADMIN`/`DOCTOR` tạo; clearance/override; trạng thái kết quả |
+| Lab test, mẫu và kết quả | Laboratory | Hợp đồng Clinical request và result event | `ADMIN`/`DOCTOR` request; Laboratory tạo; clearance/override; trạng thái kết quả |
 | Đơn, tồn kho và cấp phát | Pharmacy | Hợp đồng đơn/cấp phát/kho | Doctor actor, Pharmacy ownership, payment proof, biến động nhất quán |
 | Phí, hóa đơn, giao dịch, biên lai, hoàn tiền, clearance | Billing | Hợp đồng/sự kiện trạng thái tài chính | Tiền thập phân, idempotency, kiểm toán |
 | Gửi thông báo | Notification | Chỉ truy vấn vận hành | Riêng tư người nhận, trạng thái, bằng chứng retry |

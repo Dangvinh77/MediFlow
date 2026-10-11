@@ -23,7 +23,7 @@
 
 MediFlow không chỉ là tập hợp biểu mẫu. Hệ thống mô hình hóa cách thông tin đi từ đăng ký đến khám chữa bệnh, xét nghiệm, dùng thuốc, tài chính, nhập viện, phẫu thuật, truyền thông và báo cáo quản trị.
 
-*Gợi ý trình bày: Bắt đầu bằng câu chuyện có nhân viên hỗ trợ: đăng ký, lịch khám, gặp bác sĩ, xét nghiệm, đơn, thanh toán. Giải thích rằng mỗi bàn giao đã triển khai đều có dịch vụ sở hữu.*
+*Gợi ý trình bày: Bắt đầu bằng câu chuyện có nhân viên hỗ trợ: đăng ký, lịch khám, gặp bác sĩ, xét nghiệm, đơn, thanh toán. Giải thích rằng mỗi bàn giao đều có dịch vụ sở hữu.*
 
 ## Phần 2 — Xác định vấn đề
 
@@ -51,7 +51,7 @@ MediFlow không chỉ là tập hợp biểu mẫu. Hệ thống mô hình hóa 
 - Khôi phục sau lỗi mà không lặp tác động nghiệp vụ.
 - Cung cấp thông tin quản trị mà không sửa hồ sơ nguồn.
 
-### Phạm vi nghiệp vụ đã triển khai
+### Phạm vi nghiệp vụ của hệ thống hoàn chỉnh
 
 | Dịch vụ | Trách nhiệm chính |
 |---|---|
@@ -206,7 +206,7 @@ Review 1 có thể trình diễn qua câu chuyện nghiệm thu sau:
 
 **Kết luận:** MediFlow cung cấp nền tảng bám sát mã nguồn cho vận hành bệnh viện phối hợp. Giá trị không chỉ nằm ở số mô-đun mà ở sự di chuyển thông tin có kiểm soát giữa actor được phép và dịch vụ sở hữu.
 
-*Gợi ý trình bày: Kết thúc bằng ba cụm: “một chủ sở hữu cho mỗi hồ sơ”, “một đường truy vết cho mỗi quy trình đã làm” và “một gate tường minh cho tích hợp chưa hoàn tất”.*
+*Gợi ý trình bày: Kết thúc bằng ba cụm: “một chủ sở hữu cho mỗi hồ sơ”, “một đường truy vết cho mỗi quy trình” và “một gate tường minh cho tích hợp chưa hoàn tất”.*
 
 ### Câu hỏi và trả lời nhanh
 

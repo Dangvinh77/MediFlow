@@ -17,7 +17,7 @@ MediFlow is a hospital management platform designed to connect the main administ
 
 The current source code implements a web-oriented system built around independently deployable backend services. Staff members use a Next.js web client through a central API gateway. Each business service owns its data and communicates with other services through controlled REST calls or RabbitMQ events. PostgreSQL provides isolated persistence for each service. Eureka supports service discovery, and an outbox-based event flow improves delivery reliability.
 
-MediFlow covers ten implemented business contexts:
+MediFlow comprises ten business contexts in the final system:
 
 1. Organization
 2. Patient
@@ -178,7 +178,7 @@ MediFlow proposes a modular hospital platform in which each business capability 
 | Appointment scheduling | `ADMIN`, `NURSE` | Patient UUID, department/provider, requested time, reason | Validate request and scheduling rules; create appointment state | Appointment identifier, schedule, and status | Clinical |
 | Appointment/check-in support | `ADMIN`, `DOCTOR`, `NURSE` as permitted by route | Appointment and status input | Apply permitted appointment state; `ARRIVED` alone does not authorize examination | Updated appointment state | Clinical |
 | Clinical examination and record | `ADMIN`, `DOCTOR` | Patient, appointment, findings, matching EXAM clearance or audited emergency override | Validate authority, encounter state, and proof; create/update record and diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
-| Laboratory test creation | `ADMIN`, `DOCTOR` | Patient/record references, department, test type, requested date | Validate input and create the Laboratory-owned test directly | Laboratory test in initial state | Laboratory |
+| Clinical test request and Laboratory creation | `ADMIN`, `DOCTOR` | Patient/record references, department, test code, requested date, order ID | Validate the clinical request; transfer the explicit order; create the Laboratory-owned test | Accepted Laboratory test in initial state | Laboratory |
 | Laboratory processing and result | `ADMIN`, `LAB_TECH` | Existing Lab test, matching LAB_TEST clearance or audited emergency override, specimen/results | Validate proof and lifecycle; start, record, complete, and publish | Published Laboratory result | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical record reference, patient, medicine, dose, quantity, instructions | Pharmacy validates lines/prices and creates the Pharmacy-owned prescription plus pending dispense slip | Prescription and medication lines | Pharmacy |
 | Medicine dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock, dispense quantity | Verify proof/prescription/stock; record dispense and inventory movement | Dispense record and remaining stock | Pharmacy |
@@ -200,7 +200,7 @@ MediFlow proposes a modular hospital platform in which each business capability 
 |---|---|---|---|
 | Registration to appointment | Authorized staff register a patient and schedule care | Patient stores identity; Clinical owns and stores the appointment using the patient UUID | Confirmed appointment associated with the correct patient UUID |
 | Appointment to encounter | Appointment reaches check-in/consultation state | Clinical validates the patient/appointment reference and opens an encounter | Traceable clinical encounter |
-| Clinical decision to Laboratory test | `ADMIN`/`DOCTOR` decides a test is needed | Current source creates the test directly in Laboratory; there is no implemented Clinical-to-Lab order contract | Laboratory-owned test, later processed only with required clearance/override |
+| Clinical decision to Laboratory test | `ADMIN`/`DOCTOR` decides a test is needed | Clinical sends an explicit test code and producer-generated order ID; Laboratory validates and creates its test | Laboratory-owned test, later processed only with required clearance/override |
 | Laboratory to billing | A billable test reaches the contractually defined state | Laboratory event is consumed idempotently by Billing | One charge for the eligible laboratory activity |
 | Prescription to dispensing | Doctor creates a Pharmacy-owned prescription | Pharmacy later requires durable payment proof and valid stock before dispensing | Medication supplied with inventory movement history |
 | Care to finance | An approved billable care event reaches Billing | Billing records the charge idempotently, updates the account, and returns the required settlement or service-clearance state | Traceable charge, invoice, payment, and clearance result |
@@ -245,7 +245,7 @@ Production planning should separate database, messaging, application, and backup
 
 ### B7. Server Software Requirements
 
-| Layer | Current source-aligned requirement |
+| Layer | Final-system requirement |
 |---|---|
 | Backend runtime | Java 21 |
 | Backend framework | Spring Boot 3.3.5 |
@@ -281,7 +281,7 @@ Production planning should separate database, messaging, application, and backup
 
 ### B9. Acceptance Criteria
 
-The Review 1 requirements are considered represented by the current solution when the following can be demonstrated:
+The final-system requirements are accepted when the following can be demonstrated end to end:
 
 1. All nine roles have clearly separated permitted workflows.
 2. All ten business contexts have defined ownership and accessible service boundaries.
@@ -320,4 +320,4 @@ The Review 1 requirements are considered represented by the current solution whe
 
 ---
 
-This report describes the behavior demonstrated or directly supported by the current MediFlow source baseline. Hardware sizing and production controls are recommendations that require validation in the target hospital environment.
+This report describes the complete intended MediFlow system. Review 1 implementation gaps are isolated in the limitations section, while hardware sizing and production controls remain recommendations that require validation in the target hospital environment.

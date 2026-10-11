@@ -24,7 +24,7 @@
 | Part B depth / Độ sâu Phần B | Stakeholders, role cycles, main flows, environment, security, acceptance / Stakeholder, chu trình vai trò, luồng chính, môi trường, bảo mật, nghiệm thu | Adds requirement IDs, flow-by-flow steps, ownership, API, events, NFRs, and traceability matrix / Bổ sung mã yêu cầu, bước theo luồng, quyền sở hữu, API, sự kiện, phi chức năng và ma trận truy vết |
 | Functional requirement IDs / Mã yêu cầu chức năng | Not used; requirements are grouped in readable tables / Không dùng; yêu cầu được nhóm trong bảng dễ đọc | Uses stable `FR-*`, `API-*`, `EVT-*`, `SEC-*`, and `AC-*` references / Dùng tham chiếu ổn định `FR-*`, `API-*`, `EVT-*`, `SEC-*`, `AC-*` |
 | User roles / Vai trò | Covers all nine roles / Bao phủ đủ chín vai trò | Covers all nine roles with create/read/control boundaries / Bao phủ đủ chín vai trò cùng ranh giới tạo/đọc/kiểm soát |
-| Services / Dịch vụ | Covers all ten implemented contexts / Bao phủ đủ mười context đã triển khai | Covers all ten contexts plus ownership and contract constraints / Bao phủ đủ mười context cùng quyền sở hữu và ràng buộc hợp đồng |
+| Services / Dịch vụ | Covers all ten final-system contexts / Bao phủ đủ mười context của hệ thống hoàn chỉnh | Covers all ten contexts plus ownership and contract constraints / Bao phủ đủ mười context cùng quyền sở hữu và ràng buộc hợp đồng |
 | Data-processing model / Mô hình xử lý dữ liệu | One consolidated actor-input-process-output-owner table / Một bảng tổng hợp actor-input-process-output-owner | Consolidated table plus detailed workflow steps / Bảng tổng hợp và các bước chi tiết theo quy trình |
 | Cross-service design / Thiết kế chéo dịch vụ | Explains REST, events, outbox, idempotency / Giải thích REST, event, outbox, idempotency | Defines explicit API and asynchronous requirements / Xác định yêu cầu API và bất đồng bộ tường minh |
 | Hardware/software / Phần cứng/phần mềm | Concise client/server recommendations / Khuyến nghị client/server cô đọng | Separate client/server profiles with verification caveats / Tách cấu hình client/server cùng điều kiện xác minh |
@@ -62,7 +62,7 @@ Cả hai phiên bản bám cùng một đường cơ sở mã nguồn. Khác bi�
 
 | Evidence area / Khu vực bằng chứng | Standard / Tiêu chuẩn | Detailed / Chi tiết |
 |---|---|---|
-| Ten implemented services / Mười dịch vụ đã triển khai | Named and summarized / Nêu tên và tóm tắt | Assigned requirements, ownership, and workflow steps / Gán yêu cầu, quyền sở hữu và bước quy trình |
+| Ten final-system services / Mười dịch vụ của hệ thống hoàn chỉnh | Named and summarized / Nêu tên và tóm tắt | Assigned requirements, ownership, and workflow steps / Gán yêu cầu, quyền sở hữu và bước quy trình |
 | Nine roles / Chín vai trò | Function table and data-cycle rows / Bảng chức năng và chu trình | Responsibility boundary and requirement linkage / Ranh giới trách nhiệm và liên kết yêu cầu |
 | Java/Spring baseline | Listed in software requirements / Liệt kê trong yêu cầu phần mềm | Listed with platform separation and operational needs / Liệt kê cùng phân tách nền tảng và nhu cầu vận hành |
 | Frontend baseline | Next.js, React, TypeScript, Tailwind, pnpm / Công nghệ frontend hiện tại | Same baseline plus gateway/API boundary requirements / Cùng baseline và yêu cầu ranh giới gateway/API |
