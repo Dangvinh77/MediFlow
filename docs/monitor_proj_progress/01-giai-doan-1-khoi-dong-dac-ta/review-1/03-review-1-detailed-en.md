@@ -99,8 +99,8 @@ The solution must answer five questions for every important action:
 |---|---|---|
 | Organization | Identity-related organization records, staff, roles, departments, facilities, and rooms | Staff/user reference, role assignment, facility hierarchy, room reference |
 | Patient | Staff-operated patient registration, profile, identifiers, and contact data | Patient profile and demographic status |
-| Clinical | Appointments, medical records, diagnoses, dispositions, and admission-referral references; examination requires matching EXAM clearance or audited override | Appointment, medical record, diagnosis, disposition/reference |
-| Laboratory | `ADMIN`/`DOCTOR`-created test lifecycle, specimen, result, verification; processing requires LAB_TEST clearance or audited override | Lab test, specimen, result, published result event |
+| Clinical | Appointments, medical records, diagnoses, dispositions, and admission-referral references; active V0 record creation is role-authorized, while default-off Care-Finance V2 additionally requires matching EXAM clearance or audited override | Appointment, medical record, diagnosis, disposition/reference |
+| Laboratory | `ADMIN`/`DOCTOR`-created test lifecycle, specimen, result, verification; active V0 compatibility processing remains available, while V2 protected processing requires LAB_TEST clearance or audited override | Lab test, specimen, result, published result event |
 | Pharmacy | Medicine catalogue, Pharmacy-owned prescription creation, inventory, durable payment-proof validation, dispensing | Prescription, medicine, stock movement, dispense record |
 | Billing | Active compatibility invoice read/create/pay plus default-off/target ledger, deposit, refund, settlement, and clearance slices | Active invoice/payment state and explicitly gated finance records |
 | Notification | Template selection, recipient/channel processing, delivery attempts | Notification request and delivery status |
@@ -215,11 +215,11 @@ The requirement summary is followed by one subsection per actor. Current permiss
 | FR-INP-00 | Must | The system must maintain Inpatient-owned beds through permitted management routes | Inpatient | `ADMIN`, `MANAGER` |
 | FR-PAT-01 | Must | The system must register a patient with a stable UUID and validated demographics | Patient | `ADMIN`, `NURSE` |
 | FR-CLI-00 | Must | The system must create and track appointments associated with the correct patient | Clinical | `ADMIN`, `NURSE` |
-| FR-CLI-01 | Must | Clinical record/diagnosis writes must require `ADMIN`/`DOCTOR` and matching EXAM clearance or audited emergency override before examination | Clinical | `ADMIN`, `DOCTOR` |
+| FR-CLI-01 | Must | Active V0 Clinical record/diagnosis writes require `ADMIN`/`DOCTOR`; when default-off Care-Finance V2 is enabled, the protected path must also require matching EXAM clearance or audited emergency override | Clinical | `ADMIN`, `DOCTOR` |
 | FR-LAB-00 | Must | `ADMIN`/`DOCTOR` must create the Laboratory-owned test directly; no current Clinical-to-Lab order contract may be implied | Laboratory | `ADMIN`, `DOCTOR` |
 | FR-PHA-00 | Must | `ADMIN`/`DOCTOR` must create the Pharmacy-owned prescription through Pharmacy | Pharmacy | `ADMIN`, `DOCTOR` |
-| FR-LAB-01 | Must | Existing Laboratory tests must progress through controlled states only with matching LAB_TEST clearance or audited override | Laboratory | `ADMIN`, `LAB_TECH` |
-| FR-LAB-02 | Must | The system must retain specimen, result, verification, and publication information | Laboratory | `LAB_TECH`, `DOCTOR` |
+| FR-LAB-01 | Must | Active V0 Laboratory compatibility operations must enforce lifecycle rules; when V2 protected processing is used, matching LAB_TEST clearance or audited override is additionally required | Laboratory | `ADMIN`, `LAB_TECH` |
+| FR-LAB-02 | Must | The system must retain specimen, result, verification, and publication information; doctors may read results but do not perform write/publication operations | Laboratory | `ADMIN`, `LAB_TECH` |
 | FR-PHA-01 | Must | Dispensing must validate the Pharmacy-owned prescription, durable payment proof, and stock | Pharmacy | `ADMIN`, `PHARMACIST` |
 | FR-PHA-02 | Must | The system must record stock and dispensing movements atomically | Pharmacy | `PHARMACIST` |
 | FR-BIL-01 | Must | Active compatibility invoice read/create/pay must remain traceable | Billing | Authorized Billing staff |
@@ -249,7 +249,7 @@ The requirement summary is followed by one subsection per actor. Current permiss
 
 | Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
 |---|---|---|---|---|---|---|
-| CRS-DOC-01 | Conduct examination and write record | Appointment, findings, matching EXAM clearance or audited override | Validate proof/state and doctor authority | Medical record, diagnosis, disposition/reference | Clinical | `ARRIVED` without proof does not authorize examination |
+| CRS-DOC-01 | Conduct examination and write record | Appointment and findings; matching EXAM clearance or audited override for the default-off V2 path | Active V0 validates state/role; V2 additionally validates proof | Medical record, diagnosis, disposition/reference | Clinical | V0 remains available; V2 rejects missing/mismatched proof |
 | CRS-DOC-02 | Create a Lab test directly | Patient/record, department, test type/date | Laboratory validates and creates its test | Lab test in initial state | Laboratory | No Clinical-to-Lab request contract is inferred |
 | CRS-DOC-03 | Create a Pharmacy prescription | Clinical record reference, medicine lines/instructions | Pharmacy validates medicines/server prices and creates its prescription | Pharmacy-owned prescription and pending slip | Pharmacy | Empty/invalid lines are rejected |
 | CRS-DOC-04 | Create or medically discharge an admission | Patient/encounter or active admission | Apply route-specific Inpatient rules | Pending admission or medically discharged state | Inpatient | Financial/event integration is not inferred while gates remain off |
@@ -270,7 +270,7 @@ The requirement summary is followed by one subsection per actor. Current permiss
 
 | Requirement ID | Normal flow | Input | Process | Output | Owning service | Alternative or failure outcome |
 |---|---|---|---|---|---|---|
-| CRS-LAB-01 | Process and publish an existing Lab test | Lab test, matching LAB_TEST clearance or audited override, specimen, values | Validate proof, lifecycle, and required result data | Published laboratory result | Laboratory | Missing proof, invalid transition, or incomplete result blocks processing/publication |
+| CRS-LAB-01 | Process and publish an existing Lab test | Lab test, specimen, values; matching LAB_TEST clearance or audited override for V2 protected processing | Active V0 validates lifecycle/data; V2 additionally validates proof | Published laboratory result | Laboratory | Invalid state/data blocks all paths; missing proof blocks V2 only |
 
 #### B2.5 Pharmacist
 
@@ -325,9 +325,9 @@ The requirement summary is followed by one subsection per actor. Current permiss
 | Platform administration | `ADMIN` | Staff identity, role, department, facility/resource data | Validate authority and uniqueness; persist organization state | Governed user/resource references and audit data | Organization |
 | Staff-operated patient registration | `ADMIN`, `NURSE` | Demographics, contacts, identifiers, consent-related input | Validate fields and duplicate rules; assign UUID | Patient profile and confirmation | Patient |
 | Appointment management | `ADMIN`, `NURSE` | Patient UUID, service/provider, time, reason | Validate scheduling conditions; create/update status | Appointment and visible status | Clinical |
-| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance or audited override | Validate proof and write record/diagnosis | Medical record and disposition/reference | Clinical |
+| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment and findings; EXAM clearance/override for default-off V2 | V0 validates role/context; V2 additionally validates proof; write record/diagnosis | Medical record and disposition/reference | Clinical |
 | Laboratory test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create the Laboratory-owned test directly | Lab test in initial state | Laboratory |
-| Diagnostic processing | `ADMIN`, `LAB_TECH` | Existing Lab test, LAB_TEST clearance/override, specimen, values | Enforce proof and progress lifecycle | Verified result and publication event | Laboratory |
+| Diagnostic processing | `ADMIN`, `LAB_TECH` | Existing Lab test and specimen/values; LAB_TEST clearance/override for V2 protected processing | V0 enforces lifecycle; V2 additionally enforces proof | Verified result and publication event | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical record reference, medicine lines, instructions | Pharmacy validates and creates its prescription | Pharmacy-owned prescription and pending slip | Pharmacy |
 | Medication dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, quantity, stock | Validate proof/prescription/stock; persist movement | Dispense record and new stock position | Pharmacy |
 | Compatibility invoice create/pay | Authorized Billing staff | Patient/source, invoice/payment data | Apply active compatibility rules | Invoice and payment state | Billing |
@@ -345,7 +345,7 @@ The requirement summary is followed by one subsection per actor. Current permiss
 | 1 | `ADMIN` or `NURSE` | Demographic and contact information | Patient validates mandatory data and uniqueness constraints | Patient UUID and profile |
 | 2 | `ADMIN` or `NURSE` | Patient UUID, requested service/time | Clinical validates appointment data and records schedule state | Appointment UUID/status |
 | 3 | Nurse/reception | Appointment and arrival information | Appointment progresses through an allowed check-in state | Ready appointment context |
-| 4 | `ADMIN`/`DOCTOR` | Patient/appointment references and matching EXAM clearance or audited override | Clinical confirms proof/context and opens the examination record | Medical record UUID |
+| 4 | `ADMIN`/`DOCTOR` | Patient/appointment references; matching EXAM clearance or audited override only for default-off V2 | Active V0 validates role/context; V2 additionally validates proof; open the record | Medical record UUID |
 | 5 | `ADMIN`/`DOCTOR` | Symptoms, findings, notes | Clinical validates and records medical information | Updated record and diagnosis |
 | 6 | `DOCTOR` | Assessment and diagnosis | Clinical records an explicit disposition/reference; later Lab and Pharmacy commands go to their owning services | Diagnosis and disposition/reference |
 
@@ -356,7 +356,7 @@ There is no implemented Clinical-to-Lab order contract. A future contract requir
 | Step | Input information | Processing | Output information | Control |
 |---:|---|---|---|---|
 | 1 | Patient/record references, department, test type/date | Laboratory validates direct `ADMIN`/`DOCTOR` creation | Lab test UUID and initial state | No Clinical order contract is inferred |
-| 2 | Existing test plus matching LAB_TEST clearance or audited emergency override | Laboratory validates exact proof before protected processing | Authorized processing context | Missing/mismatched proof blocks start/results/completion |
+| 2 | Existing test; matching LAB_TEST clearance or audited emergency override only for V2 protected processing | Active V0 validates lifecycle; V2 additionally validates exact proof | Authorized processing context | Missing/mismatched proof blocks V2, not V0 compatibility operations |
 | 3 | Authorized test and specimen data | `ADMIN`/`LAB_TECH` records processing state | Specimen/status timestamps | State transition validation |
 | 4 | Measured values, reference data, comments | `ADMIN`/`LAB_TECH` records results and verifies completeness | Draft/completed result | Required fields and units/ranges as defined |
 | 5 | Completed result | Authorized publication changes final state | Published result and event | Published data changes only through controlled correction |
@@ -443,10 +443,10 @@ Notification and Report are downstream consumers. They do not become the authori
 
 - **Trigger:** `ADMIN` or `DOCTOR` directly creates a Laboratory test.
 - **Primary authority:** Laboratory; no current Clinical-to-Lab order contract exists.
-- **Input:** Patient/record references, department, test type/date, later clearance/override, specimen, values.
-- **Process:** Laboratory creates the test; protected processing requires matching LAB_TEST clearance or audited override before staff record/publish results.
+- **Input:** Patient/record references, department, test type/date, specimen and values; clearance/override is added only for V2 protected processing.
+- **Process:** Laboratory creates the test; active V0 compatibility operations enforce lifecycle/data rules, while V2 additionally validates matching LAB_TEST clearance or audited override.
 - **Output:** Published Laboratory result and eligible result event.
-- **Failure or exception:** Missing proof, incomplete result, or invalid state blocks protected processing/publication.
+- **Failure or exception:** Incomplete result or invalid state blocks processing/publication; missing or mismatched proof blocks the V2 path only.
 
 #### Workflow 4 — Laboratory Result to Billing Charge
 
@@ -644,8 +644,8 @@ The documented full Maven baseline is **3,612 tests, 0 failures, 0 errors, and 0
 |---|---|---|---|---|
 | AC-01A / FR-PAT-01 | Staff registration | Patient | Patient controller/service docs | Demonstrate authorized `ADMIN`/`NURSE` registration |
 | AC-01B / FR-CLI-00 | Appointment creation | Clinical | Clinical appointment controller/service docs | Demonstrate authorized `ADMIN`/`NURSE` appointment creation |
-| AC-02 / FR-CLI-01 | Clinical encounter | Clinical | Clinical controller/domain tests | Demonstrate authorized encounter and diagnosis flow |
-| AC-03 / FR-LAB-00..01 | Direct Lab creation and protected lifecycle | Laboratory | Lab controller/service rules/tests | Create via `ADMIN`/`DOCTOR`; require clearance/override for processing; no Clinical order claim |
+| AC-02 / FR-CLI-01 | Clinical encounter | Clinical | Clinical controller/domain tests | Demonstrate active V0 role-authorized writes and default-off V2 proof enforcement separately |
+| AC-03 / FR-LAB-00..01 | Direct Lab creation and lifecycle | Laboratory | Lab controller/service rules/tests | Create via `ADMIN`/`DOCTOR`; demonstrate V0 compatibility processing and V2 proof enforcement separately; no Clinical order claim |
 | AC-04 / FR-PHA-00..01 | Pharmacy prescription and dispense | Pharmacy | Pharmacy controller/payment-proof/inventory tests | Create through Pharmacy; require durable payment proof and stock before dispense |
 | AC-05 / FR-BIL-01 | Compatibility invoice | Billing | Current Billing invoice APIs/tests | Demonstrate active invoice read/create/pay |
 | AC-06 / FR-BIL-02 | Opt-in finance slice | Billing | Billing feature configuration and slice tests | Verify default-off rejection; test only an explicitly enabled accepted slice |

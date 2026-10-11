@@ -99,8 +99,8 @@ Giải pháp phải trả lời năm câu hỏi cho mọi hành động quan tr�
 |---|---|---|
 | Organization | Tham chiếu tổ chức, nhân viên, vai trò, khoa, cơ sở và phòng | Tham chiếu nhân viên/người dùng, gán vai trò, phân cấp cơ sở, phòng |
 | Patient | Đăng ký do nhân viên thực hiện, hồ sơ, định danh và liên hệ | Hồ sơ người bệnh và trạng thái nhân khẩu học |
-| Clinical | Lịch khám, medical record, diagnosis, disposition và admission reference; examination cần EXAM clearance khớp hoặc override audit | Appointment, medical record, diagnosis, disposition/reference |
-| Laboratory | Vòng đời test do `ADMIN`/`DOCTOR` tạo, mẫu, kết quả, xác minh; xử lý cần LAB_TEST clearance hoặc override audit | Lab test, mẫu, kết quả, sự kiện công bố |
+| Clinical | Lịch khám, medical record, diagnosis, disposition và admission reference; tạo record V0 đang hoạt động chỉ kiểm tra role, còn Care-Finance V2 mặc định tắt yêu cầu thêm EXAM clearance khớp hoặc override audit | Appointment, medical record, diagnosis, disposition/reference |
+| Laboratory | Vòng đời test do `ADMIN`/`DOCTOR` tạo, mẫu, kết quả, xác minh; xử lý tương thích V0 đang hoạt động, còn xử lý V2 được bảo vệ yêu cầu LAB_TEST clearance hoặc override audit | Lab test, mẫu, kết quả, sự kiện công bố |
 | Pharmacy | Danh mục thuốc, tạo đơn do Pharmacy sở hữu, tồn kho, kiểm tra payment proof bền vững và cấp phát | Đơn, thuốc, biến động kho, hồ sơ cấp phát |
 | Billing | Invoice read/create/pay tương thích đang hoạt động cùng ledger/deposit/refund/settlement/clearance mặc định tắt hoặc mục tiêu | Invoice/payment hoạt động và hồ sơ tài chính bị gate rõ ràng |
 | Notification | Chọn mẫu, xử lý người nhận/kênh, lần gửi | Yêu cầu và trạng thái gửi thông báo |
@@ -215,11 +215,11 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | FR-INP-00 | Must | Hệ thống phải quản lý giường do Inpatient sở hữu qua route quản trị được phép | Inpatient | `ADMIN`, `MANAGER` |
 | FR-PAT-01 | Must | Hệ thống phải đăng ký người bệnh với UUID ổn định và nhân khẩu học hợp lệ | Patient | `ADMIN`, `NURSE` |
 | FR-CLI-00 | Must | Hệ thống phải tạo/theo dõi lịch khám gắn đúng người bệnh | Clinical | `ADMIN`, `NURSE` |
-| FR-CLI-01 | Must | Ghi Clinical record/diagnosis cần `ADMIN`/`DOCTOR` và EXAM clearance khớp hoặc emergency override audit trước examination | Clinical | `ADMIN`, `DOCTOR` |
+| FR-CLI-01 | Must | Ghi Clinical record/diagnosis qua V0 đang hoạt động cần `ADMIN`/`DOCTOR`; khi Care-Finance V2 mặc định tắt được bật, nhánh được bảo vệ phải cần thêm EXAM clearance khớp hoặc emergency override audit | Clinical | `ADMIN`, `DOCTOR` |
 | FR-LAB-00 | Must | `ADMIN`/`DOCTOR` tạo test do Laboratory sở hữu trực tiếp; không hàm ý hợp đồng Clinical-to-Lab hiện tại | Laboratory | `ADMIN`, `DOCTOR` |
 | FR-PHA-00 | Must | `ADMIN`/`DOCTOR` tạo đơn do Pharmacy sở hữu qua Pharmacy | Pharmacy | `ADMIN`, `DOCTOR` |
-| FR-LAB-01 | Must | Test Laboratory đã có chỉ chuyển trạng thái khi có LAB_TEST clearance khớp hoặc override audit | Laboratory | `ADMIN`, `LAB_TECH` |
-| FR-LAB-02 | Must | Hệ thống phải lưu mẫu, kết quả, xác minh và công bố | Laboratory | `LAB_TECH`, `DOCTOR` |
+| FR-LAB-01 | Must | Thao tác tương thích V0 đang hoạt động phải thực thi vòng đời; khi dùng xử lý V2 được bảo vệ, cần thêm LAB_TEST clearance khớp hoặc override audit | Laboratory | `ADMIN`, `LAB_TECH` |
+| FR-LAB-02 | Must | Hệ thống phải lưu mẫu, kết quả, xác minh và công bố; bác sĩ chỉ đọc kết quả, không thực hiện thao tác ghi/công bố | Laboratory | `ADMIN`, `LAB_TECH` |
 | FR-PHA-01 | Must | Cấp phát phải xác minh đơn Pharmacy, payment proof bền vững và tồn kho | Pharmacy | `ADMIN`, `PHARMACIST` |
 | FR-PHA-02 | Must | Hệ thống phải ghi biến động kho và cấp phát một cách nhất quán | Pharmacy | `PHARMACIST` |
 | FR-BIL-01 | Must | Invoice read/create/pay tương thích đang hoạt động phải truy vết được | Billing | Nhân viên Billing được phép |
@@ -249,7 +249,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-DOC-01 | Khám và ghi record | Appointment, phát hiện, EXAM clearance khớp hoặc override audit | Kiểm tra proof/trạng thái/role | Medical record, diagnosis, disposition/reference | Clinical | `ARRIVED` thiếu proof không cho phép examination |
+| CRS-DOC-01 | Khám và ghi record | Appointment và phát hiện; EXAM clearance khớp hoặc override audit cho nhánh V2 mặc định tắt | V0 đang hoạt động kiểm tra trạng thái/role; V2 kiểm tra thêm proof | Medical record, diagnosis, disposition/reference | Clinical | V0 vẫn hoạt động; V2 từ chối proof thiếu/sai |
 | CRS-DOC-02 | Tạo Lab test trực tiếp | Patient/record, khoa, loại test/ngày | Laboratory kiểm tra và tạo test của mình | Lab test trạng thái đầu | Laboratory | Không suy diễn hợp đồng Clinical-to-Lab |
 | CRS-DOC-03 | Tạo đơn Pharmacy | Tham chiếu clinical record, dòng thuốc/hướng dẫn | Pharmacy kiểm tra thuốc/giá server và tạo đơn | Đơn Pharmacy và pending slip | Pharmacy | Dòng rỗng/sai bị từ chối |
 | CRS-DOC-04 | Tạo hoặc medical discharge admission | Patient/encounter hoặc admission hoạt động | Áp dụng quy tắc Inpatient theo route | Admission chờ hoặc đã medical discharge | Inpatient | Không suy diễn tích hợp tài chính/sự kiện khi gate đang tắt |
@@ -270,7 +270,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 
 | Mã yêu cầu | Luồng bình thường | Đầu vào | Xử lý | Đầu ra | Dịch vụ sở hữu | Nhánh thay thế hoặc lỗi |
 |---|---|---|---|---|---|---|
-| CRS-LAB-01 | Xử lý/công bố test đã có | Lab test, LAB_TEST clearance khớp hoặc override audit, mẫu, giá trị | Kiểm tra proof, vòng đời và dữ liệu | Kết quả công bố | Laboratory | Thiếu proof, chuyển sai hoặc kết quả thiếu sẽ chặn xử lý/công bố |
+| CRS-LAB-01 | Xử lý/công bố test đã có | Lab test, mẫu, giá trị; LAB_TEST clearance khớp hoặc override audit cho xử lý V2 được bảo vệ | V0 đang hoạt động kiểm tra vòng đời/dữ liệu; V2 kiểm tra thêm proof | Kết quả công bố | Laboratory | Sai trạng thái/dữ liệu chặn mọi nhánh; thiếu proof chỉ chặn V2 |
 
 #### B2.5 Dược sĩ
 
@@ -325,9 +325,9 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | Quản trị nền tảng | `ADMIN` | Định danh nhân viên, vai trò, khoa, dữ liệu cơ sở/tài nguyên | Kiểm tra quyền và duy nhất; lưu trạng thái tổ chức | Tham chiếu người dùng/tài nguyên và dữ liệu kiểm toán | Organization |
 | Đăng ký người bệnh do nhân viên thực hiện | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh, đầu vào đồng thuận | Kiểm tra trường và trùng; cấp UUID | Hồ sơ và xác nhận người bệnh | Patient |
 | Quản lý lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, dịch vụ/bác sĩ, thời gian, lý do | Kiểm tra điều kiện lịch; tạo/cập nhật trạng thái | Lịch khám và trạng thái hiển thị | Clinical |
-| Khám lâm sàng | `ADMIN`, `DOCTOR` | Patient/appointment, phát hiện, EXAM clearance hoặc override audit | Kiểm tra proof và ghi record/diagnosis | Medical record và disposition/reference | Clinical |
+| Khám lâm sàng | `ADMIN`, `DOCTOR` | Patient/appointment và phát hiện; EXAM clearance/override cho V2 mặc định tắt | V0 kiểm tra role/ngữ cảnh; V2 kiểm tra thêm proof; ghi record/diagnosis | Medical record và disposition/reference | Clinical |
 | Tạo Laboratory test | `ADMIN`, `DOCTOR` | Patient/record, khoa, loại test/ngày | Tạo test do Laboratory sở hữu trực tiếp | Lab test trạng thái đầu | Laboratory |
-| Xử lý chẩn đoán | `ADMIN`, `LAB_TECH` | Test đã có, LAB_TEST clearance/override, mẫu, giá trị | Thực thi proof và vòng đời | Kết quả xác minh và sự kiện công bố | Laboratory |
+| Xử lý chẩn đoán | `ADMIN`, `LAB_TECH` | Test đã có và mẫu/giá trị; LAB_TEST clearance/override cho xử lý V2 được bảo vệ | V0 thực thi vòng đời; V2 kiểm tra thêm proof | Kết quả xác minh và sự kiện công bố | Laboratory |
 | Tạo đơn thuốc | `ADMIN`, `DOCTOR` | Tham chiếu record, dòng thuốc, hướng dẫn | Pharmacy kiểm tra và tạo đơn của mình | Đơn Pharmacy và pending slip | Pharmacy |
 | Cấp phát thuốc | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof, số lượng, tồn | Kiểm tra proof/đơn/kho; lưu biến động | Hồ sơ cấp phát và vị thế kho mới | Pharmacy |
 | Invoice create/pay tương thích | Nhân viên Billing được phép | Patient/source và dữ liệu invoice/payment | Áp dụng quy tắc tương thích đang hoạt động | Trạng thái invoice/payment | Billing |
@@ -345,7 +345,7 @@ Bảng tóm tắt yêu cầu được tiếp nối bởi một mục riêng cho 
 | 1 | `ADMIN` hoặc `NURSE` | Nhân khẩu học và liên hệ | Patient kiểm tra dữ liệu bắt buộc và tính duy nhất | UUID và hồ sơ người bệnh |
 | 2 | `ADMIN` hoặc `NURSE` | UUID người bệnh, dịch vụ/thời gian | Clinical kiểm tra lịch và ghi trạng thái | UUID/trạng thái lịch khám |
 | 3 | Điều dưỡng/tiếp nhận | Lịch và thông tin đến khám | Chuyển lịch qua trạng thái check-in hợp lệ | Ngữ cảnh lịch sẵn sàng |
-| 4 | `ADMIN`/`DOCTOR` | Patient/appointment và EXAM clearance khớp hoặc override audit | Clinical xác minh proof/ngữ cảnh và mở medical record | UUID medical record |
+| 4 | `ADMIN`/`DOCTOR` | Patient/appointment; EXAM clearance khớp hoặc override audit chỉ cho V2 mặc định tắt | V0 đang hoạt động kiểm tra role/ngữ cảnh; V2 kiểm tra thêm proof; mở medical record | UUID medical record |
 | 5 | `ADMIN`/`DOCTOR` | Triệu chứng, phát hiện, ghi chú | Clinical kiểm tra và ghi thông tin y khoa | Record và diagnosis cập nhật |
 | 6 | `DOCTOR` | Đánh giá và chẩn đoán | Clinical ghi disposition/reference; command Lab/Pharmacy sau đó đi tới owner tương ứng | Diagnosis và disposition/reference |
 
@@ -356,7 +356,7 @@ Chưa có hợp đồng Clinical-to-Lab order. Hợp đồng tương lai cần t
 | Bước | Thông tin đầu vào | Xử lý | Thông tin đầu ra | Kiểm soát |
 |---:|---|---|---|---|
 | 1 | Tham chiếu patient/record, khoa, loại test/ngày | Laboratory kiểm tra lệnh tạo trực tiếp của `ADMIN`/`DOCTOR` | UUID Lab test và trạng thái đầu | Không suy diễn Clinical order |
-| 2 | Test đã có cùng LAB_TEST clearance hoặc override audit | Laboratory kiểm tra proof trước xử lý bảo vệ | Ngữ cảnh xử lý được phép | Proof thiếu/sai chặn start/result/complete |
+| 2 | Test đã có; LAB_TEST clearance hoặc override audit chỉ cho xử lý V2 được bảo vệ | V0 đang hoạt động kiểm tra vòng đời; V2 kiểm tra thêm proof chính xác | Ngữ cảnh xử lý được phép | Proof thiếu/sai chặn V2, không chặn thao tác tương thích V0 |
 | 3 | Test được phép và dữ liệu mẫu | `ADMIN`/`LAB_TECH` ghi trạng thái xử lý | Mẫu/status time | Kiểm tra chuyển trạng thái |
 | 4 | Giá trị đo, tham chiếu, nhận xét | `ADMIN`/`LAB_TECH` ghi kết quả và kiểm tra đầy đủ | Kết quả nháp/hoàn tất | Trường/đơn vị/khoảng theo định nghĩa |
 | 5 | Kết quả hoàn tất | Công bố được phép đổi trạng thái cuối | Kết quả công bố và event | Chỉ sửa theo correction kiểm soát |
@@ -443,10 +443,10 @@ Notification và Report là consumer hạ nguồn, không trở thành nguồn c
 
 - **Kích hoạt:** `ADMIN` hoặc `DOCTOR` tạo trực tiếp test trong Laboratory.
 - **Thẩm quyền chính:** Laboratory; chưa có hợp đồng Clinical-to-Lab order.
-- **Đầu vào:** Tham chiếu patient/record, khoa, loại test/ngày, sau đó clearance/override, mẫu, giá trị.
-- **Xử lý:** Laboratory tạo test; xử lý bảo vệ cần LAB_TEST clearance khớp hoặc override audit trước khi ghi/công bố.
+- **Đầu vào:** Tham chiếu patient/record, khoa, loại test/ngày, mẫu và giá trị; chỉ thêm clearance/override cho xử lý V2 được bảo vệ.
+- **Xử lý:** Laboratory tạo test; thao tác tương thích V0 đang hoạt động thực thi vòng đời/dữ liệu, còn V2 kiểm tra thêm LAB_TEST clearance khớp hoặc override audit.
 - **Đầu ra:** Kết quả Laboratory công bố và sự kiện đủ điều kiện.
-- **Lỗi/ngoại lệ:** Thiếu proof, kết quả thiếu hoặc trạng thái sai chặn xử lý/công bố.
+- **Lỗi/ngoại lệ:** Kết quả thiếu hoặc trạng thái sai chặn xử lý/công bố; proof thiếu/sai chỉ chặn nhánh V2.
 
 #### Quy trình 4 — Kết quả Laboratory đến khoản phí Billing
 
@@ -644,8 +644,8 @@ Thiết kế production nên tách hoặc phân phối workload ứng dụng, c�
 |---|---|---|---|---|
 | AC-01A / FR-PAT-01 | Đăng ký do nhân viên thực hiện | Patient | Controller/tài liệu Patient | Trình diễn `ADMIN`/`NURSE` đăng ký |
 | AC-01B / FR-CLI-00 | Tạo appointment | Clinical | Controller/tài liệu appointment Clinical | Trình diễn `ADMIN`/`NURSE` tạo lịch |
-| AC-02 / FR-CLI-01 | Lượt khám lâm sàng | Clinical | Controller/domain test Clinical | Trình diễn lượt khám/chẩn đoán được phép |
-| AC-03 / FR-LAB-00..01 | Tạo trực tiếp và vòng đời Lab có proof | Laboratory | Controller/quy tắc/test Lab | Tạo bằng `ADMIN`/`DOCTOR`; cần clearance/override; không tuyên bố Clinical order |
+| AC-02 / FR-CLI-01 | Lượt khám lâm sàng | Clinical | Controller/domain test Clinical | Trình diễn riêng ghi V0 theo role và kiểm tra proof của V2 mặc định tắt |
+| AC-03 / FR-LAB-00..01 | Tạo trực tiếp và vòng đời Lab | Laboratory | Controller/quy tắc/test Lab | Tạo bằng `ADMIN`/`DOCTOR`; trình diễn riêng xử lý tương thích V0 và kiểm tra proof V2; không tuyên bố Clinical order |
 | AC-04 / FR-PHA-00..01 | Đơn Pharmacy và cấp phát | Pharmacy | Controller/payment-proof/inventory test Pharmacy | Tạo qua Pharmacy; cần payment proof và tồn trước cấp |
 | AC-05 / FR-BIL-01 | Invoice tương thích | Billing | API/test invoice hiện tại | Trình diễn invoice read/create/pay hoạt động |
 | AC-06 / FR-BIL-02 | Finance slice opt-in | Billing | Cấu hình feature và slice test Billing | Xác minh mặc định tắt; chỉ test slice được bật/nghiệm thu |

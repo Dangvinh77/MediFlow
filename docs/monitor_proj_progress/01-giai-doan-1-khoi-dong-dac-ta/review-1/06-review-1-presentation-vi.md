@@ -57,8 +57,8 @@ MediFlow không chỉ là tập hợp biểu mẫu. Hệ thống mô hình hóa 
 |---|---|
 | Organization | Nhân viên, vai trò, khoa, cơ sở, phòng |
 | Patient | Hồ sơ và định danh do nhân viên vận hành |
-| Clinical | Appointment, medical record, diagnosis, disposition/reference; EXAM proof gate cho examination |
-| Laboratory | `ADMIN`/`DOCTOR` tạo test trực tiếp, xử lý có clearance, kết quả/công bố |
+| Clinical | Appointment, medical record, diagnosis, disposition/reference; V0 đang hoạt động kiểm tra role và V2 mặc định tắt bổ sung EXAM proof gate |
+| Laboratory | `ADMIN`/`DOCTOR` tạo test trực tiếp và xử lý/kết quả V0 đang hoạt động; V2 bổ sung LAB_TEST clearance gate |
 | Pharmacy | Đơn do Pharmacy sở hữu, cấp phát có payment proof, thuốc và tồn kho |
 | Billing | Invoice read/create/pay tương thích hoạt động; ledger/deposit/refund/settlement/clearance bị gate |
 | Notification | Xử lý thông báo theo sự kiện và trạng thái gửi |
@@ -75,7 +75,7 @@ MediFlow không chỉ là tập hợp biểu mẫu. Hệ thống mô hình hóa 
 | `ADMIN` | Cấu hình dữ liệu Organization và hồ sơ giường Inpatient được phép |
 | `DOCTOR` | Ghi Clinical record có proof; tạo Lab test và đơn Pharmacy trực tiếp; thao tác Inpatient được phép |
 | `NURSE` | Tạo/cập nhật appointment, đọc Clinical record và thao tác bed/admit/treatment observation Inpatient được phép |
-| `LAB_TECH` | Xử lý Lab test đã có và đủ proof; ghi/xác minh/công bố; không tạo test |
+| `LAB_TECH` | Xử lý test đã có qua V0 đang hoạt động hoặc V2 đủ proof; ghi/xác minh/công bố; không tạo test |
 | `PHARMACIST` | Xác minh đơn, cấp thuốc và kiểm soát tồn kho |
 | `CASHIER` | Xử lý invoice/pay tương thích và chỉ dùng ledger/deposit/refund/settlement/clearance khi bật rõ ràng |
 | `MANAGER` | Xem báo cáo vận hành và tài chính |
@@ -108,9 +108,9 @@ Quy tắc kiến trúc: `infrastructure → application → domain`. Domain khô
 |---|---|---|---|---|---|
 | Đăng ký do nhân viên thực hiện | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh | Kiểm tra dữ liệu định danh | Hồ sơ người bệnh | Patient |
 | Tạo lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, dịch vụ/thời gian | Kiểm tra dữ liệu lịch | Lịch khám | Clinical |
-| Examination Clinical | `ADMIN`, `DOCTOR` | Patient/appointment, phát hiện, EXAM clearance/override | Kiểm tra proof, ghi record/diagnosis | Medical record và disposition | Clinical |
+| Examination Clinical | `ADMIN`, `DOCTOR` | Patient/appointment và phát hiện; EXAM clearance/override cho V2 mặc định tắt | V0 kiểm tra role/ngữ cảnh; V2 kiểm tra thêm proof; ghi record/diagnosis | Medical record và disposition | Clinical |
 | Tạo Lab test | `ADMIN`, `DOCTOR` | Patient/record, khoa, loại test/ngày | Tạo trực tiếp; không có Clinical order contract | Lab test | Laboratory |
-| Xử lý Lab | `ADMIN`, `LAB_TECH` | Test đã có, LAB_TEST clearance/override, mẫu/giá trị | Xử lý, xác minh, công bố | Kết quả và event | Laboratory |
+| Xử lý Lab | `ADMIN`, `LAB_TECH` | Test đã có và mẫu/giá trị; LAB_TEST clearance/override cho V2 | V0 kiểm tra vòng đời; V2 kiểm tra thêm proof; xử lý/công bố | Kết quả và event | Laboratory |
 | Tạo đơn | `ADMIN`, `DOCTOR` | Tham chiếu Clinical và dòng thuốc | Pharmacy kiểm tra/định giá và tạo đơn | Đơn Pharmacy | Pharmacy |
 | Cấp phát | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof bền vững, tồn | Kiểm tra proof/tồn, cấp | Hồ sơ cấp và kho | Pharmacy |
 | Invoice/pay tương thích | Nhân viên Billing được phép | Patient/source, dữ liệu invoice/payment | Áp dụng quy tắc tương thích hoạt động | Trạng thái invoice/payment | Billing |
@@ -177,7 +177,7 @@ Các giá trị phần cứng là khuyến nghị lập kế hoạch. Định c�
 | Vòng đời Surgery | Business/API flag mặc định tắt và chưa làm đầy đủ lifecycle/outcome event |
 | Clinical-to-Lab order | Chưa làm; Lab test do `ADMIN`/`DOCTOR` tạo trực tiếp |
 | Billing migration slices | Ledger, deposit, refund, settlement, clearance mặc định tắt hoặc chưa hoàn tất; invoice read/create/pay tương thích hoạt động |
-| Proof bắt buộc | EXAM clearance, LAB_TEST clearance, Pharmacy payment proof, Inpatient deposit/settlement proof hoặc override audit hợp lệ |
+| Proof có điều kiện và bắt buộc | EXAM/LAB_TEST clearance chỉ áp dụng cho nhánh V2 được bảo vệ đang mặc định tắt; Pharmacy payment proof và Inpatient deposit/settlement proof vẫn bắt buộc cho thao tác được bảo vệ trừ override audit hợp lệ |
 | Bảo hiểm và định danh quốc gia | Chưa chứng minh tích hợp production đã chứng nhận |
 | Ngân hàng/cổng thanh toán | Có tài chính nội bộ; chưa chứng minh tích hợp provider thương mại hoàn tất |
 | Thiết bị y tế/lab ngoài/PACS/EHR | Không tuyên bố tương tác ngoài đã chứng nhận |
@@ -194,8 +194,8 @@ Các giá trị phần cứng là khuyến nghị lập kế hoạch. Định c�
 Review 1 có thể trình diễn qua câu chuyện nghiệm thu sau:
 
 1. Với `ADMIN`/`NURSE`, đăng ký người bệnh trong Patient và tạo lịch trong Clinical.
-2. Mở examination Clinical chỉ khi có EXAM clearance/override khớp dưới `ADMIN`/`DOCTOR`.
-3. `ADMIN`/`DOCTOR` tạo Lab test trực tiếp; cần LAB_TEST clearance/override trước xử lý/công bố.
+2. Mở Clinical record bằng `ADMIN`/`DOCTOR` qua V0 đang hoạt động; trình diễn riêng EXAM clearance/override khi V2 mặc định tắt được bật.
+3. `ADMIN`/`DOCTOR` tạo Lab test trực tiếp; trình diễn riêng xử lý V0 đang hoạt động và kiểm tra LAB_TEST clearance/override trên V2.
 4. Tạo đơn qua Pharmacy và cần payment proof bền vững trước cấp/kho.
 5. Trình diễn invoice read/create/pay tương thích; xác minh feature Billing bị gate từ chối khi tắt.
 6. Trình diễn gate bed + deposit, admit tường minh, medical discharge và close có settlement/override, trong khi event flag vẫn tắt.

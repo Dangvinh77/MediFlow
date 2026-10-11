@@ -57,8 +57,8 @@ MediFlow is not only a collection of forms. It models how information moves from
 |---|---|
 | Organization | Staff, roles, departments, facilities, rooms |
 | Patient | Staff-operated profiles and identifiers |
-| Clinical | Appointments, medical records, diagnoses, disposition/references; EXAM proof gates examination |
-| Laboratory | Direct `ADMIN`/`DOCTOR` test creation, clearance-gated processing, results/publication |
+| Clinical | Appointments, medical records, diagnoses, disposition/references; active V0 is role-authorized and default-off V2 adds the EXAM proof gate |
+| Laboratory | Direct `ADMIN`/`DOCTOR` test creation and active V0 processing/results; V2 adds the LAB_TEST clearance gate |
 | Pharmacy | Pharmacy-owned prescriptions, payment-proof-gated dispensing, medicines, stock |
 | Billing | Active compatibility invoice read/create/pay; other ledger/deposit/refund/settlement/clearance slices are gated |
 | Notification | Event-based notification processing and delivery status |
@@ -75,7 +75,7 @@ MediFlow is not only a collection of forms. It models how information moves from
 | `ADMIN` | Configure Organization data and permitted Inpatient bed records |
 | `DOCTOR` | Write proof-gated Clinical records; directly create Lab tests and Pharmacy prescriptions; perform permitted Inpatient actions |
 | `NURSE` | Create/update appointments, read Clinical records, and perform permitted Inpatient bed/admit/treatment-observation operations |
-| `LAB_TECH` | Process existing proof-authorized Lab tests; record, verify, and publish results; cannot create tests |
+| `LAB_TECH` | Process existing tests through active V0, or proof-authorized V2; record, verify, and publish results; cannot create tests |
 | `PHARMACIST` | Validate prescriptions, dispense medicines, control stock |
 | `CASHIER` | Handle active compatibility invoice/pay and only explicitly enabled ledger/deposit/refund/settlement/clearance slices |
 | `MANAGER` | Review operational and financial reports |
@@ -108,9 +108,9 @@ Architecture rule: `infrastructure → application → domain`. The domain does 
 |---|---|---|---|---|---|
 | Staff-operated registration | `ADMIN`, `NURSE` | Demographics, contact, identifiers | Validate identity data | Patient profile | Patient |
 | Appointment creation | `ADMIN`, `NURSE` | Patient UUID, service/time | Validate scheduling data | Appointment | Clinical |
-| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment, findings, EXAM clearance/override | Validate proof and write record/diagnosis | Medical record and disposition | Clinical |
+| Clinical examination | `ADMIN`, `DOCTOR` | Patient/appointment and findings; EXAM clearance/override for default-off V2 | V0 validates role/context; V2 also validates proof; write record/diagnosis | Medical record and disposition | Clinical |
 | Lab test creation | `ADMIN`, `DOCTOR` | Patient/record, department, test type/date | Create test directly; no Clinical order contract | Lab test | Laboratory |
-| Lab processing | `ADMIN`, `LAB_TECH` | Existing test, LAB_TEST clearance/override, specimen/values | Process, verify, publish | Result and result event | Laboratory |
+| Lab processing | `ADMIN`, `LAB_TECH` | Existing test and specimen/values; LAB_TEST clearance/override for V2 | V0 validates lifecycle; V2 also validates proof; process/publish | Result and result event | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical reference and medicine lines | Pharmacy validates/prices and creates its prescription | Pharmacy prescription | Pharmacy |
 | Dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock | Validate proof and stock; dispense | Dispense and stock state | Pharmacy |
 | Compatibility invoice/pay | Authorized Billing staff | Patient/source, invoice/payment data | Apply active compatibility rules | Invoice/payment state | Billing |
@@ -177,7 +177,7 @@ These hardware values are planning recommendations. Production sizing requires l
 | Surgery lifecycle | Business/API flags default off and the complete lifecycle/outcome event is not implemented |
 | Clinical-to-Lab order | Not implemented; Lab tests are directly created by `ADMIN`/`DOCTOR` |
 | Billing migration slices | Ledger, deposit, refund, settlement, and clearance are default-off or incomplete; compatibility invoice read/create/pay remains active |
-| Mandatory proofs | EXAM clearance, LAB_TEST clearance, Pharmacy payment proof, Inpatient deposit/settlement proof must be supplied or an allowed audited override must exist |
+| Conditional and mandatory proofs | EXAM/LAB_TEST clearance applies only to default-off V2 protected paths; Pharmacy payment proof and Inpatient deposit/settlement proof remain mandatory for their guarded operations unless an allowed audited override exists |
 | Insurance and national identity | No certified production integration is demonstrated |
 | Bank/payment gateway | Internal finance exists; commercial provider integration is not proven complete |
 | Medical devices/external labs/PACS/EHR | No certified external interoperability is claimed |
@@ -194,8 +194,8 @@ These hardware values are planning recommendations. Production sizing requires l
 Review 1 can be demonstrated through the following acceptance story:
 
 1. As `ADMIN`/`NURSE`, register a patient in Patient and schedule an appointment in Clinical.
-2. Open a Clinical examination only with matching EXAM clearance/override under `ADMIN`/`DOCTOR`.
-3. Directly create a Lab test as `ADMIN`/`DOCTOR`, then require LAB_TEST clearance/override before authorized processing/result publication.
+2. Open a Clinical record as `ADMIN`/`DOCTOR` through active V0; separately demonstrate matching EXAM clearance/override when default-off V2 is enabled.
+3. Directly create a Lab test as `ADMIN`/`DOCTOR`; demonstrate active V0 processing and, separately, LAB_TEST clearance/override enforcement on V2.
 4. Create the prescription through Pharmacy and require durable payment proof before dispensing/stock update.
 5. Demonstrate active compatibility invoice read/create/pay; verify gated Billing migration features reject while disabled.
 6. Demonstrate Inpatient bed + deposit gate, explicit admit, medical discharge, and settlement/override-gated close while event flags remain off.

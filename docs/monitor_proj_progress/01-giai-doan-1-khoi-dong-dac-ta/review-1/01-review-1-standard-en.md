@@ -76,8 +76,8 @@ Specific objectives are:
 |---|---|
 | Organization | Users, staff, departments, roles, facilities, rooms, and organization reference data |
 | Patient | Patient profiles, identifiers, contact information, and demographic records |
-| Clinical | Appointments, encounters, medical records, diagnoses, and admission-referral references; starting examination requires matching EXAM clearance or an audited emergency override |
-| Laboratory | Doctor/Admin-created tests, specimens, processing states, results, and publication; starting/result work requires matching LAB_TEST clearance or an audited emergency override |
+| Clinical | Appointments, encounters, medical records, diagnoses, and admission-referral references; active V0 record creation is role-authorized, while the default-off Care-Finance V2 path additionally requires matching EXAM clearance or an audited emergency override |
+| Laboratory | Doctor/Admin-created tests, specimens, processing states, results, and publication; active V0 compatibility processing remains available, while the V2 protected path requires matching LAB_TEST clearance or an audited emergency override |
 | Pharmacy | Medicine catalogue, Pharmacy-owned prescription creation, inventory, payment-proof validation, stock movement, and dispensing |
 | Billing | Active compatibility invoice read/create/pay; ledger, deposits, refunds, settlement, and purpose-specific clearance are opt-in/default-off or target capabilities |
 | Notification | Event-driven notification requests, templates, delivery attempts, and delivery status |
@@ -177,9 +177,9 @@ MediFlow proposes a modular hospital platform in which each business capability 
 | Patient registration | `ADMIN`, `NURSE` | Demographics, contact data, identifiers | Validate required fields and duplicate constraints; assign UUID | Patient profile and registration confirmation | Patient |
 | Appointment scheduling | `ADMIN`, `NURSE` | Patient UUID, department/provider, requested time, reason | Validate request and scheduling rules; create appointment state | Appointment identifier, schedule, and status | Clinical |
 | Appointment/check-in support | `ADMIN`, `DOCTOR`, `NURSE` as permitted by route | Appointment and status input | Apply permitted appointment state; `ARRIVED` alone does not authorize examination | Updated appointment state | Clinical |
-| Clinical examination and record | `ADMIN`, `DOCTOR` | Patient, appointment, findings, matching EXAM clearance or audited emergency override | Validate authority/proof; create/update record and diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
+| Clinical examination and record | `ADMIN`, `DOCTOR` | Patient, appointment, findings; matching EXAM clearance or audited override only for the default-off V2 path | Active V0 validates role/context; V2 additionally validates proof; create/update record and diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
 | Laboratory test creation | `ADMIN`, `DOCTOR` | Patient/record references, department, test type, requested date | Validate input and create the Laboratory-owned test directly | Laboratory test in initial state | Laboratory |
-| Laboratory processing and result | `ADMIN`, `LAB_TECH` | Existing Lab test, matching LAB_TEST clearance or audited emergency override, specimen/results | Enforce proof and lifecycle; start, record, complete, and publish | Published Laboratory result | Laboratory |
+| Laboratory processing and result | `ADMIN`, `LAB_TECH` | Existing Lab test and specimen/results; matching LAB_TEST clearance or audited override only for V2 protected processing | Active V0 enforces lifecycle; V2 additionally enforces proof; start, record, complete, and publish | Published Laboratory result | Laboratory |
 | Prescription creation | `ADMIN`, `DOCTOR` | Clinical record reference, patient, medicine, dose, quantity, instructions | Pharmacy validates lines/prices and creates the Pharmacy-owned prescription plus pending dispense slip | Prescription and medication lines | Pharmacy |
 | Medicine dispensing | `ADMIN`, `PHARMACIST` | Pharmacy prescription, durable payment proof, stock, dispense quantity | Verify proof/prescription/stock; record dispense and inventory movement | Dispense record and remaining stock | Pharmacy |
 | Compatibility invoice create/pay | Authorized Billing staff | Patient/source context, invoice/payment data | Apply active compatibility invoice rules | Invoice, payment state, compatibility receipt data | Billing |
@@ -286,8 +286,8 @@ The Review 1 requirements are considered represented by the current solution whe
 1. All nine roles have clearly separated permitted workflows.
 2. All ten business contexts have defined ownership and accessible service boundaries.
 3. A patient can be registered and associated with an appointment.
-4. An authorized clinician can create an examination record only with matching EXAM clearance/override, while `ADMIN`/`DOCTOR` create Laboratory tests and Pharmacy-owned prescriptions through their owning services.
-5. Authorized Lab staff can progress an existing test only with matching LAB_TEST clearance/override; no Clinical-to-Lab order contract is claimed.
+4. An authorized clinician can create a record through active V0; the default-off Care-Finance V2 path additionally requires matching EXAM clearance/override. `ADMIN`/`DOCTOR` create Laboratory tests and Pharmacy-owned prescriptions through their owning services.
+5. Authorized Lab staff can progress an existing test through active V0; V2 protected processing additionally requires matching LAB_TEST clearance/override. No Clinical-to-Lab order contract is claimed.
 6. Pharmacy can create a doctor-authored prescription and dispense only after durable payment proof and stock validation.
 7. Billing can demonstrate active compatibility invoice read/create/pay; default-off ledger, deposit, refund, settlement, and clearance capabilities are excluded unless explicitly enabled and accepted.
 8. Inpatient Core V1 can demonstrate local admission/bed/treatment and the explicit admit/discharge/close gates; cross-service event activation remains gated.

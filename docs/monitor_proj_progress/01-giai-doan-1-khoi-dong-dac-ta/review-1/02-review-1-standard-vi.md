@@ -76,8 +76,8 @@ Các mục tiêu cụ thể gồm:
 |---|---|
 | Organization | Người dùng, nhân viên, khoa, vai trò, cơ sở, phòng và dữ liệu tham chiếu tổ chức |
 | Patient | Hồ sơ người bệnh, định danh, liên hệ và dữ liệu nhân khẩu học |
-| Clinical | Lịch khám, lượt khám, medical record, chẩn đoán và tham chiếu admission; bắt đầu khám cần EXAM clearance khớp hoặc emergency override được audit |
-| Laboratory | Test do `ADMIN`/`DOCTOR` tạo, mẫu, xử lý, kết quả; start/result cần LAB_TEST clearance khớp hoặc emergency override được audit |
+| Clinical | Lịch khám, lượt khám, medical record, chẩn đoán và tham chiếu admission; tạo record V0 đang hoạt động chỉ kiểm tra role, còn nhánh Care-Finance V2 mặc định tắt yêu cầu thêm EXAM clearance khớp hoặc emergency override được audit |
+| Laboratory | Test do `ADMIN`/`DOCTOR` tạo, mẫu, xử lý, kết quả; xử lý tương thích V0 đang hoạt động, còn nhánh V2 được bảo vệ yêu cầu LAB_TEST clearance khớp hoặc emergency override được audit |
 | Pharmacy | Danh mục thuốc, tạo đơn do Pharmacy sở hữu, tồn kho, kiểm tra payment proof, biến động và cấp phát |
 | Billing | Invoice read/create/pay tương thích đang hoạt động; ledger, deposit, refund, settlement và clearance là opt-in/mặc định tắt hoặc mục tiêu |
 | Notification | Yêu cầu thông báo từ sự kiện, mẫu thông báo, lần gửi và trạng thái gửi |
@@ -177,9 +177,9 @@ MediFlow đề xuất một nền tảng bệnh viện mô-đun, trong đó mỗ
 | Đăng ký người bệnh | `ADMIN`, `NURSE` | Nhân khẩu học, liên hệ, định danh | Kiểm tra trường bắt buộc và trùng lặp; cấp UUID | Hồ sơ người bệnh và xác nhận đăng ký | Patient |
 | Xếp lịch khám | `ADMIN`, `NURSE` | UUID người bệnh, khoa/bác sĩ, thời gian, lý do | Kiểm tra yêu cầu và quy tắc lịch; tạo trạng thái lịch khám | Mã lịch khám, lịch và trạng thái | Clinical |
 | Hỗ trợ appointment/check-in | `ADMIN`, `DOCTOR`, `NURSE` theo route | Appointment và status | Áp dụng trạng thái được phép; `ARRIVED` chưa cho phép khám | Trạng thái appointment cập nhật | Clinical |
-| Khám và medical record | `ADMIN`, `DOCTOR` | Patient, appointment, phát hiện, EXAM clearance khớp hoặc override audit | Kiểm tra quyền/proof; tạo/cập nhật record và diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
+| Khám và medical record | `ADMIN`, `DOCTOR` | Patient, appointment, phát hiện; EXAM clearance khớp hoặc override audit chỉ cho nhánh V2 mặc định tắt | V0 đang hoạt động kiểm tra role/ngữ cảnh; V2 kiểm tra thêm proof; tạo/cập nhật record và diagnosis | Medical record, diagnosis, disposition/reference | Clinical |
 | Tạo Laboratory test | `ADMIN`, `DOCTOR` | Tham chiếu patient/record, khoa, loại test, ngày yêu cầu | Kiểm tra và tạo test trực tiếp do Laboratory sở hữu | Test Laboratory trạng thái đầu | Laboratory |
-| Xử lý và kết quả Laboratory | `ADMIN`, `LAB_TECH` | Test đã có, LAB_TEST clearance khớp hoặc override audit, mẫu/kết quả | Thực thi proof/vòng đời; start, ghi, complete, công bố | Kết quả Laboratory công bố | Laboratory |
+| Xử lý và kết quả Laboratory | `ADMIN`, `LAB_TECH` | Test đã có và mẫu/kết quả; LAB_TEST clearance khớp hoặc override audit chỉ cho xử lý V2 được bảo vệ | V0 đang hoạt động thực thi vòng đời; V2 kiểm tra thêm proof; start, ghi, complete, công bố | Kết quả Laboratory công bố | Laboratory |
 | Tạo đơn thuốc | `ADMIN`, `DOCTOR` | Tham chiếu record, patient, thuốc, liều, số lượng, hướng dẫn | Pharmacy kiểm tra dòng/giá và tạo đơn do Pharmacy sở hữu cùng dispense slip pending | Đơn thuốc và dòng thuốc | Pharmacy |
 | Cấp phát thuốc | `ADMIN`, `PHARMACIST` | Đơn Pharmacy, payment proof bền vững, tồn kho, số lượng | Xác minh proof/đơn/kho; ghi cấp phát và biến động | Hồ sơ cấp phát và tồn còn lại | Pharmacy |
 | Invoice create/pay tương thích | Nhân viên Billing được phép | Ngữ cảnh patient/source và dữ liệu invoice/payment | Áp dụng quy tắc invoice tương thích đang hoạt động | Invoice, trạng thái payment, dữ liệu receipt tương thích | Billing |
@@ -286,8 +286,8 @@ Các yêu cầu Review 1 được xem là đã được giải pháp hiện tạ
 1. Cả chín vai trò có các quy trình được phép tách biệt rõ ràng.
 2. Cả mười ngữ cảnh nghiệp vụ có quyền sở hữu và ranh giới dịch vụ xác định.
 3. Người bệnh có thể được đăng ký và liên kết với lịch khám.
-4. Bác sĩ được phép chỉ tạo record khi có EXAM clearance/override; `ADMIN`/`DOCTOR` tạo Lab test và đơn Pharmacy qua dịch vụ sở hữu.
-5. Nhân viên Lab được phép chỉ xử lý test đã có khi có LAB_TEST clearance/override; không tuyên bố hợp đồng Clinical-to-Lab.
+4. Bác sĩ được phép tạo record qua V0 đang hoạt động; nhánh Care-Finance V2 mặc định tắt yêu cầu thêm EXAM clearance/override. `ADMIN`/`DOCTOR` tạo Lab test và đơn Pharmacy qua dịch vụ sở hữu.
+5. Nhân viên Lab được phép xử lý test đã có qua V0 đang hoạt động; xử lý V2 được bảo vệ yêu cầu thêm LAB_TEST clearance/override. Không tuyên bố hợp đồng Clinical-to-Lab.
 6. Pharmacy tạo đơn do bác sĩ soạn và chỉ cấp khi có payment proof bền vững cùng tồn hợp lệ.
 7. Billing trình diễn invoice read/create/pay tương thích; ledger, deposit, refund, settlement và clearance mặc định tắt bị loại trừ nếu chưa bật/nghiệm thu.
 8. Inpatient Core V1 trình diễn admission/bed/treatment và gate admit/discharge/close; kích hoạt sự kiện chéo dịch vụ còn bị khóa.
