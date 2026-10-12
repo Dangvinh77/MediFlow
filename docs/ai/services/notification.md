@@ -39,9 +39,12 @@ Owns: notification history (`NOTIFICATION`) and consumer idempotency records (`P
 - **Subscribe current:** `patient.created` (welcome), `appointment.created` (reminder),
   `lab.result.created` (results), `prescription.filled` (drug ready), `payment.completed` (receipt),
   `payment.failed` (payment error), flat V0 `invoice.created` (private unpaid request).
+- **Subscribe current (care projections, gated by `mediflow.notification.care-v1.enabled`):**
+  `admission.deposit.requested`, `admission.started`, `admission.closed` (inpatient-service),
+  `surgery.ready`, `surgery.cancelled` (surgery-service), `settlement.completed` (billing-service).
 - **Subscribe target:** `invoice.created`/payment request, `payment.refunded`,
-  `appointment.status.changed`, `admission.deposit.requested`, `deposit.topup.required`, `admission.started`, `surgery.ready`,
-  `surgery.cancelled`, `settlement.completed`, `admission.closed`.
+  `appointment.status.changed`, `deposit.topup.required` (blocked: Billing has not built the top-up
+  issuer yet, so no real producer fixture exists to decode against).
 
 ## Business rules
 1. Email must be valid to send email.
@@ -111,6 +114,28 @@ Final full clean Notification verification including both Surgery consumers: **1
 zero failure/error/skip, PostgreSQL/RabbitMQ, 2026-10-08 10:34:36–10:36:42 Bangkok. This supersedes
 the earlier 120-test slice above; the counts are not additive. Remaining admission/refund/top-up/
 settlement templates and reviewed event release are still open.
+
+### Admission and settlement projection notices (2026-10-12)
+
+`CareProjectionWireHandler`/`CareProjectionService`, already handling `admission.deposit.requested`,
+`admission.started` and `admission.closed` (inpatient-service), now also consume
+`settlement.completed` (billing-service), same `mediflow.notification.care-v1.enabled` gate, same
+private IN_APP-only delivery, same claim-by-`eventId` dedupe. Content states only the settlement
+outcome and the absolute balance amount (e.g. "cần thanh toán thêm X VND" / "có khoản hoàn lại X
+VND"); no clinical detail, no per-charge breakdown. `settlement.completed` was blocked until Billing
+produced a real producer fixture for it (`backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-completed.json`,
+added 2026-10-10 alongside the discharge-freeze/settlement implementation); that fixture now exists,
+so this slice reads it directly from `../billing-service/...` in tests, same as the admission/surgery
+fixtures — no copy into notification-service. `deposit.topup.required` remains unaddressed: Billing
+has not built the top-up issuer yet (blocked on an undecided trigger-threshold policy), so there is
+still no real producer fixture to decode against.
+
+**Docker E2E (2026-10-12):** `CareProjectionPostgresIntegrationTest` proves `admission.deposit.requested`
+and `settlement.completed` each deliver exactly one real `NOTIFICATION` row (duplicate delivery still
+commits only one), against a real Postgres container, once the pre-existing Docker Desktop/
+testcontainers-version incompatibility on this machine was fixed (see billing.md's note; same
+`testcontainers.version=1.20.6` + `docker-java.properties` pin applied here). `admission.started`/
+`admission.closed` still only have mock-level (`CareProjectionWireHandlerTest`) coverage.
 
 - Read [`CONTRACT-CARE-PROJECTIONS-01`](../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md)
   before changing event bindings/templates and

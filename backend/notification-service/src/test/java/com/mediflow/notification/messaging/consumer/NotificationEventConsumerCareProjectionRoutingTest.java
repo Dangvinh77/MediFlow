@@ -29,7 +29,7 @@ class NotificationEventConsumerCareProjectionRoutingTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"admission.deposit.requested", "admission.started", "admission.closed",
-            "surgery.ready", "surgery.cancelled"})
+            "surgery.ready", "surgery.cancelled", "settlement.completed"})
     void routesExactBodyToCareProjectionHandler(String routingKey) throws Exception {
         byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
         consumer.onMessage(new Message(body, propertiesFor(routingKey)));

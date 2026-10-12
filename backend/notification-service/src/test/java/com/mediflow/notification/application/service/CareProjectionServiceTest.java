@@ -16,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.port.out.CareNotificationRepositoryPort;
 import com.mediflow.notification.domain.model.CareNotificationIntent;
@@ -67,5 +68,38 @@ class CareProjectionServiceTest {
         verify(repository).deliverInApp(captor.capture());
         assertThat(captor.getValue().content()).contains("Patient request");
         assertThat(captor.getValue().templateKey()).isEqualTo("SURGERY_CANCELLED");
+    }
+
+    @Test
+    void settlementCompleted_additionalPaymentRequired_includesAbsoluteBalance() {
+        when(repository.claim(any(), any(), any())).thenReturn(true);
+        UUID admissionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        var command = new SettlementCompletedCommand(UUID.randomUUID(), fingerprint, "cid",
+                UUID.randomUUID(), admissionId, patientId, new BigDecimal("50000.00"),
+                "ADDITIONAL_PAYMENT_REQUIRED", Instant.now());
+
+        service.onSettlementCompleted(command);
+
+        var captor = ArgumentCaptor.forClass(CareNotificationIntent.class);
+        verify(repository).deliverInApp(captor.capture());
+        assertThat(captor.getValue().sourceId()).isEqualTo(admissionId);
+        assertThat(captor.getValue().patientId()).isEqualTo(patientId);
+        assertThat(captor.getValue().content()).contains("50000.00 VND");
+        assertThat(captor.getValue().templateKey()).isEqualTo("SETTLEMENT_COMPLETED");
+    }
+
+    @Test
+    void settlementCompleted_refundDue_usesAbsoluteValueOfNegativeBalance() {
+        when(repository.claim(any(), any(), any())).thenReturn(true);
+        var command = new SettlementCompletedCommand(UUID.randomUUID(), fingerprint, "cid",
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("-20000.00"),
+                "REFUND_DUE", Instant.now());
+
+        service.onSettlementCompleted(command);
+
+        var captor = ArgumentCaptor.forClass(CareNotificationIntent.class);
+        verify(repository).deliverInApp(captor.capture());
+        assertThat(captor.getValue().content()).contains("20000.00 VND");
     }
 }

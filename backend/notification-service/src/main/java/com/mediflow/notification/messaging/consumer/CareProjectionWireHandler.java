@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.notification.application.dto.command.AdmissionClosedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.dto.command.SurgeryReadyCommand;
 import com.mediflow.notification.application.port.in.ReactToCareProjectionUseCase;
@@ -23,13 +24,15 @@ import org.springframework.stereotype.Component;
  * Nhận các projection event ngoài payment receipt (CONTRACT-CARE-PROJECTIONS-01 "Notification
  * subscriptions"): {@code admission.deposit.requested}, {@code admission.started},
  * {@code admission.closed} (inpatient-service), {@code surgery.ready}, {@code surgery.cancelled}
- * (surgery-service). {@code NotificationEventConsumer} định tuyến tới đây theo routing key —
- * không có xung đột với routing key V1 phẳng nào (khác {@code payment.completed}, nên không cần
- * "đoán hình dạng" như {@link CarePaymentReceiptWireHandler}).
+ * (surgery-service), {@code settlement.completed} (billing-service). {@code NotificationEventConsumer}
+ * định tuyến tới đây theo routing key — không có xung đột với routing key V1 phẳng nào (khác
+ * {@code payment.completed}, nên không cần "đoán hình dạng" như {@link CarePaymentReceiptWireHandler}).
  *
- * <p>Chưa đụng tới {@code deposit.topup.required}/{@code settlement.completed}: Billing chưa có
- * producer fixture thật cho hai event đó (CONTRACT-CARE-BILLING-01 "Still open") — không tự bịa
- * hình dạng wire (AGENTS.md "Do not infer... producer payloads").
+ * <p>Chưa đụng tới {@code deposit.topup.required}: Billing chưa xây top-up issuer (chặn bởi quyết
+ * định ngưỡng nghiệp vụ chưa ai quyết, xem HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT), nên chưa có
+ * producer fixture thật cho event đó (CONTRACT-CARE-BILLING-01 "Still open") — không tự bịa hình
+ * dạng wire (AGENTS.md "Do not infer... producer payloads"). {@code settlement.completed} đã có
+ * fixture thật từ Billing (2026-10-10, same-byte với bản Inpatient đã copy) nên được thêm ở đây.
  */
 @Component
 public class CareProjectionWireHandler {
@@ -81,6 +84,12 @@ public class CareProjectionWireHandler {
                             uuid(payload, "surgeryCaseId"), uuid(payload, "patientId"),
                             text(payload, "cancellationStage"), optionalText(payload, "reason"), instant(payload, "cancelledAt")));
                 }
+                case "settlement.completed" -> {
+                    requireProducer(root, "billing-service");
+                    projections.onSettlementCompleted(new SettlementCompletedCommand(eventId, fingerprint, correlationId,
+                            uuid(payload, "settlementId"), uuid(payload, "admissionId"), uuid(payload, "patientId"),
+                            decimal(payload, "balance"), text(payload, "outcome"), instant(payload, "completedAt")));
+                }
                 default -> throw new IllegalArgumentException("Unsupported care projection routing key: " + routingKey);
             }
         } catch (NotificationEventConflictException conflict) {
@@ -124,11 +133,15 @@ public class CareProjectionWireHandler {
     private static Instant instant(JsonNode root, String field) { return Instant.parse(text(root, field)); }
 
     private static BigDecimal amount(JsonNode root, String field) {
-        var value = root.get(field);
-        if (value == null || !value.isNumber()) throw new IllegalArgumentException(field + " must be numeric");
-        BigDecimal money = value.decimalValue();
+        BigDecimal money = decimal(root, field);
         if (money.signum() <= 0) throw new IllegalArgumentException(field + " must be positive");
         return money;
+    }
+
+    private static BigDecimal decimal(JsonNode root, String field) {
+        var value = root.get(field);
+        if (value == null || !value.isNumber()) throw new IllegalArgumentException(field + " must be numeric");
+        return value.decimalValue();
     }
 
     private static String sha256Hex(byte[] body) throws Exception {

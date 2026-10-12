@@ -42,6 +42,7 @@ public class RabbitConfig {
     public static final String RK_ADMISSION_CLOSED = "admission.closed";
     public static final String RK_SURGERY_READY = "surgery.ready";
     public static final String RK_SURGERY_CANCELLED = "surgery.cancelled";
+    public static final String RK_SETTLEMENT_COMPLETED = "settlement.completed";
 
     private static final String[] SUBSCRIBED_ROUTING_KEYS = {
             RK_PATIENT_CREATED,
@@ -55,6 +56,7 @@ public class RabbitConfig {
             RK_ADMISSION_CLOSED,
             RK_SURGERY_READY,
             RK_SURGERY_CANCELLED,
+            RK_SETTLEMENT_COMPLETED,
             RK_INVOICE_CREATED
     };
 
