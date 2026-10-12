@@ -191,6 +191,7 @@ class InpatientJpaSchemaIntegrationTest {
         ClinicalOrderReferenceRepositoryPort references = mock(ClinicalOrderReferenceRepositoryPort.class);
         when(references.findByAdmissionId(admissionId)).thenReturn(List.of());
         var service = new InpatientApplicationService(admissionStore, bedStore, assignmentStore,
+                mock(com.mediflow.inpatient.application.port.out.BedCapacityHistoryPort.class),
                 mock(TreatmentEntryRepositoryPort.class), references,
                 mock(DischargeSummaryRepositoryPort.class), mock(ProcessedEventPort.class),
                 mock(SurgeryEventReceiptRepositoryPort.class),

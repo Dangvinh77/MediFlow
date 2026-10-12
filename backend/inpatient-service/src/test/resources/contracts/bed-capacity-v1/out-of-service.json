@@ -1,0 +1,20 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000021",
+  "eventType": "bed.capacity.changed",
+  "version": 1,
+  "occurredAt": "2026-09-29T01:00:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "bedId": "00000000-0000-4000-8000-000000000024",
+    "capacityRevision": 2,
+    "departmentId": "00000000-0000-4000-8000-000000000023",
+    "wardCode": "WARD-A",
+    "bedType": "STANDARD",
+    "active": true,
+    "operationalStatus": "OUT_OF_SERVICE",
+    "capacityEligible": false,
+    "effectiveAt": "2026-09-29T01:00:00Z",
+    "actorId": "00000000-0000-4000-8000-000000000026"
+  }
+}

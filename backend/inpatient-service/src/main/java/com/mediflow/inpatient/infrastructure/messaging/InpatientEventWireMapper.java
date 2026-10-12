@@ -4,6 +4,7 @@ import com.mediflow.inpatient.application.dto.event.AdmissionClosedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionDepositRequestedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionPlacementChangedEvent;
+import com.mediflow.inpatient.application.dto.event.BedCapacityChangedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.dto.event.MedicalDischargeApprovedEvent;
 import java.util.LinkedHashMap;
@@ -69,6 +70,17 @@ public class InpatientEventWireMapper {
             body.put("reason", event.reason());
             body.put("previousPlacement", placement(event.previousPlacement()));
             body.put("currentPlacement", placement(event.currentPlacement()));
+        } else if (payload instanceof BedCapacityChangedEvent event) {
+            body.put("bedId", event.bedId());
+            body.put("capacityRevision", event.capacityRevision());
+            body.put("departmentId", event.departmentId());
+            body.put("wardCode", event.wardCode());
+            body.put("bedType", event.bedType());
+            body.put("active", event.active());
+            body.put("operationalStatus", event.operationalStatus().name());
+            body.put("capacityEligible", event.capacityEligible());
+            body.put("effectiveAt", event.effectiveAt());
+            body.put("actorId", event.actorId());
         } else {
             throw new IllegalArgumentException("Unsupported inpatient event payload: "
                     + (payload == null ? "null" : payload.getClass().getName()));

@@ -6,6 +6,7 @@ import com.mediflow.inpatient.application.port.in.LookupPlacementAuthorityUseCas
 import com.mediflow.inpatient.application.port.out.AdmissionAuthorityRepositoryPort;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
+import com.mediflow.inpatient.application.port.out.BedCapacityHistoryPort;
 import com.mediflow.inpatient.application.port.out.BedRepositoryPort;
 import com.mediflow.inpatient.application.port.out.ClinicalOrderReferenceRepositoryPort;
 import com.mediflow.inpatient.application.port.out.DepositSuggestionPolicyPort;
@@ -49,6 +50,7 @@ public class InpatientApplicationConfiguration {
             AdmissionRepositoryPort admissions,
             BedRepositoryPort beds,
             BedAssignmentRepositoryPort assignments,
+            BedCapacityHistoryPort capacityHistory,
             TreatmentEntryRepositoryPort treatments,
             ClinicalOrderReferenceRepositoryPort references,
             DischargeSummaryRepositoryPort discharges,
@@ -59,7 +61,8 @@ public class InpatientApplicationConfiguration {
             DepositSuggestionPolicyPort depositSuggestions,
             InpatientDtoMapper mapper,
             Clock clock) {
-        return new InpatientApplicationService(admissions, beds, assignments, treatments, references,
+        return new InpatientApplicationService(admissions, beds, assignments, capacityHistory,
+                treatments, references,
                 discharges, processedEvents, surgeryReceipts, eventStore, outbox,
                 depositSuggestions, mapper, clock);
     }

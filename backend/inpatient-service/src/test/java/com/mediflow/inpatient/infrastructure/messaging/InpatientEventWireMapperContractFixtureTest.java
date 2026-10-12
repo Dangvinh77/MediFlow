@@ -11,8 +11,10 @@ import com.mediflow.inpatient.application.dto.event.AdmissionDepositRequestedEve
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionPlacementChangedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
+import com.mediflow.inpatient.application.dto.event.BedCapacityChangedEvent;
 import com.mediflow.inpatient.application.dto.event.MedicalDischargeApprovedEvent;
 import com.mediflow.inpatient.domain.model.enums.PlacementChangeType;
+import com.mediflow.inpatient.domain.model.enums.BedStatus;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -113,6 +115,28 @@ class InpatientEventWireMapperContractFixtureTest {
                         "Medical release", previous, null));
 
         assertMatchesFixture("admission-placement-v1/released.json", event);
+    }
+
+    @Test
+    void capacityEligibleBedMatchesCanonicalV1Fixture() throws IOException {
+        Instant effectiveAt = Instant.parse("2026-09-28T01:00:00Z");
+        var event = new DomainEventEnvelope<>(id(20), "bed.capacity.changed", 1,
+                effectiveAt, CORRELATION_ID, "inpatient-service",
+                new BedCapacityChangedEvent(id(24), 1, id(23), "WARD-A", "STANDARD",
+                        true, BedStatus.AVAILABLE, true, effectiveAt, id(26)));
+
+        assertMatchesFixture("bed-capacity-v1/eligible.json", event);
+    }
+
+    @Test
+    void outOfServiceBedMatchesCanonicalV1Fixture() throws IOException {
+        Instant effectiveAt = Instant.parse("2026-09-29T01:00:00Z");
+        var event = new DomainEventEnvelope<>(id(21), "bed.capacity.changed", 1,
+                effectiveAt, CORRELATION_ID, "inpatient-service",
+                new BedCapacityChangedEvent(id(24), 2, id(23), "WARD-A", "STANDARD",
+                        true, BedStatus.OUT_OF_SERVICE, false, effectiveAt, id(26)));
+
+        assertMatchesFixture("bed-capacity-v1/out-of-service.json", event);
     }
 
     @Test

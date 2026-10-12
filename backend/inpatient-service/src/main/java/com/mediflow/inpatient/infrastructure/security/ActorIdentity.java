@@ -10,6 +10,14 @@ import org.springframework.stereotype.Component;
 /** Verifies audited actor IDs against explicit authenticated JWT staff identity. */
 @Component
 public class ActorIdentity {
+    public UUID currentStaffId() {
+        InpatientAuthenticationDetails details = authenticatedDetails();
+        if (details.staffId() == null) {
+            throw new AccessDeniedException("Authenticated staff identity is required");
+        }
+        return details.staffId();
+    }
+
     public void assertStaff(UUID requestedActorId) {
         InpatientAuthenticationDetails details = authenticatedDetails();
         if (details.staffId() == null || !details.staffId().equals(requestedActorId)) {
