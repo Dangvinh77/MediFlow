@@ -53,6 +53,7 @@ class PrescriptionIdentityHttpTest {
     private static final String CORRELATION = "33333333-3333-3333-3333-333333333333";
     private static final String PATIENT_PATH = "/api/v1/patients/" + PATIENT + "/exists";
     private static final String STAFF_PATH = "/api/v1/org/staff/" + DOCTOR + "/lookup";
+    private static final String ELIGIBILITY_PATH = "/api/v1/org/staff/" + DOCTOR + "/exists";
     private static final String DEPT_PATH = "/api/v1/org/departments/" + DEPARTMENT + "/lookup";
     private static final Map<String, Reply> REPLIES = new ConcurrentHashMap<>();
     private static final Map<String, String> TOKENS = new ConcurrentHashMap<>();
@@ -85,6 +86,13 @@ class PrescriptionIdentityHttpTest {
         REPLIES.clear(); TOKENS.clear();
         put(PATIENT_PATH, producer("../patient-service/src/test/resources/contracts/patient.lookup.exists.json"));
         put(STAFF_PATH, producer("../organization-service/src/test/resources/contracts/organization.staff.lookup.json"));
+        var eligibility = json.createObjectNode(); eligibility.put("success", true).putNull("error");
+        eligibility.put("correlationId", CORRELATION); eligibility.put("timestamp", NOW.toString());
+        eligibility.putObject("data").put("exists", true).put("eligibleDoctor", true)
+                .put("departmentId", DEPARTMENT.toString());
+        // Explicit local example of the locked Organization compatibility contract. There is no
+        // producer-owned /exists fixture to copy into this consumer test.
+        put(ELIGIBILITY_PATH, eligibility);
         var envelope = json.createObjectNode(); envelope.put("success", true); envelope.putNull("error");
         envelope.put("correlationId", CORRELATION); envelope.put("timestamp", NOW.toString());
         envelope.putObject("data").put("exists", true).put("active", true).put("departmentId", DEPARTMENT.toString())
@@ -93,7 +101,7 @@ class PrescriptionIdentityHttpTest {
     }
     @Test void lookup_originalPatientAndStaffBytesUseExactPathsAndShortLivedServiceCredential() {
         var proof = lookup(); proof.requireExact(PATIENT, DOCTOR, DEPARTMENT, NOW);
-        assertThat(TOKENS).hasSize(3).containsKeys(PATIENT_PATH, STAFF_PATH, DEPT_PATH);
+        assertThat(TOKENS).hasSize(4).containsKeys(PATIENT_PATH, STAFF_PATH, ELIGIBILITY_PATH, DEPT_PATH);
         assertThat(proof.checkedAt()).isEqualTo(NOW);
         TOKENS.values().forEach(token -> {
             var claims = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
@@ -117,8 +125,66 @@ class PrescriptionIdentityHttpTest {
             } put(STAFF_PATH, root);
         }
         var proof = lookup();
+        if (defect.equals("nurse") || defect.equals("inactive")) {
+            assertThat(proof.eligibleDoctor()).isFalse();
+        }
         assertThatThrownBy(() -> proof.requireExact(PATIENT, DOCTOR, DEPARTMENT, NOW))
                 .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"false", "absent"})
+    void lookup_compatibilityConfirmedNegativeDoesNotFallbackToGenericDoctorJob(String state) throws Exception {
+        var root = root(ELIGIBILITY_PATH);
+        var data = data(root);
+        data.put("exists", state.equals("absent") ? false : true)
+                .put("eligibleDoctor", false).putNull("departmentId");
+        put(ELIGIBILITY_PATH, root);
+
+        var proof = lookup();
+
+        assertThat(proof.eligibleDoctor()).isFalse();
+        assertThatThrownBy(() -> proof.requireExact(PATIENT, DOCTOR, DEPARTMENT, NOW))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class)
+                .hasMessage("An active doctor is required");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"absent-eligible", "eligible-null", "ineligible-department", "malformed-boolean",
+            "missing-eligible", "null-eligible", "missing-department", "wrong-department", "malformed-uuid",
+            "wrong-correlation", "duplicate", "trailing", "http-failure"})
+    void lookup_compatibilityMalformedOrUnavailableResponseFailsClosed(String defect) throws Exception {
+        var root = root(ELIGIBILITY_PATH);
+        var data = data(root);
+        data.put("exists", true).put("eligibleDoctor", true).put("departmentId", DEPARTMENT.toString());
+        switch (defect) {
+            case "absent-eligible" -> data.put("exists", false);
+            case "eligible-null" -> data.putNull("departmentId");
+            case "ineligible-department" -> data.put("eligibleDoctor", false);
+            case "malformed-boolean" -> data.put("eligibleDoctor", "true");
+            case "missing-eligible" -> data.remove("eligibleDoctor");
+            case "null-eligible" -> data.putNull("eligibleDoctor");
+            case "missing-department" -> data.remove("departmentId");
+            case "wrong-department" -> data.put("departmentId", UUID.randomUUID().toString());
+            case "malformed-uuid" -> data.put("departmentId", "not-a-uuid");
+            case "wrong-correlation" -> root.put("correlationId", "different-correlation");
+            case "duplicate", "trailing", "http-failure" -> { }
+            default -> throw new IllegalArgumentException("unknown defect: " + defect);
+        }
+        if (defect.equals("duplicate")) {
+            var body = json.writeValueAsString(root).replace("\"eligibleDoctor\":true", "\"eligibleDoctor\":false,\"eligibleDoctor\":true");
+            REPLIES.put(ELIGIBILITY_PATH, new Reply(200, body.getBytes(StandardCharsets.UTF_8), CORRELATION));
+        } else if (defect.equals("trailing")) {
+            var body = json.writeValueAsString(root) + " {}";
+            REPLIES.put(ELIGIBILITY_PATH, new Reply(200, body.getBytes(StandardCharsets.UTF_8), CORRELATION));
+        } else if (defect.equals("http-failure")) {
+            REPLIES.put(ELIGIBILITY_PATH, new Reply(503, "PRIVATE".getBytes(StandardCharsets.UTF_8), CORRELATION));
+        } else {
+            put(ELIGIBILITY_PATH, root);
+        }
+
+        assertThatThrownBy(this::lookup)
+                .isInstanceOf(PharmacyUpstreamUnavailableException.class).hasNoCause();
     }
     @ParameterizedTest @ValueSource(strings = {"wrong-patient", "short-id", "string-bool", "absent-active", "missing-role-array",
             "inactive-roles", "wrong-header", "wrong-correlation", "duplicate", "trailing", "missing-department"})
@@ -157,6 +223,9 @@ class PrescriptionIdentityHttpTest {
                 .exists(PATIENT, "PRIVATE", CORRELATION)).isInstanceOf(PharmacyUpstreamUnavailableException.class).hasNoCause();
         assertThatThrownBy(() -> new PharmacyOrganizationFallbackFactory().create(new RuntimeException("PRIVATE"))
                 .staff(DOCTOR, "PRIVATE", CORRELATION)).isInstanceOf(PharmacyUpstreamUnavailableException.class).hasNoCause();
+        assertThatThrownBy(() -> new PharmacyOrganizationFallbackFactory().create(new RuntimeException("PRIVATE"))
+                .doctorEligibility(DOCTOR, "PRIVATE", CORRELATION))
+                .isInstanceOf(PharmacyUpstreamUnavailableException.class).hasNoCause();
     }
     private PrescriptionIdentityPort.Observation lookup() { return identities.lookup(PATIENT, DOCTOR, DEPARTMENT, CORRELATION); }
     private ObjectNode producer(String path) throws Exception {

@@ -1,5 +1,13 @@
 # Service: pharmacy (Khoa Dược)
 
+Identity continuation 2026-10-12: Pharmacy's gated necessary preflight now consumes the existing
+Organization doctor-eligibility `/staff/{id}/exists` result in addition to Patient and generic
+staff/department identity reads. Positive eligibility must match the requested department and
+the generic active DOCTOR facts; explicit denial never falls back to job/team labels. Strict shape,
+correlation and outage checks remain redacted/fail-closed. This is a necessary producer decision,
+not independent current licence/order/placement authority or a permission lease. Public V1,
+admission creation/dispense, distributed revoke and held publication remain closed.
+
 Historical evidence protection 2026-10-11: published-outbox purge is independently default OFF
 (`mediflow.pharmacy.outbox.purge-published-enabled`, env
 `MEDIFLOW_PHARMACY_OUTBOX_PURGE_PUBLISHED_ENABLED`). Maintenance/dispatch/replay are unchanged;
