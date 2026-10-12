@@ -1,5 +1,6 @@
 package com.mediflow.organization.web.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mediflow.organization.domain.model.DepartmentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +16,7 @@ public record UpdateDepartmentRequest(
         DepartmentType departmentType,
         @Size(max = 255, message = "Location must not exceed 255 characters")
         String location,
+        @JsonProperty(value = "departmentHeadId", required = true)
         UUID departmentHeadId,
         Boolean active) {
 }

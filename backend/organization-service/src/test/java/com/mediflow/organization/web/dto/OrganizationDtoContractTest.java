@@ -1,6 +1,7 @@
 package com.mediflow.organization.web.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class OrganizationDtoContractTest {
 
@@ -42,6 +44,21 @@ class OrganizationDtoContractTest {
                         "0123456789", "doctor@example.com"),
                 "fullName", "jobTitle", "specialization", "licenseNumber", "phoneNumber", "email");
         assertFields(new ChangeStaffDepartmentRequest(departmentId), "newDepartmentId");
+    }
+
+    @Test
+    void updateDepartmentRequiresDepartmentHeadFieldButAcceptsExplicitNull() throws Exception {
+        UpdateDepartmentRequest request = mapper.readValue("""
+                {"departmentName":"Clinical","departmentType":"CLINICAL",
+                 "location":"A","departmentHeadId":null,"active":true}
+                """, UpdateDepartmentRequest.class);
+
+        assertThat(request.departmentHeadId()).isNull();
+        assertThatThrownBy(() -> mapper.readValue("""
+                {"departmentName":"Clinical","departmentType":"CLINICAL",
+                 "location":"A","active":true}
+                """, UpdateDepartmentRequest.class))
+                .isInstanceOf(JsonMappingException.class);
     }
 
     @Test

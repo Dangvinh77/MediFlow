@@ -104,6 +104,27 @@ class UpdateDepartmentServiceTest {
     }
 
     @Test
+    void execute_nullDepartmentHeadRemovesExistingHead() {
+        UUID departmentId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        Department department = department(
+                departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
+        Staff doctor = Staff.reconstitute(
+                staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
+                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
+        department.changeHead(doctor);
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.save(any(Department.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Department result = service.execute(
+                departmentId, "Clinical", DepartmentType.CLINICAL, "Building A", null, null);
+
+        assertEquals(null, result.getDepartmentHeadId());
+        verify(staffRepository, never()).findById(any());
+    }
+
+    @Test
     void execute_headFromOtherDepartment_throwsBusinessRule() {
         UUID departmentId = UUID.randomUUID();
         UUID otherDepartmentId = UUID.randomUUID();

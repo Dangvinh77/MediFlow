@@ -321,13 +321,15 @@ This service owns reference data and drives other contexts rather than reacting 
 
 4. `job_title = DOCTOR` requires a non-empty `license_number`.
 
-5. `department_head_id`, when provided, must reference a `STAFF` member belonging to the same department.
+5. `department_head_id`, when provided, must reference an active doctor belonging to the same department. A staff member who is a department head cannot be transferred until that head assignment is removed or reassigned.
 
 6. A department with active staff cannot be deactivated.
 
 7. Staff transfers must update the existing `STAFF` record and publish `staff.department.changed`. The staff record must never be deleted and recreated for a transfer.
 
 8. Transferring staff to the current department is a no-op: it does not write or publish an event.
+
+Department updates use `PUT /api/v1/org/departments/{id}` with `departmentHeadId` required in the request body. An explicit `null` removes the current head; a UUID assigns that staff member as head. Omitting the field is an invalid request, not an instruction to keep the current head.
 
 9. Accounts with `role = PATIENT` must have a null `staff_id`, because patients are not staff members.
 
