@@ -3,6 +3,65 @@
 Owner: Huy (`LQHuy0210`). Port `8091`, owned DB `mediflow_surgery`, base path `/api/v1/surgery`.
 Design: [bounded context](../../docs/ai/services/surgery.md), [V2 specification](../../docs/eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md).
 
+## Safety-pause evidence — 2026-10-12 (internal, not clinically activated)
+
+`SurgerySafetyPause` records BEFORE_ANAESTHESIA, BEFORE_INCISION and BEFORE_OR_EXIT separately
+from the existing pre-op checklist. Explicit procedure-policy revisions require all three phases,
+exact items and participant roles; no medical catalogue or universal staffing count is seeded.
+N/A requires a permitted reason and separate applicability evidence, never a failed/pending item.
+The first observation pins policy approval reference and schedule revision for this immutable series.
+Later phases preserve that policy/schedule and follow the previous observation with nanosecond precision.
+Incision/exit recording requires IN_PROGRESS; those observations do not create procedure timestamps.
+
+The internal use case requires a real `SurgerySafetyPauseAuthorityPort` for exact policy, observation,
+participant, evidence and applicability sources on every attempt, including replay. Remote preflight
+suspends transactions, current case context is rechecked after locking, and proof freshness is checked
+before and after the append. Recording time is owned by Clock. No positive provider, automatic use-case
+bean, HTTP mapping, lifecycle gate or wire event is installed. No legal/clinical approval is inferred.
+
+Append-only V9 adds an initially empty ledger, case-first locking and stable command receipts.
+Same intent returns original evidence even after restart; changed intent/new command for the same
+phase conflicts. UPDATE/DELETE and nonempty TRUNCATE are blocked; rollback leaves no receipt. Existing V1–V8 data,
+pre-op N/A denial, HELD outbound rows and default-off flags are unchanged. Replacing a pinned safety
+policy/schedule, corrections and phase-to-actual-timestamp/START/COMPLETE gates require their explicit
+next protocol; this series cannot silently adopt replacements or rewrite historical observations.
+
+Verification 2026-10-12: full clean Surgery **953 tests / 80 suites**, zero failures/errors/skips,
+with real PostgreSQL 16/RabbitMQ. New domain/application/ledger suites run 20/13/11 cases; additive
+upgrade preservation runs 8 baselines V1–V8. Existing full HTTP workflow 14, pre-op HTTP 15 and
+lifecycle races 12 pass. Reactor packaging of Parent/Common/Surgery also succeeds. Module regression
+is not clinical activation or multi-service HELD delivery acceptance; defaults stay off.
+
+## Authority-backed consent withdrawal — 2026-10-12 (internal, default OFF)
+
+`RevokeSurgeryConsentUseCase` wraps the existing consent kernel with mandatory
+`SurgeryConsentRevocationAuthorityPort`. Signer recording rights and login roles do not grant
+withdrawal rights. Every attempt, including a receipt replay, authorizes the exact current
+case/episode, consent type, signer, document, immutable audit, recorder and command intent.
+Missing/foreign consent fails before source I/O; unverified staff recorders are denied before reads.
+
+Source calls suspend caller transactions. A fresh bounded write locks the case first, rechecks
+the entire observed case/consent context and validates proof freshness before/after the kernel.
+Consent audit, PREOP invalidation, exact reservation release, original receipt and V7 HELD fact
+commit together. Changed context conflicts; START winners retain IN_USE resources and consent.
+Authorized retries after restart retain original outcome/time; fresh denial never returns a receipt.
+Two workers observing the same revision produce one winner; the conflicting loser can retry and
+reauthorize to read the original receipt. This is local serialization, not an external source lease.
+
+Explicit wiring requires BOTH business and `mediflow.surgery.consent.revocation.enabled=true`;
+both default false. All mandatory ports must exist or startup fails. No positive authority
+provider, HTTP revoke mapping/coarse-role policy, post-start withdrawal, migration, changed wire
+or HELD release is added. Production legal/source policy remains an activation prerequisite.
+The existing pre-op signing/checklist gate does not silently enable withdrawal.
+
+Verification: **991/991 full clean tests, 83 suites, zero failure/error/skip** with actual
+PostgreSQL 16/RabbitMQ. The 38 new withdrawal tests (17 application, 12 wiring, 9 PG) are included,
+not summed reruns. Tests cover complete rollback on receipt failure/proof expiry, restart replay,
+fresh denial despite an existing receipt, ambient-transaction suspension, two-worker contention and
+START winning during preflight. Parent/Common/Surgery packaging succeeds; packaged multi-service
+runtime/clinical activation is not claimed. Reproduce with
+`mvn -f backend/surgery-service/pom.xml -Dapi.version=1.44 clean test`.
+
 ## Billing producer contract — 2026-10-07
 
 Fixed nested-envelope V1 events on `mediflow.events`: `surgery.case.created` for planned charges

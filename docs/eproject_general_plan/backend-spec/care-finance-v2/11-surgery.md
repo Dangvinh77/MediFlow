@@ -38,9 +38,15 @@ still not invented. Canonical contract and verification: [SURGERY-BILLING](../..
 **Safety-policy research follow-up 2026-10-08:** use
 [official WHO/Vietnam analysis](../../../architecture/surgery-safety-policy-research-2026-10-08.md).
 Pre-op readiness is distinct from before-anaesthesia, pre-incision and OR-exit pauses.
-Phased evidence/applicability, procedure-specific teams and verified signer/decision
-authority still need additive implementation and acceptance. Research is not an approved
-clinical template/provider; no legal branch, emergency bypass or universal TTL is invented.
+The 2026-10-12 internal slice implements separate immutable phased evidence, exact procedure-policy
+revision/approval/schedule pins, explicit participant requirements and independent N/A applicability
+evidence in V9. The authority-backed recorder reauthorizes retry outside transactions, rechecks current
+case context under lock and proof freshness before/after append. Case-first locking makes command replay
+and phase uniqueness atomic; history is immutable and no legacy evidence is backfilled.
+It installs no positive provider, public mapping or lifecycle gate. Phase observations never create
+actual anaesthesia/incision/exit timestamps or completed charges. Source acceptance, policy replacement/
+correction and phase-to-procedure lifecycle gates remain open. Research is not an approved clinical
+template/provider; no legal branch, emergency bypass or universal TTL is invented.
 
 - [`mediflow-care-finance-redesign.html`](../../../architecture/mediflow-care-finance-redesign.html)
 - [`CONTRACT-INPATIENT-SURGERY-01`](../../../handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md)
@@ -300,6 +306,21 @@ public enum CancellationStage { BEFORE_PREOP, AFTER_PREOP, BEFORE_START, IN_PROG
 ```
 
 ## 5. Ports and DTOs
+
+**Consent revocation authority — 2026-10-12 (LOCAL/internal):** separate
+`RevokeSurgeryConsentUseCase` wraps the existing atomic revoke kernel with mandatory
+`SurgeryConsentRevocationAuthorityPort`. Recording/signing permission is not withdrawal authority.
+Each attempt authorizes current exact case/episode and consent signature/document/audit plus
+request intent/recorder; replay also reauthorizes, without demanding the original case revision
+still be current. Preflight suspends caller transactions. Case-first bounded writes recheck the
+entire observed context and proof before/after the kernel; changed context fails without effects.
+Consent audit, PREOP invalidation, exact resource release, receipt and unchanged V7 HELD fact
+commit/rollback together. A START winner retains IN_USE resources. Duplicate workers have one
+winner; the stale loser may reauthorize/replay the original receipt on a later attempt.
+Business + `mediflow.surgery.consent.revocation.enabled` are both required and default false;
+missing mandatory ports fail startup. There is no positive provider, HTTP revoke mapping/role
+policy, post-start legal branch, new migration/wire or dispatcher release. The 30-second observation
+bound is a technical freshness check, not clinical validity or a distributed source fence.
 
 **Pre-op HTTP follow-up — 2026-10-07:** strict English item-update and consent-record DTOs,
 `RecordSurgeryPreopUseCase` and mandatory `SurgeryPreopAuthorityPort` wrap the existing atomic

@@ -11,8 +11,12 @@
 [official WHO/Vietnam source design](../../architecture/surgery-safety-policy-research-2026-10-08.md).
 Existing pre-op readiness does not represent all intraoperative pauses. No full WHO catalogue
 seed into READY, universal staffing counts, login-role signer authority or clinical approval
-is inferred. Phased persistence/applicability and real source providers remain implementation
-work; clinical activation stays off.
+is inferred. Since 2026-10-12 a separate immutable three-phase model, policy-specific applicability,
+mandatory authority-backed internal recorder and additive V9 ledger exist. Policy/schedule pins,
+order, command replay and separate N/A evidence are enforced without changing lifecycle or outbound
+wire. No automatic use-case bean, positive provider or phase HTTP mapping is installed. Actual source
+providers, policy replacement/correction and phase-to-procedure timestamp/lifecycle gates remain open;
+clinical activation stays off. See the module README and current Huy plan for verification.
 
 Owns surgery cases, indications/reference to request, pre-op checklist, consent, schedule, room/time,
 team assignments, readiness snapshots, result and state history.
@@ -123,6 +127,20 @@ final before-commit proof check fence local waits. Atomic kernels retain audit, 
 invalidation/exact release and HELD capture. No consent revoke mapping, N/A defaults, distributed
 lease or live delivery is added. Exact LOCAL scope:
 [pre-op API batch](../../superpowers/plans/2026-10-07-surgery-preop-api-batch.md).
+
+### Consent withdrawal authority follow-up — 2026-10-12 (internal, default OFF)
+
+`RevokeSurgeryConsentUseCase` now independently authorizes exact current consent/document/audit
+and command/recorder via mandatory `SurgeryConsentRevocationAuthorityPort` on every attempt,
+including receipt replay. Source observation suspends transactions; bounded case-first writes
+recheck the whole context and proof around kernel waits. Audit, readiness invalidation, exact
+release, receipt and HELD fact stay atomic. START winners cannot lose IN_USE resources.
+Explicit business + `mediflow.surgery.consent.revocation.enabled` wiring defaults off and fails
+startup without any mandatory port. No positive source provider, HTTP role/mapping, post-start
+legal branch, changed wire or release is inferred; source/clinical acceptance remains open.
+Current full regression: 991 tests / 83 suites PASS, zero failure/error/skip, actual PostgreSQL/
+RabbitMQ (2026-10-12). This includes 38 new withdrawal-authority/wiring/PG cases, not clinical or
+multi-service activation approval.
 
 ### Creation HTTP follow-up — 2026-10-07 (default OFF)
 

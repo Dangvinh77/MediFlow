@@ -46,12 +46,33 @@ Evidence:
 
 ## Remaining authority and owner inputs
 
+2026-10-12 consent withdrawal follow-up: Surgery now owns the separate authority-backed internal
+revoke boundary and default-off mandatory-provider wiring. Every retry authorizes current exact
+consent/document/audit and recorder; locked context/freshness fence the existing atomic audit,
+readiness invalidation, exact release, receipt and HELD fact. This removes the missing local
+revocation orchestration, not the need for an authoritative withdrawal policy/source. No public
+revoke role/mapping or post-start legal branch is invented; legal/provider activation stays open.
+Fresh full Surgery verification: **991 tests / 83 suites PASS**, zero failure/error/skip with real
+PostgreSQL/RabbitMQ; 38 new withdrawal tests are included. Parent/Common/Surgery packaging succeeds.
+This supersedes the earlier 953-case local regression below, not source/consumer activation criteria.
+
 Research follow-up requested by Huy (2026-10-08): official WHO checklist/manual/adaptation
 and Vietnam's 2026 consolidated law now inform a
 [source-linked design](../architecture/surgery-safety-policy-research-2026-10-08.md)
 refining S-05/S-06/S-07. Huy can implement phase/applicability/authority boundaries without
 guessing medical catalogue values. Real procedure mappings, verified relationships and
 documented clinical activation approval remain required. No positive provider/new handoff.
+
+Surgery-owned implementation follow-up (2026-10-12): a separate immutable three-phase policy/evidence
+model, mandatory authority-backed internal recorder and V9 ledger now exist. Explicit N/A decisions
+need permitted reasons and independent applicability evidence; replay is reauthorized and preserves
+original observation/receipt. Current context and source freshness are checked around the locked append.
+Policy/schedule revision pins and phase ordering do not seed medical items or define actual induction,
+incision, OR exit or START/COMPLETE gates. No positive source provider/public route or outbound wire is
+installed; real source acceptance, replacement/correction and activation criteria above still apply.
+Earlier safety-pause verification: **953/953 PASS (80 suites, zero failure/error/skip)**,
+including actual PostgreSQL/RabbitMQ, and Parent/Common/Surgery packaging succeeds. This updates
+local regression evidence, not the shared source/consumer activation acceptance below.
 
 Verification update 2026-10-08: full Surgery clean **908/908 PASS**, including all previously
 pending pre-op/workflow HTTP/PG cases. Inpatient existing selected suites run read-only **45/45**,
