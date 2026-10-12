@@ -30,4 +30,19 @@ class PlacementAuthorityPersistenceAdapterTest {
                 .isInstanceOf(DataRetrievalFailureException.class)
                 .hasMessageContaining("placement authority");
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void missingRequiredPlacementFieldIsReportedAsLookupUnavailable() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        UUID admissionId = UUID.randomUUID();
+        when(jdbc.query(anyString(), any(RowMapper.class), eq(admissionId)))
+                .thenThrow(new NullPointerException("patientId"));
+
+        var adapter = new PlacementAuthorityPersistenceAdapter(jdbc);
+
+        assertThatThrownBy(() -> adapter.findByAdmissionId(admissionId))
+                .isInstanceOf(DataRetrievalFailureException.class)
+                .hasMessageContaining("placement authority");
+    }
 }

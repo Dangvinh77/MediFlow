@@ -63,7 +63,9 @@ Additive current-placement authority:
 correlation boundary. It returns the admission medication-window state plus the exact ACTIVE
 assignment/current-bed department and independent `placementRevision`. Absence, an existing
 admission with no placement, and storage outage remain distinct. The response is evidence, not a
-Pharmacy dispense lease. The original `/lookup` contract is unchanged.
+Pharmacy dispense lease. The original `/lookup` contract is unchanged. Both lookup endpoints are
+called directly through service discovery and are intentionally not allowlisted as public Gateway
+routes.
 
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
@@ -142,11 +144,12 @@ outcome, rejects changed redeliveries and ignores valid outpatient facts without
 
 Core business DDL, APIs, events and tests are implemented. Placement lookup, placement facts and
 capacity facts are `PRODUCER_READY`; keep Inpatient RabbitMQ producer and consumer flags disabled
-until dependent consumers share passing fixtures. The public route is available, but Pharmacy,
-Report, financial and Surgery activation still wait for the active handoffs above. Do not mark the
-cross-service flow `IMPLEMENTED` until Huy proves exact producer bytes and post-lock/replay behavior.
+until dependent consumers share passing fixtures. Human-facing Gateway routes are available, while
+the authority lookups remain direct service-to-service only. Pharmacy, Report, financial and Surgery
+activation still wait for the active handoffs above. Do not mark the cross-service flow `IMPLEMENTED`
+until Huy proves exact producer bytes and post-lock/replay behavior.
 
-Keep `mediflow.features.inpatient-event-producers=false` and
-`mediflow.features.inpatient-event-consumers=false` until Billing, Surgery, Pharmacy, Report and
-Notification satisfy their registered handoffs and the admission/deposit/discharge/settlement
-Docker slices pass through RabbitMQ.
+Keep `mediflow.inpatient.messaging.producer.enabled=false` and
+`mediflow.inpatient.messaging.consumers.enabled=false` until Billing, Surgery, Pharmacy, Report and
+Notification satisfy their registered handoffs and the admission/deposit/discharge/settlement Docker
+slices pass through RabbitMQ.

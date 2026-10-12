@@ -1,8 +1,8 @@
 # Inpatient Placement Authority Design
 
-**Date:** 2026-10-12  
-**Owner:** Vinh (`Dangvinh77` / `Harori`)  
-**Consumers:** Huy / Pharmacy and Report  
+**Date:** 2026-10-12
+**Owner:** Vinh (`Dangvinh77` / `Harori`)
+**Consumers:** Huy / Pharmacy and Report
 **Status:** Approved direction; written-spec review pending
 
 ## Goal

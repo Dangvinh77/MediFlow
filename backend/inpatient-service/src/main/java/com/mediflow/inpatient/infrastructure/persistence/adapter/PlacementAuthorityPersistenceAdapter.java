@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -47,7 +48,9 @@ public class PlacementAuthorityPersistenceAdapter implements PlacementAuthorityR
                 row.getObject("placement_department_id", UUID.class),
                 row.getString("ward_code"),
                 instant(row.getTimestamp("assigned_at"))), admissionId).stream().findFirst();
-        } catch (IllegalArgumentException exception) {
+        } catch (DataAccessException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
             throw new DataRetrievalFailureException(
                     "Inpatient placement authority row is invalid", exception);
         }
