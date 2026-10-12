@@ -1,6 +1,55 @@
 # Kế hoạch code của Huy — Surgery, Pharmacy, Report theo Care–Finance V2
 
-**Cập nhật:** 2026-10-11 · **Owner:** Huy (LQHuy0210).
+**Cập nhật:** 2026-10-12 · **Owner:** Huy (LQHuy0210).
+
+**Surgery continuation — 2026-10-12, Huy scope only:** S-05.2.2 now has a separate
+`RevokeSurgeryConsentUseCase`, mandatory withdrawal authority port and explicit default-off wiring.
+Exact current signature/document/audit, episode/context and command/recorder are authorized on every
+attempt, including replay. Outside-TX source reads precede case-first bounded writes; context and
+proof are rechecked around the atomic kernel. Existing audit/invalidation/exact release/receipt/V7
+HELD writes remain one transaction. Fresh clean module verification: **991/991 tests PASS,
+83 Surefire suites, zero failures/errors/skips**, actual PostgreSQL 16/RabbitMQ. The 38 new cases
+are 17 authority/application, 12 wiring/activation and 9 PostgreSQL atomicity/replay/race tests;
+they are included in 991, not added again. `mvn -f backend/surgery-service/pom.xml
+-Dapi.version=1.44 clean test` and Parent/Common/Surgery `-DskipTests package` both succeed.
+Packaging is not a root-reactor test or full shared-runtime acceptance. `git diff --check` PASS.
+Logs: `D:/HK4/EProject/.mediflow-surgery-verify-20261012/surgery-full.log` and `surgery-package.log`.
+No public revoke role/API, positive legal provider, post-start branch, changed wire or live release
+is added; S-05.2.2 remains OPEN for source/legal acceptance. No global task IDs/counts are added;
+Pharmacy–Report's separate 60/70 milestone is unchanged.
+
+**Continuation 2026-10-12 — Huy modules only, by explicit user choice:** R-04.5.2 now has
+an additive default-off finite SURGERY publication/rollback and operational rebuild management
+slice. ADMIN commands require signed canonical UUID access identity, exact frozen-manifest proof,
+completed-day bounds, fresh locally fenced catch-up, rechecked fact/scope reconciliation,
+expected-pointer CAS and immutable acceptance/audit. Exact retries do not switch a later pointer;
+rollback preserves original as-of evidence. V26 seals accepted generation/input/fact/scope rows.
+Only the three existing sourced SURGERY counters publish; no DAILY/census/capacity/category
+publication, upstream completeness, held release or Gateway change is claimed.
+Final fresh full Report **1,252 tests / 117 suites PASS**, zero failure/error/skip, with actual
+PostgreSQL/RabbitMQ. The 20 new PG publication/migration cases and 19 existing replay PG cases
+also pass separately (39 focused cases); focused reruns are NOT added to the full count. Docker
+startup is now resolved externally; the earlier NOT_RUN state is superseded, not claimed green.
+Pharmacy necessary identity preflight additionally consumes the existing canonical Organization
+doctor-eligibility decision, exact department and strict denial/outage shapes; no job/team fallback.
+64 focused unit/real-Feign-HTTP cases pass after an observed failing RED run. Final fresh full
+Pharmacy **625 tests / 90 suites PASS**, zero failure/error/skip, with actual PostgreSQL/RabbitMQ.
+Two owned modules: **1,877 distinct full-suite cases**, not a root reactor or full V1 E2E.
+No existing database was changed. The ten original leaves remain OPEN, count **60/70** unchanged.
+The user explicitly declined edits to Clinical/Inpatient/Billing/Organization in this continuation;
+Pharmacy medication/revoke/placement and Report census/capacity/full rollout contracts remain open.
+
+**Exact remaining acceptance (not new checklist IDs):**
+
+| Existing leaves | What prevents closure under the current two-module scope |
+|---|---|
+| P-02.2.4 | Authoritative transfer/medical eligibility and revoke/supersede identity/revision policy; an admission start or generic doctor lookup is not permission |
+| P-02.5.5 | Complete prescribing/order authority, same-byte required-consumer acceptance and reviewed public/held release; identity preflight is necessary only |
+| P-03.1.3, P-03.3.2 | Exact current medication order/placement and local versus source-state freshness/fencing, not owning-department/start snapshots |
+| P-03.4.4, P-03.6 | A real positive admission command path and actual producer close/transfer/discharge-versus-dispense acceptance, not always-denied admission commands |
+| P-03.5.5 | Distributed grant revoke and live/late admission adjustment; local Billing revocation/refund-due alone does not update Pharmacy authority |
+| R-04.2.3, R-04.3 | Accepted census/transfer/release business intervals and staffed/available capacity; completedStayDays is not inpatientDays or occupancy |
+| R-04.5.2 | Full sourced daily/KPI/category/census/capacity publication and reviewed Gateway/producer cutover; finite SURGERY publication alone does not close them |
 
 **Current supported-release milestone (2026-10-11): 60/70 = 85.71%, 10 remaining leaves.**
 Pharmacy **25/32**, Report **35/38**. Later user authorization permits reasonable redesign when
@@ -218,6 +267,30 @@ all new gates stay false and V1 rows held. Partial slices do not close global ac
 **Clinical-policy research:** user requested official medical references; the
 [WHO/Vietnam source design](../../architecture/surgery-safety-policy-research-2026-10-08.md)
 refines existing S-05/S-06/S-07/X-01.4 without extra task counts or activation approval.
+
+**Surgery execution — 2026-10-12, Huy-owned scope:** implemented the separate three-phase
+`SurgerySafetyPausePolicy`/`SurgerySafetyPause` models, explicit applicability evidence and mandatory
+authority-backed internal recorder, plus append-only V9 and JDBC ledger. This advances the existing
+S-05.1.2/S-06.1.2/S-07.6 safety-policy refinement; it adds no task IDs or global completion credit.
+First observation pins procedure-policy approval/revision and schedule revision. Later phases must
+follow the previous observation without rewriting those pins; missing/FAILED/PENDING evidence and
+unapproved N/A are denied. Every retry reauthorizes; recording time is owned, current case context and
+proof freshness are checked after lock waits and before commit. Case-first append is atomic, stable
+same-command replay retains original nanoseconds/identity and different intent/duplicate phase conflicts.
+V9 starts EMPTY and blocks UPDATE/DELETE/nonempty TRUNCATE. No positive provider, clinical seed, public route,
+phase-to-actual-timestamp or START/COMPLETE gate, event schema or HELD release is added. Policy/schedule
+replacement, corrections, actual source acceptance and clinical activation retain their open criteria.
+Focused domain 20 and application 13 cases pass; actual PostgreSQL ledger 11 cases and V1–V8 → V9
+preservation 8 cases pass, all zero failures/errors/skips. The source/authority and whole-flow parent
+checkboxes remain open; local evidence cannot replace their acceptance. See Surgery README/spec.
+Final clean module verification: **953/953 PASS, 80 Surefire suites, zero failure/error/skip**;
+PostgreSQL 16/RabbitMQ actual tests include HTTP workflow 14, pre-op HTTP 15 and lifecycle races 12.
+`mvn -pl backend/surgery-service -Dapi.version=1.44 clean test` and
+`mvn -pl backend/surgery-service -am -DskipTests package` both BUILD SUCCESS. Fixed empty-ledger
+TRUNCATE compatibility during full regression; nonempty history remains protected and tested.
+Logs: `D:/HK4/EProject/.mediflow-v2-verify-20261010/surgery-safety-phases-full.log` and
+`surgery-safety-phases-package.log`. Gateway/shared files/other services are unchanged in this turn.
+
 **Task-scoped override mới trong lượt 2026-10-08:** user đã giao thêm Clinical, Inpatient,
 Billing, Notification để hoàn tất dependency liên service; Gateway vẫn tuyệt đối read-only,
 Root/Common/Compose/CI không được giao. Override này thay giới hạn Huy-only của lượt trước,
@@ -401,7 +474,15 @@ Phần tài liệu H-01.6 đã cập nhật ngày 2026-09-27 trong hai Huy hando
 
 **Phạm vi:** chỉ `backend/surgery-service` và docs/contracts do Huy phụ trách. Đường dẫn dưới đây tương đối với module; Java dưới `src/main/java/com/mediflow/surgery`, tests dưới `src/test/java/com/mediflow/surgery`. Tên lớp mới là đầu ra cần tạo, không phải tuyên bố source đã tồn tại.
 
-**Đã có:** platform, domain models/rehydration, V1 core migration, JPA/JDBC adapters, receipts/inbox/outbox persistence, Patient/Organization staff/department HTTP lookup, generic Rabbit dispatcher, begin-preop/cancel controllers, checklist/consent và prepare-schedule application paths. **Chưa có:** create/referral/charge, prepare-schedule API, đủ readiness/START/COMPLETE workflow, clearance/room/eligibility authority và approved business event wire. `ReadinessSnapshot` vẫn không tự chứng minh clinical/Organization/finance authority.
+**Inventory hiện hành 2026-10-12:** platform, domain/rehydration, V1–V9 migrations, receipts/inbox/outbox,
+Patient/Organization/Billing/Inpatient lookups và gated grant/authority-hint intake đã có. Internal
+create/checklist/sign-consent/draft/READY/finalize/START/COMPLETE/CANCEL, immutable safety-pause ledger
+và authority-backed consent withdrawal có code; creation/pre-op/lifecycle HTTP adapters riêng vẫn
+default OFF. Producer V1 charge/readiness/outcome bytes được capture HELD. **Còn thiếu để bật luồng
+thật:** accepted referral intake, production creation/pre-op/readiness/withdrawal source policies,
+distributed authority fence, phase-to-actual-procedure gates và reviewed same-byte consumer/live
+release acceptance. Không ghi internal workflow/HELD bytes thành "chưa có code", cũng không coi
+`ReadinessSnapshot`, fresh REST read hoặc regression xanh là production clinical authority.
 
 **Cách đếm 2026-10-04:** 160 checklist *lá* thuộc H/S/P/R/X, 89 DONE và 71 OPEN (55,6% theo checklist, **không** phải độ sẵn sàng production). Nếu đếm cả 46 task cha sẽ phóng đại backlog; task cha chỉ đóng khi toàn bộ con/acceptance đạt. Mốc 80% cần thêm 39 task lá thật sự hoàn thành. X-01.1 vừa đóng là task cha của X-01.1.1 đã DONE nên không làm tăng số task lá đã xong. Các task OPEN gồm LOCAL, CONTRACT, OWNER và VERIFY, không độc lập hoặc tương đương kích thước; đặc biệt không tick mục liên service khi thiếu acceptance của owner. Trạng thái hiện hành ghi theo child ID và evidence §10.
 
@@ -525,8 +606,14 @@ Mỗi subtask phải có: production output đúng layer → rule/transaction �
   - [x] **S-05.1.1 · LOCAL UNIT+PG PASS / CONTRACT OPEN:** item revision, snapshot revision, append-only `preop_checklist_item_history`, optimistic update theo item/snapshot/case revision và receipt cùng transaction; chỉ đổi ở REQUESTED/PREOP hoặc invalidate READY/SCHEDULED; N/A fail-closed khi chưa có clinical policy. PostgreSQL test xác nhận item/snapshot revision + history và stale write không tạo history trùng; unit tests xác nhận receipt path khi ghi FAILED và fail-closed cho N/A. Acceptable evidence/source policy (Vinh), unknown/duplicate/cross-case matrix và rollback ở workflow checklist vẫn mở.
   - [ ] **S-05.1.2 · CONTRACT Vinh; LOCAL policy engine:** medical mandatory set, source/order/result revision, expiry/correction và NOT_APPLICABLE authority có fixture riêng. Manual attestation chỉ cho item/policy cho phép, không biến mọi item thành nút tick. Kết quả Lab/Pharmacy cần exact case/order/patient/episode; thiếu correlation/missing/stale/corrected evidence → not-ready. Không auto-complete checklist từ result event chung; consumer chỉ bind sau G1.
 - [ ] **S-05.2 · LOCAL + CONTRACT — typed consents:**
-  - [x] **S-05.2.1 · CODE COMPLETE/VERIFY OPEN (2026-09-28):** thêm application sign/revoke commands theo SURGERY/ANESTHESIA, actor recorder tách signer, same-key replay và payload conflict; active unique index vẫn là hàng rào; revoke append audit. READY/SCHEDULED consent change invalidates snapshot và release đúng schedule revision trong transaction. Unit tests xác nhận typed signer/recorder, từ chối sai case và giải phóng đúng schedule revision khi SCHEDULED; signer authority/revoke authorization vẫn fail-closed ở API gate đến S-05.2.2.
+  - [x] **S-05.2.1 · DONE/LOCAL UNIT+PG (2026-10-12):** application sign/revoke commands theo SURGERY/ANESTHESIA, actor recorder tách signer, same-key replay và payload conflict; active unique index vẫn là hàng rào; revoke append audit. READY/SCHEDULED consent change invalidates snapshot và release đúng schedule revision trong transaction. Fresh full module 991/991 PASS gồm typed signer/recorder, sai case, atomic invalidation/release/HELD/receipt, rollback, restart replay và START winner. Real signer/withdrawal policy, source provider và public revoke quyền/API vẫn thuộc S-05.2.2; LOCAL verification không đóng CONTRACT.
   - [ ] **S-05.2.2 · CONTRACT Vinh:** chốt signer/guardian/witness, document/evidence reference, expiry, ai được attestation/revoke và xử lý audit sau START. Coarse controller role không thay quyền ký hoặc quan hệ người giám hộ. Missing/unverifiable authority fail-closed; test forged actor/role, signer không hợp lệ, cross-case revoke, inactive/expired consent. Không suy đồng ý từ clinical note hoặc một consent dùng cho hai type.
+    - LOCAL follow-up 2026-10-12: separate withdrawal-authority facade + mandatory-provider wiring
+      implemented; exact consent/document/audit and current case context bind the proof, every replay
+      reauthorizes, context changes and stale proofs deny. Existing kernel preserves original receipt,
+      atomic PREOP invalidation/exact release/HELD fact and pre-start-only rule. No legal/provider or
+      HTTP mapping acceptance is claimed. 17 application + 12 wiring + 9 actual PG cases PASS;
+      included in fresh full 991/83-suite verification above, no skipped tests or extra task credit.
   - Pre-op HTTP follow-up 2026-10-07: checklist PUT/consent POST có strict English DTO, signed staff recorder, exact revisions/key, separate mandatory authority port/preflight và locked/before-commit proof fences. Internal receipt/audit/invalidation/release/HELD transaction giữ nguyên. Gates OFF, thiếu authority fail startup; no revoke mapping/N/A/legal defaults. Clean focused **114/114 PASS, 7 reports, 0 fail/error/skip**; **9/10 LOCAL checkpoints**, 15 PG cases compiled nhưng chưa chạy do Docker `dockerInference` startup failure. Full module chưa rerun, không dùng 740 cũ làm evidence mới. S-05.1.2/S-05.2.2 vẫn OPEN cho real evidence/legal provider/shared acceptance; [scope và verification](2026-10-07-surgery-preop-api-batch.md).
 - [ ] **S-05.3 · PARTIAL/BOTH-SIDES IMPLEMENTED (2026-10-06) — clearance projection/policy:** Billing đã có gated current-clearance lookup (net payments/refunds, exact ledger target, revoked/expiry); Surgery có strict service Feign adapter và mandatory lookup trước internal READY/finalize/START mutation locks, recheck freshness sau lock wait. Không chờ Lộc code lookup. Còn revoke/supersede event writer, production transaction separation/race fence và full lifecycle authority/API integration. Pending early grant không đủ quyền mổ, V1 không financial override; local DB lock **không** hứa khóa trạng thái Billing. Bằng chứng mới tại [execution ledger](2026-10-05-huy-50-task-execution.md#financial-authority-both-sides).
   - [x] **S-05.3a · CODE/LOCAL TEST:** V2 additive table + inbox/proof transaction, exact-case lock, same-grant replay không thêm proof, immutable grant conflict quarantine, inbox-finalize failure rollback/retry và exact nanosecond round-trip. Không tự READY/START; full revocation/readiness policy ở task cha chưa đóng.
@@ -669,7 +756,7 @@ Sau mỗi lát cắt: `git diff --check`, kiểm imports/ownership, cập nhật
   - [x] **P-02.5.3 · LOCAL POSTGRES PASS (2026-10-02):** writer prerequisite/idempotency/conflicts, V0 compatibility, replay/lease/retention hold, rollback/retry/mandatory transaction và exact lifecycle/name reload đã chạy thật. V1 delivery vẫn bị DB hold.
   - [x] **P-02.5.4 · LOCAL HELD CREATION:** V18 command receipt/fence + length-framed actor/intent SHA-256; DOCTOR self/ADMIN delegation kiểm trước replay; sorted stock locks, fresh expiry/availability, server price/name snapshots, Rx/reservations/slip/held CREATED/receipt chung transaction. Same key/concurrent retry giữ original ID, changed intent conflict; outbox error rollback toàn bộ. 2026-10-09: internal checked caller additionally requires exact Clinical context and real Patient/Organization identity preflight, rechecked after receipt/stock waits. This supplies necessary relationship/current descriptive identity evidence, not license/order/finance authority; public V1/held delivery remains closed. [Evidence](2026-10-09-pharmacy-report-v2-priority.md).
     - Follow-up 2026-10-09: internal context-checked caller nối Clinical owner-selected appointment/walk-in episode và exact patient/prescriber/khoa; service JWT, bounded/fail-closed lookup ngoài transaction, recheck sau receipt/stock waits và replay. Clinical **235/235**, Pharmacy **536/536** full suite/package PASS, gồm owned-PG, same-byte Feign fixtures và transaction NEVER boundary. Đây không phải current license/order authorization hoặc public/HELD activation; task cha không tự đóng.
-  - [ ] **P-02.5.5 · CONTRACT/ACTIVATION:** owner-approved five-event bytes, Billing adjustment và identity/episode authority; sau G1 mới nối public create/terminal adapters, binding/dispatch và reviewed hold-release migration. Không enable rows bằng tay.
+  - [ ] **P-02.5.5 · CONTRACT/ACTIVATION:** owner-approved five-event bytes, Billing adjustment và identity/episode authority; sau G1 mới nối public create/terminal adapters, binding/dispatch và reviewed hold-release migration. 2026-10-12: internal identity preflight now also consumes canonical doctor eligibility and exact department; 64 focused and fresh full 625 Pharmacy cases pass, zero skip. This does not supply clinical order/current licence/admission placement or complete G1/public/held release. Không enable rows bằng tay.
 - [x] **P-02.6 · LOCAL REGRESSION/POSTGRES (2026-10-02):** fresh/legacy upgrade tới V18, old DTO/context constraints, V0 dispatch/lease/held fences và flag-off regressions chạy thật. Public V1/admission vẫn fail-closed; không phải G1/G3 acceptance.
 
 Acceptance local: dữ liệu cũ không bị đổi ngữ nghĩa, context invalid không được persist, actor và price authority giữ nguyên. G1/G3 riêng cho OUTPATIENT V1 và ADMISSION; không cần đợi Surgery mới code phần này.
@@ -823,7 +910,7 @@ Ví dụ nghiệm thu cần Billing xác nhận bằng fact: nhận deposit 100,
   - [x] **R-04.4.1 · LOCAL UNIT+POSTGRES PASS (2026-10-07):** Surgery outcome mapper đọc actual producer bytes; canonical result/cancellation revision/time/category và V11 raw-payload hash fence. Duration floor actual whole minutes; không raw patient/narrative vào journal. PG dedupe/conflict/rebuild và hồi quy ba module 920 tests không failure/error/skip ở [execution](2026-10-07-huy-outbound-contracts.md), không tự bật listener/publication; parent R-04.4 còn mở cho runtime/correction acceptance.
 - [ ] **R-04.5 · LOCAL sau source/query semantics:** GET operations/daily và operations/surgery theo target; aggregate-only, bounded from/to, stable sort, null-department hospital scope; phân biệt no-events zero với source chưa sẵn sàng. Không REST join để fill missing event data.
   - [x] **R-04.5.1 · LOCAL FINITE SNAPSHOT READ/API:** hai gated GET, accepted date/zone/metric coverage + immutable generation, hospital NULL/exact department, stable days/camelCase counters, max 366 days, leap-day zero-fill chỉ khi coverage đủ. Migration/replay không tạo publication. PG: snapshot không đọc thêm live facts sau freeze, unavailable khác zero.
-  - [ ] **R-04.5.2 · SOURCE/LOCAL ACTIVATION:** accepted source maps/corrections + inpatient-days/LOS, surgery categories và staffed-bed metrics; live catch-up/read publication workflow/Gateway trước full target cutover. Basic snapshot counters không đóng mọi KPI của parent.
+  - [ ] **R-04.5.2 · SOURCE/LOCAL ACTIVATION:** accepted source maps/corrections + inpatient-days/LOS, surgery categories và staffed-bed metrics; live catch-up/read publication workflow/Gateway trước full target cutover. 2026-10-12: finite SURGERY-only publication/rollback, local journal fencing, exact proof/reconciliation, operator audit/CAS, sealed generations and gated rebuild APIs verified; 20 new PG + 19 replay PG cases pass separately; fresh full Report 1,252/117 suites passes, zero skip. Basic snapshot counters do not close full KPI/source/rollout acceptance.
 - [x] **R-04.6 · LOCAL OPERATIONS VERIFY PASS (2026-10-09):** role matrix R-02, no clinical payload, same source/new eventId, close-before-start, midnight/leap-day, two departments/hospital reconciliation, zero-fill đúng availability, query count/index plan có giới hạn. Không sửa legacy endpoints. Fresh Report 620/620; real JDBC two SELECTs for 1/366 days, indexed bounded scopes over 108,003 diagnostic rows, actual lock cancellation/recovery, V17→V18 preservation/no-op upgrade. [Full mapping](2026-10-09-report-operational-verification.md). This closes operations verification, not financial APIs R-02.3.2/R-03.6, source corrections/coverage R-04.1.3/R-04.5.2 or LOS/occupancy R-04.2.3/R-04.3.
 
 ## 9. Handoff, thứ tự triển khai và nghiệm thu liên service

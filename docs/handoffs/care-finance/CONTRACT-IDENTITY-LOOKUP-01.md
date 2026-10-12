@@ -85,6 +85,18 @@ envelopes map to upstream unavailable; consumer must not turn them into “not f
 
 ### Pharmacy necessary identity preflight — 2026-10-09
 
+Continuation 2026-10-12: the same gated preflight also reads the existing compatibility
+`GET /api/v1/org/staff/{id}/exists`. Its existing locked `StaffLookupDTO` is
+`{exists, eligibleDoctor, departmentId}`: absent cannot be eligible; eligible requires an exact
+canonical department; ineligible must have null department. Both generic active DOCTOR identity
+and explicit eligibleDoctor=true are necessary. Positive disagreement with the requested department
+or malformed/correlation/transport failure is unavailable, not a fallback to a job/team label.
+Explicit false remains a denial. The original start-of-preflight timestamp bounds all four reads
+and is rechecked by the existing locked writer. No producer schema, fixture, permission policy or
+endpoint is modified. This is not proof of a current licence, medication order, admission placement
+or distributed lease. Compatibility HTTP replies are explicitly local contract examples until a
+producer-owned same-byte fixture is supplied; no G1/activation/task closure is inferred.
+
 The independently default-off `care-finance-v2 AND pharmacy.identity.enabled` consumer reads Patient
 `/exists` and Organization's generic staff and department `/lookup` endpoints before any receipt or
 stock transaction. It supplies current descriptive facts to the internal context-checked creation

@@ -68,7 +68,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
                 return;
             }
-            if (request.getRequestURI().startsWith("/api/v1/reports/financial/")) {
+            if (request.getRequestURI().startsWith("/api/v1/reports/financial/")
+                    || request.getRequestURI().startsWith("/api/v1/reports/operations/")) {
                 if (claims.getExpiration()==null || !java.util.UUID.fromString(subject).toString().equals(subject)) {
                     SecurityContextHolder.clearContext();
                     return;

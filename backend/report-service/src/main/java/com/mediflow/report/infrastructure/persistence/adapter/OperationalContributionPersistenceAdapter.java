@@ -37,6 +37,7 @@ public class OperationalContributionPersistenceAdapter implements OperationalCon
 
     @Override
     public void recordEvent(ApplyOperationalContributionCommand command) {
+        OperationalPublicationFence.writer(jdbc);
         var event = command.event();
         var metadata = event.metadata();
         Map<String, Object> envelope = new LinkedHashMap<>();

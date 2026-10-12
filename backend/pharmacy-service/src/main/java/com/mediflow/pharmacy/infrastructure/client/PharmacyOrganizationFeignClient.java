@@ -13,6 +13,9 @@ public interface PharmacyOrganizationFeignClient {
     @GetMapping("/api/v1/org/staff/{id}/lookup")
     ResponseEntity<String> staff(@PathVariable("id") UUID id,
             @RequestHeader("Authorization") String authorization, @RequestHeader("X-Correlation-Id") String correlation);
+    @GetMapping("/api/v1/org/staff/{id}/exists")
+    ResponseEntity<String> doctorEligibility(@PathVariable("id") UUID id,
+            @RequestHeader("Authorization") String authorization, @RequestHeader("X-Correlation-Id") String correlation);
     @GetMapping("/api/v1/org/departments/{id}/lookup")
     ResponseEntity<String> department(@PathVariable("id") UUID id,
             @RequestHeader("Authorization") String authorization, @RequestHeader("X-Correlation-Id") String correlation);

@@ -159,3 +159,35 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {"commandId":"00000000-0000-4000-8000-000000000102","generationId":"{{financialGenerationId}}","expectedCurrentGenerationId":"00000000-0000-4000-8000-000000000002","acceptanceReference":"rollback/financial-v1"}
+
+### Freeze retained operational journal — ADMIN; V2 + operational-publication flags, both default OFF
+# Gateway ingress is NOT approved by these direct-service operator endpoints.
+POST {{host}}/api/v1/reports/operations/rebuilds
+Authorization: Bearer {{token}}
+
+### Advance finite operational rebuild — ADMIN, 1..500 events/batch
+@operationalGenerationId = 00000000-0000-4000-8000-000000000003
+POST {{host}}/api/v1/reports/operations/rebuilds/{{operationalGenerationId}}/batches
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"batchSize":100}
+
+### Inspect operational candidate progress and exact manifest proof — ADMIN
+GET {{host}}/api/v1/reports/operations/rebuilds/{{operationalGenerationId}}
+Authorization: Bearer {{token}}
+
+### Publish SURGERY finite snapshot only — ADMIN, completed days, retained evidence only
+# Replace hash/IDs/dates. No DAILY/census/capacity publication or upstream completeness is inferred.
+POST {{host}}/api/v1/reports/operations/publications
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"commandId":"00000000-0000-4000-8000-000000000103","generationId":"{{operationalGenerationId}}","manifestFingerprint":"replace-with-exact-64-character-candidate-hash","coveredFrom":"2026-10-07","coveredTo":"2026-10-07","acceptanceReference":"review/operational-retained-v1","expectedCurrentGenerationId":null}
+
+### Roll back to an already accepted/published operational snapshot — ADMIN
+POST {{host}}/api/v1/reports/operations/publications/rollbacks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"commandId":"00000000-0000-4000-8000-000000000104","generationId":"{{operationalGenerationId}}","acceptanceReference":"rollback/operational-v1","expectedCurrentGenerationId":"00000000-0000-4000-8000-000000000004"}
