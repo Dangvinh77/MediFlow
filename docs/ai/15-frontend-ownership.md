@@ -30,33 +30,42 @@ task scope and must preserve all route consumers.
 
 ## Shared integration scope
 
-The following paths are shared and may be changed only when the task explicitly assigns the shared
-work:
+Vinh (`Dangvinh77` / `Harori`) coordinates frontend shared scope:
 
-- root app shell and layout: `src/app/layout.tsx`, `src/app/loading.tsx`, `src/app/globals.css`,
-  `src/app/page.tsx`, and dashboard layout/shared route infrastructure;
-- login/session integration: `src/app/login/**`, `src/lib/auth.ts`, `src/lib/session.ts`, and
-  `src/components/auth/**`;
-- shared UI and layout components under `src/components/**`;
-- generic libraries under `src/lib/**`, including `api.ts`, `types.ts`, `format.ts`, and
-  `validation.ts` (feature-specific code remains with its context);
-- package manifests, lockfiles, Next/Tailwind/TypeScript configuration, and other frontend config.
+- root app shell, dashboard shell, global loading, global styles, login, auth, and session paths;
+- `src/components/**`, `src/lib/**`, and `src/test/**`;
+- package manifests, lockfiles, Next/Tailwind/TypeScript/ESLint/Vitest configuration, and other
+  frontend-wide configuration.
 
-Subagents inherit the same boundary. Delegation cannot grant a foreign feature or shared path write
-authority. A feature may read another feature to understand a contract or composition point, but it
-must not import from another feature. Move reusable code up to shared components or `lib/`; route
-composition belongs in `app/`.
+This coordination grants Vinh default write authority for shared frontend paths and Vinh-owned
+contexts only. It does not grant default authority over another developer's feature or route.
+Another developer may edit an exact shared path only when a human task explicitly delegates that
+path and bounded deliverable.
 
-## IMPLEMENT versus HANDOFF
+A feature may read another feature to verify a public contract or composition point, but it must
+not import from another feature. Move reusable code up to shared components or `lib/` only through
+Vinh's coordination or an explicit shared-scope delegation; route composition belongs in `app/`.
 
-- **IMPLEMENT** means the task is inside the assigned context and its live backend contract is
-  available. Keep changes bounded to that feature and route.
-- **HANDOFF** means the task needs another owner's backend endpoint, DTO, event, identity claim, or
-  contract decision. Record the producer, consumer, exact missing contract, acceptance criteria, and
-  compatibility expectation under `docs/`; do not edit the producer or invent a temporary field.
-- **VERIFY-CONTRACT** means the route or feature exists, but the next change must first be checked
-  against the current owner backend controller/DTO/tests.
-- **BLOCKED** means implementation cannot proceed until the named contract or decision arrives.
+## Work classifications
+
+- **IMPLEMENT:** the acting developer owns every target, or Vinh is changing shared scope.
+- **DELEGATED:** the human task names the canonical owner, delegated developer, exact context or
+  shared paths, and bounded deliverable. Authority expires with the task or PR.
+- **VERIFY-CONTRACT:** the live controller, DTO, roles, errors, feature flag, or Gateway route must
+  be confirmed read-only before editing.
+- **HANDOFF:** another owner must supply a concrete action, contract, or decision.
+- **BLOCKED:** safe work cannot continue without missing authority or without guessing a contract.
+
+Git identity, branch name, prior edits, and subagent assignment are not authorization. Delegation
+does not change canonical ownership or authorize neighboring paths. A subagent inherits only the
+paths authorized by the human task and cannot widen them. A committed public contract may be
+consumed read-only from another context, but foreign source may not be edited or imported from
+another feature.
+
+Frontend ownership, composition, or shared-scope dependencies use the active registry under
+[`frontend/docs/handoffs/`](../../frontend/docs/handoffs/). Missing backend endpoints, DTOs, roles,
+events, identity claims, or Gateway contracts use [`docs/handoffs/`](../handoffs/README.md). Do not
+duplicate one blocker in both registries.
 
 Frontend DTOs mirror the live owner backend wire contract field-for-field. Do not infer endpoint
 paths, response fields, roles, identifiers, or identity claims from a design sketch or from another

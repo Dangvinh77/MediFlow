@@ -58,6 +58,9 @@ in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
   shared. Change them only when the task explicitly assigns that shared work.
 - Vinh may coordinate, review, and merge across the repository; this does not silently expand
   Harori's production write scope beyond Clinical and Lab.
+- Frontend shared-scope exception: Vinh coordinates and has default write authority for the shared
+  frontend paths defined in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
+  This exception does not grant default authority over another owner's feature or route.
 - Subagents inherit the same ownership boundary. Delegation cannot bypass it.
 
 Each owned backend module has a nested `AGENTS.md` that identifies its owner and local verification.
