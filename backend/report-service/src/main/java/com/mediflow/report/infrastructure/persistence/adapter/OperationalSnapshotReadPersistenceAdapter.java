@@ -33,6 +33,13 @@ public class OperationalSnapshotReadPersistenceAdapter implements OperationalSna
                 WHERE p.report_kind = ? AND g.status = 'VERIFIED' AND g.projector_version = 1
                   AND g.applied_events = g.source_events
                   AND NOT EXISTS (SELECT 1 FROM operational_replay_input i WHERE i.generation_id = g.generation_id AND NOT i.applied)
+                  AND (p.report_kind <> 'SURGERY' OR EXISTS (
+                      SELECT 1 FROM operational_generation_acceptance a WHERE a.generation_id=p.generation_id
+                      AND a.report_kind=p.report_kind AND a.covered_from=p.covered_from AND a.covered_to=p.covered_to
+                      AND a.zone_id=p.zone_id AND a.acceptance_reference=p.acceptance_reference
+                      AND p.metrics=ARRAY['SURGERIES_COMPLETED','SURGERIES_CANCELLED','SURGERY_DURATION_MINUTES']::varchar[]
+                      AND EXISTS(SELECT 1 FROM operational_publication_audit h
+                          WHERE h.generation_id=a.generation_id AND h.action='PUBLISH')))
                 """);
                 statement.setString(1, kind);
                 statement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);

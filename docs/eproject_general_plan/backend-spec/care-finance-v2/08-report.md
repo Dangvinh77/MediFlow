@@ -2,6 +2,14 @@
 
 **Owner:** Huy (`LQHuy0210`)
 
+Operational continuation 2026-10-12: gated finite SURGERY-only operator rebuild/publication/
+rollback is implemented locally, with source/proof reconciliation, local catch-up fencing,
+expected-pointer audit and V26 immutable accepted generations. Local database acceptance now passes:
+20 new PG cases plus 19 existing replay PG separately; fresh full Report 1,252 cases, zero skip.
+Full DAILY/KPI/census/capacity/correction and
+Gateway/producer rollout targets below remain unchanged; no missing data or permission is inferred.
+[Canonical scope](../../../handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#finite-operational-surgery-publication--2026-10-12-local--postgresql-verified).
+
 Current supported-release decision 2026-10-11 supersedes earlier dated mandatory unavailable
 pre-V2 history and missing finite financial publisher statements below. Available exact sources
 may be rebuilt, reconciled and explicitly published through V25; missing historical periods remain

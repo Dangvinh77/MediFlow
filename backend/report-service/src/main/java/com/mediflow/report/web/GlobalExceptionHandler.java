@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.api.ApiResponse.ApiError;
@@ -36,6 +38,11 @@ import jakarta.validation.ConstraintViolationException;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
+    public ResponseEntity<ApiResponse<Void>> routeUnavailable(Exception exception, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND", "Report endpoint is unavailable", request);
+    }
 
     @ExceptionHandler(ReportPeriodValidationException.class)
     public ResponseEntity<ApiResponse<Void>> periodValidation(ReportPeriodValidationException exception, HttpServletRequest request) {

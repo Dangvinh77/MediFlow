@@ -52,6 +52,8 @@ mediflow:
       enabled: ${MEDIFLOW_REPORT_FINANCIAL_PUBLICATION_ENABLED:false}
     operational-consumer:
       enabled: ${MEDIFLOW_REPORT_OPERATIONAL_CONSUMER_ENABLED:false}
+    operational-publication:
+      enabled: ${MEDIFLOW_REPORT_OPERATIONAL_PUBLICATION_ENABLED:false}
     cash-receipt-consumer:
       enabled: ${MEDIFLOW_REPORT_CASH_RECEIPT_CONSUMER_ENABLED:false}
     settlement-consumer:
