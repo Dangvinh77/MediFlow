@@ -36,9 +36,17 @@ including `LAB_TEST`, once the request is paid in full.
 Verified against the real lab-service producer fixture, copied byte-for-byte into
 `backend/billing-service/src/test/resources/contracts/lab-request-v1/lab.request.created.v1.json`
 (mirrors `backend/lab-service/src/test/resources/contracts/lab.request.created.v1.json`).
-Decoder/service/configuration tests pass; Docker-based E2E (check-in/request → charge → payment →
-clearance → execution start) is not run on this machine (Testcontainers cannot reach Docker here —
-pre-existing environment issue, unrelated to this code).
+Decoder/service/configuration tests pass. **Docker E2E (2026-10-12):** real Postgres + RabbitMQ
+proof now exists and passes — `LabTestChargeRabbitIntegrationTest` sends the real producer fixture
+through the actual queue, verifies the charge/request/dedupe, completes payment, and asserts the
+published `financial.clearance.granted` payload (`purpose=LAB_TEST`, `labTestIds`). This proves
+Billing's own side of the chain (request → charge → payment → clearance published); Lab's own
+"execution start" consumption of that clearance is Vinh's side, proven separately in Lab's own test
+suite, not Billing's. The prior "Testcontainers cannot reach Docker here" note was a Docker
+Desktop/testcontainers-version API incompatibility (HTTP 400 with an empty `/info` response over the
+`docker_cli` named pipe), fixed by pinning `testcontainers.version=1.20.6` plus a
+`docker-java.properties` (`api.version=1.40`) in this module's test resources, mirroring
+`pharmacy-service`/`report-service`'s existing fix for the same issue.
 
 ### EXAM charge issuance (2026-10-12)
 
@@ -62,11 +70,17 @@ not `PENDING`, or a non-null `recordId`), still rejects to DLQ.
 Verified against the real clinical-service producer fixture (`appointment.status.changed.v1.json`,
 PR #334), copied byte-for-byte into
 `backend/billing-service/src/test/resources/contracts/appointment-status-changed-v1/`. Decoder/service/
-configuration/consumer tests pass, including the not-applicable and malformed-shape branches; Docker-
-based E2E (check-in → charge → payment → clearance → exam start) is not run on this machine
-(Testcontainers cannot reach Docker here — pre-existing environment issue, unrelated to this code).
-Clearance granting needs no new code: the existing generic `LedgerPaymentService` already grants
-`financial.clearance.granted` for `EXAM` once the request is paid in full, same as LAB_TEST.
+configuration/consumer tests pass, including the not-applicable and malformed-shape branches.
+**Docker E2E (2026-10-12):** real Postgres + RabbitMQ proof now exists and passes —
+`ExamChargeRabbitIntegrationTest` sends the real check-in fixture through the actual queue, verifies
+the charge/request/dedupe, rejects a trigger-shaped payload that violates its own invariants, acks
+(without effect) a different valid appointment transition, completes payment, and asserts the
+published `financial.clearance.granted` payload (`purpose=EXAM`, `appointmentId`, `recordId=null`).
+This proves Billing's own side of the chain (check-in → charge → payment → clearance published);
+Clinical's own "examination start" consumption of that clearance is Vinh's side, proven separately
+in Clinical's own test suite, not Billing's. Clearance granting needs no new code: the existing
+generic `LedgerPaymentService` already grants `financial.clearance.granted` for `EXAM` once the
+request is paid in full, same as LAB_TEST.
 
 **Out of scope, deliberately not touched:** `medicalrecord.created` is NOT the EXAM charge trigger —
 Clinical's own design doc (`docs/superpowers/specs/2026-10-10-vinh-loc-care-finance-contract-closure-design.md`)
@@ -79,14 +93,21 @@ expect; whether that combination is safe today is a pre-existing question that p
 introduces, changes, or closes. Flagging it here rather than silently expanding scope to Clinical's
 `medicalrecord.created` routing.
 
-**Still open:** the Docker acceptance flows for both EXAM and LAB_TEST, and deleting this handoff
-(only after both pass their Docker proofs).
+**Still open:** Billing's own Docker proof for both EXAM and LAB_TEST is done (above); the full
+cross-service proof — Clinical actually starting examination and Lab actually starting execution
+after consuming the real published clearance — is Vinh's side and is not run from this module.
+Deleting this handoff needs both sides' acceptance together, per the lifecycle rule, not Billing's
+proof alone.
 
 ## Acceptance criteria
 
-- Billing serializes the canonical EXAM and LAB_TEST fixtures byte-for-byte with the consumers.
-- Duplicate delivery has one effect; malformed or mismatched targets follow bounded retry/DLQ.
-- Docker proves check-in → charge → payment → EXAM clearance → examination start.
-- Docker proves Lab request → charge → payment → LAB_TEST clearance → execution start.
+- Billing serializes the canonical EXAM and LAB_TEST fixtures byte-for-byte with the consumers. DONE.
+- Duplicate delivery has one effect; malformed or mismatched targets follow bounded retry/DLQ. DONE
+  (`ExamChargeRabbitIntegrationTest`, `LabTestChargeRabbitIntegrationTest`).
+- Docker proves check-in → charge → payment → EXAM clearance. DONE (Billing's side). → examination
+  start remains Clinical's own proof, not run here.
+- Docker proves Lab request → charge → payment → LAB_TEST clearance. DONE (Billing's side). →
+  execution start remains Lab's own proof, not run here.
 - Compatibility payment handling remains until migration and rollback evidence is recorded.
-- Only after these checks may owners enable the affected Care-Finance flags and delete this handoff.
+- Only after Clinical's and Lab's own acceptance proofs also pass may owners enable the affected
+  Care-Finance flags and delete this handoff.
