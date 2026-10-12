@@ -17,6 +17,7 @@ import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
 import com.mediflow.inpatient.application.dto.event.AdmissionClosedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionDepositRequestedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
+import com.mediflow.inpatient.application.dto.event.AdmissionPlacementChangedEvent;
 import com.mediflow.inpatient.application.dto.event.DepositSuggestion;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.dto.event.MedicalDischargeApprovedEvent;
@@ -83,6 +84,7 @@ import com.mediflow.inpatient.domain.model.enums.ClearancePurpose;
 import com.mediflow.inpatient.domain.model.enums.ClinicalOrderType;
 import com.mediflow.inpatient.domain.model.enums.ExternalOrderStatus;
 import com.mediflow.inpatient.domain.model.enums.OverrideType;
+import com.mediflow.inpatient.domain.model.enums.PlacementChangeType;
 import com.mediflow.inpatient.domain.model.enums.SettlementOutcome;
 import com.mediflow.inpatient.domain.model.enums.TreatmentEntryType;
 import java.time.Clock;
@@ -200,10 +202,16 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         Admission admission = requireAdmissionForUpdate(admissionId);
         Instant now = clock.instant();
         AdmissionStatus from = admission.status();
-        releaseActiveAssignment(admission, request.nguoiHuy(), request.lyDo(), now, false);
+        Optional<ReleasedPlacement> released = releaseActiveAssignment(
+                admission, request.nguoiHuy(), request.lyDo(), now, false);
         admission.cancel(request.nguoiHuy(), request.lyDo(), now);
+        if (released.isPresent()) {
+            admission.nextPlacementRevision();
+        }
         admissions.save(admission);
         appendTransition(admission, from, request.nguoiHuy(), request.lyDo(), correlationId, now);
+        released.ifPresent(value -> appendPlacementChanged(admission, PlacementChangeType.RELEASED,
+                request.nguoiHuy(), request.lyDo(), value.fact(), null, correlationId, now));
         return admissionDto(admission);
     }
 
@@ -268,12 +276,17 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         oldBed.release();
         beds.save(oldBed);
         beds.save(targetBed);
-        assignments.save(BedAssignment.create(UUID.randomUUID(), admissionId, targetBed.bedId(),
-                request.nguoiChuyenGiuong(), now));
+        BedAssignment replacement = BedAssignment.create(UUID.randomUUID(), admissionId,
+                targetBed.bedId(), request.nguoiChuyenGiuong(), now);
+        assignments.save(replacement);
         AdmissionStatus from = admission.status();
         admission.applyBedAssignment(true, now);
+        admission.nextPlacementRevision();
         admissions.save(admission);
         appendTransition(admission, from, request.nguoiChuyenGiuong(), request.lyDo(), correlationId, now);
+        appendPlacementChanged(admission, PlacementChangeType.TRANSFERRED,
+                request.nguoiChuyenGiuong(), request.lyDo(), placementFact(current, oldBed),
+                placementFact(replacement, targetBed), correlationId, now);
         return admissionDto(admission);
     }
 
@@ -282,12 +295,16 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         Admission admission = requireAdmissionForUpdate(admissionId);
         Instant now = clock.instant();
         AdmissionStatus from = admission.status();
-        releaseActiveAssignment(admission, request.nguoiTraGiuong(), request.lyDo(), now, true);
+        ReleasedPlacement released = releaseActiveAssignment(
+                admission, request.nguoiTraGiuong(), request.lyDo(), now, true).orElseThrow();
         if (isPreAdmission(admission.status())) {
             admission.applyBedAssignment(false, now);
-            admissions.save(admission);
             appendTransition(admission, from, request.nguoiTraGiuong(), request.lyDo(), correlationId, now);
         }
+        admission.nextPlacementRevision();
+        admissions.save(admission);
+        appendPlacementChanged(admission, PlacementChangeType.RELEASED,
+                request.nguoiTraGiuong(), request.lyDo(), released.fact(), null, correlationId, now);
         return admissionDto(admission);
     }
 
@@ -773,13 +790,17 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         AdmissionStatus from = admission.status();
         bed.assign();
         beds.save(bed);
-        assignments.save(BedAssignment.create(UUID.randomUUID(), admissionId, bedId, assignedBy, now));
+        BedAssignment assignment = BedAssignment.create(UUID.randomUUID(), admissionId, bedId, assignedBy, now);
+        assignments.save(assignment);
         admission.applyBedAssignment(true, now);
         if (admission.markDepositRequested(now)) {
             appendDepositRequested(admission, correlationId, now);
         }
+        admission.nextPlacementRevision();
         admissions.save(admission);
         appendTransition(admission, from, assignedBy, null, correlationId, now);
+        appendPlacementChanged(admission, PlacementChangeType.ASSIGNED, assignedBy, null,
+                null, placementFact(assignment, bed), correlationId, now);
         return admission;
     }
 
@@ -792,14 +813,14 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         appendEvent(admissionId, "admission.deposit.requested", correlationId, now, payload);
     }
 
-    private void releaseActiveAssignment(Admission admission, UUID actorId, String reason,
-                                        Instant at, boolean missingIsError) {
+    private Optional<ReleasedPlacement> releaseActiveAssignment(Admission admission, UUID actorId, String reason,
+                                                               Instant at, boolean missingIsError) {
         Optional<BedAssignment> active = assignments.findActiveByAdmissionId(admission.admissionId());
         if (active.isEmpty()) {
             if (missingIsError) {
                 throw violation("INPATIENT_ACTIVE_BED_REQUIRED", "Admission has no active bed assignment");
             }
-            return;
+            return Optional.empty();
         }
         BedAssignment assignment = active.get();
         Bed bed = requireBedForUpdate(assignment.bedId());
@@ -807,7 +828,27 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         assignments.save(assignment);
         bed.release();
         beds.save(bed);
+        return Optional.of(new ReleasedPlacement(placementFact(assignment, bed)));
     }
+
+    private void appendPlacementChanged(Admission admission, PlacementChangeType changeType,
+                                        UUID actorId, String reason,
+                                        AdmissionPlacementChangedEvent.PlacementFact previous,
+                                        AdmissionPlacementChangedEvent.PlacementFact current,
+                                        String correlationId, Instant changedAt) {
+        appendEvent(admission.admissionId(), "admission.placement.changed", correlationId, changedAt,
+                new AdmissionPlacementChangedEvent(admission.admissionId(), admission.patientId(),
+                        admission.placementRevision(), changeType, changedAt, actorId, reason,
+                        previous, current));
+    }
+
+    private static AdmissionPlacementChangedEvent.PlacementFact placementFact(
+            BedAssignment assignment, Bed bed) {
+        return new AdmissionPlacementChangedEvent.PlacementFact(assignment.assignmentId(), bed.bedId(),
+                bed.departmentId(), bed.wardCode(), assignment.assignedAt(), assignment.releasedAt());
+    }
+
+    private record ReleasedPlacement(AdmissionPlacementChangedEvent.PlacementFact fact) {}
 
     private void appendEvent(UUID aggregateId, String eventType, String correlationId,
                              Instant occurredAt, Object payload) {
