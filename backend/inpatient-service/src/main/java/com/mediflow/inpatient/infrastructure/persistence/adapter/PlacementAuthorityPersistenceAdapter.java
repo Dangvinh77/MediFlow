@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -22,7 +23,8 @@ public class PlacementAuthorityPersistenceAdapter implements PlacementAuthorityR
 
     @Override
     public Optional<PlacementAuthoritySnapshot> findByAdmissionId(UUID admissionId) {
-        return jdbc.query("""
+        try {
+            return jdbc.query("""
                 SELECT a.admission_id, a.patient_id, a.status, a.medically_discharged_at,
                        a.closed_at, a.cancelled_at, a.placement_revision,
                        x.assignment_id, x.bed_id, b.department_id AS placement_department_id,
@@ -45,6 +47,10 @@ public class PlacementAuthorityPersistenceAdapter implements PlacementAuthorityR
                 row.getObject("placement_department_id", UUID.class),
                 row.getString("ward_code"),
                 instant(row.getTimestamp("assigned_at"))), admissionId).stream().findFirst();
+        } catch (IllegalArgumentException exception) {
+            throw new DataRetrievalFailureException(
+                    "Inpatient placement authority row is invalid", exception);
+        }
     }
 
     private static Instant instant(Timestamp value) {

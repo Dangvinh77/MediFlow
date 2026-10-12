@@ -354,6 +354,38 @@ class InpatientApplicationServiceTest {
     }
 
     @Test
+    void cancelAdmissionWithoutPlacementDoesNotAdvancePlacementRevisionOrPublish() {
+        Admission admission = restoredAdmission(
+                AdmissionStatus.AWAITING_BED, false, null, null, null);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.empty());
+
+        service.cancel(ADMISSION_ID,
+                new CancelAdmissionRequest(ACTOR_ID, "Admission cancelled"), "corr-cancel");
+
+        assertEquals(AdmissionStatus.CANCELLED, admission.status());
+        assertEquals(0L, admission.placementRevision());
+        verify(outbox, never()).append(any(), any());
+        verify(outbox, never()).append(any(), any(), any());
+    }
+
+    @Test
+    void assignBed_sameBedIsIdempotentAndDoesNotAdvancePlacementRevision() {
+        Admission admission = restoredAdmission(AdmissionStatus.READY, false, null, null, null);
+        BedAssignment current = BedAssignment.create(
+                UUID.randomUUID(), ADMISSION_ID, BED_ID, ACTOR_ID, NOW.minusSeconds(3600));
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.of(current));
+
+        service.assign(ADMISSION_ID, new AssignBedRequest(BED_ID, ACTOR_ID), "corr-assign");
+
+        assertEquals(0L, admission.placementRevision());
+        verifyNoInteractions(beds);
+        verify(outbox, never()).append(any(), any());
+        verify(outbox, never()).append(any(), any(), any());
+    }
+
+    @Test
     void transferBed_sameBedIsIdempotentAndDoesNotAdvancePlacementRevision() {
         Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
         BedAssignment current = BedAssignment.create(
