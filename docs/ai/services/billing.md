@@ -214,8 +214,40 @@ one PAYMENT_REQUEST per lab test from the configured price catalog, mirroring th
 planned-request pattern (V9). No new migration columns were needed: `PAYMENT_REQUEST_TARGET.record_id`/
 `lab_test_ids` already existed. Clearance granting reuses the existing generic `LedgerPaymentService`
 unchanged. Verified against lab-service's real producer fixture, copied into
-`src/test/resources/contracts/lab-request-v1/`. EXAM issuance remains open pending Clinical's own
-producer fixture commit; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+`src/test/resources/contracts/lab-request-v1/`. Docker E2E (2026-10-12):
+`LabTestChargeRabbitIntegrationTest` proves request → charge → payment → published clearance against
+real Postgres/RabbitMQ. See
+[HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
+### Opt-in EXAM charge issuance (2026-10-12)
+
+The opt-in `appointment.status.changed` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.exam-charge-consumer.enabled` false by default) posts one EXAM charge and one
+PAYMENT_REQUEST per appointment from the configured price catalog, mirroring the LAB_TEST
+planned-request pattern. Clinical reuses this one routing key for every appointment status
+transition; `ExamChargeDecoder#decodeApplicable` returns `Optional.empty()` (an explicit no-op ACK)
+for any transition other than the normal check-in (`oldStatus=PENDING`, `newStatus=AWAITING_PAYMENT`,
+`recordId=null`), and `BillingEventConsumer` only swaps its dispatch target for this already-bound
+routing key when both flags are on — the legacy V0 `onAppointmentStatusChanged` compatibility handler
+is otherwise unchanged (exactly one writer, same as discharge-approval). No new migration columns
+were needed: `PAYMENT_REQUEST_TARGET.appointment_id` already existed. Clearance granting reuses the
+existing generic `LedgerPaymentService` unchanged. Verified against clinical-service's real producer
+fixture (PR #334), copied into `src/test/resources/contracts/appointment-status-changed-v1/`. Docker
+E2E (2026-10-12): `ExamChargeRabbitIntegrationTest` proves check-in → charge → payment → published
+clearance against real Postgres/RabbitMQ, plus the not-applicable and malformed-shape branches.
+`medicalrecord.created` is deliberately left on its legacy V0 handler — it is not the EXAM charge
+trigger; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md)
+for the residual pre-existing question that flags.
+
+### Docker/Testcontainers Windows compatibility fix (2026-10-12)
+
+`pom.xml` pins `<testcontainers.version>1.20.6</testcontainers.version>` and
+`src/test/resources/docker-java.properties` pins `api.version=1.40`, mirroring
+`pharmacy-service`/`report-service`'s existing fix for the same problem: current Docker Desktop
+(engine 29.x, `docker_cli` named pipe) returns an HTTP 400 with an all-empty `/info` body to the
+older docker-java client Spring Boot 3.3's BOM manages. Test-scope-only, per-module; no production
+code or root `pom.xml` changed. All 940 billing-service tests now run (none skipped/errored for
+Docker), up from 758 passing + 16 Docker-environment errors before this fix.
 
 ### Opt-in pre-start cancellation adjustment (2026-10-08)
 

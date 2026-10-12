@@ -68,7 +68,7 @@ class BillingMergedMigrationPostgresTest {
                     .as("merged table %s", table).isTrue();
         }
         assertThat(jdbc.queryForObject("SELECT count(DISTINCT version) FROM flyway_schema_history "
-                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(20);
+                + "WHERE type='SQL' AND success", Integer.class)).isEqualTo(21);
     }
     private List<String> rows(String table) {
         // These table identifiers are a private fixed test list, never user input.

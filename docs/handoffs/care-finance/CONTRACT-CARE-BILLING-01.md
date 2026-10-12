@@ -605,10 +605,61 @@ and `mediflow.billing.lab-test-charge-consumer.enabled`, both false by default; 
 `sourceOrderId` or bytes) rejects. No new writer was needed for payment/clearance: the existing generic
 ledger payment command already grants `financial.clearance.granted` for `LAB_TEST` once its exact
 request is paid in full, unchanged. Verified against lab-service's own fixture, copied byte-for-byte
-into Billing's test resources per the no-copied-wire-format rule. This does not implement EXAM
-issuance (blocked: Clinical has not committed a producer fixture for its V2 `medicalrecord.created`/
-`appointment.status.changed` payloads yet), Docker/Gateway multi-service acceptance, or deletion of
+into Billing's test resources per the no-copied-wire-format rule. **Docker E2E (2026-10-12):**
+`LabTestChargeRabbitIntegrationTest` proves request → charge → payment → published clearance against
+real Postgres/RabbitMQ containers. EXAM issuance is implemented
+separately below (2026-10-12), once Clinical committed its producer fixture; this slice by itself
+does not implement Docker/Gateway multi-service acceptance or deletion of
 [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
+### EXAM charge issuance — 2026-10-12
+
+Task-scoped Billing implementation by its owner (Lộc), unblocked by Vinh's PR #334 committing the
+canonical Clinical `appointment.status.changed` producer fixture. An opt-in handler accepts actual
+Clinical-service `appointment.status.changed` V1 bytes and issues one EXAM charge plus one
+`PAYMENT_REQUEST` per appointment, reusing the existing episode account and the Lab-test
+planned-request pattern (claim delivery, lock recorded source, exact-episode account, catalog-derived
+price snapshot). Target is `appointmentId` only; no record/lab/prescription/admission/surgery field
+is set. Gated by `mediflow.billing.ledger.enabled` and `mediflow.billing.exam-charge-consumer.enabled`,
+both false by default; disabled leaves the pre-existing legacy V0 `onAppointmentStatusChanged`
+compatibility path on this already-unconditionally-bound routing key unchanged — no new `Binding` bean,
+only a dispatch switch in `BillingEventConsumer` (exactly one writer, same as discharge-approval).
+
+Clinical reuses `appointment.status.changed` for every status transition, always with
+`sourceType=EXAM`; only `oldStatus=PENDING`/`newStatus=AWAITING_PAYMENT`/`recordId=null` (the normal
+check-in) is the charge trigger. Every other well-formed transition on this routing key is explicitly
+not applicable — decoded as empty and acknowledged, not rejected — the same "valid but unrelated"
+shape already used for non-SURGERY `financial.clearance.granted` purposes. A charge-trigger-shaped
+payload that violates its own invariants still rejects to DLQ. Exact replay of the same
+`appointmentId` returns the recorded request without re-pricing; a conflicting replay rejects. No new
+writer was needed for payment/clearance: the existing generic ledger payment command already grants
+`financial.clearance.granted` for `EXAM` once its exact request is paid in full, unchanged. Verified
+against clinical-service's own fixture, copied byte-for-byte into Billing's test resources per the
+no-copied-wire-format rule. **Docker E2E (2026-10-12):** `ExamChargeRabbitIntegrationTest` proves
+check-in → charge → payment → published clearance against real Postgres/RabbitMQ containers, once
+the pre-existing Docker Desktop/testcontainers-version incompatibility was fixed (see below).
+
+Deliberately out of scope: `medicalrecord.created` is not the EXAM trigger (Clinical's record is
+created only after clearance already permits examination to start) and its legacy V0 handling is left
+untouched by this slice — see
+[HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md)
+for the residual, pre-existing question that flags. This does not implement Gateway multi-service
+acceptance or deletion of that handoff (Clinical's own cross-service proof is still needed).
+
+### Docker/Testcontainers Windows compatibility fix — 2026-10-12
+
+`backend/billing-service` and `backend/notification-service` now pin
+`<testcontainers.version>1.20.6</testcontainers.version>` in their own `pom.xml` plus a
+`src/test/resources/docker-java.properties` (`api.version=1.40`), mirroring the fix
+`pharmacy-service`/`report-service` already carried for the same problem: current Docker Desktop
+(engine 29.x, exposing the newer `docker_cli` named pipe) returns an HTTP 400 with an all-default/
+empty `/info` body to the older docker-java client Spring Boot 3.3's BOM manages, which Testcontainers
+reports as "Could not find a valid Docker environment" even though `docker info`/`docker ps` work
+fine from the CLI. This is a test-scope-only, per-module dependency property; it changes no
+production code, no root `pom.xml`, and no other owner's module. With it, every previously
+Docker-skipped/errored test in these two modules now runs for real against Postgres/RabbitMQ
+containers (billing-service: 758→940 tests all passing, including the two new EXAM/LAB_TEST Docker
+tests above; notification-service: 191→223, all passing).
 
 ### Opt-in Surgery and Pharmacy grant intake — 2026-10-05
 

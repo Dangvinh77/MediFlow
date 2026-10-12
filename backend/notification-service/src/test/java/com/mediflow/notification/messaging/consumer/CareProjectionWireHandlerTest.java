@@ -21,14 +21,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mediflow.notification.application.dto.command.AdmissionClosedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.dto.command.SurgeryReadyCommand;
 import com.mediflow.notification.application.port.in.ReactToCareProjectionUseCase;
 
 /**
- * Đọc đúng byte thật của producer (inpatient-service, surgery-service) — không copy/đổi tên field
- * (CONTRACT-CARE-PROJECTIONS-01). {@code deposit.topup.required}/{@code settlement.completed} chưa
- * có test vì Billing chưa publish fixture thật cho hai event đó.
+ * Đọc đúng byte thật của producer (inpatient-service, surgery-service, billing-service) — không
+ * copy/đổi tên field (CONTRACT-CARE-PROJECTIONS-01). {@code deposit.topup.required} chưa có test
+ * vì Billing chưa publish fixture thật cho event đó.
  */
 class CareProjectionWireHandlerTest {
     private final ObjectMapper mapper = new ObjectMapper();
@@ -84,6 +85,20 @@ class CareProjectionWireHandlerTest {
     }
 
     @Test
+    void settlementCompleted_consumesExactBillingProducerBytes() throws Exception {
+        handler.receive("settlement.completed", billingFixture("ledger-v1/settlement-completed.json"));
+
+        var captor = ArgumentCaptor.forClass(SettlementCompletedCommand.class);
+        verify(projections).onSettlementCompleted(captor.capture());
+        assertThat(captor.getValue().settlementId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000098"));
+        assertThat(captor.getValue().admissionId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+        assertThat(captor.getValue().patientId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        assertThat(captor.getValue().outcome()).isEqualTo("PAID_IN_FULL");
+        assertThat(captor.getValue().balance()).isEqualByComparingTo("0.00");
+        assertThat(captor.getValue().fingerprint()).hasSize(64);
+    }
+
+    @Test
     void defaultOff_rejectsWithoutCallingUseCase() throws Exception {
         var off = new CareProjectionWireHandler(mapper, projections, false);
         assertThatThrownBy(() -> off.receive("admission.started", fixture("inpatient", "admission.started.v1.json")))
@@ -125,5 +140,9 @@ class CareProjectionWireHandlerTest {
 
     private static byte[] surgeryFixture(String fileName) throws Exception {
         return Files.readAllBytes(Path.of("../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/" + fileName));
+    }
+
+    private static byte[] billingFixture(String relativePath) throws Exception {
+        return Files.readAllBytes(Path.of("../billing-service/src/test/resources/contracts/" + relativePath));
     }
 }

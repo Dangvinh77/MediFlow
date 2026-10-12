@@ -5,6 +5,7 @@ import java.util.UUID;
 import com.mediflow.notification.application.dto.command.AdmissionClosedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.dto.command.SurgeryReadyCommand;
 import com.mediflow.notification.application.port.in.ReactToCareProjectionUseCase;
@@ -65,6 +66,25 @@ public class CareProjectionService implements ReactToCareProjectionUseCase {
                 + (blank(c.reason()) ? "" : " Lý do: " + c.reason());
         deliver(c.eventId(), "surgery.cancelled", c.surgeryCaseId(), c.patientId(), c.correlationId(),
                 "SURGERY_CANCELLED", "Thông báo về ca mổ", content);
+    }
+
+    @Override
+    public void onSettlementCompleted(SettlementCompletedCommand c) {
+        if (!repository.claim(c.eventId(), "settlement.completed", c.fingerprint())) return;
+        deliver(c.eventId(), "settlement.completed", c.admissionId(), c.patientId(), c.correlationId(),
+                "SETTLEMENT_COMPLETED", "Quyết toán viện phí", settlementContent(c));
+    }
+
+    private static String settlementContent(SettlementCompletedCommand c) {
+        String amount = c.balance().abs().toPlainString() + " VND";
+        return switch (c.outcome()) {
+            case "PAID_IN_FULL" -> "Quyết toán viện phí đã hoàn tất, không còn khoản nợ.";
+            case "ADDITIONAL_PAYMENT_REQUIRED" -> "Quyết toán viện phí cần thanh toán thêm " + amount + ".";
+            case "REFUND_DUE" -> "Quyết toán viện phí có khoản hoàn lại " + amount + ".";
+            case "DEBT_APPROVED" -> "Quyết toán viện phí đã được duyệt ghi nợ " + amount + ".";
+            case "WAIVED" -> "Quyết toán viện phí đã được miễn giảm khoản còn lại.";
+            default -> "Quyết toán viện phí đã hoàn tất.";
+        };
     }
 
     private void deliver(UUID eventId, String eventType, UUID sourceId, UUID patientId, String correlationId,

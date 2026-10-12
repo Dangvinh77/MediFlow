@@ -80,7 +80,8 @@ class NotificationEventConsumerTest {
         var keys = config.notificationQueueBindings(config.notificationQueue(), config.mediflowEventsExchange())
                 .getDeclarablesByType(org.springframework.amqp.core.Binding.class).stream()
                 .map(org.springframework.amqp.core.Binding::getRoutingKey).toList();
-        org.assertj.core.api.Assertions.assertThat(keys).hasSize(12).contains("invoice.created", "admission.started", "surgery.cancelled");
+        org.assertj.core.api.Assertions.assertThat(keys).hasSize(13)
+                .contains("invoice.created", "admission.started", "surgery.cancelled", "settlement.completed");
     }
 
     @Test
