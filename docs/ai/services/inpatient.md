@@ -1,7 +1,7 @@
 # Service: inpatient
 
-**Status:** locally complete for Core V1; cross-service activation remains feature-gated and
-externally blocked. The sole implementation authority is
+**Status:** Core V1 plus placement/capacity producer contracts are locally complete; consumer
+activation remains feature-gated and externally blocked. The sole implementation authority is
 [`backend-spec/care-finance-v2/10-inpatient.md`](../../eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md).
 **Owner:** Vinh (`Dangvinh77` / `Harori`)
 **Source of truth:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -29,6 +29,8 @@ surgery cases or money. Those remain bare UUID references and event snapshots.
   emergency flag, status and timestamps.
 - `BED`: bedId, departmentId/ward reference, code, type and availability state.
 - `BED_ASSIGNMENT`: assignmentId, admissionId, bedId, start/end timestamps, assignment status.
+- `BED_CAPACITY_HISTORY`: append-only effective capacity snapshots keyed by bed/revision and the
+  exact outbox event ID.
 - `TREATMENT_ENTRY`: append-oriented clinical note/action with author, time and correction reference.
 - `CLINICAL_ORDER_REF`: admissionId + external order type/id for Lab, Pharmacy or Surgery.
 - `DISCHARGE_SUMMARY`: diagnosis/outcome/instructions, approver and medical approval time.
@@ -56,6 +58,15 @@ identity/status/revision. It is not the human admission DTO or bed-placement/ref
 The precise fields and absence/outage/eligibility rules live in CONTRACT-INPATIENT-SURGERY-01.
 Accepting a service credential grants no human care-command role. Runtime event flags stay off.
 
+Additive current-placement authority:
+`GET /api/v1/inpatient/admissions/{id}/placement-lookup` uses the same SYSTEM-only security and
+correlation boundary. It returns the admission medication-window state plus the exact ACTIVE
+assignment/current-bed department and independent `placementRevision`. Absence, an existing
+admission with no placement, and storage outage remain distinct. The response is evidence, not a
+Pharmacy dispense lease. The original `/lookup` contract is unchanged. Both lookup endpoints are
+called directly through service discovery and are intentionally not allowlisted as public Gateway
+routes.
+
 | Method | Path | Roles | Purpose |
 |---|---|---|---|
 | POST | `/api/v1/inpatient/admissions` | ADMIN, DOCTOR | create from exact admission request/referral |
@@ -81,12 +92,19 @@ implemented in the service controller.
 ## Events
 
 **Publish:** `admission.deposit.requested`, `admission.started`,
-`discharge.medically.approved`, `admission.closed`.
+`admission.placement.changed`, `bed.capacity.changed`, `discharge.medically.approved`,
+`admission.closed`.
 
 Start, medical discharge and close are immutable singleton operations keyed by routing key plus
 `admissionId`; their implicit business operation revision is `1`. Envelope `version` is schema-only.
 `discharge.medically.approved` ends normal Pharmacy admission-medication eligibility, while
 `admission.closed` remains the later administrative fact.
+
+`admission.placement.changed` uses the admission-scoped monotonic `placementRevision` and exact
+assignment intervals for ASSIGNED/TRANSFERRED/RELEASED. `bed.capacity.changed` uses the bed-scoped
+monotonic `capacityRevision`; capacity eligible means active and not OUT_OF_SERVICE. Assignment
+AVAILABLE ↔ OCCUPIED changes do not change capacity. Both contracts are producer-ready with exact
+fixtures, but their consumer bindings remain off until Huy accepts the same bytes.
 
 **Subscribe:** `admission.requested`, `financial.clearance.granted` for ADMISSION_DEPOSIT,
 `surgery.case.created`, `surgery.ready`, `surgery.completed`, `surgery.cancelled`,
@@ -106,9 +124,12 @@ outcome, rejects changed redeliveries and ignores valid outpatient facts without
 7. Administrative close requires `settlement.completed` for this admission or an approved debt/
    emergency override ID.
 8. External order/case IDs are never inferred from patient or “latest record”.
-9. `admission.started` carries the initial bed/department snapshot only. Transfer, release and
-   capacity have no approved wire fact, so consumers cannot use the start payload as current
-   placement after a transfer.
+9. `admission.started` carries the initial bed/department snapshot only. Current placement comes
+   from the placement lookup/event; consumers cannot use the start payload after a transfer.
+10. Placement revision increments exactly once per assign/transfer/release, including a
+    cancellation-triggered release; no-op same-bed transfer emits nothing.
+11. Capacity revision changes only for bed catalog/capacity membership changes. Occupancy mutations
+    do not change capacity or publish capacity events.
 
 ## Mandatory handoffs
 
@@ -121,14 +142,14 @@ outcome, rejects changed redeliveries and ignores valid outpatient facts without
 
 ## Integration activation gate
 
-Core business DDL, APIs, events and tests are implemented. Keep Inpatient RabbitMQ producer and
-consumer flags disabled until dependent producers and consumers share passing fixtures. Do not add
-bed-transfer/release/capacity or Surgery wire events before their canonical fields and routing keys
-are approved. The public route is available, but financial and Surgery event activation still wait
-for the active handoffs above. Contract status stays `DESIGN_READY` until those integration gates
-pass.
+Core business DDL, APIs, events and tests are implemented. Placement lookup, placement facts and
+capacity facts are `PRODUCER_READY`; keep Inpatient RabbitMQ producer and consumer flags disabled
+until dependent consumers share passing fixtures. Human-facing Gateway routes are available, while
+the authority lookups remain direct service-to-service only. Pharmacy, Report, financial and Surgery
+activation still wait for the active handoffs above. Do not mark the cross-service flow `IMPLEMENTED`
+until Huy proves exact producer bytes and post-lock/replay behavior.
 
-Keep `mediflow.features.inpatient-event-producers=false` and
-`mediflow.features.inpatient-event-consumers=false` until Billing, Surgery, Pharmacy, Report and
-Notification satisfy their registered handoffs and the admission/deposit/discharge/settlement
-Docker slices pass through RabbitMQ.
+Keep `mediflow.inpatient.messaging.producer.enabled=false` and
+`mediflow.inpatient.messaging.consumers.enabled=false` until Billing, Surgery, Pharmacy, Report and
+Notification satisfy their registered handoffs and the admission/deposit/discharge/settlement Docker
+slices pass through RabbitMQ.

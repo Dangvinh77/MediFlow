@@ -16,6 +16,11 @@ GET {{inpatientInternal}}/api/v1/inpatient/admissions/{{admissionId}}/lookup
 Authorization: Bearer {{serviceToken}}
 X-Correlation-Id: 04000000-0000-0000-0000-000000000001
 
+### Current placement authority — direct service-to-service only; intentionally blocked by Gateway
+GET {{inpatientInternal}}/api/v1/inpatient/admissions/{{admissionId}}/placement-lookup
+Authorization: Bearer {{serviceToken}}
+X-Correlation-Id: 04000000-0000-0000-0000-000000000002
+
 ### POST /admissions — ADMIN, DOCTOR
 POST {{host}}/api/v1/inpatient/admissions
 Authorization: Bearer {{token}}

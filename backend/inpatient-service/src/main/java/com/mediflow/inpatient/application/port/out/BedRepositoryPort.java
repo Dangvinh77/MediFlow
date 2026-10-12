@@ -13,5 +13,6 @@ public interface BedRepositoryPort {
     Optional<Bed> findByIdForUpdate(UUID bedId);
     List<Bed> findByIdsForUpdateInOrder(List<UUID> bedIds);
     Bed save(Bed bed);
+    Bed saveAndFlush(Bed bed);
     PageResult<Bed> search(BedSearchQuery query);
 }

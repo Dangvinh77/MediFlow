@@ -9,6 +9,16 @@ Gateway routes `/api/v1/inpatient/**` to `lb://inpatient-service`. Cross-service
 integrations remain disabled until the named producer and consumer owners pass canonical same-byte
 fixtures; a live HTTP route does not activate those contracts.
 
+The service is producer-ready for current-placement authority and operational reporting inputs:
+
+- SYSTEM-only `GET /api/v1/inpatient/admissions/{id}/placement-lookup`;
+- `admission.placement.changed` V1 with monotonic admission-scoped placement revisions;
+- `bed.capacity.changed` V1 with append-only bed capacity history and bed-scoped revisions.
+
+These facts do not activate Pharmacy dispensing or Report publication. Huy's active handoff must
+pass the checked-in fixture bytes and post-lock/replay acceptance first. Existing beds receive a V3
+capacity baseline at deployment time; history before that instant is unavailable, not zero.
+
 ## Run and verify
 
 Provide the same HS256 signing secret used by Gateway (`MEDIFLOW_JWT_SECRET`, at least 32 UTF-8

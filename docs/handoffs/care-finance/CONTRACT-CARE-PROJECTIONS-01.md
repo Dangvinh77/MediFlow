@@ -12,7 +12,8 @@ Actual Billing original-linked Rx refunds use the unchanged completed-refund sch
 cash-out, never an earned-revenue reversal or settlement. No held event is released.
 [Current adjustment evidence](../../superpowers/plans/2026-10-09-pharmacy-report-rx-adjustment.md).
 
-- **Status:** `DESIGN_READY`; current outpatient projections are partially implemented
+- **Status:** placement/capacity producer sources `PRODUCER_READY`; Report consumption, replay,
+  coverage and publication remain active owner work
 - **Owners:** Notification/Billing — Lộc; Report/Pharmacy/Surgery — Huy; Clinical/Lab/Inpatient — Vinh
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
 
@@ -639,7 +640,9 @@ V2 operational coverage/replay/publication. [Scope and verification](../../super
 | `lab.result.created` | completed lab tests by requesting department/date |
 | `prescription.filled` | dispensed prescriptions/items |
 | `admission.started` | admission count and immutable start evidence; not current-bed occupancy |
+| `admission.placement.changed` | immutable bed-use interval start/end and current-placement revision |
 | `admission.closed` | administrative-close evidence only currently; not medical discharge or bed release |
+| `bed.capacity.changed` | effective capacity membership/dimensions; not occupancy |
 | `surgery.completed` | completed surgeries, duration, complications category |
 | `surgery.cancelled` | cancellation count/reason category |
 | `settlement.completed` | recognized totals, balance/refund outcome |
@@ -706,10 +709,34 @@ correction/import, live catch-up and read-cutover acceptance are separate gates.
   and patient. The later start never reopens a closed admission. Medical discharge and administrative
   close remain distinct facts.
 
-The current events do not define bed transfer, bed release, staffed/available capacity or medical
-LOS. Report must not turn the start bed into current occupancy, administrative `closedAt` into medical
-discharge time, or a missing dimension into zero. Those additions require approved producer events,
-business identity/revision, time/rounding rules and same-byte fixtures.
+### Inpatient placement and capacity producer sources — 2026-10-12
+
+Inpatient now publishes `admission.placement.changed` V1 keyed by
+`(admissionId, placementRevision)`. `ASSIGNED`, atomic `TRANSFERRED` and `RELEASED` carry exact
+assignment/bed/department/ward interval facts. Report derives occupancy only from the half-open
+assignment intervals supplied by these facts; `admission.started` remains an admission-count and
+initial-snapshot source, not current occupancy. Administrative `closedAt` is not a bed-release or
+medical-discharge time.
+
+Inpatient now publishes `bed.capacity.changed` V1 keyed by `(bedId, capacityRevision)`. Payload is
+the exact effective snapshot: `departmentId`, `wardCode`, `bedType`, `active`,
+`operationalStatus`, `capacityEligible`, `effectiveAt` and actor. `capacityEligible` is true when
+the bed is active and not `OUT_OF_SERVICE`; assignment-controlled AVAILABLE ↔ OCCUPIED changes do
+not alter capacity revision or publish this event. Report derives the denominator from effective
+capacity-eligible intervals and must not reinterpret AVAILABLE as the only capacity state.
+
+Migration V3 creates one baseline per pre-existing bed at its then-current `updated_at`. That is
+the earliest supported capacity coverage point; it does not fabricate earlier history. Missing
+placement revisions, missing baseline coverage or out-of-order gaps are unavailable/pending, never
+zero. The greatest contiguous accepted source revision is current; identical duplicate source bytes
+are idempotent and changed bytes at the same key are conflicts.
+
+Completed medical LOS remains `admittedAt → approvedAt` from `admission.started` and
+`discharge.medically.approved`. Inpatient supplies placement/capacity source facts only. Report owns
+timezone bucketing, census cut-off, interval splitting, rounding, aggregation, coverage metadata,
+replay and publication. Canonical producer fixtures are under
+`backend/inpatient-service/src/test/resources/contracts/admission-placement-v1/` and
+`bed-capacity-v1/`; Report activation stays OFF until it consumes those exact bytes.
 
 ## Acceptance criteria
 
@@ -720,3 +747,5 @@ business identity/revision, time/rounding rules and same-byte fixtures.
 - Notification templates do not expose diagnosis/result details on insecure channels.
 - Unknown event version or missing source ID follows retry/DLQ policy and does not silently alter a
   projection.
+- Placement/capacity duplicates, conflicts and revision gaps have bounded behavior, and missing
+  pre-baseline history is unavailable rather than zero.

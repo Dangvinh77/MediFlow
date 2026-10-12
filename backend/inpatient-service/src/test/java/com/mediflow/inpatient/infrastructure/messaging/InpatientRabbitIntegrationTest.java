@@ -25,6 +25,8 @@ import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -125,6 +127,21 @@ class InpatientRabbitIntegrationTest {
                 SELECT published_at IS NOT NULL
                 FROM su_kien_outbox_noi_tru WHERE event_id = ?
                 """, Boolean.class, eventId)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"admission.placement.changed", "bed.capacity.changed"})
+    void dispatcherRoutesNewProducerContractsByExactEventType(String routingKey) {
+        String queue = declareBoundQueue(routingKey);
+        UUID eventId = insertPendingEvent(routingKey);
+
+        dispatcher.publishPending();
+
+        Message delivered = rabbitTemplate.receive(queue, 5000);
+        assertThat(delivered).isNotNull();
+        assertThat(new String(delivered.getBody(), StandardCharsets.UTF_8))
+                .contains(eventId.toString())
+                .contains("\"eventType\":\"" + routingKey + "\"");
     }
 
     @Test

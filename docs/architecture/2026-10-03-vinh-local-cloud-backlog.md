@@ -42,7 +42,7 @@ enabling an integration before shared fixtures pass.
 | VINH-P0-03 | Lab request creation | `frontend/src/features/lab/**`, `frontend/src/app/(dashboard)/lab/**` | ADMIN/DOCTOR can create from exact backend DTO; success links to detail; no local payment inference |
 | VINH-P0-04 | Inpatient frontend base | `frontend/src/features/inpatient/**`, `frontend/src/app/(dashboard)/inpatient/**` | Admission list/detail and bed list mirror the live Gateway contract; no local finance or Surgery inference |
 | VINH-P0-05 | Resolve Vinh-owned Surgery contract decisions | canonical contract/spec docs + existing Surgery handoff | Stable referral identity/path, external-order registration, outpatient not-applicable behavior and late-event policy are explicit and fixture-ready |
-| VINH-P0-06 | Agree transfer/release/current-placement facts with Huy | canonical contract/spec docs + Huy care-finance handoff | Event names, fields, ordering, replay and cross-department medication/capacity semantics are fixture-ready before either owner writes producer/consumer code |
+| VINH-P0-06 | Agree transfer/release/current-placement facts with Huy | DONE 2026-10-12 — producer-ready lookup/events/fixtures; Huy consumer handoff remains ACTIVE | Event names, fields, ordering, replay and cross-department medication/capacity semantics are canonical and fixture-ready |
 
 P0-02 and P0-03 are independent. Lab result/start/cancel UI must wait for the Gateway role/method
 matrix to align so the page does not promise a workflow that the public route rejects.
@@ -58,8 +58,8 @@ matrix to align so the page does not promise a workflow that the public route re
 
 ### P2 — intentionally deferred
 
-- Bed transfer/release/capacity events have no approved wire contract. Keep placement truth inside
-  Inpatient until consumers and fields are agreed.
+- Bed transfer/release/capacity producer contracts are approved and producer-ready. Keep consumer
+  activation off until Huy passes exact fixture, revision-gap, post-lock and replay acceptance.
 - Emergency deposit override, Surgery post-start abort and debt/waiver policy need explicit
   clinical/financial authority. Do not invent approvers or legal policy.
 - Do not add Patient/Organization lookups merely because endpoints exist. Admission referrals

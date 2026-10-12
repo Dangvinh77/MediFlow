@@ -297,7 +297,10 @@ Start, medical discharge and close are immutable singleton operations keyed by r
 `admissionId`; their implicit operation revision is `1` and envelope `version` remains schema-only.
 Close-before-start may be retained as pending evidence and paired only with the exact admission and
 patient; a late start never reopens a closed or medically discharged context. Transfer freshness is
-not inferred from the start snapshot and remains blocked until a transfer/release contract exists.
+not inferred from the start snapshot. Inpatient's producer-ready `placement-lookup` and
+`admission.placement.changed` V1 now supply exact current placement and source revisions; Pharmacy
+remains blocked until it implements exact-fixture consumption, revision-gap handling and a
+post-lock lookup recheck for both create and dispense.
 
 ## 8. REST and roles
 

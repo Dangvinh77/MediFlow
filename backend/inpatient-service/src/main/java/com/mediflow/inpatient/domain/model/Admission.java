@@ -36,6 +36,7 @@ public final class Admission {
     private Instant thoiGianDong;
     private Instant thoiGianHuy;
     private String lyDoHuy;
+    private long phienBanViTri;
 
     private Admission(
             UUID maDotNoiTru,
@@ -60,7 +61,8 @@ public final class Admission {
             Instant thoiGianRaVienYTe,
             Instant thoiGianDong,
             Instant thoiGianHuy,
-            String lyDoHuy) {
+            String lyDoHuy,
+            long phienBanViTri) {
         this.maDotNoiTru = require(maDotNoiTru, "admissionId");
         this.maYeuCauNoiTru = require(maYeuCauNoiTru, "admissionRequestId");
         this.maBenhNhan = require(maBenhNhan, "patientId");
@@ -84,6 +86,10 @@ public final class Admission {
         this.thoiGianDong = thoiGianDong;
         this.thoiGianHuy = thoiGianHuy;
         this.lyDoHuy = lyDoHuy;
+        if (phienBanViTri < 0) {
+            throw new IllegalArgumentException("placementRevision must not be negative");
+        }
+        this.phienBanViTri = phienBanViTri;
     }
 
     public static Admission create(
@@ -100,7 +106,7 @@ public final class Admission {
         return new Admission(admissionId, admissionRequestId, patientId, sourceRecordId, requestedBy,
                 diagnosisSummary, requestedAt, departmentId, priority, emergency,
                 AdmissionStatus.REQUESTED, null, null, null, null, null, null, null,
-                null, null, null, null, null);
+                null, null, null, null, null, 0);
     }
 
     public static Admission restore(
@@ -127,11 +133,43 @@ public final class Admission {
             Instant closedAt,
             Instant cancelledAt,
             String cancellationReason) {
+        return restore(admissionId, admissionRequestId, patientId, sourceRecordId, requestedBy,
+                diagnosisSummary, requestedAt, departmentId, priority, emergency, status,
+                depositRequestedAt, depositClearanceId, depositExpiresAt, emergencyOverrideId,
+                settlementId, closeOverrideId, dischargeSummaryId, admittedAt,
+                medicallyDischargedAt, closedAt, cancelledAt, cancellationReason, 0);
+    }
+
+    public static Admission restore(
+            UUID admissionId,
+            UUID admissionRequestId,
+            UUID patientId,
+            UUID sourceRecordId,
+            UUID requestedBy,
+            String diagnosisSummary,
+            Instant requestedAt,
+            UUID departmentId,
+            AdmissionPriority priority,
+            boolean emergency,
+            AdmissionStatus status,
+            Instant depositRequestedAt,
+            UUID depositClearanceId,
+            Instant depositExpiresAt,
+            UUID emergencyOverrideId,
+            UUID settlementId,
+            UUID closeOverrideId,
+            UUID dischargeSummaryId,
+            Instant admittedAt,
+            Instant medicallyDischargedAt,
+            Instant closedAt,
+            Instant cancelledAt,
+            String cancellationReason,
+            long placementRevision) {
         return new Admission(admissionId, admissionRequestId, patientId, sourceRecordId, requestedBy,
                 diagnosisSummary, requestedAt, departmentId, priority, emergency, status,
                 depositRequestedAt, depositClearanceId, depositExpiresAt, emergencyOverrideId, settlementId,
                 closeOverrideId, dischargeSummaryId, admittedAt, medicallyDischargedAt,
-                closedAt, cancelledAt, cancellationReason);
+                closedAt, cancelledAt, cancellationReason, placementRevision);
     }
 
     public boolean markDepositRequested(Instant at) {
@@ -339,4 +377,9 @@ public final class Admission {
     public Instant closedAt() { return thoiGianDong; }
     public Instant cancelledAt() { return thoiGianHuy; }
     public String cancellationReason() { return lyDoHuy; }
+    public long placementRevision() { return phienBanViTri; }
+    public long nextPlacementRevision() {
+        phienBanViTri = Math.addExact(phienBanViTri, 1);
+        return phienBanViTri;
+    }
 }

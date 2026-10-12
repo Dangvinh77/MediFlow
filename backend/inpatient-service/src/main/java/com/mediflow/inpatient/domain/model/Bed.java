@@ -16,9 +16,10 @@ public final class Bed {
     private String loaiGiuong;
     private BedStatus status;
     private boolean active;
+    private long phienBanCongSuat;
 
     private Bed(UUID maGiuong, UUID maKhoa, String maKhu, String maPhong, String maGiuongTrongPhong,
-                String loaiGiuong, BedStatus status, boolean active) {
+                String loaiGiuong, BedStatus status, boolean active, long phienBanCongSuat) {
         this.maGiuong = Objects.requireNonNull(maGiuong);
         this.maKhoa = Objects.requireNonNull(maKhoa);
         this.maKhu = requireText(maKhu);
@@ -27,17 +28,28 @@ public final class Bed {
         this.loaiGiuong = requireText(loaiGiuong);
         this.status = Objects.requireNonNull(status);
         this.active = active;
+        if (phienBanCongSuat < 0) {
+            throw new IllegalArgumentException("capacityRevision must not be negative");
+        }
+        this.phienBanCongSuat = phienBanCongSuat;
     }
 
     public static Bed create(UUID id, UUID departmentId, String wardCode, String roomCode,
                              String bedCode, String bedType) {
         return new Bed(id, departmentId, wardCode, roomCode, bedCode, bedType,
-                BedStatus.AVAILABLE, true);
+                BedStatus.AVAILABLE, true, 0);
     }
 
     public static Bed restore(UUID id, UUID departmentId, String wardCode, String roomCode,
                               String bedCode, String bedType, BedStatus status, boolean active) {
-        return new Bed(id, departmentId, wardCode, roomCode, bedCode, bedType, status, active);
+        return restore(id, departmentId, wardCode, roomCode, bedCode, bedType, status, active, 0);
+    }
+
+    public static Bed restore(UUID id, UUID departmentId, String wardCode, String roomCode,
+                              String bedCode, String bedType, BedStatus status, boolean active,
+                              long capacityRevision) {
+        return new Bed(id, departmentId, wardCode, roomCode, bedCode, bedType, status, active,
+                capacityRevision);
     }
 
     public Bed assign() {
@@ -89,4 +101,9 @@ public final class Bed {
     public String bedType() { return loaiGiuong; }
     public BedStatus status() { return status; }
     public boolean active() { return active; }
+    public long capacityRevision() { return phienBanCongSuat; }
+    public long nextCapacityRevision() {
+        phienBanCongSuat = Math.addExact(phienBanCongSuat, 1);
+        return phienBanCongSuat;
+    }
 }

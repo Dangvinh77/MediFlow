@@ -9,18 +9,24 @@ import com.mediflow.inpatient.application.dto.command.SurgeryCompletedFactComman
 import com.mediflow.inpatient.application.dto.command.SurgeryCancelledFactCommand;
 import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
 import com.mediflow.inpatient.application.dto.event.AdmissionClosedEvent;
+import com.mediflow.inpatient.application.dto.event.AdmissionPlacementChangedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
+import com.mediflow.inpatient.application.dto.event.BedCapacityChangedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.dto.event.MedicalDischargeApprovedEvent;
 import com.mediflow.inpatient.application.dto.request.AdmitRequest;
 import com.mediflow.inpatient.application.dto.request.AssignBedRequest;
+import com.mediflow.inpatient.application.dto.request.CancelAdmissionRequest;
 import com.mediflow.inpatient.application.dto.request.CloseAdmissionRequest;
+import com.mediflow.inpatient.application.dto.request.CreateBedRequest;
 import com.mediflow.inpatient.application.dto.request.MedicalDischargeRequest;
 import com.mediflow.inpatient.application.dto.request.ReleaseBedRequest;
 import com.mediflow.inpatient.application.dto.request.TransferBedRequest;
+import com.mediflow.inpatient.application.dto.request.UpdateBedRequest;
 import com.mediflow.inpatient.application.mapper.InpatientDtoMapper;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
+import com.mediflow.inpatient.application.port.out.BedCapacityHistoryPort;
 import com.mediflow.inpatient.application.port.out.BedRepositoryPort;
 import com.mediflow.inpatient.application.port.out.ClinicalOrderReferenceRepositoryPort;
 import com.mediflow.inpatient.application.port.out.DepositSuggestionPolicyPort;
@@ -34,6 +40,7 @@ import com.mediflow.inpatient.domain.exception.AdmissionRuleViolationException;
 import com.mediflow.inpatient.domain.model.Admission;
 import com.mediflow.inpatient.domain.model.Bed;
 import com.mediflow.inpatient.domain.model.BedAssignment;
+import com.mediflow.inpatient.domain.model.BedCapacitySnapshot;
 import com.mediflow.inpatient.domain.model.ClinicalOrderReference;
 import com.mediflow.inpatient.domain.model.SettlementSnapshot;
 import com.mediflow.inpatient.domain.model.SurgeryEventReceipt;
@@ -86,6 +93,7 @@ class InpatientApplicationServiceTest {
     @Mock private AdmissionRepositoryPort admissions;
     @Mock private BedRepositoryPort beds;
     @Mock private BedAssignmentRepositoryPort assignments;
+    @Mock private BedCapacityHistoryPort capacityHistory;
     @Mock private TreatmentEntryRepositoryPort treatments;
     @Mock private ClinicalOrderReferenceRepositoryPort references;
     @Mock private DischargeSummaryRepositoryPort discharges;
@@ -100,9 +108,73 @@ class InpatientApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new InpatientApplicationService(admissions, beds, assignments, treatments,
+        service = new InpatientApplicationService(admissions, beds, assignments, capacityHistory, treatments,
                 references, discharges, processedEvents, surgeryReceipts, eventStore, outbox,
                 depositSuggestions, mapper, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void createBedPersistsInitialCapacityHistoryAndPublishesBedAggregate() {
+        CreateBedRequest request = new CreateBedRequest(
+                DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01", "STANDARD");
+        when(beds.saveAndFlush(any(Bed.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.create(request, ACTOR_ID, "corr-capacity-create");
+
+        ArgumentCaptor<Bed> savedBed = ArgumentCaptor.forClass(Bed.class);
+        verify(beds).saveAndFlush(savedBed.capture());
+        assertEquals(1L, savedBed.getValue().capacityRevision());
+        ArgumentCaptor<BedCapacitySnapshot> history = ArgumentCaptor.forClass(BedCapacitySnapshot.class);
+        verify(capacityHistory).append(history.capture());
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox).append(eq("BED"), eq(savedBed.getValue().bedId()), event.capture());
+        BedCapacityChangedEvent payload = (BedCapacityChangedEvent) event.getValue().duLieu();
+        assertEquals(history.getValue().eventId(), event.getValue().maSuKien());
+        assertEquals(1L, payload.capacityRevision());
+        assertEquals(true, payload.capacityEligible());
+        assertEquals(ACTOR_ID, payload.actorId());
+    }
+
+    @Test
+    void updateBedCapacityFieldsAdvancesRevisionAndPublishesSnapshot() {
+        Bed bed = Bed.restore(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01",
+                "STANDARD", BedStatus.AVAILABLE, true, 1);
+        when(beds.findByIdForUpdate(BED_ID)).thenReturn(Optional.of(bed));
+        when(assignments.findActiveByBedId(BED_ID)).thenReturn(Optional.empty());
+        when(beds.save(bed)).thenReturn(bed);
+
+        service.update(BED_ID,
+                new UpdateBedRequest("ISOLATION", BedStatus.OUT_OF_SERVICE, true),
+                ACTOR_ID, "corr-capacity-update");
+
+        assertEquals(2L, bed.capacityRevision());
+        ArgumentCaptor<BedCapacitySnapshot> history = ArgumentCaptor.forClass(BedCapacitySnapshot.class);
+        verify(capacityHistory).append(history.capture());
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox).append(eq("BED"), eq(BED_ID), event.capture());
+        BedCapacityChangedEvent payload = (BedCapacityChangedEvent) event.getValue().duLieu();
+        assertEquals(history.getValue().eventId(), event.getValue().maSuKien());
+        assertEquals(2L, payload.capacityRevision());
+        assertEquals("ISOLATION", payload.bedType());
+        assertEquals(BedStatus.OUT_OF_SERVICE, payload.operationalStatus());
+        assertEquals(false, payload.capacityEligible());
+    }
+
+    @Test
+    void updateBedWithIdenticalCapacitySnapshotDoesNotPublish() {
+        Bed bed = Bed.restore(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01",
+                "STANDARD", BedStatus.AVAILABLE, true, 4);
+        when(beds.findByIdForUpdate(BED_ID)).thenReturn(Optional.of(bed));
+        when(assignments.findActiveByBedId(BED_ID)).thenReturn(Optional.empty());
+        when(beds.save(bed)).thenReturn(bed);
+
+        service.update(BED_ID,
+                new UpdateBedRequest("STANDARD", BedStatus.AVAILABLE, true),
+                ACTOR_ID, "corr-capacity-noop");
+
+        assertEquals(4L, bed.capacityRevision());
+        verifyNoInteractions(capacityHistory);
+        verify(outbox, never()).append(eq("BED"), any(), any());
     }
 
     @Test
@@ -175,7 +247,7 @@ class InpatientApplicationServiceTest {
     }
 
     @Test
-    void assignBed_withValidClearance_movesReadyWithoutDuplicateDepositRequest() {
+    void assignBed_withValidClearancePublishesCurrentPlacement() {
         Admission admission = restoredAdmission(
                 AdmissionStatus.AWAITING_BED, false, UUID.randomUUID(), null, null);
         Bed bed = Bed.create(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01", "STANDARD");
@@ -187,11 +259,19 @@ class InpatientApplicationServiceTest {
         assertEquals(AdmissionStatus.READY, admission.status());
         assertEquals(BedStatus.OCCUPIED, bed.status());
         verify(assignments).save(any(BedAssignment.class));
-        verify(outbox, never()).append(any(UUID.class), any(DomainEventEnvelope.class));
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox).append(eq(ADMISSION_ID), event.capture());
+        assertEquals("admission.placement.changed", event.getValue().loaiSuKien());
+        AdmissionPlacementChangedEvent payload = (AdmissionPlacementChangedEvent) event.getValue().duLieu();
+        assertEquals(1L, payload.placementRevision());
+        assertEquals("ASSIGNED", payload.changeType().name());
+        assertEquals(BED_ID, payload.currentPlacement().bedId());
+        assertEquals(null, payload.previousPlacement());
+        verify(outbox, never()).append(eq("BED"), any(), any());
     }
 
     @Test
-    void transferBed_validReleasesOldAndAssignsNewWithoutInventedEvent() {
+    void transferBedPublishesClosedOldAndCurrentNewPlacement() {
         UUID targetBedId = UUID.fromString("00000000-0000-4000-8000-000000000006");
         Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
         Bed oldBed = Bed.restore(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01",
@@ -212,11 +292,18 @@ class InpatientApplicationServiceTest {
         ArgumentCaptor<BedAssignment> replacement = ArgumentCaptor.forClass(BedAssignment.class);
         verify(assignments).save(replacement.capture());
         assertEquals(targetBedId, replacement.getValue().bedId());
-        verify(outbox, never()).append(any(), any());
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox).append(eq(ADMISSION_ID), event.capture());
+        AdmissionPlacementChangedEvent payload = (AdmissionPlacementChangedEvent) event.getValue().duLieu();
+        assertEquals(1L, payload.placementRevision());
+        assertEquals("TRANSFERRED", payload.changeType().name());
+        assertEquals(BED_ID, payload.previousPlacement().bedId());
+        assertEquals(NOW, payload.previousPlacement().releasedAt());
+        assertEquals(targetBedId, payload.currentPlacement().bedId());
     }
 
     @Test
-    void releaseBed_admittedReleasesAssignmentWithoutInventedEvent() {
+    void releaseBedPublishesClosedPlacement() {
         Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
         Bed bed = Bed.restore(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01",
                 "STANDARD", BedStatus.OCCUPIED, true);
@@ -230,6 +317,86 @@ class InpatientApplicationServiceTest {
 
         assertEquals(BedStatus.AVAILABLE, bed.status());
         assertEquals(BedAssignmentStatus.RELEASED, assignment.status());
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox).append(eq(ADMISSION_ID), event.capture());
+        AdmissionPlacementChangedEvent payload = (AdmissionPlacementChangedEvent) event.getValue().duLieu();
+        assertEquals(1L, payload.placementRevision());
+        assertEquals("RELEASED", payload.changeType().name());
+        assertEquals(BED_ID, payload.previousPlacement().bedId());
+        assertEquals(null, payload.currentPlacement());
+        verify(outbox, never()).append(eq("BED"), any(), any());
+    }
+
+    @Test
+    void cancelReadyAdmissionReleasesPlacementExactlyOnce() {
+        Admission admission = restoredAdmission(AdmissionStatus.READY, false, null, null, null);
+        Bed bed = Bed.restore(BED_ID, DEPARTMENT_ID, "WARD-A", "ROOM-1", "BED-01",
+                "STANDARD", BedStatus.OCCUPIED, true);
+        BedAssignment assignment = BedAssignment.create(
+                UUID.randomUUID(), ADMISSION_ID, BED_ID, ACTOR_ID, NOW.minusSeconds(3600));
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.of(assignment));
+        when(beds.findByIdForUpdate(BED_ID)).thenReturn(Optional.of(bed));
+
+        service.cancel(ADMISSION_ID,
+                new CancelAdmissionRequest(ACTOR_ID, "Admission cancelled"), "corr-cancel");
+
+        assertEquals(AdmissionStatus.CANCELLED, admission.status());
+        assertEquals(1L, admission.placementRevision());
+        assertEquals(BedStatus.AVAILABLE, bed.status());
+        assertEquals(BedAssignmentStatus.RELEASED, assignment.status());
+        ArgumentCaptor<DomainEventEnvelope<?>> event = outboxEventCaptor();
+        verify(outbox, times(1)).append(eq(ADMISSION_ID), event.capture());
+        AdmissionPlacementChangedEvent payload = (AdmissionPlacementChangedEvent) event.getValue().duLieu();
+        assertEquals("RELEASED", payload.changeType().name());
+        assertEquals(BED_ID, payload.previousPlacement().bedId());
+        assertEquals(null, payload.currentPlacement());
+    }
+
+    @Test
+    void cancelAdmissionWithoutPlacementDoesNotAdvancePlacementRevisionOrPublish() {
+        Admission admission = restoredAdmission(
+                AdmissionStatus.AWAITING_BED, false, null, null, null);
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.empty());
+
+        service.cancel(ADMISSION_ID,
+                new CancelAdmissionRequest(ACTOR_ID, "Admission cancelled"), "corr-cancel");
+
+        assertEquals(AdmissionStatus.CANCELLED, admission.status());
+        assertEquals(0L, admission.placementRevision());
+        verify(outbox, never()).append(any(), any());
+        verify(outbox, never()).append(any(), any(), any());
+    }
+
+    @Test
+    void assignBed_sameBedIsIdempotentAndDoesNotAdvancePlacementRevision() {
+        Admission admission = restoredAdmission(AdmissionStatus.READY, false, null, null, null);
+        BedAssignment current = BedAssignment.create(
+                UUID.randomUUID(), ADMISSION_ID, BED_ID, ACTOR_ID, NOW.minusSeconds(3600));
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.of(current));
+
+        service.assign(ADMISSION_ID, new AssignBedRequest(BED_ID, ACTOR_ID), "corr-assign");
+
+        assertEquals(0L, admission.placementRevision());
+        verifyNoInteractions(beds);
+        verify(outbox, never()).append(any(), any());
+        verify(outbox, never()).append(any(), any(), any());
+    }
+
+    @Test
+    void transferBed_sameBedIsIdempotentAndDoesNotAdvancePlacementRevision() {
+        Admission admission = restoredAdmission(AdmissionStatus.ADMITTED, false, null, null, null);
+        BedAssignment current = BedAssignment.create(
+                UUID.randomUUID(), ADMISSION_ID, BED_ID, ACTOR_ID, NOW.minusSeconds(3600));
+        when(admissions.findByIdForUpdate(ADMISSION_ID)).thenReturn(Optional.of(admission));
+        when(assignments.findActiveByAdmissionId(ADMISSION_ID)).thenReturn(Optional.of(current));
+
+        service.transfer(ADMISSION_ID,
+                new TransferBedRequest(BED_ID, ACTOR_ID, "No movement"), "corr-transfer");
+
+        assertEquals(0L, admission.placementRevision());
         verify(outbox, never()).append(any(), any());
     }
 

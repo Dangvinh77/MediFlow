@@ -10,8 +10,8 @@
 
 **Base path:** `/api/v1/inpatient`
 
-**Status:** Core V1 `IMPLEMENTED`; messaging `FEATURE_GATED` and `EXTERNAL_BLOCKED` by shared
-fixtures plus broker-backed Docker acceptance
+**Status:** Core V1 `IMPLEMENTED`; placement/capacity producer contracts `PRODUCER_READY`;
+messaging remains `FEATURE_GATED` and consumer acceptance remains externally blocked
 
 This is Inpatient's sole canonical implementation specification. Its `care-finance-v2` directory
 location records the redesign workstream; it does not indicate a competing legacy specification.
@@ -51,6 +51,21 @@ Wire/absence/freshness rules and producer fixture locations are canonical in
 No migration or invented source revision is required. Signed short-lived service tokens have only
 `ROLE_SYSTEM_SERVICE`, never human command roles. Surgery currently uses this for non-reserving
 draft preparation; other workflow activation remains separately gated.
+
+### Additive current-placement authority read (2026-10-12)
+
+`GET /api/v1/inpatient/admissions/{id}/placement-lookup` is a separate SYSTEM-only English
+projection. It returns `{exists, admissionId, patientId, admissionStatus, medicationWindowOpen,
+placementRevision, placement, observedAt}`. An existing admission without an ACTIVE assignment has
+`placement=null`; an absent admission has `exists=false`; persistence failure is unavailable, never
+absence. Placement department/ward come from the current bed, not the admission-owning department.
+The original `/lookup` remains byte- and meaning-compatible.
+
+`placementRevision` is persisted on the admission and increments exactly once per successful
+assign, transfer or release. `capacityRevision` is persisted on each bed and changes only when the
+bed catalog/capacity snapshot changes. Flyway V3 appends `lich_su_cong_suat_giuong` history and one
+deployment baseline/outbox fact for each existing bed at its then-current `updated_at`; no earlier
+capacity coverage is claimed.
 
 ## 2. Package map
 
@@ -675,6 +690,8 @@ producer-generated request ID.
 4. First active assignment appends one `admission.deposit.requested` outbox event using the
    configured suggestion policy.
 5. Recalculate waiting state: valid clearance → `READY`; otherwise `AWAITING_DEPOSIT`.
+6. Increment `placementRevision` once and append `admission.placement.changed` with the exact closed
+   previous/new current interval. Same-bed no-op transfer changes nothing and publishes nothing.
 
 ### Consume deposit clearance
 
@@ -759,12 +776,17 @@ All events use the standard envelope and `version=1`.
 |---|---|
 | `admission.deposit.requested` | `admissionId`, `patientId`, `departmentId`, `careEpisodeType=ADMISSION`, `careEpisodeId=admissionId`, `sourceType=ADMISSION_DEPOSIT`, `sourceId=admissionId`, `priceCode`, `suggestedAmount`, `reason` |
 | `admission.started` | `admissionId`, `patientId`, `bedId`, `departmentId`, `admittedAt`, `emergency`, `emergencyOverrideId?` |
+| `admission.placement.changed` | `admissionId`, `patientId`, `placementRevision`, `changeType`, `changedAt`, `actorId`, `reason?`, `previousPlacement?`, `currentPlacement?` |
+| `bed.capacity.changed` | `bedId`, `capacityRevision`, `departmentId`, `wardCode`, `bedType`, `active`, `operationalStatus`, `capacityEligible`, `effectiveAt`, `actorId?` |
 | `discharge.medically.approved` | `admissionId`, `patientId`, `summaryId`, `approvedBy`, `approvedAt` |
 | `admission.closed` | `admissionId`, `patientId`, `settlementId?`, `approvedOverrideId?`, `closedAt` |
 
-`admission.started` is the admission-time bed/department snapshot. Core V1 does not publish current
-placement, transfer, release or capacity facts. Consumers must not treat its bed as fresh after a
-transfer or reinterpret administrative `closedAt` as medical-discharge time.
+`admission.started` is the admission-time bed/department snapshot. Current placement comes only
+from the new lookup/event. Placement business identity is `(admissionId, placementRevision)`;
+capacity identity is `(bedId, capacityRevision)`. Identical source bytes are idempotent, changed
+bytes at the same key conflict, and gaps remain unavailable/pending. Capacity eligible means active
+and not OUT_OF_SERVICE; AVAILABLE ↔ OCCUPIED assignment changes do not publish capacity changes.
+Consumers must not reinterpret administrative `closedAt` as medical-discharge or release time.
 
 Future `surgery.requested` is emitted only after the shared Surgery fixture exists. Core V1 may
 record a Surgery reference but does not invent Surgery payload fields outside the canonical contract.
@@ -827,6 +849,8 @@ not query other services merely to enrich an event.
   same singleton operation is a contract error, not revision `2`.
 - External status events cannot regress a completed/cancelled order.
 - No command uses “find active admission by patient” as an identifier-selection mechanism.
+- Placement and capacity source revisions are monotonic within their own aggregates and independent
+  of the envelope version and JPA optimistic-lock version.
 
 ## 18. Required tests
 
@@ -883,6 +907,8 @@ contracts create owner handoffs and keep the dependent binding disabled.
 - `mvn -pl backend/inpatient-service -am verify` passes with Testcontainers available.
 - Gateway route handoff is complete and authorization/correlation tests pass.
 - Shared fixtures pass on both producer and consumer before a contract is marked `IMPLEMENTED`.
+- Producer-ready placement/capacity fixtures remain gated until Huy proves Pharmacy post-lock
+  authorization and Report replay/publication against the exact checked-in bytes.
 - Emergency admit creates a fully audited override and never forges payment.
 - Medical discharge and administrative close remain visibly separate.
 - Duplicate/out-of-order events do not duplicate admission, timeline, charges or projections.

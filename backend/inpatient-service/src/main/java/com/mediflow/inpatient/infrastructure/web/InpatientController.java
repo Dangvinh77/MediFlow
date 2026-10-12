@@ -202,7 +202,7 @@ public class InpatientController {
     @PostMapping("/beds")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<BedDTO>> createBed(@Valid @RequestBody CreateBedRequest request) {
-        BedDTO created = beds.create(request);
+        BedDTO created = beds.create(request, actorIdentity.currentStaffId(), correlationId());
         return ResponseEntity.created(URI.create("/api/v1/inpatient/beds/" + created.maGiuong()))
                 .body(ApiResponse.ok(created, correlationId()));
     }
@@ -211,7 +211,8 @@ public class InpatientController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<BedDTO>> updateBed(
             @PathVariable UUID id, @Valid @RequestBody UpdateBedRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(beds.update(id, request), correlationId()));
+        return ResponseEntity.ok(ApiResponse.ok(
+                beds.update(id, request, actorIdentity.currentStaffId(), correlationId()), correlationId()));
     }
 
     @GetMapping("/beds")

@@ -27,4 +27,16 @@ class BedTest {
         assertThrows(AdmissionRuleViolationException.class,
                 () -> bed.update("GENERAL", BedStatus.OUT_OF_SERVICE, false, true));
     }
+
+    @Test
+    void occupancyDoesNotChangeCapacityRevision() {
+        Bed bed = Bed.create(UUID.randomUUID(), UUID.randomUUID(), "W1", "R1", "B1", "GENERAL");
+
+        assertEquals(0L, bed.capacityRevision());
+        assertEquals(1L, bed.nextCapacityRevision());
+        bed.assign();
+        bed.release();
+
+        assertEquals(1L, bed.capacityRevision());
+    }
 }

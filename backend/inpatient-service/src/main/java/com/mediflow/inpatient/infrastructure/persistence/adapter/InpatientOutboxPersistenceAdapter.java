@@ -30,15 +30,15 @@ public class InpatientOutboxPersistenceAdapter implements InpatientOutboxPort {
     }
 
     @Override
-    public void append(UUID aggregateId, DomainEventEnvelope<?> event) {
+    public void append(String aggregateType, UUID aggregateId, DomainEventEnvelope<?> event) {
         try {
             String payload = objectMapper.writeValueAsString(wireMapper.toWireEnvelope(event));
             jdbcTemplate.update("""
                     INSERT INTO su_kien_outbox_noi_tru
                       (event_id, aggregate_type, aggregate_id, event_type, event_version,
                        correlation_id, payload, occurred_at)
-                    VALUES (?, 'ADMISSION', ?, ?, ?, ?, CAST(? AS jsonb), ?)
-                    """, event.maSuKien(), aggregateId, event.loaiSuKien(), event.phienBan(),
+                    VALUES (?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?)
+                    """, event.maSuKien(), aggregateType, aggregateId, event.loaiSuKien(), event.phienBan(),
                     event.maTuongQuan(), payload, Timestamp.from(event.xayRaLuc()));
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("Inpatient event could not be serialized", exception);

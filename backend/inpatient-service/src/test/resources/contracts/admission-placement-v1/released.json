@@ -1,0 +1,26 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000019",
+  "eventType": "admission.placement.changed",
+  "version": 1,
+  "occurredAt": "2026-09-30T09:30:00Z",
+  "correlationId": "00000000-0000-4000-8000-000000000017",
+  "producer": "inpatient-service",
+  "payload": {
+    "admissionId": "00000000-0000-4000-8000-000000000021",
+    "patientId": "00000000-0000-4000-8000-000000000022",
+    "placementRevision": 3,
+    "changeType": "RELEASED",
+    "changedAt": "2026-09-30T09:30:00Z",
+    "actorId": "00000000-0000-4000-8000-000000000026",
+    "reason": "Medical release",
+    "previousPlacement": {
+      "assignmentId": "00000000-0000-4000-8000-000000000031",
+      "bedId": "00000000-0000-4000-8000-000000000024",
+      "departmentId": "00000000-0000-4000-8000-000000000023",
+      "wardCode": "WARD-A",
+      "assignedAt": "2026-09-28T02:00:00Z",
+      "releasedAt": "2026-09-30T09:30:00Z"
+    },
+    "currentPlacement": null
+  }
+}

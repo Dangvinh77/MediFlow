@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface InpatientOutboxPort {
-    void append(UUID aggregateId, DomainEventEnvelope<?> event);
+    default void append(UUID aggregateId, DomainEventEnvelope<?> event) {
+        append("ADMISSION", aggregateId, event);
+    }
+    void append(String aggregateType, UUID aggregateId, DomainEventEnvelope<?> event);
     List<PendingOutboxEvent> claimPending(int limit);
     void markPublished(UUID eventId, Instant publishedAt);
     void markPublishFailed(UUID eventId, String reason);

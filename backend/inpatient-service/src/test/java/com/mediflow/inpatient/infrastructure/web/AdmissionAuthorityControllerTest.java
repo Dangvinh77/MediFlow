@@ -1,7 +1,9 @@
 package com.mediflow.inpatient.infrastructure.web;
 
 import com.mediflow.inpatient.application.dto.response.AdmissionLookupDTO;
+import com.mediflow.inpatient.application.dto.response.PlacementLookupDTO;
 import com.mediflow.inpatient.application.port.in.LookupAdmissionAuthorityUseCase;
+import com.mediflow.inpatient.application.port.in.LookupPlacementAuthorityUseCase;
 import com.mediflow.inpatient.infrastructure.config.SecurityConfig;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -28,6 +30,22 @@ class AdmissionAuthorityControllerTest {
     private static final String SECRET="test-inpatient-lookup-secret-at-least-32-bytes";
     @Autowired MockMvc mvc;
     @MockBean LookupAdmissionAuthorityUseCase admissions;
+    @MockBean LookupPlacementAuthorityUseCase placements;
+
+    @Test void placementLookup_serviceJwtReturnsCurrentPlacementEvidence() throws Exception {
+        UUID id=UUID.randomUUID(),patient=UUID.randomUUID(),assignment=UUID.randomUUID();
+        UUID bed=UUID.randomUUID(),department=UUID.randomUUID();
+        when(placements.lookup(id)).thenReturn(new PlacementLookupDTO(true,id,patient,"ADMITTED",true,3,
+                new PlacementLookupDTO.PlacementDTO(assignment,bed,department,"WARD-A",Instant.now()),
+                Instant.now()));
+
+        mvc.perform(get("/api/v1/inpatient/admissions/{id}/placement-lookup",id)
+                .header("Authorization",token("service","SYSTEM","pharmacy-service",60)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.medicationWindowOpen").value(true))
+                .andExpect(jsonPath("$.data.placement.departmentId").value(department.toString()))
+                .andExpect(jsonPath("$.data.placementRevision").value(3));
+    }
 
     @Test void lookup_serviceJwt_preservesCorrelation_andOutageIsNotAbsence() throws Exception {
         UUID id=UUID.randomUUID();

@@ -17,6 +17,8 @@ import com.mediflow.inpatient.application.dto.command.SurgeryReadyFactCommand;
 import com.mediflow.inpatient.application.dto.event.AdmissionClosedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionDepositRequestedEvent;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
+import com.mediflow.inpatient.application.dto.event.AdmissionPlacementChangedEvent;
+import com.mediflow.inpatient.application.dto.event.BedCapacityChangedEvent;
 import com.mediflow.inpatient.application.dto.event.DepositSuggestion;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.dto.event.MedicalDischargeApprovedEvent;
@@ -53,6 +55,7 @@ import com.mediflow.inpatient.application.port.in.ReactToFinancialClearanceUseCa
 import com.mediflow.inpatient.application.port.in.ReactToSettlementUseCase;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
+import com.mediflow.inpatient.application.port.out.BedCapacityHistoryPort;
 import com.mediflow.inpatient.application.port.out.BedRepositoryPort;
 import com.mediflow.inpatient.application.port.out.ClinicalOrderReferenceRepositoryPort;
 import com.mediflow.inpatient.application.port.out.DepositSuggestionPolicyPort;
@@ -67,6 +70,7 @@ import com.mediflow.inpatient.domain.model.Admission;
 import com.mediflow.inpatient.domain.model.AdmissionStatusHistory;
 import com.mediflow.inpatient.domain.model.Bed;
 import com.mediflow.inpatient.domain.model.BedAssignment;
+import com.mediflow.inpatient.domain.model.BedCapacitySnapshot;
 import com.mediflow.inpatient.domain.model.CloseOverride;
 import com.mediflow.inpatient.domain.model.ClinicalOrderReference;
 import com.mediflow.inpatient.domain.model.DepositTopupRequest;
@@ -83,6 +87,7 @@ import com.mediflow.inpatient.domain.model.enums.ClearancePurpose;
 import com.mediflow.inpatient.domain.model.enums.ClinicalOrderType;
 import com.mediflow.inpatient.domain.model.enums.ExternalOrderStatus;
 import com.mediflow.inpatient.domain.model.enums.OverrideType;
+import com.mediflow.inpatient.domain.model.enums.PlacementChangeType;
 import com.mediflow.inpatient.domain.model.enums.SettlementOutcome;
 import com.mediflow.inpatient.domain.model.enums.TreatmentEntryType;
 import java.time.Clock;
@@ -106,6 +111,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
     private final AdmissionRepositoryPort admissions;
     private final BedRepositoryPort beds;
     private final BedAssignmentRepositoryPort assignments;
+    private final BedCapacityHistoryPort capacityHistory;
     private final TreatmentEntryRepositoryPort treatments;
     private final ClinicalOrderReferenceRepositoryPort references;
     private final DischargeSummaryRepositoryPort discharges;
@@ -121,6 +127,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
             AdmissionRepositoryPort admissions,
             BedRepositoryPort beds,
             BedAssignmentRepositoryPort assignments,
+            BedCapacityHistoryPort capacityHistory,
             TreatmentEntryRepositoryPort treatments,
             ClinicalOrderReferenceRepositoryPort references,
             DischargeSummaryRepositoryPort discharges,
@@ -134,6 +141,7 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         this.admissions = admissions;
         this.beds = beds;
         this.assignments = assignments;
+        this.capacityHistory = capacityHistory;
         this.treatments = treatments;
         this.references = references;
         this.discharges = discharges;
@@ -200,26 +208,44 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         Admission admission = requireAdmissionForUpdate(admissionId);
         Instant now = clock.instant();
         AdmissionStatus from = admission.status();
-        releaseActiveAssignment(admission, request.nguoiHuy(), request.lyDo(), now, false);
+        Optional<ReleasedPlacement> released = releaseActiveAssignment(
+                admission, request.nguoiHuy(), request.lyDo(), now, false);
         admission.cancel(request.nguoiHuy(), request.lyDo(), now);
+        if (released.isPresent()) {
+            admission.nextPlacementRevision();
+        }
         admissions.save(admission);
         appendTransition(admission, from, request.nguoiHuy(), request.lyDo(), correlationId, now);
+        released.ifPresent(value -> appendPlacementChanged(admission, PlacementChangeType.RELEASED,
+                request.nguoiHuy(), request.lyDo(), value.fact(), null, correlationId, now));
         return admissionDto(admission);
     }
 
     @Override
-    public BedDTO create(CreateBedRequest request) {
+    public BedDTO create(CreateBedRequest request, UUID actorId, String correlationId) {
         Bed bed = Bed.create(UUID.randomUUID(), request.maKhoa(), request.maKhu(), request.maPhong(),
                 request.maGiuong(), request.loaiGiuong());
-        return mapper.toBedDto(beds.save(bed));
+        bed.nextCapacityRevision();
+        beds.saveAndFlush(bed);
+        appendCapacityChanged(bed, actorId, correlationId, clock.instant());
+        return mapper.toBedDto(bed);
     }
 
     @Override
-    public BedDTO update(UUID bedId, UpdateBedRequest request) {
+    public BedDTO update(UUID bedId, UpdateBedRequest request, UUID actorId, String correlationId) {
         Bed bed = requireBedForUpdate(bedId);
+        CapacityDefinition before = CapacityDefinition.from(bed);
         boolean hasAssignment = assignments.findActiveByBedId(bedId).isPresent();
         bed.update(request.loaiGiuong(), request.status(), request.active(), hasAssignment);
-        return mapper.toBedDto(beds.save(bed));
+        boolean capacityChanged = !before.equals(CapacityDefinition.from(bed));
+        if (capacityChanged) {
+            bed.nextCapacityRevision();
+        }
+        beds.save(bed);
+        if (capacityChanged) {
+            appendCapacityChanged(bed, actorId, correlationId, clock.instant());
+        }
+        return mapper.toBedDto(bed);
     }
 
     @Override
@@ -268,12 +294,17 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         oldBed.release();
         beds.save(oldBed);
         beds.save(targetBed);
-        assignments.save(BedAssignment.create(UUID.randomUUID(), admissionId, targetBed.bedId(),
-                request.nguoiChuyenGiuong(), now));
+        BedAssignment replacement = BedAssignment.create(UUID.randomUUID(), admissionId,
+                targetBed.bedId(), request.nguoiChuyenGiuong(), now);
+        assignments.save(replacement);
         AdmissionStatus from = admission.status();
         admission.applyBedAssignment(true, now);
+        admission.nextPlacementRevision();
         admissions.save(admission);
         appendTransition(admission, from, request.nguoiChuyenGiuong(), request.lyDo(), correlationId, now);
+        appendPlacementChanged(admission, PlacementChangeType.TRANSFERRED,
+                request.nguoiChuyenGiuong(), request.lyDo(), placementFact(current, oldBed),
+                placementFact(replacement, targetBed), correlationId, now);
         return admissionDto(admission);
     }
 
@@ -282,12 +313,16 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         Admission admission = requireAdmissionForUpdate(admissionId);
         Instant now = clock.instant();
         AdmissionStatus from = admission.status();
-        releaseActiveAssignment(admission, request.nguoiTraGiuong(), request.lyDo(), now, true);
+        ReleasedPlacement released = releaseActiveAssignment(
+                admission, request.nguoiTraGiuong(), request.lyDo(), now, true).orElseThrow();
         if (isPreAdmission(admission.status())) {
             admission.applyBedAssignment(false, now);
-            admissions.save(admission);
             appendTransition(admission, from, request.nguoiTraGiuong(), request.lyDo(), correlationId, now);
         }
+        admission.nextPlacementRevision();
+        admissions.save(admission);
+        appendPlacementChanged(admission, PlacementChangeType.RELEASED,
+                request.nguoiTraGiuong(), request.lyDo(), released.fact(), null, correlationId, now);
         return admissionDto(admission);
     }
 
@@ -773,13 +808,17 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         AdmissionStatus from = admission.status();
         bed.assign();
         beds.save(bed);
-        assignments.save(BedAssignment.create(UUID.randomUUID(), admissionId, bedId, assignedBy, now));
+        BedAssignment assignment = BedAssignment.create(UUID.randomUUID(), admissionId, bedId, assignedBy, now);
+        assignments.save(assignment);
         admission.applyBedAssignment(true, now);
         if (admission.markDepositRequested(now)) {
             appendDepositRequested(admission, correlationId, now);
         }
+        admission.nextPlacementRevision();
         admissions.save(admission);
         appendTransition(admission, from, assignedBy, null, correlationId, now);
+        appendPlacementChanged(admission, PlacementChangeType.ASSIGNED, assignedBy, null,
+                null, placementFact(assignment, bed), correlationId, now);
         return admission;
     }
 
@@ -792,14 +831,14 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         appendEvent(admissionId, "admission.deposit.requested", correlationId, now, payload);
     }
 
-    private void releaseActiveAssignment(Admission admission, UUID actorId, String reason,
-                                        Instant at, boolean missingIsError) {
+    private Optional<ReleasedPlacement> releaseActiveAssignment(Admission admission, UUID actorId, String reason,
+                                                               Instant at, boolean missingIsError) {
         Optional<BedAssignment> active = assignments.findActiveByAdmissionId(admission.admissionId());
         if (active.isEmpty()) {
             if (missingIsError) {
                 throw violation("INPATIENT_ACTIVE_BED_REQUIRED", "Admission has no active bed assignment");
             }
-            return;
+            return Optional.empty();
         }
         BedAssignment assignment = active.get();
         Bed bed = requireBedForUpdate(assignment.bedId());
@@ -807,6 +846,44 @@ public class InpatientApplicationService implements ManageAdmissionUseCase, Mana
         assignments.save(assignment);
         bed.release();
         beds.save(bed);
+        return Optional.of(new ReleasedPlacement(placementFact(assignment, bed)));
+    }
+
+    private void appendPlacementChanged(Admission admission, PlacementChangeType changeType,
+                                        UUID actorId, String reason,
+                                        AdmissionPlacementChangedEvent.PlacementFact previous,
+                                        AdmissionPlacementChangedEvent.PlacementFact current,
+                                        String correlationId, Instant changedAt) {
+        appendEvent(admission.admissionId(), "admission.placement.changed", correlationId, changedAt,
+                new AdmissionPlacementChangedEvent(admission.admissionId(), admission.patientId(),
+                        admission.placementRevision(), changeType, changedAt, actorId, reason,
+                        previous, current));
+    }
+
+    private static AdmissionPlacementChangedEvent.PlacementFact placementFact(
+            BedAssignment assignment, Bed bed) {
+        return new AdmissionPlacementChangedEvent.PlacementFact(assignment.assignmentId(), bed.bedId(),
+                bed.departmentId(), bed.wardCode(), assignment.assignedAt(), assignment.releasedAt());
+    }
+
+    private record ReleasedPlacement(AdmissionPlacementChangedEvent.PlacementFact fact) {}
+
+    private record CapacityDefinition(String bedType, BedStatus operationalStatus, boolean active) {
+        private static CapacityDefinition from(Bed bed) {
+            return new CapacityDefinition(bed.bedType(), bed.status(), bed.active());
+        }
+    }
+
+    private void appendCapacityChanged(Bed bed, UUID actorId, String correlationId, Instant effectiveAt) {
+        require(actorId, "actorId");
+        requireText(correlationId, "correlationId");
+        UUID eventId = UUID.randomUUID();
+        BedCapacitySnapshot snapshot = BedCapacitySnapshot.capture(
+                bed, actorId, correlationId, effectiveAt, eventId);
+        capacityHistory.append(snapshot);
+        outbox.append("BED", bed.bedId(), new DomainEventEnvelope<>(eventId,
+                "bed.capacity.changed", CONTRACT_VERSION, effectiveAt, correlationId, PRODUCER,
+                BedCapacityChangedEvent.from(snapshot)));
     }
 
     private void appendEvent(UUID aggregateId, String eventType, String correlationId,

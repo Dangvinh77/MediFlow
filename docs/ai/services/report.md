@@ -481,9 +481,11 @@ map thành immutable exact ID/patient/department/bed/business time/proof; không
 Close-before-start pending được persist; late start chỉ ghép đúng admission/patient, không reopen.
 Row fence serialize concurrent start/close; altered time/department/proof rollback claim. Exact ISO
 time giữ nanos qua reload. Canonical contract xem STARTED/CLOSED là singleton operations có implicit
-revision 1, độc lập envelope version. Chưa ghi contributions/counts/medical LOS/occupancy vì duration
-medical-discharge và transfer/release/capacity semantics chưa chốt. Unit/static và PG reload/rollback/race cùng
-V8→V9 upgrade/constraints đã được chạy thật; không admission metric/listener mới.
+revision 1, độc lập envelope version. Inpatient hiện đã producer-ready cho
+`admission.placement.changed` và `bed.capacity.changed`; Report vẫn chưa được coi là đã triển khai
+occupancy/capacity cho tới khi Huy consume exact fixtures, xử lý revision gap, replay và coverage
+horizon. Unit/static và PG reload/rollback/race cùng V8→V9 upgrade/constraints đã được chạy thật;
+không tự suy occupancy từ STARTED/CLOSED.
 
 Offline financial input update 2026-10-07: `BillingCashReceiptMapper` reads the two actual ledger
 receipt fixtures. V12 stores minimal immutable transaction/delivery evidence and cash-only gross

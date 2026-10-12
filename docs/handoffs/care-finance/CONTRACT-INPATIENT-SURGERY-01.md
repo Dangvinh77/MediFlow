@@ -1,6 +1,6 @@
 # CONTRACT-INPATIENT-SURGERY-01 — Admission, surgery and inpatient medication
 
-- **Status:** `DESIGN_READY`; Inpatient Core V1 and both implementation specs exist, while live cross-service activation remains blocked on approved shared fixtures and the remaining Surgery business API/event implementation
+- **Status:** Inpatient placement/medication producer contract `PRODUCER_READY`; consumer activation and the remaining Surgery business API/events stay blocked on shared-fixture acceptance
 - **Owners:** Inpatient/Clinical — Vinh; Surgery/Pharmacy — Huy
 - **Consumers involved:** Billing, Notification, Report
 - **Source:** [`mediflow-care-finance-redesign.html`](../../architecture/mediflow-care-finance-redesign.html)
@@ -29,8 +29,10 @@ admission.
 |---|---|---|
 | `admission.deposit.requested` | admissionId, patientId, episode fields, suggestedAmount, reason | Billing, Notification |
 | `admission.started` | admissionId, patientId, bedId, departmentId, admittedAt, emergency | Billing, Report, Notification |
+| `admission.placement.changed` | admissionId, patientId, placementRevision, changeType, changedAt, actorId, reason?, previousPlacement?, currentPlacement? | Pharmacy, Report |
 | `discharge.medically.approved` | admissionId, patientId, summaryId, approvedBy, approvedAt | Billing, Pharmacy |
 | `admission.closed` | admissionId, settlementId or approved override ID, closedAt | Report, Notification |
+| `bed.capacity.changed` | bedId, capacityRevision, departmentId, wardCode, bedType, active, operationalStatus, capacityEligible, effectiveAt, actorId? | Report |
 
 `admission.started` requires an active bed assignment and deposit clearance unless an audited
 emergency override exists. `admission.closed` requires medical discharge plus settlement/debt
@@ -138,16 +140,42 @@ clock skew; stale/malformed responses or an older producer's 404 fail as upstrea
 No asynchronous start projection alone can authorize medication. Shared fixtures cover active,
 medically discharged and missing states; runtime admission/medication activation remains off.
 
+### Current-placement authority and immutable placement V1 (2026-10-12)
+
+Inpatient now provides `GET /api/v1/inpatient/admissions/{id}/placement-lookup` under the same
+service-token, correlation, freshness and unavailable-versus-absence boundary as the admission
+lookup. The old `/lookup` response and meaning are unchanged. The new response is
+`{exists, admissionId, patientId, admissionStatus, medicationWindowOpen, placementRevision,
+placement, observedAt}`. `placement` is null when the admission exists without an ACTIVE assignment;
+otherwise it contains exact `assignmentId`, `bedId`, current-bed `departmentId`, `wardCode` and
+`assignedAt`. The placement department comes from the bed, never from the admission-owning
+department. A successful lookup is evidence, not a lease or final dispense permission.
+
+Inpatient also publishes `admission.placement.changed` V1. Its business identity is
+`(admissionId, placementRevision)`; the admission-scoped revision is strictly increasing and is
+independent of the envelope version and JPA row version. `ASSIGNED` has only `currentPlacement`,
+`TRANSFERRED` atomically carries the released `previousPlacement` and new `currentPlacement`, and
+`RELEASED` has only the released previous interval. Each placement includes exact assignment, bed,
+bed-department, ward and start/end business times. Same source key with identical bytes is
+idempotent; changed bytes are a contract conflict. Revision gaps remain pending/unavailable and
+must not be collapsed. Same-bed no-op transfer publishes nothing.
+
+Canonical producer fixtures are checked in at
+`backend/inpatient-service/src/test/resources/contracts/admission-placement-v1/`. Producer and
+consumer feature gates remain OFF until Pharmacy and Report prove these exact bytes.
+
 Pharmacy adds `careContext = OUTPATIENT | ADMISSION` and an exact `admissionId` when the context is
 ADMISSION. Inpatient medication is posted to the admission account and may be dispensed under the
 admission policy; it must not reuse the outpatient prescription clearance blindly. Pharmacy events
 retain `prescriptionId`, `patientId`, `departmentId`, item snapshots and correlation.
 
 The active medication window begins at the exact `admission.started` fact and ends at the exact
-`discharge.medically.approved` fact, not at administrative close. Bed transfer effects are not
-defined by these lifecycle events: the start bed/department is an immutable admission snapshot, not
-fresh placement authority. Cross-department transfer eligibility remains blocked until an approved
-transfer/release contract exists.
+`discharge.medically.approved` fact, not at administrative close. The start bed/department remains
+an immutable admission snapshot. Pharmacy must use the new placement lookup at the mutation
+boundary and the placement revision/event projection for audit and gap detection; it must not reuse
+the start bed after transfer. Inpatient supplies facts only. Pharmacy still owns the final
+create/dispense decision, post-lock recheck, prescriber/order authority, financial rules and stock
+mutation race handling.
 
 ## Acceptance criteria
 
@@ -159,3 +187,7 @@ transfer/release contract exists.
 - Medical discharge and administrative close remain separate states.
 - Medication creation/dispense after medical discharge is rejected unless a future approved late
   adjustment contract explicitly permits it.
+- Pharmacy rejects missing, stale, unavailable, revision-gapped or context-mismatched placement and
+  rechecks the fresh lookup after its own mutation lock wait.
+- Assignment, transfer, release and cancellation-release produce one monotonic placement fact;
+  consumers never infer current placement from `admission.started`.

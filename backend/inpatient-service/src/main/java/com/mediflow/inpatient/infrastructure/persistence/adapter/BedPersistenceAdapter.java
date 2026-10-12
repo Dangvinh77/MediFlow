@@ -59,6 +59,12 @@ public class BedPersistenceAdapter implements BedRepositoryPort, BedAssignmentRe
     }
 
     @Override
+    public Bed saveAndFlush(Bed bed) {
+        BedJpaEntity row = beds.findById(bed.bedId()).orElseGet(BedJpaEntity::new);
+        return mapper.toDomain(beds.saveAndFlush(mapper.copy(bed, row)));
+    }
+
+    @Override
     public PageResult<Bed> search(BedSearchQuery query) {
         String wardCode = query.maKhu() == null || query.maKhu().isBlank() ? null : query.maKhu().trim();
         var page = beds.search(query.maKhoa(), wardCode, query.status(),
