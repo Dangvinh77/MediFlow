@@ -60,8 +60,16 @@ public final class PrescriptionIdentityAdapter implements PrescriptionIdentityPo
                     || !active && !roles.isEmpty()
                     || staffExists && (job == null || !JOBS.contains(job) || staffDepartment == null)) throw new IllegalArgumentException();
             for (var role : roles) if (!role.isTextual()) throw new IllegalArgumentException();
-            // Team-role projection is descriptive. Never use it as prescribing authority.
-            boolean eligibleDoctor = staffExists && active && "DOCTOR".equals(job);
+            // A generic job/team label cannot replace Organization's explicit doctor decision.
+            // This existing compatibility contract is still only a necessary identity check,
+            // not a medication order, current licence attestation or distributed permission lease.
+            var eligibility = data(organization.doctorEligibility(doctor, auth, correlation), correlation);
+            boolean eligibilityExists = bool(eligibility, "exists"), approvedDoctor = bool(eligibility, "eligibleDoctor");
+            UUID eligibleDepartment = nullableUuid(eligibility, "departmentId");
+            if ((!eligibilityExists && approvedDoctor) || (approvedDoctor && eligibleDepartment == null)
+                    || (!approvedDoctor && eligibleDepartment != null)
+                    || (approvedDoctor && !department.equals(eligibleDepartment))) throw new IllegalArgumentException();
+            boolean eligibleDoctor = staffExists && active && "DOCTOR".equals(job) && eligibilityExists && approvedDoctor;
             var dept = data(organization.department(department, auth, correlation), correlation);
             if (!department.equals(uuid(dept, "departmentId"))) throw new IllegalArgumentException();
             boolean deptExists = bool(dept, "exists"), deptActive = bool(dept, "active");

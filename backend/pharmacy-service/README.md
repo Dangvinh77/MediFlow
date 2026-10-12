@@ -10,6 +10,18 @@ Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) 
 
 ## Status
 
+2026-10-12 identity continuation: the internal checked-creation preflight now also reads
+Organization's existing service-only `/api/v1/org/staff/{id}/exists` doctor-eligibility contract.
+Generic active DOCTOR identity and a positive `eligibleDoctor` decision for the exact department
+are both necessary. Missing/false eligibility denies; malformed, inconsistent, failed or
+wrong-correlation responses are unavailable, never a fallback to job/team labels. All four reads
+remain outside mutation transactions and share the original preflight-start freshness bound.
+This does not certify a current licence/clinical medication order, authorize admission medication,
+open public V1 or release held events. Existing independent identity/V2 gates stay default OFF.
+Focused 64 unit/real-Feign-HTTP tests and fresh full Pharmacy 625 tests / 90 suites pass, zero
+failures/errors/skips, actual PostgreSQL/RabbitMQ. The compatibility eligibility HTTP examples are LOCAL,
+not a new producer-owned fixture or full distributed acceptance.
+
 2026-10-09 identity follow-up: `MEDIFLOW_PHARMACY_IDENTITY_ENABLED` AND care-finance-v2
 (both default false) register real Patient and Organization preflight reads. The internal
 context-checked caller requires them and rechecks both identity/context after receipt/stock waits.

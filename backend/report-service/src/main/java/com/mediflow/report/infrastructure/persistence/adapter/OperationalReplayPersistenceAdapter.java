@@ -110,6 +110,21 @@ public class OperationalReplayPersistenceAdapter implements OperationalReplaySto
         var current = lock(generationId);
         if (current.status() != Status.BUILDING) return current;
         // Compare against the immutable manifest, NOT the live tables (which can advance after freeze).
+        boolean matched = matches(current);
+        Status status = matched && current.appliedEvents() == current.sourceEvents() ? Status.VERIFIED : Status.FAILED;
+        jdbc.update("UPDATE operational_replay_generation SET status = ?, completed_at = now() WHERE generation_id = ?",
+                status.name(), generationId);
+        return progress(generationId);
+    }
+
+    /** Rechecks both directions at publication time instead of trusting a historic VERIFIED label. */
+    public boolean verifiedIntegrity(UUID generationId) {
+        var current = lock(generationId);
+        return current.status() == Status.VERIFIED && current.appliedEvents() == current.sourceEvents() && matches(current);
+    }
+
+    private boolean matches(OperationalReplayProgress current) {
+        UUID generationId = current.generationId();
         boolean matched = Boolean.TRUE.equals(jdbc.queryForObject("""
                 WITH expected_facts AS (
                     SELECT DISTINCT fact FROM operational_replay_input i,
@@ -131,12 +146,14 @@ public class OperationalReplayPersistenceAdapter implements OperationalReplaySto
                     (SELECT * FROM expected_scopes EXCEPT SELECT * FROM actual_scopes)
                     UNION ALL (SELECT * FROM actual_scopes EXCEPT SELECT * FROM expected_scopes)
                 ) SELECT NOT EXISTS (SELECT 1 FROM fact_diff) AND NOT EXISTS (SELECT 1 FROM scope_diff)
+                    AND NOT EXISTS (SELECT 1 FROM operational_replay_contribution c WHERE c.generation_id=?
+                        AND (c.source_type IS DISTINCT FROM c.fact_snapshot->>'sourceType'
+                            OR c.source_id::text IS DISTINCT FROM c.fact_snapshot->>'sourceId'
+                            OR c.source_revision IS DISTINCT FROM (c.fact_snapshot->>'sourceRevision')::integer
+                            OR c.metric_type IS DISTINCT FROM c.fact_snapshot->>'metric'))
                     AND NOT EXISTS (SELECT 1 FROM operational_replay_input WHERE generation_id = ? AND NOT applied)
                     AND (SELECT count(*) FROM operational_replay_input WHERE generation_id = ?) = ?
-                """, Boolean.class, generationId, generationId, generationId, generationId, generationId, current.sourceEvents()));
-        Status status = matched && current.appliedEvents() == current.sourceEvents() ? Status.VERIFIED : Status.FAILED;
-        jdbc.update("UPDATE operational_replay_generation SET status = ?, completed_at = now() WHERE generation_id = ?",
-                status.name(), generationId);
-        return progress(generationId);
+                """, Boolean.class, generationId, generationId, generationId, generationId, generationId, generationId, current.sourceEvents()));
+        return matched;
     }
 }

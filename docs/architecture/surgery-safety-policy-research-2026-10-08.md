@@ -96,6 +96,15 @@ This is an acceptance refinement of S-05/S-06/S-07/X-01.4, **not additional glob
 
 ## 4. Activation evidence
 
+**Implementation follow-up — 2026-10-12:** the separate `SurgerySafetyPausePolicy` and
+`SurgerySafetyPause` models now preserve all three phases, policy-specific item/participant sets,
+independent applicability evidence and immutable observed/recorded times. V9 starts with an empty
+ledger; the internal recorder mandates fresh source authority on every attempt. Exact case/schedule,
+phase order, pinned policy, same-command replay/conflict and append-only history are enforced.
+No medical catalogue is imported, no existing pre-op rule is relaxed, and no phase is mapped to actual
+anaesthesia/incision/exit timestamps or a START/COMPLETE gate. Replacing a pinned policy/schedule and
+correcting observations are not silently implemented as rewrites; those protocols remain open.
+
 The real authority source, procedure-to-template/team mapping, documented clinical approval and
 staff training/simulation acceptance still need to be recorded before clinical use. Research URLs
 are provenance, not an approval signature or source grant. Feature flags remain false; no positive
