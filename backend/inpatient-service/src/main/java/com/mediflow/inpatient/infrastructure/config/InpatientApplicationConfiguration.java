@@ -2,6 +2,7 @@ package com.mediflow.inpatient.infrastructure.config;
 
 import com.mediflow.inpatient.application.mapper.InpatientDtoMapper;
 import com.mediflow.inpatient.application.port.in.LookupAdmissionAuthorityUseCase;
+import com.mediflow.inpatient.application.port.in.LookupPlacementAuthorityUseCase;
 import com.mediflow.inpatient.application.port.out.AdmissionAuthorityRepositoryPort;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
@@ -12,10 +13,12 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.PlacementAuthorityRepositoryPort;
 import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.service.InpatientApplicationService;
 import com.mediflow.inpatient.application.service.LookupAdmissionAuthorityService;
+import com.mediflow.inpatient.application.service.LookupPlacementAuthorityService;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,6 +32,11 @@ public class InpatientApplicationConfiguration {
     LookupAdmissionAuthorityUseCase lookupAdmissionAuthorityUseCase(
             AdmissionAuthorityRepositoryPort admissions, Clock clock) {
         return new LookupAdmissionAuthorityService(admissions, clock);
+    }
+    @Bean
+    LookupPlacementAuthorityUseCase lookupPlacementAuthorityUseCase(
+            PlacementAuthorityRepositoryPort placements, Clock clock) {
+        return new LookupPlacementAuthorityService(placements, clock);
     }
     @Bean
     @ConditionalOnMissingBean(Clock.class)

@@ -3,7 +3,9 @@ package com.mediflow.inpatient.infrastructure.web;
 import com.mediflow.common.api.ApiResponse;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.inpatient.application.dto.response.AdmissionLookupDTO;
+import com.mediflow.inpatient.application.dto.response.PlacementLookupDTO;
 import com.mediflow.inpatient.application.port.in.LookupAdmissionAuthorityUseCase;
+import com.mediflow.inpatient.application.port.in.LookupPlacementAuthorityUseCase;
 import com.mediflow.inpatient.infrastructure.correlation.CorrelationIdRequestAttribute;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataAccessException;
@@ -18,12 +20,23 @@ import java.util.UUID;
 @RestController
 public class AdmissionAuthorityController {
     private final LookupAdmissionAuthorityUseCase admissions;
-    public AdmissionAuthorityController(LookupAdmissionAuthorityUseCase admissions) { this.admissions = admissions; }
+    private final LookupPlacementAuthorityUseCase placements;
+    public AdmissionAuthorityController(LookupAdmissionAuthorityUseCase admissions,
+                                        LookupPlacementAuthorityUseCase placements) {
+        this.admissions = admissions;
+        this.placements = placements;
+    }
 
     @GetMapping("/api/v1/inpatient/admissions/{id}/lookup")
     @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
     public ApiResponse<AdmissionLookupDTO> lookup(@PathVariable UUID id, HttpServletRequest request) {
         return ApiResponse.ok(admissions.lookup(id),correlation(request));
+    }
+
+    @GetMapping("/api/v1/inpatient/admissions/{id}/placement-lookup")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
+    public ApiResponse<PlacementLookupDTO> placement(@PathVariable UUID id, HttpServletRequest request) {
+        return ApiResponse.ok(placements.lookup(id), correlation(request));
     }
 
     @ExceptionHandler(DataAccessException.class)
