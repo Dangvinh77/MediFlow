@@ -1,7 +1,15 @@
 # HANDOFF — Pharmacy and Report care-finance activation
 
-**Status:** ACTIVE — Pharmacy admission intake/current-state lookup and Report operational intake are implemented behind separate default-off gates; admission command authorization, full finance/live publication and placement policy remain open.
+**Status:** ACTIVE — Vinh's placement lookup, placement events and capacity-history events are producer-ready; Huy still owns Pharmacy post-lock authorization and Report projection/replay/publication behind default-off gates.
 **Owner:** Huy (`LQHuy0210`), Pharmacy and Report.
+
+Producer handoff 2026-10-12: Inpatient now supplies the distinct service-only
+`/admissions/{id}/placement-lookup`, `admission.placement.changed` V1 and
+`bed.capacity.changed` V1 with persisted source revisions, append-only capacity history and exact
+producer fixtures. The existing admission lookup is unchanged. This closes Vinh's producer gap;
+it does not activate Huy's consumers or authorize dispensing/publication. PostgreSQL/Rabbit tests
+are checked in and use the established Docker-unavailable skip behavior; broker-backed acceptance
+still must run in a Docker-capable environment before rollout.
 
 Current release 2026-10-11: the user's later decision permits a reasonable available-history
 fallback. It supersedes the earlier mandatory unavailable pre-V2 blocker below; missing periods
@@ -71,8 +79,12 @@ Inpatient produces approved admission/discharge lifecycle events. Billing produc
 ## Consumer
 
 - Pharmacy persists exact admission lifecycle evidence through its own opt-in queue. Start is not sufficient medication permission: medical discharge/close dominate late start, and public admission prescribing/dispensing remains closed.
-- Pharmacy has a separately gated service-only current-admission lookup, exact IDs/correlation and bounded freshness, with unavailable distinct from absence. It proves admission state, not placement, prescriber/order authority or a distributed lease.
-- Report has a separate opt-in operational/evidence queue using actual Clinical, Lab, Pharmacy, Surgery and Inpatient bytes. It uses transactional kernels and minimal replay inputs, not the legacy totals or accepted publication. Canonical starts and medical discharges/completed-stay duration now project into department/hospital scopes; administrative close remains evidence only and no occupancy is inferred.
+- Pharmacy has separate current-admission and current-placement lookups. The placement response
+  proves the exact active assignment/current-bed department at one observation and remains evidence,
+  not prescriber/order authority or a distributed lease.
+- Report has a separate opt-in operational/evidence queue using actual Clinical, Lab, Pharmacy,
+  Surgery and Inpatient bytes. It may now add occupancy from exact placement intervals and capacity
+  denominators from exact capacity-effective intervals; it must not infer either from start/close.
 - Report also has opt-in cash-only `payment.completed` intake into its existing gross receipt kernel
   and finite replay, with a separate queue/DLQ and default-off gate. Actual Billing service/deposit
   bytes commit once; legacy projections do not count these deposits as revenue. Allocation, release,
@@ -134,9 +146,14 @@ The missing refund cash input is implemented, not earned/deposit-liability rever
 settlement, full refund replay, historical coverage or accepted publication.
 [Current evidence](../superpowers/plans/2026-10-08-billing-refund-closure.md).
 
-1. Pharmacy lifecycle intake is implemented; finish admission create/dispense authorization and discharge/close-versus-stock mutation races before public activation. Do not treat ACK or an initial start projection as permission.
-2. Keep current placement absent until Vinh and Huy approve transfer/release/capacity identity, revision and business-time fixtures. Never reuse the initial start bed as current occupancy.
-3. Report guarded operational bindings are implemented; finish approved source coverage/export, live catch-up and controlled publication with source revalidation for legacy rows. Unsupported corrections remain rejected, not auto-imported.
+1. Pharmacy must consume the exact placement fixtures, call the fresh placement lookup outside its
+   transaction, then recheck after lock waits before create and dispense. Reject missing/stale/
+   unavailable placement, revision gaps, patient/department mismatch and a closed medication window.
+2. Report must consume the exact placement/capacity fixtures, retain out-of-order revisions until
+   contiguous, replay immutable assignment/capacity intervals, expose explicit coverage horizon and
+   keep missing pre-baseline history unavailable.
+3. Report guarded operational bindings are implemented; finish source coverage/export, live
+   catch-up and controlled publication. Unsupported corrections remain rejected, not auto-imported.
 4. Implement Billing allocation/recognition/refund/settlement projection against exact fixtures; do not count deposit cash as earned revenue.
 5. Prove live catch-up, finite replay, cutover and rollback without double-counting compatibility and versioned facts.
 
@@ -147,7 +164,10 @@ settlement, full refund replay, historical coverage or accepted publication.
 - Disabled flags produce no public delivery or publication side effects.
 - Docker proves admission start/medical discharge against Pharmacy authorization.
 - Docker proves operational and finance facts populate Report once under replay and live catch-up.
-- Placement, capacity and LOS remain absent/unavailable until their separate contracts are approved.
+- Pharmacy post-lock authorization passes actual lookup plus lifecycle/placement races without
+  treating an event ACK or stale projection as permission.
+- Report reconstructs the same occupancy/capacity result from live intake and finite replay, while
+  gaps and pre-baseline history remain explicitly unavailable.
 
 ## Local verification follow-up — 2026-10-08
 

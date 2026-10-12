@@ -290,8 +290,10 @@ not sufficient when multiple consumers run.
 | `payment.refunded` | linked cash/refund/reversal contribution |
 | `settlement.completed` | recognized revenue, remaining liability and receivable outcome |
 | `medicalrecord.completed` | completed visit and disposition |
-| `admission.started` | admission and occupancy start |
-| `admission.closed` | discharge and length of stay |
+| `admission.started` | admission count and immutable initial snapshot; not occupancy |
+| `admission.placement.changed` | exact assignment occupancy intervals and placement revision |
+| `bed.capacity.changed` | effective capacity membership and denominator revision |
+| `admission.closed` | administrative close evidence; not medical discharge or bed release |
 | `surgery.completed` | count, duration and complication category |
 | `surgery.cancelled` | cancellation count and stage/reason category |
 | `lab.result.created` | completed Lab KPI by requesting department |
@@ -420,9 +422,10 @@ are conflicts; late start never reopens a closed admission. Local row fence, eve
 effects join one transaction; ISO business times preserve source nanoseconds across reload. No full
 clinical payload is retained. The canonical contract now defines STARTED and CLOSED as separate
 immutable singleton operations keyed by routing key plus `admissionId`, each with implicit operation
-revision 1 independent of envelope version. This evidence still emits no metric contribution/count/
-LOS/occupancy until medical-discharge duration and transfer/release/capacity semantics are accepted.
-Existing listener/API remains unchanged; real PG pending/reload/race/rollback
+revision 1 independent of envelope version. Medical-discharge LOS is separately defined. Inpatient
+placement/capacity semantics and fixtures are now producer-ready, but this evidence path still emits
+no occupancy/capacity metric until Report implements revision-gap, interval replay and coverage
+rules. Existing listener/API remains unchanged; real PG pending/reload/race/rollback
 and upgrade/shape tests remain VERIFY OPEN without Docker.
 
 ## 10. Required tests

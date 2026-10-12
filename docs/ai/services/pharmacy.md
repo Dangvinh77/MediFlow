@@ -435,8 +435,11 @@ observation has a necessary exact patient/department/current-state check which m
 after mutation-lock waits; it is not sufficient permission and is not a source-state lease.
 
 Both gates default false. Public admission create/dispense and held delivery remain closed until
-current prescriber/order/placement authority and the complete stock/discharge race are implemented
-and accepted. A start bed is not current placement; outpatient clearance is never admission authority.
+current prescriber/order authority, the new producer-ready Inpatient placement lookup/event and the
+complete stock/discharge race are consumed and accepted. Pharmacy must call
+`/api/v1/inpatient/admissions/{id}/placement-lookup`, reject stale/missing/unavailable or revision-
+gapped evidence, and recheck after mutation-lock waits. A start bed is not current placement;
+outpatient clearance is never admission authority.
 These updates supersede earlier dated offline-only transport statements, not their activation gates.
 Fresh verification: [execution follow-up](../../superpowers/plans/2026-10-08-huy-ready-task-completion.md).
 
