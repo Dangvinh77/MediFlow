@@ -214,8 +214,26 @@ one PAYMENT_REQUEST per lab test from the configured price catalog, mirroring th
 planned-request pattern (V9). No new migration columns were needed: `PAYMENT_REQUEST_TARGET.record_id`/
 `lab_test_ids` already existed. Clearance granting reuses the existing generic `LedgerPaymentService`
 unchanged. Verified against lab-service's real producer fixture, copied into
-`src/test/resources/contracts/lab-request-v1/`. EXAM issuance remains open pending Clinical's own
-producer fixture commit; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+`src/test/resources/contracts/lab-request-v1/`. See
+[HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md).
+
+### Opt-in EXAM charge issuance (2026-10-12)
+
+The opt-in `appointment.status.changed` issuer (both `mediflow.billing.ledger.enabled` and
+`mediflow.billing.exam-charge-consumer.enabled` false by default) posts one EXAM charge and one
+PAYMENT_REQUEST per appointment from the configured price catalog, mirroring the LAB_TEST
+planned-request pattern. Clinical reuses this one routing key for every appointment status
+transition; `ExamChargeDecoder#decodeApplicable` returns `Optional.empty()` (an explicit no-op ACK)
+for any transition other than the normal check-in (`oldStatus=PENDING`, `newStatus=AWAITING_PAYMENT`,
+`recordId=null`), and `BillingEventConsumer` only swaps its dispatch target for this already-bound
+routing key when both flags are on — the legacy V0 `onAppointmentStatusChanged` compatibility handler
+is otherwise unchanged (exactly one writer, same as discharge-approval). No new migration columns
+were needed: `PAYMENT_REQUEST_TARGET.appointment_id` already existed. Clearance granting reuses the
+existing generic `LedgerPaymentService` unchanged. Verified against clinical-service's real producer
+fixture (PR #334), copied into `src/test/resources/contracts/appointment-status-changed-v1/`.
+`medicalrecord.created` is deliberately left on its legacy V0 handler — it is not the EXAM charge
+trigger; see [HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE](../../../backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md)
+for the residual pre-existing question that flags.
 
 ### Opt-in pre-start cancellation adjustment (2026-10-08)
 
