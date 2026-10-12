@@ -48,7 +48,8 @@ public class NotificationEventConsumer {
 
     private static final Set<String> CARE_PROJECTION_ROUTING_KEYS = Set.of(
             RabbitConfig.RK_ADMISSION_DEPOSIT_REQUESTED, RabbitConfig.RK_ADMISSION_STARTED,
-            RabbitConfig.RK_ADMISSION_CLOSED, RabbitConfig.RK_SURGERY_READY, RabbitConfig.RK_SURGERY_CANCELLED);
+            RabbitConfig.RK_ADMISSION_CLOSED, RabbitConfig.RK_SURGERY_READY, RabbitConfig.RK_SURGERY_CANCELLED,
+            RabbitConfig.RK_SETTLEMENT_COMPLETED);
 
     private final SendNotificationUseCase sendNotificationUseCase;
     private final NotificationTemplates templates;

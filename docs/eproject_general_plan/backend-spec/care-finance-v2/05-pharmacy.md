@@ -2,6 +2,12 @@
 
 **Owner:** Huy (`LQHuy0210`)
 
+2026-10-12 necessary identity continuation: internal checked creation additionally consumes the
+existing Organization doctor-eligibility `/staff/{id}/exists` decision, requiring the exact
+department plus generic active DOCTOR facts. Strict shape/correlation/freshness checks deny or
+fail unavailable; job/team labels cannot substitute. This does not complete clinical order,
+current licence/placement permission, admission races, distributed revoke or public/held rollout.
+
 **Module:** `backend/pharmacy-service`
 
 **Base path:** `/api/v1/pharmacy`

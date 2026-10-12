@@ -59,6 +59,7 @@ public class BillingEventConsumer {
     private final LabTestChargeConsumer labTestChargeConsumer;
     private final AdmissionDepositRequestConsumer admissionDepositRequestConsumer;
     private final DischargeApprovalConsumer dischargeApprovalConsumer;
+    private final ExamChargeConsumer examChargeConsumer;
 
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper) {
@@ -139,7 +140,6 @@ public class BillingEventConsumer {
                 cancellationConsumer, null, null, null, labTestChargeConsumer, admissionDepositRequestConsumer, dischargeApprovalConsumer);
     }
 
-    @Autowired
     public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
                                 SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
                                 @Nullable SurgeryChargeConsumer plannedRequestConsumer,
@@ -150,6 +150,23 @@ public class BillingEventConsumer {
                                 @Nullable LabTestChargeConsumer labTestChargeConsumer,
                                 @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
                                 @Nullable DischargeApprovalConsumer dischargeApprovalConsumer) {
+        this(accrueFeeUseCase, sagaCompensationUseCase, surgeryChargeUseCase, objectMapper, plannedRequestConsumer,
+                cancellationConsumer, prescriptionChargeConsumer, admissionChargeClose, surgeryCompletionProof,
+                labTestChargeConsumer, admissionDepositRequestConsumer, dischargeApprovalConsumer, null);
+    }
+
+    @Autowired
+    public BillingEventConsumer(AccrueFeeUseCase accrueFeeUseCase, SagaCompensationUseCase sagaCompensationUseCase,
+                                SurgeryChargeUseCase surgeryChargeUseCase, ObjectMapper objectMapper,
+                                @Nullable SurgeryChargeConsumer plannedRequestConsumer,
+                                @Nullable SurgeryCancellationConsumer cancellationConsumer,
+                                @Nullable ConsumePrescriptionChargeFactUseCase prescriptionChargeConsumer,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeAdmissionMedicalDischargeUseCase admissionChargeClose,
+                                @Nullable com.mediflow.billing.application.port.in.ConsumeSurgeryCompletionUseCase surgeryCompletionProof,
+                                @Nullable LabTestChargeConsumer labTestChargeConsumer,
+                                @Nullable AdmissionDepositRequestConsumer admissionDepositRequestConsumer,
+                                @Nullable DischargeApprovalConsumer dischargeApprovalConsumer,
+                                @Nullable ExamChargeConsumer examChargeConsumer) {
         this.accrueFeeUseCase = accrueFeeUseCase;
         this.sagaCompensationUseCase = sagaCompensationUseCase;
         this.surgeryChargeUseCase = surgeryChargeUseCase;
@@ -162,6 +179,7 @@ public class BillingEventConsumer {
         this.labTestChargeConsumer = labTestChargeConsumer;
         this.admissionDepositRequestConsumer = admissionDepositRequestConsumer;
         this.dischargeApprovalConsumer = dischargeApprovalConsumer;
+        this.examChargeConsumer = examChargeConsumer;
     }
 
     @RabbitListener(id = "billingEvents", queues = RabbitConfig.QUEUE)
@@ -177,8 +195,13 @@ public class BillingEventConsumer {
                     accrueFeeUseCase.onMedicalRecordCreated(read(body, MedicalRecordCreatedEvent.class));
             case RabbitConfig.RK_LAB_RESULT_CREATED ->
                     accrueFeeUseCase.onLabResultCreated(read(body, LabResultCreatedEvent.class));
-            case RabbitConfig.RK_APPOINTMENT_STATUS_CHANGED ->
-                    accrueFeeUseCase.onAppointmentStatusChanged(read(body, AppointmentStatusChangedEvent.class));
+            case RabbitConfig.RK_APPOINTMENT_STATUS_CHANGED -> {
+                // Exactly one writer: once the opt-in V1 EXAM issuer is configured, it alone reads
+                // this routing key. A valid transition other than the check-in charge trigger is a
+                // no-op there, not a fallback into the V0 flat-shape compatibility handler below.
+                if (examChargeConsumer != null) examChargeConsumer.receive(message);
+                else accrueFeeUseCase.onAppointmentStatusChanged(read(body, AppointmentStatusChangedEvent.class));
+            }
             case RabbitConfig.RK_PRESCRIPTION_CREATED ->
                     accrueFeeUseCase.onPrescriptionCreated(read(body, PrescriptionCreatedEvent.class));
             case RabbitConfig.RK_PRESCRIPTION_FILLED ->

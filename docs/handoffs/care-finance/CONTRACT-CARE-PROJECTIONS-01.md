@@ -19,6 +19,43 @@ cash-out, never an earned-revenue reversal or settlement. No held event is relea
 
 ## Projection rule
 
+### Finite operational SURGERY publication — 2026-10-12, LOCAL / PostgreSQL verified
+
+Report now supplies its own additive operator workflow on the existing retained operational journal:
+ADMIN starts a finite rebuild, advances 1..500 events per atomic batch and obtains the frozen
+manifest fingerprint via `/api/v1/reports/operations/rebuilds/{id}`. Publish/rollback commands are
+under `/api/v1/reports/operations/publications`. Both care-finance-v2 and the separate
+`mediflow.report.operational-publication.enabled` flag are required; defaults remain false.
+
+This first slice publishes **SURGERY only**: existing sourced completed/cancelled/whole-duration
+counters, not category breakdown, DAILY discharges, census inpatient-days or staffed-bed capacity.
+Available local evidence is a finite snapshot, not a claim about all upstream events or missing
+history. An empty/no-Surgery manifest or coverage before the earliest retained Surgery business
+day cannot certify zeroes. Coverage is 1..366 completed days in the configured reporting zone.
+
+Publication exclusively fences local journal writers before a fresh READ COMMITTED source check.
+All frozen metadata/snapshots/hashes/projector versions must match current committed journal;
+new delivery evidence requires a new freeze even when semantic totals are unchanged. Frozen
+projection hashes, distinct facts and department/hospital scope equality are checked again rather
+than trusting the historic VERIFIED label. No remote call or other service DB is introduced.
+
+V26 records immutable acceptance/actor and command intent/audit with an expected-current pointer.
+Accepted generation/input/contribution/scope rows are sealed against normal insert/update/delete.
+Same command/actor/intent retries return original receipts without changing later pointers;
+changed intent conflicts. Rollback selects only a previously accepted/published generation,
+retains its coverage/zone/as-of and does not claim fresh catch-up. Manual historical V10 pointers
+are preserved by migration, not silently adopted into operator-approved history.
+
+Signed human access tokens require expiry and canonical account UUID; ADMIN alone may manage
+these endpoints. Duplicate/unknown/trailing JSON is rejected. Routes disabled by gates return
+redacted 404 rather than an unexpected 500. New POST ingress still needs Gateway-owner review;
+Gateway and all producer schemas/fixtures/bindings/held gates are unchanged.
+
+The 20 actual PostgreSQL migration/publication/race cases and 19 existing replay PG cases now pass.
+Fresh clean full Report: 1,252 tests / 117 suites, zero failure/error/skip, actual PostgreSQL/RabbitMQ.
+Earlier focused/NOT_RUN evidence is superseded, not summed with the full run. This verifies the local
+database/kernel acceptance, not packaged full V1 E2E, full R-04.5.2 or approved production deployment.
+
 ### Initial final-only recognition intake — 2026-10-10
 
 The dual-gated Report final-recognition consumer binds only `settlement.recognition.completed`

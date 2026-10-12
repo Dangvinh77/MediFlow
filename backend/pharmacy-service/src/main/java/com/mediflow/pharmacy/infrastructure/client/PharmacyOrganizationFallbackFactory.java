@@ -11,6 +11,9 @@ public final class PharmacyOrganizationFallbackFactory implements FallbackFactor
             @Override public ResponseEntity<String> staff(UUID id, String authorization, String correlation) {
                 throw new PharmacyUpstreamUnavailableException();
             }
+            @Override public ResponseEntity<String> doctorEligibility(UUID id, String authorization, String correlation) {
+                throw new PharmacyUpstreamUnavailableException();
+            }
             @Override public ResponseEntity<String> department(UUID id, String authorization, String correlation) {
                 throw new PharmacyUpstreamUnavailableException();
             }

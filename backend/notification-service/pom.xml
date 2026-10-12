@@ -15,6 +15,11 @@
     <name>MediFlow Notification Service</name>
     <description>Email/SMS/in-app notification history (THONG_BAO).</description>
 
+    <!-- Align with pharmacy-service/report-service's Docker Desktop-compatible test runtime. -->
+    <properties>
+        <testcontainers.version>1.20.6</testcontainers.version>
+    </properties>
+
     <dependencies>
         <!-- Web / JPA / Validation -->
         <dependency>

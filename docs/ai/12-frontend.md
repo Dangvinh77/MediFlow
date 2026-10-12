@@ -8,6 +8,11 @@
 > [`15-frontend-ownership.md`](15-frontend-ownership.md) and the
 > [frontend workboard](../../frontend/docs/frontend-workboard.md).
 
+Before editing anything under `frontend/src/`, read
+[`frontend/src/AGENTS.md`](../../frontend/src/AGENTS.md) and the nearest nested `AGENTS.md` for
+every intended path. A source-local rule narrows effective write scope; it never replaces this
+blueprint or the canonical ownership policy.
+
 ## Stack
 
 | | |

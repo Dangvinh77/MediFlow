@@ -1,7 +1,8 @@
 # HANDOFF — Notification care-finance projections
 
-**Status:** ACTIVE — gated Surgery V1 intake and suppression are implemented and locally verified;
-admission, top-up, settlement and reviewed live publication remain open.
+**Status:** ACTIVE — gated Surgery V1 intake/suppression, admission (deposit/started/closed) and
+settlement notices are implemented and locally verified; top-up and reviewed live publication
+remain open.
 **Owner:** Lộc (`locgit-89`), Notification.
 **Unblocks:** privacy-safe patient communication for the Care-Finance workflow.
 
@@ -46,13 +47,39 @@ four exact subscriptions/V3 suppression and the separate Billing Surgery request
 source receipt. Final full clean Notification suite passed 145/145 (19 reports) with PostgreSQL/
 RabbitMQ, zero skipped. Producer bytes are consumed directly; no fixture copies.
 This is local broker acceptance, not released Surgery/Billing outboxes or production activation.
-The remaining admission/top-up/settlement work and cutover criteria below stay active.
+
+**Admission and settlement notices (2026-10-12):** `CareProjectionWireHandler`/`CareProjectionService`
+now also consume `admission.deposit.requested`, `admission.started`, `admission.closed` (all three
+already existed) plus the newly-added `settlement.completed` (billing-service producer), creating one
+private IN_APP intent each — amount/outcome only, no clinical detail, same `mediflow.notification.
+care-v1.enabled` gate as the others. `settlement.completed` was blocked until Billing's own
+`discharge.medically.approved`/settlement work (2026-10-10) produced a real producer fixture
+(`backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-completed.json`, same
+bytes as Inpatient's copy); that fixture now exists, so this was unblocked and implemented, same
+spirit as EXAM issuance being unblocked in the Clinical/Lab handoff by Vinh's fixture commit.
+Producer bytes are consumed directly from `../billing-service/...` in tests — no fixture copy into
+notification-service, matching the existing admission/surgery pattern.
+
+**Docker E2E (2026-10-12):** `CareProjectionPostgresIntegrationTest` proves `admission.deposit.requested`
+and `settlement.completed` each deliver exactly one real `NOTIFICATION` row through the real wire
+handler against a real Postgres container (duplicate delivery still commits only one). This closes
+the acceptance criterion "Docker proves each enabled producer event reaches one Notification intent"
+for these two events; `surgery.ready`/`surgery.cancelled` already had their own Docker coverage.
+`admission.started`/`admission.closed` still only have mock-level coverage. The pre-existing Docker
+Desktop/testcontainers-version incompatibility that blocked any Docker test on this machine is now
+fixed — see the Billing-side handoff and `CONTRACT-CARE-BILLING-01`'s Docker compatibility note.
+
+The remaining `deposit.topup.required` and cutover criteria below stay active:
+`deposit.topup.required` is still blocked because Billing itself has not built the top-up issuer yet
+(undecided trigger-threshold policy — see HANDOFF-INPATIENT-DEPOSIT-SETTLEMENT), so no real producer
+fixture exists to decode against.
 
 1. Add guarded version-1 bindings and exact decoders for `admission.deposit.requested`,
-   `deposit.topup.required`, `admission.started`, `surgery.ready`, `surgery.cancelled`,
-   `settlement.completed` and `admission.closed`. Add `surgery.readiness.invalidated` only after its
-   reminder-suppression intent is registered in the canonical projection contract; do not infer the
-   behavior from producer bytes alone.
+   `admission.started`, `surgery.ready`, `surgery.cancelled`, `admission.closed` (all done) and
+   `settlement.completed` (done 2026-10-12). `deposit.topup.required` stays open: Billing has not
+   built the top-up issuer yet, so there is no real producer fixture to decode against. Add
+   `surgery.readiness.invalidated` only after its reminder-suppression intent is registered in the
+   canonical projection contract; do not infer the behavior from producer bytes alone.
 2. Reuse existing Billing notification paths only where the canonical intent is identical; keep
    deposit, top-up, receipt, refund and settlement templates semantically distinct.
 3. Persist one notification intent per event ID and retain bounded retry/failure state.

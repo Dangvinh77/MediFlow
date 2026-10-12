@@ -11,6 +11,15 @@ it does not activate Huy's consumers or authorize dispensing/publication. Postgr
 are checked in and use the established Docker-unavailable skip behavior; broker-backed acceptance
 still must run in a Docker-capable environment before rollout.
 
+2026-10-12 scoped completion: Huy's finite SURGERY publication/rollback now passes actual PG
+fresh/upgrade, source-writer/publication races, evidence sealing and read-pointer acceptance checks.
+The internal Pharmacy preflight also consumes the existing Organization doctor-eligibility decision;
+there is no fallback to generic job/team labels. Fresh full Pharmacy 625 and Report 1,252 cases pass,
+zero skips, actual PostgreSQL/RabbitMQ. Other services/Gateway/producer contracts are unchanged.
+This handoff remains ACTIVE for prescribing/order/current placement, distributed revoke, census/
+capacity/full-KPI source contracts and approved public/held cutover. These are not replaced by
+module tests, the doctor decision or finite SURGERY counters. No new handoff file is added.
+
 Current release 2026-10-11: the user's later decision permits a reasonable available-history
 fallback. It supersedes the earlier mandatory unavailable pre-V2 blocker below; missing periods
 remain unavailable, never reconstructed from fixture/aggregate IDs. Huy now supplies a controlled

@@ -7,6 +7,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.mediflow.notification.application.dto.command.AdmissionClosedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.dto.command.SurgeryReadyCommand;
 import com.mediflow.notification.application.port.in.ReactToCarePaymentReceiptUseCase;
@@ -48,6 +49,9 @@ public class CareNotificationConfiguration {
         }
         @Override public void onSurgeryCancelled(SurgeryCancelledNoticeCommand c) {
             transactions.executeWithoutResult(status -> service.onSurgeryCancelled(c));
+        }
+        @Override public void onSettlementCompleted(SettlementCompletedCommand c) {
+            transactions.executeWithoutResult(status -> service.onSettlementCompleted(c));
         }
     }
 }

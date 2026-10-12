@@ -3,6 +3,7 @@ package com.mediflow.notification.application.port.in;
 import com.mediflow.notification.application.dto.command.AdmissionClosedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionDepositRequestedCommand;
 import com.mediflow.notification.application.dto.command.AdmissionStartedCommand;
+import com.mediflow.notification.application.dto.command.SettlementCompletedCommand;
 import com.mediflow.notification.application.dto.command.SurgeryCancelledNoticeCommand;
 import com.mediflow.notification.application.dto.command.SurgeryReadyCommand;
 
@@ -17,4 +18,5 @@ public interface ReactToCareProjectionUseCase {
     void onAdmissionClosed(AdmissionClosedCommand command);
     void onSurgeryReady(SurgeryReadyCommand command);
     void onSurgeryCancelled(SurgeryCancelledNoticeCommand command);
+    void onSettlementCompleted(SettlementCompletedCommand command);
 }

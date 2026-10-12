@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SurgeryMigrationUpgradeIntegrationTest {
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    @ParameterizedTest(name = "upgrade existing V{0} to V8 preserves all prior rows and retry bytes")
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7})
+    @ParameterizedTest(name = "upgrade existing V{0} to V9 preserves all prior rows and retry bytes")
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8})
     void migrate_existingData_preservesRowsAndDoesNotCreateAuthorityOrJobs(int baseline) {
         String schema = "upgrade_" + UUID.randomUUID().toString().replace("-", "");
         var initial = Flyway.configure().dataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())
@@ -79,7 +79,7 @@ class SurgeryMigrationUpgradeIntegrationTest {
         Map<String, List<String>> before = snapshot(db);
         var current = Flyway.configure().dataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword())
                 .schemas(schema).defaultSchema(schema).load();
-        assertThat(current.migrate().migrationsExecuted).isEqualTo(8 - baseline);
+        assertThat(current.migrate().migrationsExecuted).isEqualTo(9 - baseline);
         for (var table : before.entrySet()) {
             assertThat(rows(db, table.getKey())).as("unchanged existing %s", table.getKey()).isEqualTo(table.getValue());
         }
@@ -95,6 +95,7 @@ class SurgeryMigrationUpgradeIntegrationTest {
             assertThat(db.queryForObject("SELECT delivery_status FROM surgery_care_event_outbox", String.class)).isEqualTo("HELD");
         }
         assertThat(db.queryForObject("SELECT count(*) FROM surgery_creation_receipt", Integer.class)).isZero();
+        assertThat(db.queryForObject("SELECT count(*) FROM surgery_safety_pause", Integer.class)).isZero();
         assertThat(db.queryForObject("SELECT count(*) FROM surgery_readiness_precision", Integer.class)).isZero();
         assertThat(db.queryForObject("SELECT payload FROM surgery_inbox", byte[].class)).containsExactly(retained);
         assertThat(current.validateWithResult().validationSuccessful).isTrue();

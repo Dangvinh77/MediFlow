@@ -15,6 +15,18 @@ Reference: [`docs/ai/services/report.md`](../../docs/ai/services/report.md) · d
 
 ## Status
 
+2026-10-12 operational continuation: ADMIN-only `/operations/rebuilds` and
+`/operations/publications` (including rollback) require both care-finance-v2 and
+`MEDIFLOW_REPORT_OPERATIONAL_PUBLICATION_ENABLED`, default false. Finite SURGERY snapshots only:
+three existing completion/cancellation/duration metrics, retained evidence, completed-day bounds,
+exact manifest/current-source checks, local shared-writer/exclusive publication fence,
+expected-pointer switch, immutable acceptance/audit and sealed generation rows. Retry does not
+revert a later pointer; rollback keeps original as-of. DAILY/census/capacity/category publication,
+upstream completeness, Gateway ingress and held-event release remain unimplemented/unapproved.
+Final full Report: 1,252 tests / 117 suites PASS, zero failures/errors/skips, actual PostgreSQL/RabbitMQ.
+20 new PG publication/migration + 19 existing replay cases pass separately; focused reruns are not summed.
+No existing developer database is modified. Broader R-04.5.2 remains OPEN.
+
 Current 2026-10-11 supported release: V25 implements finite five-metric publication, exact local
 catch-up/final fence, provenance/row reconciliation, immutable acceptance/audit, expected-pointer
 switch and rollback. New capability/coverage/bounded rebuild/publish management APIs are ADMIN-only
