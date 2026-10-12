@@ -8,6 +8,10 @@ Read the guide for the service you are changing after the global
 These guides contain the effective writable paths, current UI baseline, owner queue, and known
 handoffs. Backend controllers and DTOs remain the wire-contract authority.
 
+Before editing a context, read both `src/features/<context>/AGENTS.md` and its matching
+`src/app/(dashboard)/<route>/AGENTS.md`. These files state the effective owner and writable paths;
+this service index does not grant additional authority.
+
 | Service | Owner | Current frontend baseline | Guide |
 |---|---|---|---|
 | Clinical | Vinh (`Dangvinh77` / `Harori`) | Appointment and medical-record workflows | [clinical.md](clinical.md) |

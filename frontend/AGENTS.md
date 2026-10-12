@@ -5,12 +5,16 @@
 > this file is a pointer, not a rulebook.
 
 Frontend ownership and shared integration scope are canonical in
-[`../docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md). For a frontend task,
-read `12-frontend.md`, then `15-frontend-ownership.md`, then the dated
-[`docs/frontend-workboard.md`](docs/frontend-workboard.md), and finally the live owner backend
-contract. Before editing a feature or route, read its detailed guide in
-[`docs/services/`](docs/services/README.md). The workboard is the current route-state pointer; do
-not copy its matrix here.
+[`../docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md). For every frontend
+task, read `12-frontend.md`, `15-frontend-ownership.md`, [`src/AGENTS.md`](src/AGENTS.md), and the
+nearest nested `AGENTS.md` for every intended source path. Then read the dated
+[`docs/frontend-workboard.md`](docs/frontend-workboard.md), the matching guide under
+[`docs/services/`](docs/services/README.md), and the live owner backend contract. The workboard is
+the current route-state pointer; do not copy its matrix here.
+
+Vinh (`Dangvinh77` / `Harori`) coordinates frontend root configuration and the shared source paths
+listed in `15-frontend-ownership.md`. A non-Vinh developer needs an explicit human task naming the
+exact shared paths and bounded deliverable.
 
 ## What this is
 
