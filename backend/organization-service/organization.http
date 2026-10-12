@@ -58,7 +58,7 @@ Content-Type: application/json
   "location": "Building A, Floor 2"
 }
 
-### Update department head / active state (ADMIN only)
+### Update department head / active state (ADMIN only); departmentHeadId is required, null removes the head
 PUT {{host}}/api/v1/org/departments/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -67,7 +67,7 @@ Content-Type: application/json
   "departmentName": "Outpatient Department",
   "departmentType": "CLINICAL",
   "location": "Building A, Floor 1",
-  "departmentHeadId": "00000000-0000-0000-0000-000000000000",
+  "departmentHeadId": null,
   "active": true
 }
 

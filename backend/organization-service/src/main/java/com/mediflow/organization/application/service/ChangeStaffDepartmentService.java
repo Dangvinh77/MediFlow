@@ -11,6 +11,7 @@ import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
 import com.mediflow.organization.domain.exception.DepartmentInactiveException;
 import com.mediflow.organization.domain.exception.DepartmentNotFoundException;
+import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.Staff;
@@ -69,6 +70,15 @@ public class ChangeStaffDepartmentService
         }
 
         UUID oldDepartmentId = staff.getDepartmentId();
+        Department oldDepartment = departmentRepository
+                .findById(oldDepartmentId)
+                .orElseThrow(() ->
+                        new DepartmentNotFoundException(oldDepartmentId));
+
+        if (staff.getStaffId().equals(oldDepartment.getDepartmentHeadId())) {
+            throw new InvalidDepartmentHeadException(
+                    "A department head must be removed or reassigned before transferring departments");
+        }
 
         staff.changeDepartment(newDepartmentId);
 
