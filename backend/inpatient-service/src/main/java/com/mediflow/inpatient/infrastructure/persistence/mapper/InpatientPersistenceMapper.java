@@ -70,7 +70,8 @@ public class InpatientPersistenceMapper {
                 row.maKhoa, row.doUuTien, row.capCuu, row.trangThai, row.thoiGianYeuCauTamUng,
                 row.maXacNhanTamUng, depositExpiresAt, row.maPheDuyetCapCuu,
                 row.maQuyetToan, row.maPheDuyetDong, row.maTomTatRaVien, row.thoiGianNhapVien,
-                row.thoiGianRaVienYTe, row.thoiGianDong, row.thoiGianHuy, row.lyDoHuy);
+                row.thoiGianRaVienYTe, row.thoiGianDong, row.thoiGianHuy, row.lyDoHuy,
+                row.phienBanViTri);
     }
 
     public AdmissionJpaEntity copy(Admission model, AdmissionJpaEntity row) {
@@ -96,13 +97,15 @@ public class InpatientPersistenceMapper {
         row.thoiGianDong = model.closedAt();
         row.thoiGianHuy = model.cancelledAt();
         row.lyDoHuy = model.cancellationReason();
+        row.phienBanViTri = model.placementRevision();
         row.capNhatLuc = Instant.now();
         return row;
     }
 
     public Bed toDomain(BedJpaEntity row) {
         return Bed.restore(row.maGiuong, row.maKhoa, row.maKhu, row.maPhong,
-                row.maGiuongTrongPhong, row.loaiGiuong, row.trangThai, row.dangHoatDong);
+                row.maGiuongTrongPhong, row.loaiGiuong, row.trangThai, row.dangHoatDong,
+                row.phienBanCongSuat);
     }
 
     public BedJpaEntity copy(Bed model, BedJpaEntity row) {
@@ -114,6 +117,7 @@ public class InpatientPersistenceMapper {
         row.loaiGiuong = model.bedType();
         row.trangThai = model.status();
         row.dangHoatDong = model.active();
+        row.phienBanCongSuat = model.capacityRevision();
         row.capNhatLuc = Instant.now();
         return row;
     }

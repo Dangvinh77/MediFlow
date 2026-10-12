@@ -36,6 +36,22 @@ class InpatientSchemaIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "SELECT to_regclass('tiep_nhan_su_kien_phau_thuat')", String.class))
                 .isEqualTo("tiep_nhan_su_kien_phau_thuat");
+        assertThat(jdbc.queryForObject(
+                "SELECT to_regclass('lich_su_cong_suat_giuong')", String.class))
+                .isEqualTo("lich_su_cong_suat_giuong");
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_name = 'dot_noi_tru' AND column_name = 'placement_revision'
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_name = 'giuong_benh' AND column_name = 'capacity_revision'
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM pg_indexes
+                WHERE tablename = 'lich_su_cong_suat_giuong'
+                  AND indexdef ILIKE '%UNIQUE%bed_id%capacity_revision%'
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT indexdef FROM pg_indexes WHERE indexname = 'uq_phan_giuong_active_bed'",
                 String.class)).containsIgnoringCase("UNIQUE").containsIgnoringCase("WHERE")
                 .containsIgnoringCase("status").containsIgnoringCase("'ACTIVE'");

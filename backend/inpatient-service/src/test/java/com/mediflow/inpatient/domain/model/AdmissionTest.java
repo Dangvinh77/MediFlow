@@ -102,6 +102,16 @@ class AdmissionTest {
                 () -> admitted.cancel(UUID.randomUUID(), "changed mind", NOW.plusSeconds(1)));
     }
 
+    @Test
+    void placementRevisionIsIndependentFromAdmissionStateChanges() {
+        Admission admission = requestedAdmission();
+
+        assertEquals(0L, admission.placementRevision());
+        assertEquals(1L, admission.nextPlacementRevision());
+        admission.markAwaitingBed();
+        assertEquals(1L, admission.placementRevision());
+    }
+
     private static Admission readyAdmission() {
         return requestedAdmission().markAwaitingBed()
                 .applyFinancialClearance(UUID.randomUUID(), null, false, NOW)

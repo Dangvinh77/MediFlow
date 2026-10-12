@@ -22,6 +22,7 @@ public class BedJpaEntity {
     @Column(name = "bed_type", nullable = false, length = 32) public String loaiGiuong;
     @Enumerated(EnumType.STRING) @Column(name = "status", nullable = false, length = 20) public BedStatus trangThai;
     @Column(name = "active", nullable = false) public boolean dangHoatDong;
+    @Column(name = "capacity_revision", nullable = false) public long phienBanCongSuat;
     @Version @Column(name = "version", nullable = false) public long phienBan;
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false) public Instant taoLuc;
     @Column(name = "updated_at", nullable = false, insertable = false) public Instant capNhatLuc;
