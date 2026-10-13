@@ -6,6 +6,8 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
@@ -84,6 +86,9 @@ class InpatientRabbitIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @SpyBean
     private InpatientEventConsumer consumer;
 
@@ -131,7 +136,7 @@ class InpatientRabbitIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"admission.placement.changed", "bed.capacity.changed"})
-    void dispatcherRoutesNewProducerContractsByExactEventType(String routingKey) {
+    void dispatcherRoutesNewProducerContractsByExactEventType(String routingKey) throws Exception {
         String queue = declareBoundQueue(routingKey);
         UUID eventId = insertPendingEvent(routingKey);
 
@@ -139,9 +144,9 @@ class InpatientRabbitIntegrationTest {
 
         Message delivered = rabbitTemplate.receive(queue, 5000);
         assertThat(delivered).isNotNull();
-        assertThat(new String(delivered.getBody(), StandardCharsets.UTF_8))
-                .contains(eventId.toString())
-                .contains("\"eventType\":\"" + routingKey + "\"");
+        JsonNode envelope = objectMapper.readTree(delivered.getBody());
+        assertThat(envelope.path("eventId").asText()).isEqualTo(eventId.toString());
+        assertThat(envelope.path("eventType").asText()).isEqualTo(routingKey);
     }
 
     @Test
