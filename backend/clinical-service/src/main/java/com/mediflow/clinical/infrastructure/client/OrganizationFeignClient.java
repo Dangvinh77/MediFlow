@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.mediflow.common.api.ApiResponse;
 
-@FeignClient(name = "organization-service", contextId = "clinicalOrganizationClient",
+@FeignClient(name = "${mediflow.clients.organization-service:organization-service}",
+        contextId = "clinicalOrganizationClient",
         path = "/api/v1/org/staff")
 public interface OrganizationFeignClient {
 

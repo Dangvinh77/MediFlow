@@ -37,9 +37,12 @@ spring:
         default-requeue-rejected: false
 
 mediflow:
+  profile: ${MEDIFLOW_PROFILE:compatibility-v0}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
   features:
+    outpatient-mvp:
+      enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
   events:
     outbox-poll-interval: ${MEDIFLOW_OUTBOX_POLL_INTERVAL:1000}

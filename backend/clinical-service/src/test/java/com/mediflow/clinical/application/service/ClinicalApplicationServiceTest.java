@@ -32,6 +32,7 @@ import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
+import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
@@ -50,12 +51,18 @@ class ClinicalApplicationServiceTest {
     private final StaffLookupPort staff = mock(StaffLookupPort.class);
     private final ClinicalEventPublisherPort publisher = mock(ClinicalEventPublisherPort.class);
     private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
+    private final CurrentClinicalActorPort actors = mock(CurrentClinicalActorPort.class);
     private final ClinicalDtoMapper mapper = mock(ClinicalDtoMapper.class);
     private final AppointmentApplicationService appointmentService =
-            new AppointmentApplicationService(appointments, patients, staff, publisher, mapper, correlationIds);
+            new AppointmentApplicationService(appointments, patients, staff, publisher, mapper, correlationIds, false);
+    private final AppointmentApplicationService outpatientMvpAppointmentService =
+            new AppointmentApplicationService(appointments, patients, staff, publisher, mapper, correlationIds, true);
     private final MedicalRecordApplicationService recordService =
             new MedicalRecordApplicationService(appointments, records, patients, staff, publisher, mapper,
-                    correlationIds);
+                    correlationIds, actors, false);
+    private final MedicalRecordApplicationService outpatientMvpRecordService =
+            new MedicalRecordApplicationService(appointments, records, patients, staff, publisher, mapper,
+                    correlationIds, actors, true);
 
     @BeforeEach
     void mapDiagnosisRequests() {
@@ -183,6 +190,64 @@ class ClinicalApplicationServiceTest {
         verify(publisher).publishAppointmentStatusChanged(statusEvent.capture());
         assertThat(statusEvent.getValue().recordId()).isEqualTo(saved.getValue().getRecordId());
         assertThat(statusEvent.getValue().correlationId()).isEqualTo(recordEvent.getValue().correlationId());
+    }
+
+    @Test
+    void outpatientMvp_blocksLegacyRecordCreationBeforeRemoteLookups() {
+        var request = new CreateRecordRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                LocalDate.now(), "Fever", null, List.of(new AddDiagnosisRequest("Influenza", null, "J10")));
+
+        assertThatThrownBy(() -> outpatientMvpRecordService.create(request))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_V0_WRITE_DISABLED");
+
+        verifyNoInteractions(patients, staff, appointments, records, publisher);
+    }
+
+    @Test
+    void outpatientMvp_legacyStatusCannotCheckInButCanCancelPendingVisit() {
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.create(patientId, doctorId, departmentId,
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        UUID appointmentId = appointment.getAppointmentId();
+
+        assertThatThrownBy(() -> outpatientMvpAppointmentService.changeStatus(
+                appointmentId, AppointmentStatus.ARRIVED))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_V0_STATUS_WRITE_DISABLED");
+        verifyNoInteractions(appointments);
+
+        when(appointments.findByIdForUpdate(appointmentId)).thenReturn(Optional.of(appointment));
+        when(appointments.save(appointment)).thenReturn(appointment);
+        outpatientMvpAppointmentService.changeStatus(appointmentId, AppointmentStatus.CANCELLED);
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        verify(publisher).publishAppointmentStatusChanged(any(AppointmentStatusChangedEvent.class));
+    }
+
+    @Test
+    void outpatientMvp_allowsDiagnosisOnlyForAssignedDoctorDuringActiveV1Exam() {
+        UUID patientId = UUID.randomUUID();
+        UUID doctorId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        Appointment appointment = Appointment.create(patientId, doctorId, departmentId,
+                LocalDate.now().plusDays(1), LocalTime.NOON, null);
+        appointment.checkIn("OUTPATIENT_EXAM", java.time.Instant.now());
+        appointment.startExam(UUID.randomUUID(), null, java.time.Instant.now());
+        MedicalRecord record = MedicalRecord.openForAppointment(patientId, doctorId, departmentId,
+                LocalDate.now(), null, appointment.getAppointmentId(), java.time.Instant.now());
+        when(records.findByIdForUpdate(record.getRecordId())).thenReturn(Optional.of(record));
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(records.save(record)).thenReturn(record);
+        when(actors.current()).thenReturn(new com.mediflow.clinical.application.dto.command.ActorIdentity(
+                doctorId, "DOCTOR"));
+        when(staff.departmentOf(doctorId)).thenReturn(Optional.of(departmentId));
+
+        outpatientMvpRecordService.addDiagnosis(record.getRecordId(),
+                new AddDiagnosisRequest("Influenza", null, "J10"));
+
+        assertThat(record.getDiagnoses()).hasSize(1);
+        verify(publisher).publishDiagnosisAdded(any(DiagnosisAddedEvent.class));
     }
 
     @Test

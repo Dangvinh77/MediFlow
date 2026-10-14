@@ -35,6 +35,7 @@ import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPor
 import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.ClinicalAppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.exception.ClinicalRecordNotFoundException;
@@ -67,9 +68,11 @@ public class ClinicalCareFinanceApplicationService
     private final ExamPricePolicyPort prices;
     private final ClinicalOutboxPort outbox;
     private final CurrentClinicalActorPort actors;
+    private final ClinicalStaffAuthority staffAuthority;
     private final ClinicalDtoMapper mapper;
     private final CorrelationIdProvider correlationIds;
     private final Clock clock;
+    private final boolean admissionReferralsEnabled;
 
     public ClinicalCareFinanceApplicationService(AppointmentRepositoryPort appointments,
                                                   MedicalRecordRepositoryPort records,
@@ -79,9 +82,11 @@ public class ClinicalCareFinanceApplicationService
                                                   ExamPricePolicyPort prices,
                                                   ClinicalOutboxPort outbox,
                                                   CurrentClinicalActorPort actors,
+                                                  StaffLookupPort staff,
                                                   ClinicalDtoMapper mapper,
                                                   CorrelationIdProvider correlationIds,
-                                                  Clock clock) {
+                                                  Clock clock,
+                                                  boolean admissionReferralsEnabled) {
         this.appointments = appointments;
         this.records = records;
         this.clearances = clearances;
@@ -90,9 +95,11 @@ public class ClinicalCareFinanceApplicationService
         this.prices = prices;
         this.outbox = outbox;
         this.actors = actors;
+        this.staffAuthority = new ClinicalStaffAuthority(actors, staff);
         this.mapper = mapper;
         this.correlationIds = correlationIds;
         this.clock = clock;
+        this.admissionReferralsEnabled = admissionReferralsEnabled;
     }
 
     @Override
@@ -115,6 +122,7 @@ public class ClinicalCareFinanceApplicationService
                     "Start exam command is required");
         }
         Appointment appointment = lockedAppointment(appointmentId);
+        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
         AppointmentStatus oldStatus = appointment.getStatus();
         Instant now = clock.instant();
         Optional<ExamClearance> found = clearances.findByAppointment(appointmentId);
@@ -220,6 +228,11 @@ public class ClinicalCareFinanceApplicationService
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Appointment must be in examination before record completion");
         }
+        staffAuthority.requireAssignedDoctor(appointment.getDoctorId(), appointment.getDepartmentId());
+        if (!admissionReferralsEnabled && (request.disposition() == RecordDisposition.ADMISSION
+                || request.disposition() == RecordDisposition.TRANSFER)) {
+            throw deferredAdmission();
+        }
         Instant now = clock.instant();
         AppointmentStatus oldStatus = appointment.getStatus();
         record.complete(request.disposition(), request.dispositionNote(), now);
@@ -239,6 +252,9 @@ public class ClinicalCareFinanceApplicationService
     @Override
     @Transactional
     public AdmissionReferralDTO requestAdmission(UUID recordId, CreateAdmissionReferralRequest request) {
+        if (!admissionReferralsEnabled) {
+            throw deferredAdmission();
+        }
         if (request == null) {
             throw new InvalidClinicalDataException("CLINICAL_INVALID_STATUS_TRANSITION",
                     "Admission referral command is required");
@@ -336,6 +352,11 @@ public class ClinicalCareFinanceApplicationService
     private static InvalidClinicalDataException clearanceMismatch() {
         return new InvalidClinicalDataException("CLINICAL_CLEARANCE_TARGET_MISMATCH",
                 "Exam clearance does not match the exact Clinical target");
+    }
+
+    private static InvalidClinicalDataException deferredAdmission() {
+        return new InvalidClinicalDataException("CLINICAL_ADMISSION_DEFERRED",
+                "Admission and transfer dispositions are not enabled in the outpatient MVP profile");
     }
 
     private static DuplicateResourceException admissionReferralConflict() {

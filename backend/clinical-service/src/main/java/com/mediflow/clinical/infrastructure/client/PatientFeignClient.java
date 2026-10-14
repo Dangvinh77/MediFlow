@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.mediflow.common.api.ApiResponse;
 
-@FeignClient(name = "patient-service", contextId = "clinicalPatientClient", path = "/api/v1/patients")
+@FeignClient(name = "${mediflow.clients.patient-service:patient-service}",
+        contextId = "clinicalPatientClient", path = "/api/v1/patients")
 public interface PatientFeignClient {
 
     @GetMapping("/{id}/exists")

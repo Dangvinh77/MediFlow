@@ -1,13 +1,16 @@
 package com.mediflow.lab.messaging.consumer;
 
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -51,6 +54,21 @@ class LabQueueConsumerTest {
         verify(payments).consume(argThat(payload ->
                 eventId.equals(payload.eventId())
                         && payload.labTestIds().equals(java.util.List.of(labTestId))));
+    }
+
+    @Test
+    void outpatientMvp_quarantinesV0PaymentEventWithoutApplyingLabEffects() {
+        PaymentCompletedConsumer paymentConsumer = mock(PaymentCompletedConsumer.class);
+        LabQueueConsumer outpatientMvp = new LabQueueConsumer(
+                new ObjectMapper().findAndRegisterModules(), medicalRecords, paymentConsumer, true);
+
+        assertThatThrownBy(() -> outpatientMvp.consume(message(RabbitConfig.PAYMENT_COMPLETED, """
+                {"eventId":"%s","labTestIds":["%s"]}
+                """.formatted(UUID.randomUUID(), UUID.randomUUID()))))
+                .isInstanceOf(AmqpRejectAndDontRequeueException.class)
+                .hasMessageContaining("quarantined");
+
+        verifyNoInteractions(paymentConsumer);
     }
 
     private static Message message(String routingKey, String json) {

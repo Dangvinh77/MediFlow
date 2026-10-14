@@ -1,0 +1,18 @@
+# Activate with --spring.profiles.active=outpatient-mvp. This profile selects the
+# outpatient V1 care flow while keeping admission referrals outside MVP runtime.
+mediflow:
+  profile: outpatient-mvp
+  features:
+    outpatient-mvp:
+      enabled: true
+    care-finance-v2:
+      # Keep purpose-scoped V1 inactive until producer/consumer fixtures pass together.
+      enabled: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:false}
+    admission-referral:
+      enabled: false
+  clinical:
+    durable-events:
+      enabled: true
+  clients:
+    organization-service: core-service
+    patient-service: core-service

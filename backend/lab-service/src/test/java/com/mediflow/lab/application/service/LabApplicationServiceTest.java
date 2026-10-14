@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.mediflow.lab.application.dto.request.AddResultRequest;
+import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.request.LabResultItem;
 import com.mediflow.lab.application.event.LabRequestCreatedEvent;
@@ -27,6 +28,7 @@ import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
+import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.model.LabTest;
 import com.mediflow.lab.domain.model.LabTestStatus;
 
@@ -110,6 +112,47 @@ class LabApplicationServiceTest {
 
         assertThat(test.isPaid()).isTrue();
         verify(tests).save(test);
+    }
+
+    @Test
+    void outpatientMvp_rejectsV0CreateBeforePersistingOrPublishing() {
+        LabApplicationService outpatient = outpatientService(false, null);
+        var request = new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "CBC", LocalDate.now());
+
+        assertThatThrownBy(() -> outpatient.create(request))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_V0_MUTATION_DISABLED");
+        verify(tests, never()).save(any());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    void outpatientMvp_rejectsV0LifecycleMutationsBeforeChangingState() {
+        LabApplicationService outpatient = outpatientService(false, null);
+        LabTest test = newTest();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+
+        assertThatThrownBy(() -> outpatient.start(test.getTestId(), null))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_V0_MUTATION_DISABLED");
+        assertThatThrownBy(() -> outpatient.changeStatus(test.getTestId(), LabTestStatus.IN_PROGRESS))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_V0_MUTATION_DISABLED");
+        assertThatThrownBy(() -> outpatient.cancel(test.getTestId(),
+                new CancelLabTestRequest("reason", UUID.randomUUID())))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_V0_MUTATION_DISABLED");
+
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.PENDING);
+        verify(tests, never()).save(any());
+    }
+
+    private LabApplicationService outpatientService(boolean careFinanceEnabled,
+                                                     com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort actor) {
+        return new LabApplicationService(tests, publisher, mapper, correlationIds,
+                event -> { }, null, null, actor == null ? () -> Optional.empty() : actor,
+                careFinanceEnabled, true, java.time.Clock.systemUTC());
     }
 
     private static LabTest newTest() {

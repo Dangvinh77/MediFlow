@@ -26,16 +26,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.mediflow.clinical.application.dto.request.CompleteRecordRequest;
-import com.mediflow.clinical.application.dto.request.CreateAdmissionReferralRequest;
 import com.mediflow.clinical.application.dto.request.StartExamRequest;
-import com.mediflow.clinical.application.dto.response.AdmissionReferralDTO;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.in.CompleteMedicalRecordUseCase;
 import com.mediflow.clinical.application.port.in.ManageExamGateUseCase;
 import com.mediflow.clinical.infrastructure.correlation.ThreadLocalCorrelationIdProvider;
 import com.mediflow.clinical.infrastructure.web.CorrelationIdFilter;
-import com.mediflow.clinical.domain.model.AdmissionPriority;
 import com.mediflow.clinical.domain.model.AppointmentStatus;
 import com.mediflow.clinical.domain.model.MedicalRecordStatus;
 import com.mediflow.clinical.domain.model.RecordDisposition;
@@ -88,25 +85,17 @@ class ClinicalCareFinanceControllerTest {
                         .with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"disposition\":\"OUTPATIENT_FOLLOW_UP\"}"))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post(RECORDS + recordId + "/admission-referrals")
-                        .with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"diagnosisSummary\":\"Needs admission\",\"priority\":\"URGENT\"}"))
-                .andExpect(status().isForbidden());
 
         verifyNoInteractions(examGate, records);
     }
 
     @Test
     @WithMockUser(roles = "DOCTOR")
-    void doctorCanStartAndCompleteExamAndRequestAdmission() throws Exception {
+    void doctorCanStartAndCompleteExam() throws Exception {
         UUID appointmentId = UUID.randomUUID();
         UUID recordId = UUID.randomUUID();
-        UUID referralId = UUID.randomUUID();
         when(examGate.startExam(any(), any())).thenReturn(appointment(appointmentId));
         when(records.complete(any(), any())).thenReturn(record(recordId));
-        when(records.requestAdmission(any(), any())).thenReturn(new AdmissionReferralDTO(
-                referralId, recordId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                "Needs inpatient observation", AdmissionPriority.URGENT, false, Instant.now()));
 
         mockMvc.perform(put(APPOINTMENTS + appointmentId + "/start-exam")
                         .with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
@@ -115,14 +104,9 @@ class ClinicalCareFinanceControllerTest {
                         .with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"disposition\":\"OUTPATIENT_FOLLOW_UP\"}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(post(RECORDS + recordId + "/admission-referrals")
-                        .with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"diagnosisSummary\":\"Needs admission\",\"priority\":\"URGENT\"}"))
-                .andExpect(status().isCreated());
 
         verify(examGate).startExam(any(), any(StartExamRequest.class));
         verify(records).complete(any(), any(CompleteRecordRequest.class));
-        verify(records).requestAdmission(any(), any(CreateAdmissionReferralRequest.class));
     }
 
     @Test

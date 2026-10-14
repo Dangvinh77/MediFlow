@@ -1,22 +1,17 @@
 package com.mediflow.clinical.web;
 
-import java.net.URI;
 import java.util.UUID;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mediflow.clinical.application.dto.request.CompleteRecordRequest;
-import com.mediflow.clinical.application.dto.request.CreateAdmissionReferralRequest;
 import com.mediflow.clinical.application.dto.request.StartExamRequest;
-import com.mediflow.clinical.application.dto.response.AdmissionReferralDTO;
 import com.mediflow.clinical.application.dto.response.AppointmentDTO;
 import com.mediflow.clinical.application.dto.response.MedicalRecordDTO;
 import com.mediflow.clinical.application.port.in.CompleteMedicalRecordUseCase;
@@ -63,14 +58,4 @@ public class ClinicalCareFinanceController {
                 records.complete(id, request), correlationIds.currentOrCreate().toString()));
     }
 
-    @PostMapping("/api/v1/records/{id}/admission-referrals")
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
-    public ResponseEntity<ApiResponse<AdmissionReferralDTO>> requestAdmission(
-            @PathVariable UUID id, @Valid @RequestBody CreateAdmissionReferralRequest request) {
-        AdmissionReferralDTO result = records.requestAdmission(id, request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .location(URI.create("/api/v1/records/" + id + "/admission-referrals/"
-                        + result.admissionRequestId()))
-                .body(ApiResponse.ok(result, correlationIds.currentOrCreate().toString()));
-    }
 }

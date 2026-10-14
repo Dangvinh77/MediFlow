@@ -40,10 +40,20 @@ public class ClinicalOutboxEventJpaEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private JsonNode payload;
+    @Column(name = "payload_bytes", columnDefinition = "bytea")
+    private byte[] payloadBytes;
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
     @Column(name = "published_at")
     private Instant publishedAt;
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
+    @Column(name = "held_at")
+    private Instant heldAt;
+    @Column(name = "hold_reason", length = 255)
+    private String holdReason;
+    @Column(name = "quarantined_at")
+    private Instant quarantinedAt;
+    @Column(name = "quarantine_reason", length = 255)
+    private String quarantineReason;
 }
