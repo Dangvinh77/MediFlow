@@ -9,12 +9,12 @@ spring:
       # One route per business service. `lb://` resolves the name through Eureka —
       # never hard-code a host. Paths come from docs/ai/05-api-conventions.md.
       routes:
-        - id: organization-service
-          uri: lb://organization-service
+        - id: core-organization
+          uri: lb://core-service
           predicates:
             - Path=/api/v1/org/**
-        - id: patient-service
-          uri: lb://patient-service
+        - id: core-patient
+          uri: lb://core-service
           predicates:
             - Path=/api/v1/patients/**
         # clinical-service owns two URL prefixes: appointments and records were merged

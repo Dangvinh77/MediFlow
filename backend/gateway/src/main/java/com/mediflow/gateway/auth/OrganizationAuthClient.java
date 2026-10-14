@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 public class OrganizationAuthClient {
 
     private static final String ORGANIZATION_URI =
-            "http://organization-service/api/v1/org/accounts/verify";
+            "http://core-service/api/v1/org/accounts/verify";
     private static final Set<String> SUPPORTED_ROLES = Set.of(
             Roles.ADMIN,
             Roles.DOCTOR,

@@ -1,0 +1,50 @@
+server:
+  port: ${SERVER_PORT:8089}
+
+spring:
+  application:
+    name: core-service
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.hbm2ddl.auto: validate
+  rabbitmq:
+    host: ${MEDIFLOW_RABBIT_HOST:localhost}
+    port: ${MEDIFLOW_RABBIT_PORT:5672}
+    username: ${MEDIFLOW_RABBIT_USER:guest}
+    password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+mediflow:
+  datasource:
+    organization:
+      url: ${MEDIFLOW_ORGANIZATION_DB_URL:jdbc:postgresql://localhost:5432/mediflow_organization}
+      username: ${MEDIFLOW_ORGANIZATION_DB_USER:${MEDIFLOW_DB_USER:postgres}}
+      password: ${MEDIFLOW_ORGANIZATION_DB_PASSWORD:${MEDIFLOW_DB_PASSWORD:postgres}}
+      driver-class-name: org.postgresql.Driver
+    patient:
+      url: ${MEDIFLOW_PATIENT_DB_URL:jdbc:postgresql://localhost:5432/mediflow_patient}
+      username: ${MEDIFLOW_PATIENT_DB_USER:${MEDIFLOW_DB_USER:postgres}}
+      password: ${MEDIFLOW_PATIENT_DB_PASSWORD:${MEDIFLOW_DB_PASSWORD:postgres}}
+      driver-class-name: org.postgresql.Driver
+  jwt:
+    secret: ${MEDIFLOW_JWT_SECRET}
+  organization:
+    surgery-authority:
+      outbox-enabled: ${MEDIFLOW_ORGANIZATION_SURGERY_AUTHORITY_OUTBOX_ENABLED:false}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

@@ -1,0 +1,698 @@
+# organization-service
+
+Departments, staff, rooms and accounts — the organisational backbone the rest of the system references.
+
+Reference: [`docs/ai/services/organization.md`](../docs/ai/services/organization.md) · design doc [`EProject/organization-service.html`](../docs/eproject_general_plan/organization-service.html).
+
+- **Port:** 8089 · **Base path:** `/api/v1/org` · **DB:** `mediflow_organization` (PostgreSQL)
+- **Owns tables:** `DEPARTMENT`, `STAFF`, `ROOM`, `ACCOUNT`
+- **Architecture:** clean architecture per [`docs/ai/04-microservice-blueprint.md`](../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`.
+
+## Why it exists
+
+It owns the three things every other service points at:
+
+1. **Departments** — `DEPARTMENT`, and the `department_id` carried by every operational table and every domain event. This is the dimension that makes the system _departmental_ rather than merely modular.
+2. **Staff** — `STAFF` provides the `staff_id` referenced from `APPOINTMENT`, `MEDICAL_RECORD` and `PRESCRIPTION`, three bounded contexts that must not own staff identity themselves.
+3. **Accounts** — `ACCOUNT` is what the gateway checks before issuing a JWT. The gateway holds no user data of its own.
+4. **Rooms** — `ROOM` is the authoritative room/reference master. Scheduling services store only a
+   room UUID and own reservation/overlap rules themselves.
+
+## Data ownership
+
+The Organization Service owns:
+
+### `DEPARTMENT`
+
+| Column               | Type         | Description                                  |
+| -------------------- | ------------ | -------------------------------------------- |
+| `department_id`      | UUID         | Primary key                                  |
+| `department_name`    | VARCHAR(100) | Department name                              |
+| `abbreviation`       | VARCHAR(20)  | Unique department abbreviation               |
+| `department_type`    | ENUM         | `CLINICAL`, `PARACLINICAL`, `ADMINISTRATIVE` |
+| `department_head_id` | UUID         | References `STAFF.staff_id`, nullable        |
+| `location`           | VARCHAR(255) | Department location                          |
+| `is_active`          | BOOLEAN      | Whether the department is active             |
+| `created_at`         | TIMESTAMPTZ  | Creation timestamp                           |
+| `updated_at`         | TIMESTAMPTZ  | Last update timestamp                        |
+
+### `STAFF`
+
+| Column           | Type         | Description                                                                           |
+| ---------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `staff_id`       | UUID         | Primary key                                                                           |
+| `full_name`      | VARCHAR(100) | Staff member's full name                                                              |
+| `department_id`  | UUID         | Foreign key to `DEPARTMENT`                                                           |
+| `job_title`      | ENUM         | `DOCTOR`, `NURSE`, `TECHNICIAN`, `PHARMACIST`, `CASHIER`, `MANAGER`, `ADMINISTRATIVE` |
+| `specialization` | VARCHAR(100) | Optional specialization                                                               |
+| `license_number` | VARCHAR(50)  | Optional professional/practising license                                              |
+| `phone_number`   | VARCHAR(15)  | Phone number                                                                          |
+| `email`          | VARCHAR(100) | Email address                                                                         |
+| `status`         | ENUM         | `ACTIVE`, `INACTIVE`                                                                  |
+| `created_at`     | TIMESTAMPTZ  | Creation timestamp                                                                    |
+| `updated_at`     | TIMESTAMPTZ  | Last update timestamp                                                                 |
+
+### `ACCOUNT`
+
+| Column          | Type         | Description                                                                                     |
+| --------------- | ------------ | ----------------------------------------------------------------------------------------------- |
+| `account_id`    | UUID         | Primary key                                                                                     |
+| `username`      | VARCHAR(50)  | Unique username                                                                                 |
+| `password_hash` | VARCHAR(255) | BCrypt password hash                                                                            |
+| `staff_id`      | UUID         | Foreign key to `STAFF`, nullable                                                                |
+| `patient_id`    | UUID         | Bare UUID reference to `patient-service`, required only for `PATIENT` accounts                 |
+| `role`          | ENUM         | `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, `SYSTEM` |
+| `is_active`     | BOOLEAN      | Whether the account can log in                                                                  |
+| `last_login_at` | TIMESTAMPTZ  | Nullable                                                                                        |
+| `created_at`    | TIMESTAMPTZ  | Creation timestamp                                                                              |
+| `updated_at`    | TIMESTAMPTZ  | Last update timestamp                                                                           |
+
+### `ROOM`
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `room_id` | UUID | Primary key |
+| `department_id` | UUID | Owning department UUID |
+| `room_name` | VARCHAR(100) | Room display/name identifier |
+| `room_type` | VARCHAR(30) | First locked value: `OPERATING_ROOM` |
+| `is_active` | BOOLEAN | Whether consumers may use the room |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | Last update timestamp |
+
+## Enum definitions
+
+The following enum values are the single source of truth for the Organization Service.
+
+### `DepartmentType`
+
+```text
+CLINICAL
+PARACLINICAL
+ADMINISTRATIVE
+```
+
+### `JobTitle`
+
+```text
+DOCTOR
+NURSE
+TECHNICIAN
+PHARMACIST
+CASHIER
+MANAGER
+ADMINISTRATIVE
+```
+
+### `StaffStatus`
+
+```text
+ACTIVE
+INACTIVE
+```
+
+### `Role`
+
+```text
+ADMIN
+DOCTOR
+NURSE
+PHARMACIST
+CASHIER
+LAB_TECH
+MANAGER
+PATIENT
+SYSTEM
+```
+
+`Role` must remain exactly synchronized with `backend/common/security/Roles.java`.
+
+`TECHNICIAN` and `LAB_TECH` intentionally represent different concepts:
+
+- `TECHNICIAN` is a staff `JobTitle`.
+- `LAB_TECH` is an authorization `Role`.
+
+## Status
+
+The module currently provides department and staff creation, lookup, update, department transfer,
+active filtering, pagination, staff-existence checks, and account creation with BCrypt password
+hashing, account status management, and credential verification for the gateway.
+
+All HTTP responses use the shared `ApiResponse` envelope. Successful payloads are under `data`;
+errors are under `error` and include a stable machine-readable code plus the request
+`correlationId` (also returned in `X-Correlation-Id`).
+
+## Run locally
+
+1. `CREATE DATABASE mediflow_organization;` (or `docker compose up -d`, which creates it).
+2. Start `eureka-server` on port `8761`, then `gateway` on port `8080`, then this service.
+3. RabbitMQ runs on `localhost:5672`.
+
+```bash
+mvn -pl backend/core-service -am install -DskipTests
+mvn -pl backend/core-service spring-boot:run
+```
+
+Swagger UI:
+
+`http://localhost:8089/swagger-ui.html`
+
+## Endpoints
+
+| Method | Path                                                | Roles                         |
+| ------ | --------------------------------------------------- | ----------------------------- |
+| GET    | `/api/v1/org/departments?activeOnly=true`           | ADMIN, MANAGER, DOCTOR, NURSE |
+| GET    | `/api/v1/org/departments/{id}`                      | ADMIN, MANAGER, DOCTOR, NURSE |
+| POST   | `/api/v1/org/departments`                           | ADMIN                         |
+| PUT    | `/api/v1/org/departments/{id}`                      | ADMIN                         |
+| GET    | `/api/v1/org/staff?departmentId&jobTitle&page&size` | ADMIN, MANAGER, DOCTOR, NURSE |
+| GET    | `/api/v1/org/staff/{id}`                            | ADMIN, MANAGER, DOCTOR, NURSE |
+| POST   | `/api/v1/org/staff`                                 | ADMIN                         |
+| PUT    | `/api/v1/org/staff/{id}`                            | ADMIN                         |
+| PUT    | `/api/v1/org/staff/{id}/department`                 | ADMIN                         |
+| GET    | `/api/v1/org/staff/{id}/exists`                     | SYSTEM                        |
+| GET    | `/api/v1/org/staff/{id}/lookup`                     | SYSTEM service token         |
+| GET    | `/api/v1/org/departments/{id}/lookup`               | SYSTEM service token         |
+| GET    | `/api/v1/org/rooms/{id}/lookup`                      | SYSTEM service token         |
+| POST   | `/api/v1/org/accounts`                              | ADMIN                         |
+| POST   | `/api/v1/org/accounts/verify`                       | SYSTEM                        |
+
+The staff list uses database pagination. `page` is zero-based and `size` is capped at 100. Its
+`data` payload is a `PageResult` containing `content`, `totalElements`, `totalPages`, `number`,
+and `size`.
+
+Create department/staff endpoints return the complete created DTO in `data` (not only an ID).
+Department transfer returns the updated `StaffResponse` with HTTP 200.
+
+### Service identity lookups
+
+The additive lookup endpoints are authenticated only with a short-lived JWT carrying
+`type=service`, `role=SYSTEM`, and a non-blank service subject. Human access tokens, refresh
+tokens, and non-SYSTEM service tokens are rejected. All three lookup endpoints preserve `X-Correlation-Id`
+and return the common `ApiResponse` envelope.
+
+`GET /api/v1/org/staff/{id}/lookup` returns
+`{ exists, active, jobTitle, departmentId, eligibleTeamRoles }`.
+`GET /api/v1/org/departments/{id}/lookup` returns
+`{ exists, active, departmentId, departmentName, departmentType }`.
+`GET /api/v1/org/rooms/{id}/lookup` returns
+`{ exists, active, roomId, departmentId, roomName, roomType }`.
+Missing records are confirmed absence with HTTP 200. Malformed UUIDs return HTTP 400; persistence
+failures return HTTP 503 with `ORG_LOOKUP_UNAVAILABLE`. The existing `/staff/{id}/exists`
+doctor-eligibility contract is unchanged.
+
+For active staff, the locked V1 team-role mapping is `DOCTOR` →
+`PRIMARY_SURGEON`, `ASSISTANT_SURGEON`, `ANESTHESIOLOGIST`; `NURSE` → `OR_NURSE`; all other
+current job titles → `[]`. Inactive and missing staff always return `eligibleTeamRoles: []`.
+
+### Department transfer
+
+`PUT /api/v1/org/staff/{id}/department`
+
+Request:
+
+```json
+{
+  "newDepartmentId": "..."
+}
+```
+
+The operation updates the existing staff member's `department_id` and publishes `staff.department.changed`. It never deletes and recreates the staff member.
+
+### Department update
+
+`PUT /api/v1/org/departments/{id}` updates the department name, type, location, optional
+department head, and optional active flag. The department abbreviation is immutable after
+creation. Omitting `departmentHeadId` or `active` preserves the current value. A department can
+only be deactivated when it has no active staff; otherwise the service returns `422
+DEPARTMENT_HAS_ACTIVE_STAFF`.
+
+### Staff profile update
+
+`PUT /api/v1/org/staff/{id}` updates the staff profile (name, job title, specialization,
+license, phone, and email). It does not move the staff member between departments; use the
+department transfer endpoint for that operation. A doctor must always have a license number.
+
+### Account status
+
+`PUT /api/v1/org/accounts/{id}/status`
+
+Request:
+
+```json
+{
+  "isActive": true
+}
+```
+
+### Account verification
+
+`POST /api/v1/org/accounts/verify`
+
+Request:
+
+```json
+{
+  "username": "...",
+  "password": "..."
+}
+```
+
+Successful response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "accountId": "...",
+    "staffId": "...",
+    "departmentId": "...",
+    "patientId": null,
+    "role": "DOCTOR"
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
+}
+```
+
+The gateway posts credentials to this endpoint using a short-lived signed service JWT with
+`type=service` and `role=SYSTEM`. The Organization Service verifies the account and BCrypt password
+hash, then returns the authenticated identity. The gateway uses the result to mint human JWTs with
+`type=access|refresh`, `sub=accountId`, and optional `staffId`, `departmentId`, and `patientId` claims.
+
+Invalid username, password, or inactive account returns HTTP `422` with the stable
+`AUTH_INVALID_CREDENTIALS` code. The Gateway maps that internal result to public HTTP `401`.
+
+**The gateway must never read the `ACCOUNT` table directly.** That would violate the service boundary through cross-service database access.
+
+## Events
+
+### Publish
+
+- `department.created`
+- `staff.created`
+- `staff.department.changed`
+
+### `department.created`
+
+```json
+{
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
+  "departmentId": "...",
+  "departmentName": "...",
+  "departmentType": "CLINICAL"
+}
+```
+
+### `staff.created`
+
+```json
+{
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
+  "staffId": "...",
+  "fullName": "...",
+  "departmentId": "...",
+  "jobTitle": "DOCTOR"
+}
+```
+
+### `staff.department.changed`
+
+```json
+{
+  "eventId": "...",
+  "occurredAt": "...",
+  "correlationId": "...",
+  "staffId": "...",
+  "oldDepartmentId": "...",
+  "newDepartmentId": "..."
+}
+```
+
+### Subscribe
+
+None. This is reference data; it drives other contexts rather than reacting to them.
+
+## Business rules
+
+1. `username` is unique.
+2. Passwords are stored as **BCrypt hashes**, never plaintext, and never logged.
+3. A `STAFF` member must belong to exactly one active `DEPARTMENT`.
+4. `job_title = DOCTOR` requires a non-empty `license_number`.
+5. `department_head_id`, if set, must reference a `STAFF` member of the same department.
+6. A department with active staff cannot be deactivated.
+7. Staff transfer updates the existing `STAFF` record and publishes `staff.department.changed`; it never deletes and recreates the staff member.
+8. Transferring staff to its current department is a no-op: no database write and no event.
+9. `role = PATIENT` accounts must have `patient_id` and `staff_id = null`, because patients are not staff.
+10. `role = SYSTEM` is reserved for short-lived service tokens; SYSTEM accounts cannot be created or logged in.
+11. Deactivating an account (`is_active = false`) prevents future logins.
+12. Existing JWTs expire naturally according to the gateway's JWT configuration.
+13. `Role` must remain synchronized with `backend/common/security/Roles.java`.
+14. No other service may directly access the Organization Service database.
+
+## Two integration points to get right
+
+### Account verification
+
+**`POST /api/v1/org/accounts/verify`**
+
+The gateway posts credentials here and mints the JWT from the result.
+
+Flow:
+
+```text
+Client
+  │
+  │ username + password
+  ▼
+Gateway
+  │
+  │ POST /api/v1/org/accounts/verify
+  │ Authorization: Bearer (type=service, role=SYSTEM)
+  ▼
+Organization Service
+  │
+  ├── find ACCOUNT by username
+  ├── verify BCrypt password
+  ├── verify account is active
+  └── return accountId, staffId, departmentId, patientId, role
+  │
+  ▼
+Gateway
+  │
+  └── mint JWT
+```
+
+The gateway must **never** read `ACCOUNT` directly.
+
+### Staff existence
+
+**`GET /api/v1/org/staff/{id}/exists`**
+
+`APPOINTMENT` and `MEDICAL_RECORD` use this endpoint to validate `staff_id`.
+
+The endpoint is an internal `type=service`, `SYSTEM`-authenticated lookup and returns the common envelope:
+
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "eligibleDoctor": true,
+    "departmentId": "..."
+  },
+  "error": null,
+  "timestamp": "...",
+  "correlationId": "..."
+}
+```
+
+`eligibleDoctor` is true only when the staff member is active and has job title `DOCTOR`.
+`departmentId` is populated only for an eligible doctor. Missing and ineligible staff are
+confirmed negative results with HTTP 200; transport failures and invalid upstream responses
+remain error responses.
+
+The lookup must be resilient with:
+
+- Timeout
+- Circuit breaker
+- Fallback
+
+This follows the same cross-service validation pattern used when operational services validate patient existence.
+
+## Cross-service references
+
+Other services must hold Organization Service identifiers as **bare UUIDs**.
+
+Examples:
+
+```text
+department_id
+staff_id
+```
+
+They must not use:
+
+- JPA relationships to Organization Service entities
+- Cross-service database joins
+- Direct access to the `mediflow_organization` database
+
+### Example: APPOINTMENT
+
+The `APPOINTMENT` bounded context may contain:
+
+```text
+staff_id
+department_id
+```
+
+It does not contain a JPA relationship such as:
+
+```java
+@ManyToOne
+private Staff staff;
+```
+
+Instead, it stores the UUID and performs an internal REST lookup when staff existence needs to be validated.
+
+### Example: MEDICAL_RECORD
+
+The `MEDICAL_RECORD` bounded context may contain:
+
+```text
+staff_id
+department_id
+```
+
+but does not own staff or department data.
+
+### Example: PRESCRIPTION
+
+The `PRESCRIPTION` bounded context may reference:
+
+```text
+staff_id
+department_id
+```
+
+as bare UUIDs.
+
+## Naming convention
+
+All names in this service and all references documented here use English terminology.
+
+### Database
+
+Use `snake_case` for columns:
+
+```text
+department_id
+department_name
+abbreviation
+department_type
+department_head_id
+location
+is_active
+
+staff_id
+full_name
+job_title
+specialization
+license_number
+phone_number
+status
+
+account_id
+username
+password_hash
+role
+last_login_at
+
+created_at
+updated_at
+```
+
+Database table names:
+
+```text
+DEPARTMENT
+STAFF
+ACCOUNT
+```
+
+### Java
+
+Use English domain names:
+
+```text
+Department
+Staff
+Account
+
+DepartmentType
+JobTitle
+StaffStatus
+Role
+```
+
+Fields:
+
+```text
+departmentId
+departmentName
+abbreviation
+departmentType
+departmentHeadId
+location
+isActive
+
+staffId
+fullName
+jobTitle
+specialization
+licenseNumber
+phoneNumber
+status
+
+accountId
+username
+passwordHash
+role
+lastLoginAt
+```
+
+### JSON / API
+
+Use `camelCase`:
+
+```json
+{
+  "departmentId": "...",
+  "departmentName": "...",
+  "departmentType": "CLINICAL",
+  "departmentHeadId": "...",
+  "staffId": "...",
+  "fullName": "...",
+  "jobTitle": "DOCTOR",
+  "accountId": "...",
+  "username": "...",
+  "role": "DOCTOR",
+  "isActive": true
+}
+```
+
+## Related service naming
+
+When this README refers to other bounded contexts, use their English names consistently:
+
+| Context         | Table / Domain   |
+| --------------- | ---------------- |
+| Appointment     | `APPOINTMENT`    |
+| Medical Record  | `MEDICAL_RECORD` |
+| Prescription    | `PRESCRIPTION`   |
+| Laboratory Test | `LAB_TEST`       |
+| Billing         | `BILLING`        |
+| Patient         | `PATIENT`        |
+
+The Organization Service does not own these tables.
+
+## Architecture
+
+The service follows the project's clean architecture:
+
+```text
+infrastructure
+      │
+      ▼
+application
+      │
+      ▼
+domain
+```
+
+### Domain
+
+Contains:
+
+- Entities
+- Value objects
+- Domain enums
+- Business rules
+- Domain events
+
+### Application
+
+Contains:
+
+- Use cases
+- Application services
+- Ports
+- Transaction orchestration
+
+### Infrastructure
+
+Contains:
+
+- REST controllers
+- JPA repositories
+- Database configuration
+- RabbitMQ integration
+- Security integration
+- External service adapters
+
+Dependencies must point inward:
+
+```text
+infrastructure → application → domain
+```
+
+The domain layer must not depend on Spring, JPA, RabbitMQ, HTTP, or other infrastructure concerns.
+
+## Tests
+
+Unit tests:
+
+```bash
+mvn -pl backend/core-service test
+```
+
+These cover domain and application logic without requiring Spring infrastructure.
+
+Integration verification:
+
+```bash
+mvn -pl backend/core-service verify
+```
+
+Integration tests use Testcontainers and require Docker.
+
+## Definition of Done
+
+The service is complete when:
+
+- [ ] `DEPARTMENT`, `STAFF`, and `ACCOUNT` are implemented.
+- [ ] All database columns use the English naming convention.
+- [ ] All Java domain classes and fields use English names.
+- [ ] All enum values match the definitions in this README.
+- [ ] `Role` matches `backend/common/security/Roles.java`.
+- [x] Department create, list, get, and update endpoints are implemented.
+- [x] Staff lookup, creation, update, and department transfer are implemented.
+- [x] Staff existence lookup is implemented.
+- [x] Account creation and status management are implemented.
+- [x] Account verification uses BCrypt.
+- [x] Plaintext passwords are never stored or logged.
+- [x] Patient accounts have no `staff_id`.
+- [x] Patient accounts carry `patient_id`; SYSTEM is service-token-only.
+- [x] Department and staff domain events are published.
+- [x] No events are consumed by this service.
+- [x] Cross-service references use bare UUIDs.
+- [x] No cross-service database access exists.
+- [ ] Staff existence validation supports timeout, circuit breaker, and fallback.
+- [x] Gateway authentication uses `/api/v1/org/accounts/verify`.
+- [x] Unit tests pass.
+- [x] Testcontainers integration test is included (requires Docker to execute; skipped when Docker is unavailable).
+- [x] Swagger/OpenAPI documentation is available through Springdoc at `/swagger-ui.html`.
