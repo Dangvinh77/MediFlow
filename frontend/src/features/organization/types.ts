@@ -33,7 +33,15 @@ export interface UpdateDepartmentRequest {
   departmentType: DepartmentType;
   location: string | null;
   departmentHeadId: string | null;
-  active: boolean;
+  active: boolean | null;
+}
+
+export interface ChangeStaffDepartmentRequest {
+  newDepartmentId: string;
+}
+
+export interface UpdateAccountStatusRequest {
+  isActive: boolean;
 }
 
 export interface CreateStaffRequest {

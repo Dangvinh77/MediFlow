@@ -1,4 +1,4 @@
-import type { PatientDTO } from "./types";
+import type { CreatePatientRequest, PatientDTO, UpdatePatientRequest } from "./types";
 
 /** Compile-time wire-contract fixture for the Vietnamese Patient DTO. */
 export const patientContractFixture = {
@@ -7,10 +7,32 @@ export const patientContractFixture = {
   ngaySinh: "1990-01-15",
   gioiTinh: "M",
   soCmnd: "001234567890",
-  diaChi: "Ho Chi Minh City",
-  soDienThoai: "0901234567",
-  email: "patient@example.com",
-  bhytSo: "01-12345678-9",
+  diaChi: null,
+  soDienThoai: null,
+  email: null,
+  bhytSo: null,
   createdAt: "2026-08-13T10:00:00Z",
   updatedAt: "2026-08-13T10:00:00Z",
 } satisfies PatientDTO;
+
+/** Update DTO fixture proves identity is immutable and soCmnd must not be sent. */
+export const updatePatientContractFixture = {
+  hoTen: "Nguyen Van A",
+  ngaySinh: "1990-01-15",
+  gioiTinh: "M",
+  diaChi: null,
+  soDienThoai: null,
+  email: null,
+  bhytSo: null,
+} satisfies UpdatePatientRequest;
+
+export const createPatientContractFixture = {
+  hoTen: "Nguyen Van A",
+  ngaySinh: "1990-01-15",
+  gioiTinh: "M",
+  soCmnd: "001234567890",
+  diaChi: null,
+  soDienThoai: null,
+  email: null,
+  bhytSo: null,
+} satisfies CreatePatientRequest;
