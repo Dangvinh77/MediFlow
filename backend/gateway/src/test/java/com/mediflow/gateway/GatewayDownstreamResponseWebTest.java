@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.cloud.discovery.enabled=false",
                 "eureka.client.enabled=false",
                 "spring.cloud.gateway.discovery.locator.enabled=false",
-                "spring.cloud.gateway.routes[0].id=organization-service",
+                "spring.cloud.gateway.routes[0].id=core-organization",
                 "spring.cloud.gateway.routes[0].predicates[0]=Path=/api/v1/org/**"
         })
 @AutoConfigureWebTestClient
@@ -74,7 +74,7 @@ class GatewayDownstreamResponseWebTest {
 
     @DynamicPropertySource
     static void routeToStub(DynamicPropertyRegistry registry) {
-        registry.add("spring.cloud.gateway.routes[0].id", () -> "organization-service");
+        registry.add("spring.cloud.gateway.routes[0].id", () -> "core-organization");
         registry.add("spring.cloud.gateway.routes[0].uri",
                 () -> "http://localhost:" + downstream.getAddress().getPort());
         registry.add("spring.cloud.gateway.routes[0].predicates[0]",

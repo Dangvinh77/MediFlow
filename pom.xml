@@ -23,9 +23,8 @@
     <module>backend/eureka-server</module>
     <module>backend/gateway</module>
 
-    <!-- reference data: who works where, and who the patients are -->
-    <module>backend/organization-service</module>
-    <module>backend/patient-service</module>
+    <!-- Core hosts Organization and Patient bounded contexts -->
+    <module>backend/core-service</module>
 
     <!-- departments (khoa/phòng) -->
     <module>backend/clinical-service</module>

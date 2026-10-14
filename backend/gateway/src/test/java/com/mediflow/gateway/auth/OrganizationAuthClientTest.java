@@ -54,7 +54,7 @@ class OrganizationAuthClientTest {
 
         var request = requestRef.get();
         assertThat(request.url().toString())
-                .isEqualTo("http://organization-service/api/v1/org/accounts/verify");
+                .isEqualTo("http://core-service/api/v1/org/accounts/verify");
         assertThat(request.headers().getFirst("X-Correlation-Id"))
                 .isEqualTo("00000000-0000-0000-0000-000000000010");
         String serviceToken = request.headers().getFirst(HttpHeaders.AUTHORIZATION)
