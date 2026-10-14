@@ -1,0 +1,110 @@
+# Hợp đồng tích hợp tối thiểu
+
+## Một nguồn wire truth
+
+Tài liệu này quyết định phạm vi và quy tắc tích hợp. Exact field names/types/nullability/roles/
+errors lấy từ live controllers, DTOs, serializers và producer fixtures ở source, sau đó khóa
+manifest M6-02. Không dùng thiết kế mới để khẳng định endpoint/event chưa code đã tồn tại.
+Không đổi wire tiếng Việt/Anh vì đổi deployment name; breaking change có version riêng.
+
+## Modes
+
+| Mode | Sử dụng |
+|---|---|
+| COMPATIBILITY V0 | Giữ các API/saga/event đang có để regression và rollback; không mở rộng ý nghĩa paid |
+| MVP OUTPATIENT V1 | Profile đích cho exact EXAM/LAB_TEST/PRESCRIPTION clearance và source-bound operations |
+| DEFERRED | Admission/Surgery/full V2, không producer/listener/job/route activation trong MVP |
+
+Mỗi command/aggregate/delivery chọn một mode rõ ràng. Không thử V1 rồi fallback V0 khi thiếu
+permission/provider. Không chạy hai issuer cùng charge source. MVP V1 chỉ công bố đạt khi
+driving API, real authority, producer/consumer cùng bytes và PG/Rabbit/Gateway tests đạt.
+Nếu chưa đủ, ghi task mở; không đổi demo thành V0 mà vẫn gọi toàn bộ MVP V1 hoàn thành.
+
+## Gateway và routes
+
+| Prefix giữ nguyên | Target deployment | Source owner |
+|---|---|---|
+| /api/v1/auth/** | Gateway; upstream account verification ở Core | Hoàng Anh |
+| /api/v1/org/**, /api/v1/patients/** | Core | Hoàng Anh |
+| /api/v1/appointments/**, /api/v1/records/** | Clinical | Vinh |
+| /api/v1/lab/** | Lab | Vinh |
+| /api/v1/pharmacy/** | Pharmacy | Huy |
+| /api/v1/billing/** | Billing | Lộc |
+| /api/v1/reports/**, /api/v1/notifications/** | Support | Huy/Lộc |
+| /api/v1/inpatient/**, /api/v1/surgery/** | Không route trong profile MVP | Deferred |
+
+Prefix không thay exact endpoint/role matrix. Gateway phải deny method/path ngoài manifest,
+không OR roles của hai module co-host. Account verify và exists/lookup là service-only,
+không public human API. Giữ ApiResponse/PageResult và correlation như source.
+
+## REST dependencies
+
+Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.
+Pharmacy gọi Clinical prescription-context lookup với exact recordId, patient, prescriber,
+department và visit identity. Gateway OrganizationAuthClient phải đổi upstream discovery về Core.
+Report không Feign tới producer; Notification MVP không tự thêm contact lookup vì chỉ in-app.
+
+Confirmed absence khác timeout/5xx/malformed; unavailable không là exists=false hoặc default
+permission. Có timeout/circuit breaker/bounded retry, không retry write tạo effect mới.
+Discovery name khác logical JWT subject; giữ allowlist/module caller identities compatibility.
+
+## Event manifest
+
+Đây là routing/semantics manifest, không schema mới. Khóa schema bằng fixtures tại M6-02.
+
+| Fact | Logical producer | Consumer/action trong MVP |
+|---|---|---|
+| patient.created | patient-service | Notification compatibility khi mapping hợp lệ |
+| appointment.created | clinical-service | In-app notice |
+| appointment.status.changed | clinical-service | EXAM issuer theo mode; không double-charge với record |
+| medicalrecord.created | clinical-service | Billing compatibility/EXAM source dedupe, Report compatibility |
+| medicalrecord.completed | clinical-service | Report outpatient count, Notification nếu fixture đã có |
+| lab.request.created | lab-service | V1 Billing planned charge |
+| lab.result.created | lab-service | Clinical result, Report Lab count, optional in-app notice |
+| prescription.created | pharmacy-service | Billing Rx charge/request |
+| prescription.filled | pharmacy-service | Billing saga completion, Clinical attachment, Report items/count, in-app |
+| prescription.dispense.failed | pharmacy-service | Billing adjustment/compensation, không auto refund cả hai mode |
+| invoice.created | billing-service | Private payment-request notice đúng mode |
+| payment.completed | billing-service | V0 Rx saga hoặc V1 cash evidence; V1 không care authorization |
+| financial.clearance.granted | billing-service | Exact EXAM/LAB_TEST/PRESCRIPTION authorization |
+| payment.failed | billing-service | V0 compensation/report reversal/notice theo source |
+| payment.refunded | billing-service | V1 completed cash refund projection/notice khi activated |
+| stock.low | pharmacy-service | Ops/in-app nếu thuộc manifest, không MVP prerequisite |
+| notification.sent | notification-service | Delivery fact, không unlock care |
+
+ADMISSION_DEPOSIT/SURGERY clearance và admission/surgery/settlement/topup facts không bật ở
+MVP. Không xóa shared queues hoặc historical messages: consumer phải phân loại deferred facts
+trước effect, giữ quarantine/HELD theo policy hiện có, không ACK-drop financial evidence.
+
+## Identity và idempotency
+
+Patient/staff/account/department IDs có authoritative origin. Episode identity chọn khi mở
+outpatient account, không thay khi record xuất hiện. Không lookup “latest record” hoặc dùng
+patientId để chọn mọi khoản tiền/đơn thuốc.
+
+V1 envelope: eventId, eventType, integer version, occurredAt, correlationId, producer, payload.
+Routing key không tự thêm .v1; schema version không là result/operation revision.
+Logical producer vẫn patient-service/clinical-service/pharmacy-service/... dù app co-host.
+Giữ event IDs và raw bytes của outbox cũ. Optional additive field có compatibility test;
+rename/type/meaning change phải version và consumer fixtures đồng bộ.
+
+Claim eventId và effect cùng transaction. Business-operation key chống same operation/new eventId.
+Same key/different bytes là conflict; source ID/purpose/episode mismatch không được silently accept.
+Không bảo đảm broker exactly-once; phải chứng minh effects không lặp bằng state/locks/receipts.
+
+## RBAC
+
+Role constants giữ ADMIN, DOCTOR, NURSE, PHARMACIST, CASHIER, LAB_TECH, MANAGER, PATIENT, SYSTEM.
+Role không tự thay clinical authority. Mọi endpoint có @PreAuthorize theo live manifest.
+Human APIs chỉ signed access tokens; refresh/service không dùng thay human. PATIENT ownership
+kiểm trong use case; internal-only lookups cần authenticated service subject/scope. Secrets external.
+
+## Contract evidence và gap register
+
+Không giữ handoff cũ như task bắt buộc. Một gap MVP mới phải ghi ngay trong M6 task:
+producer, consumer, thiếu field/permission/behavior, owner, acceptance fixture và test.
+Task không tự cấp quyền sửa service owner khác. Deferred gap không chặn MVP trừ khi code còn
+vô tình phụ thuộc nó. Chuyển module/hợp đồng phải update cả hai phía hoặc giữ gate OFF.
+
+Surgery/Inpatient contract implementation và fixtures trong source vẫn tồn tại, nhưng không
+là scope mới của tài liệu này. Không sửa payload của chúng theo manifest ngoại trú.

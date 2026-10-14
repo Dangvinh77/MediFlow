@@ -791,4 +791,3 @@ monthly URL submit trước khi ghi PASS. Không ghi các lượt lỗi đó là
 
 Tiếp tục R-01.3 và R-02 cho Daily/Top, rồi R-04/R-05; sau đó P-02/P-03/P-05/P-06/P-07.
 Surgery/V2 đi theo gate đã ghi, có thể làm local DTO/presenter nhưng chưa tự mở route hoặc sửa shared/Gateway.
-
