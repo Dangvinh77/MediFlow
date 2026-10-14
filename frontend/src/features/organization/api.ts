@@ -2,12 +2,14 @@ import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
 import type {
   AccountDTO,
+  ChangeStaffDepartmentRequest,
   CreateAccountRequest,
   CreateDepartmentRequest,
   CreateStaffRequest,
   DepartmentDTO,
   JobTitle,
   StaffDTO,
+  UpdateAccountStatusRequest,
   UpdateDepartmentRequest,
   UpdateStaffRequest,
 } from "./types";
@@ -40,8 +42,14 @@ export const organizationApi = {
   updateStaff: (staffId: string, body: UpdateStaffRequest) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`, body),
   changeStaffDepartment: (staffId: string, newDepartmentId: string) =>
-    api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}/department`, { newDepartmentId }),
+    api.put<StaffDTO>(
+      `/v1/org/staff/${encodeURIComponent(staffId)}/department`,
+      { newDepartmentId } satisfies ChangeStaffDepartmentRequest,
+    ),
   createAccount: (body: CreateAccountRequest) => api.post<AccountDTO>("/v1/org/accounts", body),
   updateAccountStatus: (accountId: string, isActive: boolean) =>
-    api.put<AccountDTO>(`/v1/org/accounts/${encodeURIComponent(accountId)}/status`, { isActive }),
+    api.put<AccountDTO>(
+      `/v1/org/accounts/${encodeURIComponent(accountId)}/status`,
+      { isActive } satisfies UpdateAccountStatusRequest,
+    ),
 };
