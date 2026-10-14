@@ -1,0 +1,9 @@
+# Activate with --spring.profiles.active=outpatient-mvp. Historical V0 payment
+# events remain durable in lab.dlq instead of applying V0 effects in this mode.
+mediflow:
+  profile: outpatient-mvp
+  features:
+    outpatient-mvp:
+      enabled: true
+    # Keep V1 Lab clearance effects inactive until producer/consumer acceptance passes.
+    care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}

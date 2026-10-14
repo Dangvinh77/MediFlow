@@ -1,5 +1,9 @@
 package com.mediflow.clinical.infrastructure.persistence.adapter;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -9,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.event.DomainEventEnvelope;
 import com.mediflow.clinical.application.port.out.ClinicalOutboxPort;
+import com.mediflow.clinical.application.port.out.LegacyClinicalEventMetadata;
 import com.mediflow.clinical.infrastructure.persistence.jpaEntity.ClinicalOutboxEventJpaEntity;
 import com.mediflow.clinical.infrastructure.persistence.repository.ClinicalOutboxJpaRepository;
 
@@ -35,6 +40,77 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
                 .occurredAt(event.occurredAt())
                 .retryCount(0)
                 .build());
+    }
+
+    @Override
+    @Transactional
+    public void appendLegacyEvent(LegacyClinicalEventMetadata metadata, byte[] wirePayload) {
+        Objects.requireNonNull(metadata, "legacy Clinical event metadata is required");
+        Objects.requireNonNull(wirePayload, "legacy Clinical event wire payload is required");
+        if (metadata.correlationId() == null) {
+            throw new IllegalArgumentException("legacy Clinical event correlationId is required");
+        }
+
+        JsonNode payload;
+        try {
+            payload = objectMapper.readTree(wirePayload);
+        } catch (IOException malformedPayload) {
+            throw new IllegalArgumentException("legacy Clinical event wire payload must be valid JSON", malformedPayload);
+        }
+        validateFlatPayload(metadata, payload);
+
+        repository.save(ClinicalOutboxEventJpaEntity.builder()
+                .eventId(metadata.eventId())
+                .aggregateType(legacyAggregateType(metadata.eventType()))
+                .aggregateId(metadata.aggregateId())
+                .eventType(metadata.eventType())
+                .eventVersion(0)
+                .correlationId(metadata.correlationId())
+                .payload(payload)
+                .payloadBytes(wirePayload.clone())
+                .occurredAt(metadata.occurredAt())
+                .retryCount(0)
+                .build());
+    }
+
+    private static void validateFlatPayload(LegacyClinicalEventMetadata metadata, JsonNode payload) {
+        if (!payload.isObject()
+                || payload.has("payload")
+                || !matches(payload, "eventId", metadata.eventId().toString())
+                || !instantMatches(payload.path("occurredAt"), metadata.occurredAt())
+                || !matches(payload, "correlationId", metadata.correlationId())
+                || !matches(payload, legacyAggregateIdField(metadata.eventType()), metadata.aggregateId().toString())) {
+            throw new IllegalArgumentException("legacy Clinical wire payload does not match its flat event metadata");
+        }
+    }
+
+    private static String legacyAggregateIdField(String eventType) {
+        return switch (eventType) {
+            case "appointment.created", "appointment.status.changed" -> "appointmentId";
+            case "medicalrecord.created", "diagnosis.added" -> "recordId";
+            default -> throw new IllegalArgumentException("Unsupported flat Clinical event type: " + eventType);
+        };
+    }
+
+    private static String legacyAggregateType(String eventType) {
+        return switch (eventType) {
+            case "appointment.created", "appointment.status.changed" -> "APPOINTMENT";
+            case "medicalrecord.created", "diagnosis.added" -> "MEDICAL_RECORD";
+            default -> throw new IllegalArgumentException("Unsupported flat Clinical event type: " + eventType);
+        };
+    }
+
+    private static boolean instantMatches(JsonNode actual, Instant expected) {
+        if (actual.isNumber()) {
+            BigDecimal expectedEpoch = BigDecimal.valueOf(expected.getEpochSecond())
+                    .add(BigDecimal.valueOf(expected.getNano(), 9));
+            return actual.decimalValue().compareTo(expectedEpoch) == 0;
+        }
+        return actual.isTextual() && expected.toString().equals(actual.asText());
+    }
+
+    private static boolean matches(JsonNode payload, String field, String expected) {
+        return expected.equals(payload.path(field).asText(null));
     }
 
     private static String aggregateType(String eventType) {

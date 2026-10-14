@@ -61,6 +61,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final LabEmergencyOverrideRepositoryPort overrides;
     private final AuthenticatedStaffContextPort authenticatedStaff;
     private final boolean careFinanceV2Enabled;
+    private final boolean outpatientMvpEnabled;
     private final Clock clock;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
@@ -70,6 +71,17 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                                  AuthenticatedStaffContextPort authenticatedStaff,
                                   boolean careFinanceV2Enabled,
                                   Clock clock) {
+        this(tests, publisher, mapper, correlationIds, outbox, clearances, overrides,
+                authenticatedStaff, careFinanceV2Enabled, false, clock);
+    }
+
+    public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
+                                 LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                 LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
+                                 LabEmergencyOverrideRepositoryPort overrides,
+                                 AuthenticatedStaffContextPort authenticatedStaff,
+                                 boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
+                                 Clock clock) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
@@ -79,6 +91,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         this.overrides = overrides;
         this.authenticatedStaff = authenticatedStaff;
         this.careFinanceV2Enabled = careFinanceV2Enabled;
+        this.outpatientMvpEnabled = outpatientMvpEnabled;
         this.clock = clock;
     }
 
@@ -94,8 +107,20 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     public LabTestDTO create(CreateLabRequest request) {
         boolean hasV2Identity = request.sourceOrderId() != null || request.careEpisodeType() != null
                 || request.careEpisodeId() != null || request.priceCode() != null;
+        if (outpatientMvpEnabled && request.careEpisodeType() != null
+                && request.careEpisodeType() != CareEpisodeType.OUTPATIENT_VISIT) {
+            throw new LabRuleException("LAB_ADMISSION_DEFERRED",
+                    "Admission Lab requests are deferred from outpatient MVP");
+        }
         if (careFinanceV2Enabled) {
+            if (outpatientMvpEnabled) {
+                throw new LabRuleException("LAB_SOURCE_ORDER_UNVERIFIED",
+                        "Lab cannot verify an authoritative clinical order for this request");
+            }
             return createV2(request);
+        }
+        if (outpatientMvpEnabled) {
+            throw outpatientV1Required();
         }
         if (hasV2Identity) {
             throw featureDisabled();
@@ -134,6 +159,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     @Transactional
     public LabTestDTO start(UUID id, StartLabTestRequest request) {
         LabTest test = locked(id);
+        requireOutpatientV1Mutation(test);
         if (test.getCareContractVersion() == 0) {
             test.start(null, null, clock.instant());
             return mapper.toDto(tests.save(test));
@@ -163,6 +189,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         LabTest test = locked(id);
         if (test.getCareContractVersion() == 1) {
             requireV2Enabled();
+            requireOutpatientV1Mutation(test);
+            requireCancellationActor(request);
+        } else {
+            requireOutpatientV1Mutation(test);
         }
         test.cancel(request.reason(), request.cancelledBy());
         return mapper.toDto(tests.save(test));
@@ -172,13 +202,16 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     @Transactional
     public LabTestDTO addResults(UUID id, AddResultRequest request) {
         LabTest test = locked(id);
+        requireOutpatientV1Mutation(test);
+        if (test.getCareContractVersion() == 1) {
+            requireV2Enabled();
+        }
         List<LabResult> results = request.results().stream()
                 .map(item -> LabResult.create(item.indicator(), item.value(), item.unit(), item.referenceRange()))
                 .toList();
         test.recordResults(results, request.conclusion(), request.performedDate());
         UUID verifiedBy = null;
         if (test.getCareContractVersion() == 1) {
-            requireV2Enabled();
             verifiedBy = authenticatedStaff.currentStaff().map(AuthenticatedStaffContext::staffId)
                     .orElseThrow(() ->
                     new LabRuleException("LAB_STAFF_REQUIRED", "Người xác nhận kết quả phải là nhân viên đã xác thực"));
@@ -197,6 +230,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     @Transactional
     public LabTestDTO changeStatus(UUID id, LabTestStatus status) {
         LabTest test = locked(id);
+        requireOutpatientV1Mutation(test);
+        if (test.getCareContractVersion() == 1) {
+            requireV2Enabled();
+        }
         test.changeStatus(status);
         return mapper.toDto(tests.save(test));
     }
@@ -204,6 +241,9 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     @Override
     @Transactional
     public void autoCreateFromRecord(UUID recordId, UUID patientId, UUID departmentId, String labType) {
+        if (outpatientMvpEnabled) {
+            throw outpatientV1Required();
+        }
         if (labType == null || labType.isBlank()) {
             return;
         }
@@ -214,6 +254,11 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     @Transactional
     public void markPaid(UUID testId) {
         LabTest test = locked(testId);
+        if (outpatientMvpEnabled) {
+            throw new LabRuleException("LAB_V0_PAYMENT_DISABLED",
+                    "Version-0 payment completion cannot mutate Lab in outpatient MVP mode");
+        }
+        requireOutpatientV1Mutation(test);
         test.markPaid();
         tests.save(test);
     }
@@ -223,6 +268,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     public void onFinancialClearance(FinancialClearanceCommand command) {
         requireV2Enabled();
         validateClearanceCommand(command);
+        if (outpatientMvpEnabled && command.careEpisodeType() != CareEpisodeType.OUTPATIENT_VISIT) {
+            throw new LabRuleException("LAB_ADMISSION_DEFERRED",
+                    "Admission Lab clearance is deferred from outpatient MVP");
+        }
 
         List<LabFinancialClearance> projections = command.labTestIds().stream()
                 .map(testId -> LabFinancialClearance.grant(UUID.randomUUID(), command.clearanceId(),
@@ -329,6 +378,34 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         if (!careFinanceV2Enabled) {
             throw featureDisabled();
         }
+    }
+
+    private void requireOutpatientV1Mutation(LabTest test) {
+        if (outpatientMvpEnabled && test.getCareContractVersion() != 1) {
+            throw outpatientV1Required();
+        }
+        if (outpatientMvpEnabled && test.getCareEpisodeType() == CareEpisodeType.ADMISSION) {
+            throw new LabRuleException("LAB_ADMISSION_DEFERRED",
+                    "Admission Lab operations are deferred from outpatient MVP");
+        }
+        if (outpatientMvpEnabled && test.getCareEpisodeType() != CareEpisodeType.OUTPATIENT_VISIT) {
+            throw new LabRuleException("LAB_OUTPATIENT_ONLY",
+                    "Outpatient MVP Lab operations require an outpatient episode");
+        }
+    }
+
+    private static LabRuleException outpatientV1Required() {
+        return new LabRuleException("LAB_V0_MUTATION_DISABLED",
+                "Version-0 Lab mutations are disabled in outpatient MVP mode");
+    }
+
+    private void requireCancellationActor(CancelLabTestRequest request) {
+        AuthenticatedStaffContext actor = authenticatedStaff.currentStaff()
+                .filter(staff -> request != null && staff.staffId() != null
+                        && staff.staffId().equals(request.cancelledBy()))
+                .filter(staff -> List.of("ADMIN", "DOCTOR", "LAB_TECH").contains(staff.role()))
+                .orElseThrow(() -> new LabRuleException("LAB_ACTOR_MISMATCH",
+                        "The authenticated Lab actor must match the cancellation audit identity"));
     }
 
     private static LabRuleException featureDisabled() {

@@ -62,10 +62,21 @@ resilience4j:
 
 # Shared HS256 secret — MUST match the gateway. Provide via env in real environments.
 mediflow:
+  profile: ${MEDIFLOW_PROFILE:compatibility-v0}
   features:
+    outpatient-mvp:
+      enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}
     care-finance-v2:
       enabled: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:false}
+    admission-referral:
+      # Keep the pre-MVP V2 default when no profile/gate is selected.
+      enabled: ${MEDIFLOW_ADMISSION_REFERRAL_ENABLED:${mediflow.features.care-finance-v2.enabled:false}}
+  clients:
+    organization-service: ${MEDIFLOW_ORGANIZATION_SERVICE:organization-service}
+    patient-service: ${MEDIFLOW_PATIENT_SERVICE:patient-service}
   clinical:
+    durable-events:
+      enabled: ${MEDIFLOW_CLINICAL_DURABLE_EVENTS_ENABLED:false}
     prescription-context-lookup:
       enabled: ${MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED:false}
     exam-price:
@@ -73,6 +84,7 @@ mediflow:
       by-department: {}
     outbox-poll-interval: ${MEDIFLOW_CLINICAL_OUTBOX_POLL_INTERVAL:1000}
     outbox-confirm-timeout: ${MEDIFLOW_CLINICAL_OUTBOX_CONFIRM_TIMEOUT:5s}
+    outbox-max-retries: ${MEDIFLOW_CLINICAL_OUTBOX_MAX_RETRIES:5}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
 

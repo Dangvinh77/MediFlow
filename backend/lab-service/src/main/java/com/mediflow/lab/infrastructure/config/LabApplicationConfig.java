@@ -13,6 +13,7 @@ import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
+import com.mediflow.lab.application.port.out.LabOutpatientMvpMode;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.application.service.LabApplicationService;
 
@@ -36,8 +37,10 @@ public class LabApplicationConfig {
             LabEmergencyOverrideRepositoryPort overrides,
             AuthenticatedStaffContextPort authenticatedStaff,
             Clock clock,
-            @Value("${mediflow.features.care-finance-v2:false}") boolean careFinanceV2Enabled) {
+            @Value("${mediflow.features.care-finance-v2:false}") boolean careFinanceV2Enabled,
+            LabOutpatientMvpMode outpatientMvpMode) {
         return new LabApplicationService(tests, publisher, mapper, correlationIds, outbox,
-                clearances, overrides, authenticatedStaff, careFinanceV2Enabled, clock);
+                clearances, overrides, authenticatedStaff, careFinanceV2Enabled,
+                outpatientMvpMode.enabled(), clock);
     }
 }

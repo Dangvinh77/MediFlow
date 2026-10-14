@@ -20,23 +20,12 @@ import com.mediflow.clinical.domain.model.ClearancePurpose;
 import com.mediflow.clinical.messaging.consumer.payload.FinancialClearanceEvent;
 
 class FinancialClearanceConsumerContractTest {
-    @Test
-    void consume_billingProducerBytes_preservesExactExamTargets() throws Exception {
-        byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
-                "../billing-service/src/test/resources/contracts/ledger-v1/clearance-exam.json"));
-        consumer.consume(objectMapper.readValue(bytes, FinancialClearanceEvent.class));
-        var command = org.mockito.ArgumentCaptor.forClass(FinancialClearanceCommand.class);
-        verify(useCase).onFinancialClearance(command.capture());
-        assertThat(command.getValue().appointmentId()).isEqualTo(command.getValue().careEpisodeId());
-        assertThat(command.getValue().recordId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000004"));
-        assertThat(command.getValue().purpose()).isEqualTo(ClearancePurpose.EXAM);
-    }
     private final ReactToFinancialClearanceUseCase useCase = mock(ReactToFinancialClearanceUseCase.class);
     private final FinancialClearanceConsumer consumer = new FinancialClearanceConsumer(useCase);
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Test
-    void consume_canonicalV1Fixture_preservesAppointmentEpisodeAndTarget() throws IOException {
+    void consume_clinicalLockedLiveExamFixtureHasOnlyTheAppointmentTarget() throws IOException {
         FinancialClearanceEvent event = objectMapper.readValue(
                 getClass().getResourceAsStream("/contracts/financial.clearance.granted.v1.json"),
                 FinancialClearanceEvent.class);

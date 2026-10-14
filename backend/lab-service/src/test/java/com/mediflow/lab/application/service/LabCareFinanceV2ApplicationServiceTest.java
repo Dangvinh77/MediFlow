@@ -26,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.lab.application.dto.command.FinancialClearanceCommand;
 import com.mediflow.lab.application.dto.request.AddResultRequest;
+import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.request.EmergencyOverrideRequest;
 import com.mediflow.lab.application.dto.request.LabResultItem;
@@ -92,6 +93,75 @@ class LabCareFinanceV2ApplicationServiceTest {
         assertThat(payload.careEpisodeId()).isEqualTo(episodeId);
         assertThat(payload.requestedAt()).isEqualTo(NOW);
         verify(compatibilityEvents, never()).publishRequestCreated(any());
+    }
+
+    @Test
+    void outpatientMvp_v1CreateFailsClosedUntilClinicalOrderAuthorityExists() {
+        LabApplicationService outpatient = new LabApplicationService(tests, compatibilityEvents, mapper,
+                correlations, outbox, clearances, overrides, authenticatedStaff, true, true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> outpatient.create(v2Request(UUID.randomUUID(), UUID.randomUUID())))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_SOURCE_ORDER_UNVERIFIED");
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void outpatientMvp_refusesHistoricalAdmissionTestMutations() {
+        UUID episodeId = UUID.randomUUID();
+        LabTest admissionTest = LabTest.createV2(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), CareEpisodeType.ADMISSION, episodeId, "CBC", "LAB-CBC", REQUESTED_DATE);
+        LabApplicationService outpatient = new LabApplicationService(tests, compatibilityEvents, mapper,
+                correlations, outbox, clearances, overrides, authenticatedStaff, true, true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+        when(tests.findByIdForUpdate(admissionTest.getTestId())).thenReturn(Optional.of(admissionTest));
+
+        assertThatThrownBy(() -> outpatient.start(admissionTest.getTestId(), null))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_ADMISSION_DEFERRED");
+        verify(tests, never()).save(any());
+        verifyNoInteractions(clearances);
+    }
+
+    @Test
+    void outpatientMvp_quarantinesAdmissionClearanceBeforeClaimingIt() {
+        UUID episodeId = UUID.randomUUID();
+        LabTest admissionTest = LabTest.createV2(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), CareEpisodeType.ADMISSION, episodeId, "CBC", "LAB-CBC", REQUESTED_DATE);
+        LabApplicationService outpatient = new LabApplicationService(tests, compatibilityEvents, mapper,
+                correlations, outbox, clearances, overrides, authenticatedStaff, true, true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> outpatient.onFinancialClearance(clearanceCommand(
+                UUID.randomUUID(), admissionTest, CareEpisodeType.ADMISSION, episodeId)))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_ADMISSION_DEFERRED");
+        verifyNoInteractions(clearances);
+    }
+
+    @Test
+    void outpatientMvp_v1MutationStillRequiresV2GateWhenHistoricalVisitExists() {
+        LabTest test = v2Test();
+        LabApplicationService outpatient = new LabApplicationService(tests, compatibilityEvents, mapper,
+                correlations, outbox, clearances, overrides, authenticatedStaff, false, true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+
+        assertThatThrownBy(() -> outpatient.changeStatus(test.getTestId(), LabTestStatus.CANCELLED))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_CARE_FINANCE_V2_DISABLED");
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.AWAITING_PAYMENT);
+        verify(tests, never()).save(any());
     }
 
     @Test
@@ -266,6 +336,23 @@ class LabCareFinanceV2ApplicationServiceTest {
                 .isEqualTo("LAB_OVERRIDE_INVALID");
 
         verify(overrides, never()).save(any());
+        verify(tests, never()).save(any());
+    }
+
+    @Test
+    void cancel_rejectsBodyActorThatDoesNotMatchVerifiedStaff() {
+        LabTest test = v2Test();
+        UUID authenticatedStaffId = UUID.randomUUID();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(authenticatedStaffId, "LAB_TECH")));
+
+        assertThatThrownBy(() -> service.cancel(test.getTestId(),
+                new CancelLabTestRequest("duplicate", UUID.randomUUID())))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_ACTOR_MISMATCH");
         verify(tests, never()).save(any());
     }
 

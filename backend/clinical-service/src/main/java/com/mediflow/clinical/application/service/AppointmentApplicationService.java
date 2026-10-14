@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.UpdateAppointmentRequest;
@@ -18,6 +19,7 @@ import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.PatientLookupPort;
+import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
 import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.AppointmentNotFoundException;
 import com.mediflow.clinical.domain.exception.DuplicatePendingAppointmentException;
@@ -36,16 +38,28 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
     private final ClinicalEventPublisherPort publisher;
     private final ClinicalDtoMapper mapper;
     private final CorrelationIdProvider correlationIds;
+    private final boolean outpatientMvpEnabled;
+
+    @Autowired
+    public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
+                                         StaffLookupPort staff, ClinicalEventPublisherPort publisher,
+                                         ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                         OutpatientMvpMode outpatientMvpMode) {
+        this(appointments, patients, staff, publisher, mapper, correlationIds,
+                outpatientMvpMode.enabled());
+    }
 
     public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
                                          StaffLookupPort staff, ClinicalEventPublisherPort publisher,
-                                         ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds) {
+                                         ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                         boolean outpatientMvpEnabled) {
         this.appointments = appointments;
         this.patients = patients;
         this.staff = staff;
         this.publisher = publisher;
         this.mapper = mapper;
         this.correlationIds = correlationIds;
+        this.outpatientMvpEnabled = outpatientMvpEnabled;
     }
 
     @Override
@@ -78,6 +92,10 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
     @Override
     @Transactional
     public AppointmentDTO changeStatus(UUID id, AppointmentStatus status) {
+        if (outpatientMvpEnabled && status != AppointmentStatus.CANCELLED) {
+            throw new InvalidClinicalDataException("CLINICAL_V0_STATUS_WRITE_DISABLED",
+                    "Legacy appointment status writes are disabled in the outpatient MVP profile");
+        }
         Appointment appointment = locked(id);
         appointment.changeStatus(status);
         Appointment saved = appointments.save(appointment);

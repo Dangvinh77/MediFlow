@@ -40,6 +40,7 @@ import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPor
 import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.application.port.out.StaffLookupPort;
 import com.mediflow.clinical.domain.exception.InvalidClinicalDataException;
 import com.mediflow.clinical.domain.model.AdmissionPriority;
 import com.mediflow.clinical.domain.model.Appointment;
@@ -64,11 +65,15 @@ class ClinicalCareFinanceApplicationServiceTest {
     private final ExamPricePolicyPort prices = mock(ExamPricePolicyPort.class);
     private final ClinicalOutboxPort outbox = mock(ClinicalOutboxPort.class);
     private final CurrentClinicalActorPort actors = mock(CurrentClinicalActorPort.class);
+    private final StaffLookupPort staff = mock(StaffLookupPort.class);
     private final ClinicalDtoMapper mapper = mock(ClinicalDtoMapper.class);
     private final CorrelationIdProvider correlationIds = mock(CorrelationIdProvider.class);
     private final ClinicalCareFinanceApplicationService service = new ClinicalCareFinanceApplicationService(
-            appointments, records, clearances, overrides, referrals, prices, outbox, actors, mapper,
-            correlationIds, CLOCK);
+            appointments, records, clearances, overrides, referrals, prices, outbox, actors, staff, mapper,
+            correlationIds, CLOCK, true);
+    private final ClinicalCareFinanceApplicationService outpatientMvpService =
+            new ClinicalCareFinanceApplicationService(appointments, records, clearances, overrides, referrals,
+                    prices, outbox, actors, staff, mapper, correlationIds, CLOCK, false);
 
     @BeforeEach
     void setUp() {
@@ -97,6 +102,7 @@ class ClinicalCareFinanceApplicationServiceTest {
     @Test
     void startExam_arrivedWithoutClearanceOrOverride_rejects() {
         Appointment appointment = appointment();
+        authorize(appointment);
         appointment.checkIn("OUTPATIENT_EXAM", NOW);
         when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
         when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.empty());
@@ -151,18 +157,34 @@ class ClinicalCareFinanceApplicationServiceTest {
     }
 
     @Test
+    void onClearance_appointmentAndRecordTogetherRejectsBeforeClaim() {
+        UUID appointmentId = UUID.randomUUID();
+        FinancialClearanceCommand invalid = new FinancialClearanceCommand(
+                UUID.randomUUID(), "financial.clearance.granted", 1, NOW,
+                UUID.randomUUID().toString(), "billing-service", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), CareEpisodeType.OUTPATIENT_VISIT, appointmentId,
+                ClearancePurpose.EXAM, appointmentId, UUID.randomUUID(), List.of(), null, null, null,
+                new BigDecimal("150000.00"), "VND", "CASH", null, false);
+
+        assertThatThrownBy(() -> service.onFinancialClearance(invalid))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_CLEARANCE_TARGET_MISMATCH");
+        verify(clearances, never()).claimAndSave(any());
+        verifyNoOutboxEvent();
+    }
+
+    @Test
     void startExam_emergencyOverride_persistsAuditAndStartsRecord() {
         Appointment appointment = appointment();
+        authorize(appointment);
         appointment.checkIn("OUTPATIENT_EXAM", NOW);
         when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
         when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.empty());
         when(records.findByAppointmentId(appointment.getAppointmentId())).thenReturn(Optional.empty());
-        UUID doctorId = UUID.randomUUID();
-        when(actors.current()).thenReturn(new ActorIdentity(doctorId, "DOCTOR"));
         when(mapper.toDto(any(Appointment.class))).thenReturn(null);
 
         service.startExam(appointment.getAppointmentId(), new StartExamRequest(
-                new EmergencyOverrideRequest(UUID.randomUUID(), doctorId, "DOCTOR", "Critical condition", NOW)));
+                new EmergencyOverrideRequest(UUID.randomUUID(), appointment.getDoctorId(), "DOCTOR",
+                        "Critical condition", NOW)));
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
         assertThat(appointment.getEmergencyOverrideId()).isNotNull();
@@ -177,16 +199,16 @@ class ClinicalCareFinanceApplicationServiceTest {
     @Test
     void startExam_legacyArrivedEmergency_promotesAppointmentAndPublishesPriceCode() {
         Appointment appointment = appointment();
+        authorize(appointment);
         appointment.changeStatus(AppointmentStatus.ARRIVED);
         when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
         when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.empty());
         when(records.findByAppointmentId(appointment.getAppointmentId())).thenReturn(Optional.empty());
-        UUID doctorId = UUID.randomUUID();
-        when(actors.current()).thenReturn(new ActorIdentity(doctorId, "DOCTOR"));
         when(mapper.toDto(any(Appointment.class))).thenReturn(null);
 
         service.startExam(appointment.getAppointmentId(), new StartExamRequest(
-                new EmergencyOverrideRequest(UUID.randomUUID(), doctorId, "DOCTOR", "Critical condition", NOW)));
+                new EmergencyOverrideRequest(UUID.randomUUID(), appointment.getDoctorId(), "DOCTOR",
+                        "Critical condition", NOW)));
 
         assertThat(appointment.getCareContractVersion()).isEqualTo((short) 1);
         assertThat(appointment.getExamPriceCode()).isEqualTo("OUTPATIENT_EXAM");
@@ -203,6 +225,7 @@ class ClinicalCareFinanceApplicationServiceTest {
     @Test
     void complete_missingDiagnosis_rejectsWithoutPublishing() {
         Appointment appointment = appointment();
+        authorize(appointment);
         appointment.checkIn("OUTPATIENT_EXAM", NOW);
         appointment.startExam(UUID.randomUUID(), null, NOW);
         MedicalRecord record = MedicalRecord.openForAppointment(appointment.getPatientId(), appointment.getDoctorId(),
@@ -220,6 +243,7 @@ class ClinicalCareFinanceApplicationServiceTest {
     @Test
     void complete_repeatedCommand_publishesCompletedFactOnce() {
         Appointment appointment = appointment();
+        authorize(appointment);
         appointment.checkIn("OUTPATIENT_EXAM", NOW);
         appointment.startExam(UUID.randomUUID(), null, NOW);
         MedicalRecord record = MedicalRecord.openForAppointment(appointment.getPatientId(), appointment.getDoctorId(),
@@ -258,9 +282,65 @@ class ClinicalCareFinanceApplicationServiceTest {
         verifyNoOutboxEvent();
     }
 
+    @Test
+    void startExam_withoutSignedStaffIdentity_failsClosedBeforeMutation() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+        when(clearances.findByAppointment(appointment.getAppointmentId())).thenReturn(Optional.empty());
+        when(actors.current()).thenReturn(null);
+
+        assertThatThrownBy(() -> service.startExam(appointment.getAppointmentId(), new StartExamRequest(null)))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_STAFF_IDENTITY_REQUIRED");
+
+        verify(records, never()).save(any());
+        verifyNoOutboxEvent();
+    }
+
+    @Test
+    void startExam_ineligibleAssignedDoctor_failsClosedBeforeMutation() {
+        Appointment appointment = appointment();
+        authorize(appointment);
+        when(staff.departmentOf(appointment.getDoctorId())).thenReturn(Optional.empty());
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+
+        assertThatThrownBy(() -> service.startExam(appointment.getAppointmentId(), new StartExamRequest(null)))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_DOCTOR_NOT_ELIGIBLE");
+
+        verify(records, never()).save(any());
+        verifyNoOutboxEvent();
+    }
+
+    @Test
+    void complete_admissionDispositionIsRejectedWhenDeferredGateIsOff() {
+        Appointment appointment = appointment();
+        authorize(appointment);
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        appointment.startExam(UUID.randomUUID(), null, NOW);
+        MedicalRecord record = MedicalRecord.openForAppointment(appointment.getPatientId(), appointment.getDoctorId(),
+                appointment.getDepartmentId(), LocalDate.now(CLOCK), "Fever", appointment.getAppointmentId(), NOW);
+        record.addDiagnosis(Diagnosis.create("Influenza", null, "J10"));
+        when(records.findByIdForUpdate(record.getRecordId())).thenReturn(Optional.of(record));
+        when(appointments.findByIdForUpdate(appointment.getAppointmentId())).thenReturn(Optional.of(appointment));
+
+        assertThatThrownBy(() -> outpatientMvpService.complete(record.getRecordId(),
+                new CompleteRecordRequest(RecordDisposition.ADMISSION, null)))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_ADMISSION_DEFERRED");
+
+        assertThat(record.getDisposition()).isNull();
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.IN_EXAM);
+        verifyNoOutboxEvent();
+    }
+
     private Appointment appointment() {
         return Appointment.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 LocalDate.now(CLOCK), LocalTime.NOON, "Checkup", CLOCK);
+    }
+
+    private void authorize(Appointment appointment) {
+        when(actors.current()).thenReturn(new ActorIdentity(appointment.getDoctorId(), "DOCTOR"));
+        when(staff.departmentOf(appointment.getDoctorId())).thenReturn(Optional.of(appointment.getDepartmentId()));
     }
 
     private FinancialClearanceCommand clearance(UUID patientId, UUID appointmentId, UUID episodeId) {
