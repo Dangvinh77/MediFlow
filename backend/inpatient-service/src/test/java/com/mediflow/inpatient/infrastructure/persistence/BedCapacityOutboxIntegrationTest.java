@@ -12,6 +12,7 @@ import com.mediflow.inpatient.domain.model.enums.BedStatus;
 import com.mediflow.inpatient.infrastructure.messaging.InpatientEventWireMapper;
 import com.mediflow.inpatient.infrastructure.persistence.adapter.BedCapacityHistoryPersistenceAdapter;
 import com.mediflow.inpatient.infrastructure.persistence.adapter.InpatientOutboxPersistenceAdapter;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
@@ -46,7 +47,7 @@ class BedCapacityOutboxIntegrationTest {
                 INSERT INTO giuong_benh(bed_id,department_id,ward_code,room_code,bed_code,bed_type,
                 status,active,version,capacity_revision,created_at,updated_at)
                 VALUES(?,?,'WARD-A','101','01','STANDARD','OUT_OF_SERVICE',true,0,2,?,?)
-                """, bedId, departmentId, effectiveAt, effectiveAt);
+                """, bedId, departmentId, Timestamp.from(effectiveAt), Timestamp.from(effectiveAt));
         var snapshot = new BedCapacitySnapshot(UUID.randomUUID(), eventId, bedId, 2,
                 departmentId, "WARD-A", "STANDARD", true, BedStatus.OUT_OF_SERVICE,
                 false, effectiveAt, actorId, correlationId);
