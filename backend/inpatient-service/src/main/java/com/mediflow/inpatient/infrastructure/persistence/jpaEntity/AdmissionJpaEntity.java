@@ -38,6 +38,7 @@ public class AdmissionJpaEntity {
     @Column(name = "closed_at") public Instant thoiGianDong;
     @Column(name = "cancelled_at") public Instant thoiGianHuy;
     @Column(name = "cancellation_reason") public String lyDoHuy;
+    @Column(name = "placement_revision", nullable = false) public long phienBanViTri;
     @Version @Column(name = "version", nullable = false) public long phienBan;
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false) public Instant taoLuc;
     @Column(name = "updated_at", nullable = false, insertable = false) public Instant capNhatLuc;

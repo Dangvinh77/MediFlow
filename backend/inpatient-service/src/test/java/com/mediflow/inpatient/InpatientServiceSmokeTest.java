@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.inpatient.application.port.out.AdmissionRepositoryPort;
 import com.mediflow.inpatient.application.port.out.BedAssignmentRepositoryPort;
+import com.mediflow.inpatient.application.port.out.BedCapacityHistoryPort;
 import com.mediflow.inpatient.application.port.out.BedRepositoryPort;
 import com.mediflow.inpatient.application.port.out.ClinicalOrderReferenceRepositoryPort;
 import com.mediflow.inpatient.application.port.out.DepositSuggestionPolicyPort;
@@ -31,6 +32,7 @@ import com.mediflow.inpatient.application.port.out.DischargeSummaryRepositoryPor
 import com.mediflow.inpatient.application.port.out.InpatientEventStorePort;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
 import com.mediflow.inpatient.application.port.out.ProcessedEventPort;
+import com.mediflow.inpatient.application.port.out.PlacementAuthorityRepositoryPort;
 import com.mediflow.inpatient.application.port.out.SurgeryEventReceiptRepositoryPort;
 import com.mediflow.inpatient.application.port.out.TreatmentEntryRepositoryPort;
 import com.mediflow.inpatient.application.dto.request.CreateAdmissionRequest;
@@ -74,8 +76,10 @@ class InpatientServiceSmokeTest {
 
     @MockBean private AdmissionRepositoryPort admissions;
     @MockBean private com.mediflow.inpatient.application.port.out.AdmissionAuthorityRepositoryPort admissionAuthority;
+    @MockBean private PlacementAuthorityRepositoryPort placementAuthority;
     @MockBean private BedRepositoryPort beds;
     @MockBean private BedAssignmentRepositoryPort assignments;
+    @MockBean private BedCapacityHistoryPort capacityHistory;
     @MockBean private TreatmentEntryRepositoryPort treatments;
     @MockBean private ClinicalOrderReferenceRepositoryPort references;
     @MockBean private DischargeSummaryRepositoryPort discharges;

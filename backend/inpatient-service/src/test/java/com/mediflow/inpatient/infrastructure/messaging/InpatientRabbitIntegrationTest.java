@@ -6,6 +6,8 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.inpatient.application.dto.event.AdmissionStartedEvent;
 import com.mediflow.inpatient.application.dto.event.DomainEventEnvelope;
 import com.mediflow.inpatient.application.port.out.InpatientOutboxPort;
@@ -25,6 +27,8 @@ import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -82,6 +86,9 @@ class InpatientRabbitIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @SpyBean
     private InpatientEventConsumer consumer;
 
@@ -125,6 +132,21 @@ class InpatientRabbitIntegrationTest {
                 SELECT published_at IS NOT NULL
                 FROM su_kien_outbox_noi_tru WHERE event_id = ?
                 """, Boolean.class, eventId)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"admission.placement.changed", "bed.capacity.changed"})
+    void dispatcherRoutesNewProducerContractsByExactEventType(String routingKey) throws Exception {
+        String queue = declareBoundQueue(routingKey);
+        UUID eventId = insertPendingEvent(routingKey);
+
+        dispatcher.publishPending();
+
+        Message delivered = rabbitTemplate.receive(queue, 5000);
+        assertThat(delivered).isNotNull();
+        JsonNode envelope = objectMapper.readTree(delivered.getBody());
+        assertThat(envelope.path("eventId").asText()).isEqualTo(eventId.toString());
+        assertThat(envelope.path("eventType").asText()).isEqualTo(routingKey);
     }
 
     @Test

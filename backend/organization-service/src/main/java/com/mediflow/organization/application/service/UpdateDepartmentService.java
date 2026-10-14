@@ -45,7 +45,9 @@ public class UpdateDepartmentService implements UpdateDepartmentUseCase {
                 location
         );
 
-        if (departmentHeadId != null) {
+        if (departmentHeadId == null) {
+            department.removeHead();
+        } else if (!departmentHeadId.equals(department.getDepartmentHeadId())) {
             Staff head = staffRepository.findById(departmentHeadId)
                     .orElseThrow(() -> new StaffNotFoundException(departmentHeadId));
             department.changeHead(head);

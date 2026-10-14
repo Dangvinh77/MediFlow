@@ -1,6 +1,7 @@
 package com.mediflow.organization.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.StaffRepository;
+import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
 import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
@@ -64,8 +66,11 @@ class ChangeStaffDepartmentServiceTest {
                 null, null, "0901234567", "alex@example.com");
         Department department = Department.create(
                 newDepartmentId, "Surgery", "SUR", DepartmentType.CLINICAL, "Building B");
+        Department oldDepartment = Department.create(
+                oldDepartmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
         when(staffRepository.findById(staffId)).thenReturn(Optional.of(staff));
         when(departmentRepository.findById(newDepartmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findById(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
         when(staffRepository.save(any(Staff.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -75,5 +80,31 @@ class ChangeStaffDepartmentServiceTest {
         service.execute(staffId, newDepartmentId);
 
         verify(eventPublisher).publishStaffDepartmentChanged(any());
+    }
+
+    @Test
+    void execute_departmentHeadCannotTransferUntilRemovedOrReassigned() {
+        UUID oldDepartmentId = UUID.randomUUID();
+        UUID newDepartmentId = UUID.randomUUID();
+        UUID staffId = UUID.randomUUID();
+        Staff doctor = Staff.create("Dr. Alex Morgan", oldDepartmentId, JobTitle.DOCTOR,
+                "Cardiology", "MED-1", "0901234567", "alex@example.com");
+        Department oldDepartment = Department.create(
+                oldDepartmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
+        oldDepartment.changeHead(doctor);
+        Department newDepartment = Department.create(
+                newDepartmentId, "Surgery", "SUR", DepartmentType.CLINICAL, "Building B");
+        when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
+        when(departmentRepository.findById(newDepartmentId)).thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.findById(oldDepartmentId)).thenReturn(Optional.of(oldDepartment));
+
+        ChangeStaffDepartmentService service = new ChangeStaffDepartmentService(
+                staffRepository, departmentRepository, eventPublisher);
+
+        assertThrows(InvalidDepartmentHeadException.class,
+                () -> service.execute(staffId, newDepartmentId));
+
+        verify(staffRepository, never()).save(any());
+        verify(eventPublisher, never()).publishStaffDepartmentChanged(any());
     }
 }

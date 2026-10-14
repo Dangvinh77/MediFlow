@@ -13,8 +13,8 @@ import com.mediflow.inpatient.application.dto.response.BedDTO;
 import java.util.UUID;
 
 public interface ManageBedUseCase {
-    BedDTO create(CreateBedRequest request);
-    BedDTO update(UUID bedId, UpdateBedRequest request);
+    BedDTO create(CreateBedRequest request, UUID actorId, String correlationId);
+    BedDTO update(UUID bedId, UpdateBedRequest request, UUID actorId, String correlationId);
     PageResult<BedDTO> search(BedSearchQuery query);
     AdmissionDTO assign(UUID admissionId, AssignBedRequest request, String correlationId);
     AdmissionDTO transfer(UUID admissionId, TransferBedRequest request, String correlationId);

@@ -39,6 +39,12 @@ không public human API. Giữ ApiResponse/PageResult và correlation như sourc
 
 ## REST dependencies
 
+Organization hiện yêu cầu `departmentHeadId` trong request
+`PUT /api/v1/org/departments/{id}`: UUID để bổ nhiệm, `null` để bỏ trưởng khoa;
+thiếu field là request không hợp lệ, không có nghĩa giữ nguyên. Trưởng khoa phải là bác sĩ
+đang hoạt động trong cùng khoa; không chuyển khoa của trưởng khoa trước khi bỏ/đổi bổ nhiệm.
+Giữ nguyên hợp đồng này khi đóng gói Core; kiểm tra consumer theo DTO/test nguồn master.
+
 Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.
 Pharmacy gọi Clinical prescription-context lookup với exact recordId, patient, prescriber,
 department và visit identity. Gateway OrganizationAuthClient phải đổi upstream discovery về Core.
@@ -108,3 +114,24 @@ vô tình phụ thuộc nó. Chuyển module/hợp đồng phải update cả ha
 
 Surgery/Inpatient contract implementation và fixtures trong source vẫn tồn tại, nhưng không
 là scope mới của tài liệu này. Không sửa payload của chúng theo manifest ngoại trú.
+
+### Producer Inpatient được nhập từ master ngày 2026-10-14 — DEFERRED
+
+- `GET /api/v1/inpatient/admissions/{id}/placement-lookup` trả snapshot coherent với
+  `exists`, `admissionId`, `patientId`, `admissionStatus`, `medicationWindowOpen`,
+  `placementRevision`, `placement`, `observedAt`. `placement` có thể null; department
+  của placement là khoa của giường, không tự suy ra từ khoa chủ quản admission.
+  Lookup không phải lease hay quyền cấp thuốc cuối cùng; lookup admission cũ vẫn giữ nguyên.
+- `admission.placement.changed` V1 dùng `(admissionId, placementRevision)`:
+  ASSIGNED có current, TRANSFERRED có previous/current nguyên tử, RELEASED có previous.
+  Same-bed no-op không sinh fact; gap giữ pending/unavailable, duplicate cùng bytes
+  idempotent, cùng key khác bytes là conflict.
+- `bed.capacity.changed` V1 dùng `(bedId, capacityRevision)` và effective snapshot.
+  Eligible khi active và không OUT_OF_SERVICE; AVAILABLE/OCCUPIED không tạo capacity revision.
+  Migration V3 chỉ tạo baseline tại `updated_at` hiện hữu, không bịa lịch sử trước baseline.
+- Fixtures nguồn: `backend/inpatient-service/src/test/resources/contracts/admission-placement-v1/`
+  và `backend/inpatient-service/src/test/resources/contracts/bed-capacity-v1/`.
+  Consumer phải nghiệm thu cùng bytes trước khi mở gates. Report vẫn sở hữu interval bucketing,
+  coverage, replay/publication; producer đã có không chứng minh consumer đã hoàn thành.
+
+Không bật admission medication hoặc occupancy V2 trong MVP chỉ vì merge producer này.

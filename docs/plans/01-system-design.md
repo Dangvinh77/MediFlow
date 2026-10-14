@@ -58,6 +58,11 @@ MVP chỉ cần các intent ngoại trú có nguồn hợp lệ. Gateway policy 
 
 ## Phần hoãn
 
+Master cập nhật ngày 2026-10-14 đã bổ sung producer placement/capacity của Inpatient,
+lookup placement và migration V3. Giữ nguyên code, fixtures và migration này; đó là tiến
+triển của context hoãn, không mở lại scope nội trú hoặc tự đóng task consumer Pharma/Report.
+Các tài liệu placement nhập từ master chỉ là tham chiếu cho lần tái kích hoạt sau MVP.
+
 | Phần | Cách xử lý hiện tại |
 |---|---|
 | Inpatient | Giữ module, migration và dữ liệu; không chạy trong profile MVP, không admission referral từ MVP |
