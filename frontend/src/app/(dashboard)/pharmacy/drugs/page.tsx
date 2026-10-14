@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { DrugCatalogActions } from "@/features/pharmacy/components/drug/DrugCatalogActions";
+import { PrescriptionLookup } from "@/features/pharmacy/components/prescription/PrescriptionLookup";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { PageShell } from "@/components/layout/PageShell";
+import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import {
   CatalogFallback,
   DrugCatalog,
 } from "@/features/pharmacy/components/drug/DrugCatalog";
 
 export const metadata: Metadata = {
-  title: "Kho thuốc | MediFlow",
+  title: "Danh mục thuốc | MediFlow",
 };
 
 /**
@@ -19,15 +21,17 @@ export const metadata: Metadata = {
  */
 export default function DrugCatalogPage() {
   return (
-    <PageShell
-      title="Kho thuốc"
-      description="Tra cứu danh mục thuốc, tồn kho và hạn sử dụng."
+    <PharmacyPageShell
+      title="Danh mục thuốc"
+      description="Tra cứu thuốc và quản lý tồn kho."
+      actions={<DrugCatalogActions />}
     >
       <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
         <Suspense fallback={<CatalogFallback />}>
           <DrugCatalog />
         </Suspense>
+        <PrescriptionLookup variant="compact" />
       </RoleGate>
-    </PageShell>
+    </PharmacyPageShell>
   );
 }

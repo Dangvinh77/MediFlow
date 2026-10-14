@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { PageShell } from "@/components/layout/PageShell";
+import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import { CreatePrescriptionForm } from "@/features/pharmacy/components/prescription/CreatePrescriptionForm";
 
 export const metadata: Metadata = {
@@ -9,13 +9,13 @@ export const metadata: Metadata = {
 
 export default function CreatePrescriptionPage() {
   return (
-    <PageShell
+    <PharmacyPageShell
       title="Kê đơn"
       description="Tạo đơn thuốc và khai báo các dòng thuốc."
     >
       <RoleGate allowed={["ADMIN", "DOCTOR"]}>
         <CreatePrescriptionForm />
       </RoleGate>
-    </PageShell>
+    </PharmacyPageShell>
   );
 }

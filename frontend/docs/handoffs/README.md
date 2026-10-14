@@ -6,7 +6,9 @@ belong in [`docs/handoffs/README.md`](../../../docs/handoffs/README.md).
 
 ## Active handoffs
 
-None.
+| Handoff | Producer owner | Consumer owner | Unblocks |
+|---|---|---|---|
+| [Surgery idempotency headers](HANDOFF-SHARED-HUY-IDEMPOTENCY-HEADERS.md) | Vinh — shared API wrapper | Huy — Surgery | S-04 command dispatch through the existing HTTP boundary |
 
 ## When to create one
 

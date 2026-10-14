@@ -1,16 +1,92 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useId, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { formatDecimal, formatLocalDate } from "@/lib/format";
-import { isUuid } from "@/lib/validation";
+import { formatDecimal } from "@/lib/format";
 import { reportApi } from "../api";
-import type { MonthlyReportDTO } from "../types";
+import { useReportRequest } from "../useReportRequest";
+import { validateMonthlyReportQuery, type MonthlyReportQuery } from "../validation";
+import { DailyDetailsTable } from "./DailyDetailsTable";
+import { MonthlyRevenueChart } from "./MonthlyRevenueChart";
 
-export function MonthlyReportView() {
-  const now = new Date(); const [month, setMonth] = useState(now.getMonth() + 1); const [year, setYear] = useState(now.getFullYear()); const [departmentId, setDepartmentId] = useState(""); const [report, setReport] = useState<MonthlyReportDTO | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState<string | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const department = departmentId.trim(); if (department && !isUuid(department)) { setError("Mã khoa phải là UUID hợp lệ."); return; } setLoading(true); setError(null); try { setReport(await reportApi.monthly(month, year, department || undefined)); } catch (cause: unknown) { setError(cause instanceof Error ? cause.message : "Không thể tải báo cáo tháng."); } finally { setLoading(false); } }
-  return <section className="mt-8 rounded-xl border border-border bg-surface p-5"><h2 className="text-lg font-semibold">Doanh thu tháng</h2><form onSubmit={submit} className="mt-4 grid gap-4 md:grid-cols-4 md:items-end"><Field label="Tháng" htmlFor="report-month"><input id="report-month" type="number" min={1} max={12} value={month} onChange={(event) => setMonth(Number(event.target.value))} className={controlClassName} /></Field><Field label="Năm" htmlFor="report-year"><input id="report-year" type="number" min={2000} max={2100} value={year} onChange={(event) => setYear(Number(event.target.value))} className={controlClassName} /></Field><Field label="Mã khoa (tùy chọn)" htmlFor="monthly-department"><input id="monthly-department" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName} /></Field><Button type="submit" variant="primary" loading={loading}>Xem theo tháng</Button></form>{error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}{loading ? <AsyncState kind="loading" message="Đang tải báo cáo tháng…" /> : null}{report && !loading ? <div className="mt-5"><dl className="grid gap-3 sm:grid-cols-2"><div className="rounded-lg bg-surface-muted p-4"><dt className="text-sm text-muted-foreground">Tổng doanh thu</dt><dd className="mt-1 text-2xl font-semibold">{formatDecimal(report.totalRevenue)}</dd></div><div className="rounded-lg bg-surface-muted p-4"><dt className="text-sm text-muted-foreground">Số hóa đơn</dt><dd className="mt-1 text-2xl font-semibold">{report.invoiceCount}</dd></div></dl><div className="mt-4 overflow-x-auto"><table className="w-full min-w-3xl text-left text-sm"><thead className="border-b border-border"><tr><th className="px-3 py-2">Ngày</th><th className="px-3 py-2">Lượt khám</th><th className="px-3 py-2">Xét nghiệm</th><th className="px-3 py-2">Đơn thuốc</th><th className="px-3 py-2">Doanh thu</th></tr></thead><tbody>{report.dailyDetails.map((day) => <tr key={day.reportDate} className="border-b border-border"><td className="px-3 py-2">{formatLocalDate(day.reportDate)}</td><td className="px-3 py-2">{day.visitCount}</td><td className="px-3 py-2">{day.labCount}</td><td className="px-3 py-2">{day.prescriptionCount}</td><td className="px-3 py-2">{formatDecimal(day.revenue)}</td></tr>)}</tbody></table></div></div> : null}</section>;
+interface MonthlyReportViewProps {
+  initialQuery?: MonthlyReportQuery;
+  autoLoad?: boolean;
+  /** True when URL navigation will mount the submitted query; false reloads the current one. */
+  onQuerySubmit?: (query: MonthlyReportQuery) => boolean;
+}
+
+export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmit }: MonthlyReportViewProps) {
+  const [defaults] = useState<MonthlyReportQuery>(() => ({ month: new Date().getMonth() + 1, year: new Date().getFullYear() }));
+  const initial = initialQuery ?? defaults;
+  const initialDepartment = initial.departmentId;
+  const [month, setMonth] = useState(Number.isFinite(initial.month) ? String(initial.month) : "");
+  const [year, setYear] = useState(Number.isFinite(initial.year) ? String(initial.year) : "");
+  const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const errorId = useId();
+  const initialRequest = useCallback(() => reportApi.monthly(initial.month, initial.year, initialDepartment), [initial.month, initial.year, initialDepartment]);
+  const { state, load, retry } = useReportRequest(initialRequest, autoLoad);
+  const loading = state.status === "loading";
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = { month: Number(month), year: Number(year), departmentId: departmentId.trim() || undefined };
+    const error = validateMonthlyReportQuery(query);
+    setValidationError(error);
+    if (error) return;
+    if (onQuerySubmit?.(query)) return;
+    load(() => reportApi.monthly(query.month, query.year, query.departmentId));
+  }
+
+  return (
+    <section className="mt-6" aria-label="Báo cáo tháng" aria-busy={loading}>
+      <form onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_auto] xl:items-end">
+        <Field label="Tháng" htmlFor="report-month">
+          <input id="report-month" type="number" min={1} max={12} step={1} value={month} onChange={(event) => { setMonth(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        </Field>
+        <Field label="Năm" htmlFor="report-year">
+          <input id="report-year" type="number" min={2000} max={2100} step={1} value={year} onChange={(event) => { setYear(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        </Field>
+        <Field label="Mã khoa (tùy chọn)" htmlFor="monthly-department">
+          <input id="monthly-department" value={departmentId} onChange={(event) => { setDepartmentId(event.target.value); setValidationError(null); }} placeholder="Nhập UUID khoa" aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
+        </Field>
+        <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
+        {validationError && <p id={errorId} role="alert" className="text-sm text-danger sm:col-span-2 xl:col-span-4">{validationError}</p>}
+      </form>
+      {state.status === "idle" && <AsyncState kind="idle" message="Chọn tháng, năm và khoa để xem báo cáo." />}
+      {loading && <AsyncState kind="loading" message="Đang tải báo cáo tháng…" />}
+      {state.status === "error" && (state.forbidden ? (
+        <div role="alert" className="mt-5 rounded-xl border border-danger/40 bg-surface p-4 text-sm">
+          <p className="text-danger">{state.message}</p>
+          {state.correlationId && <p className="mt-1 text-xs text-muted-foreground">Mã theo dõi: {state.correlationId}</p>}
+        </div>
+      ) : <AsyncState kind="error" message={state.message} correlationId={state.correlationId} onRetry={retry} />)}
+      {state.status === "success" && (
+        <div className="mt-6">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,2.2fr)_minmax(220px,1fr)]">
+            <section className="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <h2 className="text-base font-semibold">Doanh thu theo ngày</h2>
+                <span className="rounded-full bg-surface-muted px-2.5 py-1 text-xs text-muted-foreground">{state.data.month}/{state.data.year}</span>
+              </div>
+              {state.data.dailyDetails.length ? <MonthlyRevenueChart days={state.data.dailyDetails} /> : <AsyncState kind="empty" message="Báo cáo không có chi tiết theo ngày." />}
+            </section>
+            <section className="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5">
+              <h2 className="text-base font-semibold">Tháng {state.data.month}/{state.data.year}</h2>
+              <p className="mt-1 break-all text-xs text-muted-foreground">Phạm vi: {state.data.departmentId ?? "Toàn bệnh viện"}</p>
+              <dl className="mt-4 divide-y divide-border">
+                <div className="py-4"><dt className="text-sm text-muted-foreground">Tổng doanh thu</dt><dd className="mt-2 break-words text-3xl font-semibold tracking-tight tabular-nums">{formatDecimal(state.data.totalRevenue)}</dd></div>
+                <div className="py-4"><dt className="text-sm text-muted-foreground">Số hóa đơn</dt><dd className="mt-2 text-3xl font-semibold tabular-nums">{state.data.invoiceCount.toLocaleString("vi-VN")}</dd></div>
+              </dl>
+              <p className="mt-2 rounded-lg bg-surface-muted p-3 text-xs text-muted-foreground">Nguồn số liệu: Report</p>
+            </section>
+          </div>
+          <DailyDetailsTable days={state.data.dailyDetails} />
+        </div>
+      )}
+    </section>
+  );
 }

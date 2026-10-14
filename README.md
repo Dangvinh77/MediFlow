@@ -3,18 +3,18 @@
 <!-- commit-activity:start -->
 ## Commit activity
 
-Changelog updated through **2026-10-13 21:43:21 Asia/Saigon** · **762 unique commits**
+Changelog updated through **2026-10-14 10:52:34 Asia/Saigon** · **765 unique commits**
 
 | Contributor | Commits | Active days | Avg/active day | Peak date | Peak hour | Latest commit |
 |---|---:|---:|---:|---|---|---|
 | Harori | 496 | 47 | 10.55 | 2026-09-27 (35) | 18:00 (65) | 2026-10-13 21:43:21 |
-| LQHuy0210 | 173 | 30 | 5.77 | 2026-09-13 (27) | 08:00 (26) | 2026-10-12 14:32:49 |
+| LQHuy0210 | 176 | 31 | 5.68 | 2026-09-13 (27) | 08:00 (26) | 2026-10-14 10:52:34 |
 | TranHoangAnh94 | 53 | 21 | 2.52 | 2026-09-18 (8) | 23:00 (10) | 2026-10-12 19:07:31 |
 | locgit-89 | 40 | 12 | 3.33 | 2026-10-12 (10) | 15:00 (15) | 2026-10-12 16:29:29 |
 
-![Commits by day](docs/assets/commit-activity-by-day.svg?v=86c82d410d23)
+![Commits by day](docs/assets/commit-activity-by-day.svg?v=38d04bab01c2)
 
-![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=49d7cee29f8a)
+![Commits — last 72 hours](docs/assets/commit-activity-by-hour.svg?v=27467e53d69a)
 
 _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitHub Insights._
 <!-- commit-activity:end -->
@@ -40,20 +40,20 @@ The repository also includes a shared AI coding framework so contributors using 
 > Repo: `git@github.com:Dangvinh77/MediFlow.git`
 
 > ⚠️ **DEMO / WORK IN PROGRESS.** This is an academic demonstration project. The code
-> (services, gateway stub auth, frontend, configs) is **subject to change** and is **not
-> production-ready** — auth is stubbed, secrets use dev defaults, and some contexts are still
-> planned or incomplete. MediFlow belongs to the HIS/HMS domain, but it should not be treated as
+> (services, authentication, frontend, configs) is **subject to change** and is **not
+> production-ready** — integration flags and runtime acceptance must be verified, and some
+> contexts are deferred or incomplete. MediFlow belongs to the HIS/HMS domain, but it should not be treated as
 > a complete, compliant hospital information system for real-world deployment.
 >
 > ⚠️ **DEMO / ĐANG PHÁT TRIỂN.** Đây là đồ án demo phục vụ học tập. Toàn bộ code (service, auth
-> stub ở gateway, frontend, cấu hình) **có thể thay đổi** và **chưa dùng cho production** — auth
-> mới là bản giả lập, secret dùng giá trị mặc định dev, và một số bounded context vẫn đang được
-> lên kế hoạch hoặc chưa hoàn thiện. MediFlow thuộc nhóm HIS/HMS nhưng chưa phải hệ thống thông tin
+> ở gateway, frontend, cấu hình) **có thể thay đổi** và **chưa dùng cho production** — các gate và
+> luồng tích hợp phải được nghiệm thu, một số bounded context đã hoãn hoặc chưa hoàn thiện.
+> MediFlow thuộc nhóm HIS/HMS nhưng chưa phải hệ thống thông tin
 > bệnh viện hoàn chỉnh, tuân thủ đầy đủ để triển khai thực tế.
 
-- **Design docs (authoritative):** [`docs/eproject_general_plan/`](docs/eproject_general_plan/) — one HTML per service.
+- **Design docs (authoritative):** [`docs/README.md`](docs/README.md) — simplified system design, contracts, plan and acceptance.
 - **AI coding rules (single source of truth):** [`docs/ai/`](docs/ai/README.md).
-- **Business services:** organization, patient, clinical, lab, pharmacy, billing, notification, report; inpatient and surgery are approved planned contexts.
+- **Current source:** 10 business modules. **MVP target:** Core, Clinical, Lab, Pharmacy, Billing and Support; Inpatient/Surgery are deferred, with code and data preserved. This documentation update does not migrate deployments.
 - **Platform and infrastructure:** API gateway, Netflix Eureka, RabbitMQ, and PostgreSQL with database-per-service ownership.
 
 ---
@@ -225,7 +225,7 @@ start the shared infrastructure and the selected service from your IDE.
 | `docker compose down` | stop, keep the data |
 | `docker compose down -v` | stop and **wipe** every database |
 
-> 🇻🇳 **Chưa dùng PostgreSQL bao giờ?** Đọc [`docs/huong-dan-postgres.md`](docs/huong-dan-postgres.md) —
+> 🇻🇳 **Chưa dùng PostgreSQL bao giờ?** Đọc [`docs/huong-dan-postgres.md`](docs/plans/huong-dan-postgres.md) —
 > hướng dẫn tiếng Việt từ đầu: kết nối bằng DBeaver, lệnh `psql` cần biết, SQL cơ bản, và các lỗi
 > thường gặp. Không cần cài PostgreSQL vào máy.
 
@@ -311,11 +311,9 @@ MediFlow/
 ├── .cursor/rules/project.mdc     ← Cursor entry pointer → docs/ai
 ├── .mcp.json (+ .example)        ← codebase-memory-mcp config (committed)
 ├── .gitignore / .editorconfig
-├── docs/eproject_general_plan/                     ← authoritative design docs (one HTML per service)
-│   └── backend-spec/             ← implementation specs: DDL, ports, DTOs, algorithms, test cases
-├── docs/ai/                      ← SINGLE SOURCE OF TRUTH for coding standards
-│   ├── 00..13 *.md               ← overview, architecture, standards, blueprint, ide-setup, codebase-tools, ...
-│   └── services/*.md             ← per-service bounded context / data / events
+├── docs/README.md                ← simplified MVP documentation entry point
+├── docs/plans/01..06 *.md              ← architecture, flows, contracts, data, 18-task plan, acceptance
+├── docs/ai/README.md             ← coding rules; remaining old-path files are short entry pointers
 ├── .claude/                      ← vendored Claude tooling (agents, commands, skills, hooks, settings)
 ├── .codex/                       ← Codex config, agents, and hooks
 ├── .agents/skills/               ← team-shared Codex workflows

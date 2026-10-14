@@ -1,47 +1,94 @@
-# AI Coding Rules — Single Source of Truth
+# Quy tắc coding MediFlow
 
-> **This folder is the ONE canonical source of coding standards for this project.**
-> Claude Code (`CLAUDE.md`), Codex (`AGENTS.md`) and Cursor (`.cursor/rules/`) all point here.
-> Edit rules HERE — never duplicate them in the tool-specific entry files.
+Bộ quy tắc viết lại ngày 2026-10-14 cho [thiết kế tối giản](../README.md).
+Chỉ giữ quy tắc cần cho correctness, bảo mật, phối hợp owner và nghiệm thu phân tán.
+Các entry files/skill cũ có thể trỏ qua tài liệu ngắn trong thư mục này; không dùng spec cũ
+để scaffold thêm nghiệp vụ ngoài MVP.
 
-## How to use
+## Ownership và scope
 
-- **Humans:** read `00` → `10` in order once, then keep `04-microservice-blueprint.md` open while coding.
-- **Frontend work:** read `12-frontend.md`, then the canonical ownership rules in `15-frontend-ownership.md` and the current [frontend workboard](../../frontend/docs/frontend-workboard.md).
-- **AI assistants:** these files are loaded as context. Follow them exactly. When a rule and the design docs (`docs/eproject_general_plan/*.html`) disagree, the design docs win for *what* to build; these files win for *how* to build it.
+Vinh owns Clinical/Lab; Inpatient deferred. Huy owns Pharmacy/Report; Surgery deferred.
+Hoàng Anh owns Organization/Patient/Gateway. Lộc owns Billing/Notification.
+Core co-host không chuyển ownership; Support có Huy/Report và Lộc/Notification.
+Root build/common/CI/scripts/Compose là shared, chỉ sửa khi được giao rõ.
+Branch name/reviewer/coordinator không tự cấp quyền sửa module khác. Subagents cũng vậy.
 
-## Index
+Frontend ownership và shared scope ở [15](15-frontend-ownership.md); source-local AGENTS phải đọc.
+Production changes không vượt scope. Foreign modules được inspect read-only để xác nhận contracts.
+Gap MVP ghi owner/producer/consumer/fixture/test trong [plan](../plans/05-implementation-plan.md).
+Hoãn Surgery/Inpatient không cho phép xóa code/data, relax guards hoặc fabricate authority.
 
-| # | File | What it governs |
-|---|------|-----------------|
-| 00 | [00-project-overview.md](00-project-overview.md) | Domain, implemented and planned service landscape, glossary |
-| 01 | [01-architecture.md](01-architecture.md) | System topology, communication patterns |
-| 02 | [02-tech-stack.md](02-tech-stack.md) | Pinned versions, libraries, build tool |
-| 03 | [03-coding-standards.md](03-coding-standards.md) | Java style, naming, error handling |
-| 04 | [04-microservice-blueprint.md](04-microservice-blueprint.md) | **The mandatory package & layer layout every service copies** |
-| 05 | [05-api-conventions.md](05-api-conventions.md) | REST paths, DTOs, responses, validation |
-| 06 | [06-events-rabbitmq.md](06-events-rabbitmq.md) | Event naming, exchanges, publish/subscribe |
-| 07 | [07-security-rbac.md](07-security-rbac.md) | JWT, roles, endpoint authorization |
-| 08 | [08-persistence-naming.md](08-persistence-naming.md) | Service-scoped DB ↔ Java/JSON naming, including Huy-owned English identifiers |
-| 09 | [09-testing.md](09-testing.md) | Test layers, coverage bar, tools |
-| 10 | [10-git-workflow.md](10-git-workflow.md) | Branches, commits, PRs |
-| 11 | [11-ide-setup.md](11-ide-setup.md) | IntelliJ / VS Code (Cursor) / NetBeans setup for a mixed-IDE team |
-| 12 | [12-frontend.md](12-frontend.md) | Next.js frontend — structure, gateway/auth wiring, conventions |
-| 13 | [13-codebase-tools.md](13-codebase-tools.md) | Optional AI tools: codebase-memory-mcp + Understand-Anything |
-| 14 | [14-flutter.md](14-flutter.md) | Flutter mobile — Clean Architecture, feature structure, API contract |
-| 15 | [15-frontend-ownership.md](15-frontend-ownership.md) | Frontend ownership matrix, shared scope, work routing, and quota-aware model use |
-| 16 | [16-care-finance-integration-contracts.md](16-care-finance-integration-contracts.md) | Mandatory cross-service contract gate for care episodes, finance, inpatient and surgery |
-| — | [services/README.md](services/README.md) | Per-service bounded context, owner, runtime status, data, endpoints and events |
+## Backend blueprint
 
-## Golden rules (the 30-second version)
+Infrastructure/web/messaging → application → domain; dependencies inward.
+Domain pure Java, không Spring/JPA/AMQP/Jackson; application không infrastructure/Spring Data/JPA/HTTP.
+Cho phép @Service/@Transactional, MapStruct annotations và DTO validation theo blueprint.
+In-ports/out-ports ở application; framework adapters ngoài domain. Constructor injection.
+DTO records cross boundary, entity không làm response. common chỉ generic, không business domain.
 
-1. **One bounded context per service.** Never reach into another service's database.
-2. **Copy the blueprint** (`04`) for every new service — package layout is not negotiable.
-3. **Use the service-scoped DB/Java/JSON naming in `08`.** Map explicitly; Pharmacy, Report and Surgery use English identifiers.
-4. **Change data → publish an event.** Cross-service reads are REST; cross-service reactions are events (`06`).
-5. **Every endpoint declares its roles** (`07`). No endpoint is open except gateway `/auth/**` and `/actuator/health`.
-6. **Money is `BigDecimal`**, IDs are `UUID`, times are `Instant`/`LocalDate` — never `float`/`double`/`String` for these.
-7. **Cross-service contract changes are atomic team work.** Read `16` and the service's registered
-   [active handoffs](../handoffs/README.md); update producer schema/fixture and every consumer
-   fixture/test together, or mark the consumer explicitly blocked. Delete completed handoffs after
-   moving lasting rules into canonical contracts.
+Mỗi context giữ data authority. Không cross-context SQL/JPA/repository/domain entity coupling.
+Core/Support là ngoại lệ deployment được thiết kế rõ, không ngoại lệ quyền DB hay business rules.
+Mỗi module có đúng datasource/Flyway/EMF/transaction manager. Không bean overriding che collision.
+Host security/config/advice explicit scoped. Không schema consolidation/refactor domain hàng loạt.
+
+Money BigDecimal; UUID IDs; Instant/LocalDate cho thời gian. Transaction critical ghi aggregate/
+receipt/outbox cùng nhau; consumer claim và effect atomic. Giữ REQUIRES_NEW và unit-of-work
+semantics của code hiện có. Không distributed @Transactional/XA.
+
+## Naming và API
+
+Class/routes English. Wire mirror live source, không đổi field names trong cùng refactor.
+Pharmacy/Report/Surgery Java/JSON English camelCase và SQL English snake_case; convention context
+khác giữ source hiện tại. Released migrations append-only, không edit/renumber/repair checksum.
+DTO request validation; ApiResponse/error.code/PageResult giữ contract và correlation.
+Mỗi endpoint shipped có role declarations và matching .http request. Breaking wire change
+version riêng, producer + consumer fixtures/tests cùng update.
+
+## Messaging
+
+State change có domain fact nếu contexts khác cần. Synchronous REST chỉ cho câu trả lời cần
+ngay; timeout/bounded retries/circuit breaker, confirmed absence khác unavailable.
+RabbitMQ durable exchange/queue/DLQ. Critical writes dùng durable outbox; ACK/confirm không
+là exactly-once. Dedupe event + logical operation, same key/different bytes reject.
+Original IDs/bytes giữ khi retry/restart. Poison bounded retry rồi DLQ, không nuốt evidence.
+HELD/quarantined không release vì host đổi tên. Không fake target IDs/price/history/authority.
+
+## Security
+
+JWT verify ở Gateway và downstream. Endpoint @PreAuthorize default deny theo exact role/
+method/path, không OR all roles của co-host. PATIENT resource ownership kiểm trong use case.
+SYSTEM chỉ service token; human access/service/refresh types không interchangeable.
+Actor/role/staff/account từ signed credential, không body untrusted.
+Secrets external; không log passwords/tokens/full PII. Service calls giữ subject/scope/correlation.
+Clinical authority khác login role; absence/provider failure fail-closed.
+
+## Frontend
+
+Next.js App Router/TypeScript/Tailwind hiện tại, pnpm; versions lấy package/lockfile.
+Feature-based folders theo logical context, không theo developer/deployment. Thin app routes.
+Gateway same-origin /api/*, mọi HTTP qua src/lib/api.ts; không raw fetch trong component.
+features/<ctx>/types.ts mirror live wire; shared envelopes ở lib/types.ts.
+Không feature imports từ feature khác; shared extraction phải đúng scope.
+Tailwind utilities/tokens/themes có sẵn; không component library/CSS-in-JS/new fetch library.
+Loading/error/empty/retry/permission states rõ; stale request không overwrite current state.
+Giữ UI Huy đã chốt; source FE đang sửa không phải scope xóa docs.
+
+## Mobile
+
+Flutter presentation → domain ← data, gateway-only qua api_client, repositories/use cases.
+Domain pure Dart; DTO mirror exact wire, không áp một quy tắc Vietnamese lên mọi context.
+JWT SecureStorage, không plain SharedPreferences. Dùng stack/dependencies hiện có.
+Không mobile expansion bắt buộc để nghiệm thu backend; regression nếu đổi contract.
+
+## Tests và release
+
+Business invariants cần unit/use-case tests; mock ports, không mock persistence adapters để
+chứng minh domain. Web slices cho validation/RBAC; PostgreSQL/RabbitMQ thật cho race/atomicity/
+retry/DLQ/restart. Testcontainers Docker engine phải running; skipped không là passed.
+Schema fresh/upgrade validate; giữ compatibility regression, test opt-in tách gates OFF.
+Không weakened tests/permissive fallback để green CI. Evidence ghi commit/flags/test counts.
+
+Conventional Commits, focused owner changes. Không tự push/merge từ task đọc/plan/docs.
+Mỗi commit đúng một human author theo scripts/allowed-contributors.json; không đổi identity
+để impersonate, không Co-Authored-By/AI/session trailers. Giữ hooks/required checks.
+Trước code đọc changelog rồi [docs index](../README.md), contracts, plan và nearest AGENTS.

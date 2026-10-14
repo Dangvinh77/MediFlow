@@ -1,5 +1,11 @@
 # Pharmacy Frontend Implementation Plan
 
+> **Thứ tự thực thi mới — 2026-10-12:** dùng
+> [plan FE Huy](huy-frontend-implementation-plan.md), gồm thiết kế đã duyệt, theme dự án,
+> Pharmacy/Report/Surgery và task/subtask mới. File này giữ lịch sử PH-FE-00…12 và business detail.
+> Các ghi chú lịch sử “chưa có test harness/script” không còn đúng: baseline `c110671b` đã có Vitest.
+> Signed `staffId` đã có producer code; nghiệm thu token/role thật vẫn phải chạy theo plan mới.
+
 > Kế hoạch triển khai frontend cho bounded context `pharmacy`.
 >
 > **Nguồn chuẩn là code backend hiện tại**, không phải thiết kế dự kiến. Kế hoạch này được kiểm tra

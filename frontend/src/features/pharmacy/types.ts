@@ -77,7 +77,7 @@ export interface PrescriptionLineDTO {
 
 export interface PrescriptionDTO {
   prescriptionId: string;
-  recordId: string;
+  recordId: string | null;
   patientId: string;
   doctorId: string;
   departmentId: string;

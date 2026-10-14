@@ -1,5 +1,11 @@
 # Inpatient Placement Authority Implementation Plan
 
+> **DEFERRED reference after the 2026-10-14 MVP redesign.** Preserved from master with
+> its implementation evidence; not an active MVP backlog. The canonical scope is
+> [system design](../../plans/01-system-design.md) and
+> [contracts](../../plans/03-contracts.md). Do not activate Pharmacy/Report consumers
+> or reopen Inpatient/Surgery merely by following this historical plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make Inpatient producer-ready for fresh admission placement authority, immutable bed-use intervals, and historical bed-capacity facts consumed by Pharmacy and Report.
