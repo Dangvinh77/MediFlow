@@ -4,6 +4,10 @@
 - **Backend:** `backend/surgery-service/**`
 - **Contract context:** [`docs/ai/services/surgery.md`](../../../docs/ai/services/surgery.md)
 
+**Current execution plan (2026-10-12):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
+Local DTO/presenter/tests can start using the existing Vitest harness; public routes/commands still
+require the activation and authority gates below. The older queue's absent-harness statement is historical.
+
 ## Planned frontend scope
 
 - `frontend/src/features/surgery/**`

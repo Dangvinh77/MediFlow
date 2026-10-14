@@ -4,6 +4,13 @@
 **Backend:** `backend/report-service/**`  
 **Contract context:** [`docs/ai/services/report.md`](../../../docs/ai/services/report.md)
 
+**Current execution plan (2026-10-12):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
+The current plan separates existing legacy reports, request-state hardening and gated V2 surfaces.
+
+2026-10-12 implementation checkpoint: a URL-driven report workspace and themed monthly chart/full-calendar
+table are implemented. Monthly validation, request race guards, last-query retry and 401/403/correlation
+behavior have local tests; Daily/Top filter persistence and equivalent request hardening remain queued.
+
 ## Writable frontend scope
 
 - `frontend/src/features/report/**`

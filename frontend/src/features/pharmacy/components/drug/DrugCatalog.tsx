@@ -1,15 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { controlClassName } from "@/components/ui/Field";
 import { Pagination } from "@/components/ui/Pagination";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { PageResult } from "@/lib/types";
-import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
-import { getPharmacyCapabilities } from "../../permissions";
 import type { DrugDTO } from "../../types";
 import {
   buildDrugCatalogQuery,
@@ -18,10 +16,6 @@ import {
   type DrugCatalogQuery,
 } from "../../utils";
 import { DrugTable } from "./DrugTable";
-
-function getServerRole(): Role | null {
-  return null;
-}
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
@@ -56,18 +50,13 @@ export function DrugCatalog() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = useSyncExternalStore(
-    subscribeToAuthChanges,
-    getRole,
-    getServerRole,
-  );
   const rawQuery = searchParams.toString();
   const query = useMemo(
     () => parseDrugCatalogQuery(new URLSearchParams(rawQuery)),
     [rawQuery],
   );
   const { keyword, page, size } = query;
-  const [result, setResult] = useState<PageResult<DrugDTO> | null>(null);
+  const [loadedResult, setResult] = useState<{ key: string; data: PageResult<DrugDTO> } | null>(null);
   const [settledRequestKey, setSettledRequestKey] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<{
     key: string;
@@ -78,12 +67,12 @@ export function DrugCatalog() {
 
   const queryKey = `${keyword}\u0000${page}\u0000${size}`;
   const requestKey = `${queryKey}\u0000${retryToken}`;
+  const result = loadedResult?.key === requestKey ? loadedResult.data : null;
   const loading = settledRequestKey !== requestKey;
   const error =
     settledRequestKey === requestKey && requestError?.key === requestKey
       ? requestError.message
       : null;
-  const canCreateDrug = getPharmacyCapabilities(role).canCreateDrug;
 
   const updateQuery = useCallback(
     (changes: Partial<DrugCatalogQuery>) => {
@@ -120,12 +109,13 @@ export function DrugCatalog() {
           return;
         }
 
-        setResult(nextResult);
+        setResult({ key: requestKey, data: nextResult });
       })
       .catch((cause: unknown) => {
         if (!active || requestId !== requestSequence.current) return;
 
         if (cause instanceof ApiRequestError && cause.status === 401) {
+          setResult(null);
           router.replace("/login");
           return;
         }
@@ -158,95 +148,55 @@ export function DrugCatalog() {
     updateQuery({ size, page: 0 });
   }
 
-  const hasData = Boolean(result && result.content.length > 0);
+  const hasData = Boolean(!loading && !error && result && result.content.length > 0);
 
   return (
-    <section className="mt-6" aria-busy={loading}>
-      {canCreateDrug && (
-        <div className="mb-4 flex justify-end">
-          <Link
-            href="/pharmacy/drugs/new"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Tạo thuốc
-          </Link>
-        </div>
-      )}
-      <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="min-w-0 flex-1">
-          <label htmlFor="drug-keyword" className="mb-1 block text-sm font-medium">
-            Tìm theo tên thuốc
-          </label>
-          <input
-            key={keyword}
-            id="drug-keyword"
-            name="keyword"
-            defaultValue={keyword}
-            placeholder="Ví dụ: Paracetamol"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
+    <section className="mt-6 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-busy={loading} aria-label="Danh mục thuốc">
+      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
-          <label htmlFor="drug-page-size" className="mb-1 block text-sm font-medium">
-            Số dòng
-          </label>
-          <select
-            id="drug-page-size"
-            value={query.size}
-            onChange={(event) => selectSize(event.target.value)}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground sm:w-auto"
-          >
-            {DRUG_CATALOG_PAGE_SIZES.map((size) => (
-              <option key={size} value={size}>{size}</option>
-            ))}
-          </select>
+          <h2 className="text-base font-semibold" aria-live="polite">
+            {!loading && !error && result ? result.totalElements.toLocaleString("vi-VN") + " thuốc" : "Danh mục thuốc"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {keyword ? "Tìm theo tên: “" + keyword + "”" : "Giá và tồn kho hiện tại"}
+          </p>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Tìm kiếm
-        </button>
-      </form>
+        <form onSubmit={submitSearch} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end xl:w-2/3">
+          <div className="min-w-0">
+            <label htmlFor="drug-keyword" className="mb-1 block text-xs font-medium">Tìm theo tên thuốc</label>
+            <input key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Ví dụ: Paracetamol" className={controlClassName} />
+          </div>
+          <div>
+            <label htmlFor="drug-page-size" className="mb-1 block text-xs font-medium">Số dòng</label>
+            <select id="drug-page-size" value={query.size} onChange={(event) => selectSize(event.target.value)} className={controlClassName}>
+              {DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+            </select>
+          </div>
+          <Button type="submit" variant="primary" disabled={loading}>Tìm kiếm</Button>
+        </form>
+      </div>
 
-      {loading && !result && <CatalogFallback />}
-
+      {loading && <CatalogFallback />}
       {error && (
-        <div role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+        <div role="alert" className="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
           <p>{error}</p>
-          <button
-            type="button"
-            onClick={() => setRetryToken((value) => value + 1)}
-            className="mt-3 rounded-lg border border-danger/40 px-3 py-2 font-medium hover:bg-danger/10"
-          >
-            Thử lại
-          </button>
+          <Button type="button" className="mt-3" onClick={() => setRetryToken((value) => value + 1)}>Thử lại</Button>
         </div>
       )}
-
       {!loading && !error && result && result.content.length === 0 && (
-        <p className="mt-6 rounded-lg border border-border bg-surface p-6 text-sm text-muted-foreground">
+        <p role="status" className="py-8 text-sm text-muted-foreground">
           Không tìm thấy thuốc phù hợp với bộ lọc hiện tại.
         </p>
       )}
-
-      {!error && hasData && result && (
+      {hasData && result && (
         <>
-          <div className="mt-6 flex items-center justify-between gap-3 text-sm text-muted-foreground">
-            <span>
-              {result.totalElements.toLocaleString("vi-VN")} thuốc
-              {query.keyword ? ` phù hợp với “${query.keyword}”` : " trong danh mục"}
-            </span>
-            {loading && <span role="status">Đang cập nhật…</span>}
-          </div>
           <DrugTable drugs={result.content} />
-          <Pagination
-            page={result.number}
-            totalPages={result.totalPages}
-            loading={loading}
-            onPageChange={(page) => updateQuery({ page })}
-          />
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground">
+              Hiển thị {(result.number * result.size + 1).toLocaleString("vi-VN")}–{(result.number * result.size + result.content.length).toLocaleString("vi-VN")} trong {result.totalElements.toLocaleString("vi-VN")} thuốc
+            </p>
+            <Pagination page={result.number} totalPages={result.totalPages} totalElements={result.totalElements} loading={loading} onPageChange={(page) => updateQuery({ page })} />
+          </div>
         </>
       )}
     </section>

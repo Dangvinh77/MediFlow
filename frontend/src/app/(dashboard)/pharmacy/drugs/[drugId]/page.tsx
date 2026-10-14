@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { PageShell } from "@/components/layout/PageShell";
+import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import { DrugDetail } from "@/features/pharmacy/components/drug/DrugDetail";
 import { isUuid } from "@/features/pharmacy/utils";
 
@@ -27,7 +27,7 @@ export default async function DrugDetailPage({
 
   if (!isUuid(id)) {
     return (
-      <PageShell
+      <PharmacyPageShell
         title="Chi tiết thuốc"
         description="Thông tin thuốc và các thao tác tồn kho."
       >
@@ -37,18 +37,18 @@ export default async function DrugDetailPage({
             URL cần chứa một UUID hợp lệ để mở chi tiết thuốc.
           </p>
         </section>
-      </PageShell>
+      </PharmacyPageShell>
     );
   }
 
   return (
-    <PageShell
+    <PharmacyPageShell
       title="Chi tiết thuốc"
       description="Thông tin thuốc và các thao tác tồn kho."
     >
       <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
         <DrugDetail drugId={id} />
       </RoleGate>
-    </PageShell>
+    </PharmacyPageShell>
   );
 }

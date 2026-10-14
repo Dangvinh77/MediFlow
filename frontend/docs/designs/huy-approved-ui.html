@@ -1,0 +1,343 @@
+<style>
+  #mf-huy-theme-preview {
+    color-scheme: light dark;
+    --mf-background: light-dark(#f8fafc, #0f172a);
+    --mf-foreground: light-dark(#0f172a, #f8fafc);
+    --mf-surface: light-dark(#ffffff, #1e293b);
+    --mf-surface-muted: light-dark(#f1f5f9, #273449);
+    --mf-muted-foreground: light-dark(#475569, #cbd5e1);
+    --mf-border: light-dark(#e2e8f0, #475569);
+    --mf-control-border: light-dark(#64748b, #94a3b8);
+    --mf-primary: light-dark(#1d4ed8, #93c5fd);
+    --mf-primary-hover: light-dark(#1e40af, #bfdbfe);
+    --mf-primary-foreground: light-dark(#ffffff, #0f172a);
+    --mf-danger: light-dark(#b91c1c, #f87171);
+    --mf-danger-foreground: light-dark(#ffffff, #450a0a);
+    --mf-warning: light-dark(#a16207, #facc15);
+    --mf-warning-foreground: #422006;
+    --mf-success: light-dark(#15803d, #4ade80);
+    --mf-success-foreground: light-dark(#ffffff, #052e16);
+    --mf-info: light-dark(#1d4ed8, #60a5fa);
+    --mf-info-foreground: light-dark(#ffffff, #172554);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.5; color: var(--mf-foreground);
+    background: var(--mf-background); border: 1px solid var(--mf-border);
+    border-radius: 12px; overflow: clip; isolation: isolate;
+  }
+  #mf-huy-theme-preview *, #mf-huy-theme-preview *::before, #mf-huy-theme-preview *::after { box-sizing: border-box; }
+  #mf-huy-theme-preview [hidden] { display: none !important; }
+  #mf-huy-theme-preview h1, #mf-huy-theme-preview h2, #mf-huy-theme-preview h3, #mf-huy-theme-preview p { margin: 0; }
+  #mf-huy-theme-preview h1 { font-size: 24px; line-height: 1.3; font-weight: 600; letter-spacing: -.5px; }
+  #mf-huy-theme-preview h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  #mf-huy-theme-preview .mf-small { font-size: 12px; }
+  #mf-huy-theme-preview .mf-muted { color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-number { font-variant-numeric: tabular-nums; }
+  #mf-huy-theme-preview .mf-shell { display: grid; grid-template-columns: 190px minmax(0,1fr); }
+  #mf-huy-theme-preview .mf-sidebar { background: var(--mf-surface); border-right: 1px solid var(--mf-border); display: flex; flex-direction: column; }
+  #mf-huy-theme-preview .mf-brand { display: flex; align-items: center; gap: 10px; min-height: 72px; padding: 16px; border-bottom: 1px solid var(--mf-border); }
+  #mf-huy-theme-preview .mf-brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: var(--mf-primary); color: var(--mf-primary-foreground); font-weight: 700; }
+  #mf-huy-theme-preview .mf-brand-name { font-size: 16px; font-weight: 600; letter-spacing: -.3px; }
+  #mf-huy-theme-preview .mf-sidebar nav { padding: 20px 12px; }
+  #mf-huy-theme-preview .mf-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--mf-muted-foreground); padding: 0 10px 12px; }
+  #mf-huy-theme-preview .mf-nav-item { display: block; width: 100%; text-align: left; padding: 9px 10px; margin-bottom: 4px; border: 0; border-left: 2px solid transparent; border-radius: 8px; color: var(--mf-muted-foreground); background: transparent; font: inherit; }
+  #mf-huy-theme-preview .mf-nav-item strong { display: block; font-weight: 600; }
+  #mf-huy-theme-preview .mf-nav-item small { display: block; font-size: 11px; margin-top: 1px; }
+  #mf-huy-theme-preview button.mf-nav-item:hover { background: var(--mf-surface-muted); }
+  #mf-huy-theme-preview .mf-nav-item[aria-current="page"] { background: color-mix(in srgb, var(--mf-primary) 10%, var(--mf-surface)); border-left-color: var(--mf-primary); color: var(--mf-foreground); }
+  #mf-huy-theme-preview .mf-sidebar-foot { padding: 16px; margin-top: auto; border-top: 1px solid var(--mf-border); font-size: 12px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-body { min-width: 0; }
+  #mf-huy-theme-preview .mf-header { padding: 14px 24px; background: var(--mf-surface); border-bottom: 1px solid var(--mf-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; min-height: 72px; }
+  #mf-huy-theme-preview .mf-header-title { font-size: 13px; font-weight: 600; }
+  #mf-huy-theme-preview .mf-header-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #mf-huy-theme-preview .mf-demo { font-size: 11px; color: var(--mf-info); background: color-mix(in srgb, var(--mf-info) 15%, var(--mf-surface)); border-radius: 5px; padding: 4px 8px; }
+  #mf-huy-theme-preview .mf-button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--mf-control-border); border-radius: 8px; background: var(--mf-surface); color: var(--mf-foreground); font: inherit; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+  #mf-huy-theme-preview .mf-button:hover { background: var(--mf-surface-muted); }
+  #mf-huy-theme-preview .mf-button-primary { background: var(--mf-primary); border-color: var(--mf-primary); color: var(--mf-primary-foreground); }
+  #mf-huy-theme-preview .mf-button-primary:hover { background: var(--mf-primary-hover); }
+  #mf-huy-theme-preview .mf-button:disabled { opacity: .55; cursor: not-allowed; }
+  #mf-huy-theme-preview .mf-button:focus-visible, #mf-huy-theme-preview button:focus-visible, #mf-huy-theme-preview input:focus-visible, #mf-huy-theme-preview select:focus-visible { outline: 2px solid var(--mf-primary); outline-offset: 2px; }
+  #mf-huy-theme-preview main { padding: 26px 24px 20px; min-height: 738px; }
+  #mf-huy-theme-preview .mf-page-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+  #mf-huy-theme-preview .mf-page-title p { margin-top: 5px; color: var(--mf-muted-foreground); font-size: 13px; }
+  #mf-huy-theme-preview .mf-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--mf-border); margin-bottom: 20px; flex-wrap: wrap; }
+  #mf-huy-theme-preview .mf-tab { padding: 0 0 12px; font: inherit; font-weight: 500; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--mf-muted-foreground); min-height: 44px; }
+  #mf-huy-theme-preview .mf-tab[aria-selected="true"], #mf-huy-theme-preview .mf-tab-active { border-bottom-color: var(--mf-primary); color: var(--mf-primary); }
+  #mf-huy-theme-preview .mf-panel { border: 1px solid var(--mf-border); background: var(--mf-surface); border-radius: 10px; padding: 18px; margin-bottom: 18px; min-width: 0; }
+  #mf-huy-theme-preview .mf-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  #mf-huy-theme-preview .mf-search { display: flex; align-items: center; gap: 8px; flex: 0 1 390px; }
+  #mf-huy-theme-preview input, #mf-huy-theme-preview select { min-height: 44px; border: 1px solid var(--mf-control-border); border-radius: 8px; background: var(--mf-surface); color: var(--mf-foreground); padding: 9px 12px; font: inherit; min-width: 0; width: 100%; }
+  #mf-huy-theme-preview input::placeholder { color: var(--mf-muted-foreground); opacity: .8; }
+  #mf-huy-theme-preview .mf-search input { flex: 1; }
+  #mf-huy-theme-preview #mf-theme { width: auto; padding: 8px 10px; font-size: 12px; }
+  #mf-huy-theme-preview label { font-size: 12px; font-weight: 500; display: block; margin-bottom: 6px; }
+  #mf-huy-theme-preview .mf-table-wrap { overflow-x: auto; }
+  #mf-huy-theme-preview table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  #mf-huy-theme-preview th { padding: 10px 9px; background: var(--mf-surface-muted); color: var(--mf-muted-foreground); font-weight: 500; text-align: left; white-space: nowrap; }
+  #mf-huy-theme-preview td { padding: 11px 9px; border-bottom: 1px solid var(--mf-border); vertical-align: middle; }
+  #mf-huy-theme-preview tbody tr:last-child td { border-bottom: 0; }
+  #mf-huy-theme-preview .mf-align-right { text-align: right; }
+  #mf-huy-theme-preview .mf-drug-name { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-weight: 500; }
+  #mf-huy-theme-preview .mf-initial { display: grid; place-items: center; width: 32px; height: 32px; background: var(--mf-surface-muted); border-radius: 7px; color: var(--mf-primary); flex-shrink: 0; }
+  #mf-huy-theme-preview .mf-detail-button { border: 0; background: transparent; color: var(--mf-primary); min-height: 44px; padding: 5px; font: inherit; font-size: 12px; font-weight: 500; }
+  #mf-huy-theme-preview .mf-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--mf-info); background: color-mix(in srgb, var(--mf-info) 15%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-badge-success { color: var(--mf-success); background: color-mix(in srgb, var(--mf-success) 15%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-badge-warning { color: var(--mf-warning); background: color-mix(in srgb, var(--mf-warning) 20%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-badge-danger { color: var(--mf-danger); background: color-mix(in srgb, var(--mf-danger) 15%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-table-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 15px; border-top: 1px solid var(--mf-border); font-size: 12px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-pagination { display: flex; align-items: center; gap: 8px; }
+  #mf-huy-theme-preview .mf-page-index { min-width: 40px; min-height: 44px; display: grid; place-items: center; color: var(--mf-primary-foreground); background: var(--mf-primary); border-radius: 8px; }
+  #mf-huy-theme-preview .mf-lookup { display: grid; grid-template-columns: 1fr 1.4fr; align-items: center; gap: 20px; }
+  #mf-huy-theme-preview .mf-lookup p { font-size: 12px; margin-top: 4px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-note { color: var(--mf-muted-foreground); font-size: 11px; margin-top: 12px; }
+  #mf-huy-theme-preview .mf-error { color: var(--mf-danger); font-size: 12px; margin-top: 8px; }
+  #mf-huy-theme-preview .mf-filters { display: grid; grid-template-columns: .7fr .9fr 1.4fr auto; gap: 14px; align-items: end; }
+  #mf-huy-theme-preview .mf-two-columns { display: grid; grid-template-columns: minmax(0,2.2fr) minmax(190px,1fr); gap: 18px; }
+  #mf-huy-theme-preview .mf-chart-title { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  #mf-huy-theme-preview .mf-chart-layout { display: grid; grid-template-columns: 44px 1fr; height: 206px; margin-top: 8px; }
+  #mf-huy-theme-preview .mf-chart-axis { display: flex; flex-direction: column; justify-content: space-between; text-align: right; padding-right: 8px; padding-bottom: 23px; font-size: 11px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-chart-area { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12%; padding: 0 6%; align-items: end; height: 183px; border-bottom: 1px solid var(--mf-border); background: repeating-linear-gradient(to top, transparent 0px, transparent calc(25% - 1px), var(--mf-border) calc(25% - 1px), var(--mf-border) 25%); }
+  #mf-huy-theme-preview .mf-chart-bar { min-width: 0; background: var(--mf-primary); border-radius: 2px 2px 0 0; position: relative; }
+  #mf-huy-theme-preview .mf-chart-bar-label { position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--mf-foreground); white-space: nowrap; }
+  #mf-huy-theme-preview .mf-chart-days { display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-summary-row { padding: 16px 0; border-bottom: 1px solid var(--mf-border); }
+  #mf-huy-theme-preview .mf-summary-row:last-of-type { border: 0; }
+  #mf-huy-theme-preview .mf-big-number { font-size: 28px; font-weight: 600; line-height: 1.25; letter-spacing: -.6px; margin-bottom: 5px; overflow-wrap: anywhere; }
+  #mf-huy-theme-preview .mf-notice { display: flex; align-items: flex-start; gap: 10px; border-radius: 8px; padding: 12px; font-size: 12px; color: var(--mf-foreground); background: color-mix(in srgb, var(--mf-info) 10%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-notice-warning { background: color-mix(in srgb, var(--mf-warning) 12%, var(--mf-surface)); }
+  #mf-huy-theme-preview .mf-notice i { color: var(--mf-info); flex-shrink: 0; }
+  #mf-huy-theme-preview .mf-notice-warning i { color: var(--mf-warning); }
+  #mf-huy-theme-preview .mf-case-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+  #mf-huy-theme-preview .mf-case-meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+  #mf-huy-theme-preview .mf-case-meta > div { padding-right: 12px; border-right: 1px solid var(--mf-border); }
+  #mf-huy-theme-preview .mf-case-meta > div:last-child { border: 0; }
+  #mf-huy-theme-preview .mf-case-meta strong { display: block; font-size: 15px; margin-top: 6px; font-weight: 500; }
+  #mf-huy-theme-preview .mf-surgery-columns { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); gap: 18px; }
+  #mf-huy-theme-preview .mf-schedule { display: grid; grid-template-columns: 78px 1fr; margin: 22px 0 12px; gap: 10px; }
+  #mf-huy-theme-preview .mf-time-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--mf-muted-foreground); margin-bottom: 12px; }
+  #mf-huy-theme-preview .mf-schedule-lane { background: var(--mf-surface-muted); padding: 12px; border-radius: 6px; border-left: 3px solid var(--mf-primary); }
+  #mf-huy-theme-preview .mf-schedule-lane strong { color: var(--mf-primary); font-weight: 500; }
+  #mf-huy-theme-preview .mf-schedule-lane p { color: var(--mf-muted-foreground); font-size: 12px; margin-top: 4px; }
+  #mf-huy-theme-preview .mf-room { display: flex; align-items: center; font-size: 11px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-steps { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin: 24px 0; }
+  #mf-huy-theme-preview .mf-step { text-align: center; color: var(--mf-muted-foreground); font-size: 12px; }
+  #mf-huy-theme-preview .mf-step-dot { width: 16px; height: 16px; border: 2px solid var(--mf-control-border); border-radius: 50%; display: block; margin: 0 auto 9px; background: var(--mf-surface); }
+  #mf-huy-theme-preview .mf-step-active { color: var(--mf-primary); font-weight: 500; }
+  #mf-huy-theme-preview .mf-step-active .mf-step-dot { border-color: var(--mf-primary); background: var(--mf-primary); }
+  #mf-huy-theme-preview .mf-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  #mf-huy-theme-preview .mf-checklist { padding: 0; list-style: none; margin: 15px 0 20px; }
+  #mf-huy-theme-preview .mf-checklist li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--mf-border); }
+  #mf-huy-theme-preview .mf-check-ring { height: 15px; width: 15px; border: 1.5px solid var(--mf-control-border); border-radius: 50%; margin-top: 3px; }
+  #mf-huy-theme-preview .mf-check-copy { font-size: 13px; }
+  #mf-huy-theme-preview .mf-check-copy small { display: block; color: var(--mf-muted-foreground); font-size: 11px; margin-top: 3px; }
+  #mf-huy-theme-preview .mf-bottom-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+  #mf-huy-theme-preview details > summary { min-height: 44px; display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  #mf-huy-theme-preview .mf-technical { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; padding-top: 12px; }
+  #mf-huy-theme-preview dialog { max-width: min(480px, calc(100% - 24px)); width: 100%; padding: 24px; color: var(--mf-foreground); background: var(--mf-surface); border: 1px solid var(--mf-border); border-radius: 12px; }
+  #mf-huy-theme-preview dialog::backdrop { background: color-mix(in srgb, var(--mf-background) 65%, transparent); }
+  #mf-huy-theme-preview .mf-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  #mf-huy-theme-preview .mf-detail-grid dt { font-size: 12px; color: var(--mf-muted-foreground); }
+  #mf-huy-theme-preview .mf-detail-grid dd { margin: 4px 0 0; font-weight: 500; }
+  @media (max-width: 820px) {
+    #mf-huy-theme-preview .mf-shell { grid-template-columns: 156px minmax(0,1fr); }
+    #mf-huy-theme-preview main { padding: 20px 16px; }
+    #mf-huy-theme-preview .mf-header { padding: 14px 16px; }
+    #mf-huy-theme-preview .mf-two-columns, #mf-huy-theme-preview .mf-surgery-columns { grid-template-columns: 1fr; }
+    #mf-huy-theme-preview .mf-filters { grid-template-columns: 1fr 1fr; }
+    #mf-huy-theme-preview .mf-lookup { grid-template-columns: 1fr; gap: 14px; }
+    #mf-huy-theme-preview .mf-summary-row { display: inline-block; width: 49%; border: 0; vertical-align: top; }
+    #mf-huy-theme-preview .mf-big-number { font-size: 26px; }
+  }
+  @media (max-width: 600px) {
+    #mf-huy-theme-preview .mf-shell { display: block; }
+    #mf-huy-theme-preview .mf-sidebar { border: 0; border-bottom: 1px solid var(--mf-border); }
+    #mf-huy-theme-preview .mf-brand { min-height: 62px; }
+    #mf-huy-theme-preview .mf-sidebar nav { display: flex; gap: 6px; padding: 10px 12px; flex-wrap: wrap; }
+    #mf-huy-theme-preview .mf-sidebar .mf-nav-item { width: auto; margin: 0; padding: 8px 12px; min-height: 44px; }
+    #mf-huy-theme-preview .mf-sidebar .mf-nav-item small, #mf-huy-theme-preview .mf-static-nav, #mf-huy-theme-preview .mf-eyebrow, #mf-huy-theme-preview .mf-sidebar-foot { display: none; }
+    #mf-huy-theme-preview .mf-header { padding: 12px 16px; gap: 10px; }
+    #mf-huy-theme-preview h1 { font-size: 22px; }
+    #mf-huy-theme-preview .mf-search { flex-basis: 100%; }
+    #mf-huy-theme-preview .mf-search .mf-button { padding: 8px 10px; }
+    #mf-huy-theme-preview .mf-tabs { gap: 16px; font-size: 12px; }
+    #mf-huy-theme-preview .mf-panel { padding: 14px; }
+    #mf-huy-theme-preview .mf-case-meta { grid-template-columns: 1fr; gap: 12px; }
+    #mf-huy-theme-preview .mf-case-meta > div { border-right: 0; border-bottom: 1px solid var(--mf-border); padding-bottom: 12px; }
+    #mf-huy-theme-preview .mf-bottom-actions { grid-template-columns: 1fr; }
+    #mf-huy-theme-preview .mf-filters { grid-template-columns: 1fr; }
+    #mf-huy-theme-preview .mf-summary-row { display: block; width: 100%; }
+    #mf-huy-theme-preview .mf-technical { grid-template-columns: 1fr; }
+  }
+</style>
+<div id="mf-huy-theme-preview" aria-label="MediFlow — mẫu giao diện theo theme dự án">
+  <div class="mf-shell">
+    <aside class="mf-sidebar" aria-label="Điều hướng nghiệp vụ">
+      <div class="mf-brand"><span class="mf-brand-mark">MF</span><div><div class="mf-brand-name">MediFlow</div><div class="mf-small mf-muted">Hospital workspace</div></div></div>
+      <nav aria-label="Các màn hình bản mẫu">
+        <div class="mf-eyebrow">Nghiệp vụ</div>
+        <div class="mf-nav-item mf-static-nav"><strong>Tổ chức</strong><small>Nhân sự &amp; khoa</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Bệnh nhân</strong><small>Hồ sơ định danh</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Lịch hẹn</strong><small>Tiếp nhận ngoại trú</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Hồ sơ khám</strong><small>Chẩn đoán &amp; kết luận</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Xét nghiệm</strong><small>Hàng đợi &amp; kết quả</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Nội trú</strong><small>Nhập viện &amp; giường</small></div>
+        <button type="button" class="mf-nav-item cursor-interaction" data-screen="pharmacy" aria-current="page"><strong>Dược</strong><small>Thuốc &amp; đơn thuốc</small></button>
+        <div class="mf-nav-item mf-static-nav"><strong>Viện phí</strong><small>Hóa đơn &amp; thanh toán</small></div>
+        <div class="mf-nav-item mf-static-nav"><strong>Thông báo</strong><small>Lịch sử gửi</small></div>
+        <button type="button" class="mf-nav-item cursor-interaction" data-screen="report"><strong>Báo cáo</strong><small>Chỉ số vận hành</small></button>
+        <button type="button" class="mf-nav-item cursor-interaction" data-screen="surgery"><strong>Phẫu thuật</strong><small>Bản mẫu chi tiết ca</small></button>
+      </nav>
+      <div class="mf-sidebar-foot">Dữ liệu minh họa<br>Pharmacy · Report · Surgery</div>
+    </aside>
+    <div class="mf-body">
+      <header class="mf-header">
+        <div><div class="mf-header-title">Không gian vận hành MediFlow</div><div class="mf-small mf-muted">Quản trị viên</div></div>
+        <div class="mf-header-tools"><span class="mf-demo">BẢN MẪU</span><select id="mf-theme" aria-label="Giao diện"><option value="system">Hệ thống</option><option value="light">Sáng</option><option value="dark">Tối</option></select></div>
+      </header>
+      <main>
+        <section id="mf-pharmacy" aria-label="Danh mục thuốc">
+          <div class="mf-page-title"><div><h1>Danh mục thuốc</h1><p>Tra cứu thuốc và quản lý tồn kho</p></div><button type="button" class="mf-button mf-button-primary cursor-interaction" id="mf-add-drug"><i data-lucide="plus" aria-hidden="true"></i>Thêm thuốc</button></div>
+          <div class="mf-tabs" role="tablist" aria-label="Dược"><button type="button" id="mf-drugs-tab" class="mf-tab cursor-interaction" role="tab" aria-selected="true" aria-controls="mf-drugs-content">Danh mục</button><button type="button" id="mf-prescriptions-tab" class="mf-tab cursor-interaction" role="tab" aria-selected="false" aria-controls="mf-rx-content">Đơn thuốc</button><button type="button" id="mf-outbox-tab" class="mf-tab cursor-interaction" role="tab" aria-selected="false" aria-controls="mf-outbox-content">Khôi phục outbox</button></div>
+          <div id="mf-drugs-content" role="tabpanel" aria-labelledby="mf-drugs-tab">
+            <div class="mf-panel">
+              <div class="mf-toolbar"><div><h2 id="mf-drug-count">6 thuốc</h2><span class="mf-small mf-muted">Danh mục minh họa</span></div><form id="mf-search-form" class="mf-search"><input id="mf-drug-search" aria-label="Tìm theo tên thuốc" placeholder="Tìm theo tên thuốc" type="search"><button class="mf-button mf-button-primary cursor-interaction" type="submit">Tìm kiếm</button></form></div>
+              <div class="mf-table-wrap"><table aria-label="Danh mục thuốc minh họa"><thead><tr><th>Tên thuốc</th><th>Đơn vị</th><th class="mf-align-right">Tồn kho</th><th>Hạn dùng</th><th class="mf-align-right">Giá (VND)</th><th>Thao tác</th></tr></thead><tbody id="mf-drug-rows"></tbody></table></div>
+              <p id="mf-no-drugs" class="mf-muted" hidden>Không tìm thấy thuốc phù hợp.</p>
+              <div class="mf-table-footer"><span id="mf-drug-footer">Hiển thị 1–6 trong 6 thuốc · 20 / trang</span><div class="mf-pagination"><button class="mf-button" type="button" disabled>Trước</button><span class="mf-page-index">1</span><button class="mf-button" type="button" disabled>Sau</button></div></div>
+            </div>
+            <div class="mf-panel mf-lookup"><div><h2>Tra cứu đơn thuốc</h2><p>Nhập mã để mở chi tiết đơn thuốc.</p></div><form id="mf-rx-compact-form"><div class="mf-search"><input id="mf-rx-compact-id" aria-label="Mã đơn thuốc" placeholder="Mã đơn thuốc (UUID)"><button class="mf-button mf-button-primary cursor-interaction" type="submit">Tra cứu</button></div><p class="mf-error" id="mf-rx-compact-message" role="status" hidden></p></form></div>
+          </div>
+          <div id="mf-rx-content" role="tabpanel" aria-labelledby="mf-prescriptions-tab" hidden><div class="mf-panel"><h2>Tra cứu đơn thuốc</h2><p class="mf-muted mf-small" style="margin:8px 0 18px">Nhập mã đơn thuốc để xem trạng thái, thanh toán và xuất thuốc.</p><form id="mf-rx-form"><label for="mf-rx-id">Mã đơn thuốc</label><div class="mf-search"><input id="mf-rx-id" placeholder="UUID đơn thuốc"><button class="mf-button mf-button-primary cursor-interaction" type="submit">Tra cứu</button></div><p class="mf-error" id="mf-rx-message" role="status" hidden></p></form></div></div>
+          <div id="mf-outbox-content" role="tabpanel" aria-labelledby="mf-outbox-tab" hidden><div class="mf-panel"><h2>Khôi phục sự kiện</h2><p class="mf-muted mf-small" style="margin:8px 0 18px">Dành cho quản trị viên, sử dụng mã sự kiện đã được xác định.</p><label for="mf-event-id">Mã sự kiện</label><input id="mf-event-id" placeholder="UUID sự kiện"><div class="mf-actions"><button class="mf-button" disabled type="button">Xác nhận khôi phục</button></div><p class="mf-note">Thao tác được khóa trong bản mẫu.</p></div></div>
+          <p class="mf-note">Dữ liệu minh họa · Giá và tồn kho do Pharmacy cung cấp khi chạy thực tế.</p>
+        </section>
+        <section id="mf-report" aria-label="Báo cáo tháng" hidden>
+          <div class="mf-page-title"><div><h1>Báo cáo tháng</h1><p>Số liệu tổng hợp từ Report</p></div></div>
+          <div class="mf-tabs" aria-label="Loại báo cáo"><span class="mf-tab">Hàng ngày</span><span class="mf-tab mf-tab-active">Hàng tháng</span><span class="mf-tab">Thuốc xuất nhiều</span></div>
+          <form id="mf-report-form" class="mf-panel mf-filters"><div><label for="mf-report-month">Tháng</label><input id="mf-report-month" value="10" readonly></div><div><label for="mf-report-year">Năm</label><input id="mf-report-year" value="2026" readonly></div><div><label for="mf-report-department">Mã khoa (tùy chọn)</label><input id="mf-report-department" placeholder="Nhập UUID khoa"></div><button class="mf-button mf-button-primary cursor-interaction" type="submit">Xem báo cáo</button><p id="mf-report-message" class="mf-error" role="status" hidden></p></form>
+          <div class="mf-two-columns">
+            <div class="mf-panel"><div class="mf-chart-title"><h2>Doanh thu theo ngày</h2><span class="mf-badge">01–04/10</span></div><p class="mf-small mf-muted">Giá trị doanh thu · triệu</p><div class="mf-chart-layout" role="img" aria-label="Doanh thu minh họa ngày 1 đến 4 tháng 10: 2,4 triệu; 3,15 triệu; 2,85 triệu; 4,05 triệu."><div class="mf-chart-axis"><span>5,0</span><span>3,75</span><span>2,5</span><span>1,25</span><span>0</span></div><div><div class="mf-chart-area" id="mf-month-chart"></div><div class="mf-chart-days"><span>01/10</span><span>02/10</span><span>03/10</span><span>04/10</span></div></div></div><p class="mf-note">Ngày trong tháng · Phần xem trước 01–04/10</p></div>
+            <div class="mf-panel"><h2>Tháng 10/2026</h2><div class="mf-summary-row"><div class="mf-big-number mf-number">12.450.000</div><div class="mf-small mf-muted">Tổng doanh thu</div></div><div class="mf-summary-row"><div class="mf-big-number mf-number">84</div><div class="mf-small mf-muted">Số hóa đơn</div></div><div class="mf-notice"><i data-lucide="database" aria-hidden="true"></i><div><strong>Nguồn: Report</strong><div class="mf-small mf-muted">Dữ liệu minh họa</div></div></div></div>
+          </div>
+          <div class="mf-panel"><h2 style="margin-bottom:14px">Chi tiết theo ngày</h2><div class="mf-table-wrap"><table aria-label="Chi tiết doanh thu minh họa"><thead><tr><th>Ngày</th><th class="mf-align-right">Lượt thăm</th><th class="mf-align-right">Xét nghiệm</th><th class="mf-align-right">Đơn thuốc</th><th class="mf-align-right">Doanh thu</th></tr></thead><tbody><tr><td>01/10/2026</td><td class="mf-align-right">16</td><td class="mf-align-right">8</td><td class="mf-align-right">11</td><td class="mf-align-right mf-number">2.400.000</td></tr><tr><td>02/10/2026</td><td class="mf-align-right">22</td><td class="mf-align-right">12</td><td class="mf-align-right">15</td><td class="mf-align-right mf-number">3.150.000</td></tr><tr><td>03/10/2026</td><td class="mf-align-right">18</td><td class="mf-align-right">7</td><td class="mf-align-right">13</td><td class="mf-align-right mf-number">2.850.000</td></tr><tr><td>04/10/2026</td><td class="mf-align-right">24</td><td class="mf-align-right">10</td><td class="mf-align-right">17</td><td class="mf-align-right mf-number">4.050.000</td></tr></tbody></table></div><details><summary class="cursor-interaction">Các ngày còn lại trong tháng <i data-lucide="chevron-down" aria-hidden="true"></i></summary><div class="mf-table-wrap"><table aria-label="Các ngày còn lại trong báo cáo minh họa"><thead><tr><th>Ngày</th><th class="mf-align-right">Lượt thăm</th><th class="mf-align-right">Xét nghiệm</th><th class="mf-align-right">Đơn thuốc</th><th class="mf-align-right">Doanh thu</th></tr></thead><tbody id="mf-remaining-days"></tbody></table></div></details></div>
+          <div class="mf-notice mf-notice-warning"><i data-lucide="info" aria-hidden="true"></i><div><strong>Báo cáo V2 chưa mở sử dụng</strong><div class="mf-small">Dữ liệu không khả dụng ở V2 sẽ được hiển thị riêng.</div></div></div>
+        </section>
+        <section id="mf-surgery" aria-label="Chuẩn bị ca phẫu thuật" hidden>
+          <div class="mf-page-title"><div><div class="mf-case-heading"><h1>Chuẩn bị ca phẫu thuật</h1><span class="mf-badge">Đang chuẩn bị</span></div><p class="mf-number">#8c6a…14e2 · Bản mẫu chi tiết ca</p></div></div>
+          <div class="mf-panel mf-case-meta"><div><span class="mf-small mf-muted">Mã bệnh nhân</span><strong class="mf-number">2f91…6d30</strong></div><div><span class="mf-small mf-muted">Mã nhập viện</span><strong class="mf-number">42d3…7b16</strong></div><div><span class="mf-small mf-muted">Mã thủ thuật</span><strong>PROC-DEMO-01</strong></div></div>
+          <div class="mf-surgery-columns">
+            <div><div class="mf-panel"><div class="mf-toolbar"><h2>Lịch dự kiến</h2><span class="mf-small mf-muted">13/10/2026</span></div><div class="mf-schedule"><div class="mf-room">Mã phòng<br>a219…d862</div><div><div class="mf-time-labels"><span>08:00</span><span>08:30</span><span>09:00</span><span>09:30</span></div><div class="mf-schedule-lane"><strong>Ca đang xem</strong><p>Lịch nháp · Chưa giữ chỗ</p></div></div></div></div><div class="mf-panel"><h2>Tiến trình ca</h2><div class="mf-steps" aria-label="Tiến trình: đang chuẩn bị"><div class="mf-step mf-step-active"><span class="mf-step-dot"></span>Chuẩn bị</div><div class="mf-step"><span class="mf-step-dot"></span>Sẵn sàng</div><div class="mf-step"><span class="mf-step-dot"></span>Thực hiện</div><div class="mf-step"><span class="mf-step-dot"></span>Kết thúc</div></div><div class="mf-notice"><i data-lucide="info" aria-hidden="true"></i><span>Lịch dự kiến không xác nhận quyền bắt đầu ca.</span></div><div class="mf-actions"><button class="mf-button" type="button" disabled><i data-lucide="lock-keyhole" aria-hidden="true"></i>Sửa lịch</button><button class="mf-button" type="button" disabled><i data-lucide="lock-keyhole" aria-hidden="true"></i>Chốt lịch</button></div></div></div>
+            <div class="mf-panel"><h2>Điều kiện trước mổ</h2><ul class="mf-checklist"><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Chỉ định phẫu thuật<small>Chờ xác minh</small></div></li><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Checklist bắt buộc<small>Chưa đủ bằng chứng</small></div></li><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Đồng ý phẫu thuật<small>Chờ xác minh</small></div></li><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Đồng ý gây mê<small>Chờ xác minh</small></div></li><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Đội mổ &amp; phòng<small>Chưa có dữ liệu xác minh</small></div></li><li><span class="mf-check-ring" aria-hidden="true"></span><div class="mf-check-copy">Điều kiện tài chính<small>Chưa có dữ liệu xác minh</small></div></li></ul><button class="mf-button" disabled type="button" style="width:100%"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Đánh giá sẵn sàng</button><p class="mf-note">Thao tác được khóa trong bản mẫu.</p></div>
+          </div>
+          <div class="mf-panel mf-bottom-actions"><button class="mf-button" type="button" disabled><i data-lucide="lock-keyhole" aria-hidden="true"></i>Bắt đầu ca</button><button class="mf-button" type="button" disabled><i data-lucide="lock-keyhole" aria-hidden="true"></i>Hoàn tất</button><button class="mf-button" type="button" disabled><i data-lucide="lock-keyhole" aria-hidden="true"></i>Hủy ca</button></div>
+          <details class="mf-panel"><summary class="cursor-interaction"><i data-lucide="chevron-down" aria-hidden="true"></i>Thông tin kỹ thuật</summary><div class="mf-technical"><div>Revision ca: 2</div><div>Trạng thái: PREOP_IN_PROGRESS</div><div>Revision lịch: 1</div><div>Readiness: chưa được đánh giá</div></div></details>
+          <div class="mf-notice mf-notice-warning"><i data-lucide="info" aria-hidden="true"></i><span>Bản mẫu chưa mở sử dụng · Dữ liệu minh họa.</span></div>
+        </section>
+        <p id="mf-announcement" class="mf-note" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+  </div>
+  <dialog id="mf-drug-dialog" aria-labelledby="mf-dialog-title"><h2 id="mf-dialog-title">Chi tiết thuốc</h2><p class="mf-note" id="mf-dialog-copy"></p><dl class="mf-detail-grid" id="mf-dialog-details"></dl><button type="button" class="mf-button cursor-interaction" id="mf-dialog-close">Đóng</button></dialog>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('mf-huy-theme-preview');
+  const $ = (selector) => root.querySelector(selector);
+  const state = { screen: 'pharmacy', theme: 'system' };
+  const names = { pharmacy: 'Danh mục thuốc', report: 'Báo cáo tháng', surgery: 'Chuẩn bị ca phẫu thuật' };
+  const saved = window.openai?.widgetState?.modelContent;
+  if (saved && names[saved.screen]) state.screen = saved.screen;
+  if (saved && ['light','dark','system'].includes(saved.theme)) state.theme = saved.theme;
+  function renderTheme() {
+    root.style.colorScheme = state.theme === 'system' ? 'light dark' : state.theme;
+    $('#mf-theme').value = state.theme;
+  }
+  function renderScreen() {
+    Object.keys(names).forEach(key => { $('#mf-' + key).hidden = key !== state.screen; });
+    root.querySelectorAll('[data-screen]').forEach(button => {
+      if (button.dataset.screen === state.screen) button.setAttribute('aria-current','page');
+      else button.removeAttribute('aria-current');
+    });
+  }
+  function save() {
+    window.openai?.setWidgetState?.({ modelContent: { screen: state.screen, theme: state.theme }, privateContent: null })?.catch(() => {});
+  }
+  $('#mf-theme').addEventListener('change', event => { state.theme = event.target.value; renderTheme(); save(); });
+  root.querySelectorAll('[data-screen]').forEach(button => button.addEventListener('click', () => {
+    state.screen = button.dataset.screen; renderScreen(); $('#mf-announcement').textContent = names[state.screen]; save();
+  }));
+  window.addEventListener('openai:set_globals', event => {
+    const incoming = event.detail?.globals?.widgetState?.modelContent;
+    if (!incoming) return;
+    if (names[incoming.screen]) state.screen = incoming.screen;
+    if (['light','dark','system'].includes(incoming.theme)) state.theme = incoming.theme;
+    renderTheme(); renderScreen();
+  });
+  const drugs = [
+    {name:'Paracetamol 500 mg', initial:'P', unit:'Viên', stock:120, expiry:'30/06/2027', price:2500},
+    {name:'Vitamin C 500 mg', initial:'C', unit:'Viên', stock:24, expiry:'31/08/2027', price:3000},
+    {name:'Natri clorid 0,9%', initial:'N', unit:'Chai', stock:80, expiry:'30/09/2027', price:8500},
+    {name:'Thuốc mẫu A', initial:'A', unit:'Hộp', stock:6, expiry:'31/12/2026', price:45000},
+    {name:'Thuốc mẫu B', initial:'B', unit:'Viên', stock:0, expiry:'31/03/2027', price:4000},
+    {name:'Thuốc mẫu C', initial:'C', unit:'Hộp', stock:32, expiry:'30/11/2027', price:18000}
+  ];
+  const fmt = value => value.toLocaleString('vi-VN');
+  function renderDrugs(keyword = '') {
+    const rows = drugs.filter(drug => drug.name.toLocaleLowerCase('vi').includes(keyword.trim().toLocaleLowerCase('vi')));
+    $('#mf-drug-count').textContent = rows.length + ' thuốc';
+    $('#mf-drug-footer').textContent = rows.length ? 'Hiển thị 1–' + rows.length + ' trong ' + rows.length + ' thuốc · 20 / trang' : '0 thuốc';
+    $('#mf-no-drugs').hidden = rows.length !== 0;
+    $('#mf-drug-rows').replaceChildren();
+    rows.forEach(drug => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><div class="mf-drug-name"><span class="mf-initial">${drug.initial}</span>${drug.name}</div></td><td>${drug.unit}</td><td class="mf-align-right mf-number">${drug.stock}${drug.stock === 0 ? '<br><span class="mf-badge mf-badge-danger">Hết hàng</span>' : drug.stock < 10 ? '<br><span class="mf-badge mf-badge-warning">Tồn thấp</span>' : ''}</td><td class="mf-number">${drug.expiry}</td><td class="mf-align-right mf-number">${fmt(drug.price)}</td><td><button type="button" class="mf-detail-button cursor-interaction">Chi tiết</button></td>`;
+      tr.querySelector('button').addEventListener('click', () => {
+        $('#mf-dialog-title').textContent = drug.name;
+        $('#mf-dialog-copy').textContent = 'Dữ liệu minh họa';
+        $('#mf-dialog-details').innerHTML = `<div><dt>Đơn vị</dt><dd>${drug.unit}</dd></div><div><dt>Tồn kho</dt><dd>${drug.stock}</dd></div><div><dt>Hạn dùng</dt><dd>${drug.expiry}</dd></div><div><dt>Giá (VND)</dt><dd>${fmt(drug.price)}</dd></div>`;
+        $('#mf-drug-dialog').showModal();
+      });
+      $('#mf-drug-rows').append(tr);
+    });
+  }
+  function bindLocalForm(selector, action) {
+    const form = $(selector);
+    form.querySelectorAll('button[type="submit"]').forEach(button => {
+      button.type = 'button';
+      button.addEventListener('click', action);
+    });
+    form.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); action(); }
+    });
+    form.addEventListener('submit', event => event.preventDefault());
+  }
+  bindLocalForm('#mf-search-form', () => renderDrugs($('#mf-drug-search').value));
+  $('#mf-drug-search').addEventListener('input', event => { if (!event.target.value) renderDrugs(); });
+  $('#mf-dialog-close').addEventListener('click', () => $('#mf-drug-dialog').close());
+  $('#mf-add-drug').addEventListener('click', () => { $('#mf-dialog-title').textContent = 'Thêm thuốc'; $('#mf-dialog-copy').textContent = 'Bản mẫu bố cục — thao tác thêm dữ liệu chưa mở.'; $('#mf-dialog-details').replaceChildren(); $('#mf-drug-dialog').showModal(); });
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  [['mf-rx-compact-form','mf-rx-compact-id','mf-rx-compact-message'], ['mf-rx-form','mf-rx-id','mf-rx-message']].forEach(([form,input,message]) => {
+    bindLocalForm('#'+form, () => { $('#'+message).hidden = false; $('#'+message).textContent = uuid.test($('#'+input).value.trim()) ? 'Bản mẫu chưa kết nối dữ liệu đơn thuốc.' : 'Nhập mã đơn thuốc đúng định dạng UUID.'; });
+  });
+  const tabs = [...root.querySelectorAll('#mf-pharmacy [role="tab"]')];
+  tabs.forEach(button => button.addEventListener('click', () => {
+    tabs.forEach(tab => { const active = tab === button; tab.setAttribute('aria-selected', String(active)); $('#'+tab.getAttribute('aria-controls')).hidden = !active; });
+  }));
+  bindLocalForm('#mf-report-form', () => {
+    const department = $('#mf-report-department').value.trim();
+    $('#mf-report-message').hidden = false;
+    $('#mf-report-message').textContent = department && !uuid.test(department) ? 'Mã khoa cần đúng định dạng UUID.' : 'Đang hiển thị dữ liệu minh họa tháng 10/2026.';
+  });
+  const revenues = [2400000,3150000,2850000,4050000];
+  for (let day=1; day<=31; day++) {
+    if (day <= 4) {
+      const bar = document.createElement('span'); bar.className = 'mf-chart-bar';
+      const value = revenues[day-1]; bar.style.height = `${value/5000000*100}%`;
+      bar.setAttribute('data-tooltip', `${String(day).padStart(2,'0')}/10: ${fmt(value)}`);
+      const label = document.createElement('span'); label.className = 'mf-chart-bar-label'; label.textContent = (value/1000000).toLocaleString('vi-VN'); bar.append(label);
+      $('#mf-month-chart').append(bar);
+    }
+    if(day>4) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${String(day).padStart(2,'0')}/10/2026</td><td class="mf-align-right">0</td><td class="mf-align-right">0</td><td class="mf-align-right">0</td><td class="mf-align-right">0</td>`; $('#mf-remaining-days').append(tr); }
+  }
+  renderDrugs(); renderTheme(); renderScreen();
+})();
+</script>

@@ -31,7 +31,7 @@ interface PharmacyNavItem {
 const navigation: readonly PharmacyNavItem[] = [
   {
     href: "/pharmacy/drugs",
-    label: "Kho thuốc",
+    label: "Danh mục",
     capability: "canReadDrugs",
   },
   {
@@ -41,12 +41,12 @@ const navigation: readonly PharmacyNavItem[] = [
   },
   {
     href: "/pharmacy/prescriptions",
-    label: "Tra đơn",
+    label: "Đơn thuốc",
     capability: "canReadPrescription",
   },
   {
     href: "/pharmacy/admin/outbox",
-    label: "Outbox",
+    label: "Khôi phục outbox",
     capability: "canReplayOutbox",
   },
 ];
@@ -135,7 +135,7 @@ export function PharmacyNav() {
   return (
     <nav
       aria-label="Điều hướng phân hệ Dược"
-      className="flex flex-wrap items-center gap-2"
+      className="mt-4 flex flex-wrap items-center gap-x-6 border-b border-border"
     >
       {visibleItems.map((item) => {
         const active = item.href === activeHref;
@@ -154,12 +154,12 @@ export function PharmacyNav() {
                 : undefined
             }
             className={[
-              "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "inline-flex min-h-11 items-center border-b-2 px-1 py-3 text-sm font-medium transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2",
               "focus-visible:outline-primary",
               active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
             {item.label}

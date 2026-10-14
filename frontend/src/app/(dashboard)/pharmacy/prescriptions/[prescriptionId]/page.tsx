@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { PageShell } from "@/components/layout/PageShell";
+import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import { PrescriptionDetail } from "@/features/pharmacy/components/prescription/PrescriptionDetail";
 import { isUuid } from "@/features/pharmacy/utils";
 
@@ -19,7 +19,7 @@ export default async function PrescriptionDetailPage({
   const id = prescriptionId.trim();
 
   return (
-    <PageShell
+    <PharmacyPageShell
       title="Chi tiết đơn thuốc"
       description="Thông tin đơn thuốc và trạng thái xuất thuốc."
     >
@@ -33,6 +33,6 @@ export default async function PrescriptionDetailPage({
           <PrescriptionDetail prescriptionId={id} />
         </RoleGate>
       )}
-    </PageShell>
+    </PharmacyPageShell>
   );
 }

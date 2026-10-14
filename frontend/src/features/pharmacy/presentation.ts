@@ -35,7 +35,7 @@ export const prescriptionStatusPresentation = {
 
 export const dispenseStatusPresentation = {
   PENDING: {
-    label: "Chờ thanh toán / xuất thuốc",
+    label: "Chờ xuất thuốc",
     tone: "warning",
   },
   DISPENSED: {

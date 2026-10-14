@@ -86,10 +86,11 @@ function DetailError({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-function CopyValue({ label, value }: { label: string; value: string }) {
+function CopyValue({ label, value }: { label: string; value: string | null }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
+    if (!value) return;
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
@@ -103,10 +104,10 @@ function CopyValue({ label, value }: { label: string; value: string }) {
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-1 flex items-center gap-2">
-        <code className="break-all text-xs">{value}</code>
-        <button type="button" onClick={copy} className="shrink-0 rounded border border-border px-2 py-1 text-xs hover:bg-surface-muted">
+        <code className="break-all text-xs">{value ?? "Không có"}</code>
+        {value && <button type="button" onClick={copy} className="shrink-0 rounded border border-border px-2 py-1 text-xs hover:bg-surface-muted">
           {copied ? "Đã chép" : "Chép"}
-        </button>
+        </button>}
       </dd>
     </div>
   );
