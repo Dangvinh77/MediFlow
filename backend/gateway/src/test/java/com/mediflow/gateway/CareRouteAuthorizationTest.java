@@ -39,6 +39,12 @@ class CareRouteAuthorizationTest {
                 new MatrixRow(HttpMethod.PUT, "/api/v1/lab/" + ID + "/cancel", Set.of("ADMIN", "DOCTOR", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/lab/" + ID + "/results", Set.of("ADMIN", "LAB_TECH")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/lab/" + ID + "/status", Set.of("ADMIN", "LAB_TECH")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/records/" + ID + "/lab-orders", Set.of("ADMIN", "DOCTOR")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/records/" + ID, Set.of("ADMIN", "DOCTOR", "NURSE")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/records/patient/" + ID, Set.of("ADMIN", "DOCTOR", "NURSE")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/records/" + ID, Set.of("ADMIN", "DOCTOR")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/records/" + ID + "/complete", Set.of("ADMIN", "DOCTOR")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/records/" + ID + "/diagnoses", Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.POST, "/api/v1/records/" + ID + "/admission-referrals", Set.of("ADMIN", "DOCTOR")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/appointments/" + ID + "/check-in", Set.of("ADMIN", "NURSE")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/appointments/" + ID + "/start-exam", Set.of("ADMIN", "DOCTOR")),
@@ -63,11 +69,19 @@ class CareRouteAuthorizationTest {
         for (String path : List.of("/api/v1/lab/" + ID + "/nested/start",
                 "/api/v1/appointments/" + ID + "/check-in/extra",
                 "/api/v1/appointments/" + ID + "/nested/start-exam",
+                "/api/v1/records/" + ID + "/lab-orders/extra",
                 "/api/v1/records/" + ID + "/admission-referrals/extra")) {
             everyCanonicalRoleMatchesDownstreamPolicy(path.contains("/records/") ? HttpMethod.POST : HttpMethod.PUT,
                     path, "ADMIN", false);
         }
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/lab/" + ID + "/start", "ADMIN", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.DELETE, "/api/v1/records/" + ID + "/lab-orders", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/records/" + ID + "/lab-orders", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT, "/api/v1/records/" + ID + "/lab-orders", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/records/" + ID + "/lab-orders/extra", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/records/" + ID + "/lab-orders/extra", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT, "/api/v1/records/" + ID + "/lab-orders/extra", "DOCTOR", false);
+        everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/records/" + ID + "/prescription-context", "DOCTOR", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/appointments/" + ID + "/check-in", "ADMIN", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/surgery/cases/" + ID + "/schedule", "ADMIN", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/surgery/cases/" + ID + "/evidence", "ADMIN", false);
