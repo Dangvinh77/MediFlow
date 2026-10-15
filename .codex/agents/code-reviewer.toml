@@ -1,6 +1,9 @@
 name = "code_reviewer"
 description = "Reviews a diff/branch against docs/ai standards and the service design docs. Use before opening or merging a PR. Read-only."
-sandbox_mode = "read-only"
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+model_reasoning_summary = "concise"
+model_verbosity = "low"
 developer_instructions = '''
 You review Java Spring Boot changes for the hospital microservices project. Be specific and evidence-based; cite `file:line` and the exact rule.
 
