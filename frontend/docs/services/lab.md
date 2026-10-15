@@ -27,6 +27,16 @@ The detail workspace now exposes start to `ADMIN`/`LAB_TECH` for `PENDING` or `R
 to those roles for `IN_PROGRESS`, and cancel to `ADMIN`/`DOCTOR`/`LAB_TECH` for non-terminal tests.
 The backend remains authoritative for every 403 and lifecycle conflict.
 
+## MVP contract preparation — 2026-10-15
+
+The existing create facade accepts the exact V1 source-order/episode/price fields. Feature-local
+HTTP tests verify that supplied identity reaches Gateway unchanged and that the returned lifecycle,
+payment and clearance remain separate. Start defaults to `emergencyOverride: null`; its request
+type now mirrors the full backend audit record, without enabling an override approval UI.
+422 financial blocks and 503 source-authority errors preserve their code/correlation ID and do not
+trigger automatic mutation retry or fallback. Transport/session are mocked; integrated Gateway,
+Billing and Clinical acceptance and V1 create controls remain open under `FE-VINH-MVP-03/04`.
+
 ## Owner queue
 
 - `FE-LAB-01` — `DONE`: test detail mirrors the exact live response DTO and keeps payment/lifecycle separate.
@@ -34,8 +44,8 @@ The backend remains authoritative for every 403 and lifecycle conflict.
   success navigation, and 400/403/404/409/business-rule handling.
 - `FE-LAB-03` — `DONE`: start, multi-indicator result entry and audited cancellation use the exact
   live request records and roles.
-- `FE-LAB-04` — `IMPLEMENT`: cover filters, pagination, payment/clinical status separation, and
-  retry behavior with focused tests after the shared harness exists.
+- `FE-LAB-04` — `IN PROGRESS`: source identity, normal start, payment/lifecycle separation and
+  blocked/unavailable HTTP tests added; queue filters/pagination and component retry coverage remain open.
 
 ## Handoffs and blockers
 

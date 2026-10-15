@@ -51,8 +51,16 @@ export interface CreateLabRequest {
   priceCode?: string | null;
 }
 
+export interface EmergencyOverrideRequest {
+  overrideId: string;
+  approvedBy: string;
+  approverRole: string;
+  reason: string;
+  approvedAt: string;
+}
+
 export interface StartLabTestRequest {
-  emergencyOverride: null;
+  emergencyOverride: EmergencyOverrideRequest | null;
 }
 
 export interface LabResultInput {

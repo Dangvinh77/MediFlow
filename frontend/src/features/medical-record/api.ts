@@ -1,6 +1,9 @@
 import { api } from "@/lib/api";
 import type {
   AddDiagnosisRequest,
+  ClinicalLabOrderDTO,
+  CompleteRecordRequest,
+  CreateClinicalLabOrderRequest,
   CreateMedicalRecordRequest,
   DiagnosisDTO,
   MedicalRecordDTO,
@@ -8,6 +11,17 @@ import type {
 } from "./types";
 
 export const medicalRecordApi = {
+  // Contract preparation only; V1 controls require integrated runtime acceptance.
+  complete: (recordId: string, body: CompleteRecordRequest) =>
+    api.put<MedicalRecordDTO>(
+      `/v1/records/${encodeURIComponent(recordId)}/complete`,
+      body,
+    ),
+  createLabOrder: (recordId: string, body: CreateClinicalLabOrderRequest) =>
+    api.post<ClinicalLabOrderDTO>(
+      `/v1/records/${encodeURIComponent(recordId)}/lab-orders`,
+      body,
+    ),
   getById: (recordId: string) =>
     api.get<MedicalRecordDTO>(
       `/v1/records/${encodeURIComponent(recordId)}`,

@@ -39,6 +39,9 @@ cấp thuốc lỗi, redelivery, crash recovery, compensation và eventual consi
 ## CURRENT khác TARGET
 
 Source hiện có 10 business modules; Core/Support host chưa được tạo trong lượt viết tài liệu.
+Đây là baseline của lượt thiết kế 2026-10-14, không mô tả source mới nhất: rà soát
+2026-10-15 tại `5411acfa` đã có `backend/core-service` sau PR #368; chưa có
+`backend/support-service`. Sự hiện diện Core không chứng minh đã nghiệm thu sáu deployments.
 Clinical/Lab có các use case V1/EXAM/LAB clearance và Billing có issuer opt-in; flags/producer
 publication phải nghiệm thu lại. Pharmacy có V0 public/receipt saga và V1 outpatient internal
 creation/dispense; không coi internal service/test là public V1 workflow đã chạy.

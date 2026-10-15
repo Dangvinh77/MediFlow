@@ -39,6 +39,20 @@ department, Lab, Pharmacy, and Billing data remain external references.
   exposed while `mediflow.features.care-finance-v2` remains disabled by default in Clinical and
   Docker Compose.
 
+## MVP contract preparation — 2026-10-15
+
+The appointment API facade now supports bodyless PUT check-in and PUT start-exam (normal default:
+`{ emergencyOverride: null }`), both returning `AppointmentDTO`. The record facade supports PUT
+completion and POST Clinical Lab order creation; its response preserves the server-issued
+`sourceOrderId` and all episode/price/reference fields. Request types mirror the live controller
+records, including emergency audit fields; no override approval UI is enabled.
+
+Feature-local HTTP tests exercise the real shared API wrapper with mocked transport/session,
+covering same-origin Gateway paths, bearer propagation, bodyless check-in, payloads, response
+identity, validation details, 403/422 errors and correlation IDs without mutation retries or V0
+fallback. These are contract-preparation tests, not authenticated Gateway or integrated acceptance.
+V1 command controls remain gated by `FE-VINH-MVP-02/03` and the backend closeout handoffs.
+
 ## Owner queue
 
 - `FE-CLINICAL-01` — `DONE`: appointment detail with UUID validation, role gate, loading,
@@ -47,8 +61,8 @@ department, Lab, Pharmacy, and Billing data remain external references.
   request, response, role, validation, conflict, correlation-ID, and transition contracts.
 - `FE-CLINICAL-03` — `DONE`: record detail, create, update and add-diagnosis commands mirror the
   live controller DTOs, roles, validation and error states.
-- `FE-CLINICAL-04` — `IMPLEMENT`: add focused API/component tests after the shared test harness is
-  assigned.
+- `FE-CLINICAL-04` — `IN PROGRESS`: focused MVP command API tests added; component role/loading/
+  retry coverage and authenticated runtime smoke remain open.
 - `FE-CLINICAL-05` — `BLOCKED`: enable and smoke Care/Finance V2 through Gateway before adding its
   conditional command controls.
 

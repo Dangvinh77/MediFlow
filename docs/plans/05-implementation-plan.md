@@ -4,7 +4,15 @@ Ngày 2026-10-14. Plan này thay plan bảo toàn cả 10 nghiệp vụ gồm 36
 Mục tiêu mới là giảm phạm vi nghiệm thu ngoại trú; không lấy ít checkbox làm bằng chứng code
 đơn giản hơn. Có 18 task chính, 72 subtask; ưu tiên reuse code và đóng gap, không viết lại service.
 
-Mọi task hiện là TODO. Lượt viết docs không chạy nghiệm thu backend và không chuyển topology.
+Baseline viết plan ngày 2026-10-14: mọi task là TODO; lượt viết docs không chạy nghiệm thu
+backend và không chuyển topology. Rà soát Vinh ngày 2026-10-15 đã có implementation/test evidence
+trong [source lock và closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#chốt-sổ-vinh--rà-soát-ngày-2026-10-15).
+Các task toàn nhóm dưới đây vẫn mở; checkbox không thay thế phần evidence theo owner.
+Lượt reliability tiếp theo thêm Lab PG/Rabbit publisher/listener acceptance, broker application
+restart và publish-confirm/DB-rollback windows cho Clinical/Lab; xem phạm vi và full-run evidence
+trong cùng closeout. Lượt packaged recovery sau đó thêm actual `java -jar` kill/restart cho
+outbox Clinical/Lab qua module-local `process-recovery` profile. Không đánh integrated
+Gateway/Billing slices hoặc consumer crash-after-effect-before-ACK đã đạt.
 Chỉ đóng task khi bốn subtask + điều kiện đóng có evidence. User scope docs không cấp quyền
 Huy sửa production Gateway/shared/Clinical/Lab/Billing/Notification.
 
@@ -31,6 +39,11 @@ Owner: từng owner, Vinh tổng hợp. Dependency: M6-01.
 - [ ] M6-02.4 Chọn fixture nguồn và golden scenarios; deferred tests không trở thành live MVP task.
 
 Đóng khi: có manifest đủ để code/test từng gap; không coi local mock/provider test là real flow.
+
+Evidence Vinh 2026-10-15: Clinical/Lab source lock đã gồm PR #366/#370, persisted Lab order,
+signed Lab-only context và event/operation/fingerprint inbox. Không giao lại hai implementation
+này từ checklist cũ. Open gap register theo owner nằm ở H-VINH-01/02/03 bên dưới; xem
+[closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md) để lấy flags, fixtures và verification.
 
 ### M6-03 Chuẩn bị hai host gọn
 
@@ -66,6 +79,10 @@ Owner: Hoàng Anh/Gateway, Vinh/Clinical, Huy/Pharmacy. Dependency: M6-04.
 - [ ] M6-05.4 Test login/correlation/unavailable và old/new destination parity.
 
 Đóng khi: MVP không remote call tới retired names, không đoán patient/doctor/episode.
+
+Vinh 2026-10-15: Clinical profile đã retarget `core-service`; real Core lookup parity còn
+thuộc [H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-và-core).
+Pharmacy caller vẫn theo handoff của Huy đã đăng ký, không chuyển thành việc Vinh.
 
 ### M6-06 Support composition và quyền
 
@@ -113,6 +130,11 @@ Owner: Vinh; Lộc verify producer/consumer. Dependency: M6-02, M6-05, M6-12.
 
 Đóng khi: V1 EXAM chạy real slice; không bật admission referral để hoàn tất Clinical.
 
+Vinh 2026-10-15: source M6-09.1–3 và durable inbox/outbox đã có; M6-09.4 chưa đóng.
+Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+V1 Rx attachment còn cần Huy khóa exact producer relationship, rồi Vinh implement consumer:
+[H-VINH-02](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-02--huy--pharmacy--report-vinh-nhận-consumer-clinical).
+
 ### M6-10 Pharmacy ngoại trú và stock
 
 Owner: Huy; Vinh/Lộc verify contracts. Dependency: M6-02, M6-05, M6-12.
@@ -134,6 +156,13 @@ Owner: Vinh; Lộc verify Billing. Dependency: M6-02, M6-05, M6-12.
 - [ ] M6-11.4 E2E request → pay → result và duplicate/mismatch/finalized negative tests.
 
 Đóng khi: Lab slice thật; không amendment/correction chain hoặc guessing labTestIds.
+
+Vinh 2026-10-15: Lab order authority/lookup/request và immutable V1 result đã code; không
+coi M6-11.4 E2E đã đạt từ unit/persistence tests. Gateway thiếu public driving allowlist:
+[H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-và-core).
+Billing exact LAB_TEST slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+Report consume cùng result fixture: H-VINH-02. Producer/consumer/owner/fixtures/điều kiện đóng
+ghi tại từng handoff; không copy payload hoặc đoán fields ở plan.
 
 ### M6-12 Billing selected charge payment và clearance
 
@@ -169,6 +198,10 @@ Owner: Vinh/shared + owner modules + Hoàng Anh/Gateway. Dependency: M6-03, M6-1
 - [ ] M6-14.4 Startup/dependency tests không gọi deferred service; messages giữ đúng quarantine policy.
 
 Đóng khi: hoãn thật ở runtime và không ACK-drop historical financial facts.
+
+Vinh 2026-10-15: Clinical/Lab đã có profile/guards và Clinical HELD/quarantine; còn full-runtime
+deferred-route/dependency acceptance với Gateway owner và packaged six-service profile.
+Không giao Inpatient/Surgery features để đóng task này.
 
 ### M6-15 Gateway và frontend smoke
 

@@ -4,6 +4,7 @@ import type {
   AppointmentDTO,
   ChangeAppointmentStatusRequest,
   CreateAppointmentRequest,
+  StartExamRequest,
   UpdateAppointmentRequest,
 } from "./types";
 
@@ -15,6 +16,16 @@ export interface AppointmentSearchParams {
 }
 
 export const appointmentApi = {
+  // Contract preparation only; V1 controls require integrated runtime acceptance.
+  checkIn: (appointmentId: string) =>
+    api.put<AppointmentDTO>(
+      `/v1/appointments/${encodeURIComponent(appointmentId)}/check-in`,
+    ),
+  startExam: (appointmentId: string, body: StartExamRequest = { emergencyOverride: null }) =>
+    api.put<AppointmentDTO>(
+      `/v1/appointments/${encodeURIComponent(appointmentId)}/start-exam`,
+      body,
+    ),
   getById: (appointmentId: string) =>
     api.get<AppointmentDTO>(
       `/v1/appointments/${encodeURIComponent(appointmentId)}`,
