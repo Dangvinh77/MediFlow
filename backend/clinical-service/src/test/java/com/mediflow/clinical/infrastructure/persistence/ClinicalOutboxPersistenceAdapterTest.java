@@ -3,17 +3,28 @@ package com.mediflow.clinical.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.amqp.core.MessageProperties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.clinical.application.event.AppointmentCreatedEvent;
+import com.mediflow.clinical.application.event.AppointmentStatusChangedEvent;
+import com.mediflow.clinical.application.event.DiagnosisAddedEvent;
+import com.mediflow.clinical.application.event.MedicalRecordCreatedEvent;
 import com.mediflow.clinical.application.port.out.LegacyClinicalEventMetadata;
+import com.mediflow.clinical.domain.model.AppointmentStatus;
+import com.mediflow.clinical.infrastructure.config.RabbitConfig;
 import com.mediflow.clinical.infrastructure.persistence.adapter.ClinicalOutboxPersistenceAdapter;
 import com.mediflow.clinical.infrastructure.persistence.jpaEntity.ClinicalOutboxEventJpaEntity;
 import com.mediflow.clinical.infrastructure.persistence.repository.ClinicalOutboxJpaRepository;
@@ -54,6 +65,52 @@ class ClinicalOutboxPersistenceAdapterTest {
         assertThat(row.getPayload().path("eventId").asText()).isEqualTo(EVENT_ID.toString());
         assertThat(row.getPayload().path("appointmentTime").asText()).isEqualTo("09:30");
         assertThat(row.getPayload().has("payload")).isFalse();
+    }
+
+    @Test
+    void appendLegacyFlatEventsAcceptTimestampPrecisionFromRabbitWireConverter() {
+        Instant occurredAt = Instant.parse("2026-10-14T10:53:00.123456789Z");
+        UUID recordId = UUID.fromString("66666666-6666-6666-6666-666666666666");
+        UUID diagnosisRecordId = UUID.fromString("77777777-7777-7777-7777-777777777777");
+        AppointmentCreatedEvent appointmentCreated = new AppointmentCreatedEvent(
+                EVENT_ID, occurredAt, "correlation-test", APPOINTMENT_ID, PATIENT_ID, DOCTOR_ID, DEPARTMENT_ID,
+                LocalDate.parse("2026-10-15"), LocalTime.parse("09:30"));
+        AppointmentStatusChangedEvent appointmentStatusChanged = new AppointmentStatusChangedEvent(
+                UUID.randomUUID(), occurredAt, "correlation-test", APPOINTMENT_ID, recordId, PATIENT_ID,
+                DEPARTMENT_ID, AppointmentStatus.ARRIVED);
+        MedicalRecordCreatedEvent medicalRecordCreated = new MedicalRecordCreatedEvent(
+                UUID.randomUUID(), occurredAt, "correlation-test", recordId, PATIENT_ID, DOCTOR_ID, DEPARTMENT_ID,
+                "Acceptance diagnosis", LocalDate.parse("2026-10-14"));
+        DiagnosisAddedEvent diagnosisAdded = new DiagnosisAddedEvent(
+                UUID.randomUUID(), occurredAt, "correlation-test", diagnosisRecordId, "A00.0", "Acceptance diagnosis");
+        List<Object> events = List.of(
+                appointmentCreated, appointmentStatusChanged, medicalRecordCreated, diagnosisAdded);
+        List<LegacyClinicalEventMetadata> metadata = List.of(
+                new LegacyClinicalEventMetadata(appointmentCreated.eventId(), AppointmentCreatedEvent.ROUTING_KEY,
+                        "correlation-test", APPOINTMENT_ID, occurredAt),
+                new LegacyClinicalEventMetadata(appointmentStatusChanged.eventId(),
+                        AppointmentStatusChangedEvent.ROUTING_KEY, "correlation-test", APPOINTMENT_ID, occurredAt),
+                new LegacyClinicalEventMetadata(medicalRecordCreated.eventId(), MedicalRecordCreatedEvent.ROUTING_KEY,
+                        "correlation-test", recordId, occurredAt),
+                new LegacyClinicalEventMetadata(diagnosisAdded.eventId(), DiagnosisAddedEvent.ROUTING_KEY,
+                        "correlation-test", diagnosisRecordId, occurredAt));
+        var converter = new RabbitConfig().rabbitJsonMessageConverter();
+        List<byte[]> wireBytes = events.stream()
+                .map(event -> converter.toMessage(event, new MessageProperties()).getBody())
+                .toList();
+        wireBytes.forEach(bytes -> assertThat(new String(bytes, StandardCharsets.UTF_8))
+                .contains("\"occurredAt\":1791975180.123456789"));
+        for (int index = 0; index < metadata.size(); index++) {
+            adapter.appendLegacyEvent(metadata.get(index), wireBytes.get(index));
+        }
+
+        ArgumentCaptor<ClinicalOutboxEventJpaEntity> saved =
+                ArgumentCaptor.forClass(ClinicalOutboxEventJpaEntity.class);
+        verify(repository, times(4)).save(saved.capture());
+        for (int index = 0; index < metadata.size(); index++) {
+            assertThat(saved.getAllValues().get(index).getOccurredAt()).isEqualTo(occurredAt);
+            assertThat(saved.getAllValues().get(index).getPayloadBytes()).containsExactly(wireBytes.get(index));
+        }
     }
 
     @Test

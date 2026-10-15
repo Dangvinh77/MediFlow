@@ -183,8 +183,46 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <includes>
+                                <include>**/*ProcessRecoveryIT.java</include>
+                            </includes>
                             <systemPropertyVariables>
                                 <recovery.jar>${project.build.directory}/${project.build.finalName}.jar</recovery.jar>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>packaged-acceptance</id>
+            <properties>
+                <acceptance.core.jar>${project.basedir}/../core-service/target/core-service-${project.version}.jar</acceptance.core.jar>
+                <acceptance.gateway.jar>${project.basedir}/../gateway/target/gateway-${project.version}.jar</acceptance.gateway.jar>
+                <acceptance.eureka.jar>${project.basedir}/../eureka-server/target/eureka-server-${project.version}.jar</acceptance.eureka.jar>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includes>
+                                <include>**/ClinicalExamPackagedAcceptanceIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <acceptance.clinical.jar>${project.build.directory}/${project.build.finalName}.jar</acceptance.clinical.jar>
+                                <acceptance.core.jar>${acceptance.core.jar}</acceptance.core.jar>
+                                <acceptance.gateway.jar>${acceptance.gateway.jar}</acceptance.gateway.jar>
+                                <acceptance.eureka.jar>${acceptance.eureka.jar}</acceptance.eureka.jar>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

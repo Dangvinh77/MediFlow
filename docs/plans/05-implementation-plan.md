@@ -12,7 +12,10 @@ Lượt reliability tiếp theo thêm Lab PG/Rabbit publisher/listener acceptanc
 restart và publish-confirm/DB-rollback windows cho Clinical/Lab; xem phạm vi và full-run evidence
 trong cùng closeout. Lượt packaged recovery sau đó thêm actual `java -jar` kill/restart cho
 outbox Clinical/Lab qua module-local `process-recovery` profile. Không đánh integrated
-Gateway/Billing slices hoặc consumer crash-after-effect-before-ACK đã đạt.
+Gateway/Billing slices đã đạt. Batch tiếp tục từ `050b5916` bổ sung Clinical/Lab consumer
+JVM crash-after-effect-before-ACK với actual attachment/clearance + inbox trên PG/Rabbit thật;
+đây là contract-fixture recovery, không actual paid E2E. Xem counts/command/giới hạn trong
+closeout; không dùng test lịch sử làm verification bản hiện tại.
 Chỉ đóng task khi bốn subtask + điều kiện đóng có evidence. User scope docs không cấp quyền
 Huy sửa production Gateway/shared/Clinical/Lab/Billing/Notification.
 
@@ -131,7 +134,15 @@ Owner: Vinh; Lộc verify producer/consumer. Dependency: M6-02, M6-05, M6-12.
 Đóng khi: V1 EXAM chạy real slice; không bật admission referral để hoàn tất Clinical.
 
 Vinh 2026-10-15: source M6-09.1–3 và durable inbox/outbox đã có; M6-09.4 chưa đóng.
+Lượt packaged API slice đã phát hiện/sửa lỗi numeric timestamp mất nano giây khi validate
+flat event trong durable outbox; regression dùng actual Rabbit converter cho bốn event
+types. Core/Gateway/Clinical check-in race, exact unpaid/actor denial và một exam record
+đã có packaged proof với synthetic contract clearance, chưa phải real Billing payment.
 Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+Blocker driving API được xác nhận từ `050b5916`: Billing sinh random EXAM paymentRequestId
+nhưng chưa có source-bound discovery API/event để CASHIER/FE/test lấy mã; không đọc Billing
+DB hoặc đoán ID để drive payment. Lộc owns discovery contract, Hoàng Anh owns exact Gateway
+allowlist nếu thêm API; Vinh tiếp tục real paid slice sau khi producer handoff đạt.
 V1 Rx attachment còn cần Huy khóa exact producer relationship, rồi Vinh implement consumer:
 [H-VINH-02](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-02--huy--pharmacy--report-vinh-nhận-consumer-clinical).
 
@@ -163,6 +174,10 @@ coi M6-11.4 E2E đã đạt từ unit/persistence tests. Gateway thiếu public 
 Billing exact LAB_TEST slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
 Report consume cùng result fixture: H-VINH-02. Producer/consumer/owner/fixtures/điều kiện đóng
 ghi tại từng handoff; không copy payload hoặc đoán fields ở plan.
+Packaged Core/Clinical/Lab slice đã đạt persisted order → request → fixture clearance →
+immutable result → actual Clinical attachment, bao gồm source mismatch, unpaid denial,
+duplicate effect/broker drain và terminal mutation denial. Clinical prerequisite dùng audited
+override; Lab grant là fixture. Public normal-payment flow và Report acceptance vẫn mở.
 
 ### M6-12 Billing selected charge payment và clearance
 
@@ -174,6 +189,14 @@ Owner: Lộc; Vinh/Huy consulted. Dependency: M6-02, M6-05.
 - [ ] M6-12.4 Reuse linked refund/compensation, reject over-allocation/cross-account/wrong-source.
 
 Đóng khi: V1 ngoại trú coherent; admission/deposit/settlement/full insurance không task bắt buộc.
+
+**Gap P0, consumer Clinical/Lab + Billing FE:** M6-12.1/12.3 còn thiếu đường lấy request
+do EXAM/LAB_TEST issuers tạo theo exact source. Live controller chỉ có
+`POST /api/v1/billing/payment-requests/{id}/payments`; IDs không được expose bởi hai issuers.
+Lộc khóa authorized discovery API hoặc durable fact (source/purpose/target/episode/amount/
+currency/status), test duplicate/wrong-target/role và giao fixture/HTTP evidence; phối hợp
+Gateway owner nếu là public API. Acceptance và source paths ở H-VINH-03, không copy schema mới
+vào plan hoặc mặc định chọn endpoint chưa được owner thống nhất.
 
 ### M6-13 Saga và lỗi phân tán
 
