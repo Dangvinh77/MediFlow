@@ -12,6 +12,7 @@ Inpatient/Surgery/full V2 deferred, không trở thành blocker để đóng lu�
 
 - [Vinh Clinical/Lab outpatient MVP source lock and open dependencies](HANDOFF-VINH-OUTPATIENT-MVP.md) — partial implementation evidence; does not close M6-02, M6-09, M6-11, M6-14, or end-to-end acceptance.
 - [Pharmacy Core identity lookup retarget](HANDOFF-PHARMACY-CORE-LOOKUPS.md) — Huy-owned caller update after Organization and Patient source modules move into Core.
+- [Gateway allowlist missing for two live Billing read endpoints](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) — Hoàng Anh-owned allowlist rule for `prescription-adjustments` and `surgery-cancellations`, found while building their frontend.
 
 ## Deferred compatibility
 
