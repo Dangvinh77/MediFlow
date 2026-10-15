@@ -403,6 +403,33 @@ class GatewayWebTest {
     }
 
     @Test
+    void clinicalLabOrderRoute_allowsOnlyExactPostForAdminAndDoctor() {
+        String path = "/api/v1/records/" + UUID.randomUUID() + "/lab-orders";
+
+        expectDownstreamUnavailable(HttpMethod.POST, path, Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.POST, path, Roles.DOCTOR);
+
+        expectForbidden(HttpMethod.POST, path, Roles.NURSE);
+        expectForbidden(HttpMethod.POST, path, Roles.LAB_TECH);
+        expectForbidden(HttpMethod.GET, path, Roles.DOCTOR);
+        expectForbidden(HttpMethod.PUT, path, Roles.DOCTOR);
+        expectForbidden(HttpMethod.DELETE, path, Roles.DOCTOR);
+        expectForbidden(HttpMethod.POST, path + "/extra", Roles.DOCTOR);
+        expectForbidden(HttpMethod.GET, path + "/extra", Roles.DOCTOR);
+        expectForbidden(HttpMethod.PUT, path + "/extra", Roles.DOCTOR);
+
+        webTestClient.post().uri(path).exchange()
+                .expectStatus().isUnauthorized();
+        webTestClient.post().uri(path)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt.issueRefreshToken(UUID.randomUUID(), Roles.DOCTOR)))
+                .exchange().expectStatus().isUnauthorized();
+        webTestClient.post().uri(path)
+                .header(HttpHeaders.AUTHORIZATION, bearer(jwt.issueServiceToken(
+                        "clinical-service", Roles.SYSTEM, UUID.randomUUID().toString())))
+                .exchange().expectStatus().isForbidden();
+    }
+
+    @Test
     void correlationId_isKeptWhenValidAndGeneratedWhenMissing() {
         String requested = UUID.randomUUID().toString();
         webTestClient.get()

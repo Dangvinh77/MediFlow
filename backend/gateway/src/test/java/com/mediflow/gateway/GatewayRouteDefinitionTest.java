@@ -48,4 +48,28 @@ class GatewayRouteDefinitionTest {
                 .isTrue();
     }
 
+    @Test
+    void clinicalRecordsRoute_forwardsTheLabOrderCreatePath() {
+        Route route = routeLocator.getRoutes()
+                .filter(candidate -> "clinical-service-records".equals(candidate.getId()))
+                .next()
+                .block();
+
+        assertThat(route).isNotNull();
+        assertThat(route.getUri()).isEqualTo(URI.create("lb://clinical-service"));
+        assertThat(Mono.from(route.getPredicate().apply(MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/records/00000000-0000-0000-0000-000000000001/lab-orders")
+                        .build()))).block()).isTrue();
+    }
+
+    @Test
+    void internalLabOrderContext_hasNoPublicGatewayRoute() {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(
+                "/api/v1/lab-orders/00000000-0000-0000-0000-000000000001/context").build());
+
+        assertThat(routeLocator.getRoutes()
+                .filter(route -> Boolean.TRUE.equals(Mono.from(route.getPredicate().apply(exchange)).block()))
+                .collectList().block()).isEmpty();
+    }
+
 }

@@ -212,12 +212,12 @@ class SurgeryAuthorityIntegrationTest {
     @Test void migration_v2Upgrade_preservesOldDepartmentAndSeedsNoAuthority() {
         String schema="authority_upgrade_test";
         Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
-                .schemas(schema).locations("classpath:db/migration").target("2").load().migrate();
+                .schemas(schema).locations("classpath:db/organization-migration").target("2").load().migrate();
         UUID id=UUID.randomUUID();
         jdbc.update("INSERT INTO "+schema+".department(department_id,department_name,abbreviation,department_type) VALUES(?,?,?,?)",
                 id,"Existing","OLD","CLINICAL");
         Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
-                .schemas(schema).locations("classpath:db/migration").load().migrate();
+                .schemas(schema).locations("classpath:db/organization-migration").load().migrate();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM "+schema+".department WHERE department_id=?",Integer.class,id)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM "+schema+".operating_room",Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM "+schema+".surgical_capability",Integer.class)).isZero();

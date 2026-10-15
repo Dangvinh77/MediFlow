@@ -57,11 +57,15 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
                     Roles.ADMIN, Roles.NURSE),
             rule("/api/v1/appointments/{id}/start-exam", HttpMethod.PUT,
                     Roles.ADMIN, Roles.DOCTOR),
-            rule("/api/v1/records/**", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/records/{id}", HttpMethod.GET, Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
+            rule("/api/v1/records/patient/{patientId}", HttpMethod.GET,
+                    Roles.ADMIN, Roles.DOCTOR, Roles.NURSE),
             rule("/api/v1/records", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/records/{id}/lab-orders", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
             rule("/api/v1/records/{id}/admission-referrals", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
-            rule("/api/v1/records/**", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
-            rule("/api/v1/records/**/diagnoses", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/records/{id}", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/records/{id}/complete", HttpMethod.PUT, Roles.ADMIN, Roles.DOCTOR),
+            rule("/api/v1/records/{id}/diagnoses", HttpMethod.POST, Roles.ADMIN, Roles.DOCTOR),
 
             // Inpatient routes mirror the downstream controller's method-level guards.
             rule("/api/v1/inpatient/admissions", HttpMethod.GET,
