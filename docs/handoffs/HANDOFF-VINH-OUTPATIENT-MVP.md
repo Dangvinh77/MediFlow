@@ -103,7 +103,7 @@ email/SMS, gom DB hoặc redesign frontend để đóng ba việc trên.
 - **Producer evidence nhận từ Lộc:** owner ghi nhận `ExamChargeRabbitIntegrationTest` và
   `LabTestChargeRabbitIntegrationTest` đạt với PG/Rabbit thật; runtime flags có trong Compose.
   **Phần phối hợp còn lại:** xác nhận đầy đủ catalog/price codes, selected-payment driving API
-  và emitted EXAM/LAB_TEST source bytes cho V-CLOSE-03; cung cấp flags,
+  và emitted EXAM/LAB_TEST source bytes cho V-CLOSE-03 theo flags đã công bố.
   Kiểm tra request tạo đúng một Lab charge và result không tạo charge V1 lần đầu.
 - **Đóng khi:** V-CLOSE-03 chạy qua Gateway/real Billing với exact non-expired grants,
   duplicate không charge/grant/effect hai lần, wrong purpose/target/episode bị chặn.
@@ -142,7 +142,7 @@ clearance fail nếu bị gọi bất ngờ; không thay producer contract để
 `rabbitmqctl stop_app/start_app` restart broker application trong cùng container/Erlang VM;
 không phải stop/start Docker container, VM hoặc kill JVM service. Rollback sau confirm mô phỏng
 cửa sổ publish thành công nhưng DB chưa commit, không được mô tả như đã kill tiến trình thật.
-Packaged JVM/service restart và V-CLOSE-03 vẫn mở.
+Tại lượt broker-test này packaged JVM/service restart còn mở; gap đó đã được đóng bằng OutboxProcessRecoveryIT ở phần packaged JVM recovery bên dưới. V-CLOSE-03 vẫn mở.
 
 Chạy lại đầy đủ trong Docker-ready environment:
 
