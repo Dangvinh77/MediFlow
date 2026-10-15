@@ -99,6 +99,42 @@ after consuming the real published clearance — is Vinh's side and is not run f
 Deleting this handoff needs both sides' acceptance together, per the lifecycle rule, not Billing's
 proof alone.
 
+### Fixture reconciliation and MVP runtime config (2026-10-15)
+
+Per Vinh's open owner task in `docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md` ("Lộc — fixture
+ownership"): the generic held fixture
+`backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-exam.json` previously
+carried both `appointmentId` and `recordId`, which does not match the live EXAM producer —
+`ExamChargeRepositoryAdapter` always publishes an appointment-only target (`recordId=null`), as
+already asserted by `ExamChargeRabbitIntegrationTest`. Set `recordId` to `null` in the fixture to
+match. This does not change Clinical's exactly-one-target (XOR) acceptance invariant; Surgery's
+`SurgeryClearanceDecoderTest`, which also reads this generic fixture, does not assert on the exact
+value of `recordId` and remains green.
+
+Also wired the MVP runtime switches for the outpatient flows this handoff covers (Phase M6-12/
+M6-07 in `docs/plans/05-implementation-plan.md`), none of which required new code — only turning
+on existing opt-in flags:
+- `backend/billing-service/src/main/resources/application.yml`: declared the two
+  previously-undeclared flags `exam-charge-consumer.enabled`
+  (`MEDIFLOW_BILLING_EXAM_CHARGE_CONSUMER_ENABLED`) and `lab-test-charge-consumer.enabled`
+  (`MEDIFLOW_BILLING_LAB_TEST_CHARGE_CONSUMER_ENABLED`), default `false` (no behavior change).
+- `docker-compose.yml`: set `true` for billing's `clearance-lookup`, `ledger`, `refunds`,
+  `exam-charge-consumer`, `lab-test-charge-consumer`, `prescription-charge-consumer`, and for
+  notification's `care-v1` + `refund-consumer`. Every Admission/Surgery-only flag
+  (`settlement-preview`, `reconciliation`, `admission-charge-close`, `deposit-allocation`,
+  `final-settlement`, `settlement`, `surgery-charge-consumer`, `surgery-completion-proof`,
+  `surgery-consumer`, `surgery-payment-request-consumer`) is left at its default `false` —
+  deliberately not enabled, per the MVP scope decision that a global care-finance flag must not
+  turn Inpatient/Surgery on by accident.
+
+Fresh verification same day (Java 21, Docker available, `testcontainers.version=1.20.6` +
+`docker-java.properties` pin already in place from 2026-10-12):
+`mvn -pl backend/billing-service -am test` → **940 tests, 0 failures, 0 errors**, including
+`ExamChargeRabbitIntegrationTest` and `LabTestChargeRabbitIntegrationTest` against real
+PostgreSQL + RabbitMQ (Docker E2E, not mocked). `mvn -f backend/surgery-service/pom.xml test
+-Dtest=SurgeryClearanceDecoderTest` → 13 tests, 0 failures/errors, confirming the fixture edit
+does not regress Surgery's read of this generic fixture.
+
 ## Acceptance criteria
 
 - Billing serializes the canonical EXAM and LAB_TEST fixtures byte-for-byte with the consumers. DONE.
