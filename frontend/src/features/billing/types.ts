@@ -42,3 +42,41 @@ export interface PaymentResultDTO {
   paidAt: string;
   sagaStatus: SagaStatus;
 }
+
+/** Hình thức thanh toán hợp lệ cho một khoản phí đã chọn (ledger V1) — backend từ chối INSURANCE. */
+export type LedgerPaymentMethod = "CASH" | "TRANSFER";
+
+export type PaymentClassification = "SERVICE_PAYMENT" | "ADMISSION_DEPOSIT" | "SETTLEMENT_PAYMENT";
+
+export type PaymentTransactionStatus = "PENDING" | "COMPLETED" | "FAILED";
+
+export interface CompleteLedgerPaymentRequest {
+  idempotencyKey: string;
+  amount: number;
+  currency: string;
+  paymentMethod: LedgerPaymentMethod;
+  providerReference: string | null;
+}
+
+export interface LedgerPaymentDTO {
+  transactionId: string;
+  accountId: string;
+  paymentRequestId: string;
+  classification: PaymentClassification;
+  status: PaymentTransactionStatus;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  completedAt: string;
+}
+
+export interface RevenueByDeptDTO {
+  departmentId: string;
+  totalRevenue: number;
+  invoiceCount: number;
+}
+
+export interface OutboxReplayResult {
+  eventId: string;
+  replayed: boolean;
+}

@@ -48,7 +48,7 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
 | Organization | Department and staff list/detail/create/update; staff transfer; account create/status | `DONE` |
 | Patient | List/detail/create/update/delete with immutable identity number | `DONE` |
 | Pharmacy | Drug, stock, prescription, dispense/cancel and ADMIN outbox replay workflows | `DONE` |
-| Billing | Patient invoice lookup, invoice detail/create/payment and fee breakdown | `DONE` |
+| Billing | Patient invoice lookup/detail/create/payment (V0); V1 selected-charge ledger payment, revenue-by-department, outbox replay | `DONE`, see `frontend/docs/services/billing.md` |
 | Notification | Patient history, secured detail and ADMIN manual send without exposing recipient PII | `DONE` |
 | Report | Daily, monthly and top-medicine reports | `DONE` for always-on controllers |
 
@@ -64,6 +64,9 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
   authority handoff is open.
 - Refund, notification read-state/retry and other commands absent from live controllers are not
   represented as UI controls.
+- Billing's prescription-adjustment refund-due view is not exposed: the controller is live but the
+  Gateway has no allowlist rule for it yet (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+  Its Surgery-cancellation counterpart stays unavailable because Surgery itself is deferred.
 
 ## Next tasks tại baseline 2026-10-09 (historical; ưu tiên hiện tại ở trên)
 
