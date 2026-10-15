@@ -50,3 +50,28 @@ export interface CreateMedicalRecordRequest {
 export interface UpdateMedicalRecordRequest {
   symptoms: string | null;
 }
+
+export interface CompleteRecordRequest {
+  disposition: RecordDisposition;
+  dispositionNote: string | null;
+}
+
+export interface CreateClinicalLabOrderRequest {
+  labType: string;
+  requestedDate: string;
+  priceCode: string;
+}
+
+export interface ClinicalLabOrderDTO {
+  sourceOrderId: string;
+  recordId: string;
+  patientId: string;
+  requestingDoctorId: string;
+  requestingDepartmentId: string;
+  careEpisodeType: "OUTPATIENT_VISIT" | "ADMISSION";
+  careEpisodeId: string;
+  labType: string;
+  requestedDate: string;
+  priceCode: string;
+  orderedAt: string;
+}

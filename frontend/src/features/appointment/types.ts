@@ -48,3 +48,15 @@ export interface UpdateAppointmentRequest {
 export interface ChangeAppointmentStatusRequest {
   status: LegacyAppointmentStatus;
 }
+
+export interface EmergencyOverrideRequest {
+  overrideId: string;
+  approvedBy: string;
+  approverRole: string;
+  reason: string;
+  approvedAt: string;
+}
+
+export interface StartExamRequest {
+  emergencyOverride: EmergencyOverrideRequest | null;
+}
