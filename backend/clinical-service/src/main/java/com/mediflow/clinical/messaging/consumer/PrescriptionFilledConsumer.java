@@ -22,7 +22,7 @@ public class PrescriptionFilledConsumer {
                 payload.eventId(), payload.recordId(), payload.prescriptionId()));
     }
 
-    private static void validate(PrescriptionFilledPayload payload) {
+    static void validate(PrescriptionFilledPayload payload) {
         if (payload == null) {
             throw new IllegalArgumentException("prescription.filled payload is required");
         }

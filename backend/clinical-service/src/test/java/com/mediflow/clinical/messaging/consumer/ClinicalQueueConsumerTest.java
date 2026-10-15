@@ -3,7 +3,9 @@ package com.mediflow.clinical.messaging.consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -12,24 +14,40 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.clinical.application.dto.command.ConsumerInboxClaim;
+import com.mediflow.clinical.application.port.out.ConsumerInboxPort.InboxOutcome;
+import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
+import com.mediflow.clinical.application.service.ConsumerInboxBoundary;
 import com.mediflow.clinical.infrastructure.config.RabbitConfig;
+import com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactory;
 
 class ClinicalQueueConsumerTest {
 
     private final LabResultCreatedConsumer labResults = mock(LabResultCreatedConsumer.class);
     private final PrescriptionFilledConsumer prescriptions = mock(PrescriptionFilledConsumer.class);
-    private final ClinicalQueueConsumer consumer = new ClinicalQueueConsumer(
-            new ObjectMapper().findAndRegisterModules(), labResults, prescriptions);
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final ConsumerInboxBoundary inbox = mock(ConsumerInboxBoundary.class);
+    private final InboxEvidenceFactory evidenceFactory = new InboxEvidenceFactory(objectMapper);
+    private final ClinicalQueueConsumer consumer = consumer(false);
+
+    ClinicalQueueConsumerTest() {
+        when(inbox.execute(any(ConsumerInboxClaim.class), any(Runnable.class))).thenAnswer(invocation -> {
+            ((Runnable) invocation.getArgument(1)).run();
+            return InboxOutcome.APPLIED;
+        });
+    }
 
     @Test
     void consume_v1LabEnvelope_dispatchesCanonicalNestedProjection() throws IOException {
-        consumer.consume(message(RabbitConfig.LAB_RESULT_CREATED,
-                readFixture("lab.result.created.v1.json")));
+        String raw = readFixture("lab.result.created.v1.json");
+        consumer.consume(message(RabbitConfig.LAB_RESULT_CREATED, raw));
 
         verify(labResults).consume(argThat(payload ->
                 UUID.fromString("00000000-0000-4000-8000-000000000011").equals(payload.eventId())
@@ -37,6 +55,12 @@ class ClinicalQueueConsumerTest {
                         && UUID.fromString("00000000-0000-4000-8000-000000000002").equals(payload.labId())
                         && "Normal".equals(payload.conclusion())
                         && "00000000-0000-4000-8000-000000000007".equals(payload.correlationId())));
+
+        ArgumentCaptor<ConsumerInboxClaim> claim = ArgumentCaptor.forClass(ConsumerInboxClaim.class);
+        verify(inbox).execute(claim.capture(), any(Runnable.class));
+        assertThat(claim.getValue().operationKey())
+                .isEqualTo("clinical:lab-result:v1:00000000-0000-4000-8000-000000000002:1");
+        assertThat(claim.getValue().rawBody()).containsExactly(raw.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -74,6 +98,63 @@ class ClinicalQueueConsumerTest {
     }
 
     @Test
+    void consume_flatLabPayloadCannotSpoofV1ProjectionFields() {
+        UUID eventId = UUID.randomUUID();
+        String spoof = """
+                {"eventId":"%s","recordId":"%s","labId":"%s","patientId":"%s",
+                 "departmentId":"%s","sourceVersion":1,"careEpisodeType":"OUTPATIENT_VISIT",
+                 "careEpisodeId":"%s","resultVersion":1}
+                """.formatted(eventId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> consumer.consume(message(RabbitConfig.LAB_RESULT_CREATED, spoof)))
+                .isInstanceOf(MessageConversionException.class)
+                .hasMessageContaining("flat compatibility");
+        verifyNoInteractions(labResults, inbox);
+    }
+
+    @Test
+    void consume_incompleteFlatEnvelopeCannotFallBackToV0() {
+        UUID eventId = UUID.randomUUID();
+        String spoof = """
+                {"eventId":"%s","eventType":"lab.result.created","version":1,
+                 "producer":"lab-service","recordId":"%s","labId":"%s"}
+                """.formatted(eventId, UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> consumer.consume(message(RabbitConfig.LAB_RESULT_CREATED, spoof)))
+                .isInstanceOf(MessageConversionException.class);
+        verifyNoInteractions(labResults, inbox);
+    }
+
+    @Test
+    void outpatientMvp_quarantinesFlatV0LabResultBeforeReceiptAndEffect() {
+        UUID eventId = UUID.randomUUID();
+        ClinicalQueueConsumer outpatientMvp = consumer(true);
+        String payload = """
+                {"eventId":"%s","recordId":"%s","labId":"%s","conclusion":"Normal"}
+                """.formatted(eventId, UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> outpatientMvp.consume(message(RabbitConfig.LAB_RESULT_CREATED, payload)))
+                .isInstanceOf(AmqpRejectAndDontRequeueException.class)
+                .hasMessageContaining("lacks outpatient identity");
+        verifyNoInteractions(labResults, inbox);
+    }
+
+    @Test
+    void outpatientMvp_quarantinesFlatV0PrescriptionBeforeReceiptAndEffect() {
+        UUID eventId = UUID.randomUUID();
+        ClinicalQueueConsumer outpatientMvp = consumer(true);
+        String payload = """
+                {"eventId":"%s","recordId":"%s","prescriptionId":"%s"}
+                """.formatted(eventId, UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> outpatientMvp.consume(message(RabbitConfig.PRESCRIPTION_FILLED, payload)))
+                .isInstanceOf(AmqpRejectAndDontRequeueException.class)
+                .hasMessageContaining("lacks outpatient identity");
+        verifyNoInteractions(prescriptions, inbox);
+    }
+
+    @Test
     void consume_labRoute_dispatchesLabProjection() {
         UUID eventId = UUID.randomUUID();
         UUID recordId = UUID.randomUUID();
@@ -103,6 +184,9 @@ class ClinicalQueueConsumerTest {
                 eventId.equals(payload.eventId())
                         && recordId.equals(payload.recordId())
                         && prescriptionId.equals(payload.prescriptionId())));
+        ArgumentCaptor<ConsumerInboxClaim> claim = ArgumentCaptor.forClass(ConsumerInboxClaim.class);
+        verify(inbox).execute(claim.capture(), any(Runnable.class));
+        assertThat(claim.getValue().operationKey()).isEqualTo("clinical:prescription:v0:" + prescriptionId);
     }
 
     private static Message message(String routingKey, String json) {
@@ -110,6 +194,11 @@ class ClinicalQueueConsumerTest {
         properties.setReceivedRoutingKey(routingKey);
         properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
         return new Message(json.getBytes(StandardCharsets.UTF_8), properties);
+    }
+
+    private ClinicalQueueConsumer consumer(boolean outpatientMvp) {
+        return new ClinicalQueueConsumer(objectMapper, labResults, prescriptions, inbox, evidenceFactory,
+                new OutpatientMvpMode(outpatientMvp));
     }
 
     private static String readFixture(String name) throws IOException {

@@ -29,8 +29,11 @@ class ExternalResultApplicationServiceTest {
         UUID recordId = UUID.randomUUID();
         UUID labId = UUID.randomUUID();
         when(records.findById(recordId)).thenReturn(Optional.of(mock(MedicalRecord.class)));
+        when(externalResults.attach(recordId, ExternalResultType.LAB, labId, "No abnormality detected"))
+                .thenReturn(true);
 
-        service.attachLabResult(recordId, labId, "No abnormality detected");
+        org.assertj.core.api.Assertions.assertThat(
+                service.attachLabResult(recordId, labId, "No abnormality detected")).isTrue();
 
         verify(externalResults).attach(
                 recordId, ExternalResultType.LAB, labId, "No abnormality detected");
@@ -41,8 +44,10 @@ class ExternalResultApplicationServiceTest {
         UUID recordId = UUID.randomUUID();
         UUID prescriptionId = UUID.randomUUID();
         when(records.findById(recordId)).thenReturn(Optional.of(mock(MedicalRecord.class)));
+        when(externalResults.attach(recordId, ExternalResultType.PRESCRIPTION, prescriptionId, null))
+                .thenReturn(true);
 
-        service.attachPrescription(recordId, prescriptionId);
+        org.assertj.core.api.Assertions.assertThat(service.attachPrescription(recordId, prescriptionId)).isTrue();
 
         verify(externalResults).attach(
                 recordId, ExternalResultType.PRESCRIPTION, prescriptionId, null);

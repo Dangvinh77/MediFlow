@@ -21,18 +21,9 @@ public class FinancialClearanceConsumer {
     }
 
     public void consume(FinancialClearanceEvent event) {
-        if (event == null || event.eventId() == null || !"financial.clearance.granted".equals(event.eventType())
-                || event.version() != 1 || event.occurredAt() == null
-                || !StringUtils.hasText(event.correlationId()) || !"billing-service".equals(event.producer())
-                || event.payload() == null) {
-            throw new IllegalArgumentException("Invalid financial.clearance.granted v1 envelope");
-        }
-        FinancialClearancePayload payload = event.payload();
+        FinancialClearancePayload payload = validate(event);
         ClearancePurpose purpose = enumValue(ClearancePurpose.class, payload.purpose());
         CareEpisodeType careEpisodeType = enumValue(CareEpisodeType.class, payload.careEpisodeType());
-        if (!hasValidSharedPayload(payload, purpose, careEpisodeType)) {
-            throw new IllegalArgumentException("Invalid financial.clearance.granted v1 payload");
-        }
         if (purpose != ClearancePurpose.EXAM) {
             return;
         }
@@ -45,6 +36,22 @@ public class FinancialClearanceConsumer {
                     payload.appointmentId(), payload.recordId(), payload.labTestIds(), payload.prescriptionId(),
                     payload.admissionId(), payload.surgeryCaseId(), payload.amount(), payload.currency(),
                     payload.paymentMethod(), payload.expiresAt(), payload.emergencyOverride()));
+    }
+
+    static FinancialClearancePayload validate(FinancialClearanceEvent event) {
+        if (event == null || event.eventId() == null || !"financial.clearance.granted".equals(event.eventType())
+                || event.version() != 1 || event.occurredAt() == null
+                || !StringUtils.hasText(event.correlationId()) || !"billing-service".equals(event.producer())
+                || event.payload() == null) {
+            throw new IllegalArgumentException("Invalid financial.clearance.granted v1 envelope");
+        }
+        FinancialClearancePayload payload = event.payload();
+        ClearancePurpose purpose = enumValue(ClearancePurpose.class, payload.purpose());
+        CareEpisodeType careEpisodeType = enumValue(CareEpisodeType.class, payload.careEpisodeType());
+        if (!hasValidSharedPayload(payload, purpose, careEpisodeType)) {
+            throw new IllegalArgumentException("Invalid financial.clearance.granted v1 payload");
+        }
+        return payload;
     }
 
     private static boolean hasValidSharedPayload(FinancialClearancePayload payload, ClearancePurpose purpose,

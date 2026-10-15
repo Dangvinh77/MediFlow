@@ -8,5 +8,5 @@ import com.mediflow.clinical.domain.model.ExternalResultType;
 public interface ExternalResultRepositoryPort {
 
     /** Repeating the same record, type and reference must have no additional effect. */
-    void attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary);
+    boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary);
 }

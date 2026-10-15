@@ -1,14 +1,28 @@
 package com.mediflow.clinical.infrastructure.config;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.aopalliance.aop.Advice;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.dao.DataAccessException;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.mediflow.clinical.application.exception.ConsumerInboxConflictException;
 
 /** RabbitMQ topology and JSON serialization for Clinical publishers and consumers. */
 @Configuration
@@ -71,5 +85,34 @@ public class RabbitConfig {
     @Bean
     public Jackson2JsonMessageConverter rabbitJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
+    }
+
+    @Bean
+    public Advice clinicalListenerRetryInterceptor() {
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(3, Map.of(
+                DataAccessException.class, true,
+                AmqpException.class, true,
+                IOException.class, true,
+                MessageConversionException.class, false,
+                org.springframework.amqp.AmqpRejectAndDontRequeueException.class, false,
+                ConsumerInboxConflictException.class, false), false, true);
+        return RetryInterceptorBuilder.stateless()
+                .retryPolicy(retryPolicy)
+                .backOffOptions(250, 2.0, 2000)
+                .recoverer(new RejectAndDontRequeueRecoverer())
+                .build();
+    }
+
+    @Bean(name = "rabbitListenerContainerFactory")
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter messageConverter,
+            Advice clinicalListenerRetryInterceptor) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        factory.setDefaultRequeueRejected(false);
+        factory.setAdviceChain(clinicalListenerRetryInterceptor);
+        return factory;
     }
 }

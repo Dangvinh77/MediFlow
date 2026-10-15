@@ -43,17 +43,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            authenticate(request);
+        if (SecurityContextHolder.getContext().getAuthentication() == null
+                && !authenticate(request, response)) {
+            return;
         }
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(HttpServletRequest request) {
+    private boolean authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (!StringUtils.hasText(authorization)
                 || !authorization.startsWith(BEARER_PREFIX)) {
-            return;
+            return true;
         }
 
         try {
@@ -67,27 +68,57 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
             Date expiration = claims.getExpiration();
             String path = request.getRequestURI().substring(request.getContextPath().length());
-            if (path.matches("/api/v1/records/[^/]+/prescription-context")) {
+            boolean prescriptionContextLookup = path.matches("/api/v1/records/[^/]+/prescription-context");
+            boolean labOrderContextLookup = path.matches("/api/v1/lab-orders/[^/]+/context");
+            if (prescriptionContextLookup || labOrderContextLookup) {
                 Date issued = claims.getIssuedAt();
                 long now = System.currentTimeMillis();
-                if (!path.matches("/api/v1/records/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/prescription-context")
-                        || !"GET".equals(request.getMethod()) || !"service".equals(tokenType)
-                        || !"SYSTEM".equals(role) || !"pharmacy-service".equals(subject)
+                boolean exactPath = prescriptionContextLookup
+                        ? path.matches("/api/v1/records/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/prescription-context")
+                        : path.matches("/api/v1/lab-orders/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/context");
+                boolean exactService = prescriptionContextLookup
+                        ? "pharmacy-service".equals(subject)
+                        : "lab-service".equals(subject);
+                UUID actorStaffId = null;
+                String actorRole = null;
+                if (labOrderContextLookup) {
+                    try {
+                        String actorStaffClaim = claims.get(JwtClaims.STAFF_ID, String.class);
+                        actorStaffId = actorStaffClaim == null ? null : UUID.fromString(actorStaffClaim);
+                        if (actorStaffId != null && !actorStaffId.toString().equals(actorStaffClaim)) {
+                            actorStaffId = null;
+                        }
+                        actorRole = claims.get("originalActorRole", String.class);
+                    } catch (IllegalArgumentException invalidActor) {
+                        SecurityContextHolder.clearContext();
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        return false;
+                    }
+                }
+                boolean validActor = prescriptionContextLookup
+                        || actorStaffId != null && ("DOCTOR".equals(actorRole) || "ADMIN".equals(actorRole));
+                if (!exactPath || !"GET".equals(request.getMethod()) || !JwtClaims.SERVICE_TOKEN_TYPE.equals(tokenType)
+                        || !"SYSTEM".equals(role) || !exactService || !validActor
                         || issued == null || expiration == null || expiration.getTime() <= now
                         || issued.getTime() > now + 5000 || expiration.getTime() <= issued.getTime()
                         || expiration.getTime() - issued.getTime() > 60000) {
                     SecurityContextHolder.clearContext();
-                    return;
+                    if (labOrderContextLookup) {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        return false;
+                    }
+                    return true;
                 }
                 SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-                        new ClinicalServicePrincipal(subject), null, List.of(new SimpleGrantedAuthority("ROLE_SYSTEM"))));
-                return;
+                        new ClinicalServicePrincipal(subject, actorStaffId, actorRole), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_SYSTEM"))));
+                return true;
             }
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
                     || expiration == null || !expiration.after(new Date())
                     || !StringUtils.hasText(subject) || !StringUtils.hasText(role)) {
                 SecurityContextHolder.clearContext();
-                return;
+                return true;
             }
 
             String staffIdClaim = claims.get(JwtClaims.STAFF_ID, String.class);
@@ -99,8 +130,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             authentication.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            return true;
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
+            if (isLabOrderContextLookup(request)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return false;
+            }
+            return true;
         }
+    }
+
+    private static boolean isLabOrderContextLookup(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return path.matches("/api/v1/lab-orders/[^/]+/context");
     }
 }

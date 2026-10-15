@@ -14,6 +14,13 @@ public record MedicalRecordCreatedPayload(
         UUID doctorId,
         UUID departmentId,
         String diagnosis,
-        LocalDate examinationDate
+        LocalDate examinationDate,
+        int sourceVersion
 ) {
+    public MedicalRecordCreatedPayload(UUID eventId, Instant occurredAt, String correlationId,
+                                       UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
+                                       String diagnosis, LocalDate examinationDate) {
+        this(eventId, occurredAt, correlationId, recordId, patientId, doctorId, departmentId,
+                diagnosis, examinationDate, 0);
+    }
 }

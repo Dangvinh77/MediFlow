@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -96,6 +97,93 @@ class JwtAuthFilterTest {
                 new MockFilterChain());
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void labServiceContextTokenRequiresVerifiedActorClaimsAndExactReadRoute() throws Exception {
+        UUID staffId = UUID.fromString("00000000-0000-0000-0000-000000001004");
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String token = Jwts.builder().subject("lab-service")
+                .claim(JwtClaims.ROLE, "SYSTEM")
+                .claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .claim(JwtClaims.STAFF_ID, staffId.toString())
+                .claim("originalActorRole", "DOCTOR")
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        MockHttpServletRequest request = requestWithToken(token);
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/lab-orders/00000000-0000-0000-0000-000000001001/context");
+
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication).isNotNull();
+        assertThat(authentication.getPrincipal()).isEqualTo(new ClinicalServicePrincipal("lab-service", staffId, "DOCTOR"));
+        assertThat(authentication.getAuthorities()).extracting("authority").containsExactly("ROLE_SYSTEM");
+    }
+
+    @Test
+    void labServiceContextTokenRejectsMissingActorClaimAndNonReadMethods() throws Exception {
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String missingActor = Jwts.builder().subject("lab-service")
+                .claim(JwtClaims.ROLE, "SYSTEM").claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        MockHttpServletRequest request = requestWithToken(missingActor);
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/lab-orders/00000000-0000-0000-0000-000000001001/context");
+        MockHttpServletResponse missingActorResponse = new MockHttpServletResponse();
+        filter.doFilter(request, missingActorResponse, new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(missingActorResponse.getStatus()).isEqualTo(401);
+
+        SecurityContextHolder.clearContext();
+        UUID staffId = UUID.fromString("00000000-0000-0000-0000-000000001004");
+        String valid = Jwts.builder().subject("lab-service")
+                .claim(JwtClaims.ROLE, "SYSTEM").claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .claim(JwtClaims.STAFF_ID, staffId.toString()).claim("originalActorRole", "DOCTOR")
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        request = requestWithToken(valid);
+        request.setMethod("POST");
+        request.setRequestURI("/api/v1/lab-orders/00000000-0000-0000-0000-000000001001/context");
+        MockHttpServletResponse methodResponse = new MockHttpServletResponse();
+        filter.doFilter(request, methodResponse, new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(methodResponse.getStatus()).isEqualTo(401);
+    }
+
+    @Test
+    void labServiceContextTokenRejectsUnsignedAliasClaimsAndNonCanonicalStaffId() throws Exception {
+        Instant issued = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String aliasedClaims = Jwts.builder().subject("lab-service")
+                .claim(JwtClaims.ROLE, "SYSTEM").claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .claim("actorStaffId", "00000000-0000-0000-0000-000000001004")
+                .claim("actorRole", "DOCTOR")
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        MockHttpServletRequest request = requestWithToken(aliasedClaims);
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/lab-orders/00000000-0000-0000-0000-000000001001/context");
+        MockHttpServletResponse aliasResponse = new MockHttpServletResponse();
+        filter.doFilter(request, aliasResponse, new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(aliasResponse.getStatus()).isEqualTo(401);
+
+        String uppercaseStaffId = Jwts.builder().subject("lab-service")
+                .claim(JwtClaims.ROLE, "SYSTEM").claim(JwtClaims.TYPE, JwtClaims.SERVICE_TOKEN_TYPE)
+                .claim(JwtClaims.STAFF_ID, "00000000-0000-0000-0000-00000000100A")
+                .claim("originalActorRole", "DOCTOR")
+                .issuedAt(Date.from(issued)).expiration(Date.from(issued.plusSeconds(60)))
+                .signWith(SIGNING_KEY).compact();
+        SecurityContextHolder.clearContext();
+        request = requestWithToken(uppercaseStaffId);
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/lab-orders/00000000-0000-0000-0000-000000001001/context");
+        MockHttpServletResponse nonCanonicalResponse = new MockHttpServletResponse();
+        filter.doFilter(request, nonCanonicalResponse, new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(nonCanonicalResponse.getStatus()).isEqualTo(401);
     }
 
     @Test

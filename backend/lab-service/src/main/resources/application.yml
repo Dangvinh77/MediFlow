@@ -36,6 +36,14 @@ spring:
       simple:
         default-requeue-rejected: false
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          labClinicalOrderContextClient:
+            connectTimeout: 1000
+            readTimeout: 2000
+
 mediflow:
   profile: ${MEDIFLOW_PROFILE:compatibility-v0}
   jwt:
@@ -44,6 +52,9 @@ mediflow:
     outpatient-mvp:
       enabled: ${MEDIFLOW_OUTPATIENT_MVP_ENABLED:false}
     care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  lab:
+    clinical-context:
+      enabled: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:false}
   events:
     outbox-poll-interval: ${MEDIFLOW_OUTBOX_POLL_INTERVAL:1000}
     outbox-confirm-timeout-ms: ${MEDIFLOW_LAB_OUTBOX_CONFIRM_TIMEOUT_MS:5000}

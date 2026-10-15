@@ -14,7 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mediflow.common.api.PageQuery;
 import com.mediflow.common.api.PageResult;
 import com.mediflow.common.exception.DuplicateResourceException;
+import com.mediflow.common.exception.ForbiddenOperationException;
+import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.lab.application.dto.request.AddResultRequest;
+import com.mediflow.lab.application.dto.context.LabClinicalOrderContext;
 import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
 import com.mediflow.lab.application.dto.request.CreateLabRequest;
 import com.mediflow.lab.application.dto.request.EmergencyOverrideRequest;
@@ -28,6 +31,7 @@ import com.mediflow.lab.application.event.LabRequestV2Payload;
 import com.mediflow.lab.application.event.LabResultV2Payload;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
+import com.mediflow.lab.application.port.in.CreateLabRequestUseCase;
 import com.mediflow.lab.application.port.in.ReactToClinicalUseCase;
 import com.mediflow.lab.application.port.in.ReactToFinancialClearanceUseCase;
 import com.mediflow.lab.application.port.in.UpdateLabPaymentUseCase;
@@ -37,6 +41,7 @@ import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
+import com.mediflow.lab.application.port.out.LabClinicalOrderContextPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabRuleException;
@@ -63,6 +68,8 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final boolean careFinanceV2Enabled;
     private final boolean outpatientMvpEnabled;
     private final Clock clock;
+    private final LabClinicalOrderContextPort clinicalOrders;
+    private final CreateLabRequestUseCase requestCreation;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
@@ -72,7 +79,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                                   boolean careFinanceV2Enabled,
                                   Clock clock) {
         this(tests, publisher, mapper, correlationIds, outbox, clearances, overrides,
-                authenticatedStaff, careFinanceV2Enabled, false, clock);
+                authenticatedStaff, careFinanceV2Enabled, false, clock, null, null);
     }
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
@@ -82,6 +89,18 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                                  AuthenticatedStaffContextPort authenticatedStaff,
                                  boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
                                  Clock clock) {
+        this(tests, publisher, mapper, correlationIds, outbox, clearances, overrides,
+                authenticatedStaff, careFinanceV2Enabled, outpatientMvpEnabled, clock, null, null);
+    }
+
+    public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
+                                 LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                 LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
+                                 LabEmergencyOverrideRepositoryPort overrides,
+                                 AuthenticatedStaffContextPort authenticatedStaff,
+                                 boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
+                                 Clock clock, LabClinicalOrderContextPort clinicalOrders,
+                                 CreateLabRequestUseCase requestCreation) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
@@ -93,6 +112,8 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         this.careFinanceV2Enabled = careFinanceV2Enabled;
         this.outpatientMvpEnabled = outpatientMvpEnabled;
         this.clock = clock;
+        this.clinicalOrders = clinicalOrders;
+        this.requestCreation = requestCreation;
     }
 
     /** Compatibility constructor retained for version-0 unit fixtures. */
@@ -103,8 +124,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     }
 
     @Override
-    @Transactional
     public LabTestDTO create(CreateLabRequest request) {
+        if (request == null) {
+            throw new LabRuleException("LAB_REQUEST_INVALID", "A Lab request is required");
+        }
         boolean hasV2Identity = request.sourceOrderId() != null || request.careEpisodeType() != null
                 || request.careEpisodeId() != null || request.priceCode() != null;
         if (outpatientMvpEnabled && request.careEpisodeType() != null
@@ -114,10 +137,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         }
         if (careFinanceV2Enabled) {
             if (outpatientMvpEnabled) {
-                throw new LabRuleException("LAB_SOURCE_ORDER_UNVERIFIED",
-                        "Lab cannot verify an authoritative clinical order for this request");
+                return createOutpatientV1(request);
             }
-            return createV2(request);
+            return requestCreation == null ? createV2(request)
+                    : requestCreation.createCareFinance(request, correlationIds.currentOrCreate().toString());
         }
         if (outpatientMvpEnabled) {
             throw outpatientV1Required();
@@ -125,9 +148,51 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         if (hasV2Identity) {
             throw featureDisabled();
         }
-        LabTest saved = saveNew(request.recordId(), request.patientId(), request.requestingDepartmentId(),
-                request.labType(), request.requestedDate());
-        return mapper.toDto(saved);
+        return requestCreation == null ? mapper.toDto(saveNew(request.recordId(), request.patientId(),
+                request.requestingDepartmentId(), request.labType(), request.requestedDate()))
+                : requestCreation.createCompatibility(request);
+    }
+
+    private LabTestDTO createOutpatientV1(CreateLabRequest request) {
+        if (request.sourceOrderId() == null || request.careEpisodeType() == null
+                || request.careEpisodeId() == null || request.priceCode() == null
+                || request.priceCode().isBlank()) {
+            throw new LabRuleException("LAB_SOURCE_ORDER_REQUIRED",
+                    "An outpatient Lab request requires a Clinical source order and complete episode pricing");
+        }
+        AuthenticatedStaffContext actor = authenticatedStaff.currentStaff()
+                .filter(staff -> staff.staffId() != null
+                        && List.of("ADMIN", "DOCTOR").contains(staff.role()))
+                .orElseThrow(() -> new ForbiddenOperationException("LAB_STAFF_REQUIRED",
+                        "A verified doctor or administrator identity is required"));
+        if (clinicalOrders == null) {
+            throw new com.mediflow.lab.application.exception.LabUpstreamUnavailableException();
+        }
+        String correlationId = correlationIds.currentOrCreate().toString();
+        LabClinicalOrderContext context = clinicalOrders.findById(request.sourceOrderId(), correlationId, actor)
+                .orElseThrow(() -> new ResourceNotFoundException("LAB_SOURCE_ORDER_NOT_FOUND",
+                        "The Clinical source order does not exist"));
+        if (!matches(context, request, actor)) {
+            throw new LabRuleException("LAB_SOURCE_ORDER_MISMATCH",
+                    "Lab request fields must match the persisted Clinical source order and authenticated doctor");
+        }
+        return requestCreation == null ? createV2(request)
+                : requestCreation.createCareFinance(request, correlationId);
+    }
+
+    private static boolean matches(LabClinicalOrderContext context, CreateLabRequest request,
+                                   AuthenticatedStaffContext actor) {
+        return context.sourceOrderId().equals(request.sourceOrderId())
+                && context.recordId().equals(request.recordId())
+                && context.patientId().equals(request.patientId())
+                && context.requestingDoctorId().equals(actor.staffId())
+                && context.requestingDepartmentId().equals(request.requestingDepartmentId())
+                && context.careEpisodeType() == request.careEpisodeType()
+                && context.careEpisodeId().equals(request.careEpisodeId())
+                && context.labType().equals(request.labType())
+                && context.requestedDate().equals(request.requestedDate())
+                && context.priceCode().equals(request.priceCode())
+                && context.orderedAt() != null && context.observedAt() != null;
     }
 
     @Override
