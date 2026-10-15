@@ -20,13 +20,15 @@ class PaymentCompletedConsumerTest {
     private final PaymentCompletedConsumer consumer = new PaymentCompletedConsumer(useCase);
 
     @Test
-    void consume_mapsAllExplicitLabTestIdentifiers() {
+    void consume_mapsAllExplicitLabTestIdentifiersInCanonicalOrder() {
         UUID eventId = UUID.randomUUID();
-        List<UUID> labTestIds = List.of(UUID.randomUUID(), UUID.randomUUID());
+        UUID first = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID second = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        List<UUID> labTestIds = List.of(second, first);
 
         consumer.consume(new PaymentCompletedPayload(eventId, labTestIds, UUID.randomUUID()));
 
-        verify(useCase).onPaymentCompleted(new PaymentCompletedCommand(eventId, labTestIds));
+        verify(useCase).onPaymentCompleted(new PaymentCompletedCommand(eventId, List.of(first, second)));
     }
 
     @Test

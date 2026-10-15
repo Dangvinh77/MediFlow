@@ -10,7 +10,9 @@ Inpatient/Surgery/full V2 deferred, không trở thành blocker để đóng lu�
 
 ## Active source lock
 
-- [Vinh Clinical/Lab outpatient MVP source lock and open dependencies](HANDOFF-VINH-OUTPATIENT-MVP.md) — partial implementation evidence; does not close M6-02, M6-09, M6-11, M6-14, or end-to-end acceptance.
+- [Vinh Clinical/Lab closeout, source lock and owner handoffs — 2026-10-15](HANDOFF-VINH-OUTPATIENT-MVP.md) — owned implementation/test evidence; M6 toàn nhóm và end-to-end acceptance còn mở. V-CLOSE-01 đã có standalone recovery proof; Vinh còn V-CLOSE-02/03; không làm lại Lab authority/inbox đã merge.
+  H-VINH-01: Hoàng Anh/Gateway-Core; H-VINH-02: Huy/Pharmacy-Report + Vinh/Clinical consumer;
+  H-VINH-03: Lộc/Billing. Từng handoff có source gap, producer/consumer, fixture/test và điều kiện đóng.
 - [Pharmacy Core identity lookup retarget](HANDOFF-PHARMACY-CORE-LOOKUPS.md) — Huy-owned caller update after Organization and Patient source modules move into Core.
 - [Gateway allowlist missing for two live Billing read endpoints](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) — Hoàng Anh-owned allowlist rule for `prescription-adjustments` and `surgery-cancellations`, found while building their frontend.
 

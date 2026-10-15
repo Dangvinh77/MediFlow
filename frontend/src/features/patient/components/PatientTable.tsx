@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -49,13 +49,15 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
   const [pageNumber, setPageNumber] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [lastRequest, setLastRequest] = useState<PatientRequest>({
+  const lastRequest = useRef<PatientRequest>({
     keyword: "",
     page: 0,
   });
+  const requestSequence = useRef(0);
 
   const loadPatients = useCallback(async (request: PatientRequest) => {
-    setLastRequest(request);
+    lastRequest.current = request;
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError(null);
 
@@ -65,19 +67,24 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
         page: request.page,
         size: PATIENT_PAGE_SIZE,
       });
+      if (requestId !== requestSequence.current) return;
+
       setPatients(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
     } catch (cause: unknown) {
+      if (requestId !== requestSequence.current) return;
+
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        setPatients([]);
         router.replace("/login");
         return;
       }
 
       setError(getRequestError(cause));
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, [router]);
 
@@ -143,7 +150,7 @@ export function PatientTable({ notice }: { notice?: "deleted" }) {
           kind="error"
           message={error.message}
           correlationId={error.correlationId}
-          onRetry={() => void loadPatients(lastRequest)}
+          onRetry={() => void loadPatients(lastRequest.current)}
         />
       ) : null}
 
