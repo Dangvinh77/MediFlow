@@ -20,6 +20,25 @@ Owner ghi nhận 940 Billing tests và 13 Surgery decoder tests đạt trong
 `backend/billing-service/HANDOFF-CLINICAL-LAB-FINANCIAL-CLEARANCE.md`; đây là producer-side
 evidence, chưa thay thế nghiệm thu Gateway/Clinical/Lab của V-CLOSE-03.
 
+**Refresh tiếp theo 2026-10-15, baseline `050b5916`:** master đã chứa PR #375 (Vinh),
+#376 (Hoàng Anh, Patient FE stale-response handling), #378 (Lộc, Billing FE ledger payment/
+revenue/outbox). So với `3f07f216`, không có thay đổi production backend Core/Gateway/
+Billing/Pharmacy/Report/Notification. Vì vậy route Lab-order và Rx producer gaps bên dưới
+vẫn mở; merge PR không tự đóng owner acceptance. Lượt tiếp tục code ở nhánh
+`codex/vinh-outpatient-acceptance`; kết quả mới chỉ được ghi sau khi chạy kiểm chứng.
+
+### Owner delivery queue — làm song song để đóng backend sớm
+
+| Ưu tiên | Owner | Deliverable tiếp theo | Consumer / điều kiện nghiệm thu |
+|---|---|---|---|
+| P0 | Lộc / Billing | Cấp đường discovery cho V1 EXAM/LAB_TEST `paymentRequestId` theo exact source qua API được authorize hoặc durable producer contract được owners thống nhất; trả purpose, exact target/episode, amount/currency và trạng thái authoritative | Clinical/Lab acceptance + Billing FE chọn request được mà không SQL/đoán UUID; duplicate source trả cùng request, wrong-role/source/account denied, actual payment phát grant tương ứng |
+| P0 | Hoàng Anh / Gateway-Core | Exact `POST /api/v1/records/{id}/lab-orders` ADMIN/DOCTOR; giữ context service-only; sửa hai migration locations trong Core test `SurgeryAuthorityIntegrationTest` và chạy lại suites | Public Lab-order command forward đúng assigned doctor; wrong role/method/nested paths không forward; Core Flyway upgrade test chạy đúng `db/organization-migration` |
+| P0 | Huy / Pharmacy | Khóa outpatient `prescription.filled` relationship bằng persisted source; giao producer golden bytes và operation theo dispense, không chỉ ADMISSION fixture | Vinh triển khai Clinical V1 attach với exact record/patient/department/episode, replay/conflict/terminal tests; gate giữ OFF đến khi hai phía đạt |
+| P1 | Huy / Report | Chứng minh consume outpatient completed-record/Lab-result fixtures đúng một contribution, replay/new event ID/conflicting bytes rõ | Đóng Report side của M6-08/11; không dùng evidence Clinical/Lab để báo Report DONE |
+| P1 | Hoàng Anh + Lộc + Vinh | Chốt runtime flags/catalog/profile và chạy lại hai public Gateway payment slices sau khi P0 đạt | Lưu source SHA, actual IDs/event hashes, counts/failures/skips; deferred routes/calls không active |
+
+Queue này là handoff trong repo; không là xác nhận đã gửi tin nhắn riêng hoặc owner đã nhận việc.
+
 **Kết luận:** không còn lý do làm lại Lab order authority hay operation/fingerprint inbox.
 Chưa được ghi toàn bộ backend Vinh DONE: V1 Rx attachment thiếu producer contract; real
 Gateway/Billing/Lab slices và recovery liên service vẫn mở. Inpatient/Surgery không phải
@@ -30,9 +49,9 @@ flow V1 cho người dùng sau acceptance và cấu hình gates đồng bộ.
 
 | M6 | Bằng chứng source hiện tại | Giới hạn kết luận |
 |---|---|---|
-| M6-05.1 | Clinical `application-outpatient-mvp.yml` retarget hai client tới Core, giữ JWT identity logic | Còn cần chạy lookup thật qua Core và signed delegation |
-| M6-09.1–3 | Check-in, exact EXAM gate, assigned-doctor checks, completion ngoại trú; outbox và inbox transactional | Chưa chứng minh check-in → Billing payment → Gateway exam cùng runtime |
-| M6-11.1–3 | Clinical persisted order + internal Lab-only lookup; Lab kiểm source trước transaction; request/outbox atomic; exact clearance; immutable resultVersion=1 | Chưa chứng minh toàn bộ request → Billing → result → Clinical/Report |
+| M6-05.1 | Clinical `application-outpatient-mvp.yml` retarget hai client tới Core, giữ JWT identity logic; packaged slices đã gọi real Core và signed Lab delegation | Không thay thế full Core test/lookup acceptance của owner |
+| M6-09.1–3 | Check-in, exact EXAM gate, assigned-doctor checks, completion ngoại trú; outbox và inbox transactional; packaged Gateway race/denial/start-exam đã đạt | Grant ở harness là fixture; check-in → Billing payment → Gateway exam vẫn mở |
+| M6-11.1–3 | Clinical persisted order + internal Lab-only lookup; packaged request/result publication → Clinical attachment đã đạt; exact gate và immutable resultVersion=1 | Normal payment, public Lab-order command và Report consumer acceptance vẫn mở |
 | M6-14 phần Clinical/Lab | `outpatient-mvp`, V0 mutation/deferred guards, Clinical HELD/quarantine và rollback fence | Không chứng minh profile toàn repo chỉ chạy sáu business apps |
 
 ### Vinh còn code/test gì để đóng phần mình
@@ -43,7 +62,8 @@ flow V1 cho người dùng sau acceptance và cấu hình gates đồng bộ.
    còn có `OutboxProcessRecoveryIT`: kill packaged JVM sau publish, trước commit; start cùng
    JAR với PID mới, replay original delivery và không republish sau mark. Phạm vi/kết quả ở
    mục packaged JVM recovery bên dưới. Đây đóng gap outbox JVM restart từng được ghi mở;
-   không chuyển business E2E hoặc consumer kill-after-effect-before-ACK của V-CLOSE-03 thành DONE.
+   Consumer JVM kill-after-effect-before-ACK đã có thêm proof với actual Clinical attachment
+   và Lab clearance (mục Consumer JVM recovery bên dưới); business E2E V-CLOSE-03 vẫn mở.
 2. **V-CLOSE-02 — implement Clinical V1 Rx attachment sau H-VINH-02 (M6-09/10).**
    Consumer hiện chủ động reject V1 envelope và quarantine V0 trong MVP. Sau producer lock:
    validate exact record/patient/department/OUTPATIENT_VISIT, operation theo dispense thật,
@@ -56,6 +76,9 @@ flow V1 cho người dùng sau acceptance và cấu hình gates đồng bộ.
    gọi deferred services. Ghi source SHA, exact flags, test counts, source IDs/event hashes.
    Clinical flag `MEDIFLOW_CARE_FINANCE_V2_ENABLED`, Lab flag `MEDIFLOW_CARE_FINANCE_V2` và
    `MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED` là ba keys khác nhau; không bật production ở lượt này.
+   Hai packaged API harness mới đã đóng phần independent authority/gate/result assertions
+   bằng fixture clearance được ghi rõ bên dưới; không phải làm lại các assertion này.
+   Phần còn mở là actual normal payment/public route và owner producer/consumer acceptance.
 
 Không giao cho Vinh làm full Inpatient, Surgery, admission settlement, full Report V2,
 email/SMS, gom DB hoặc redesign frontend để đóng ba việc trên.
@@ -76,6 +99,12 @@ email/SMS, gom DB hoặc redesign frontend để đóng ba việc trên.
   các denial cases không forward; service-only context vẫn bị chặn qua public Gateway;
   lookup Core phân biệt absence/unavailable. Hoàng Anh cung cấp source/test evidence;
   Vinh chạy V-CLOSE-03. Chưa có owner acceptance trong lượt này.
+- **Core test blocker vẫn có tại `050b5916`:**
+  `backend/core-service/src/test/java/com/mediflow/organization/SurgeryAuthorityIntegrationTest.java`
+  dòng 215/220 dùng `classpath:db/migration`; Organization migrations trong co-host nằm ở
+  `classpath:db/organization-migration`. Hoàng Anh owns fix + targeted/full Core verification.
+  Vinh không sửa Core hoặc bypass CI. Packaged dependency build với `-DskipTests` không là
+  bằng chứng Core test đạt.
 
 ### H-VINH-02 — Huy / Pharmacy + Report; Vinh nhận consumer Clinical
 
@@ -109,6 +138,24 @@ email/SMS, gom DB hoặc redesign frontend để đóng ba việc trên.
   duplicate không charge/grant/effect hai lần, wrong purpose/target/episode bị chặn.
   Lộc owns Billing/Notification; Vinh không sửa producer Billing để tự mở gate.
 
+**Blocking discovery contract — xác nhận từ live source `050b5916`:**
+`LedgerPaymentController` chỉ có POST `/api/v1/billing/payment-requests/{id}/payments`.
+`ExamChargeRepositoryAdapter.saveChargeAndRequest` và
+`LabTestChargeRepositoryAdapter.saveChargeAndRequest` sinh random `payment_request_id`;
+hai planned-request services chỉ trả ID nội bộ cho consumer, không expose qua REST hoặc
+publish EXAM/LAB request-created fact. Không có source-bound request discovery controller.
+Frontend `PaymentRequestLookupForm` hiện yêu cầu người dùng nhập mã có sẵn, không tạo được
+quan hệ source → request. Invoice V0 không thay thế V1 ledger payment request.
+
+Lộc cần giao một đường discovery authoritative (API hoặc producer event contract được
+thống nhất), đủ để chọn đúng request cho appointment hoặc Lab test vừa tạo và khoản tiền
+theo catalog. Khóa exact method/path/roles/query/response/errors và fixtures; Hoàng Anh thêm
+exact allowlist tương ứng nếu là API. Acceptance: từ actual source IDs tìm được request,
+duplicate source không có request mới; wrong source/episode/account hoặc role không được
+chọn khoản của người khác; CASHIER thanh toán exact request qua HTTP rồi Clinical/Lab nhận
+actual published grant. Không đọc Billing SQL, đoán UUID hoặc inject fixture grant rồi gọi
+đó là paid cross-service E2E. Đây là blocker cả EXAM và LAB_TEST, không chỉ vấn đề cấu hình giá.
+
 ### Điều kiện chuyển trọng tâm frontend
 
 Vinh có thể làm shared shell và appointment/record/Lab DTO/API/error/permission states theo
@@ -122,6 +169,131 @@ handoffs có owner evidence. **MVP toàn hệ thống:** vẫn theo M6-16/17/18;
 rollout/CI của cả nhóm không được đánh DONE bằng số test Clinical/Lab.
 
 ### Reliability tiếp theo — kịch bản và giới hạn bằng chứng
+
+### Clinical production fix — giữ chính xác timestamp của flat event
+
+Packaged API acceptance phát hiện tạo appointment trả HTTP 500 trong durable/MVP mode.
+`RabbitConfig.rabbitJsonMessageConverter()` phát `occurredAt` dạng numeric seconds với
+nano giây, ví dụ `1791975180.123456789`. `ObjectMapper.readTree()` mặc định tạo `DoubleNode`,
+làm tròn thành `1791975180.1234567`; `ClinicalOutboxPersistenceAdapter.instantMatches()`
+vì vậy từ chối event hợp lệ do chính ứng dụng tạo.
+
+Bản sửa dùng per-call immutable `ObjectReader` với `USE_BIG_DECIMAL_FOR_FLOATS` để đọc
+wire payload. Không đổi shared mapper, converter, schema, strict metadata checks hoặc
+original bytes được lưu/publish. Test hồi quy dùng actual Rabbit converter cho cả bốn
+flat facts (`appointment.created`, `appointment.status.changed`, `medicalrecord.created`,
+`diagnosis.added`), kiểm timestamp nano giây, bốn saves và exact stored bytes.
+
+TDD: focused regression thất bại trước bản sửa; `ClinicalOutboxPersistenceAdapterTest`
+sau sửa **4 tests, 0 failures/errors/skips**. Packaged Clinical slice sau rebuild cũng đã
+đạt **1 test, 0 failures/errors/skips**. Static review không còn finding ở bản sửa;
+full owned-module evidence của batch được ghi riêng bên dưới.
+
+### Packaged API slices — phạm vi lượt tiếp tục 2026-10-15
+
+Hai harness opt-in chạy executable JAR trong process riêng với PostgreSQL/RabbitMQ isolated.
+Core tạo department/staff/account/patient qua HTTP; test chỉ provision database rỗng cho Core,
+không dùng SQL để lấy hoặc tạo business identity ở service của owner khác. SQL assertions
+chỉ đọc Clinical/Lab stores do Vinh sở hữu. Các profile này không đổi runtime defaults.
+
+| Harness | Phạm vi API và effect cần chứng minh | Giới hạn phải giữ |
+|---|---|---|
+| Clinical `ClinicalExamPackagedAcceptanceIT`, profile `packaged-acceptance` | Core/Gateway login và authority thật; assigned/wrong doctor, wrong role; concurrent check-in đúng một transition/outbox; exact unpaid error; canonical fixture grant qua listener rồi start đúng một exam record | Grant là synthetic contract fixture gắn với runtime source IDs; không start Billing hoặc claim đã thanh toán |
+| Lab `PackagedOutpatientLabAcceptanceIT`, profile `packaged-slice` | Core identity, Clinical persisted order và signed service lookup thật; source mismatch/unpaid denial; duplicate fixture grant được ACK, không DLQ; Lab start/result immutable và actual result publication tạo đúng Clinical attachment | Clinical prerequisite dùng audited emergency override; Lab clearance là synthetic fixture; Lab-order command gọi trực tiếp Clinical vì Gateway allowlist còn thiếu; không claim normal paid public E2E |
+
+Targeted Clinical và Lab packaged harness đều đã đạt **mỗi harness 1 test, 0 failures,
+0 errors, 0 skips**, gồm cleanup trên Windows. Full regression của batch ghi riêng bên dưới.
+H-VINH-01/02/03 vẫn là các dependency để đóng V-CLOSE-02/03.
+
+Reproduce từ repository root (Docker phải sẵn sàng):
+
+```powershell
+mvn -pl backend/eureka-server,backend/core-service,backend/gateway,backend/clinical-service,backend/lab-service -am -DskipTests package
+mvn -f backend/clinical-service/pom.xml -Ppackaged-acceptance verify
+mvn -f backend/lab-service/pom.xml -Ppackaged-slice verify
+```
+
+Packaged profiles mặc định dùng sibling `target/*-${project.version}.jar`, có thể override
+qua `acceptance.{core,gateway,eureka}.jar` ở Clinical hoặc
+`lab.acceptance.{core,gateway,eureka,clinical,lab}.jar` ở Lab. Thiếu JAR là lỗi, không skip.
+Dependency packaging có `-DskipTests` chỉ build JARs; không chứng minh full Core/Gateway tests.
+Harness pin localhost Eureka advertisement, bounded registry-cache polling, exact Core wire
+field `maBenhNhan`, và kiểm child processes đã exit trước TempDir cleanup. Không đổi DNS,
+discovery intervals hoặc service flags của runtime production.
+
+### Consumer JVM recovery — lượt tiếp tục 2026-10-15
+
+Clinical và Lab bổ sung `ConsumerProcessRecoveryIT` dưới profile `process-recovery` hiện có.
+`ConsumerRecoveryProcess` chỉ ở test sources, ngoài production scan; test copy đúng launcher
+class files vào temporary loader path rồi chạy production executable JAR bằng Boot
+`PropertiesLauncher`. Không đóng gói launcher/hook trong production JAR và không đổi code
+production, migrations hoặc default gates để kiểm thử.
+
+Test-only BeanPostProcessor bọc **production retry advice**, gọi hết listener/use-case và
+transaction trước khi ghi exact received-body/redelivery marker rồi chờ latch, nên Rabbit
+chưa ACK. Parent đọc own-service database bằng connection khác để xác nhận effect + inbox
+đã commit và quan sát broker queue `ready=0, unacked=1`. Sau force-kill child JVM, broker
+phải chuyển `ready=1, unacked=0`; restart cùng JAR với PID khác nhận identical bytes cùng
+`redelivered=true`, kết thúc `ready=0, unacked=0`, không DLQ hoặc business effect thứ hai.
+
+| Module | Real business effect được kiểm tra | Fixture / giới hạn |
+|---|---|---|
+| Clinical | Một `attached_result` đúng record/Lab reference/summary + một delivery/operation inbox, giữ original raw bytes | Canonical `lab.result.created.v1.json`, seed chỉ Clinical-owned target tương ứng; không claim đã gọi API Lab hoặc Billing |
+| Lab | Một `lab_financial_clearance`, target chuyển READY đúng clearance + một delivery/operation inbox, giữ original raw bytes | Canonical `financial.clearance.granted.v1.json`, seed chỉ Lab-owned target; không claim đây là clearance do actual payment trong run này |
+
+Targeted verification đầu: Clinical **1/1, 0 failures/errors/skips**, exit 0; Lab **1/1,
+0 failures/errors/skips**, exit 0. Docker Engine 29.8.0, PostgreSQL `16-alpine`, RabbitMQ
+`3.13-alpine`. Lượt đầu Clinical gặp Docker daemon chưa chạy (1 setup error); daemon đã
+khởi động, rerun đạt, không đổi test thành skip. Logs `%TEMP%/vinh-consumer-recovery.log`
+và `%TEMP%/vinh-lab-consumer-recovery.log`; failed child logs giữ trong JUnit temp directory.
+Full regression của batch này đã hoàn tất; xem bảng kết quả cuối bên dưới.
+
+```powershell
+mvn -f backend/clinical-service/pom.xml -Pprocess-recovery verify
+mvn -f backend/lab-service/pom.xml -Pprocess-recovery verify
+```
+
+Evidence này đóng cửa sổ **consumer JVM chết sau local commit trước ACK** trong Clinical/Lab.
+V-CLOSE-03 vẫn mở cho normal paid public Gateway slices, Rx và Report; không lấy contract
+fixture recovery thay cho business E2E/rollout/backup-restore.
+
+### Kết quả cuối batch — 2026-10-15, 19:45 +07
+
+Baseline `050b5916`, branch `codex/vinh-outpatient-acceptance` với working-tree changes
+của batch này. Java 21.0.11, Maven 3.9.16, Docker Engine 29.8.0, PostgreSQL 16.15
+(`16-alpine`), RabbitMQ `3.13-alpine`. Independent static review: không còn finding.
+
+| Verification | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|
+| Clinical Surefire regression | 311 | 0 | 0 | 0 |
+| Clinical Failsafe: packaged EXAM + consumer recovery + outbox recovery | 3 | 0 | 0 | 0 |
+| Lab Surefire regression | 216 | 0 | 0 | 0 |
+| Lab Failsafe: consumer recovery + outbox recovery | 2 | 0 | 0 | 0 |
+| Lab Failsafe: packaged outpatient slice | 1 | 0 | 0 | 0 |
+| **Tổng** | **533** | **0** | **0** | **0** |
+
+Các lệnh cuối đều exit 0; số đếm đối chiếu XML Surefire/Failsafe, không cộng các lần
+targeted/rerun trùng lặp:
+
+```powershell
+mvn -q -f backend/clinical-service/pom.xml '-Pprocess-recovery,packaged-acceptance' '-Dit.test=ClinicalExamPackagedAcceptanceIT,*ProcessRecoveryIT' verify
+mvn -q -f backend/lab-service/pom.xml -Pprocess-recovery verify
+mvn -f backend/lab-service/pom.xml -Ppackaged-slice '-Dit.test=PackagedOutpatientLabAcceptanceIT' test-compile failsafe:integration-test failsafe:verify
+```
+
+Lượt Clinical tổng trước đó đã gặp Windows file lock khi JUnit xóa redirected child log,
+sau khi các business assertions hoàn tất. `OutboxProcessRecoveryIT` bổ sung bounded
+15-second rename barrier sau khi dừng child JVM để xác nhận file đã được nhả; persistent
+lock vẫn làm test thất bại. Không tắt TempDir cleanup hoặc biến lỗi thành skip. Lượt tổng
+cuối sau sửa đạt cả 311 + 3 tests, gồm cleanup. Logs tại `%TEMP%/vinh-clinical-final-all-verify.log`
+và `%TEMP%/vinh-lab-final-verify.log`; Lab packaged result nằm trong Failsafe reports của module.
+
+Phần độc lập của Vinh trong batch đã hoàn tất. H-VINH-01/02/03 vẫn mở theo owner delivery
+queue; Vinh tiếp nhận Rx consumer và hoàn tất normal paid public acceptance sau khi có
+producer bytes/authority, Billing discovery và Gateway route đúng hợp đồng. Chưa đánh
+DONE backend toàn hệ thống hoặc M6-16/17/18; gates vẫn OFF mặc định.
+
+### Broker/listener evidence trước consumer JVM recovery
 
 Các test mới dùng PostgreSQL `postgres:16-alpine` và RabbitMQ `rabbitmq:3.13-alpine`
 riêng do Testcontainers tạo, không reset DB/queue ứng dụng. Không đổi production code,

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -134,6 +135,19 @@ class OutboxProcessRecoveryIT {
                 }
             }
         }
+        awaitLogRelease("before-kill.log");
+        awaitLogRelease("after-restart.log");
+    }
+
+    private void awaitLogRelease(String name) {
+        Path log = logs.resolve(name);
+        // Windows can retain a redirected file handle briefly after waitFor reports process exit.
+        // A successful rename proves the file permits cleanup; a persistent lock still fails the test.
+        await().pollInterval(Duration.ofMillis(100)).atMost(Duration.ofSeconds(15))
+                .ignoreExceptionsInstanceOf(IOException.class).until(() -> {
+                    Files.move(log, logs.resolve(name + ".released"));
+                    return true;
+                });
     }
 
     private void seed(JdbcTemplate jdbc, UUID eventId, String type, String json, byte[] body) {

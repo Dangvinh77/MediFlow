@@ -15,6 +15,14 @@
     <name>MediFlow Lab Service</name>
     <description>Lab tests &amp; results (XET_NGHIEM, KET_QUA_XN).</description>
 
+    <properties>
+        <lab.acceptance.core.jar>${project.basedir}/../core-service/target/core-service-${project.version}.jar</lab.acceptance.core.jar>
+        <lab.acceptance.gateway.jar>${project.basedir}/../gateway/target/gateway-${project.version}.jar</lab.acceptance.gateway.jar>
+        <lab.acceptance.eureka.jar>${project.basedir}/../eureka-server/target/eureka-server-${project.version}.jar</lab.acceptance.eureka.jar>
+        <lab.acceptance.clinical.jar>${project.basedir}/../clinical-service/target/clinical-service-${project.version}.jar</lab.acceptance.clinical.jar>
+        <lab.acceptance.lab.jar>${project.build.directory}/${project.build.finalName}.jar</lab.acceptance.lab.jar>
+    </properties>
+
     <dependencies>
         <!-- Web / JPA / Validation -->
         <dependency>
@@ -176,8 +184,42 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <includes>
+                                <include>**/*ProcessRecoveryIT.java</include>
+                            </includes>
                             <systemPropertyVariables>
                                 <recovery.jar>${project.build.directory}/${project.build.finalName}.jar</recovery.jar>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>packaged-slice</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includes>
+                                <include>**/PackagedOutpatientLabAcceptanceIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <lab.acceptance.core.jar>${lab.acceptance.core.jar}</lab.acceptance.core.jar>
+                                <lab.acceptance.gateway.jar>${lab.acceptance.gateway.jar}</lab.acceptance.gateway.jar>
+                                <lab.acceptance.eureka.jar>${lab.acceptance.eureka.jar}</lab.acceptance.eureka.jar>
+                                <lab.acceptance.clinical.jar>${lab.acceptance.clinical.jar}</lab.acceptance.clinical.jar>
+                                <lab.acceptance.lab.jar>${lab.acceptance.lab.jar}</lab.acceptance.lab.jar>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

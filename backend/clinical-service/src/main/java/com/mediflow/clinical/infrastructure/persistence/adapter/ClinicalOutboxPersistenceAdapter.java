@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.clinical.application.event.DomainEventEnvelope;
@@ -53,7 +54,9 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
 
         JsonNode payload;
         try {
-            payload = objectMapper.readTree(wirePayload);
+            payload = objectMapper.reader()
+                    .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                    .readTree(wirePayload);
         } catch (IOException malformedPayload) {
             throw new IllegalArgumentException("legacy Clinical event wire payload must be valid JSON", malformedPayload);
         }
