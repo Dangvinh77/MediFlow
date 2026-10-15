@@ -1,23 +1,39 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+model_reasoning_summary = "concise"
+model_verbosity = "medium"
+review_model = "gpt-6.1-sol"
+model_context_window = 262144
+model_auto_compact_token_limit = 196608
+model_auto_compact_token_limit_scope = "total"
+tool_output_token_limit = 12000
+project_doc_max_bytes = 65536
+web_search = "cached"
+developer_instructions = """
+When implementation is requested, use a staged workflow: the primary Sol grounds and produces the plan; implementation goes to an appropriate worker, Spring engineer, or test engineer; audit goes to a code_reviewer or java_architect. All roles follow the nearest AGENTS.md and ownership boundaries. Do not require delegation for trivial read-only questions.
+"""
+
 [features]
 hooks = true
 multi_agent = true
+memories = false
+
 [mcp_servers."codebase-memory-mcp"]
 command = "codebase-memory-mcp"
 startup_timeout_sec = 30
+tool_timeout_sec = 90
 
 [mcp_servers.mermaidchart]
 url = "https://mcp.mermaid.ai/mcp"
-
-[features.multi_agent_v2]
-enabled = true
-expose_spawn_agent_model_overrides = true
-max_concurrent_threads_per_session = 12
-wait_agent_enabled = true
-default_wait_timeout_ms = 30000
-min_wait_timeout_ms = 10000
-max_wait_timeout_ms = 300000
+enabled = false
 
 [agents]
-default_subagent_model = "gpt-5.6-luna"
+enabled = true
+default_subagent_model = "gpt-6-luna"
 default_subagent_reasoning_effort = "max"
+max_concurrent_threads_per_session = 4
 interrupt_message = true
+
+[skills]
+max_context_tokens = 6000
