@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
+import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatDecimal, formatLocalDate } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { billingApi } from "../api";
@@ -63,6 +64,7 @@ function getPaymentMethodLabel(paymentMethod: PaymentMethod | null): string {
 
 export function InvoiceLookup() {
   const router = useRouter();
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [patientId, setPatientId] = useState("");
   const [activePatientId, setActivePatientId] = useState("");
   const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
@@ -121,7 +123,16 @@ export function InvoiceLookup() {
 
   return (
     <section className="mt-6">
-      <div className="mb-4 flex justify-end"><Link href="/billing/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Lập hóa đơn</Link></div>
+      <div className="mb-4 flex flex-wrap justify-end gap-2">
+        <Link href="/billing/payment-requests" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Thanh toán khoản phí đã chọn</Link>
+        {role === "ADMIN" ? (
+          <>
+            <Link href="/billing/revenue" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Doanh thu theo khoa</Link>
+            <Link href="/billing/admin/outbox" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Phát lại outbox</Link>
+          </>
+        ) : null}
+        <Link href="/billing/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Lập hóa đơn</Link>
+      </div>
       <form
         onSubmit={onSearch}
         noValidate

@@ -1,6 +1,15 @@
 import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
-import type { CreateInvoiceRequest, InvoiceDTO, PaymentResultDTO, PayInvoiceRequest } from "./types";
+import type {
+  CompleteLedgerPaymentRequest,
+  CreateInvoiceRequest,
+  InvoiceDTO,
+  LedgerPaymentDTO,
+  OutboxReplayResult,
+  PaymentResultDTO,
+  PayInvoiceRequest,
+  RevenueByDeptDTO,
+} from "./types";
 
 export const billingApi = {
   getById: (invoiceId: string) => api.get<InvoiceDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}`),
@@ -11,4 +20,13 @@ export const billingApi = {
   create: (body: CreateInvoiceRequest) => api.post<InvoiceDTO>("/v1/billing/invoices", body),
   pay: (invoiceId: string, body: PayInvoiceRequest) =>
     api.put<PaymentResultDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}/pay`, body),
+  completeLedgerPayment: (requestId: string, body: CompleteLedgerPaymentRequest) =>
+    api.post<LedgerPaymentDTO>(`/v1/billing/payment-requests/${encodeURIComponent(requestId)}/payments`, body),
+  revenueByDepartment: (fromDate: string, toDate: string, departmentId?: string) => {
+    const params = new URLSearchParams({ fromDate, toDate });
+    if (departmentId) params.set("departmentId", departmentId);
+    return api.get<RevenueByDeptDTO[]>(`/v1/billing/revenue?${params.toString()}`);
+  },
+  replayOutboxEvent: (eventId: string) =>
+    api.post<OutboxReplayResult>(`/v1/billing/admin/outbox/${encodeURIComponent(eventId)}/replay`),
 };
