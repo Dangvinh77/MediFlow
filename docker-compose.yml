@@ -266,6 +266,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_billing
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      # MVP ngoại trú (docs/plans/05-implementation-plan.md M6-12): mở đúng các cờ Billing V1
+      # cần cho EXAM/LAB_TEST/Rx — Admission/Surgery vẫn giữ false (deferred), không bật nhầm.
+      MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED: "true"
+      MEDIFLOW_BILLING_LEDGER_ENABLED: "true"
+      MEDIFLOW_BILLING_REFUNDS_ENABLED: "true"
+      MEDIFLOW_BILLING_EXAM_CHARGE_CONSUMER_ENABLED: "true"
+      MEDIFLOW_BILLING_LAB_TEST_CHARGE_CONSUMER_ENABLED: "true"
+      MEDIFLOW_BILLING_PRESCRIPTION_CHARGE_CONSUMER_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
@@ -291,6 +299,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_notification
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      # MVP ngoại trú (M6-07): mở in-app refund notice; Surgery notice/payment-request vẫn
+      # giữ false (deferred), không bật nhầm qua global care-v1 flag.
+      MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED: "true"
+      MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
