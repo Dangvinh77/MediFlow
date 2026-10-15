@@ -18,7 +18,7 @@ public class ExternalResultPersistenceAdapter implements ExternalResultRepositor
     }
 
     @Override
-    public void attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary) {
-        repository.insertIfAbsent(recordId, type.name(), referenceId, summary);
+    public boolean attach(UUID recordId, ExternalResultType type, UUID referenceId, String summary) {
+        return repository.insertIfAbsent(recordId, type.name(), referenceId, summary) == 1;
     }
 }

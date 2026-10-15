@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import com.mediflow.lab.application.exception.ConsumerInboxConflictException;
+
 /** RabbitMQ topology and JSON serialization for Lab publishers and consumers. */
 @Configuration
 public class RabbitConfig {
@@ -100,7 +102,9 @@ public class RabbitConfig {
                 DataAccessException.class, true,
                 org.springframework.amqp.AmqpException.class, true,
                 IOException.class, true,
-                MessageConversionException.class, false), false, true);
+                MessageConversionException.class, false,
+                org.springframework.amqp.AmqpRejectAndDontRequeueException.class, false,
+                ConsumerInboxConflictException.class, false), false, true);
         return RetryInterceptorBuilder.stateless()
                 .retryPolicy(retryPolicy)
                 .backOffOptions(250, 2.0, 2000)

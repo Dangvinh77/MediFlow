@@ -26,15 +26,16 @@ public class FinancialClearanceConsumer {
             return;
         }
         validateLabTarget(payload);
+        java.util.List<java.util.UUID> sortedTestIds = payload.labTestIds().stream().sorted().toList();
         useCase.onFinancialClearance(new FinancialClearanceCommand(
                 event.eventId(), event.eventType(), event.version(), event.occurredAt(),
                 event.correlationId(), event.producer(), payload.clearanceId(), payload.invoiceId(),
                 payload.accountId(), payload.patientId(), payload.careEpisodeType(), payload.careEpisodeId(),
-                payload.purpose(), payload.labTestIds(), payload.amount(), payload.currency(),
+                payload.purpose(), sortedTestIds, payload.amount(), payload.currency(),
                 payload.expiresAt(), payload.emergencyOverride()));
     }
 
-    private static FinancialClearancePayload validate(FinancialClearanceEnvelope event) {
+    static FinancialClearancePayload validate(FinancialClearanceEnvelope event) {
         if (event == null) {
             throw new IllegalArgumentException("financial.clearance.granted event is required");
         }
@@ -66,7 +67,7 @@ public class FinancialClearanceConsumer {
         return payload;
     }
 
-    private static void validateLabTarget(FinancialClearancePayload payload) {
+    static void validateLabTarget(FinancialClearancePayload payload) {
         if (payload.labTestIds() == null || payload.labTestIds().isEmpty()
                 || payload.labTestIds().stream().anyMatch(Objects::isNull)
                 || payload.labTestIds().stream().distinct().count() != payload.labTestIds().size()) {

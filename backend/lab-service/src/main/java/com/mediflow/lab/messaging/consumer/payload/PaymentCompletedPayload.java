@@ -9,5 +9,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PaymentCompletedPayload(
         UUID eventId,
-        List<UUID> labTestIds
-) {}
+        List<UUID> labTestIds,
+        UUID invoiceId
+) {
+    public PaymentCompletedPayload(UUID eventId, List<UUID> labTestIds) {
+        this(eventId, labTestIds, null);
+    }
+}

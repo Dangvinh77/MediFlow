@@ -21,7 +21,8 @@ public record LabResultCreatedEnvelope(
     public LabResultCreatedPayload toProjection() {
         return new LabResultCreatedPayload(eventId, occurredAt, correlationId,
                 payload.labId(), payload.patientId(), payload.recordId(), payload.departmentId(),
-                payload.labType(), payload.performedDate(), payload.results(), payload.conclusion());
+                payload.labType(), payload.performedDate(), payload.results(), payload.conclusion(),
+                1, payload.careEpisodeType(), payload.careEpisodeId(), payload.resultVersion());
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,7 +31,10 @@ public record LabResultCreatedEnvelope(
             UUID patientId,
             UUID recordId,
             UUID departmentId,
+            String careEpisodeType,
+            UUID careEpisodeId,
             String labType,
+            Integer resultVersion,
             LocalDate performedDate,
             List<LabResultCreatedPayload.Result> results,
             String conclusion

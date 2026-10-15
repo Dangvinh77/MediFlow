@@ -8,6 +8,7 @@ import com.mediflow.common.exception.DuplicateResourceException;
 import com.mediflow.common.exception.ForbiddenOperationException;
 import com.mediflow.common.exception.ResourceNotFoundException;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
+import com.mediflow.lab.application.exception.LabUpstreamUnavailableException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -63,6 +64,12 @@ public class GlobalExceptionHandler {
             ForbiddenOperationException exception) {
 
         return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler(LabUpstreamUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> authorityUnavailable(LabUpstreamUnavailableException exception) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "LAB_SOURCE_ORDER_UNVERIFIED",
+                "Clinical source-order authority is temporarily unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

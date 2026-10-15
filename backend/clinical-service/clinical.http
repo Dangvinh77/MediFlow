@@ -184,9 +184,22 @@ Content-Type: application/json
 }
 
 ### Care & Finance V2 endpoints
-### These routes are registered only when MEDIFLOW_CARE_FINANCE_V2_ENABLED=true.
+### Care & Finance V2 writes require MEDIFLOW_CARE_FINANCE_V2_ENABLED=true.
+### Clinical Lab source-order creation requires both that flag and MEDIFLOW_OUTPATIENT_MVP_ENABLED=true.
 
 ### Check in and open EXAM payment gate (ADMIN/NURSE)
+### Create the authoritative Lab source order from an active outpatient examination (ADMIN/DOCTOR)
+### Clinical generates sourceOrderId; copy the returned id and context into Lab's V1 request.
+POST {{host}}/api/v1/records/00000000-0000-0000-0000-000000001002/lab-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "labType": "CBC",
+  "requestedDate": "2026-10-14",
+  "priceCode": "LAB-CBC"
+}
+
 PUT {{host}}/api/v1/appointments/00000000-0000-0000-0000-000000000001/check-in
 Authorization: Bearer {{token}}
 

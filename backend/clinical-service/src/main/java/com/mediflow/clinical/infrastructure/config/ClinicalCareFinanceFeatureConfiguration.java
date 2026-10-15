@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.out.AdmissionReferralRepositoryPort;
@@ -43,7 +44,7 @@ public class ClinicalCareFinanceFeatureConfiguration {
             StaffLookupPort staff,
             ClinicalDtoMapper mapper,
             CorrelationIdProvider correlationIds,
-            Clock clinicalCareFinanceClock,
+            @Qualifier("clinicalCareFinanceClock") Clock clinicalCareFinanceClock,
             @Value("${mediflow.features.admission-referral.enabled:false}") boolean admissionReferralsEnabled,
             OutpatientMvpMode outpatientMvpMode) {
         return new ClinicalCareFinanceApplicationService(appointments, records, clearances, overrides,

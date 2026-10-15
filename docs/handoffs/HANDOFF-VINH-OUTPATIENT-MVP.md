@@ -4,6 +4,54 @@
 
 **Scope:** Production edits are limited to `backend/clinical-service` and `backend/lab-service`. The implementation profile is opt-in as `outpatient-mvp`; the default remains `compatibility-v0` so rollback and existing V0 regression behavior remain available.
 
+## Follow-up source lock (2026-10-15)
+
+The follow-up branch `fix/vinh-lab-authority-inbox` supersedes the earlier missing-source-order and event-ID-only implementation notes below. Final verification evidence for this branch is recorded separately; the 2026-10-14 test counts are historical, not evidence for these changes.
+
+Clinical now persists an immutable, server-generated Lab order through `POST /api/v1/records/{id}/lab-orders` (ADMIN/DOCTOR). Creation requires both effective outpatient MVP mode and the Clinical care-finance gate, an OPEN record, its matching V1 appointment in IN_EXAM, and the signed assigned eligible doctor. Patient, department and outpatient episode come from Clinical's stored examination. `labType`, `priceCode` and `requestedDate` are explicit order fields; a future scheduled requested date is permitted by the existing Lab contract.
+
+`GET /api/v1/lab-orders/{sourceOrderId}/context` is an internal Lab-only lookup. It accepts only the exact GET path, a short-lived signed `lab-service` SYSTEM service token, and signed `staffId`/`originalActorRole` delegation matching the stored requesting doctor. It does not broaden Pharmacy's separate prescription-context authority. Confirmed absence is a successful `exists=false` response; forbidden actors are denied, and upstream errors or malformed responses are unavailable rather than absence.
+
+Lab's V1 create verifies every order/request identity, signed actor, episode, test type, price code and requested date before starting its local write transaction. The local test and request outbox remain atomic. The lookup requires `mediflow.lab.clinical-context.enabled=true` (`MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED`), as well as Lab's existing care-finance gate; both remain opt-in. Missing authority has no compatibility fallback. The Clinical/Lab `contracts/clinical-lab-order-context-v1/valid.json` fixtures have identical SHA-256 `B1ECB5A8DC167BA934716728119BB324649DD7EFD1B0EB80A630E9AE2C659B50`.
+
+Append-only Clinical V6 stores orders; Clinical V7 and Lab V3 add delivery/operation receipts. Receipts retain original body bytes and SHA-256, plus canonical business bytes and SHA-256. Event identity is unique across handlers within each module. An identical event is a no-op; the same operation under a new event ID is a no-op only when business evidence agrees. Reused IDs or operation keys with changed evidence are conflicts. Claim, effect and any resulting outbox writes share one transaction; failures roll them back together. Legacy effects without verifiable evidence fail closed rather than acquiring invented fingerprints. These database guarantees still require real PostgreSQL acceptance.
+
+Clinical V1 Lab results require `resultVersion=1` and the exact record/patient/department/outpatient episode before attachment. Amendments are outside this MVP. Effective outpatient MVP mode quarantines flat V0 Lab/Rx facts before receipt or effect, while their compatibility paths remain available outside MVP. Permanent conflicts/deferred evidence go to the existing durable DLQs; transient database/broker failures have bounded retry.
+
+### Dependencies still open
+
+- **Hoang Anh / Gateway:** add exactly `POST /api/v1/records/{id}/lab-orders` for ADMIN/DOCTOR to the Gateway allowlist, with wrong-role, wrong-method and extra/nested-path denial tests. Keep the internal `/api/v1/lab-orders/{id}/context` lookup unavailable to human/public Gateway callers. Clinical's downstream signed assigned-doctor checks remain mandatory. The current allowlist does not yet expose the new driving API.
+- **Huy / Pharmacy and Vinh / Clinical:** the locked V1 `prescription.filled` contract uses `dispenseId` and does not provide Clinical's required `recordId`. Agree a producer-owned exact relationship contract and same-PR fixtures/tests before enabling V1 attachment. Clinical's flat V0 attachment path must not guess a record or treat a prescription ID as a V1 dispense operation.
+- **Vinh with Billing/Gateway owners:** run real PostgreSQL/RabbitMQ migration, race, rollback, restart, DLQ and Gateway flow acceptance. Core consolidation is now present on remote master; its presence does not prove the cross-service slice has passed. No Core/Gateway production files are changed by this branch.
+
+Rollback to a pre-V7 Clinical or pre-V3 Lab binary must keep its old consumer listeners disabled after the new receipts have accepted writes. Those binaries do not understand operation/raw-body evidence. Preserve orders, receipts, outbox and DLQ contents for forward recovery; do not reset markers or delete evidence to make replay succeed.
+
+### Follow-up verification evidence
+
+Fresh verification on 2026-10-15 used Java 21.0.11, Maven 3.9.16 and the existing offline dependency cache. The branch is based on `334df99d`; remote master is nine commits ahead with Core/Gateway and frontend changes, but no Clinical/Lab source differences. Verification here does not claim a merged six-service runtime test.
+
+| Latest run | Tests | Passed | Failed/errors | Skipped | Result |
+|---|---:|---:|---:|---:|---|
+| Clinical selected suite | 301 | 284 | 0 / 0 | 17 | Clinical reactor step SUCCESS; excludes only `PrescriptionContextPostgresTest`. |
+| Lab full suite | 209 | 193 | 0 / 0 | 16 | Exit 0, BUILD SUCCESS; no Lab test exclusions. |
+| Total selected tests | 510 | 477 | 0 / 0 | 33 | Skipped container tests are not passing evidence. |
+
+The initial unrestricted owned-module run stopped in Clinical with a Docker initialization error, one stale command assertion and three controller-test context errors; Lab was not reached. The test-harness errors were corrected and the latest selected Clinical and full Lab runs above passed. `PrescriptionContextPostgresTest` still requires a running Docker engine and is excluded only from the selected Clinical run, not counted as passed or skipped there. The new five-test PostgreSQL inbox class in each module is included in the 33 skips.
+
+Commands (add `-o -Dmaven.repo.local=<existing-cache>` only when using the offline cache):
+
+```text
+mvn -pl backend/clinical-service,backend/lab-service -am -Dtest=*,!PrescriptionContextPostgresTest -Dsurefire.failIfNoSpecifiedTests=false test
+mvn -pl backend/lab-service -am test
+mvn -pl backend/clinical-service,backend/lab-service -am -DskipTests package
+```
+
+The first command reached Clinical SUCCESS before a now-fixed Lab test-compile issue. Clinical production code did not change afterward. The second command is the fresh successful Lab evidence. Packaging compiles both modules and their final test sources; it does not execute container acceptance. Sol 5.6 high completed static review; its last `labTestIds` canonical-order finding is fixed and covered by the passing Clinical factory test. No full MVP or PostgreSQL/RabbitMQ/Gateway acceptance is claimed.
+
+## Initial PR #366 baseline (historical)
+
+The remaining sections describe the first implementation at `334df99d`. The follow-up source lock above replaces its missing-authority and event-ID-only notes; its original test evidence is retained for traceability.
+
 ## Locked source fixtures
 
 The following Clinical-owned fixtures are the checked-in golden inputs for this slice. Their SHA-256 values make source changes reviewable; refresh them only from a producer acceptance test and update the owning consumer test in the same change.

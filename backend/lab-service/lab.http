@@ -63,6 +63,24 @@ Content-Type: application/json
 }
 
 ### Bắt đầu sau clearance chính xác đã tới Lab (200 — role ADMIN/LAB_TECH)
+### Submit an outpatient V1 request using sourceOrderId returned by Clinical (ADMIN/DOCTOR)
+### The signed human actor, record, patient, department, episode, labType, date and priceCode must match Clinical.
+POST {{host}}/api/v1/lab
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recordId": "00000000-0000-0000-0000-000000001002",
+  "patientId": "00000000-0000-0000-0000-000000001003",
+  "requestingDepartmentId": "00000000-0000-0000-0000-000000001005",
+  "sourceOrderId": "{{sourceOrderId}}",
+  "careEpisodeType": "OUTPATIENT_VISIT",
+  "careEpisodeId": "00000000-0000-0000-0000-000000001006",
+  "labType": "CBC",
+  "priceCode": "LAB-CBC",
+  "requestedDate": "2026-10-14"
+}
+
 PUT {{host}}/api/v1/lab/00000000-0000-0000-0000-000000000000/start
 Authorization: Bearer {{token}}
 Content-Type: application/json

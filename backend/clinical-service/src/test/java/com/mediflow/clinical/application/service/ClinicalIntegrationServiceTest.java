@@ -1,93 +1,101 @@
 package com.mediflow.clinical.application.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
 import com.mediflow.clinical.application.dto.command.PrescriptionFilledCommand;
+import com.mediflow.clinical.application.exception.ConsumerInboxConflictException;
 import com.mediflow.clinical.application.port.in.AttachExternalResultUseCase;
-import com.mediflow.clinical.application.port.out.ProcessedEventPort;
+import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
+import com.mediflow.clinical.domain.model.CareEpisodeType;
+import com.mediflow.clinical.domain.model.MedicalRecord;
 
 class ClinicalIntegrationServiceTest {
 
     private final AttachExternalResultUseCase attachments = mock(AttachExternalResultUseCase.class);
-    private final ProcessedEventPort processedEvents = mock(ProcessedEventPort.class);
-    private final ClinicalIntegrationService service =
-            new ClinicalIntegrationService(attachments, processedEvents);
+    private final MedicalRecordRepositoryPort records = mock(MedicalRecordRepositoryPort.class);
+    private final ClinicalIntegrationService service = new ClinicalIntegrationService(attachments, records);
 
     @Test
-    void onLabResultCreated_claimedEvent_attachesOnce() {
-        LabResultCreatedCommand command = command();
-        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(true);
+    void onLabResultCreated_legacyV0AttachesOnce() {
+        LabResultCreatedCommand command = new LabResultCreatedCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+                .thenReturn(true);
 
         service.onLabResultCreated(command);
 
-        InOrder order = inOrder(processedEvents, attachments);
-        order.verify(processedEvents).tryClaim(command.eventId(), "lab.result.created");
-        order.verify(attachments, times(1)).attachLabResult(
-                command.recordId(), command.labId(), command.conclusion());
+        verify(attachments).attachLabResult(command.recordId(), command.labId(), command.conclusion());
     }
 
     @Test
-    void onLabResultCreated_unclaimedEvent_doesNotAttach() {
-        LabResultCreatedCommand command = command();
-        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(false);
+    void onLabResultCreated_v1RequiresTheRecordPatientDepartmentAndEpisodeToMatch() {
+        UUID recordId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID departmentId = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        MedicalRecord record = mock(MedicalRecord.class);
+        when(record.getPatientId()).thenReturn(patientId);
+        when(record.getDepartmentId()).thenReturn(departmentId);
+        when(record.getAppointmentId()).thenReturn(appointmentId);
+        when(record.getRecordId()).thenReturn(recordId);
+        when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
+        LabResultCreatedCommand command = new LabResultCreatedCommand(UUID.randomUUID(), recordId,
+                UUID.randomUUID(), "Normal", 1, patientId, departmentId,
+                CareEpisodeType.OUTPATIENT_VISIT, appointmentId, 1);
+        when(attachments.attachLabResult(recordId, command.labId(), "Normal")).thenReturn(true);
 
         service.onLabResultCreated(command);
 
-        verifyNoInteractions(attachments);
+        verify(records).findByIdForUpdate(recordId);
+        verify(attachments).attachLabResult(recordId, command.labId(), "Normal");
     }
 
     @Test
-    void onLabResultCreated_attachmentFails_propagatesAfterClaim() {
-        LabResultCreatedCommand command = command();
-        when(processedEvents.tryClaim(command.eventId(), "lab.result.created")).thenReturn(true);
-        doThrow(new IllegalStateException("database unavailable"))
-                .when(attachments).attachLabResult(
-                        command.recordId(), command.labId(), command.conclusion());
+    void onLabResultCreated_v1WrongEpisodeIsAConflictBeforeAttachment() {
+        UUID recordId = UUID.randomUUID();
+        UUID appointmentId = UUID.randomUUID();
+        MedicalRecord record = mock(MedicalRecord.class);
+        when(record.getPatientId()).thenReturn(UUID.randomUUID());
+        when(record.getDepartmentId()).thenReturn(UUID.randomUUID());
+        when(record.getAppointmentId()).thenReturn(appointmentId);
+        when(record.getRecordId()).thenReturn(recordId);
+        when(records.findByIdForUpdate(recordId)).thenReturn(Optional.of(record));
+        LabResultCreatedCommand command = new LabResultCreatedCommand(UUID.randomUUID(), recordId,
+                UUID.randomUUID(), "Normal", 1, record.getPatientId(), record.getDepartmentId(),
+                CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(), 1);
 
         assertThatThrownBy(() -> service.onLabResultCreated(command))
-                .isInstanceOf(IllegalStateException.class);
-        verify(processedEvents).tryClaim(command.eventId(), "lab.result.created");
+                .isInstanceOf(ConsumerInboxConflictException.class);
     }
 
     @Test
-    void onPrescriptionFilled_claimedEvent_attachesPrescriptionOnce() {
-        PrescriptionFilledCommand command = new PrescriptionFilledCommand(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-        when(processedEvents.tryClaim(command.eventId(), "prescription.filled")).thenReturn(true);
-
-        service.onPrescriptionFilled(command);
-
-        InOrder order = inOrder(processedEvents, attachments);
-        order.verify(processedEvents).tryClaim(command.eventId(), "prescription.filled");
-        order.verify(attachments).attachPrescription(command.recordId(), command.prescriptionId());
-    }
-
-    @Test
-    void onPrescriptionFilled_duplicateEvent_doesNotAttach() {
-        PrescriptionFilledCommand command = new PrescriptionFilledCommand(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-        when(processedEvents.tryClaim(command.eventId(), "prescription.filled")).thenReturn(false);
-
-        service.onPrescriptionFilled(command);
-
-        verifyNoInteractions(attachments);
-    }
-
-    private LabResultCreatedCommand command() {
-        return new LabResultCreatedCommand(
+    void onLabResultCreated_missingMaterialEffectIsAConflict() {
+        LabResultCreatedCommand command = new LabResultCreatedCommand(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
+        when(attachments.attachLabResult(command.recordId(), command.labId(), command.conclusion()))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> service.onLabResultCreated(command))
+                .isInstanceOf(ConsumerInboxConflictException.class);
+    }
+
+    @Test
+    void onPrescriptionFilled_requiresAnInsertedAttachment() {
+        PrescriptionFilledCommand command = new PrescriptionFilledCommand(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        when(attachments.attachPrescription(command.recordId(), command.prescriptionId())).thenReturn(true);
+
+        service.onPrescriptionFilled(command);
+
+        verify(attachments).attachPrescription(command.recordId(), command.prescriptionId());
     }
 }

@@ -3,6 +3,7 @@ package com.mediflow.lab.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -24,6 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.mediflow.common.exception.DuplicateResourceException;
+import com.mediflow.common.exception.ResourceNotFoundException;
+import com.mediflow.common.exception.ForbiddenOperationException;
+import com.mediflow.lab.application.dto.context.LabClinicalOrderContext;
+import com.mediflow.lab.application.exception.LabUpstreamUnavailableException;
 import com.mediflow.lab.application.dto.command.FinancialClearanceCommand;
 import com.mediflow.lab.application.dto.request.AddResultRequest;
 import com.mediflow.lab.application.dto.request.CancelLabTestRequest;
@@ -39,6 +44,7 @@ import com.mediflow.lab.application.port.out.AuthenticatedStaffContext;
 import com.mediflow.lab.application.port.out.AuthenticatedStaffContextPort;
 import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
+import com.mediflow.lab.application.port.out.LabClinicalOrderContextPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
@@ -97,17 +103,152 @@ class LabCareFinanceV2ApplicationServiceTest {
 
     @Test
     void outpatientMvp_v1CreateFailsClosedUntilClinicalOrderAuthorityExists() {
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(
+                new AuthenticatedStaffContext(UUID.randomUUID(), "DOCTOR")));
         LabApplicationService outpatient = new LabApplicationService(tests, compatibilityEvents, mapper,
                 correlations, outbox, clearances, overrides, authenticatedStaff, true, true,
                 Clock.fixed(NOW, ZoneOffset.UTC));
 
         assertThatThrownBy(() -> outpatient.create(v2Request(UUID.randomUUID(), UUID.randomUUID())))
-                .isInstanceOf(LabRuleException.class)
-                .extracting(LabRuleException.class::cast)
-                .extracting(LabRuleException::getCode)
-                .isEqualTo("LAB_SOURCE_ORDER_UNVERIFIED");
+                .isInstanceOf(LabUpstreamUnavailableException.class);
         verify(tests, never()).save(any());
         verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void outpatientMvp_v1AcceptsOnlyExactPersistedClinicalOrderAndVerifiedDoctor() {
+        UUID orderId = UUID.fromString("00000000-0000-0000-0000-000000001001");
+        UUID recordId = UUID.fromString("00000000-0000-0000-0000-000000001002");
+        UUID patientId = UUID.fromString("00000000-0000-0000-0000-000000001003");
+        UUID doctorId = UUID.fromString("00000000-0000-0000-0000-000000001004");
+        UUID departmentId = UUID.fromString("00000000-0000-0000-0000-000000001005");
+        UUID episodeId = UUID.fromString("00000000-0000-0000-0000-000000001006");
+        UUID correlationId = UUID.fromString("00000000-0000-0000-0000-000000001099");
+        AuthenticatedStaffContext actor = new AuthenticatedStaffContext(doctorId, "DOCTOR");
+        LabClinicalOrderContextPort contexts = mock(LabClinicalOrderContextPort.class);
+        com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation = mock(
+                com.mediflow.lab.application.port.in.CreateLabRequestUseCase.class);
+        LabClinicalOrderContext authority = new LabClinicalOrderContext(orderId, recordId, patientId, doctorId,
+                departmentId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "CBC", REQUESTED_DATE,
+                "LAB-CBC", NOW.minusSeconds(1), NOW);
+        CreateLabRequest request = new CreateLabRequest(recordId, patientId, departmentId, "CBC",
+                REQUESTED_DATE, orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC");
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(actor));
+        when(correlations.currentOrCreate()).thenReturn(correlationId);
+        when(contexts.findById(orderId, correlationId.toString(), actor)).thenReturn(Optional.of(authority));
+        when(creation.createCareFinance(request, correlationId.toString())).thenReturn(null);
+
+        LabApplicationService outpatient = outpatient(contexts, creation);
+
+        outpatient.create(request);
+
+        verify(contexts).findById(orderId, correlationId.toString(), actor);
+        verify(creation).createCareFinance(request, correlationId.toString());
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void outpatientMvp_v1RejectsEveryCallerFieldThatDiffersFromClinicalAuthority() {
+        UUID orderId = UUID.fromString("00000000-0000-0000-0000-000000001001");
+        UUID recordId = UUID.fromString("00000000-0000-0000-0000-000000001002");
+        UUID patientId = UUID.fromString("00000000-0000-0000-0000-000000001003");
+        UUID doctorId = UUID.fromString("00000000-0000-0000-0000-000000001004");
+        UUID departmentId = UUID.fromString("00000000-0000-0000-0000-000000001005");
+        UUID episodeId = UUID.fromString("00000000-0000-0000-0000-000000001006");
+        AuthenticatedStaffContext actor = new AuthenticatedStaffContext(doctorId, "DOCTOR");
+        LabClinicalOrderContextPort contexts = mock(LabClinicalOrderContextPort.class);
+        com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation = mock(
+                com.mediflow.lab.application.port.in.CreateLabRequestUseCase.class);
+        LabClinicalOrderContext authority = new LabClinicalOrderContext(orderId, recordId, patientId, doctorId,
+                departmentId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "CBC", REQUESTED_DATE,
+                "LAB-CBC", NOW.minusSeconds(1), NOW);
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(actor));
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+        when(contexts.findById(any(UUID.class), anyString(), any())).thenReturn(Optional.of(authority));
+        LabApplicationService outpatient = outpatient(contexts, creation);
+        List<CreateLabRequest> changedRequests = List.of(
+                new CreateLabRequest(UUID.randomUUID(), patientId, departmentId, "CBC", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, UUID.randomUUID(), departmentId, "CBC", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, UUID.randomUUID(), "CBC", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, departmentId, "BMP", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, departmentId, "CBC", REQUESTED_DATE.plusDays(1),
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, departmentId, "CBC", REQUESTED_DATE,
+                        UUID.randomUUID(), CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, departmentId, "CBC", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(), "LAB-CBC"),
+                new CreateLabRequest(recordId, patientId, departmentId, "CBC", REQUESTED_DATE,
+                        orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-OTHER"));
+
+        for (CreateLabRequest changed : changedRequests) {
+            assertThatThrownBy(() -> outpatient.create(changed)).isInstanceOf(LabRuleException.class)
+                    .extracting(LabRuleException.class::cast).extracting(LabRuleException::getCode)
+                    .isEqualTo("LAB_SOURCE_ORDER_MISMATCH");
+        }
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(
+                new AuthenticatedStaffContext(UUID.randomUUID(), "DOCTOR")));
+        assertThatThrownBy(() -> outpatient.create(new CreateLabRequest(recordId, patientId, departmentId,
+                "CBC", REQUESTED_DATE, orderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC")))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast).extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_SOURCE_ORDER_MISMATCH");
+        verify(creation, never()).createCareFinance(any(), anyString());
+        verifyNoInteractions(tests, outbox);
+    }
+
+    @Test
+    void outpatientMvp_v1RejectsAdmissionOrdersBeforeClinicalLookup() {
+        LabClinicalOrderContextPort contexts = mock(LabClinicalOrderContextPort.class);
+        com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation = mock(
+                com.mediflow.lab.application.port.in.CreateLabRequestUseCase.class);
+        LabApplicationService outpatient = outpatient(contexts, creation);
+        CreateLabRequest admission = new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "CBC", REQUESTED_DATE, UUID.randomUUID(), CareEpisodeType.ADMISSION, UUID.randomUUID(), "LAB-CBC");
+
+        assertThatThrownBy(() -> outpatient.create(admission)).isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast).extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_ADMISSION_DEFERRED");
+        verifyNoInteractions(contexts, creation, tests, outbox);
+    }
+
+    @Test
+    void outpatientMvp_v1RequiresVerifiedDoctorOrAdministrator() {
+        LabClinicalOrderContextPort contexts = mock(LabClinicalOrderContextPort.class);
+        com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation = mock(
+                com.mediflow.lab.application.port.in.CreateLabRequestUseCase.class);
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.empty());
+        LabApplicationService outpatient = outpatient(contexts, creation);
+
+        assertThatThrownBy(() -> outpatient.create(v2Request(UUID.randomUUID(), UUID.randomUUID())))
+                .isInstanceOf(ForbiddenOperationException.class);
+        verifyNoInteractions(contexts, creation, tests, outbox);
+    }
+
+    @Test
+    void outpatientMvp_v1TreatsConfirmedAbsenceAndUpstreamFailureSeparately() {
+        UUID orderId = UUID.randomUUID();
+        UUID episodeId = UUID.randomUUID();
+        LabClinicalOrderContextPort contexts = mock(LabClinicalOrderContextPort.class);
+        com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation = mock(
+                com.mediflow.lab.application.port.in.CreateLabRequestUseCase.class);
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(
+                new AuthenticatedStaffContext(UUID.randomUUID(), "DOCTOR")));
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+        when(contexts.findById(eq(orderId), anyString(), any())).thenReturn(Optional.empty());
+        LabApplicationService outpatient = outpatient(contexts, creation);
+        CreateLabRequest request = v2Request(orderId, episodeId);
+
+        assertThatThrownBy(() -> outpatient.create(request)).isInstanceOf(ResourceNotFoundException.class)
+                .extracting(ResourceNotFoundException.class::cast)
+                .extracting(ResourceNotFoundException::getCode).isEqualTo("LAB_SOURCE_ORDER_NOT_FOUND");
+        when(contexts.findById(eq(orderId), anyString(), any())).thenThrow(new LabUpstreamUnavailableException());
+        assertThatThrownBy(() -> outpatient.create(request)).isInstanceOf(LabUpstreamUnavailableException.class);
+        verify(creation, never()).createCareFinance(any(), anyString());
+        verifyNoInteractions(tests, outbox);
     }
 
     @Test
@@ -359,6 +500,13 @@ class LabCareFinanceV2ApplicationServiceTest {
     private static CreateLabRequest v2Request(UUID sourceOrderId, UUID episodeId) {
         return new CreateLabRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "CBC",
                 REQUESTED_DATE, sourceOrderId, CareEpisodeType.OUTPATIENT_VISIT, episodeId, "LAB-CBC");
+    }
+
+    private LabApplicationService outpatient(LabClinicalOrderContextPort contexts,
+            com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation) {
+        return new LabApplicationService(tests, compatibilityEvents, mapper, correlations, outbox,
+                clearances, overrides, authenticatedStaff, true, true, Clock.fixed(NOW, ZoneOffset.UTC),
+                contexts, creation);
     }
 
     private static LabTest v2Test() {

@@ -3,6 +3,7 @@ package com.mediflow.lab.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.common.security.JwtClaims;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
+import com.mediflow.lab.application.exception.LabUpstreamUnavailableException;
 import com.mediflow.lab.domain.exception.LabRuleException;
 import com.mediflow.lab.domain.exception.LabTestNotFoundException;
 import com.mediflow.lab.domain.model.LabTestStatus;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -115,6 +117,21 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INTERNAL_ERROR"))
                 .andExpect(jsonPath("$.error.message").value("Đã xảy ra lỗi hệ thống"))
+                .andDo(this::assertCorrelationIdMatchesHeader);
+    }
+
+    @Test
+    @WithMockUser(roles = "DOCTOR")
+    void clinicalAuthorityUnavailable_returns503WithoutTreatingItAsAbsence() throws Exception {
+        when(manageLabTestUseCase.create(any())).thenThrow(new LabUpstreamUnavailableException());
+
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"recordId\":\"00000000-0000-0000-0000-000000000001\","
+                                + "\"patientId\":\"00000000-0000-0000-0000-000000000002\","
+                                + "\"requestingDepartmentId\":\"00000000-0000-0000-0000-000000000003\","
+                                + "\"labType\":\"CBC\",\"requestedDate\":\"2026-09-20\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error.code").value("LAB_SOURCE_ORDER_UNVERIFIED"))
                 .andDo(this::assertCorrelationIdMatchesHeader);
     }
 

@@ -21,13 +21,15 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mediflow.clinical.application.dto.command.ConsumerInboxClaim;
 import com.mediflow.clinical.application.port.in.AttachExternalResultUseCase;
 import com.mediflow.clinical.application.port.in.ReactToLabResultUseCase;
 import com.mediflow.clinical.domain.model.ExternalResultType;
 import com.mediflow.clinical.infrastructure.persistence.adapter.ExternalResultPersistenceAdapter;
+import com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactory;
 
-/** PostgreSQL transaction coverage for claim rollback followed by redelivery retry. */
+/** PostgreSQL transaction coverage for atomic receipt/effect rollback and redelivery. */
 @SpringBootTest(properties = {
         "eureka.client.enabled=false",
         "spring.rabbitmq.listener.simple.auto-startup=false",
@@ -40,22 +42,19 @@ class ClinicalIntegrationTransactionTest {
     @ServiceConnection
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    @Autowired
-    private ReactToLabResultUseCase integration;
-
-    @Autowired
-    private ExternalResultPersistenceAdapter externalResults;
-
-    @Autowired
-    private JdbcTemplate jdbc;
+    @Autowired private ReactToLabResultUseCase integration;
+    @Autowired private ConsumerInboxBoundary inbox;
+    @Autowired private InboxEvidenceFactory evidenceFactory;
+    @Autowired private ExternalResultPersistenceAdapter externalResults;
+    @Autowired private JdbcTemplate jdbc;
 
     @MockBean
     private AttachExternalResultUseCase attachments;
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void failedAttachment_rollsBackClaimAndRetryCommitsOneEffect() {
-        assertThat(AopUtils.isAopProxy(integration)).isTrue();
+    void failedEffect_rollsBackDeliveryAndOperationThenRetryCommitsOneAttachment() {
+        assertThat(AopUtils.isAopProxy(inbox)).isTrue();
 
         UUID eventId = UUID.randomUUID();
         UUID recordId = UUID.randomUUID();
@@ -68,20 +67,31 @@ class ClinicalIntegrationTransactionTest {
                 throw new IllegalStateException("database unavailable");
             }
             externalResults.attach(recordId, ExternalResultType.LAB, labId, "Normal");
-            return null;
+            return true;
         }).when(attachments).attachLabResult(recordId, labId, "Normal");
 
-        LabResultCreatedCommand command = new LabResultCreatedCommand(
-                eventId, recordId, labId, "Normal");
+        byte[] body = ("{\"eventId\":\"" + eventId + "\",\"eventType\":\"lab.result.created\","
+                + "\"recordId\":\"" + recordId + "\",\"labId\":\"" + labId
+                + "\",\"conclusion\":\"Normal\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        ConsumerInboxClaim claim = evidenceFactory.create("clinical-lab-result", "lab.result.created",
+                eventId, "clinical:lab-result:v0:" + labId, body);
 
-        assertThatThrownBy(() -> integration.onLabResultCreated(command))
+        assertThatThrownBy(() -> inbox.execute(claim, () -> integration.onLabResultCreated(
+                new com.mediflow.clinical.application.dto.command.LabResultCreatedCommand(
+                        eventId, recordId, labId, "Normal"))))
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(count("processed_event", eventId)).isZero();
+        assertThat(count("consumer_inbox_delivery", eventId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_operation WHERE operation_key = ?",
+                Integer.class, "clinical:lab-result:v0:" + labId)).isZero();
 
-        integration.onLabResultCreated(command);
+        inbox.execute(claim, () -> integration.onLabResultCreated(
+                new com.mediflow.clinical.application.dto.command.LabResultCreatedCommand(
+                        eventId, recordId, labId, "Normal")));
 
         assertThat(attempts).hasValue(2);
-        assertThat(count("processed_event", eventId)).isOne();
+        assertThat(count("consumer_inbox_delivery", eventId)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_operation WHERE operation_key = ?",
+                Integer.class, "clinical:lab-result:v0:" + labId)).isOne();
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM attached_result WHERE record_id = ? AND type = ? AND reference_id = ?",
                 Integer.class, recordId, "LAB", labId)).isOne();
@@ -97,7 +107,7 @@ class ClinicalIntegrationTransactionTest {
     }
 
     private int count(String table, UUID eventId) {
-        return jdbc.queryForObject(
-                "SELECT count(*) FROM " + table + " WHERE event_id = ?", Integer.class, eventId);
+        return jdbc.queryForObject("SELECT count(*) FROM " + table + " WHERE event_id = ?",
+                Integer.class, eventId);
     }
 }

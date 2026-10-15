@@ -21,7 +21,7 @@ public class MedicalRecordCreatedConsumer {
                 payload.eventId(), payload.recordId(), payload.patientId(), payload.departmentId()));
     }
 
-    private static void validate(MedicalRecordCreatedPayload payload) {
+    static void validate(MedicalRecordCreatedPayload payload) {
         if (payload == null) {
             throw new IllegalArgumentException("medicalrecord.created payload is required");
         }

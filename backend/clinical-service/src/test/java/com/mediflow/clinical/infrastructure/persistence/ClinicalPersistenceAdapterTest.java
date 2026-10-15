@@ -2,8 +2,6 @@ package com.mediflow.clinical.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,17 +15,10 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.mediflow.clinical.application.dto.command.LabResultCreatedCommand;
-import com.mediflow.clinical.application.port.in.AttachExternalResultUseCase;
-import com.mediflow.clinical.application.service.ClinicalIntegrationService;
 import com.mediflow.clinical.domain.model.Appointment;
 import com.mediflow.clinical.domain.model.Diagnosis;
 import com.mediflow.clinical.domain.model.ExternalResultType;
@@ -57,7 +48,6 @@ class ClinicalPersistenceAdapterTest {
     @Autowired ExternalResultPersistenceAdapter externalResults;
     @Autowired ProcessedEventPersistenceAdapter processedEvents;
     @Autowired JdbcTemplate jdbc;
-    @Autowired PlatformTransactionManager transactionManager;
 
     @Test
     void recordRoundTrip_preservesDiagnosesAndAppointmentReference() {
@@ -144,27 +134,6 @@ class ClinicalPersistenceAdapterTest {
                 "SELECT count(*) FROM processed_event WHERE event_id = ?",
                 Integer.class, eventId);
         assertThat(count).isEqualTo(1);
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void attachmentFailure_rollsBackClaimInSameTransaction() {
-        AttachExternalResultUseCase attachments = mock(AttachExternalResultUseCase.class);
-        ClinicalIntegrationService integration = new ClinicalIntegrationService(attachments, processedEvents);
-        LabResultCreatedCommand command = new LabResultCreatedCommand(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Normal");
-        doThrow(new IllegalStateException("database unavailable"))
-                .when(attachments).attachLabResult(
-                        command.recordId(), command.labId(), command.conclusion());
-
-        assertThatThrownBy(() -> new TransactionTemplate(transactionManager)
-                .executeWithoutResult(status -> integration.onLabResultCreated(command)))
-                .isInstanceOf(IllegalStateException.class);
-
-        Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM processed_event WHERE event_id = ?",
-                Integer.class, command.eventId());
-        assertThat(count).isZero();
     }
 
     private static MedicalRecord recordFor(Appointment appointment, String diagnosis) {

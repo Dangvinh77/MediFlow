@@ -24,18 +24,28 @@ class PaymentCompletedConsumerTest {
         UUID eventId = UUID.randomUUID();
         List<UUID> labTestIds = List.of(UUID.randomUUID(), UUID.randomUUID());
 
-        consumer.consume(new PaymentCompletedPayload(eventId, labTestIds));
+        consumer.consume(new PaymentCompletedPayload(eventId, labTestIds, UUID.randomUUID()));
 
         verify(useCase).onPaymentCompleted(new PaymentCompletedCommand(eventId, labTestIds));
     }
 
     @Test
     void consume_missingLabTestIds_rejectsBeforeUseCase() {
-        PaymentCompletedPayload payload = new PaymentCompletedPayload(UUID.randomUUID(), null);
+        PaymentCompletedPayload payload = new PaymentCompletedPayload(UUID.randomUUID(), null, UUID.randomUUID());
 
         assertThatThrownBy(() -> consumer.consume(payload))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("labTestIds");
+        verifyNoInteractions(useCase);
+    }
+
+    @Test
+    void consume_emptyLabTestIds_rejectsReceiptWithoutMaterialEffect() {
+        PaymentCompletedPayload payload = new PaymentCompletedPayload(UUID.randomUUID(), List.of(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> consumer.consume(payload))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("nonempty");
         verifyNoInteractions(useCase);
     }
 }
