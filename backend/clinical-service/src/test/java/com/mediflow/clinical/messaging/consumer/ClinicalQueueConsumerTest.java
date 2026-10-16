@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
@@ -29,6 +31,55 @@ import com.mediflow.clinical.infrastructure.config.RabbitConfig;
 import com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactory;
 
 class ClinicalQueueConsumerTest {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"version", "producer", "eventType", "sourceId", "careContext",
+            "careEpisodeType", "dispenseId", "filledAt", "patientId", "departmentId", "careEpisodeId",
+            "admissionId"})
+    void malformedPrescriptionV1CannotClaimInboxOrAttach(String field) throws Exception {
+        var root = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(
+                java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                    "../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json")));
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) root.path("payload");
+        switch (field) {
+            case "version" -> root.put("version", "1");
+            case "producer", "eventType" -> root.put(field, "wrong");
+            case "sourceId", "admissionId" -> payload.put(field, UUID.randomUUID().toString());
+            case "careContext", "careEpisodeType" -> payload.put(field, "INPATIENT");
+            default -> payload.putNull(field);
+        }
+        assertThatThrownBy(() -> consumer(true).consume(message(RabbitConfig.PRESCRIPTION_FILLED,
+                objectMapper.writeValueAsString(root)))).isInstanceOf(MessageConversionException.class);
+        verifyNoInteractions(inbox, prescriptions);
+    }
+
+    @Test
+    void prescriptionOperationUsesDispenseIdentityRatherThanRecordIdentity() throws Exception {
+        var root = (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(
+                java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                    "../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json")));
+        UUID dispenseId = UUID.randomUUID();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) root.path("payload")).put("dispenseId", dispenseId.toString());
+        consumer(true).consume(message(RabbitConfig.PRESCRIPTION_FILLED, objectMapper.writeValueAsString(root)));
+        verify(inbox).execute(argThat(claim -> claim.operationKey().equals("clinical:prescription:v1:" + dispenseId)),
+                any(Runnable.class));
+    }
+
+    @Test
+    void outpatientMvp_acceptsOriginalPharmacyFilledBytesWithDispenseOperation() throws IOException {
+        byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json"));
+        String raw = new String(bytes, StandardCharsets.UTF_8);
+        consumer(true).consume(message(RabbitConfig.PRESCRIPTION_FILLED, raw));
+        verify(prescriptions).consume(argThat(payload ->
+                UUID.fromString("10000000-0000-4000-8000-000000000005").equals(payload.recordId())
+                        && UUID.fromString("10000000-0000-4000-8000-000000000001").equals(payload.prescriptionId())));
+        ArgumentCaptor<ConsumerInboxClaim> claim = ArgumentCaptor.forClass(ConsumerInboxClaim.class);
+        verify(inbox).execute(claim.capture(), any(Runnable.class));
+        assertThat(claim.getValue().operationKey())
+                .isEqualTo("clinical:prescription:v1:10000000-0000-4000-8000-000000000005");
+        assertThat(claim.getValue().rawBody()).isEqualTo(bytes);
+    }
 
     private final LabResultCreatedConsumer labResults = mock(LabResultCreatedConsumer.class);
     private final PrescriptionFilledConsumer prescriptions = mock(PrescriptionFilledConsumer.class);

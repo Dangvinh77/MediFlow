@@ -16,6 +16,19 @@ class InboxEvidenceFactoryTest {
     private final InboxEvidenceFactory factory = new InboxEvidenceFactory(new ObjectMapper());
 
     @Test
+    void prescriptionV1PriceSnapshotsRetainDecimalPrecision() {
+        UUID eventId = UUID.randomUUID();
+        String prefix = "{\"eventId\":\"" + eventId + "\",\"payload\":{\"totalAmount\":";
+        var first = factory.create("clinical-prescription", "prescription.filled", eventId,
+                "clinical:prescription:v1:" + UUID.randomUUID(),
+                (prefix + "999999999999999.99}}").getBytes(StandardCharsets.UTF_8));
+        var changed = factory.create("clinical-prescription", "prescription.filled", eventId,
+                first.operationKey(),
+                (prefix + "999999999999999.98}}").getBytes(StandardCharsets.UTF_8));
+        assertThat(first.canonicalBusinessBytes()).isNotEqualTo(changed.canonicalBusinessBytes());
+    }
+
+    @Test
     void canonicalBusinessBytesSortObjectsAndDropOnlyVolatileEnvelopeFields() throws Exception {
         byte[] body = ("{\"payload\":{\"z\":2,\"a\":[{\"y\":1,\"x\":0}]},"
                 + "\"producer\":\"lab-service\",\"correlationId\":\"corr-1\","

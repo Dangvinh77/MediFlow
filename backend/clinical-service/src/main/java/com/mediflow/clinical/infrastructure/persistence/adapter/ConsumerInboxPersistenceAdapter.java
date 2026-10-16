@@ -98,9 +98,16 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                     labId);
         }
         if (key.startsWith("clinical:prescription:v0:")) {
+            lockPrescriptionReference(uuidPart(key.substring("clinical:prescription:v0:".length())));
             return exists("SELECT EXISTS(SELECT 1 FROM attached_result "
                     + "WHERE type = 'PRESCRIPTION' AND reference_id = ?)",
                     uuidPart(key.substring("clinical:prescription:v0:".length())));
+        }
+        if (key.startsWith("clinical:prescription:v1:")) {
+            UUID prescriptionId = claim.legacyEffectIds().getFirst();
+            lockPrescriptionReference(prescriptionId);
+            return exists("SELECT EXISTS(SELECT 1 FROM attached_result "
+                    + "WHERE type = 'PRESCRIPTION' AND reference_id = ?)", prescriptionId);
         }
         if (key.startsWith("clinical:clearance:v1:")) {
             return exists("SELECT EXISTS(SELECT 1 FROM exam_clearance WHERE clearance_id = ?)",
@@ -114,6 +121,11 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                 Boolean.class, "clinical:lab-result-reference:" + labId);
     }
 
+    private void lockPrescriptionReference(UUID prescriptionId) {
+        jdbc.queryForObject("SELECT pg_advisory_xact_lock(hashtextextended(?, 0)) IS NULL",
+                Boolean.class, "clinical:prescription-reference:" + prescriptionId);
+    }
+
     private void requireKnownContract(ConsumerInboxClaim claim) {
         String key = claim.operationKey();
         boolean known = ("clinical-lab-result".equals(claim.consumerName())
@@ -122,7 +134,9 @@ public class ConsumerInboxPersistenceAdapter implements ConsumerInboxPort {
                             "clinical:lab-result:v1:[0-9a-fA-F-]{36}:1")))
                 || ("clinical-prescription".equals(claim.consumerName())
                     && "prescription.filled".equals(claim.routingKey())
-                    && key.matches("clinical:prescription:v0:[0-9a-fA-F-]{36}"))
+                    && (key.matches("clinical:prescription:v0:[0-9a-fA-F-]{36}")
+                        || key.matches("clinical:prescription:v1:[0-9a-fA-F-]{36}")
+                            && claim.legacyEffectIds().size() == 1))
                 || ("clinical-exam-clearance".equals(claim.consumerName())
                     && "financial.clearance.granted".equals(claim.routingKey())
                     && key.matches("clinical:clearance:v1:[0-9a-fA-F-]{36}"));
