@@ -161,16 +161,10 @@ export function DrugCatalog() {
             {keyword ? "Tìm theo tên: “" + keyword + "”" : "Giá và tồn kho hiện tại"}
           </p>
         </div>
-        <form onSubmit={submitSearch} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end xl:w-2/3">
-          <div className="min-w-0">
-            <label htmlFor="drug-keyword" className="mb-1 block text-xs font-medium">Tìm theo tên thuốc</label>
-            <input key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Ví dụ: Paracetamol" className={controlClassName} />
-          </div>
-          <div>
-            <label htmlFor="drug-page-size" className="mb-1 block text-xs font-medium">Số dòng</label>
-            <select id="drug-page-size" value={query.size} onChange={(event) => selectSize(event.target.value)} className={controlClassName}>
-              {DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
-            </select>
+        <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-center xl:w-3/5">
+          <div className="min-w-0 flex-1">
+            <label htmlFor="drug-keyword" className="sr-only">Tìm theo tên thuốc</label>
+            <input key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Tìm theo tên thuốc" className={controlClassName} />
           </div>
           <Button type="submit" variant="primary" disabled={loading}>Tìm kiếm</Button>
         </form>
@@ -191,10 +185,16 @@ export function DrugCatalog() {
       {hasData && result && (
         <>
           <DrugTable drugs={result.content} />
-          <div className="mt-4 border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground">
-              Hiển thị {(result.number * result.size + 1).toLocaleString("vi-VN")}–{(result.number * result.size + result.content.length).toLocaleString("vi-VN")} trong {result.totalElements.toLocaleString("vi-VN")} thuốc
-            </p>
+          <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs text-muted-foreground">
+                Hiển thị {(result.number * result.size + 1).toLocaleString("vi-VN")}–{(result.number * result.size + result.content.length).toLocaleString("vi-VN")} trong {result.totalElements.toLocaleString("vi-VN")} thuốc
+              </p>
+              <label htmlFor="drug-page-size" className="sr-only">Số dòng</label>
+              <select id="drug-page-size" value={query.size} onChange={(event) => selectSize(event.target.value)} className={`${controlClassName} w-auto`}>
+                {DRUG_CATALOG_PAGE_SIZES.map((size) => <option key={size} value={size}>{size} / trang</option>)}
+              </select>
+            </div>
             <Pagination page={result.number} totalPages={result.totalPages} totalElements={result.totalElements} loading={loading} onPageChange={(page) => updateQuery({ page })} />
           </div>
         </>

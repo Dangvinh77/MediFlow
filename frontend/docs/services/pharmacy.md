@@ -5,12 +5,19 @@
 **Contract context:** [`docs/ai/services/pharmacy.md`](../../../docs/ai/services/pharmacy.md)  
 **Detailed task plan:** [`../pharmacy-frontend-implementation-plan.md`](../pharmacy-frontend-implementation-plan.md)
 
-**Current execution plan (2026-10-12):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
+**Current execution plan (2026-10-16):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
 The earlier plan retains PH-FE history; the current plan records live harness/identity evidence and remaining gates.
 
 2026-10-12 implementation checkpoint: themed catalog/local navigation and compact prescription lookup
 are implemented; pending dispense/payment proof labels are independent and nullable `recordId` is supported.
 The Huy plan records passing local tests/build and isolated browser smoke; real Gateway role smoke remains open.
+
+2026-10-16 checkpoint: drug detail/create/stock and ADMIN outbox now use the approved theme and
+explicit request/error states. Drug flows add UUID/DTO guards, field focus, synchronous duplicate-submit
+locks and server-returned stock. Conflict/unknown stock outcomes refresh before a new command;
+outbox confirmation supports Escape/cancel and distinguishes replayed=false. Drug tests: 40/40;
+outbox tests: 11/11. Browser fixture smoke covers create/detail/adjust and mobile layouts. Signed
+actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
 
 ## Writable frontend scope
 

@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
-import { buildMonthlyReportQuery, getReportView, readMonthlyReportQuery, reportViews, type ReportView } from "../reportQuery";
+import { buildDailyReportQuery, buildMonthlyReportQuery, buildTopMedicinesQuery, getReportView, readDailyReportQuery, readMonthlyReportQuery, readTopMedicinesQuery, reportViews, type ReportView } from "../reportQuery";
 import { DailyReportView } from "./DailyReportView";
 import { MonthlyReportView } from "./MonthlyReportView";
 import { TopMedicinesView } from "./TopMedicinesView";
@@ -13,6 +13,8 @@ export function ReportWorkspace() {
   const rawQuery = params.toString();
   const view = getReportView(params.get("view"));
   const monthly = readMonthlyReportQuery(new URLSearchParams(rawQuery));
+  const daily = readDailyReportQuery(new URLSearchParams(rawQuery));
+  const medicines = readTopMedicinesQuery(new URLSearchParams(rawQuery));
 
   // These query-only views fetch client data. Next integrates native history with useSearchParams,
   // keeping Back/Forward available without a server-component navigation for every filter.
@@ -35,8 +37,8 @@ export function ReportWorkspace() {
         })}
       </nav>
       {view === "monthly" && <MonthlyReportView key={rawQuery} initialQuery={monthly.query} autoLoad={monthly.autoLoad} onQuerySubmit={(query) => navigateQuery(buildMonthlyReportQuery(new URLSearchParams(rawQuery), query))} />}
-      {view === "daily" && <DailyReportView />}
-      {view === "medicines" && <TopMedicinesView />}
+      {view === "daily" && <DailyReportView key={rawQuery} initialQuery={daily.query} autoLoad={daily.autoLoad} onQuerySubmit={(query) => navigateQuery(buildDailyReportQuery(new URLSearchParams(rawQuery), query))} />}
+      {view === "medicines" && <TopMedicinesView key={rawQuery} initialQuery={medicines.query} autoLoad={medicines.autoLoad} onQuerySubmit={(query) => navigateQuery(buildTopMedicinesQuery(new URLSearchParams(rawQuery), query))} />}
     </PageShell>
   );
 }

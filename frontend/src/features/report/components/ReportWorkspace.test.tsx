@@ -45,4 +45,34 @@ describe("ReportWorkspace", () => {
     expect(screen.queryByLabelText("Ngày báo cáo")).not.toBeInTheDocument();
     expect(mocks.monthly).not.toHaveBeenCalled();
   });
+  it("auto-loads valid daily deep links, records submitted URL filters and restores them on back/forward", async () => {
+    mocks.query = "view=daily&date=2024-02-29";
+    mocks.daily.mockResolvedValue({ reportDate: "2024-02-29", departmentId: null, visitCount: 0, labCount: 0, prescriptionCount: 0, revenue: 0 });
+    const view = render(<ReportWorkspace />);
+    await screen.findByRole("heading", { name: "Báo cáo ngày 29/02/2024" });
+    expect(mocks.daily).toHaveBeenCalledWith("2024-02-29", undefined);
+    fireEvent.change(screen.getByLabelText("Ngày báo cáo"), { target: { value: "2024-03-01" } });
+    fireEvent.submit(screen.getByLabelText("Ngày báo cáo").closest("form")!);
+    expect(window.history.pushState).toHaveBeenCalledWith(null, "", "/reports?view=daily&date=2024-03-01");
+    expect(mocks.daily).toHaveBeenCalledTimes(1);
+    mocks.query = "view=daily&date=2024-02-28"; view.rerender(<ReportWorkspace />);
+    expect(screen.getByLabelText("Ngày báo cáo")).toHaveValue("2024-02-28");
+    await waitFor(() => expect(mocks.daily).toHaveBeenLastCalledWith("2024-02-28", undefined));
+    expect(mocks.monthly).not.toHaveBeenCalled(); expect(mocks.topMedicines).not.toHaveBeenCalled();
+  });
+  it("restores ranking deep-link bounds, reloads an unchanged query and ignores invalid filters", async () => {
+    mocks.query = "view=medicines&fromDate=2024-02-01&toDate=2024-02-29&limit=5";
+    mocks.topMedicines.mockResolvedValue([]);
+    const view = render(<ReportWorkspace />);
+    await screen.findByText("Không có dữ liệu xuất thuốc trong khoảng đã chọn.");
+    expect(screen.getByLabelText("Số kết quả")).toHaveValue(5);
+    expect(mocks.topMedicines).toHaveBeenCalledWith("2024-02-01", "2024-02-29", 5, undefined);
+    fireEvent.submit(screen.getByLabelText("Từ ngày").closest("form")!);
+    await waitFor(() => expect(mocks.topMedicines).toHaveBeenCalledTimes(2));
+    mocks.query = "view=medicines&fromDate=2024-02-01&toDate=2024-02-29&limit=51";
+    view.rerender(<ReportWorkspace />);
+    expect(screen.getByLabelText("Số kết quả")).toHaveValue(51);
+    expect(mocks.topMedicines).toHaveBeenCalledTimes(2);
+    expect(mocks.monthly).not.toHaveBeenCalled(); expect(mocks.daily).not.toHaveBeenCalled();
+  });
 });
