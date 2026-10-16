@@ -6,7 +6,7 @@ Mục tiêu mới là giảm phạm vi nghiệm thu ngoại trú; không lấy �
 
 Baseline viết plan ngày 2026-10-14: mọi task là TODO; lượt viết docs không chạy nghiệm thu
 backend và không chuyển topology. Rà soát Vinh ngày 2026-10-15 đã có implementation/test evidence
-trong [source lock và closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#chốt-sổ-vinh--rà-soát-ngày-2026-10-15).
+trong [source lock và closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#current-owner-queue).
 Các task toàn nhóm dưới đây vẫn mở; checkbox không thay thế phần evidence theo owner.
 Lượt reliability tiếp theo thêm Lab PG/Rabbit publisher/listener acceptance, broker application
 restart và publish-confirm/DB-rollback windows cho Clinical/Lab; xem phạm vi và full-run evidence
@@ -83,8 +83,9 @@ Owner: Hoàng Anh/Gateway, Vinh/Clinical, Huy/Pharmacy. Dependency: M6-04.
 
 Đóng khi: MVP không remote call tới retired names, không đoán patient/doctor/episode.
 
-Vinh 2026-10-15: Clinical profile đã retarget `core-service`; real Core lookup parity còn
-thuộc [H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-và-core).
+Refresh 2026-10-16: Clinical profile retarget `core-service` và packaged actual Core lookup đã có.
+Full Core/Gateway parity và global M6-05 vẫn cần owner evidence; G1 discovery là dependency riêng
+ở [closeout](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
 Pharmacy caller vẫn theo handoff của Huy đã đăng ký, không chuyển thành việc Vinh.
 
 ### M6-06 Support composition và quyền
@@ -139,14 +140,13 @@ flat event trong durable outbox; regression dùng actual Rabbit converter cho b�
 types. Core/Gateway/Clinical check-in race, exact unpaid/actor denial và một exam record
 đã có packaged proof với synthetic contract clearance, chưa phải real Billing payment.
 Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
-Refresh `71e2684d`, 2026-10-16: [Lộc implementation handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
-khóa source discovery API và selective publication boundary, L1–L4 Billing/G1 Gateway;
-Lộc vào code theo checklist, không lập kế hoạch khác. Grant V1 hiện còn HELD; tests đọc grant
-trong outbox chưa là dispatcher/broker proof. Không tự tick M6-09.4/M6-11.4/M6-16.
-Blocker driving API được xác nhận từ `050b5916`: Billing sinh random EXAM paymentRequestId
-nhưng chưa có source-bound discovery API/event để CASHIER/FE/test lấy mã; không đọc Billing
-DB hoặc đoán ID để drive payment. Lộc owns discovery contract, Hoàng Anh owns exact Gateway
-allowlist nếu thêm API; Vinh tiếp tục real paid slice sau khi producer handoff đạt.
+Refresh `c8024921`, 2026-10-16: [owner handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+L1 discovery và L2 selective cohort/writer V22/V23 đã merge. Fresh targeted Billing 61 tests
+đạt (0 failure/error/skip), gồm discovery + migration/cohort; chưa là actual Rabbit delivery.
+Không giao lại L1/L2. Còn Lộc L3/L4 actual dispatcher/Rabbit/JVM recovery/full evidence,
+Hoàng Anh G1 exact GET discovery qua Gateway. Allowlist hiện chưa có GET by-source.
+Vinh chạy V-CLOSE-03 actual paid EXAM/LAB_TEST/Rx sau producer/Gateway evidence; không SQL
+discovery/synthetic grants và không tự tick M6-09.4/M6-11.4/M6-16.
 Refresh `71e2684d` + Vinh continuation 2026-10-16: Huy đã giao explicit recordId/dispense
 relationship và API/PG proof; Clinical đã implement V1 Rx consumer, per-dispense inbox/effect,
 precise decimal fingerprint, delayed fill vào completed outpatient record và PG/Rabbit tests.
@@ -177,8 +177,9 @@ Owner: Vinh; Lộc verify Billing. Dependency: M6-02, M6-05, M6-12.
 Đóng khi: Lab slice thật; không amendment/correction chain hoặc guessing labTestIds.
 
 Vinh 2026-10-15: Lab order authority/lookup/request và immutable V1 result đã code; không
-coi M6-11.4 E2E đã đạt từ unit/persistence tests. Gateway thiếu public driving allowlist:
-[H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-và-core).
+coi M6-11.4 E2E đã đạt từ unit/persistence tests. Refresh 2026-10-16: public Lab-order route
+và packaged Gateway acceptance đã có; chỉ còn Gateway discovery G1 tại
+[H-VINH-01](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-01--hoàng-anh--gateway-discovery).
 Billing exact LAB_TEST slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
 Report consume cùng result fixture: H-VINH-02. Producer/consumer/owner/fixtures/điều kiện đóng
 ghi tại từng handoff; không copy payload hoặc đoán fields ở plan.
@@ -198,13 +199,11 @@ Owner: Lộc; Vinh/Huy consulted. Dependency: M6-02, M6-05.
 
 Đóng khi: V1 ngoại trú coherent; admission/deposit/settlement/full insurance không task bắt buộc.
 
-**Gap P0, consumer Clinical/Lab + Billing FE:** M6-12.1/12.3 còn thiếu đường lấy request
-do EXAM/LAB_TEST issuers tạo theo exact source. Live controller chỉ có
-`POST /api/v1/billing/payment-requests/{id}/payments`; IDs không được expose bởi hai issuers.
-Lộc khóa authorized discovery API hoặc durable fact (source/purpose/target/episode/amount/
-currency/status), test duplicate/wrong-target/role và giao fixture/HTTP evidence; phối hợp
-Gateway owner nếu là public API. Acceptance và source paths ở H-VINH-03, không copy schema mới
-vào plan hoặc mặc định chọn endpoint chưa được owner thống nhất.
+**Remaining P0, consumer Clinical/Lab + Billing FE (refresh `c8024921`):**
+L1 source-bound discovery GET và L2 selective eligible writer đã có, targeted DB/API tests đạt.
+Còn exact Gateway discovery allowlist (Hoàng Anh G1), actual publication/recovery và full producer
+evidence (Lộc L3/L4), rồi paid consumer slices (Vinh). Không giao lại endpoint hoặc suy DB flag
+là broker delivery. Acceptance tại [handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
 
 ### M6-13 Saga và lỗi phân tán
 

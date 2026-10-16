@@ -1,10 +1,31 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
-Ngày giao: **2026-10-16**. Source lock: **`71e2684d`**. Trạng thái: **READY TO IMPLEMENT**;
-API, migration và publication boundary dưới đây **chưa được triển khai** ở baseline.
+Ngày giao: **2026-10-16**. Refresh source: **`c8024921`**.
+**Trạng thái: L1/L2 implementation đã merge; L3/L4 và G1 còn mở.**
+Không làm lại discovery/cohort/writer. Checklist chưa tick là acceptance chưa được xác nhận,
+không có nghĩa code của toàn mục chưa tồn tại.
 
-**Goal:** Lộc triển khai source-bound payment-request discovery và selective publication cho
-request ngoại trú mới, để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
+## Current delivery — Hoàng Anh và Lộc nhận đúng phần còn lại
+
+| Owner | Đã giao | Công việc tiếp theo |
+|---|---|---|
+| Lộc | L1 `9b89a355`; L2 `1624cbd3`, V22 cohort/V23 payload fence, writer và PG tests | L3 actual Rabbit/dispatcher + packaged recovery; L4 full regression và evidence/fixtures. Hoàn thiện các acceptance gaps L1/L2 nếu full verification phát hiện |
+| Hoàng Anh | Public Lab-order và Core migration paths tại `0a8636cd` | G1 exact GET discovery ADMIN/CASHIER, query/correlation forwarding và deny tests; actual Billing smoke |
+| Vinh | Rx V1 consumer + public Lab-order acceptance | V-CLOSE-03 actual paid EXAM/LAB_TEST và paid Rx sau producer/Gateway evidence |
+
+Fresh targeted rerun 2026-10-16: **61 Billing tests, 0 failures/errors/skips**, Java 21,
+real PostgreSQL; discovery 27, publication/migration 34. Gateway care matrix/Lab-order
+**183 tests, 0 failures/errors/skips**. Hai commands exit 0, không thay full Billing/Gateway
+regression hoặc actual publication. Logs và reproduce ở [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#verification-refresh--2026-10-16).
+
+Chưa có `OutpatientPublicationRabbitIntegrationTest`, `OutpatientPublicationProcessRecoveryIT`
+hay profile `outpatient-publication-acceptance` trên source refresh. Test tên
+`actualIssuanceAndPaymentPublishExactOriginalEvents` kiểm eligible DB rows, chưa đọc broker.
+Gateway allowlist chưa có exact GET by-source, nên chưa drive public paid slice được.
+Các gates deployment giữ nguyên; handoff này không là rollout approval.
+
+**Goal còn lại:** hoàn thiện actual publication/recovery và evidence của discovery/cohort đã merge,
+để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
 
 **Architecture:** Giữ Billing là money authority, đọc duy nhất Billing store; dùng application
 ports và infrastructure adapters hiện có. Tái sử dụng `BILLING_EVENT_OUTBOX` và dispatcher có
@@ -15,7 +36,7 @@ confirm/retry/lease; cohort được ghi lúc issue request mới, không releas
 [M6 plan](../plans/05-implementation-plan.md), [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md),
 [Huy handoff](HANDOFF-HUY-MVP.md). Đây là kế hoạch triển khai cho gap đã xác nhận, không backlog mới.
 
-Lộc thực hiện checklist theo thứ tự, **không cần viết thêm proposal/design/implementation plan**.
+Lộc tiếp tục checklist còn lại L3/L4, **không cần viết thêm proposal/design/implementation plan**.
 Các lựa chọn API/cohort/flags đã chốt trong handoff này cho phần việc được giao. Đọc nearest
 AGENTS và canonical docs trước code; nếu source upstream thay đổi, ghi delta thật, không tự
 coi API/event ở tài liệu này là live. Không tự push/merge hoặc bật deployment vì checklist local đạt.
@@ -33,7 +54,9 @@ Không giao Lộc Support composition, full refunds/settlement, Surgery/Inpatien
 hoặc frontend trong handoff này. Rx discovery/issuer publication được đưa vào cùng boundary để
 đóng đúng dependency Billing đã nêu trong Huy handoff; terminal/refund acceptance còn theo file Huy.
 
-## 2. Source gap và giới hạn evidence
+## 2. Source gap tại baseline `71e2684d` — historical rationale
+
+Các bullet dưới mô tả trước L1/L2, không dùng làm current owner queue. Refresh ở đầu file.
 
 - `web/LedgerPaymentController.java` chỉ có `POST /api/v1/billing/payment-requests/{id}/payments`.
   EXAM/LAB_TEST/PRESCRIPTION issuers sinh request ID, chưa có HTTP discovery từ exact source.
@@ -271,13 +294,13 @@ tự giả price/expiry/identities hoặc tắt clearance gate.
 V-CLOSE-02 và public Lab-order acceptance có thể thực hiện ngay, độc lập với handoff này.
 Không làm lại Lab authority/inbox hoặc Clinical/Lab recovery proof đã merge.
 
-## 7. Evidence điền sau triển khai
+## 7. Evidence refresh — 2026-10-16
 
 | Gate | Source SHA / command / counts / IDs-hashes / kết quả |
 |---|---|
-| L1 discovery | Chưa chạy — chưa implement |
-| L2 migration/cohort | Chưa chạy — chưa implement |
-| L3 Rabbit/recovery | Chưa chạy — chưa implement |
-| L4 full regression/delivery | Chưa chạy — chưa implement |
-| G1 Gateway + actual Billing | Chưa chạy — chưa implement |
+| L1 discovery | Implement `9b89a355`; fresh service/controller/PG: 27 tests, 0 failure/error/skip; actual HTTP qua Gateway còn mở |
+| L2 migration/cohort | Implement `1624cbd3` + V22/V23; fresh cohort/migration PG: 34 tests, 0 failure/error/skip; không tick toàn bộ acceptance checklist chỉ từ focused run |
+| L3 Rabbit/recovery | OPEN: thiếu dedicated Rabbit + packaged recovery proof theo section L3 |
+| L4 full regression/delivery | OPEN: targeted 61 tests đạt; chưa có full regression/package/recovery và artifact delivery xác nhận đủ handoff |
+| G1 Gateway + actual Billing | OPEN: thiếu exact GET allowlist; Lab-order route đã có là task khác |
 | V-CLOSE-03 consumer acceptance | Chưa chạy — chờ producer/Gateway |
