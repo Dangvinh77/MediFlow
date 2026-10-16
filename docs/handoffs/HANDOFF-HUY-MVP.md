@@ -41,6 +41,12 @@ Current full regression: Pharmacy 822, Report 1.330; source acceptance 1; packag
 
 ### Lộc — Billing và Notification
 
+Kế hoạch code cho Billing discovery và new-outpatient issuer/payment/grant publication đã chốt
+tại [handoff Lộc L1–L4](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md), source `71e2684d`.
+Lộc triển khai trực tiếp checklist đó; không cần lên kế hoạch khác. Đây là deliverable Billing
+để nhận các bytes/purposes đã được consumer nghiệm thu, không tự đóng Notification,
+terminal/refund, Support hoặc các subtask Huy còn mở bên dưới.
+
 - `PrescriptionChargeService.issue` hiện dùng `LedgerEventPort.appendHeld` cho V1 `invoice.created`.
   Packaged probe trước đó timeout 35 giây khi chờ invoice. Cần selective **NEW outpatient**
   publication boundary có confirms/retry/fencing; giữ historical HELD. Không cấp invoiceId hoặc
@@ -63,6 +69,11 @@ Sau producer acceptance, chạy prepared live test `PharmacyOutpatientRuntimeAcc
 proof. Khi chưa có owner boundary, live method mặc định SKIPPED và H6-06.2/.4 vẫn mở.
 
 ### Vinh — Clinical/Lab
+
+Refresh 2026-10-16: Clinical đã nhận original outpatient filled fixture trong V-CLOSE-02;
+exact relationship, per-dispense inbox/effect và delayed terminal replay có PG/Rabbit proof.
+Xem [evidence Vinh](HANDOFF-VINH-OUTPATIENT-MVP.md). Đây chỉ đóng Clinical attachment side;
+Billing/Notification intake và actual paid Rx flow vẫn là điều kiện H6-06.2/06.4 còn mở.
 
 - Accept Rx attachment từ original Pharmacy fixtures và real producer bytes: record/patient/
   department/episode đúng persisted relationship, một operation per dispense; duplicate/conflict tests.

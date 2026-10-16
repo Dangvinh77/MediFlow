@@ -139,11 +139,19 @@ flat event trong durable outbox; regression dùng actual Rabbit converter cho b�
 types. Core/Gateway/Clinical check-in race, exact unpaid/actor denial và một exam record
 đã có packaged proof với synthetic contract clearance, chưa phải real Billing payment.
 Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-03--lộc--billing-phối-hợp-slice-với-vinh).
+Refresh `71e2684d`, 2026-10-16: [Lộc implementation handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+khóa source discovery API và selective publication boundary, L1–L4 Billing/G1 Gateway;
+Lộc vào code theo checklist, không lập kế hoạch khác. Grant V1 hiện còn HELD; tests đọc grant
+trong outbox chưa là dispatcher/broker proof. Không tự tick M6-09.4/M6-11.4/M6-16.
 Blocker driving API được xác nhận từ `050b5916`: Billing sinh random EXAM paymentRequestId
 nhưng chưa có source-bound discovery API/event để CASHIER/FE/test lấy mã; không đọc Billing
 DB hoặc đoán ID để drive payment. Lộc owns discovery contract, Hoàng Anh owns exact Gateway
 allowlist nếu thêm API; Vinh tiếp tục real paid slice sau khi producer handoff đạt.
-V1 Rx attachment còn cần Huy khóa exact producer relationship, rồi Vinh implement consumer:
+Refresh `71e2684d` + Vinh continuation 2026-10-16: Huy đã giao explicit recordId/dispense
+relationship và API/PG proof; Clinical đã implement V1 Rx consumer, per-dispense inbox/effect,
+precise decimal fingerprint, delayed fill vào completed outpatient record và PG/Rabbit tests.
+Public Gateway Lab-order acceptance dùng route Hoàng Anh đã thêm ở `0a8636cd`;
+current evidence ở Vinh closeout. Actual paid slice vẫn chờ handoff Lộc/G1:
 [H-VINH-02](../handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md#h-vinh-02--huy--pharmacy--report-vinh-nhận-consumer-clinical).
 
 ### M6-10 Pharmacy ngoại trú và stock

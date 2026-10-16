@@ -164,11 +164,14 @@ class PackagedOutpatientLabAcceptanceIT {
                     .path("departmentId").asText());
             UUID doctorStaffId = createStaff(gatewayUrl, setupAdmin, departmentId, unique,
                     "DOCTOR", "doctor");
+            UUID otherDoctorId = createStaff(gatewayUrl, setupAdmin, departmentId, unique,
+                    "DOCTOR", "otherdoctor");
             UUID nurseStaffId = createStaff(gatewayUrl, setupAdmin, departmentId, unique,
                     "NURSE", "nurse");
             UUID labTechStaffId = createStaff(gatewayUrl, setupAdmin, departmentId, unique,
                     "TECHNICIAN", "labtech");
             createAccount(gatewayUrl, setupAdmin, "lab-doctor-" + unique, "DOCTOR", doctorStaffId);
+            createAccount(gatewayUrl, setupAdmin, "lab-otherdoctor-" + unique, "DOCTOR", otherDoctorId);
             createAccount(gatewayUrl, setupAdmin, "lab-nurse-" + unique, "NURSE", nurseStaffId);
             createAccount(gatewayUrl, setupAdmin, "lab-tech-" + unique, "LAB_TECH", labTechStaffId);
             UUID patientId = UUID.fromString(data(post(gatewayUrl, "/api/v1/patients", setupAdmin,
@@ -179,6 +182,7 @@ class PackagedOutpatientLabAcceptanceIT {
                     "bhytSo", null)).path("maBenhNhan").asText());
 
             String doctorToken = login(gatewayUrl, "lab-doctor-" + unique);
+            String otherDoctorToken = login(gatewayUrl, "lab-otherdoctor-" + unique);
             String nurseToken = login(gatewayUrl, "lab-nurse-" + unique);
             String labTechToken = login(gatewayUrl, "lab-tech-" + unique);
             UUID appointmentId = UUID.fromString(data(post(gatewayUrl, "/api/v1/appointments", nurseToken,
@@ -201,7 +205,7 @@ class PackagedOutpatientLabAcceptanceIT {
                                     "approvedAt", Instant.now().minusSeconds(1).toString()))));
             assertThat(examStarted.statusCode()).as(examStarted.body()).isEqualTo(200);
             JdbcTemplate clinicalDb = database("mediflow_clinical");
-            JsonNode patientRecords = data(get("http://127.0.0.1:" + clinicalPort,
+            JsonNode patientRecords = data(get(gatewayUrl,
                     "/api/v1/records/patient/" + patientId, doctorToken));
             assertThat(patientRecords.isArray()).isTrue();
             JsonNode record = java.util.stream.StreamSupport.stream(patientRecords.spliterator(), false)
@@ -212,11 +216,23 @@ class PackagedOutpatientLabAcceptanceIT {
                     recordId, appointmentId)).isOne();
 
             LocalDate requestedDate = LocalDate.now();
-            String directClinicalBase = "http://127.0.0.1:" + clinicalPort;
-            HttpResponse<String> clinicalOrderResponse = request(directClinicalBase, "POST",
-                    "/api/v1/records/" + recordId + "/lab-orders", doctorToken,
-                    JSON.writeValueAsString(object("labType", "CBC", "requestedDate", requestedDate.toString(),
-                            "priceCode", "LAB-CBC")));
+            String orderPath = "/api/v1/records/" + recordId + "/lab-orders";
+            String orderBody = JSON.writeValueAsString(object("labType", "CBC",
+                    "requestedDate", requestedDate.toString(), "priceCode", "LAB-CBC"));
+            assertThat(gatewayRequest(gatewayUrl, "POST", orderPath, nurseToken, orderBody).statusCode())
+                    .as("Gateway rejects a role outside ADMIN/DOCTOR").isEqualTo(403);
+            assertThat(gatewayRequest(gatewayUrl, "POST", orderPath, otherDoctorToken, orderBody).statusCode())
+                    .as("Clinical rejects a doctor who does not own the record").isEqualTo(403);
+            assertThat(gatewayRequest(gatewayUrl, "PUT", orderPath, doctorToken, orderBody).statusCode())
+                    .isEqualTo(403);
+            assertThat(gatewayRequest(gatewayUrl, "POST", orderPath + "/extra", doctorToken, orderBody).statusCode())
+                    .isEqualTo(403);
+            assertThat(gatewayRequest(gatewayUrl, "GET", "/api/v1/lab-orders/" + UUID.randomUUID() + "/context",
+                    doctorToken, null).statusCode()).as("Internal context has no public Gateway route").isEqualTo(404);
+            assertThat(count(clinicalDb, "SELECT count(*) FROM clinical_lab_order WHERE record_id=?", recordId))
+                    .isZero();
+            HttpResponse<String> clinicalOrderResponse = gatewayRequest(gatewayUrl, "POST",
+                    orderPath, doctorToken, orderBody);
             assertThat(clinicalOrderResponse.statusCode()).as(clinicalOrderResponse.body()).isEqualTo(201);
             JsonNode clinicalOrder = data(clinicalOrderResponse);
             UUID sourceOrderId = UUID.fromString(clinicalOrder.path("sourceOrderId").asText());

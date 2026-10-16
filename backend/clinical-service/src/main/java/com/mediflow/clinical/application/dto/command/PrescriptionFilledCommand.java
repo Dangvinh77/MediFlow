@@ -6,5 +6,15 @@ import java.util.UUID;
 public record PrescriptionFilledCommand(
         UUID eventId,
         UUID recordId,
-        UUID prescriptionId
-) {}
+        UUID prescriptionId,
+        int sourceVersion,
+        UUID patientId,
+        UUID departmentId,
+        String careEpisodeType,
+        UUID careEpisodeId,
+        UUID dispenseId
+) {
+    public PrescriptionFilledCommand(UUID eventId, UUID recordId, UUID prescriptionId) {
+        this(eventId, recordId, prescriptionId, 0, null, null, null, null, null);
+    }
+}

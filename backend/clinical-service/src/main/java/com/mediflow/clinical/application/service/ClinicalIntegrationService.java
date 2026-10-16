@@ -12,6 +12,7 @@ import com.mediflow.clinical.application.port.in.ReactToPrescriptionFilledUseCas
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.domain.model.CareEpisodeType;
 import com.mediflow.clinical.domain.model.MedicalRecord;
+import com.mediflow.clinical.domain.model.RecordDisposition;
 
 @Service
 public class ClinicalIntegrationService implements ReactToLabResultUseCase, ReactToPrescriptionFilledUseCase {
@@ -55,6 +56,24 @@ public class ClinicalIntegrationService implements ReactToLabResultUseCase, Reac
     @Override
     @Transactional
     public void onPrescriptionFilled(PrescriptionFilledCommand command) {
+        if (command.sourceVersion() == 1) {
+            if (!"OUTPATIENT_VISIT".equals(command.careEpisodeType()) || command.dispenseId() == null) {
+                throw new ConsumerInboxConflictException("unsupported prescription care episode or missing dispense");
+            }
+            MedicalRecord record = records.findByIdForUpdate(command.recordId())
+                    .orElseThrow(() -> new ConsumerInboxConflictException("prescription references an unknown record"));
+            java.util.UUID episodeId = record.getAppointmentId() == null
+                    ? record.getRecordId() : record.getAppointmentId();
+            if (!record.getPatientId().equals(command.patientId())
+                    || !record.getDepartmentId().equals(command.departmentId())
+                    || !episodeId.equals(command.careEpisodeId())
+                    || record.getDisposition() == RecordDisposition.ADMISSION
+                    || record.getDisposition() == RecordDisposition.TRANSFER) {
+                throw new ConsumerInboxConflictException("prescription relationship or record state does not match");
+            }
+        } else if (command.sourceVersion() != 0) {
+            throw new ConsumerInboxConflictException("unsupported prescription contract version");
+        }
         if (!attachments.attachPrescription(command.recordId(), command.prescriptionId())) {
             throw new ConsumerInboxConflictException("prescription attachment produced no new effect");
         }

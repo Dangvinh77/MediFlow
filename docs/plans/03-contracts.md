@@ -98,6 +98,31 @@ Claim eventId và effect cùng transaction. Business-operation key chống same 
 Same key/different bytes là conflict; source ID/purpose/episode mismatch không được silently accept.
 Không bảo đảm broker exactly-once; phải chứng minh effects không lặp bằng state/locks/receipts.
 
+### Clinical nhận outpatient prescription.filled V1
+
+Producer bytes khóa tại
+`backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json`.
+Clinical chỉ nhận envelope V1 này trong mode `outpatient-mvp`: logical producer
+`pharmacy-service`, careContext `OUTPATIENT`, sourceType `PRESCRIPTION`, sourceId bằng
+prescriptionId, admissionId null, occurredAt bằng filledAt. Required target fields là
+recordId/patientId/departmentId, `OUTPATIENT_VISIT`/careEpisodeId và dispenseId.
+Không suy recordId từ prescriptionId hoặc dispenseId. Clinical khóa record rồi đối chiếu
+patient/khoa/episode; episode là appointmentId của record, hoặc recordId với walk-in.
+
+Delivery key là eventId; operation key là `clinical:prescription:v1:<dispenseId>`.
+Inbox claim và attached result commit cùng transaction, giữ exact raw bytes và fingerprint
+toàn bộ business snapshot, kể cả items/price chưa dùng trong Clinical projection. Price decimals
+V1 phải giữ chính xác; không đổi fingerprint đã persist của V0/Lab/clearance cũ.
+Same eventId phải cùng raw bytes; new eventId/cùng dispense chỉ no-op khi business snapshot
+khớp. Prescription đã gắn bởi dispense khác hoặc effect lịch sử thiếu fingerprint là conflict;
+không tự đánh dấu delivery mới thành công.
+
+Sự kiện đến muộn có thể append reference vào record đã hoàn tất ngoại trú mà không mở lại
+record, thay diagnosis/disposition hoặc phát lại completion. Known replay vẫn no-op sau
+completion; new fill vào disposition ADMISSION/TRANSFER bị reject trong MVP.
+Flat V0 tiếp tục quarantine trong MVP và giữ behavior compatibility ngoài MVP;
+không đổi default mode/gates. Đây là consumer contract acceptance, chưa là real paid Rx E2E.
+
 ## RBAC
 
 Role constants giữ ADMIN, DOCTOR, NURSE, PHARMACIST, CASHIER, LAB_TECH, MANAGER, PATIENT, SYSTEM.

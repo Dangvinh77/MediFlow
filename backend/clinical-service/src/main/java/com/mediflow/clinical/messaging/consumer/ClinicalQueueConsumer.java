@@ -18,6 +18,7 @@ import com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactory;
 import com.mediflow.clinical.messaging.consumer.payload.LabResultCreatedEnvelope;
 import com.mediflow.clinical.messaging.consumer.payload.LabResultCreatedPayload;
 import com.mediflow.clinical.messaging.consumer.payload.PrescriptionFilledPayload;
+import com.mediflow.clinical.messaging.consumer.payload.PrescriptionFilledEnvelope;
 
 /** Sole listener for {@code clinical.q}; dispatches by the broker routing key. */
 @Component
@@ -79,10 +80,39 @@ public class ClinicalQueueConsumer {
 
     private void consumePrescription(Message message) throws IOException {
         var root = objectMapper.readTree(message.getBody());
-        if (root == null || root.has("payload") || root.has("version")
+        if (root != null && root.has("payload")) {
+            if (!outpatientMvpEnabled) {
+                throw new MessageConversionException("V1 prescription.filled requires outpatient MVP mode");
+            }
+            if (!root.path("version").isIntegralNumber() || !root.path("version").canConvertToInt()
+                    || root.path("version").intValue() != 1) {
+                throw new MessageConversionException("prescription.filled version must be integer 1");
+            }
+            PrescriptionFilledEnvelope envelope = objectMapper.treeToValue(root, PrescriptionFilledEnvelope.class);
+            var source = envelope.payload();
+            if (!RabbitConfig.PRESCRIPTION_FILLED.equals(envelope.eventType())
+                    || !"pharmacy-service".equals(envelope.producer())
+                    || envelope.eventId() == null || envelope.occurredAt() == null
+                    || envelope.correlationId() == null || envelope.correlationId().isBlank()
+                    || source == null || !"OUTPATIENT".equals(source.careContext())
+                    || !"PRESCRIPTION".equals(source.sourceType()) || source.prescriptionId() == null
+                    || !source.prescriptionId().equals(source.sourceId()) || source.admissionId() != null
+                    || !envelope.occurredAt().equals(source.filledAt())) {
+                throw new MessageConversionException("Invalid outpatient prescription.filled envelope or relationship");
+            }
+            PrescriptionFilledPayload payload = envelope.toProjection();
+            PrescriptionFilledConsumer.validate(payload);
+            ConsumerInboxClaim claim = evidenceFactory.create(PRESCRIPTION_CONSUMER,
+                    RabbitConfig.PRESCRIPTION_FILLED, payload.eventId(),
+                    "clinical:prescription:v1:" + payload.dispenseId(), message.getBody(),
+                    java.util.List.of(payload.prescriptionId()));
+            inbox.execute(claim, () -> prescriptions.consume(payload));
+            return;
+        }
+        if (root == null || root.has("sourceVersion") || root.has("version")
                 || root.has("eventType") || root.has("producer")) {
             throw new MessageConversionException(
-                    "V1 prescription.filled is unsupported by the current Clinical attachment contract");
+                    "Flat compatibility prescription payload cannot assert V1 envelope metadata");
         }
         PrescriptionFilledPayload payload = objectMapper.treeToValue(root, PrescriptionFilledPayload.class);
         PrescriptionFilledConsumer.validate(payload);

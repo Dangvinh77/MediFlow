@@ -4,6 +4,101 @@
 
 **Scope:** Production edits are limited to `backend/clinical-service` and `backend/lab-service`. The implementation profile is opt-in as `outpatient-mvp`; the default remains `compatibility-v0` so rollback and existing V0 regression behavior remain available.
 
+## Current owner queue — refresh 2026-10-16, source `71e2684d`
+
+Mục này supersede các mô tả dependency cũ bên dưới; giữ các batch cũ làm historical evidence,
+không dùng chúng để kết luận source hiện tại vẫn thiếu phần owner đã giao.
+
+1. **V-CLOSE-02 đã implement consumer:** Huy đã giao outpatient filled fixture với explicit recordId và
+   `OutpatientApiPostgresTest.filledProducerRelationshipComesFromPersistedPrescriptionAndSlipAndReplayKeepsExactBytes`
+   (`7610cb97`/`e542d066`). Clinical nhận V1 trong outpatient MVP theo
+   original Pharmacy bytes, operation=dispenseId, delivery=eventId, exact identities và atomic
+   inbox/effect; exact price fingerprint, replay/conflict/rollback/concurrency và delayed fill
+   vào completed outpatient record có regression. Không mở lại record hoặc sửa diagnosis/
+   disposition/completedAt; ADMISSION/TRANSFER bị chặn. Xem evidence lượt tiếp tục bên dưới.
+   Producer upstream proofs dùng test doubles; live paid Rx acceptance vẫn mở.
+2. **Public Gateway Lab-order acceptance đã đạt:** Hoàng Anh `0a8636cd` đã thêm exact
+   POST records/{id}/lab-orders ADMIN/DOCTOR và sửa Core Flyway test locations. Chuyển bước
+   create-order của `PackagedOutpatientLabAcceptanceIT` từ direct Clinical sang Gateway thật,
+   giữ signed assigned-doctor checks. Focused Gateway rerun 2026-10-16: 5 classes, 210 tests,
+   0 failures/errors/skips. Docker đã sẵn sàng; packaged rerun ghi ở evidence lượt tiếp tục
+   bên dưới, không dùng route unit tests thay packaged acceptance.
+3. **V-CLOSE-03 chờ Billing + discovery Gateway:** đã giao kế hoạch code cụ thể cho Lộc tại
+   [discovery/publication handoff](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+   L1–L4 là Billing, G1 là Hoàng Anh; không yêu cầu Lộc lên kế hoạch lần nữa. Source-bound GET
+   và publication boundary mới trong handoff chưa live. Grant V1 hiện chỉ được persist HELD;
+   hai Billing charge Rabbit tests đọc grant từ outbox, chưa chứng minh dispatcher phát grant.
+   Sau actual producer/Gateway evidence, Vinh chạy normal paid EXAM/LAB_TEST slices, không SQL
+   discovery hoặc synthetic grant thay actual payment.
+
+Report Huy đã có actual Clinical outpatient completion source acceptance và Lab fixture intake
+ở batch 9; không giao lại producer timestamp fix. Report coverage/Support/paid integration vẫn
+theo [handoff chung Huy](HANDOFF-HUY-MVP.md), không coi local proof là full MVP done.
+
+## Evidence lượt tiếp tục Vinh — 2026-10-16
+
+Source: baseline `71e2684d` + branch `codex/vinh-rx-v1-public-lab-acceptance`.
+Java 21.0.11, Maven 3.9.16, Docker 29.8.0; isolated PostgreSQL `16-alpine` và RabbitMQ
+`3.13-alpine`. Không sửa production Billing/Pharmacy/Gateway, shared build hoặc deployment flags.
+
+| Fresh verification | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|
+| Full Clinical `test` | 339 | 0 | 0 | 0 |
+| Full Lab `test` | 216 | 0 | 0 | 0 |
+| Clinical `process-recovery` (consumer Lab + Rx, outbox) | 3 | 0 | 0 | 0 |
+| Lab `packaged-slice`, public Gateway create-order | 1 | 0 | 0 | 0 |
+| Tổng, không cộng lại focused reruns | 559 | 0 | 0 | 0 |
+
+Tất cả commands cuối exit 0. Package reactor Eureka/Core/Gateway/Clinical/Lab cũng exit 0.
+Review độc lập không còn blocker/should-fix sau hai regression fixes: delayed first fill được
+append vào completed outpatient record và precise decimal Rx snapshot fingerprint. Red run
+đã tái hiện hai lỗi trước sửa; bảng chỉ ghi kết quả cuối. Lượt packaged đầu dừng vì assertion
+context path đòi 403; actual Gateway không khai báo route đó nên trả 404. Đã đối chiếu route
+source rồi assert exact 404; wrong-role/method/nested public command vẫn assert exact 403.
+
+Rx tests đọc **trực tiếp original Pharmacy fixture bytes**, không chép/sửa producer để đạt test:
+`prescription.filled.outpatient.v1.json`, SHA-256
+`b0db35a17d80b1cbdb30d0de7b7549592bc960c67365363634e1f2c1366981a6`.
+Fixture identities: prescription `10000000-0000-4000-8000-000000000001`, patient suffix `002`,
+department `003`, visit `004`, record/dispense `005`; test riêng đổi dispense độc lập record để
+chứng minh không suy ID. Chỉ seed Clinical-owned target của fixture, không query Pharmacy store.
+PG/Rabbit chứng minh một attachment, event/new-event replay, snapshot conflict (kể cả decimal
+precision), mismatch target, historical effect, concurrency, rollback và exact conflict bytes
+trong durable DLQ. Consumer process test dùng actual packaged Clinical/inbox/attachment:
+commit effect, giữ ACK, kill JVM, start PID mới, broker redelivers original body một lần, một effect.
+
+Packaged Lab slice tạo staff/accounts/patient qua real Core/Gateway, login signed doctor;
+check-in/start exam bằng audited **test-only EXAM override**, public POST Lab-order 201,
+NURSE/wrong assigned doctor/wrong method/nested path 403, internal context public path 404.
+Denied commands giữ order count=0; accepted command persist đúng record/patient/sourceOrderId.
+Lab gọi service-only context bằng real signed delegation; unpaid start denied, exact synthetic
+LAB_TEST grant unlock, result outbox → Rabbit → Clinical giữ một attachment; terminal edit denied.
+Đây đóng **public Lab-order command/attachment acceptance**, không thay actual Billing payment.
+Core full-suite ownership acceptance và global M6 vẫn theo owner; không tick toàn bộ H-VINH-01.
+
+Reproduce từ repository root sau khi Docker sẵn sàng:
+
+```powershell
+mvn -q -pl backend/clinical-service,backend/lab-service -am test
+mvn -q -pl backend/eureka-server,backend/core-service,backend/gateway,backend/clinical-service,backend/lab-service -am -DskipTests package
+mvn -q -f backend/clinical-service/pom.xml -Pprocess-recovery failsafe:integration-test failsafe:verify
+$taskRoot=(Get-Location).Path
+mvn -q -f backend/lab-service/pom.xml -Ppackaged-slice test-compile `
+  "-Dlab.acceptance.core.jar=$taskRoot/backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.gateway.jar=$taskRoot/backend/gateway/target/gateway-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.eureka.jar=$taskRoot/backend/eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.clinical.jar=$taskRoot/backend/clinical-service/target/clinical-service-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.lab.jar=$taskRoot/backend/lab-service/target/lab-service-0.0.1-SNAPSHOT.jar" `
+  failsafe:integration-test failsafe:verify
+```
+
+Raw logs local: `%TEMP%/mediflow-vinh-final-tests.log`, `mediflow-vinh-package.log`,
+`mediflow-rx-recovery.log`, `mediflow-public-lab-acceptance-final.log`; XML ở module targets.
+Không cộng report ClinicalExamPackagedAcceptanceIT/Lab process cũ chưa rerun vào 559 tests.
+**Còn lại:** V-CLOSE-03 normal paid EXAM/LAB_TEST và real paid Rx nhận actual Billing grants,
+chờ Lộc L1–L4 và Hoàng Anh G1 tại handoff mới. Không release historical HELD hoặc đổi gates
+để gọi fixture acceptance là full MVP done. Các mục từ đây trở xuống là historical evidence.
+
 ## Chốt sổ Vinh — rà soát ngày 2026-10-15
 
 Nguồn kiểm tra: HEAD `5411acfa56137b410459f98a49c8e680cde2c37b`, đã chứa PR #366/#370
