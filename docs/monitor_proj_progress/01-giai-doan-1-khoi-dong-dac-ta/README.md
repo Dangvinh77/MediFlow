@@ -1,80 +1,68 @@
-# Phase 1 — Project Initiation and Requirements Specification
+# Giai đoạn 1 — Khởi động và đặc tả yêu cầu
 
-This folder contains the Phase 1 evidence package for MediFlow. It records the project problem, customer requirements, user roles, initial business forms, system boundaries, and the architecture baseline that the team will use in later phases.
+Cập nhật ngày **16/10/2026**. Hồ sơ giai đoạn 1 tập trung vào **MVP ngoại trú** của MediFlow, bám theo [thiết kế hệ thống hiện hành](../../plans/01-system-design.md).
 
-The package was reconciled with repository source at commit `3f10ea6` on 10 October 2026. It describes the system that is implemented in source, not the earlier eight-service concept.
+## Mục tiêu và đầu ra
 
-## Phase 1 objective
+1. Nêu vấn đề phối hợp tiếp nhận, khám, xét nghiệm, dược và thu phí.
+2. Xác định người dùng, ranh giới nghiệp vụ và phạm vi MVP.
+3. Đặc tả chức năng theo role, yêu cầu máy khách/máy chủ và tiêu chí nghiệm thu.
+4. Xác định nội dung biểu mẫu ban đầu để đối chiếu với DTO và giao diện khi triển khai.
 
-The teaching plan requires the team to:
+## Review 1
 
-1. identify the operational problem addressed by the project;
-2. analyze customer and stakeholder requirements;
-3. define the responsibilities of administrators, customers, staff, and specialists;
-4. prepare the initial business forms and acceptance baseline.
+Chỉ duy trì hai bản Standard có nội dung tương ứng:
 
-## Documents
+- [Bản tiếng Việt](review-1/02-review-1-standard-vi.md).
+- [English version](review-1/01-review-1-standard-en.md).
 
-| File | Purpose |
+Kèm [Frontend Task Sheet](review-1/Tasksheet_review1.md) cập nhật ngày 16/10/2026: phân công theo owner, trạng thái local so với nghiệm thu runtime, phụ thuộc Gateway/Billing/identity/Support và công việc deferred. Task sheet là bảng theo dõi triển khai, không phải phiên bản báo cáo thứ ba.
+
+Mỗi bản gồm **Phần A — Xác định vấn đề** và **Phần B — CRS**. Functional Requirements nằm trong phần B, được liệt kê bằng danh sách theo từng role. Yêu cầu phần cứng dùng cấu hình tham khảo cho demo/tích hợp, không cam kết công suất production.
+
+## Cấu trúc project và phạm vi
+
+| Deployment đích | Ngữ cảnh nghiệp vụ | Owner |
+|---|---|---|
+| Core | Organization + Patient | Hoàng Anh |
+| Clinical | Clinical | Vinh |
+| Lab | Lab | Vinh |
+| Pharmacy | Pharmacy | Huy |
+| Billing | Billing | Lộc |
+| Support | Report + Notification | Huy / Report; Lộc / Notification |
+
+Gateway là điểm vào backend; Eureka là hạ tầng discovery; `common` là thư viện. Core/Support không chuyển ownership giữa các module và không hợp nhất database. Đích giữ tám kho dữ liệu ngữ cảnh hoạt động.
+
+Source đã có `backend/core-service`, chưa có `backend/support-service`; Report và Notification còn tách module. Đây là phân biệt CURRENT/TARGET, không phải biên bản đã nghiệm thu sáu deployment. Inpatient và Surgery được giữ trong repository nhưng hoãn khỏi profile MVP.
+
+Frontend tiếp tục tổ chức theo logical context trong `src/features/`, không đổi thành thư mục Core/Support. Các lời gọi web đi qua cùng nguồn `/api/*` tới Gateway. Mở rộng mobile không phải điều kiện đóng MVP backend.
+
+## Biểu mẫu nghiệp vụ ban đầu
+
+Danh sách này xác định nội dung người dùng cần làm việc với hệ thống, không định nghĩa lại tên field JSON. Tên field, trường bắt buộc và quyền thao tác phải theo DTO/controller thực tế và [hợp đồng tích hợp](../../plans/03-contracts.md).
+
+| Biểu mẫu | Nội dung chính cần thể hiện |
 |---|---|
-| [Customer requirements and initial forms](giai-doan-1-crs-bieu-mau.md) | The primary Phase 1 specification: scope, stakeholders, roles, functional requirements, use cases, forms, non-functional requirements, and acceptance criteria. |
-| [Source-alignment report](bao-cao-giai-trinh.md) | Evidence showing how this package was reconciled with the current backend, frontend, mobile, database, security, and integration implementation. |
-| [Refresh design](phase-1-source-aligned-refresh-design.md) | Design decisions and boundaries for this documentation refresh. |
-| [Refresh plan](phase-1-source-aligned-refresh-plan.md) | The implementation and verification plan used for the refresh. |
+| Hồ sơ người bệnh | Định danh, thông tin nhân khẩu, liên hệ và thông tin bảo hiểm được hỗ trợ |
+| Lịch khám / tiếp nhận | Người bệnh, khoa/bác sĩ, thời gian, trạng thái lịch và check-in |
+| Hồ sơ khám | Liên kết lượt khám, thông tin khám, chẩn đoán, chỉ định và hướng xử trí ngoại trú |
+| Chỉ định / kết quả xét nghiệm | Hồ sơ nguồn, loại xét nghiệm, trạng thái, kết quả và ngày thực hiện |
+| Đơn thuốc / cấp thuốc | Người bệnh/lượt khám nguồn, thuốc, số lượng, giá máy chủ, giữ thuốc và trạng thái cấp |
+| Hóa đơn / thanh toán / hoàn tiền | Tài khoản lượt khám, khoản phí, đối tượng được thanh toán, giao dịch gốc, trạng thái và lịch sử |
+| Báo cáo / thông báo | Bộ lọc được hỗ trợ, dữ liệu có nguồn, trạng thái cập nhật và người nhận hợp lệ |
 
-## Current system baseline
+Biểu mẫu nội trú, phẫu thuật, tạm ứng và quyết toán nội trú không thuộc đầu ra giai đoạn 1 của MVP này.
 
-MediFlow is a hospital management platform with three client channels and ten implemented business contexts:
+## Cơ sở đối chiếu và kiểm tra
 
-- Web application: Next.js App Router, TypeScript, and Tailwind CSS.
-- Mobile application: Flutter.
-- API access: the gateway is the only public backend entry point.
-- Service discovery: Eureka.
-- Synchronous integration: versioned REST APIs when a current authority decision is required.
-- Asynchronous integration: RabbitMQ events with transactional outbox dispatch, idempotent consumers, bounded retries, and dead-letter queues.
-- Data ownership: one PostgreSQL database per business service; no cross-service table access.
-- Business services: Organization, Patient, Clinical, Lab, Pharmacy, Billing, Notification, Report, Inpatient, and Surgery.
+- [Luồng nghiệp vụ](../../plans/02-business-flows.md) và [hợp đồng](../../plans/03-contracts.md).
+- [Kế hoạch triển khai](../../plans/05-implementation-plan.md) và [tiêu chí nghiệm thu](../../plans/06-acceptance-runbook.md).
+- [Frontend blueprint](../../ai/12-frontend.md), [ownership](../../ai/15-frontend-ownership.md) và [workboard](../../../frontend/docs/frontend-workboard.md).
 
-The source defines these application roles: `ADMIN`, `DOCTOR`, `NURSE`, `PHARMACIST`, `CASHIER`, `LAB_TECH`, `MANAGER`, `PATIENT`, and `SYSTEM`.
+Kiểm tra hai ngôn ngữ có cùng vai trò, phạm vi hoãn, điều kiện nghiệp vụ và tiêu chí nghiệm thu. Kết quả triển khai phải có commit, profile và bằng chứng kiểm thử; không lấy báo cáo lịch sử làm xác nhận hiện tại.
 
-## Mermaid assets
+## Sơ đồ và hồ sơ lịch sử
 
-Every diagram in this folder is maintained as Mermaid source. SVG is the primary format for Markdown and browser viewing; PNG is supplied for compatibility with office applications and submission systems.
+Các file trong `assets/` là sơ đồ của lần lập hồ sơ trước, có thể còn mô tả mười nghiệp vụ. Chúng được giữ để đối chiếu, không minh họa topology MVP hiện hành. Kiến trúc dùng cho Review 1 mới được mô tả trong hai bản Standard và tài liệu thiết kế được liên kết ở trên.
 
-| Diagram | Mermaid source | SVG | PNG |
-|---|---|---|---|
-| System architecture | [`.mmd`](assets/mediflow-system-architecture.mmd) | [`.svg`](assets/mediflow-system-architecture.svg) | [`.png`](assets/mediflow-system-architecture.png) |
-| REST, event, outbox, and idempotency flow | [`.mmd`](assets/mediflow-integration-and-saga-flow.mmd) | [`.svg`](assets/mediflow-integration-and-saga-flow.svg) | [`.png`](assets/mediflow-integration-and-saga-flow.png) |
-
-### System architecture
-
-![MediFlow system architecture](assets/mediflow-system-architecture.svg)
-
-### Integration and saga flow
-
-![MediFlow integration and saga flow](assets/mediflow-integration-and-saga-flow.svg)
-
-## Diagram regeneration
-
-Use the repository's Pretty Mermaid tooling or any Mermaid-compatible renderer. The committed outputs use a print-safe white background, blue connectors, and DejaVu Sans text.
-
-Example:
-
-```powershell
-$node = "C:\Users\VIP\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
-$render = "C:\Users\VIP\.codex\skills\pretty-mermaid\scripts\render.mjs"
-
-& $node $render `
-  --input assets/mediflow-system-architecture.mmd `
-  --output assets/mediflow-system-architecture.svg `
-  --font "DejaVu Sans" `
-  --bg "#ffffff" --fg "#111827" --muted "#334155" `
-  --line "#64748b" --accent "#2563eb" `
-  --surface "#f8fafc" --border "#94a3b8" --padding 40
-```
-
-Render PNG separately with the same palette and a width of 2400 pixels.
-
-## Scope boundary
-
-This refresh changes only Markdown and diagram assets in this Phase 1 folder. It intentionally does not modify generated Word or PDF submissions, application source code, canonical files under `docs/ai`, or later project phases.
+Báo cáo Word/PDF ở thư mục cha là bản nộp lịch sử, chưa được tái xuất từ Markdown mới. Các bản CRS trùng, giải trình, refresh plan/design và các phiên bản Review 1 ngoài Standard đã được bỏ để chỉ còn một bộ yêu cầu song ngữ cần duy trì.

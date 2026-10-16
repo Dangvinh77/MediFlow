@@ -1,345 +1,69 @@
 # MediFlow Review 1 — Frontend Task Sheet
 
-- **Plan preparation date:** 2026-10-12
-- **Source baseline:** `64242496`
-- **Scope:** Current frontend delivery and future frontend allocation by bounded-context ownership
+- **Plan preparation / refresh date:** 2026-10-16.
+- **Scope:** Outpatient MVP; six target deployments: Core, Clinical, Lab, Pharmacy, Billing, Support.
+- **Evidence baseline:** Dated frontend workboard, owner service guides, and active handoffs linked below. This is a documentation reconciliation, not a new runtime verification run.
+- **Relationship to Review 1:** The two Standard reports define customer requirements. This sheet tracks frontend delivery and integration dependencies; a listed requirement is not proof of a delivered screen.
 
-## Evidence and Scheduling Rules
+## Scheduling and Evidence Rules
 
-- Existing work is derived from the live Next.js routes, feature folders, frontend workboard, and service guides.
-- `Actual Start Date` is the earliest Git author date for the relevant frontend context.
-- `Actual Days` is the number of distinct Git author dates that touched the relevant feature and route paths; it is not elapsed calendar time.
-- When no separate historical activity-plan date is traceable, a delivered row uses its earliest Git activity date as both planned and actual start evidence.
-- Dates for future work are planning targets beginning on or after 2026-10-12. They do not claim that a missing backend contract already exists.
-- Planned page names are proposals within the assigned owner's context and are explicitly prefixed with `Planned:`.
+- Keep frontend features and routes organized by logical context. Core groups Organization/Patient and Support groups Report/Notification at deployment level; ownership remains separate.
+- Use the existing task IDs where available. Sheet row numbers identify this summary only and do not create replacement implementation tasks.
+- `Planned Start`, `Actual Start`, and `Actual Days` are `—` where no task-specific schedule or time record has been verified for this revised scope. A checkpoint date is not a start date; test counts and elapsed days are not person-days.
+- The former 2026-10-12 forward schedule is superseded. Sequence work by the dependencies below; do not invent replacement dates or infer progress percentages from historical task totals.
+- `BASELINE` and `LOCAL VERIFIED` do not mean accepted against the outpatient backend. Close a task only after the required contract, activation, signed-role Gateway, and runtime evidence is recorded.
+- Missing contracts remain owner handoffs. Frontend code must not guess source IDs, identity mappings, prices, financial clearance, or unavailable report values.
 
 ## Status Legend
 
 | Status | Meaning |
 |---|---|
-| `DONE` | The route and stated workflow exist in the current source. |
-| `IN PROGRESS` | A bounded implementation exists, but the complete workflow is not finished. |
-| `PLANNED` | Future frontend work with a defined owner and no known blocking contract at preparation time. |
-| `VERIFY CONTRACT` | The live controller, DTO, role, state, or error contract must be reconfirmed before implementation. |
-| `BLOCKED` | A named backend, identity, Gateway, or producer contract is not yet available or activated. |
+| `BASELINE` | Existing UI reported in the workboard/service guide; outpatient runtime acceptance is still separate. |
+| `LOCAL VERIFIED` | Dated local tests or fixture-browser evidence exists for the stated work; does not close external gates. |
+| `IN PROGRESS` | Part of the task is implemented or verified; named acceptance work remains. |
+| `VERIFY CONTRACT` | Confirm the current controller, DTO, roles, activation, and Gateway contract before implementation. |
+| `BLOCKED` | A named contract, identity, Gateway, or runtime dependency remains open. |
+| `PLANNED` | Required work without completion evidence in the cited sources. |
+| `DEFERRED` | Outside outpatient MVP acceptance; retain existing source and data. |
 
 ## Task Sheet
 
-<table>
-  <thead>
-    <tr>
-      <th rowspan="2">No.</th>
-      <th rowspan="2">Member</th>
-      <th rowspan="2">Contents</th>
-      <th rowspan="2">Page Name</th>
-      <th>Activity Plan</th>
-      <th colspan="3">Plan Preparation Date</th>
-    </tr>
-    <tr>
-      <th>Planned Start Date</th>
-      <th>Actual Start Date</th>
-      <th>Actual Days</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>1</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Appointment list, filters, detail, create, edit, arrival, and cancellation with role and state guards.</td>
-      <td><code>/appointments</code><br><code>/appointments/new</code><br><code>/appointments/[appointmentId]</code><br><code>/appointments/[appointmentId]/edit</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>7</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Medical-record lookup, detail, create, symptom update, diagnosis entry, disposition, and immutable completed-state presentation.</td>
-      <td><code>/records</code><br><code>/records/new</code><br><code>/records/[recordId]</code><br><code>/records/[recordId]/edit</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>7</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Laboratory queue, filters, detail, request creation, specimen processing start, result entry, and cancellation.</td>
-      <td><code>/lab</code><br><code>/lab/new</code><br><code>/lab/[testId]</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>8</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Inpatient admission list/detail, admission creation, and bed list with exact Vietnamese wire names. Only the admission-create command slice is currently delivered.</td>
-      <td><code>/inpatient</code><br><code>/inpatient/new</code><br><code>/inpatient/[admissionId]</code><br><code>/inpatient/beds</code></td>
-      <td>2026-10-08</td><td>2026-10-08</td><td>2</td><td><code>IN PROGRESS</code></td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>SHARED testing work: add focused Clinical, Laboratory, and Inpatient API/component tests for role denial, validation, terminal states, retry, and correlation-ID rendering after the shared harness is available.</td>
-      <td>Planned: test suites for <code>/appointments</code>, <code>/records</code>, <code>/lab</code>, and <code>/inpatient</code></td>
-      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>6</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Complete Inpatient bed assignment, transfer, and release controls after reconfirming controller roles, request DTOs, transition preconditions, and conflict codes.</td>
-      <td>Planned: <code>/inpatient/[admissionId]/bed</code></td>
-      <td>2026-10-15</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Add Inpatient admit and pre-admission cancellation controls after verifying bed placement, financial-clearance gates, role rules, cancellation policy, transition conflicts, and Gateway routing.</td>
-      <td>Planned: <code>/inpatient/[admissionId]/admission-state</code></td>
-      <td>2026-10-17</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>8</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Expose Clinical check-in, examination start, record completion, and admission-referral commands only after their backend and Gateway contracts are activated and smoke-tested.</td>
-      <td>Planned: controls in <code>/appointments/[appointmentId]</code> and <code>/records/[recordId]</code></td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>9</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Add the explicit Clinical-to-Laboratory test-request handoff using test code and producer-generated order ID after the live producer/consumer contract is available.</td>
-      <td>Planned: <code>/records/[recordId]/lab-orders</code></td>
-      <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>10</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Add Inpatient treatment entries and immutable corrections, clinical order-reference registration, bed history, medical discharge, and administrative-close presentation after validating each route contract and authority boundary.</td>
-      <td>Planned: <code>/inpatient/[admissionId]/care</code><br>Planned: <code>/inpatient/[admissionId]/order-references</code></td>
-      <td>2026-10-26</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>11</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Add administrator/manager bed creation and update controls after verifying the exact bed DTOs, department/ward selectors, uniqueness rules, occupied-bed restrictions, and Gateway authorization.</td>
-      <td>Planned: <code>/inpatient/beds/admin</code></td>
-      <td>2026-10-28</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>12</td>
-      <td>Vinh<br><code>Dangvinh77 / Harori</code></td>
-      <td>Integrate Inpatient deposit, top-up, settlement, Pharmacy, Surgery, Report, and Notification timeline data after the remaining handoffs are approved and same-byte producer/consumer fixtures pass.</td>
-      <td>Planned: integrated timeline in <code>/inpatient/[admissionId]</code></td>
-      <td>2026-10-29</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
+| No. | Member | Contents / task reference | Page Name / scope | Planned Start | Actual Start | Actual Days | Status |
+|---:|---|---|---|---|---|---:|---|
+| 1 | Vinh | Appointment list/detail/create/edit and legacy arrival/cancel. Existing screens do not prove the V1 check-in/examination flow. | `/appointments` and child routes | — | — | — | `BASELINE` |
+| 2 | Vinh | Medical-record lookup/detail/create/edit/diagnosis. Keep completed-state and permission guards; distinguish legacy operations from outpatient V1. | `/records` and child routes | — | — | — | `BASELINE` |
+| 3 | Vinh | `FE-VINH-MVP-01/04`, `FE-LAB-04`: reconcile Clinical/Lab API/types and role/error/loading/retry states. Lab stale-response regression and local tests recorded on 16 October; signed-role smoke remains. | `/appointments`, `/records`, `/lab` | — | — | — | `IN PROGRESS` |
+| 4 | Vinh | `FE-VINH-MVP-02`: check-in → start examination → outpatient completion. Wait for exact EXAM Gateway/Billing acceptance; unpaid visits remain blocked. | Existing appointment/record workspaces; V1 controls gated | — | — | — | `BLOCKED` |
+| 5 | Vinh | `FE-VINH-MVP-03`: Clinical Lab order → Lab request using the returned source order ID → processing/results. Producer/API preparation exists; actual paid LAB_TEST and Gateway acceptance remain. | `/records`, `/lab` | — | — | — | `BLOCKED` |
+| 6 | Vinh | `FE-VINH-MVP-04`: integrate prescription status from accepted Clinical/Pharmacy contracts and run authenticated role/error smoke; no V0 fallback presented as V1. | `/records`, related outpatient read states | — | — | — | `BLOCKED` |
+| 7 | Huy | `P-02/P-03/P-05/P-07`: drug detail/create/stock, prescription form, and ADMIN outbox UX. Local tests/fixture checks recorded on 16 October; preserve server prices and exact DTOs. | `/pharmacy` and existing child routes | — | — | — | `LOCAL VERIFIED` |
+| 8 | Huy | `P-06`: cancel/dispense terminal actions; 4/4 local subtasks complete. Main task still needs GW-01 real-role smoke, including doctor-owned cancellation and denied actors. | Existing prescription detail and terminal controls | — | — | — | `IN PROGRESS` |
+| 9 | Huy | `P-08`: connect public outpatient prescription source/payment/dispense only after accepted activation, exact clearance and signed actor contracts. Do not substitute the legacy V0 flow. | Existing Pharmacy workspaces; outpatient V1 controls gated | — | — | — | `BLOCKED` |
+| 10 | Huy | `R-01/R-02/R-04/R-05`: daily/monthly/top-medicine report scope, filtering and request lifecycle. Local work recorded; numeric values keep existing contract semantics. | `/reports` and existing report views | — | — | — | `LOCAL VERIFIED` |
+| 11 | Huy; Lộc / Billing; Hoàng Anh / Organization | Resolve report currency/department display and source coverage before new MVP report snapshots. Distinguish cash received from earned revenue and unavailable from zero. Each owner supplies only their own contract. | `/reports`; display contracts for `/billing` | — | — | — | `BLOCKED` |
+| 12 | Hoàng Anh | `FE-ORG-01/02/03`: department/staff/account workflows, including transfer and account status. Service-only identity endpoints remain outside browser code. | `/organization` and child routes | — | — | — | `BASELINE` |
+| 13 | Hoàng Anh | `FE-PATIENT-01/02/03`: search/detail/create/update/delete with current roles and immutable identity number. Existing writes are staff-only; patient self-service requires an explicit contract. | `/patients` and child routes | — | — | — | `BASELINE` |
+| 14 | Hoàng Anh | `FE-ORG-04`, `FE-PATIENT-04`: verify remaining component/contract tests, independent section errors, paging, validation, role denial, retry, and actual Core routing. Shared test harness already exists; do not recreate it. | Organization/Patient owned feature and route paths | — | — | — | `PLANNED` |
+| 15 | Hoàng Anh | Gateway/Core identity liaison: document signed staff/account/patient mappings; G1 exact Billing discovery routing and GW-01 Pharmacy method/role acceptance. These are backend/Gateway prerequisites for the UI. | Gateway contracts; no new browser access to internal lookups | — | — | — | `IN PROGRESS` |
+| 16 | Lộc | `FE-BILLING-01/02/03/05/06/08`: invoice lookup/detail/create/payment, selected-charge V1 payment, department revenue view, ADMIN outbox replay. Current ledger UI accepts an exact request ID; actual source discovery integration needs G1 and Billing evidence. | `/billing`, `/billing/new`, `/billing/[invoiceId]`, `/billing/payment-requests`, `/billing/payment-requests/[id]`, `/billing/revenue`, `/billing/admin/outbox` | — | — | — | `BASELINE` |
+| 17 | Lộc | `FE-BILLING-04`: verify/add tests for pagination, monetary display, permission, terminal state, API errors, retries, and payment flow using the existing harness. Do not assume currency from locale. | Billing owned feature and route paths | — | — | — | `PLANNED` |
+| 18 | Lộc; Hoàng Anh / Gateway | `FE-BILLING-07` outpatient prescription-adjustment refund-due view: confirm exact Gateway allowlist and DTO/roles before exposing it. Read-only refund-due is not a refund command. | Planned control/view under Billing; route subject to accepted contract | — | — | — | `BLOCKED` |
+| 19 | Lộc | `FE-NOTIFICATION-01/02`: patient history, secured detail and ADMIN manual send baseline. Protect recipient data; retain exact role/privacy boundaries. MVP only requires accepted outpatient in-app intents. | `/notifications`, `/notifications/[notificationId]`, `/notifications/send` | — | — | — | `BASELINE` |
+| 20 | Lộc | `FE-NOTIFICATION-04`: verify/add pagination, status/channel, error/retry rendering, role and cross-patient denial tests using the existing harness. | Notification owned feature and route paths | — | — | — | `PLANNED` |
+| 21 | Lộc; Hoàng Anh / identity producer | Patient-owned notification entry needs authoritative patient/account mapping and ownership checks. `FE-NOTIFICATION-03` retry/read-state controls remain unavailable until a live command contract exists. | Planned patient-owned notification entry; no assumed route or claim | — | — | — | `BLOCKED` |
+| 22 | Vinh / shared coordinator; Huy / recorded frame delivery | Six-group sidebar/header/home/theme work has local evidence on 16 October. Remaining shared release work: signed-session desktop/mobile navigation, drawer, denied-role and expired-session smoke. Prior Huy frame assignment does not grant new shared scope. | Existing shared layout, home and theme paths only as authorized | — | — | — | `IN PROGRESS` |
+| 23 | Context owners; Vinh / coordination | Verify the integrated identity → EXAM → LAB_TEST → prescription/payment/dispense journey, asynchronous reports/notifications, duplicate delivery and failure recovery. Requires actual Billing publication, Gateway rules and accepted runtime gates. Six navigation groups do not prove six deployed processes. | All active outpatient routes through Gateway | — | — | — | `BLOCKED` |
+| 24 | Lộc / Notification; Huy / Report; assigned shared runtime/build owner; Hoàng Anh / Gateway | Support deployment and routing acceptance for existing Report/Notification screens. This is an external dependency, not permission to edit shared build or another owner's production files. | Existing `/reports`, `/notifications`; target Support host | — | — | — | `BLOCKED` |
+| 25 | Vinh / Inpatient; Huy / Surgery; Lộc / related Billing | Inpatient beds/admission/treatment, Surgery, admission deposit/top-up/settlement, Surgery refund views, full Report V2 and advanced reminders remain outside MVP. Preserve their existing code/data; do not activate them to close outpatient tasks. | `/inpatient` and future Surgery/advanced-care surfaces | — | — | — | `DEFERRED` |
 
-    <tr>
-      <td>13</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Pharmacy drug catalogue/detail/create, stock adjustment, prescription create/lookup/detail, dispense/cancel, and administrator outbox replay.</td>
-      <td><code>/pharmacy</code><br><code>/pharmacy/drugs</code><br><code>/pharmacy/prescriptions</code><br><code>/pharmacy/admin/outbox</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>5</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>14</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Daily metrics, monthly revenue with daily detail, and top-dispensed medicine reports with validation, zero states, errors, and retry.</td>
-      <td><code>/reports</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>15</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>SHARED testing work: add Pharmacy validation, permission, terminal-state, API-error, and replay tests after the common test harness is available.</td>
-      <td>Planned: test suite for <code>/pharmacy</code></td>
-      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>16</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>SHARED testing work: add Report formatter, filter, permission, zero-value, error, and retry tests after the common test harness is available.</td>
-      <td>Planned: test suite for <code>/reports</code></td>
-      <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>17</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add operational Inpatient/Surgery snapshots, financial daily/monthly views, and capability/coverage indicators after verifying the available conditional Report controllers, DTOs, roles, activation settings, and Gateway routing.</td>
-      <td>Planned: <code>/reports/operations</code><br>Planned: <code>/reports/financial</code></td>
-      <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>18</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add administrator financial rebuild, progress, publication/rollback, and source-archive export/restore after verifying the conditional command contracts, binary size limit, authorization, activation settings, and Gateway behavior.</td>
-      <td>Planned: <code>/reports/financial-operations</code></td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>19</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Create the Surgery case list and detail workspace after the Surgery backend route, authority handoff, DTOs, roles, and Gateway routing are approved.</td>
-      <td>Planned: <code>/surgery</code><br>Planned: <code>/surgery/[caseId]</code></td>
-      <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>20</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add Surgery request, readiness, clearance, schedule, execution, recovery, outcome, cancellation, and charge-handoff controls after each live command contract is verified.</td>
-      <td>Planned: <code>/surgery/[caseId]/workflow</code></td>
-      <td>2026-10-26</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>21</td>
-      <td>Huy<br><code>LQHuy0210</code></td>
-      <td>Add Surgery permission, lifecycle, conflict, retry, and integration tests after the Surgery workspace and approved fixtures exist.</td>
-      <td>Planned: Surgery test suite</td>
-      <td>2026-10-29</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
+## Evidence and Dependency Register
 
-    <tr>
-      <td>22</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Organization department and staff list/detail/create/update, staff transfer, and account create/lock/unlock administration.</td>
-      <td><code>/organization</code><br><code>/organization/departments/new</code><br><code>/organization/departments/[departmentId]</code><br><code>/organization/departments/[departmentId]/edit</code><br><code>/organization/staff/new</code><br><code>/organization/staff/[staffId]</code><br><code>/organization/staff/[staffId]/edit</code><br><code>/organization/accounts</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>23</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Patient paged search, detail, create, update, delete, exact Vietnamese wire mapping, and immutable identity-number behavior.</td>
-      <td><code>/patients</code><br><code>/patients/new</code><br><code>/patients/[patientId]</code><br><code>/patients/[patientId]/edit</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>6</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>24</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>SHARED testing work: add Organization partial-failure, pagination, empty-state, role-gate, account, and retry tests after the common harness is available.</td>
-      <td>Planned: test suite for <code>/organization</code></td>
-      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>25</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>SHARED testing work: add Patient contract, validation, permission, deletion, empty/error, and retry tests after the common harness is available.</td>
-      <td>Planned: test suite for <code>/patients</code></td>
-      <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>26</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Provide authorized patient, doctor, and department lookup contracts for human-facing selectors used by Clinical, Laboratory, Billing, and Report; consumers must not use service-only endpoints.</td>
-      <td>Planned: shared consumer forms in <code>/appointments</code>, <code>/lab</code>, <code>/billing</code>, and <code>/reports</code></td>
-      <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>27</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Define and integrate stable authenticated <code>staffId</code>, patient identity, and account-to-subject mapping across Gateway and Organization without inferring undocumented token claims.</td>
-      <td>Planned: shared <code>/login</code> and session integration</td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>28</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Add secure patient self-service for the authenticated patient's own profile after Gateway identity and Patient ownership/mutation contracts are approved.</td>
-      <td>Planned: <code>/patients/me</code></td>
-      <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>29</td>
-      <td>Hoàng Anh<br><code>TranHoangAnh94</code></td>
-      <td>Provide the identity handoff required for patient-owned appointments, results, prescriptions, invoices, receipts, payments, and notifications; each consumer retains its own UI ownership.</td>
-      <td>Planned: identity contract for patient portal routes</td>
-      <td>2026-10-26</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
+1. [Frontend workboard](../../../../frontend/docs/frontend-workboard.md): 16 October Clinical/Lab regression, Huy local work, shared frame checkpoints, and historical route baseline. Its dated current priorities override older shipped-route labels for MVP activation.
+2. [Frontend ownership](../../../ai/15-frontend-ownership.md): canonical feature/route boundaries and shared-scope rules.
+3. [Organization guide](../../../../frontend/docs/services/organization.md) and [Patient guide](../../../../frontend/docs/services/patient.md): rows 12–14 and identity dependencies. Owner guides describe their recorded baseline; they do not prove a fresh Core runtime smoke.
+4. [Billing guide](../../../../frontend/docs/services/billing.md) and [Notification guide](../../../../frontend/docs/services/notification.md): rows 16–21. Reconfirm older missing-endpoint statements against the newer discovery handoff before starting work; API implementation, Gateway exposure, publication and actual UI acceptance are separate gates.
+5. [Billing discovery/publication handoff](../../../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md): L1/L2 merged; L3 still has open acceptance groups, L4 has owner evidence, G1 and actual paid slice remain open at its recorded checkpoint. Do not mark publication or end-to-end UI complete from API availability alone.
+6. [Huy MVP handoff](../../../handoffs/HANDOFF-HUY-MVP.md): GW-01, signed actor, Rx source/paid flow, report coverage and Support dependencies. P-06 local completion does not close these gates.
+7. [System design](../../../plans/01-system-design.md), [implementation plan](../../../plans/05-implementation-plan.md), and [acceptance runbook](../../../plans/06-acceptance-runbook.md): six-service target and required backend evidence. Core exists in source; Support composition is not yet present. Inpatient/Surgery remain deferred.
 
-    <tr>
-      <td>30</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Billing patient invoice lookup, invoice detail, invoice creation from server-owned fees, payment state, and fee breakdown without client-side authoritative totals.</td>
-      <td><code>/billing</code><br><code>/billing/new</code><br><code>/billing/[invoiceId]</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>31</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Notification patient history, privacy-safe secured detail, and administrator manual-send workflow.</td>
-      <td><code>/notifications</code><br><code>/notifications/[notificationId]</code><br><code>/notifications/send</code></td>
-      <td>2026-07-28</td><td>2026-07-28</td><td>3</td><td><code>DONE</code></td>
-    </tr>
-    <tr>
-      <td>32</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>SHARED testing work: add Billing pagination, monetary display, permission, terminal-state, API-error, retry, and payment-flow tests after the common harness is available.</td>
-      <td>Planned: test suite for <code>/billing</code></td>
-      <td>2026-10-12</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>33</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>SHARED testing work: add Notification pagination, channel/status, privacy-boundary, cross-patient denial, error, and retry tests after the common harness is available.</td>
-      <td>Planned: test suite for <code>/notifications</code></td>
-      <td>2026-10-14</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-    <tr>
-      <td>34</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add ledger payment/refund, admission deposit allocation, settlement preview, reconciliation, settlement, and final-settlement controls after verifying the available conditional Billing controllers, DTOs, idempotency headers, roles, activation settings, and Gateway routing.</td>
-      <td>Planned: <code>/billing/accounts/[accountId]</code><br>Planned: <code>/billing/transactions/[transactionId]</code></td>
-      <td>2026-10-16</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>35</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add administrator/manager revenue filtering by department and date range after confirming the live <code>RevenueByDeptDTO</code>, Gateway routing, validation, empty/error behavior, and non-authoritative display semantics.</td>
-      <td>Planned: <code>/billing/revenue</code></td>
-      <td>2026-10-17</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>36</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add cashier/administrator prescription-adjustment and Surgery-cancellation refund-due read models after verifying both conditional ledger consumers, producer identifiers, DTO fields, roles, error behavior, and Gateway routing; these views must not be presented as refund commands.</td>
-      <td>Planned: <code>/billing/prescription-adjustments/[adjustmentId]/refunds-due</code><br>Planned: <code>/billing/surgery-cancellations/[cancellationId]/refunds-due</code></td>
-      <td>2026-10-18</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>37</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add administrator Billing outbox replay after verifying event-ID discovery, conditional maintenance settings, correlation-ID propagation, not-found behavior, operator feedback, and Gateway routing.</td>
-      <td>Planned: <code>/billing/admin/outbox</code></td>
-      <td>2026-10-20</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>38</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add notification read-state and authorized retry commands only after the live Notification contract defines endpoints, roles, lifecycle rules, and privacy-safe responses.</td>
-      <td>Planned: controls in <code>/notifications/[notificationId]</code></td>
-      <td>2026-10-19</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>39</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Add authenticated “My Notifications” after Hoàng Anh's Gateway/Patient identity mapping is available and backend ownership checks are enforced.</td>
-      <td>Planned: <code>/notifications/me</code></td>
-      <td>2026-10-22</td><td>—</td><td>—</td><td><code>BLOCKED</code></td>
-    </tr>
-    <tr>
-      <td>40</td>
-      <td>Lộc<br><code>locgit-89</code></td>
-      <td>Define and expose currency semantics for Billing displays in coordination with Report; the frontend must not infer currency from locale.</td>
-      <td>Planned: <code>/billing</code> and shared display contract for <code>/reports</code></td>
-      <td>2026-10-26</td><td>—</td><td>—</td><td><code>VERIFY CONTRACT</code></td>
-    </tr>
-    <tr>
-      <td>41</td>
-      <td>Vinh<br><code>SHARED coordinator</code></td>
-      <td>SHARED release verification: run authenticated browser smoke tests for every role across all delivered dashboard contexts, including role denial, ownership/privacy boundaries, error correlation IDs, and critical end-to-end workflows.</td>
-      <td>Planned: all delivered dashboard routes</td>
-      <td>2026-11-02</td><td>—</td><td>—</td><td><code>PLANNED</code></td>
-    </tr>
-  </tbody>
-</table>
-
-## Ownership and Dependency Notes
-
-1. Vinh owns Clinical, Laboratory, and Inpatient frontend contexts. Cross-context identifiers remain bare references and must come from approved contracts.
-2. Huy owns Pharmacy, Report, and the planned Surgery frontend. Surgery remains future work because no frontend route is present in the current source.
-3. Hoàng Anh owns Organization, Patient, and the Gateway-facing identity liaison lane. Shared login/session changes still require explicit shared scope.
-4. Lộc owns Billing and Notification. Financial totals, clearance, retry, and privacy decisions remain backend-authoritative.
-5. Shared components, session files, API wrappers, configuration, and the common test harness are not silently assigned by this table; rows marked `SHARED` identify coordination work only.
+This sheet records no new application test results and grants no additional production write scope. Refresh the relevant row when its owner supplies new evidence; keep detailed backend gaps in the existing handoffs rather than creating a second registry here.
