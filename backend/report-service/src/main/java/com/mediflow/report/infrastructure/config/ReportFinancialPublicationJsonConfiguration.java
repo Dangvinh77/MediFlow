@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 /** Opt-in management commands require an explicit, unambiguous JSON evidence decision. */
 @Configuration(proxyBeanMethods=false)
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2", "mediflow.report.financial-publication.enabled"}, havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportFinancialPublicationJsonConfiguration {
     @Bean Jackson2ObjectMapperBuilderCustomizer strictFinancialPublicationJson() {
         return builder -> builder.featuresToEnable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION,

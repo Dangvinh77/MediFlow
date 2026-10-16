@@ -21,7 +21,7 @@ public class OperationalContributionApplicationService implements ApplyOperation
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void apply(ApplyOperationalContributionCommand command) {
         store.recordEvent(command);
         var accepted = new ArrayList<OperationalContribution>();

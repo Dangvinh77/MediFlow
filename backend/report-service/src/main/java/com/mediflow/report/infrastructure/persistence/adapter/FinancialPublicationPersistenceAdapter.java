@@ -26,13 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Finite available-history publication. Never certifies upstream completeness or releases events. */
 @Component
-@Transactional(propagation=Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation=Propagation.MANDATORY)
 public class FinancialPublicationPersistenceAdapter implements FinancialPublicationStorePort {
     private final JdbcTemplate jdbc;
     private final FinancialRebuildPersistenceAdapter rebuild;
     private final ObjectMapper mapper;
 
-    public FinancialPublicationPersistenceAdapter(JdbcTemplate jdbc, FinancialRebuildPersistenceAdapter rebuild, ObjectMapper mapper) {
+    public FinancialPublicationPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, FinancialRebuildPersistenceAdapter rebuild, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.rebuild = rebuild;
         this.mapper = mapper.copy().findAndRegisterModules().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

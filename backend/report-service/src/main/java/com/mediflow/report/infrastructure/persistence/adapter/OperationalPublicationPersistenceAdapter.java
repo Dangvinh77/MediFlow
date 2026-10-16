@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** SURGERY finite snapshots only. No census, capacity, upstream completeness or held release. */
 @Component
-@Transactional(propagation=Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation=Propagation.MANDATORY)
 public class OperationalPublicationPersistenceAdapter implements OperationalPublicationStorePort {
     private final JdbcTemplate jdbc;
     private final OperationalReplayPersistenceAdapter replay;
@@ -34,8 +34,8 @@ public class OperationalPublicationPersistenceAdapter implements OperationalPubl
     private final OperationalSnapshotCodec snapshots;
     private final ZoneId zone;
 
-    public OperationalPublicationPersistenceAdapter(JdbcTemplate jdbc, OperationalReplayPersistenceAdapter replay,
-            ObjectMapper mapper, ZoneId zone) {
+    public OperationalPublicationPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, OperationalReplayPersistenceAdapter replay,
+            ObjectMapper mapper, @org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId zone) {
         this.jdbc = jdbc; this.replay = replay; this.mapper = mapper.copy().findAndRegisterModules();
         this.snapshots = new OperationalSnapshotCodec(mapper); this.zone = zone;
     }

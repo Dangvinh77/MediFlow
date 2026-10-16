@@ -2,6 +2,12 @@
 
 Root `AGENTS.md` rules continue to apply.
 
+Current scope is the [Huy MVP adjustment plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md).
+Full V2/Surgery/Admission metrics are deferred; legacy zero-fill is not MVP coverage evidence.
+Canonical profile is outpatient-mvp; mvp-outpatient remains an alias. Co-host import must use
+ReportModuleConfiguration with report-module + outpatient-mvp, never broad-scan standalone boot.
+Support composition does not grant write access to Notification, root build, Compose or Gateway.
+
 - **Owner:** Huy (`LQHuy0210`)
 - **Writable scope:** `backend/report-service/**`
 - **Task types:** `IMPLEMENT` inside this scope; `HANDOFF` under `docs/` when another owner must change a contract.
@@ -11,9 +17,15 @@ Root `AGENTS.md` rules continue to apply.
 - **JWT contract:** human endpoints require `type=access`; preserve the cases in
   `src/test/java/com/mediflow/report/infrastructure/security/JwtAuthFilterTest.java`.
 - **Integration gate:** before changing event bindings, revenue/payment semantics or projection
-  fixtures, read the [care-finance registry](../../docs/handoffs/care-finance/README.md) and
-  [CARE-PROJECTIONS](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md), plus the
-  [active Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md).
+  fixtures, read [MVP contracts](../../docs/plans/03-contracts.md),
+  [reliability](../../docs/plans/04-data-reliability.md) and the
+  [active Huy MVP handoff](../../docs/handoffs/HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md).
+  New outpatient reads require accepted coverage; absence is not zero. Gates default OFF.
+  Support must use the `lib` classifier and exclude the standalone Report application from scans;
+  the library artifact alone does not establish multi-store/security composition readiness.
+  Use qualified reportTransactionManager/reportJdbcTemplate/reportZoneId and explicit Report DS
+  credentials. Report Flyway location is module-specific; never scan a foreign default migration
+  directory. Report jobs bind reportTaskScheduler; no generic transaction manager fallback.
 - Deposits are cash/liability, not earned revenue. New producer events require matching Report
   fixtures/replay/idempotency tests before the contract is marked implemented.
 - **Verify:** `mvn -q -pl backend/report-service -am test`

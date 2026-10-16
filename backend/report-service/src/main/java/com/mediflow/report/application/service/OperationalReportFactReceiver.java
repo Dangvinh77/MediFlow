@@ -42,7 +42,7 @@ public class OperationalReportFactReceiver implements ReceiveOperationalReportFa
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.transaction.annotation.Transactional("reportTransactionManager")
     public void receive(DecodedCareFinanceEvent event) {
         Objects.requireNonNull(event);
         switch (event.metadata().eventType()) {

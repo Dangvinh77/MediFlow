@@ -147,7 +147,29 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource><directory>src/main/resources</directory></resource>
+            <!-- Add an isolated lookup location without changing released SQL bytes. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes><include>db/migration/**</include></includes>
+                <targetPath>mediflow/report</targetPath>
+            </resource>
+        </resources>
         <plugins>
+            <!-- Keep the existing executable filename; Support must depend on classifier lib. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>report-context-library</id>
+                        <phase>package</phase>
+                        <goals><goal>jar</goal></goals>
+                        <configuration><classifier>lib</classifier></configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -162,4 +184,24 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>report-packaging-acceptance</id>
+            <properties><skipUnitTests>false</skipUnitTests></properties>
+            <build><plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId>
+                    <configuration><skipTests>${skipUnitTests}</skipTests></configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId>
+                    <configuration><includes>
+                        <include>**/ReportPackagingAcceptanceIT.java</include>
+                        <include>**/ReportPackagedModuleAcceptanceIT.java</include>
+                    </includes></configuration>
+                    <executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions>
+                </plugin>
+            </plugins></build>
+        </profile>
+    </profiles>
 </project>

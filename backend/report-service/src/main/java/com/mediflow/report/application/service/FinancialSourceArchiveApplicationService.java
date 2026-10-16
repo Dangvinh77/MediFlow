@@ -16,12 +16,12 @@ public class FinancialSourceArchiveApplicationService implements ManageFinancial
     public FinancialSourceArchiveApplicationService(FinancialSourceArchiveStorePort store, FinancialArchiveCodecPort codec) {
         this.store = store; this.codec = codec;
     }
-    @Override @Transactional(isolation = Isolation.REPEATABLE_READ, readOnly = true, timeout = 15)
+    @Override @Transactional(transactionManager = "reportTransactionManager", isolation = Isolation.REPEATABLE_READ, readOnly = true, timeout = 15)
     public byte[] exportArchive(UUID generationId) {
         if (generationId == null) throw new IllegalArgumentException("Generation identity required");
         return codec.encode(store.exportArchive(generationId));
     }
-    @Override @Transactional(timeout = 15)
+    @Override @Transactional(transactionManager = "reportTransactionManager", timeout = 15)
     public FinancialArchiveRestoreDTO restoreArchive(byte[] bytes, UUID actorAccountId) {
         if (actorAccountId == null) throw new IllegalArgumentException("Authenticated archive operator required");
         return store.restoreArchive(codec.decode(bytes), actorAccountId);

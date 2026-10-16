@@ -19,7 +19,7 @@ public class RefundReplayApplicationService implements ReplayCashRefundsUseCase 
     public RefundReplayApplicationService(ReplayCashReceiptsUseCase receipts, RefundReplayStorePort store) {
         this.receipts = receipts; this.store = store;
     }
-    @Override @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Override @Transactional(transactionManager = "reportTransactionManager", isolation = Isolation.REPEATABLE_READ)
     public RefundReplayProgress start() {
         // Both freeze statements must share one PostgreSQL MVCC snapshot, not separate timestamps.
         var receiptRun = receipts.start();
@@ -27,7 +27,7 @@ public class RefundReplayApplicationService implements ReplayCashRefundsUseCase 
         return receiptRun.status() == Status.VERIFIED && run.sourceRefunds() == 0
                 ? store.reconcile(run.generationId()) : run;
     }
-    @Override @Transactional
+    @Override @Transactional("reportTransactionManager")
     public RefundReplayProgress advance(UUID id, int batchSize) {
         if (id == null || batchSize < 1 || batchSize > 500) throw new IllegalArgumentException("Refund replay batch must be 1..500");
         var current = store.lock(id); supported(current);
@@ -50,7 +50,7 @@ public class RefundReplayApplicationService implements ReplayCashRefundsUseCase 
         var progress = store.progress(id);
         return inputs.isEmpty() || progress.sourceRefunds() == progress.processedRefunds() ? store.reconcile(id) : progress;
     }
-    @Override @Transactional(readOnly = true)
+    @Override @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public RefundReplayProgress progress(UUID id) {
         if (id == null) throw new IllegalArgumentException("Refund replay generation required");
         return store.progress(id);

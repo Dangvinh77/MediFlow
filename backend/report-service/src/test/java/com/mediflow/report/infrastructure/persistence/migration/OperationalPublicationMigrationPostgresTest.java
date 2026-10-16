@@ -17,7 +17,7 @@ class OperationalPublicationMigrationPostgresTest {
     @BeforeEach void cleanIsolatedContainer() { migration("latest").clean(); }
 
     @Test void freshV26_startsWithNoFabricatedAcceptanceOrPublication() {
-        var migrate = migration("latest"); migrate.migrate(); migrate.validate();
+        var migrate = migration("26"); migrate.migrate(); migrate.validate();
         var jdbc = jdbc();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM operational_generation_acceptance", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM operational_publication_audit", Integer.class)).isZero();
@@ -37,7 +37,8 @@ class OperationalPublicationMigrationPostgresTest {
         var pointer = jdbc.queryForList("SELECT to_jsonb(t)::text FROM operational_report_publication t", String.class);
         var legacy = jdbc.queryForList("SELECT to_jsonb(t)::text FROM daily_visit_report t", String.class);
         var checksums = jdbc.queryForList("SELECT version,checksum FROM flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank");
-        var migrate = migration("latest"); assertThat(migrate.migrate().migrationsExecuted).isOne(); migrate.validate();
+        // This contract isolates V26. V27's additive upgrade is covered by ReportModuleUpgradePostgresTest.
+        var migrate = migration("26"); assertThat(migrate.migrate().migrationsExecuted).isOne(); migrate.validate();
         assertThat(jdbc.queryForList("SELECT to_jsonb(t)::text FROM operational_replay_scope t", String.class)).isEqualTo(scopes);
         assertThat(jdbc.queryForList("SELECT to_jsonb(t)::text FROM operational_report_publication t", String.class)).isEqualTo(pointer);
         assertThat(jdbc.queryForList("SELECT to_jsonb(t)::text FROM daily_visit_report t", String.class)).isEqualTo(legacy);

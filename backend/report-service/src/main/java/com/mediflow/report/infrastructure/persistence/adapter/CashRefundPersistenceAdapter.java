@@ -14,11 +14,28 @@ import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.*;
 
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class CashRefundPersistenceAdapter implements CashRefundStorePort {
     private final JdbcTemplate jdbc;
     private final CashSnapshotCodec codec;
-    public CashRefundPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc = jdbc; this.codec = new CashSnapshotCodec(mapper); }
+    private final boolean outpatientOnly;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public CashRefundPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper,
+            org.springframework.core.env.Environment environment) {
+        this(jdbc, mapper, environment.acceptsProfiles(org.springframework.core.env.Profiles.of("mvp-outpatient", "outpatient-mvp")));
+    }
+
+    /** Compatibility constructor for isolated standalone tests; production mode comes from the active profile. */
+    public CashRefundPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
+        this(jdbc, mapper, false);
+    }
+
+    private CashRefundPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper, boolean outpatientOnly) {
+        this.jdbc = jdbc;
+        this.codec = new CashSnapshotCodec(mapper);
+        this.outpatientOnly = outpatientOnly;
+    }
     @Override public void lockAccount(UUID accountId) {
         jdbc.execute("SET LOCAL lock_timeout = '3s'");
         jdbc.execute("SET LOCAL statement_timeout = '5s'");
@@ -78,11 +95,12 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
         require(limit >= 1 && limit <= 20, "CASH_REFUND_BATCH_INVALID");
         return jdbc.query("""
                 SELECT * FROM report_cash_refund WHERE original_transaction_id=? AND state='PENDING'
+                    AND (? = false OR care_episode_type='OUTPATIENT_VISIT')
                 ORDER BY created_at,refund_transaction_id LIMIT ?
                 """, (rs, row) -> new CashRefund(rs.getObject("refund_transaction_id", UUID.class), rs.getObject("original_transaction_id", UUID.class),
                 rs.getObject("account_id", UUID.class), rs.getObject("patient_id", UUID.class), rs.getObject("department_id", UUID.class),
                 rs.getString("care_episode_type"), rs.getObject("care_episode_id", UUID.class), rs.getBigDecimal("amount"), rs.getString("currency"),
-                Instant.parse(rs.getString("completed_at_iso")), rs.getDate("business_date").toLocalDate(), rs.getString("report_zone")), original, limit);
+                Instant.parse(rs.getString("completed_at_iso")), rs.getDate("business_date").toLocalDate(), rs.getString("report_zone")), original, outpatientOnly, limit);
     }
     @Override public void apply(CashRefund refund, CashReceipt original) {
         int changed = jdbc.update("""
@@ -107,7 +125,7 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
     @Override public void reject(UUID refund, String reason) {
         jdbc.update("UPDATE report_cash_refund SET state='REJECTED',reason_code=? WHERE refund_transaction_id=? AND state='PENDING'", reason, refund);
     }
-    @Override @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW, timeout = 5)
+    @Override @Transactional(transactionManager = "reportTransactionManager", readOnly = true, propagation = Propagation.REQUIRES_NEW, timeout = 5)
     public List<UUID> readyOriginals(int limit) {
         require(limit >= 1 && limit <= 20, "CASH_REFUND_BATCH_INVALID");
         return jdbc.queryForList("""
@@ -117,12 +135,26 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
                 ORDER BY MIN(r.created_at),r.original_transaction_id LIMIT ?
                 """, UUID.class, limit);
     }
-    @Override @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 5)
+    @Override
+    public List<UUID> readyOutpatientOriginals(int limit) {
+        require(limit >= 1 && limit <= 20, "CASH_REFUND_BATCH_INVALID");
+        return jdbc.queryForList("""
+                SELECT r.original_transaction_id FROM report_cash_refund r
+                JOIN report_cash_receipt p ON p.transaction_id=r.original_transaction_id
+                WHERE r.state='PENDING' AND r.next_attempt_at<=now()
+                    AND r.care_episode_type='OUTPATIENT_VISIT' AND p.care_episode_type='OUTPATIENT_VISIT'
+                    AND p.classification='SERVICE_PAYMENT'
+                GROUP BY r.original_transaction_id ORDER BY MIN(r.created_at),r.original_transaction_id LIMIT ?
+                """, UUID.class, limit);
+    }
+
+    @Override @Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.REQUIRES_NEW, timeout = 5)
     public void defer(UUID original) {
         jdbc.update("""
                 UPDATE report_cash_refund SET next_attempt_at=now()+interval '60 seconds', recovery_attempts=recovery_attempts+1
                 WHERE original_transaction_id=? AND state='PENDING'
-                """, original);
+                      AND (? = false OR care_episode_type='OUTPATIENT_VISIT')
+                  """, original, outpatientOnly);
     }
     private static void require(boolean valid, String code) { if (!valid) throw new ReportRuleException(code, "Cash refund evidence conflict"); }
 }

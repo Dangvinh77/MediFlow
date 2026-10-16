@@ -1,7 +1,16 @@
 # Surgery Service
 
+## Current MVP scope — deferred (2026-10-15)
+
+Surgery is preserved but not running/routed/activated in the simplified six-deployment MVP.
+The implementation notes and historical test counts below are not an active backlog or current
+runtime acceptance. Do not enable Surgery or delete its source/data to close the Huy MVP plan.
+Only compatibility fixture paths were aligned to Core; production callers still require a separate
+reactivation task. Current scope: [Huy plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
+[Core compatibility handoff](../../docs/handoffs/HANDOFF-SURGERY-CORE-PATHS.md).
+
 Owner: Huy (`LQHuy0210`). Port `8091`, owned DB `mediflow_surgery`, base path `/api/v1/surgery`.
-Design: [bounded context](../../docs/ai/services/surgery.md), [V2 specification](../../docs/eproject_general_plan/backend-spec/care-finance-v2/11-surgery.md).
+Current scope: [MVP design](../../docs/plans/01-system-design.md), [bounded-context pointer](../../docs/ai/services/surgery.md).
 
 ## Safety-pause evidence — 2026-10-12 (internal, not clinically activated)
 
@@ -100,7 +109,7 @@ writes remain atomic. Observation freshness is not a clinical TTL or distributed
 No revoke mapping is added: its legal roles/policy remain unresolved.
 
 This is a direct-service LOCAL slice, not source policy, Gateway or downstream acceptance. No
-migrations/outbound bytes/producer activation changed. [Execution ledger](../../docs/superpowers/plans/2026-10-07-surgery-preop-api-batch.md).
+migrations/outbound bytes/producer activation changed. Execution ledger (historical document retired; outside MVP scope).
 
 ## Implemented routes — 2026-10-07
 
@@ -166,8 +175,8 @@ mvn -pl backend/surgery-service -am '-Dapi.version=1.44' '-Dtest=SurgeryCreation
 ```
 
 Latest evidence and remaining integration gates:
-[creation execution batch](../../docs/superpowers/plans/2026-10-07-surgery-creation-batch.md) and
-[ten HTTP follow-up checks](../../docs/superpowers/plans/2026-10-07-surgery-creation-api-batch.md).
+creation execution batch (historical document retired; outside MVP scope) and
+ten HTTP follow-up checks (historical document retired; outside MVP scope).
 
 POST `/api/v1/surgery/cases` needs BOTH `mediflow.features.surgery.enabled=true` and
 `mediflow.surgery.creation.api.enabled=true` (both default false). Enabling them without a real
@@ -264,7 +273,7 @@ receipt/Location replay, changed-result conflict, missing consent/current financ
 scheduled correction/new draft revision and HELD failure rollback/retry. These assertions are
 **not yet DB-verified** while Docker is unavailable; no shared/Gateway/live-delivery acceptance is
 claimed. Framework-free cross-command tests complement, not replace, that database evidence.
-[Selection and fresh verification](../../docs/superpowers/plans/2026-10-07-surgery-workflow-batch.md).
+Selection and fresh verification (historical document retired; outside MVP scope).
 
 Gated POST paths: `/{id}/readiness/evaluate`, `/{id}/schedule/finalize`, `/{id}/start`, `/{id}/complete`
 under `/api/v1/surgery/cases`. ADMIN/DOCTOR may use clinical commands; finalize also permits MANAGER.
@@ -337,7 +346,7 @@ The freshness window does not invent a 30-second READY/SCHEDULED expiry; START o
 The read is not a
 distributed lock: the cross-service race fence remains open, while preflight now runs outside all
 transactions. Lifecycle is still not registered as a production bean, and the independent HTTP gate
-remains OFF. See the [ten-ID closure ledger](../../docs/superpowers/plans/2026-10-07-surgery-closeable-batch.md).
+remains OFF. See the ten-ID closure ledger (historical document retired; outside MVP scope).
 
 Billing-side switch `MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED` defaults false. Existing Surgery
 business/consumer/publication switches and held V1 rows are unchanged. The REST contract and
@@ -399,7 +408,7 @@ message queued while Surgery is down. Authority publishing/intake is enabled onl
 test apps. Assertions cover exact case targeting, atomic pre-start invalidation/release, retained
 history and single-effect replay; the unchanged defaults remain OFF in production. These new
 scenarios do not certify READY/finalize/START reconciliation or the full clinical lifecycle.
-Latest results/remaining acceptance: [50-item execution ledger](../../docs/superpowers/plans/2026-10-05-huy-50-task-execution.md).
+Latest results/remaining acceptance: 50-item execution ledger (historical document retired; outside MVP scope).
 
 Prior verification before the financial lookup slice — 2026-10-06: **506 Surgery Surefire tests and 6 explicit packaged-runtime
 scenarios pass**, zero failures/errors/skips. Includes 10 actual PG lifecycle cases and five

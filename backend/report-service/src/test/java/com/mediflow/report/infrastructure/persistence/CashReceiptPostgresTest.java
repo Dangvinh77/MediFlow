@@ -38,6 +38,7 @@ import com.mediflow.report.infrastructure.messaging.carefinance.CareFinanceEnvel
 import com.mediflow.report.infrastructure.persistence.adapter.CashReceiptPersistenceAdapter;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CashReceiptApplicationService.class, CashReceiptPersistenceAdapter.class, CashReceiptPostgresTest.Config.class,
         com.mediflow.report.application.service.CashRefundApplicationService.class,

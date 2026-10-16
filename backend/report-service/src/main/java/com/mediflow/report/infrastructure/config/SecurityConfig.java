@@ -27,30 +27,38 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /** Stateless JWT verification and default-deny authorization for report HTTP endpoints. */
-@Configuration
+@Configuration("reportSecurityConfig")
+@org.springframework.context.annotation.Import(ReportWebConfiguration.class)
 @EnableMethodSecurity
 @EnableConfigurationProperties({JwtProperties.class, CareFinanceFeatureProperties.class})
 public class SecurityConfig {
 
-    @Bean
+    @Bean("reportJwtAuthFilter")
     public JwtAuthFilter jwtAuthFilter(JwtProperties properties) {
         return new JwtAuthFilter(properties);
     }
 
-    @Bean
-    public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration(JwtAuthFilter filter) {
+    @Bean("reportJwtAuthFilterRegistration")
+    public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration(
+            @org.springframework.beans.factory.annotation.Qualifier("reportJwtAuthFilter") JwtAuthFilter filter) {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
+    @Bean("reportSecurityFilterChain")
+    @org.springframework.core.annotation.Order(20)
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   @org.springframework.beans.factory.annotation.Qualifier("reportJwtAuthFilter") JwtAuthFilter jwtAuthFilter,
                                                    ObjectMapper objectMapper,
+                                                   org.springframework.core.env.Environment environment,
                                                    @Value("${mediflow.report.telemetry.enabled:false}")
                                                    boolean telemetryEnabled,
                                                    @Value("${mediflow.security.swagger-permit:false}")
                                                    boolean swaggerPermit) throws Exception {
+        if (environment.matchesProfiles("report-module")) {
+            http.securityMatcher("/api/v1/reports/**");
+        }
         return http
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())

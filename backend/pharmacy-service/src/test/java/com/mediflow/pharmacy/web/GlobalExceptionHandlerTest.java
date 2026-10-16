@@ -21,7 +21,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().success()).isFalse();
         assertThat(response.getBody().data()).isNull();
         assertThat(response.getBody().error().code()).isEqualTo("PHARMACY_UPSTREAM_UNAVAILABLE");
-        assertThat(response.getBody().error().message()).isEqualTo("Admission authority is unavailable");
+        assertThat(response.getBody().error().message()).isEqualTo("Required upstream authority is unavailable");
     }
 
     @Test

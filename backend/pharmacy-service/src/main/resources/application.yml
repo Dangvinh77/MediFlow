@@ -50,6 +50,9 @@ spring:
           pharmacyClinicalContextClient:
             connectTimeout: 2000
             readTimeout: 3000
+          pharmacyBillingClearanceClient:
+            connectTimeout: 1000
+            readTimeout: 1000
           pharmacyPatientIdentityClient:
             connectTimeout: 2000
             readTimeout: 3000
@@ -79,6 +82,11 @@ mediflow:
       enabled: ${MEDIFLOW_PHARMACY_ADMISSION_AUTHORITY_ENABLED:false}
     clearance-consumer:
       enabled: ${MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED:false}
+    clearance-authority:
+      enabled: ${MEDIFLOW_PHARMACY_CLEARANCE_AUTHORITY_ENABLED:false}
+    outpatient-events:
+      enabled: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED:false}
+      acceptance-reference: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE:}
     business-zone: ${MEDIFLOW_PHARMACY_BUSINESS_ZONE:Asia/Ho_Chi_Minh}
     reservation:
       batch-size: ${MEDIFLOW_PHARMACY_RESERVATION_BATCH_SIZE:100}

@@ -14,12 +14,12 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Database fences serialize replicas. Delivery, immutable revision and both stock scopes are atomic. */
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class SettlementReceivableStoreAdapter implements SettlementReceivableStorePort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final CashSnapshotCodec evidence;
-    public SettlementReceivableStoreAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public SettlementReceivableStoreAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.mapper = mapper.copy().disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.evidence = new CashSnapshotCodec(this.mapper);

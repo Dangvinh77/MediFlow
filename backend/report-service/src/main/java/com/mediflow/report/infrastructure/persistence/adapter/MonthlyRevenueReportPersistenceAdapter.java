@@ -22,7 +22,7 @@ public class MonthlyRevenueReportPersistenceAdapter implements MonthlyRevenueRep
     private final MonthlyRevenueReportJpaRepository repository;
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public MonthlyRevenueReport findOrCreate(int year, int month, UUID departmentId) {
         MonthlyRevenueReport.initialize(month, year, departmentId);
         repository.insertIfAbsent(UUID.randomUUID(), month, year, departmentId);
@@ -32,14 +32,14 @@ public class MonthlyRevenueReportPersistenceAdapter implements MonthlyRevenueRep
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public MonthlyRevenueReport save(MonthlyRevenueReport report) {
         MonthlyRevenueReportJpaEntity saved = repository.save(MonthlyRevenueReportPersistenceMapper.toEntity(report));
         return MonthlyRevenueReportPersistenceMapper.toDomain(saved);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public Optional<MonthlyRevenueReport> find(int year, int month, UUID departmentId) {
         return repository.findByScope(month, year, departmentId)
                 .map(MonthlyRevenueReportPersistenceMapper::toDomain);

@@ -22,7 +22,7 @@ import com.mediflow.report.domain.model.OperationalReportPublication;
 public class OperationalSnapshotReadPersistenceAdapter implements OperationalSnapshotReadPort {
     private static final int QUERY_TIMEOUT_SECONDS = 3;
     private final JdbcTemplate jdbc;
-    public OperationalSnapshotReadPersistenceAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public OperationalSnapshotReadPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     @Override public Optional<OperationalReportPublication> publication(String kind) {
         try {

@@ -13,18 +13,22 @@ import com.mediflow.report.infrastructure.persistence.PaymentContributionJpaEnti
 import com.mediflow.report.infrastructure.persistence.PaymentContributionPersistenceMapper;
 import com.mediflow.report.infrastructure.persistence.repository.PaymentContributionJpaRepository;
 
-import lombok.RequiredArgsConstructor;
 
 /** Invoice contribution adapter using an advisory transaction lock for absent rows. */
 @Component
-@RequiredArgsConstructor
 public class PaymentContributionPersistenceAdapter implements PaymentContributionRepositoryPort {
 
     private final PaymentContributionJpaRepository repository;
     private final JdbcTemplate jdbcTemplate;
 
+    public PaymentContributionPersistenceAdapter(PaymentContributionJpaRepository repository,
+            @org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbcTemplate) {
+        this.repository = repository;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public PaymentContribution findOrCreateForUpdate(UUID invoiceId) {
         jdbcTemplate.query("SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))",
                 statement -> statement.setObject(1, invoiceId), resultSet -> {
@@ -39,7 +43,7 @@ public class PaymentContributionPersistenceAdapter implements PaymentContributio
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public PaymentContribution save(PaymentContribution contribution) {
         if (contribution.getStatus() == PaymentContributionStatus.NEW) {
             throw new IllegalArgumentException("NEW payment contribution must not be persisted");

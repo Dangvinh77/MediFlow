@@ -45,6 +45,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.CashReceiptPersist
 import com.mediflow.report.infrastructure.persistence.adapter.CashReplayPersistenceAdapter;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CashReceiptApplicationService.class, CashReceiptPersistenceAdapter.class, CashReplayApplicationService.class,
         CashReplayPersistenceAdapter.class, CashReplayPostgresTest.Config.class,

@@ -1,9 +1,69 @@
 # report-service
 
+## MVP adjustment — 2026-10-14
+
+Scope: outpatient counts/dispensed items and source-evidenced cash/refund; future Report module
+inside Support with Notification remaining Lộc-owned. Support host is not created by this batch.
+
+2026-10-15: canonical mode is `outpatient-mvp`; earlier `mvp-outpatient` is an alias.
+For co-hosting, import `ReportModuleConfiguration` from classifier `lib` and activate
+`report-module,outpatient-mvp`. Report data credentials must be explicit via
+`mediflow.report.datasource.*`; named Report DS/Flyway/EMF/tx/JDBC have no foreign/default fallback.
+Namespaced migration copies live at `classpath:mediflow/report/db/migration`, bytes unchanged.
+Standalone keeps its original datasource and aliases for compatibility. All Report transactions
+select reportTransactionManager; native adapters select reportJdbcTemplate. Security/advice/Rabbit
+beans and scheduled work are now namespaced, module security matches Report routes only.
+Full composition contract and owner actions: [Support handoff](../../docs/handoffs/HANDOFF-HUY-SUPPORT-COMPOSITION.md).
+Local wiring does not prove real DB/broker/Support startup acceptance.
+
+Cutover preparation and rollback checklist: [owned runbook](../../docs/plans/huy-mvp-cutover-runbook.md).
+The operator inventory in `src/main/resources/operations/mvp-cutover-inventory.sql` is READ ONLY,
+not a publication/recovery/acceptance writer. Current Report migration history contains 24 SQL files,
+latest V27; version gaps are preserved. Artifact profile now compares every SQL copy and runs three
+forked-JVM probes from the actual plain JAR, not Report target/classes; DB/broker gates remain open.
+Canonical scope: [MVP design](../../docs/plans/01-system-design.md),
+[Huy plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
+[manifest/evidence](../../docs/plans/huy-backend-mvp-baseline.md).
+
+The module `mvp-outpatient` profile excludes legacy flat intake, mixed Admission/Surgery intake,
+settlement/final-recognition and full V2 read/publication/archive APIs, even with global overrides.
+Mixed standalone cash/refund listeners are also excluded. The default-OFF selected V1 listener
+uses `mediflow.report.outpatient-consumer.enabled` AND global care-finance-v2. It binds only
+medicalrecord.completed/lab.result.created/prescription.filled/payment.completed/payment.refunded
+to `report.outpatient-v1.q`, with a durable `report.outpatient-v1.dlq`. Invalid/deferred/conflicting
+facts go to DLQ, not ACK-drop; transient storage errors get bounded retry. Existing operation
+receipts/cash/refund kernels remain authoritative, including original-linked early-refund recovery.
+
+New ADMIN/MANAGER reads require `mediflow.report.outpatient-read.enabled` AND global care-finance-v2:
+`GET /api/v1/reports/outpatient/daily?fromDate&toDate&departmentId` and
+`GET /api/v1/reports/outpatient/monthly?year&departmentId`. At most 366 complete calendar days,
+years 2000–2100, configured Report zone, VND. Periods carry visits/Lab/Rx/units, cashReceived,
+refunds/netCash; never earned revenue/liability. Coverage metadata includes coverageId,
+sourceObservedAt/reconciledAt. Legacy endpoints retain their wire and zero-fill semantics.
+
+V27 creates an EMPTY accepted-coverage table. No write API or automatic acceptance is provided.
+An audited source export/reconciliation for all five inputs and exact department/date/zone is
+required before rollout. No coverage, pending/invalid refund, fingerprint drift, wrong scope or
+future acceptance returns 404 REPORT_NOT_FOUND, not invented zero. One REPEATABLE READ snapshot
+reads only Report stores; late facts invalidate the accepted local witness. Gateway routing and
+real Clinical outpatient/source-coverage acceptance are still owner gates; do not enable after pull.
+
+Packaging preserves executable `report-service-0.0.1-SNAPSHOT.jar` for standalone rollback and
+adds plain `report-service-0.0.1-SNAPSHOT-lib.jar`. Future Support dependency must explicitly use
+classifier `lib`, never the executable BOOT-INF JAR; exclude ReportServiceApplication from host
+scans. Module datasource/EMF/Flyway/transaction manager/security wiring is supplied locally;
+real PostgreSQL/upgrade and co-host startup acceptance remains H6-10.4/H6-11.
+Artifact verification: `mvn -q -pl backend/report-service -am -Preport-packaging-acceptance
+-DskipUnitTests=true verify`. This checks artifact structure/migration bytes, not host startup.
+Existing stores, migrations, queues, raw evidence and compatibility behavior remain intact.
+
+The implementation notes/test counts below are historical; they do not reopen full V2 or prove
+this profile has passed packaged Support/Gateway/PostgreSQL/RabbitMQ acceptance.
+
 Aggregated analytics. A **read model** built purely from events — never queries another service's DB.
 
 Reference: [`docs/ai/services/report.md`](../../docs/ai/services/report.md) · design doc
-[`docs/eproject_general_plan/report-service.html`](../../docs/eproject_general_plan/report-service.html).
+[`docs/eproject_general_plan/report-service.html`](../../docs/plans/02-business-flows.md).
 
 - **Port:** 8088 · **Base path:** `/api/v1/reports` · **DB:** `mediflow_report` (PostgreSQL)
 - **Owns tables:** `DAILY_VISIT_REPORT`, `MONTHLY_REVENUE_REPORT`, `DRUG_STATISTIC`,
@@ -43,7 +103,7 @@ workflow. [Canonical release and limits](../../docs/handoffs/care-finance/CONTRA
 source claims, minimal replay journal and hospital/department scopes in one transaction. Close-before-
 start, conflicting snapshots, rollback, replica delivery and finite replay are tested. Administrative
 close remains evidence only, never medical discharge/LOS/occupancy. No new binding, publication or
-activation. [Verification and remaining V2 work](../../docs/superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+activation. [Verification and remaining V2 work](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md).
 
 Cash-only intake follow-up (2026-10-08): `MEDIFLOW_REPORT_CASH_RECEIPT_CONSUMER_ENABLED`
 AND `MEDIFLOW_CARE_FINANCE_V2` independently gate `report.cash-receipts-v2.q`/DLQ, both false by
@@ -53,14 +113,14 @@ with redacted reasons, and storage failures retry three times before original-by
 This gross-receipt slice alone does not implement recognition, deposit release, refunds, settlement,
 financial API/publication or held-row release; the separate cash-refund follow-up is described below.
 Legacy listeners remain unchanged and reject V1 envelopes rather than
-counting a deposit as revenue. [Verification and source manifest](../../docs/superpowers/plans/2026-10-08-report-cash-intake.md).
+counting a deposit as revenue. [Verification and source manifest](../../docs/plans/03-contracts.md).
 
 Completed-refund follow-up: care-finance-v2 AND `MEDIFLOW_REPORT_CASH_REFUND_CONSUMER_ENABLED`
 (false) gate `report.cash-refunds-v2.q`/DLQ and a bounded durable pending-recovery worker. V15 accepts
 actual Billing refund bytes, matches the original local receipt and records actual-refund-day cash-out
 for hospital/account-department scopes. Early refunds remain PENDING; context/budget violations reject
 or quarantine without guessed classification. Gross inflows stay unchanged. This is not earned/liability
-reversal, full financial/refund replay or accepted publication. [Implementation and verification](../../docs/superpowers/plans/2026-10-08-billing-refund-closure.md).
+reversal, full financial/refund replay or accepted publication. [Implementation and verification](../../docs/plans/04-data-reliability.md).
 
 V2 operational intake follow-up (2026-10-08): `MEDIFLOW_REPORT_OPERATIONAL_CONSUMER_ENABLED`
 AND `MEDIFLOW_CARE_FINANCE_V2` independently gate a private seven-key operational/evidence queue.
@@ -70,7 +130,7 @@ while administrative close remains pending/pairing evidence only.
 Permanent contract errors use DLQ, storage failures bounded retry; retained bytes can be replayed
 without repeated metrics. Five compatibility bindings/read APIs remain unchanged. No financial
 intake, LOS/occupancy inference, accepted coverage or read-publication activation is introduced.
-See [fresh module and broker evidence](../../docs/superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+See [fresh module and broker evidence](../../docs/plans/huy-backend-mvp-baseline.md).
 
 **T01–T11 legacy và review hardening trong report-service đã hoàn tất, không phải toàn bộ V2.** Domain rules, persistence
 mappings/adapters, payment compensation, aggregate updates, read queries, RabbitMQ consumer/DLQ
@@ -191,7 +251,7 @@ inventory. Bounded generation-row-fenced batches commit facts/scopes/progress at
 bidirectional reconciliation verifies only the finite accepted state. Old gross-only runs and live
 tables are unchanged. It does not retry copied pending refunds, invent recognition/liability,
 publish reads or establish historical coverage. [Canonical semantics](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md#report-paired-finite-accepted-cash-rebuild--v17-2026-10-08)
-and [current evidence](../../docs/superpowers/plans/2026-10-08-huy-master-sync-refund-replay.md).
+and [current evidence](../../docs/plans/huy-backend-mvp-baseline.md).
 
 ```bash
 mvn -pl backend/report-service test        # unit (domain + application, no Spring)

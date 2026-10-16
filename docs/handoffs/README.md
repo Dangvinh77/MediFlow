@@ -3,6 +3,17 @@
 Handoff/backlog lịch sử đã thay bằng [plan MVP](../plans/05-implementation-plan.md).
 Đây không là xác nhận mọi integration gap đã được giải quyết.
 
+## Active MVP gates
+
+- [Huy Report export → Support composition](HANDOFF-HUY-SUPPORT-COMPOSITION.md): module entry,
+  scoped persistence/security/resources and remaining Notification/shared/Gateway owner actions.
+
+- [Huy outpatient activation](HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md): Core/Clinical authority,
+  Gateway idempotency header, Billing/lifecycle consumer acceptance và Support packaging.
+  API gate mặc định OFF; không phục hồi backlog Admission/Surgery/full V2.
+  Packaged probes ngày 2026-10-15 còn phát hiện Billing V1 invoice publication HELD và
+  Clinical durable legacy metadata mismatch; lookup compatibility pass không đóng hai publisher gates.
+
 [Contracts canonical](../plans/03-contracts.md) quy định source truth và modes.
 Mỗi gap MVP ghi trong task: producer, consumer, missing behavior/field, owner và acceptance
 fixture/test. Không copy payload thành nhiều file handoff. Không vượt service ownership.

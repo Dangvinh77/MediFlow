@@ -34,7 +34,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 
 /** Maps report web and business failures to the common response envelope. */
-@RestControllerAdvice
+@RestControllerAdvice(name = "reportGlobalExceptionHandler", basePackages = "com.mediflow.report.web")
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);

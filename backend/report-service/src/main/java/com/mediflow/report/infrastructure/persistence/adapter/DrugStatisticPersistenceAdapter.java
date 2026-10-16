@@ -25,7 +25,7 @@ public class DrugStatisticPersistenceAdapter implements DrugStatisticRepositoryP
     private final DrugStatisticJpaRepository repository;
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public DrugStatistic findOrCreate(UUID drugId, String drugName, LocalDate reportDate, UUID departmentId) {
         DrugStatistic.initialize(drugId, drugName, reportDate, departmentId);
         repository.insertIfAbsent(UUID.randomUUID(), drugId, drugName.trim(), reportDate, departmentId);
@@ -35,14 +35,14 @@ public class DrugStatisticPersistenceAdapter implements DrugStatisticRepositoryP
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public DrugStatistic save(DrugStatistic statistic) {
         DrugStatisticJpaEntity saved = repository.save(DrugStatisticPersistenceMapper.toEntity(statistic));
         return DrugStatisticPersistenceMapper.toDomain(saved);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public List<TopMedicineSummary> topMedicines(LocalDate fromDate, LocalDate toDate,
                                                   UUID departmentId, int limit) {
         return repository.topMedicines(fromDate, toDate, departmentId, limit).stream()

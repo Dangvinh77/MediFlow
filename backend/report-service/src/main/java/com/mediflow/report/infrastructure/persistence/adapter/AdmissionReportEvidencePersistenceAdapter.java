@@ -24,12 +24,12 @@ import com.mediflow.report.domain.model.AdmissionReportHistory;
 
 /** Minimal local facts plus envelope hash. No complete producer/clinical payload retention. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class AdmissionReportEvidencePersistenceAdapter implements AdmissionReportEvidencePort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
 
-    public AdmissionReportEvidencePersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public AdmissionReportEvidencePersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.mapper = mapper.copy().enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
     }

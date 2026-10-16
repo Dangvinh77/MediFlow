@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import com.mediflow.report.infrastructure.messaging.ReportMessageRecoverer;
 
 /** RabbitMQ topology and bounded retry policy for the report read model. */
-@Configuration
+@Configuration("reportRabbitConfig")
 public class RabbitConfig {
 
     public static final String EVENTS_EXCHANGE = "mediflow.events";
@@ -46,12 +46,12 @@ public class RabbitConfig {
             RK_PAYMENT_COMPLETED,
             RK_PAYMENT_FAILED);
 
-    @Bean
+    @Bean("reportEventsExchange")
     public TopicExchange eventsExchange() {
         return new TopicExchange(EVENTS_EXCHANGE, true, false);
     }
 
-    @Bean
+    @Bean("reportDeadLetterExchange")
     public TopicExchange deadLetterExchange() {
         return new TopicExchange(DEAD_LETTER_EXCHANGE, true, false);
     }
@@ -70,7 +70,8 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Declarables reportQueueBindings(Queue reportQueue, TopicExchange eventsExchange) {
+    public Declarables reportQueueBindings(Queue reportQueue,
+            @org.springframework.beans.factory.annotation.Qualifier("reportEventsExchange") TopicExchange eventsExchange) {
         Binding[] bindings = SUBSCRIBED_ROUTING_KEYS.stream()
                 .map(routingKey -> BindingBuilder.bind(reportQueue)
                         .to(eventsExchange)
@@ -81,22 +82,22 @@ public class RabbitConfig {
 
     @Bean
     public Binding reportDeadLetterBinding(Queue reportDeadLetterQueue,
-                                           TopicExchange deadLetterExchange) {
+            @org.springframework.beans.factory.annotation.Qualifier("reportDeadLetterExchange") TopicExchange deadLetterExchange) {
         return BindingBuilder.bind(reportDeadLetterQueue)
                 .to(deadLetterExchange)
                 .with(DEAD_LETTER_ROUTING_KEY);
     }
 
-    @Bean
+    @Bean("reportRabbitJsonMessageConverter")
     public Jackson2JsonMessageConverter rabbitJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
     /** Retry transient consumer failures a finite number of times, then reject to report.dlq. */
-    @Bean
+    @Bean("reportLegacyListenerFactory")
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
-            Jackson2JsonMessageConverter converter,
+            @org.springframework.beans.factory.annotation.Qualifier("reportRabbitJsonMessageConverter") Jackson2JsonMessageConverter converter,
             @Value("${mediflow.report.rabbit.retry.max-attempts:3}") int maxAttempts,
             @Value("${mediflow.report.rabbit.retry.initial-interval-ms:1000}") long initialIntervalMs,
             @Value("${mediflow.report.rabbit.retry.max-interval-ms:10000}") long maxIntervalMs,

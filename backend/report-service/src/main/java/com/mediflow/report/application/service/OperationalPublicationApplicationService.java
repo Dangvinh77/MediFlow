@@ -24,7 +24,7 @@ public class OperationalPublicationApplicationService implements PublishOperatio
     }
 
     @Override
-    @Transactional(isolation=Isolation.READ_COMMITTED, timeout=15)
+    @Transactional(transactionManager = "reportTransactionManager", isolation=Isolation.READ_COMMITTED, timeout=15)
     public OperationalPublicationDTO publish(PublishOperationalSnapshotRequest request, UUID actorAccountId) {
         require(request != null);
         command(request.commandId(), request.generationId(), actorAccountId, request.acceptanceReference());
@@ -36,7 +36,7 @@ public class OperationalPublicationApplicationService implements PublishOperatio
     }
 
     @Override
-    @Transactional(isolation=Isolation.READ_COMMITTED, timeout=15)
+    @Transactional(transactionManager = "reportTransactionManager", isolation=Isolation.READ_COMMITTED, timeout=15)
     public OperationalPublicationDTO rollback(RollbackOperationalSnapshotRequest request, UUID actorAccountId) {
         require(request != null && request.expectedCurrentGenerationId() != null);
         command(request.commandId(), request.generationId(), actorAccountId, request.acceptanceReference());
@@ -44,7 +44,7 @@ public class OperationalPublicationApplicationService implements PublishOperatio
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly=true)
     public com.mediflow.report.application.dto.response.OperationalPublicationCandidateDTO candidate(UUID generationId) {
         require(generationId != null);
         return store.candidate(generationId);

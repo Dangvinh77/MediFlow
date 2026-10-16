@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PharmacyUpstreamUnavailableException.class)
     public ResponseEntity<ApiResponse<Void>> upstreamUnavailable(PharmacyUpstreamUnavailableException exception) {
         return build(HttpStatus.SERVICE_UNAVAILABLE, "PHARMACY_UPSTREAM_UNAVAILABLE",
-                "Admission authority is unavailable");
+                "Required upstream authority is unavailable");
     }
 
     /**

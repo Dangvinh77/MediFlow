@@ -3,6 +3,11 @@
 **Owner:** Huy / Surgery  
 **Status:** Deferred with Surgery; not an outpatient MVP acceptance blocker.
 
+2026-10-15 compatibility-only update: the three Surgery test classes reading Organization fixture
+files now point to Core's resources without changing the bytes. Selected decoder/local HTTP tests
+pass; no Surgery production client, feature flag, route, job or payload was activated/changed.
+The client retargeting below remains deferred until context reactivation.
+
 Organization and Patient source modules have moved into `backend/core-service`. Surgery's
 `OrganizationFeignClient` and `PatientFeignClient` still resolve the removed Eureka names.
 When Surgery is reactivated, retarget those clients to `core-service` while preserving their

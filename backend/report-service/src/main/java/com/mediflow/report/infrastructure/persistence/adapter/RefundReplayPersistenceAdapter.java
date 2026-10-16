@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class RefundReplayPersistenceAdapter implements RefundReplayStorePort {
     private static final Set<String> FIELDS = Set.of("refundTransactionId", "originalTransactionId", "accountId",
             "patientId", "departmentId", "careEpisodeType", "careEpisodeId", "amount", "currency", "completedAt",
@@ -32,7 +32,7 @@ public class RefundReplayPersistenceAdapter implements RefundReplayStorePort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final CashSnapshotCodec receipts;
-    public RefundReplayPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public RefundReplayPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc; this.mapper = mapper.copy(); this.receipts = new CashSnapshotCodec(mapper);
     }
     @Override public RefundReplayProgress freeze(UUID id) {

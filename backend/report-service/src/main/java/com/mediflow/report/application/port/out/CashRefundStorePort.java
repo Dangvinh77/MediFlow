@@ -15,5 +15,6 @@ public interface CashRefundStorePort {
     void apply(CashRefund refund, CashReceipt original);
     void reject(UUID refundTransactionId, String reasonCode);
     List<UUID> readyOriginals(int limit);
+    List<UUID> readyOutpatientOriginals(int limit);
     void defer(UUID originalTransactionId);
 }

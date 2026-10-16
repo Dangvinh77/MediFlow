@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2",
         "mediflow.report.operational-consumer.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportOperationalConsumerConfiguration {
     @Bean
     Declarables reportOperationalTopology() {
@@ -50,7 +51,7 @@ public class ReportOperationalConsumerConfiguration {
 
     @Bean
     ReceiveOperationalReportFactUseCase operationalReportFactReceiver(ApplyOperationalContributionUseCase operations,
-            ProjectAdmissionReportEvidenceUseCase admissions, ZoneId reportZoneId,
+            ProjectAdmissionReportEvidenceUseCase admissions, @org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZoneId,
             com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase medicalDischarges) {
         return new OperationalReportFactReceiver(operations, admissions, reportZoneId, medicalDischarges);
     }

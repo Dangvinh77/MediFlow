@@ -13,6 +13,6 @@ public class FinalSettlementRecognitionApplicationService implements ApplyFinalS
     public FinalSettlementRecognitionApplicationService(BillingFinalSettlementRecognitionMapper mapper,FinalSettlementRecognitionStorePort store) {
         this.mapper=mapper;this.store=store;
     }
-    @Override @Transactional(timeout=8) public void apply(DecodedCareFinanceEvent event){store.apply(event,mapper.map(event));}
-    @Override @Transactional(timeout=8) public void recover(UUID operationId){store.recover(operationId);}
+    @Override @Transactional(transactionManager = "reportTransactionManager", timeout=8) public void apply(DecodedCareFinanceEvent event){store.apply(event,mapper.map(event));}
+    @Override @Transactional(transactionManager = "reportTransactionManager", timeout=8) public void recover(UUID operationId){store.recover(operationId);}
 }

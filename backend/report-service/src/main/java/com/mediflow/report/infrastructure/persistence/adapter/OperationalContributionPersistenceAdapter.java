@@ -23,13 +23,13 @@ import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.OperationalContribution;
 
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class OperationalContributionPersistenceAdapter implements OperationalContributionStorePort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final OperationalSnapshotCodec snapshots;
 
-    public OperationalContributionPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public OperationalContributionPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.mapper = mapper.copy().enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         this.snapshots = new OperationalSnapshotCodec(mapper);

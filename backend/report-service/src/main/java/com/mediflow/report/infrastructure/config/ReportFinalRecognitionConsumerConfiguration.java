@@ -20,7 +20,9 @@ import org.springframework.scheduling.annotation.*;
 
 @Configuration(proxyBeanMethods=false)
 @EnableRabbit @EnableScheduling
+@org.springframework.context.annotation.Import(ReportSchedulingConfiguration.class)
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2","mediflow.report.final-recognition-consumer.enabled"},havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportFinalRecognitionConsumerConfiguration {
     @Bean ApplyFinalSettlementRecognitionUseCase finalSettlementRecognition(FinalSettlementRecognitionStorePort store,
             @Value("${mediflow.report.zone-id:Asia/Bangkok}") String zone){return new FinalSettlementRecognitionApplicationService(new BillingFinalSettlementRecognitionMapper(ZoneId.of(zone)),store);}
@@ -43,7 +45,7 @@ public class ReportFinalRecognitionConsumerConfiguration {
     public static final class FinalRecognitionRecoveryWorker {
         private final FinalSettlementRecognitionStorePort store;private final ApplyFinalSettlementRecognitionUseCase useCase;
         FinalRecognitionRecoveryWorker(FinalSettlementRecognitionStorePort store,ApplyFinalSettlementRecognitionUseCase useCase){this.store=store;this.useCase=useCase;}
-        @Scheduled(fixedDelayString="${mediflow.report.final-recognition-consumer.recovery-delay-ms:5000}",initialDelayString="${mediflow.report.final-recognition-consumer.recovery-initial-delay-ms:5000}")
+        @Scheduled(scheduler = "reportTaskScheduler", fixedDelayString="${mediflow.report.final-recognition-consumer.recovery-delay-ms:5000}",initialDelayString="${mediflow.report.final-recognition-consumer.recovery-initial-delay-ms:5000}")
         public void recover() {
             try {
                 for(var id:store.pending(20))try{useCase.recover(id);store.defer(id);}catch(RuntimeException unavailable){

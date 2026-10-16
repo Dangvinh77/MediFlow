@@ -46,7 +46,13 @@ class PharmacyMigrationCompatibilityTest {
     void freshDatabase_migratesToLatestVersion() throws Exception {
         flyway().migrate();
 
-        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("19");
+        assertThat(flyway().info().current().getVersion().getVersion()).isEqualTo("20");
+        assertThat(tableExists("PHARMACY_OUTPATIENT_DELIVERY_COHORT")).isTrue();
+        assertThat(columnExists("PHARMACY_EVENT_OUTBOX", "CARE_DELIVERY_COHORT_ID")).isTrue();
+        assertThat(foreignKeyExists("PHARMACY_OUTPATIENT_DELIVERY_COHORT", "prescription_id",
+                "PRESCRIPTION", "prescription_id")).isTrue();
+        assertThat(foreignKeyExists("PHARMACY_EVENT_OUTBOX", "care_delivery_cohort_id",
+                "PHARMACY_OUTPATIENT_DELIVERY_COHORT", "prescription_id")).isTrue();
         assertThat(tableExists("CARE_PRESCRIPTION_CREATION")).isTrue();
         assertThat(tableExists("PRESCRIPTION_CLEARANCE")).isTrue();
         assertThat(tableExists("PRESCRIPTION_CLEARANCE_EVENT")).isTrue();
@@ -396,7 +402,8 @@ class PharmacyMigrationCompatibilityTest {
                 + "AND tc.constraint_type = 'FOREIGN KEY' "
                 + "AND (ccu.table_schema <> 'public' OR ccu.table_name NOT IN "
                 + "('drug', 'prescription', 'prescription_line', 'dispense_slip',"
-                + " 'stock_reservation', 'stock_adjustment', 'prescription_clearance_target'))";
+                + " 'stock_reservation', 'stock_adjustment', 'prescription_clearance_target',"
+                + " 'pharmacy_outpatient_delivery_cohort'))";
         return queryInt(sql);
     }
 

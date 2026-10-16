@@ -19,7 +19,7 @@ import com.mediflow.report.domain.model.FinancialReportPublication;
 @Repository
 public class FinancialSnapshotReadPersistenceAdapter implements FinancialSnapshotReadPort {
     private final JdbcTemplate jdbc;
-    public FinancialSnapshotReadPersistenceAdapter(JdbcTemplate jdbc) { this.jdbc=jdbc; }
+    public FinancialSnapshotReadPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc) { this.jdbc=jdbc; }
     @Override public Optional<FinancialReportPublication> publication(String currency,String reportZone) {
         try {
             return jdbc.query(connection -> {

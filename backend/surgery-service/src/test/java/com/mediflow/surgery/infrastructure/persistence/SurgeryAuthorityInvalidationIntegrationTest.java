@@ -388,7 +388,7 @@ class SurgeryAuthorityInvalidationIntegrationTest {
         return (ObjectNode)mapper.readTree(fixture(kind));
     }
     private byte[] fixture(String kind) throws Exception {
-        return Files.readAllBytes(Path.of("../organization-service/src/test/resources/contracts/surgery-authority-v1/event." + kind + ".changed.json"));
+        return Files.readAllBytes(Path.of("../core-service/src/test/resources/contracts/surgery-authority-v1/event." + kind + ".changed.json"));
     }
     private ReceiveSurgeryAuthorityChangeUseCase.Command command(String kind) throws Exception {
         return decoder.decode(ReceiveSurgeryAuthorityChangeUseCase.EVENT_TYPE, fixture(kind), NOW);

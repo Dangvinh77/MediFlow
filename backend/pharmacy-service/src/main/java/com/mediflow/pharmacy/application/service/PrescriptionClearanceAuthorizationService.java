@@ -11,6 +11,9 @@ import com.mediflow.pharmacy.application.port.out.PrescriptionClearancePort;
 import com.mediflow.pharmacy.domain.exception.DispenseAuthorizationException;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionClearance;
+import com.mediflow.pharmacy.application.port.out.PrescriptionClearanceAuthorityPort;
+import com.mediflow.pharmacy.application.exception.PharmacyUpstreamUnavailableException;
+import java.util.Optional;
 
 /**
  * Local transaction primitive, NOT a reusable permission token or a public authorization API.
@@ -21,14 +24,30 @@ import com.mediflow.pharmacy.domain.model.PrescriptionClearance;
 public class PrescriptionClearanceAuthorizationService {
     private final PrescriptionClearancePort clearances;
     private final Clock clock;
+    private final Optional<PrescriptionClearanceAuthorityPort> currentAuthority;
+    private final boolean authorityRequired;
 
     public PrescriptionClearanceAuthorizationService(PrescriptionClearancePort clearances, Clock clock) {
+        this(clearances,clock,Optional.empty(),false);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public PrescriptionClearanceAuthorizationService(PrescriptionClearancePort clearances, Clock clock,
+            Optional<PrescriptionClearanceAuthorityPort> currentAuthority,
+            @org.springframework.beans.factory.annotation.Value("${mediflow.pharmacy.clearance-authority.required:false}") boolean authorityRequired) {
         this.clearances = clearances;
         this.clock = clock;
+        this.currentAuthority=currentAuthority;
+        this.authorityRequired=authorityRequired;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public PrescriptionClearance requireValidAfterLocks(Prescription prescription) {
+        return requireValidAfterLocks(prescription,java.util.UUID.randomUUID().toString());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public PrescriptionClearance requireValidAfterLocks(Prescription prescription,String correlationId) {
         if (prescription == null || prescription.getPrescriptionId() == null) {
             throw new IllegalArgumentException("A persisted, locked prescription is required");
         }
@@ -44,6 +63,11 @@ public class PrescriptionClearanceAuthorizationService {
                         && candidate.isValidAt(now)).findFirst()
                 .orElseThrow(() -> new DispenseAuthorizationException("PHARMACY_CLEARANCE_REQUIRED",
                         "A non-expired matching V1 prescription clearance is required"));
+        if(currentAuthority.isPresent()) {
+            var observation=currentAuthority.get().lookup(grant.clearanceId(),correlationId);
+            if(observation==null) throw new PharmacyUpstreamUnavailableException();
+            observation.requireCurrent(grant,clock.instant());
+        } else if(authorityRequired) throw new PharmacyUpstreamUnavailableException();
         clearances.markVerified(grant.clearanceId());
         return grant;
     }

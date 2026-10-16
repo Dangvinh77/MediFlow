@@ -15,6 +15,6 @@ public class ReportTelemetryApplicationService implements ReadReportTelemetryUse
 
     /** X-01.6: one bounded read transaction, no source claims or projection effects. */
     @Override
-    @Transactional(readOnly = true, timeout = 5)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true, timeout = 5)
     public ReportTelemetrySnapshot capture() { return store.capture(); }
 }

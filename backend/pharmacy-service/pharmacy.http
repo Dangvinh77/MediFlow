@@ -14,6 +14,54 @@
 
 # ============ DANH MỤC THUỐC — LIVE ============
 
+### V1 outpatient creation — OPT-IN / NOT YET LIVE ACCEPTED
+### Requires profile outpatient-mvp (mvp-outpatient alias) and all SIX global/identity/context/clearance-consumer/clearance-authority/API gates.
+### Current Billing lookup is required before stock effects; live issuer/consumer rollout remains gated.
+### Event enrollment defaults OFF; enabling an isolated NEW cohort never releases historical HELD rows.
+### Reuse the SAME commandKey for retry of the SAME actor/intent; use real Core/Clinical identifiers.
+# @commandKey = paste-one-canonical-uuid-for-this-intent
+# @recordId = paste-authoritative-medical-record-id
+# @patientId = paste-authoritative-patient-id
+# @doctorId = paste-signed-prescriber-staff-id
+# @departmentId = paste-authoritative-department-id
+# @visitId = paste-authoritative-outpatient-visit-id-not-record-id
+# @prescribedDate = paste-current-date-YYYY-MM-DD
+POST {{host}}/api/v1/pharmacy/prescriptions
+Authorization: Bearer {{token}}
+Idempotency-Key: {{commandKey}}
+Content-Type: application/json
+
+{
+  "recordId": "{{recordId}}",
+  "patientId": "{{patientId}}",
+  "doctorId": "{{doctorId}}",
+  "departmentId": "{{departmentId}}",
+  "prescribedDate": "{{prescribedDate}}",
+  "lines": [{"drugId": "{{drugId}}", "quantity": 1, "dosage": "Daily"}],
+  "careContractVersion": 1,
+  "careContext": "OUTPATIENT",
+  "careEpisodeType": "OUTPATIENT_VISIT",
+  "careEpisodeId": "{{visitId}}",
+  "priceCode": "RX"
+}
+
+### Default/off: V1 returns PHARMACY_CARE_FINANCE_V2_UNAVAILABLE, with no legacy creation fallback.
+### MVP rejects V0 creation; compatibility profile retains existing V0 requests below.
+
+### V1 manual dispense — OPT-IN; signed ADMIN/PHARMACIST actor, exact persisted prescription/grant
+# @prescriptionId = paste-created-v1-prescription-id
+PUT {{host}}/api/v1/pharmacy/prescriptions/{{prescriptionId}}/dispense
+Authorization: Bearer {{token}}
+X-Correlation-Id: mvp-manual-dispense
+
+### V1 cancellation — OPT-IN; signed prescribing DOCTOR/ADMIN, same reason/actor for a retry
+PUT {{host}}/api/v1/pharmacy/prescriptions/{{prescriptionId}}/cancel
+Authorization: Bearer {{token}}
+X-Correlation-Id: mvp-manual-cancel
+Content-Type: application/json
+
+{"reason": "Changed treatment"}
+
 ### Tạo thuốc — 201, role ADMIN/PHARMACIST
 POST {{host}}/api/v1/pharmacy/drugs
 Authorization: Bearer {{token}}

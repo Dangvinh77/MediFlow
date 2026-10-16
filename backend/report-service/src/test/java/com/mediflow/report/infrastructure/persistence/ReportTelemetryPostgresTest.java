@@ -29,6 +29,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.ReportTelemetryPer
 
 /** Diagnostic SQL tests use synthetic local rows, not producer/consumer workflow acceptance. */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ReportTelemetryApplicationService.class, ReportTelemetryPersistenceAdapter.class})
 @Testcontainers(disabledWithoutDocker = true)

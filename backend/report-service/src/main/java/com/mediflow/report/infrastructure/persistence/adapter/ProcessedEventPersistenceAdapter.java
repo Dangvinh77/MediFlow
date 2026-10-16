@@ -18,7 +18,7 @@ public class ProcessedEventPersistenceAdapter implements ProcessedEventPort {
     private final ProcessedEventJpaRepository repository;
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public boolean claimIfAbsent(UUID eventId, String routingKey) {
         return repository.insertIfAbsent(eventId, routingKey) == 1;
     }

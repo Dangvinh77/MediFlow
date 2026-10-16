@@ -41,6 +41,10 @@ import com.mediflow.pharmacy.application.service.CareDispenseTransactionService;
 import com.mediflow.pharmacy.application.service.CarePrescriptionTerminalService;
 import com.mediflow.pharmacy.application.service.CarePrescriptionCreationService;
 import com.mediflow.pharmacy.application.service.ContextCheckedPrescriptionCreationService;
+import com.mediflow.pharmacy.application.service.OutpatientPrescriptionLifecycleApplicationService;
+import com.mediflow.pharmacy.application.service.PublicOutpatientPrescriptionCreationService;
+import com.mediflow.pharmacy.application.service.PrescriptionApplicationService;
+import com.mediflow.pharmacy.application.mapper.PrescriptionDtoMapper;
 import com.mediflow.pharmacy.application.dto.command.ActorIdentity;
 import com.mediflow.pharmacy.application.dto.command.CancelPrescriptionCommand;
 import com.mediflow.pharmacy.application.dto.command.CreatePrescriptionCommand;
@@ -60,6 +64,8 @@ import com.mediflow.pharmacy.infrastructure.persistence.adapter.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CareDispenseTransactionService.class, CarePrescriptionTerminalService.class, CarePrescriptionCreationService.class,
         ContextCheckedPrescriptionCreationService.class,
+        OutpatientPrescriptionLifecycleApplicationService.class, PublicOutpatientPrescriptionCreationService.class,
+        PrescriptionApplicationService.class, PaymentReceiptPersistenceAdapter.class,
         CarePrescriptionCreationPersistenceAdapter.class, PrescriptionCareEventCaptureService.class,
         PrescriptionClearanceAuthorizationService.class, PrescriptionClearancePersistenceAdapter.class,
         PrescriptionPersistenceAdapter.class, DispenseSlipPersistenceAdapter.class, DrugPersistenceAdapter.class,
@@ -74,6 +80,8 @@ class CareDispensePostgresTest {
     @Autowired CarePrescriptionTerminalService terminal;
     @Autowired CarePrescriptionCreationService creation;
     @Autowired ContextCheckedPrescriptionCreationService contextCreation;
+    @Autowired PublicOutpatientPrescriptionCreationService publicCreation;
+    @Autowired OutpatientPrescriptionLifecycleApplicationService publicLifecycle;
     @MockBean OutpatientPrescriptionContextPort contextSource;
     @MockBean PrescriptionIdentityPort identitySource;
     @Autowired PrescriptionCareEventCaptureService capture;
@@ -399,6 +407,61 @@ class CareDispensePostgresTest {
                 CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(), null, "DRUG"), actor, "internal-creation");
     }
 
+    @Test void publicCreation_concurrentReplayUsesCheckedContextAndRealReader() throws Exception {
+        var original = creationCommand(); var r = original.request(); UUID record = UUID.randomUUID();
+        var command = new CreatePrescriptionCommand(new CreatePrescriptionRequest(record, r.patientId(), r.doctorId(),
+                r.departmentId(), r.prescribedDate(), r.lines(), 1, r.careContext(), r.careEpisodeType(),
+                r.careEpisodeId(), null, r.priceCode()), original.actor(), "public-create-pg");
+        org.mockito.Mockito.when(contextSource.findRecord(record, command.correlationId())).thenReturn(
+                new OutpatientPrescriptionContextPort.Observation(true, record, r.patientId(), r.doctorId(), r.departmentId(),
+                        "OUTPATIENT_VISIT", r.careEpisodeId(), "OPEN", null, clock.instant()));
+        org.mockito.Mockito.when(identitySource.lookup(r.patientId(), r.doctorId(), r.departmentId(), command.correlationId()))
+                .thenReturn(new PrescriptionIdentityPort.Observation(r.patientId(), true, r.doctorId(), true, true,
+                        r.departmentId(), r.departmentId(), true, clock.instant()));
+        UUID key = UUID.randomUUID(); var gate = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var a = executor.submit(() -> { gate.await(5, TimeUnit.SECONDS); return publicCreation.create(key, command); });
+            var b = executor.submit(() -> { gate.await(5, TimeUnit.SECONDS); return publicCreation.create(key, command); });
+            gate.countDown();
+            var first = a.get(20, TimeUnit.SECONDS); var retry = b.get(20, TimeUnit.SECONDS);
+            assertThat(first.prescriptionId()).isEqualTo(retry.prescriptionId());
+            assertThat(first.recordId()).isEqualTo(record);
+            assertThat(first.totalAmount()).isEqualByComparingTo("100.00");
+            assertThat(first.paymentConfirmed()).isFalse();
+        }
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM care_prescription_creation", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM STOCK_RESERVATION", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX", Integer.class)).isOne();
+        assertThat(stock(r.lines().getFirst().drugId())).isEqualTo(3);
+    }
+
+    @Test void publicDispense_concurrentActorsCommitOneStockEffectAndHeldProof() throws Exception {
+        var seed = seed(true); var gate = new CountDownLatch(1);
+        var actor = new ActorIdentity(UUID.randomUUID(), UUID.randomUUID(), "PHARMACIST");
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var a = executor.submit(() -> { gate.await(5, TimeUnit.SECONDS); return publicLifecycle.dispense(seed.prescriptionId(), actor, "public-a"); });
+            var b = executor.submit(() -> { gate.await(5, TimeUnit.SECONDS); return publicLifecycle.dispense(seed.prescriptionId(), actor, "public-b"); });
+            gate.countDown();
+            assertThat(a.get(20, TimeUnit.SECONDS)).isEqualTo(b.get(20, TimeUnit.SECONDS));
+        }
+        assertThat(stock(seed.drugId())).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE care_lifecycle_order=1 AND NOT delivery_enabled", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PAYMENT_RECEIPT", Integer.class)).isZero();
+    }
+
+    @Test void publicDispense_stockFailureRollsBackBeforeSeparateTerminalTransactionAndRetry() {
+        var seed = seed(true);
+        jdbc.update("UPDATE DRUG SET stock_quantity=1 WHERE drug_id=?", seed.drugId());
+        var actor = new ActorIdentity(UUID.randomUUID(), UUID.randomUUID(), "PHARMACIST");
+        var first = publicLifecycle.dispense(seed.prescriptionId(), actor, "short-stock");
+        assertThat(first.status()).isEqualTo(DispenseStatus.FAILED);
+        assertThat(publicLifecycle.dispense(seed.prescriptionId(), actor, "retry")).isEqualTo(first);
+        assertThat(stock(seed.drugId())).isOne();
+        assertThat(jdbc.queryForObject("SELECT status FROM STOCK_RESERVATION WHERE prescription_id=?", String.class, seed.prescriptionId())).isEqualTo("RELEASED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE routing_key='prescription.dispense.failed' AND NOT delivery_enabled", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PAYMENT_RECEIPT", Integer.class)).isZero();
+    }
+
     private Seed seed(boolean holdCreation) {
         return new TransactionTemplate(transactions).execute(status -> {
             var today = clock.instant().atZone(clock.getZone()).toLocalDate();
@@ -429,5 +492,6 @@ class CareDispensePostgresTest {
         }
         @Bean ObjectMapper objectMapper() { return new ObjectMapper().findAndRegisterModules(); }
         @Bean DispenseDtoMapper dispenseDtoMapper() { return Mappers.getMapper(DispenseDtoMapper.class); }
+        @Bean PrescriptionDtoMapper prescriptionDtoMapper() { return Mappers.getMapper(PrescriptionDtoMapper.class); }
     }
 }

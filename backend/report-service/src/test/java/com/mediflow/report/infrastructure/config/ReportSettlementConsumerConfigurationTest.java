@@ -20,7 +20,7 @@ class ReportSettlementConsumerConfigurationTest {
         return new ApplicationContextRunner().withUserConfiguration(ReportSettlementConsumerConfiguration.class)
                 .withBean(CareFinanceWirePort.class,()->mock(CareFinanceWirePort.class))
                 .withBean(ConnectionFactory.class,()->mock(ConnectionFactory.class))
-                .withBean(JdbcTemplate.class,()->mock(JdbcTemplate.class)).withBean(ObjectMapper.class,ObjectMapper::new)
+                .withBean("reportJdbcTemplate", JdbcTemplate.class,()->mock(JdbcTemplate.class)).withBean(ObjectMapper.class,ObjectMapper::new)
                 .withPropertyValues("spring.rabbitmq.listener.simple.auto-startup=false");
     }
     @ParameterizedTest @ValueSource(ints={0,1,2,3})

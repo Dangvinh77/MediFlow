@@ -23,7 +23,7 @@ public class FinancialRebuildApplicationService implements RebuildFinancialSourc
     public FinancialRebuildApplicationService(FinancialRebuildStorePort store) { this.store = store; }
 
     @Override
-    @Transactional(isolation = Isolation.REPEATABLE_READ, timeout = 15)
+    @Transactional(transactionManager = "reportTransactionManager", isolation = Isolation.REPEATABLE_READ, timeout = 15)
     public FinancialRebuildProgress start(LocalDate from, LocalDate to, String reportZone) {
         if (from == null || to == null || from.getYear() < 2000 || to.getYear() > 2100
                 || to.isBefore(from) || ChronoUnit.DAYS.between(from, to) >= 366 || reportZone == null) {
@@ -34,7 +34,7 @@ public class FinancialRebuildApplicationService implements RebuildFinancialSourc
     }
 
     @Override
-    @Transactional(timeout = 15)
+    @Transactional(transactionManager = "reportTransactionManager", timeout = 15)
     public FinancialRebuildProgress advance(UUID generationId, int batchDays) {
         if (generationId == null || batchDays < 1 || batchDays > MAX_BATCH_DAYS) throw invalid();
         var current = store.lock(generationId);
@@ -63,7 +63,7 @@ public class FinancialRebuildApplicationService implements RebuildFinancialSourc
     }
 
     @Override
-    @Transactional(readOnly = true, timeout = 5)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true, timeout = 5)
     public FinancialRebuildProgress progress(UUID generationId) {
         if (generationId == null) throw invalid();
         return store.progress(generationId);

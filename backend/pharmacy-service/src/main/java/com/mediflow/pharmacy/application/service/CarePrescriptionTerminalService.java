@@ -27,6 +27,7 @@ import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
 import com.mediflow.pharmacy.domain.model.enums.DispenseStatus;
 import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
@@ -115,8 +116,9 @@ public class CarePrescriptionTerminalService implements CancelCarePrescriptionUs
         if (id == null) throw invalid("Prescription identity is required");
         var prescription = prescriptions.findByIdForUpdate(id)
                 .orElseThrow(() -> new PrescriptionNotFoundException("Prescription not found"));
-        if (prescription.getCareContext().contractVersion() != CareContractVersion.V1) {
-            throw invalid("Internal care lifecycle requires V1, never legacy reinterpretation");
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.V1
+                || prescription.getCareContext().careContext() != CareContext.OUTPATIENT) {
+            throw invalid("Care lifecycle requires V1 outpatient, never legacy/admission reinterpretation");
         }
         return prescription;
     }

@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.*;
 import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 @Import({CashReceiptApplicationService.class,CashReceiptPersistenceAdapter.class,CashRefundApplicationService.class,CashRefundPersistenceAdapter.class,
         FinalSettlementRecognitionApplicationService.class,FinalSettlementRecognitionStoreAdapter.class,FinalSettlementRecognitionPostgresTest.Config.class})

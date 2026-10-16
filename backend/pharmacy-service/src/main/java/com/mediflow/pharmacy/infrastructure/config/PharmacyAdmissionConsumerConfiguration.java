@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2",
         "mediflow.pharmacy.admission-consumer.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class PharmacyAdmissionConsumerConfiguration {
     @Bean
     Declarables pharmacyAdmissionTopology() {
