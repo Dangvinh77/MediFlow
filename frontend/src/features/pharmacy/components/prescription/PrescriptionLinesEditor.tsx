@@ -3,9 +3,13 @@
 import type { PrescriptionLineFieldErrors, PrescriptionLineFormValue } from "./prescriptionFormValidation";
 import type { DrugDTO } from "../../types";
 import { formatVnd } from "../../utils";
+import { Button } from "@/components/ui/Button";
+import { Field, controlClassName } from "@/components/ui/Field";
 
 interface PrescriptionLinesEditorProps {
   lines: PrescriptionLineFormValue[];
+  disabled?: boolean;
+  listError?: string;
   errors: Record<string, PrescriptionLineFieldErrors>;
   drugOptions: DrugDTO[];
   drugKeyword: string;
@@ -19,14 +23,13 @@ interface PrescriptionLinesEditorProps {
 }
 
 function inputClass(invalid: boolean): string {
-  return [
-    "w-full rounded-lg border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground",
-    invalid ? "border-danger" : "border-border",
-  ].join(" ");
+  return `${controlClassName}${invalid ? " border-danger" : ""}`;
 }
 
 export function PrescriptionLinesEditor({
   lines,
+  disabled = false,
+  listError,
   errors,
   drugOptions,
   drugKeyword,
@@ -49,30 +52,32 @@ export function PrescriptionLinesEditor({
   });
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-surface p-5">
+    <section className="min-w-0 space-y-5 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-lines-title">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold">Dòng thuốc</h2>
+          <h2 id="prescription-lines-title" className="text-base font-semibold">Dòng thuốc</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Giá và tổng tiền được backend chụp từ danh mục tại thời điểm tạo đơn.
+            Chọn thuốc, số lượng và cách dùng. Giá tham khảo có thể thay đổi khi tạo đơn.
           </p>
         </div>
-        <button
+        <Button
+          id="prescription-add-line"
           type="button"
+          disabled={disabled}
           onClick={onAdd}
-          className="rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-surface-muted"
         >
           Thêm dòng thuốc
-        </button>
+        </Button>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
           <label htmlFor="prescription-drug-keyword" className="mb-1 block text-sm font-medium">
             Tìm thuốc trong danh mục
           </label>
           <input
             id="prescription-drug-keyword"
+            disabled={disabled}
             value={drugKeyword}
             onChange={(event) => onDrugKeywordChange(event.target.value)}
             onKeyDown={(event) => {
@@ -85,14 +90,15 @@ export function PrescriptionLinesEditor({
             className={inputClass(false)}
           />
         </div>
-        <button
+        <Button
           type="button"
           onClick={onSearchDrugs}
-          disabled={drugLoading}
-          className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={disabled}
+          loading={drugLoading}
+          variant="primary"
         >
-          {drugLoading ? "Đang tìm…" : "Tìm thuốc"}
-        </button>
+          Tìm thuốc
+        </Button>
       </div>
 
       {drugError && (
@@ -100,6 +106,7 @@ export function PrescriptionLinesEditor({
           {drugError}
         </p>
       )}
+      {listError && <p role="alert" className="text-sm text-danger">{listError}</p>}
       {drugOptions.length === 0 && !drugLoading && !drugError && (
         <p className="text-sm text-muted-foreground">
           Chưa có thuốc trong lựa chọn. Hãy tìm theo tên thuốc.
@@ -112,33 +119,34 @@ export function PrescriptionLinesEditor({
           const selectedDrug = line.drug;
 
           return (
-            <div key={line.rowKey} className="rounded-lg border border-border p-4">
+            <section key={line.rowKey} className="min-w-0 rounded-lg border border-border p-4" aria-labelledby={`line-title-${line.rowKey}`}>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 className="font-medium">Thuốc {index + 1}</h3>
-                <button
+                <h3 id={`line-title-${line.rowKey}`} className="font-medium">Thuốc {index + 1}</h3>
+                <Button
                   type="button"
                   onClick={() => onRemove(line.rowKey)}
-                  disabled={lines.length === 1}
-                  className="text-sm font-medium text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={disabled || lines.length === 1}
+                  aria-label={`Xóa dòng thuốc ${index + 1}`}
+                  variant="ghost"
+                  className="text-danger"
                 >
                   Xóa dòng
-                </button>
+                </Button>
               </div>
 
               <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2fr)]">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor={`drug-${line.rowKey}`} className="text-sm font-medium">
-                    Thuốc <span aria-hidden="true">*</span>
-                  </label>
+                <Field label="Thuốc" htmlFor={`drugId-${line.rowKey}`} error={lineErrors.drugId} required>
                   <select
-                    id={`drug-${line.rowKey}`}
+                    id={`drugId-${line.rowKey}`}
+                    disabled={disabled}
+                    aria-required="true"
                     value={line.drugId}
                     onChange={(event) => {
-                      const drug = drugOptions.find((option) => option.drugId === event.target.value) ?? null;
+                      const drug = availableDrugs.find((option) => option.drugId === event.target.value) ?? null;
                       onChange(line.rowKey, { drugId: event.target.value, drug });
                     }}
                     aria-invalid={lineErrors.drugId ? true : undefined}
-                    aria-describedby={lineErrors.drugId ? `drug-${line.rowKey}-error` : undefined}
+                    aria-describedby={lineErrors.drugId ? `drugId-${line.rowKey}-error` : undefined}
                     className={inputClass(Boolean(lineErrors.drugId))}
                   >
                     <option value="">Chọn thuốc</option>
@@ -154,18 +162,16 @@ export function PrescriptionLinesEditor({
                   </select>
                   {selectedDrug && (
                     <p className="text-xs text-muted-foreground">
-                      Tạm tính: {formatVnd(selectedDrug.price * (Number(line.quantity) || 0))} · không dùng làm nguồn giá gửi backend
+                      Giá tham khảo: {formatVnd(selectedDrug.price)} / {selectedDrug.unit} · tồn {selectedDrug.stockQuantity}
                     </p>
                   )}
-                  {lineErrors.drugId && <p id={`drug-${line.rowKey}-error`} className="text-xs text-danger">{lineErrors.drugId}</p>}
-                </div>
+                </Field>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor={`quantity-${line.rowKey}`} className="text-sm font-medium">
-                    Số lượng <span aria-hidden="true">*</span>
-                  </label>
+                <Field label="Số lượng" htmlFor={`quantity-${line.rowKey}`} error={lineErrors.quantity} required>
                   <input
                     id={`quantity-${line.rowKey}`}
+                    disabled={disabled}
+                    aria-required="true"
                     type="number"
                     inputMode="numeric"
                     min="1"
@@ -176,13 +182,12 @@ export function PrescriptionLinesEditor({
                     aria-describedby={lineErrors.quantity ? `quantity-${line.rowKey}-error` : undefined}
                     className={inputClass(Boolean(lineErrors.quantity))}
                   />
-                  {lineErrors.quantity && <p id={`quantity-${line.rowKey}-error`} className="text-xs text-danger">{lineErrors.quantity}</p>}
-                </div>
+                </Field>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor={`dosage-${line.rowKey}`} className="text-sm font-medium">Cách dùng</label>
+                <Field label="Cách dùng" htmlFor={`dosage-${line.rowKey}`} error={lineErrors.dosage}>
                   <input
                     id={`dosage-${line.rowKey}`}
+                    disabled={disabled}
                     value={line.dosage}
                     maxLength={255}
                     onChange={(event) => onChange(line.rowKey, { dosage: event.target.value })}
@@ -191,10 +196,9 @@ export function PrescriptionLinesEditor({
                     className={inputClass(Boolean(lineErrors.dosage))}
                     placeholder="Ví dụ: 1 viên sau ăn"
                   />
-                  {lineErrors.dosage && <p id={`dosage-${line.rowKey}-error`} className="text-xs text-danger">{lineErrors.dosage}</p>}
-                </div>
+                </Field>
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

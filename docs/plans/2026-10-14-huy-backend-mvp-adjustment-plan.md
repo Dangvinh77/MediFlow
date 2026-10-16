@@ -593,3 +593,22 @@ Toàn bộ việc cần nhận, owner, exact source gap và acceptance nằm tro
 [handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md). Sáu handoff/pointer backend Huy cũ đã được gộp, không giữ
 thêm file pointer/backlog trùng. Core retarget đã có packaged acceptance; Surgery chỉ ghi deferred,
 không tạo việc mới để tăng scope. Giữ nguyên mẫu số và tiến độ 38/48, không đổi tiêu chí để tăng %.
+
+### Backend continuation — chặn disposition deferred tại Pharmacy (2026-10-16)
+
+Rà soát lại source Clinical V1 cho thấy Pharmacy còn chấp nhận relationship ngoại trú có
+disposition `ADMISSION`/`TRANSFER`, trong khi Clinical không nhận thuốc cho các disposition này.
+Đã bổ sung kiểm tra trong `OutpatientPrescriptionContextPort.Observation.requireExact`: trả
+`PHARMACY_CARE_CONTEXT_INVALID` (HTTP 422) trước lookup identity và trước mutation/creation replay.
+Completed outpatient `PRESCRIPTION`/`OUTPATIENT_FOLLOW_UP`/`OTHER` vẫn hợp lệ. Không đổi DTO, fixture,
+migration, V0 hoặc các activation/delivery gate; đây là sửa tính đúng đắn trong scope Pharmacy.
+
+Verification mới của lượt này: **85 class không cần container, 694 tests, 0 failure/error/skip**,
+gồm observation, creation orchestration/writer, real Feign HTTP và signed controller tests.
+Đã thêm 5 PostgreSQL cases cho create/replay bị từ chối và completed outpatient replay hợp lệ;
+các case đã biên dịch đạt (`-DskipTests test-compile`) nhưng chưa chạy vì Docker Desktop lỗi startup.
+Theo lựa chọn của người dùng, tiếp tục
+phần không cần Docker; không dùng kết quả biên dịch thay cho database/runtime acceptance.
+
+Tiến độ vẫn **38/48**. Mục còn mở và yêu cầu chạy lại PostgreSQL tiếp tục nằm trong
+[handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md#7-backend-continuation--pharmacy-disposition-guard-2026-10-16).

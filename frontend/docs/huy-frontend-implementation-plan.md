@@ -3,8 +3,9 @@
 **Ngày:** 2026-10-12. **Owner:** Huy (`LQHuy0210`).
 **Baseline đã đọc:** `c110671bd2eaa7f1e948879162506df106cbf27d`.
 **Trạng thái:** IN PROGRESS — Pharmacy/Report tiếp tục theo mẫu đã duyệt và frame 6 service.
-**Checkpoint 2026-10-16:** 10/30 task chính, 42/123 subtask đã đóng ở mức FE local;
-chi tiết tại mục 13. Mẫu số 30/123 thuộc plan lịch sử có cả Surgery/full V2 deferred, không phải
+**Checkpoint 2026-10-16:** 11/30 task chính, 50/123 subtask đã đóng ở mức FE local;
+chi tiết tại mục 14. P-06 xong 4/4 subtask local, task chính vẫn chờ real-role smoke GW-01.
+Mẫu số 30/123 thuộc plan lịch sử có cả Surgery/full V2 deferred, không phải
 tỷ lệ hoàn thành MVP 6 service. Nghiệm thu Gateway/backend thật và các task release vẫn mở.
 **Thiết kế:** người dùng đã chốt bản dùng theme Sáng / Tối / Hệ thống của MediFlow.
 
@@ -373,27 +374,27 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### P-05 — Form kê đơn legacy/V0
 
-**READY sau P-04.** File: `CreatePrescriptionForm`, `PrescriptionLinesEditor`, `prescriptionFormValidation`, new route.
+**DONE — FE local 2026-10-16; V0 giữ nguyên, không kích hoạt V1.** File: `CreatePrescriptionForm`, `PrescriptionLinesEditor`, `prescriptionFormValidation`, existing new route.
 
-- [ ] P-05.1 Áp dụng form grid/line editor theo theme; giữ record/patient/doctor/department IDs rõ ràng.
-- [ ] P-05.2 Ít nhất một dòng, drug ID không trùng, quantity nguyên dương, dosage bounded,
+- [x] P-05.1 Áp dụng form grid/line editor theo theme; giữ record/patient/doctor/department IDs rõ ràng.
+- [x] P-05.2 Ít nhất một dòng, drug ID không trùng, quantity nguyên dương, dosage bounded,
   prescribedDate đúng calendar và không tương lai; không gửi giá do người dùng tính.
-- [ ] P-05.3 Hiện server field errors và signed-identity denial; không lấy doctorId từ accountId.
-- [ ] P-05.4 Test add/remove line, lỗi từng dòng, serialization V0 không lẫn V1,
+- [x] P-05.3 Hiện server field errors và signed-identity denial; không lấy doctorId từ accountId.
+- [x] P-05.4 Test add/remove line, lỗi từng dòng, serialization V0 không lẫn V1,
   duplicate submit và giữ input khi lỗi; success chuyển đúng prescriptionId server trả.
 
 **Đạt khi:** V0 đang có không regress; không tự chọn hồ sơ/latest admission theo patient ID.
 
 ### P-06 — Hủy đơn và xuất thuốc
 
-**READY local; DOCTOR cancel E2E chờ GW-01.** File: cancel/dispense dialogs, detail action composition, permissions/tests.
+**LOCAL 4/4 — task chính chưa đóng; real-role smoke, gồm DOCTOR cancel, chờ GW-01.** File: cancel/dispense confirmations, detail action composition, tests.
 
-- [ ] P-06.1 Confirmation bằng primitive hiện có hoặc native dialog phù hợp; label, focus ban đầu,
+- [x] P-06.1 Confirmation bằng primitive hiện có hoặc inline section phù hợp; label, focus ban đầu,
   Escape/return-focus và trạng thái đang gửi rõ ràng.
-- [ ] P-06.2 Cancel reason theo DTO; hiển thị releasedReservations từ response; không tự xóa đơn.
-- [ ] P-06.3 Dispense bodyless PUT; canDispense UX phải xét role + ACTIVE/PENDING + paymentConfirmed;
+- [x] P-06.2 Cancel reason theo DTO; hiển thị releasedReservations từ response; không tự xóa đơn.
+- [x] P-06.3 Dispense bodyless PUT; canDispense UX phải xét role + ACTIVE/PENDING + paymentConfirmed;
   refresh lifecycle/stock từ server, không tự đánh dấu đã xuất hoặc trả tiền.
-- [ ] P-06.4 Test terminal/replay/race 409, thất bại nghiệp vụ, 401/403, timeout chưa rõ outcome;
+- [x] P-06.4 Test terminal/replay/race 409, thất bại nghiệp vụ, 401/403, timeout chưa rõ outcome;
   xử lý lỗi refresh tách lỗi mutation, không tự retry command với intent mới.
 
 **Đạt khi:** local test đủ matrix và real role smoke đạt; DOCTOR không được đổi thành PHARMACIST để qua Gateway.
@@ -844,3 +845,45 @@ Phần việc tiếp theo trong scope Huy: P-05/P-06 (kê đơn và terminal act
 outpatient MVP activation trước P-08; không lấy checkbox V0 làm bằng chứng V1 đã chạy.
 Mọi phụ thuộc backend/shared runtime được gom tại
 [handoff chung duy nhất](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+
+## 14. Checkpoint kê đơn và terminal actions — 2026-10-16
+
+Tiếp tục từ mục 13 trên branch `Huy`, HEAD `e34fbb4c53586880676c4416bbcc9b01097c3aa4`;
+thay đổi chưa commit/push. Production diff của batch chỉ nằm trong
+`src/features/pharmacy/components/prescription/**`; không sửa route, shared frame, API/types,
+Gateway hoặc backend của owner khác. Các thay đổi backend từ lượt trước giữ nguyên.
+
+| Task | Trạng thái | Bằng chứng |
+|---|---|---|
+| P-05 | DONE — FE local | Shared Field/Button và semantic theme; grid responsive; validation UUID/calendar/positive integer/duplicate/bounds; lỗi server theo dòng và focus; khóa submit trùng; V0 serializer không gửi giá hoặc V1 fields; chuyển trang theo prescriptionId server |
+| P-06 | LOCAL 4/4; GW-01 OPEN | Inline confirmation có label, initial focus, Escape và return-focus; cancel reason 1–500 ký tự; releasedReservations đúng response; dispense bodyless; khóa command trùng; refresh sau conflict/unknown outcome; giữ bằng chứng mutation thành công nếu GET mới lỗi |
+
+Tổng hiện tại: **11/30 task chính, 50/123 subtask FE local**. Không cộng P-06 vào task chính
+đã đóng vì acceptance của task còn yêu cầu real-role smoke. Mẫu số có các task Surgery/full V2
+deferred, không phải phần trăm hoàn thành MVP ngoại trú. P-08 và activation/release gates vẫn mở;
+không dùng kiểm thử V0 để xác nhận public outpatient V1, signed staff, paid/source hoặc Support host.
+
+Kiểm tra trên source cuối:
+
+- Thêm 51 tests: validation 14, create form 15, terminal actions 22. Bao phủ lỗi từng dòng,
+  role denial, wire V0, stale/unmount response, double submit, 401/403, 409, timeout/empty payload,
+  payment proof denial và read retry không gửi lại mutation.
+- Focused Pharmacy prescription/API suite **68/68**; sau sửa return-focus chạy lại action suite
+  **22/22**. Full `pnpm test -- --maxWorkers=2`: **262/262 tests, 34 files, exit 0**.
+  Các tests này mock API, không dùng PostgreSQL/RabbitMQ hoặc signed token thật.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**.
+  Build lần đầu bị EBUSY do log đặt trong `.next` đang bị build dọn; chuyển log ra thư mục tạm
+  và build lại đạt, không thay source/config để né lỗi.
+- Browser chạy source Next.js qua cùng proxy `/api/*` với gateway fixture riêng tại loopback.
+  Đã kiểm empty-submit/first-field focus, chọn thuốc/add/remove/duplicate option, tạo đơn bằng ID
+  response, hủy đơn với số reservation trả về, xuất đơn rồi đọc trạng thái terminal từ fixture.
+  Browser phát hiện trigger mất focus khi bị disabled; đã sửa và xác nhận Escape quay lại đúng
+  nút Hủy đơn/Xuất thuốc. Không khai báo inline confirmation là modal.
+- Desktop 1366×900 và mobile 360×800 Sáng/Tối; form mobile không tràn ngang
+  (`scrollWidth=345`, `innerWidth=360`). Khôi phục theme Theo hệ thống, đăng xuất, đóng tab và
+  dừng cả hai server kiểm tra. Dữ liệu/tài khoản mô phỏng không được đưa vào production source.
+
+GW-01 vẫn cần Hoàng Anh đối chiếu exact cancel/dispense policy: controller cancel cho ADMIN/DOCTOR,
+trong khi Gateway generic PUT hiện chỉ cho ADMIN/PHARMACIST. Không đổi role hoặc gọi service port
+để vượt gate. Phần còn lại tiếp tục trong
+[một handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).

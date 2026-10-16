@@ -11,13 +11,14 @@ public interface OutpatientPrescriptionContextPort {
 
     record Observation(boolean exists, UUID recordId, UUID patientId, UUID doctorId, UUID departmentId,
             String careEpisodeType, UUID careEpisodeId, String recordStatus, String disposition, Instant observedAt) {
-        /** Caller must repeat this check after mutation lock waits; never substitute patient/latest record. */
+        /** Recheck after mutation lock waits; deferred dispositions cannot authorize outpatient creation. */
         public void requireExact(UUID record, UUID patient, UUID doctor, UUID department, UUID episode, Instant at) {
             if (at == null || observedAt == null || observedAt.isBefore(at.minusSeconds(30))
                     || observedAt.isAfter(at.plusSeconds(5))) throw new PharmacyUpstreamUnavailableException();
             if (!exists || record == null || !record.equals(recordId) || patient == null || !patient.equals(patientId)
                     || doctor == null || !doctor.equals(doctorId) || department == null || !department.equals(departmentId)
-                    || episode == null || !episode.equals(careEpisodeId) || !"OUTPATIENT_VISIT".equals(careEpisodeType))
+                    || episode == null || !episode.equals(careEpisodeId) || !"OUTPATIENT_VISIT".equals(careEpisodeType)
+                    || "ADMISSION".equals(disposition) || "TRANSFER".equals(disposition))
                 throw new BusinessRuleException("PHARMACY_CARE_CONTEXT_INVALID", "Clinical relationship does not match");
         }
     }
