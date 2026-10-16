@@ -1,4 +1,6 @@
-# Bộ sơ đồ Giai đoạn 2 - MediFlow
+# Bộ sơ đồ lịch sử Giai đoạn 2 - MediFlow
+
+> Tư liệu trước lần chuyển sang MVP sáu service ngày 14/10/2026. Bộ sơ đồ chưa được cập nhật và không mô tả topology/schema hiện hành. Đọc [thiết kế hệ thống](../../../../plans/01-system-design.md) và đối chiếu migrations/source trước khi sử dụng.
 
 Bộ này được dựng bằng skill **Pretty Mermaid** từ nguồn Mermaid và xuất theo ba định dạng:
 

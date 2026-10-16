@@ -1,21 +1,26 @@
-# Bộ báo cáo Giai đoạn 3 - Phân công, Rà soát và Hoàn thiện hồ sơ
+# Giai đoạn 3 — Chỉ dẫn phân công và nghiệm thu
 
-**Thời gian kế hoạch:** 24/08/2026 - 31/08/2026  
-**Ngày cập nhật:** 05/09/2026
+Cập nhật ngày **16/10/2026**. Bản phân công/giải trình Markdown tháng 9 đã hết hiệu lực và được bỏ. Không dùng các mốc tiến độ cũ để kết luận trạng thái MVP hiện tại.
 
-## Nội dung của folder
+## Phân công theo ngữ cảnh
 
-1. [Tài liệu chính Giai đoạn 3](giai-doan-3-final-review.md) - phân công tám service và Gateway, phạm vi Backend–Database–API/event–Flutter, bảng năng lực, rà soát đồng bộ và tổng hợp ba file giai đoạn.
-2. [Báo cáo giải trình lịch sử](bao-cao-giai-trinh.md) - tình trạng và kế hoạch bù tiến độ được lập trước khi chốt lại ownership.
-3. [Lộ trình bù tiến độ](../recovery-roadmap.md) - mốc xử lý, owner và quality gate.
-4. [Manifest hồ sơ](../submission-checklist.md) - danh mục tài liệu và bằng chứng nộp.
-5. [Báo cáo tổng hợp tiến độ](../README.md) - kết luận điều hành cho toàn bộ ba giai đoạn.
+| Thành viên | Phạm vi backend | Phạm vi hoãn |
+|---|---|---|
+| Vinh | Clinical, Lab | Inpatient |
+| Huy | Pharmacy, Report | Surgery |
+| Hoàng Anh | Organization, Patient, Gateway | — |
+| Lộc | Billing, Notification | — |
 
-## Khi nộp cho giáo viên
+Core đóng gói Organization + Patient; Support đích đóng gói Report + Notification. Việc đóng gói không chuyển ownership. Shared build, common, CI và scripts chỉ thay đổi khi task giao rõ. Ownership frontend và ngoại lệ shared scope theo [ma trận frontend](../../ai/15-frontend-ownership.md).
 
-Nộp file chính của Giai đoạn 3 cùng file Giai đoạn 1 và Giai đoạn 2. Mục Final Review trong file Giai đoạn 3 chỉ tóm tắt nội dung chính của ba tài liệu, không yêu cầu bảng ký xác nhận.
+## Nguồn quản lý công việc và nghiệm thu
 
-## Nguồn đối chiếu
+- [Kế hoạch triển khai MVP](../../plans/05-implementation-plan.md): task, subtask, phụ thuộc và bằng chứng cần có.
+- [Nghiệm thu và vận hành](../../plans/06-acceptance-runbook.md): luồng demo, kiểm thử lỗi từng phần, rollout và rollback.
+- [Frontend workboard](../../../frontend/docs/frontend-workboard.md): trạng thái route và công việc theo ngày.
+- [Review 1](../01-giai-doan-1-khoi-dong-dac-ta/README.md): bộ yêu cầu Standard Việt/Anh đang duy trì.
+- [Frontend Task Sheet](../01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md): phân công frontend MVP, trạng thái có bằng chứng và các phụ thuộc còn mở.
 
-- [Kế hoạch của giáo viên](../TeacherPlans.docx)
-- [Kế hoạch dự án MediFlow](../../plan/KeHoachDuAnMediFlow.docx)
+Chỉ xác nhận hoàn thành khi có bằng chứng tương ứng với commit, cấu hình/profile và kết quả kiểm thử. Phân biệt yêu cầu đã thiết kế, mã đã tồn tại và luồng đã nghiệm thu. Các thao tác tiền/kho phải được kiểm tra khi gửi lặp, restart và lỗi giữa các dịch vụ.
+
+Báo cáo giai đoạn 3 DOCX/PDF ở thư mục cha là tài sản lịch sử, chưa được tái xuất theo MVP hiện tại. Lịch sử Git giữ các Markdown cũ nếu cần đối chiếu phân công hoặc hồ sơ đã nộp.
