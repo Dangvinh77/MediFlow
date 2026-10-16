@@ -1,6 +1,6 @@
 # Vinh Clinical/Lab outpatient MVP closeout
 
-**Cập nhật:** 2026-10-16, source `c8024921` (đã có PR #393/#396 Billing và PR #383 Gateway/Core).
+**Cập nhật:** 2026-10-16, PR #401 tích hợp master (Lộc evidence source `bea617db`; giữ các gate consumer mở).
 **Trạng thái:** owned implementation đã có; **chưa đóng actual paid acceptance / toàn MVP**.
 Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 
@@ -11,10 +11,10 @@ Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 | V-CLOSE-01 reliability | Standalone Clinical/Lab PG/Rabbit/outbox/consumer JVM recovery đã có | Không làm lại; integrated paid recovery thuộc V-CLOSE-03 |
 | V-CLOSE-02 Rx V1 | Huy đã giao outpatient recordId/dispense relationship; Clinical consumer đã merge ở `c4cf810f` | Không giao lại producer/consumer implementation; actual paid Rx vẫn cần nghiệm thu |
 | Public Lab-order | Hoàng Anh `0a8636cd` đã giao exact route và sửa Core migration test paths; Vinh đã chạy packaged public slice | Không giao lại route Lab-order hoặc migration-path fix; không suy full Core suite đã đạt |
-| L1 discovery | `9b89a355`: Billing đã có source-bound GET, DTO, authorization/validation và PG tests | Đã có implementation; HTTP Billing thật qua Gateway và bàn giao fixtures vẫn còn |
-| L2 selective publication | `1624cbd3`: cohort + eligible writer; V22/V23 fences giữ historical HELD | Đã có implementation/DB proof; chưa thay actual broker/recovery proof |
+| L1 discovery | `9b89a355`: Billing đã có source-bound GET, DTO, authorization/validation và PG tests | Đã có implementation + discovery fixtures PR #401; HTTP Billing thật qua Gateway còn mở |
+| L2 selective publication | `1624cbd3`: cohort + eligible writer; V22/V23 fences giữ historical HELD | Đã có implementation/DB proof + partial broker/recovery PR #401; chưa đóng toàn L3 |
 | G1 Gateway discovery | Allowlist hiện chưa có exact GET by-source | Hoàng Anh: mục H-VINH-01 bên dưới |
-| L3/L4 publication delivery | Chưa có outpatient Rabbit integration/process recovery IT hoặc acceptance profile theo handoff | Lộc: mục H-VINH-03 bên dưới |
+| L3/L4 publication delivery | PR #401 thêm 6 Rabbit cases + packaged JVM recovery IT/profile; còn failure/ordering proof | Lộc: hoàn thiện L3 gaps + L4 artifacts tại H-VINH-03 |
 | V-CLOSE-03 | Actual paid EXAM/LAB_TEST và paid Rx chưa đóng | Vinh nhận sau producer + Gateway evidence; không inject grant hoặc SQL discovery |
 
 ## Verification refresh — 2026-10-16
@@ -61,10 +61,13 @@ Actual paid Rx và Report/Support activation/coverage theo
 
 ### H-VINH-03 — Lộc / Billing; phối hợp slice với Vinh
 
-**OPEN — L3/L4**, không làm lại L1/L2 đã merge. Thực hiện
+**PARTIAL — L3/L4**. PR #401 đã giao actual Rabbit tests, process recovery và discovery fixtures;
+không làm lại L1/L2 hoặc happy-path/recovery đã có. Hoàn thiện
 [checklist producer còn lại](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md#l3--actual-rabbit-publication-và-recovery):
-real dispatcher + confirm/returns, original broker bytes/hash, HTTP discovery/payment,
-partial/full payment, duplicates, retry/quarantine và packaged JVM crash recovery.
+unroutable/NACK/confirm timeout, bounded retry/quarantine, expired lease/stale owner,
+admin replay eligibility và equal-timestamp/multi-request ordering.
+L3 duplicate-new-event/historical HELD coverage phải đối chiếu đúng tầng test; không suy từ
+case payment retry/deferred admission.
 Giao full Billing regression/package/recovery evidence, flags/catalog, actual IDs/hashes và
 fixtures cho Vinh/Huy/Hoàng Anh. L1/L2 targeted tests chưa chứng minh mọi acceptance item đạt.
 Không release historical HELD hoặc tự bật deployment gates để làm acceptance.

@@ -143,7 +143,7 @@ Billing producer/fixture và real slice: [H-VINH-03](../handoffs/HANDOFF-VINH-OU
 Refresh `c8024921`, 2026-10-16: [owner handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
 L1 discovery và L2 selective cohort/writer V22/V23 đã merge. Fresh targeted Billing 61 tests
 đạt (0 failure/error/skip), gồm discovery + migration/cohort; chưa là actual Rabbit delivery.
-Không giao lại L1/L2. Còn Lộc L3/L4 actual dispatcher/Rabbit/JVM recovery/full evidence,
+Không giao lại L1/L2. PR #401 giao partial Rabbit/JVM recovery; còn Lộc L3 failure/ordering + L4 full artifacts,
 Hoàng Anh G1 exact GET discovery qua Gateway. Allowlist hiện chưa có GET by-source.
 Vinh chạy V-CLOSE-03 actual paid EXAM/LAB_TEST/Rx sau producer/Gateway evidence; không SQL
 discovery/synthetic grants và không tự tick M6-09.4/M6-11.4/M6-16.
@@ -201,8 +201,8 @@ Owner: Lộc; Vinh/Huy consulted. Dependency: M6-02, M6-05.
 
 **Remaining P0, consumer Clinical/Lab + Billing FE (refresh `c8024921`):**
 L1 source-bound discovery GET và L2 selective eligible writer đã có, targeted DB/API tests đạt.
-Còn exact Gateway discovery allowlist (Hoàng Anh G1), actual publication/recovery và full producer
-evidence (Lộc L3/L4), rồi paid consumer slices (Vinh). Không giao lại endpoint hoặc suy DB flag
+Còn exact Gateway discovery allowlist (Hoàng Anh G1), L3 failure/ordering và full producer artifacts
+(Lộc L3/L4; partial Rabbit/JVM recovery đã có PR #401), rồi paid consumer slices (Vinh). Không giao lại endpoint hoặc suy DB flag
 là broker delivery. Acceptance tại [handoff](../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
 
 ### M6-13 Saga và lỗi phân tán

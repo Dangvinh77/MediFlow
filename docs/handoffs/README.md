@@ -1,14 +1,14 @@
 # Registry hợp đồng MVP
 
-Refresh **2026-10-16**, source `c8024921`. Registry chỉ giữ dependencies còn mở;
+Refresh **2026-10-16**, PR #401 tích hợp master. Registry chỉ giữ dependencies còn mở;
 implementation đã merge không được giao lại. Không suy full MVP done từ owner-local tests.
 
 ## Active MVP gates
 
 - [Lộc L3/L4 + Hoàng Anh G1 — discovery/publication ngoại trú](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
   — **PARTIAL DELIVERY**. L1 discovery và L2 cohort/eligible writer V22/V23 đã merge;
-  fresh targeted Billing 61 tests đạt, không failure/error/skip. Còn actual dispatcher/Rabbit,
-  packaged JVM recovery, full regression/artifact delivery (Lộc), exact public discovery GET
+  PR #401 giao actual Rabbit happy-path, packaged JVM recovery và discovery fixtures.
+  Còn L3 failure/ordering coverage và L4 artifact delivery (Lộc), exact public discovery GET
   + actual Billing smoke (Hoàng Anh). Không làm lại L1/L2 hoặc Lab-order route đã giao.
 - [Huy — Pharmacy, Report và Support](HANDOFF-HUY-MVP.md)
   — một đầu mối cho owner acceptance/activation, Billing/Rx/Report/Notification và Support.
