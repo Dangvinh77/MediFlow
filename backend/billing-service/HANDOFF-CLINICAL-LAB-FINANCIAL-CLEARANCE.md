@@ -1,8 +1,7 @@
 # HANDOFF — Clinical/Lab financial clearance
 
-**Status:** ACTIVE — authoritative request issuance exists; L1–L4 live publication (discovery +
-cohort + actual broker delivery, default OFF) is implemented and has evidence (see the discovery
-handoff's §7); G1 Gateway route and V-CLOSE-03 consumer acceptance remain open.
+**Status:** ACTIVE — authoritative request issuance exists; L1/L2 implementation and partial L3 broker/recovery proof (default OFF) have evidence
+(see the discovery handoff §5/§7); L3 failure/ordering coverage and L4 artifact delivery remain open; G1 Gateway route and V-CLOSE-03 consumer acceptance remain open.
 **Owner:** Lộc (`locgit-89`), Billing.
 **Unblocks:** Vinh's Clinical EXAM gate and Lab LAB_TEST gate.
 
@@ -16,8 +15,9 @@ request bằng SQL và assert grant từ BILLING_EVENT_OUTBOX. Chúng chứng mi
 chưa chứng minh broker delivery. Live LedgerEventOutboxAdapter giữ V1 HELD và V6 còn fence.
 L1 bổ sung public source discovery; L2–L3 bổ sung new-cohort publication/actual broker recovery.
 Producer/consumer phải nghiệm thu cùng bytes trước deployment activation; historical HELD
-không được release. **Cập nhật 2026-10-16 (cuối ngày):** L1–L4 đã triển khai và chạy Docker thật
-(1007/1007 test + recovery IT), evidence ở discovery handoff §7; hai flags publication/discovery
+không được release. **Cập nhật 2026-10-16 (cuối ngày):** L1/L2 và một phần L3 đã triển khai và chạy Docker thật
+(owner báo 1007/1007 test + recovery IT), evidence ở discovery handoff §7;
+L3 failure/ordering và L4 raw artifacts chưa đóng; hai flags publication/discovery
 vẫn default OFF nên hành vi production không đổi. Clinical/Lab consumer bên dưới vẫn phải tự
 nghiệm thu actual delivery (không dùng evidence Billing này để tự coi là paid E2E).
 

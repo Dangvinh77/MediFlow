@@ -56,6 +56,11 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
 }
 
 export function LabDetail({ testId, notice }: LabDetailProps) {
+  // Keep pending reads and mutation callbacks scoped to the selected lab test.
+  return <LabDetailContent key={testId} testId={testId} notice={notice} />;
+}
+
+function LabDetailContent({ testId, notice }: LabDetailProps) {
   const router = useRouter();
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);

@@ -177,9 +177,26 @@ class OutpatientPublicationRabbitIntegrationTest {
 
         pay(request, "rx-first", "750.00");
         assertThat(received("financial.clearance.granted", Duration.ofSeconds(2))).isNull();
+        // Each installment produces its own payment.completed; both must be drained and verified —
+        // not just the one a single assertMatchesBroker call happens to pick up first (PR #401 review).
+        assertMatchesBrokerPaymentCompletedAmount(request, "750.00");
         pay(request, "rx-last", "1250.00");
-        assertMatchesBroker("payment.completed", request);
+        assertMatchesBrokerPaymentCompletedAmount(request, "1250.00");
         assertMatchesBroker("financial.clearance.granted", request);
+    }
+
+    private void assertMatchesBrokerPaymentCompletedAmount(UUID paymentRequestId, String expectedAmount) throws Exception {
+        Message message = received("payment.completed", Duration.ofSeconds(20));
+        assertThat(message).as("payment.completed delivered on the broker").isNotNull();
+        var payload = mapper.readTree(message.getBody());
+        assertThat(payload.path("eventType").asText()).isEqualTo("payment.completed");
+        assertThat(payload.path("payload").path("totalAmount").decimalValue()).isEqualByComparingTo(expectedAmount);
+        UUID eventId = UUID.fromString(payload.path("eventId").asText());
+        byte[] stored = jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE event_id=?", String.class, eventId)
+                .getBytes(StandardCharsets.UTF_8);
+        assertThat(sha256(message.getBody())).as("broker bytes match stored outbox bytes exactly").isEqualTo(sha256(stored));
+        assertThat(jdbc.queryForObject("SELECT outpatient_payment_request_id FROM BILLING_EVENT_OUTBOX WHERE event_id=?", UUID.class, eventId))
+                .isEqualTo(paymentRequestId);
     }
 
     @Test void partialPayment_receiptPublishedButNoGrantYet() throws Exception {
@@ -258,13 +275,15 @@ class OutpatientPublicationRabbitIntegrationTest {
 
     // Events can legitimately arrive out of the order a test happens to ask about (e.g. a random
     // eventId tie-break may let financial.clearance.granted reach the queue before payment.completed
-    // for the same account). A message that doesn't match the current search is buffered, never
-    // discarded, so a later received() call for that other eventType still finds it.
-    private final Map<String, Message> buffered = new java.util.HashMap<>();
+    // for the same account; or two installments on one request each produce their own
+    // payment.completed). Each eventType gets its own FIFO queue — never a single slot — so a
+    // second same-type message is never silently overwritten/lost; callers that expect N events of
+    // one type must call received() N times to drain them in arrival order.
+    private final Map<String, java.util.Deque<Message>> buffered = new java.util.HashMap<>();
 
     private Message received(String eventType, Duration timeout) throws InterruptedException {
-        Message already = buffered.remove(eventType);
-        if (already != null) return already;
+        var already = buffered.get(eventType);
+        if (already != null && !already.isEmpty()) return already.poll();
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
             Message candidate = externalRabbit.receive(OUTBOUND_QUEUE, 300);
@@ -272,7 +291,7 @@ class OutpatientPublicationRabbitIntegrationTest {
             try {
                 String type = mapper.readTree(candidate.getBody()).path("eventType").asText();
                 if (type.equals(eventType)) return candidate;
-                buffered.put(type, candidate);
+                buffered.computeIfAbsent(type, key -> new java.util.LinkedList<>()).add(candidate);
             } catch (Exception ignored) { /* not JSON we care about */ }
         }
         return null;
