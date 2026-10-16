@@ -6,6 +6,8 @@
 
 Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế được điền theo lịch dự kiến để lập kế hoạch, chưa phải số liệu thực hiện đã xác nhận. Số ngày tính theo ngày lịch, gồm ngày bắt đầu và ngày kết thúc; các công việc có thể thực hiện song song. Ngày bắt đầu dự kiến nằm trong khoảng 01–10/10, ngày bắt đầu thực tế theo lịch này sau đó 3–4 ngày, thời lượng từ 5–12 ngày. Khi triển khai, cập nhật hai cột này và trạng thái theo thực tế. Mobile sử dụng API và quyền truy cập đã thống nhất.
 
+**Trạng thái rà soát ngày 16/10/2026:** đối chiếu source backend, frontend, mobile và kết quả kiểm thử đã ghi nhận trong repository. Đang thực hiện: đã có một phần công việc; Chờ tích hợp: đã có mã nhưng phụ thuộc hoặc nghiệm thu liên thông còn mở; Chưa bắt đầu: chưa có phần triển khai tương ứng; Chưa nghiệm thu: chưa có kết quả bàn giao cuối. Mỗi trạng thái áp dụng cho toàn bộ nội dung của dòng. Lượt cập nhật này không chạy lại kiểm thử ứng dụng.
+
 <table>
 <thead>
 <tr>
@@ -32,7 +34,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>5</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có thiết kế và API; còn thống nhất tích hợp web/mobile.</td>
 </tr>
 <tr>
 <td>2</td>
@@ -42,7 +44,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có Core và các API; chưa xác nhận đầy đủ luồng đăng nhập và dữ liệu liên thông.</td>
 </tr>
 <tr>
 <td>3</td>
@@ -52,7 +54,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>9</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có định tuyến và kiểm tra quyền; còn thiếu đường tra cứu khoản phí và đối chiếu quyền hủy đơn.</td>
 </tr>
 <tr>
 <td>4</td>
@@ -62,7 +64,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có xử lý nghiệp vụ và kiểm thử; còn nghiệm thu luồng khám với thanh toán thật.</td>
 </tr>
 <tr>
 <td>5</td>
@@ -72,7 +74,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có chỉ định, kết quả và kiểm thử phục hồi; còn nghiệm thu thanh toán xét nghiệm liên thông.</td>
 </tr>
 <tr>
 <td>6</td>
@@ -82,7 +84,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có quản lý thuốc và cấp thuốc; còn kiểm tra quyền qua Gateway và luồng đơn đã thanh toán.</td>
 </tr>
 <tr>
 <td>7</td>
@@ -92,7 +94,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có thu phí, thanh toán và kiểm thử; còn bổ sung bằng chứng phát sự kiện và nghiệm thu với bên nhận.</td>
 </tr>
 <tr>
 <td>8</td>
@@ -102,7 +104,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có API báo cáo; nguồn dữ liệu và độ đầy đủ số liệu còn chờ xác nhận.</td>
 </tr>
 <tr>
 <td>9</td>
@@ -112,7 +114,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có API thông báo; còn nghiệm thu sự kiện thực và quyền người nhận trong luồng chung.</td>
 </tr>
 <tr>
 <td>10</td>
@@ -122,7 +124,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có module Support; các dịch vụ báo cáo và thông báo còn tách riêng.</td>
 </tr>
 <tr>
 <td>11</td>
@@ -132,7 +134,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có nhiều kiểm thử nghiệp vụ và phục hồi; kiểm thử liên thông toàn hệ thống còn mở.</td>
 </tr>
 <tr>
 <td>12</td>
@@ -142,7 +144,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>7</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có khung giao diện, menu và đăng nhập; còn kiểm tra phiên thật và điều hướng theo vai trò.</td>
 </tr>
 <tr>
 <td>13</td>
@@ -152,7 +154,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-03</td>
 <td>2026-10-06</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có các trang và thao tác quản lý; còn xác nhận hoạt động với Core qua Gateway.</td>
 </tr>
 <tr>
 <td>14</td>
@@ -162,7 +164,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-03</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có lịch và hồ sơ khám; các thao tác khám liên quan thanh toán còn chờ nghiệm thu.</td>
 </tr>
 <tr>
 <td>15</td>
@@ -172,7 +174,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có giao diện và kiểm thử cục bộ; chưa xác nhận luồng xét nghiệm đã thanh toán qua Gateway.</td>
 </tr>
 <tr>
 <td>16</td>
@@ -182,7 +184,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-03</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có màn hình thuốc, tồn kho và xử lý đơn; còn kiểm tra vai trò thật và cấp thuốc sau thanh toán.</td>
 </tr>
 <tr>
 <td>17</td>
@@ -192,7 +194,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-03</td>
 <td>2026-10-06</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có hóa đơn và giao diện thanh toán; tra cứu khoản phí theo nghiệp vụ qua Gateway còn thiếu.</td>
 </tr>
 <tr>
 <td>18</td>
@@ -202,7 +204,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-05</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có các trang và kiểm thử báo cáo cục bộ; còn đối chiếu số liệu thực và nguồn dữ liệu.</td>
 </tr>
 <tr>
 <td>19</td>
@@ -212,7 +214,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Đã có danh sách, chi tiết và gửi thông báo; còn kiểm tra người nhận với phiên đăng nhập thật.</td>
 </tr>
 <tr>
 <td>20</td>
@@ -222,7 +224,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có kiểm thử giao diện cục bộ; chưa kiểm tra đủ vai trò và luồng API thật.</td>
 </tr>
 <tr>
 <td>21</td>
@@ -232,7 +234,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>6</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có khung thư mục và thành phần loading; chưa có cấu hình ứng dụng và kết nối Gateway.</td>
 </tr>
 <tr>
 <td>22</td>
@@ -242,7 +244,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>8</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có mã đăng nhập, lưu phiên và điều hướng mobile.</td>
 </tr>
 <tr>
 <td>23</td>
@@ -252,7 +254,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình và xử lý dữ liệu người bệnh trên mobile.</td>
 </tr>
 <tr>
 <td>24</td>
@@ -262,7 +264,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình lịch khám và thông tin khám trên mobile.</td>
 </tr>
 <tr>
 <td>25</td>
@@ -272,7 +274,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-05</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình kết quả xét nghiệm trên mobile.</td>
 </tr>
 <tr>
 <td>26</td>
@@ -282,7 +284,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình thuốc và đơn thuốc trên mobile.</td>
 </tr>
 <tr>
 <td>27</td>
@@ -292,7 +294,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình hóa đơn và thanh toán trên mobile.</td>
 </tr>
 <tr>
 <td>28</td>
@@ -302,7 +304,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có màn hình thông báo trên mobile.</td>
 </tr>
 <tr>
 <td>29</td>
@@ -312,7 +314,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa bắt đầu</strong><br>Chưa có ứng dụng hoàn chỉnh, kiểm thử thiết bị hoặc bản cài Android để nghiệm thu.</td>
 </tr>
 <tr>
 <td>30</td>
@@ -322,7 +324,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-06</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có dữ liệu mẫu và fixture kiểm thử backend/web; chưa có bộ kiểm thử chung cho cả mobile.</td>
 </tr>
 <tr>
 <td>31</td>
@@ -332,7 +334,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-08</td>
 <td>2026-10-12</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Luồng thanh toán thực qua Gateway còn phụ thuộc; mobile chưa có chức năng.</td>
 </tr>
 <tr>
 <td>32</td>
@@ -342,7 +344,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-08</td>
 <td>2026-10-12</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chờ tích hợp</strong><br>Chưa nghiệm thu dữ liệu, phân quyền và sự kiện xuyên suốt cả ba phần.</td>
 </tr>
 <tr>
 <td>33</td>
@@ -352,7 +354,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-09</td>
 <td>2026-10-13</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có các sửa lỗi và kiểm thử hồi quy cục bộ; còn lỗi và phụ thuộc tích hợp cần kiểm tra.</td>
 </tr>
 <tr>
 <td>34</td>
@@ -362,7 +364,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-09</td>
 <td>2026-10-12</td>
 <td>12</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Đang thực hiện</strong><br>Đã có tài liệu thiết kế và hướng dẫn; hồ sơ bàn giao cần cập nhật theo kết quả cuối.</td>
 </tr>
 <tr>
 <td>35</td>
@@ -372,7 +374,7 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 <td>2026-10-10</td>
 <td>2026-10-14</td>
 <td>11</td>
-<td>Chưa bắt đầu</td>
+<td><strong>Chưa nghiệm thu</strong><br>Chưa có kết quả nghiệm thu toàn hệ thống hoặc bộ bàn giao hoàn chỉnh.</td>
 </tr>
 </tbody>
 </table>
@@ -382,6 +384,8 @@ Các giá trị trong Ngày bắt đầu thực tế và Số ngày thực tế 
 **Prepared on:** 2026-10-16. **Planned period:** 2026-10-01–2026-10-24. **Planned project completion:** 2026-10-24.
 
 Actual Start Date and Actual Days are populated with scheduling estimates, not confirmed execution records. Durations use calendar days, including the start and end dates; tasks may run in parallel. Planned starts fall on October 1–10, the scheduled actual starts follow 3–4 days later, and durations range from 5 to 12 days. Update these columns and status with actual records during execution. Mobile uses agreed APIs and access permissions.
+
+**Status reviewed on 2026-10-16:** checked backend, frontend and mobile source and recorded repository test evidence. In progress: partially implemented; Awaiting integration: code exists but dependencies or integrated acceptance remain open; Not started: the corresponding implementation is absent; Not accepted: final acceptance and handover are outstanding. Each status covers the entire row. This update did not rerun application tests.
 
 <table>
 <thead>
@@ -409,7 +413,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>5</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Design and APIs exist; web/mobile integration alignment remains.</td>
 </tr>
 <tr>
 <td>2</td>
@@ -419,7 +423,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Core and APIs exist; complete login and cross-service data flows remain unverified.</td>
 </tr>
 <tr>
 <td>3</td>
@@ -429,7 +433,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>9</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Routing and role checks exist; payment-request discovery routing and prescription cancellation permissions remain open.</td>
 </tr>
 <tr>
 <td>4</td>
@@ -439,7 +443,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Business logic and tests exist; acceptance with actual examination payments remains open.</td>
 </tr>
 <tr>
 <td>5</td>
@@ -449,7 +453,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Orders, results and recovery tests exist; integrated lab payment acceptance remains open.</td>
 </tr>
 <tr>
 <td>6</td>
@@ -459,7 +463,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Drug and dispensing workflows exist; Gateway role checks and the paid prescription journey remain open.</td>
 </tr>
 <tr>
 <td>7</td>
@@ -469,7 +473,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Charges, payments and tests exist; event publication evidence and consumer acceptance remain incomplete.</td>
 </tr>
 <tr>
 <td>8</td>
@@ -479,7 +483,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Report APIs exist; source coverage and data completeness await confirmation.</td>
 </tr>
 <tr>
 <td>9</td>
@@ -489,7 +493,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Notification APIs exist; actual event delivery and recipient permissions await integrated acceptance.</td>
 </tr>
 <tr>
 <td>10</td>
@@ -499,7 +503,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>No Support host module exists; Report and Notification remain separate services.</td>
 </tr>
 <tr>
 <td>11</td>
@@ -509,7 +513,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Business and recovery tests exist; system-wide integration testing remains open.</td>
 </tr>
 <tr>
 <td>12</td>
@@ -519,7 +523,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-05</td>
 <td>7</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Layout, navigation and login exist; real-session and role-based navigation checks remain open.</td>
 </tr>
 <tr>
 <td>13</td>
@@ -529,7 +533,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-03</td>
 <td>2026-10-06</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Management pages and actions exist; verification against Core through Gateway remains open.</td>
 </tr>
 <tr>
 <td>14</td>
@@ -539,7 +543,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-03</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Appointment and record screens exist; payment-dependent examination actions await acceptance.</td>
 </tr>
 <tr>
 <td>15</td>
@@ -549,7 +553,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Screens and local tests exist; the paid lab flow through Gateway remains unverified.</td>
 </tr>
 <tr>
 <td>16</td>
@@ -559,7 +563,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-03</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Drug, stock and prescription screens exist; real-role and paid dispensing checks remain open.</td>
 </tr>
 <tr>
 <td>17</td>
@@ -569,7 +573,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-03</td>
 <td>2026-10-06</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Invoice and payment screens exist; source-based charge discovery through Gateway remains unavailable.</td>
 </tr>
 <tr>
 <td>18</td>
@@ -579,7 +583,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-05</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Report screens and local tests exist; actual figures and source coverage remain to be reconciled.</td>
 </tr>
 <tr>
 <td>19</td>
@@ -589,7 +593,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>List, detail and send screens exist; recipient checks with real sessions remain open.</td>
 </tr>
 <tr>
 <td>20</td>
@@ -599,7 +603,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Local screen tests exist; complete role coverage and real-API journeys remain unverified.</td>
 </tr>
 <tr>
 <td>21</td>
@@ -609,7 +613,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-01</td>
 <td>2026-10-04</td>
 <td>6</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Folder scaffolding and a loading component exist; app configuration and Gateway connectivity are missing.</td>
 </tr>
 <tr>
 <td>22</td>
@@ -619,7 +623,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-02</td>
 <td>2026-10-06</td>
 <td>8</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile login, session storage and navigation have not been implemented.</td>
 </tr>
 <tr>
 <td>23</td>
@@ -629,7 +633,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile patient screens and data handling have not been implemented.</td>
 </tr>
 <tr>
 <td>24</td>
@@ -639,7 +643,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile appointment and examination screens have not been implemented.</td>
 </tr>
 <tr>
 <td>25</td>
@@ -649,7 +653,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-05</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile lab-result screens have not been implemented.</td>
 </tr>
 <tr>
 <td>26</td>
@@ -659,7 +663,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-08</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile drug and prescription screens have not been implemented.</td>
 </tr>
 <tr>
 <td>27</td>
@@ -669,7 +673,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-04</td>
 <td>2026-10-07</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile invoice and payment screens have not been implemented.</td>
 </tr>
 <tr>
 <td>28</td>
@@ -679,7 +683,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-05</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>Mobile notification screens have not been implemented.</td>
 </tr>
 <tr>
 <td>29</td>
@@ -689,7 +693,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-07</td>
 <td>2026-10-11</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Not started</strong><br>No complete app, device testing or Android package is available for acceptance.</td>
 </tr>
 <tr>
 <td>30</td>
@@ -699,7 +703,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-06</td>
 <td>2026-10-09</td>
 <td>10</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Backend/web sample data and test fixtures exist; a shared set covering mobile is not ready.</td>
 </tr>
 <tr>
 <td>31</td>
@@ -709,7 +713,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-08</td>
 <td>2026-10-12</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Actual payment journeys depend on pending Gateway work; mobile workflows are not implemented.</td>
 </tr>
 <tr>
 <td>32</td>
@@ -719,7 +723,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-08</td>
 <td>2026-10-12</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>Awaiting integration</strong><br>Cross-application data, permissions and events have not passed integrated acceptance.</td>
 </tr>
 <tr>
 <td>33</td>
@@ -729,7 +733,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-09</td>
 <td>2026-10-13</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Local fixes and regression tests exist; integration issues and dependencies remain to be checked.</td>
 </tr>
 <tr>
 <td>34</td>
@@ -739,7 +743,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-09</td>
 <td>2026-10-12</td>
 <td>12</td>
-<td>Not started</td>
+<td><strong>In progress</strong><br>Design documents and guides exist; handover materials need the final delivery results.</td>
 </tr>
 <tr>
 <td>35</td>
@@ -749,7 +753,7 @@ Actual Start Date and Actual Days are populated with scheduling estimates, not c
 <td>2026-10-10</td>
 <td>2026-10-14</td>
 <td>11</td>
-<td>Not started</td>
+<td><strong>Not accepted</strong><br>System-wide acceptance and the complete handover package are not yet available.</td>
 </tr>
 </tbody>
 </table>
