@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/api/v1/reports/operations")
 @ConditionalOnProperty(name = "mediflow.features.care-finance-v2", havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class OperationalSnapshotReportController {
     private final ReadOperationalSnapshotUseCase reader;
     public OperationalSnapshotReportController(ReadOperationalSnapshotUseCase reader) { this.reader = reader; }

@@ -12,5 +12,5 @@ public class SettlementSnapshotApplicationService implements ApplySettlementSnap
     public SettlementSnapshotApplicationService(BillingSettlementSnapshotMapper mapper, SettlementReceivableStorePort store) {
         this.mapper = mapper; this.store = store;
     }
-    @Override @Transactional public void apply(DecodedCareFinanceEvent event) { store.apply(event, mapper.map(event)); }
+    @Override @Transactional("reportTransactionManager") public void apply(DecodedCareFinanceEvent event) { store.apply(event, mapper.map(event)); }
 }

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/reports/financial/source-archives")
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2", "mediflow.report.financial-archive.enabled"}, havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class FinancialSourceArchiveController {
     private static final int MAX_BYTES = 32 * 1024 * 1024;
     private final ManageFinancialSourceArchivesUseCase archives;

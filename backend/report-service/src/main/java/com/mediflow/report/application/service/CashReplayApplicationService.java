@@ -22,7 +22,7 @@ public class CashReplayApplicationService implements ReplayCashReceiptsUseCase {
     public CashReplayApplicationService(CashReplayStorePort store) { this.store = store; }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public CashReplayProgress start() {
         var current = store.freeze(UUID.randomUUID());
         supported(current);
@@ -30,7 +30,7 @@ public class CashReplayApplicationService implements ReplayCashReceiptsUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public CashReplayProgress advance(UUID generationId, int batchSize) {
         if (generationId == null || batchSize < 1 || batchSize > MAX_BATCH_SIZE) {
             throw new IllegalArgumentException("Cash replay generation and batch size 1..500 are required");
@@ -54,7 +54,7 @@ public class CashReplayApplicationService implements ReplayCashReceiptsUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public CashReplayProgress progress(UUID generationId) {
         if (generationId == null) throw new IllegalArgumentException("Cash replay generation is required");
         return store.progress(generationId);

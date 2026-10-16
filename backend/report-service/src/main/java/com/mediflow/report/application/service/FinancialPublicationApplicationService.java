@@ -18,7 +18,7 @@ public class FinancialPublicationApplicationService implements PublishFinancialS
     public FinancialPublicationApplicationService(FinancialPublicationStorePort store) { this.store = store; }
 
     @Override
-    @Transactional(isolation=Isolation.READ_COMMITTED, timeout=15)
+    @Transactional(transactionManager = "reportTransactionManager", isolation=Isolation.READ_COMMITTED, timeout=15)
     public FinancialPublicationDTO publish(PublishFinancialSnapshotRequest request, UUID actorAccountId) {
         if (request == null) throw invalid();
         FinancialPublicationPolicy.requireCommand(request.commandId(), request.generationId(), actorAccountId, request.acceptanceReference());
@@ -27,7 +27,7 @@ public class FinancialPublicationApplicationService implements PublishFinancialS
     }
 
     @Override
-    @Transactional(isolation=Isolation.READ_COMMITTED, timeout=15)
+    @Transactional(transactionManager = "reportTransactionManager", isolation=Isolation.READ_COMMITTED, timeout=15)
     public FinancialPublicationDTO rollback(RollbackFinancialSnapshotRequest request, UUID actorAccountId) {
         if (request == null || request.expectedCurrentGenerationId() == null) throw invalid();
         FinancialPublicationPolicy.requireCommand(request.commandId(), request.generationId(), actorAccountId, request.acceptanceReference());

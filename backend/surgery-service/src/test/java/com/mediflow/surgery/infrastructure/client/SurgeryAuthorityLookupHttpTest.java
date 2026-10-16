@@ -246,7 +246,7 @@ class SurgeryAuthorityLookupHttpTest {
     private static UUID financialId(int value) { return UUID.fromString("00000000-0000-0000-0000-"+String.format("%012d",value)); }
 
     private static byte[] fixture(String name) throws IOException {
-        return Files.readAllBytes(Path.of("../organization-service/src/test/resources/contracts/surgery-authority-v1",name));
+        return Files.readAllBytes(Path.of("../core-service/src/test/resources/contracts/surgery-authority-v1",name));
     }
 
     private static void assertServiceToken() {

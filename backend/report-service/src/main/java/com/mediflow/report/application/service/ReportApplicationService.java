@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 /** Application orchestration for stable, zero-filled report read models. */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional(transactionManager = "reportTransactionManager", readOnly = true)
 public class ReportApplicationService implements ReadReportUseCase {
 
     static final int DEFAULT_TOP_LIMIT = 10;

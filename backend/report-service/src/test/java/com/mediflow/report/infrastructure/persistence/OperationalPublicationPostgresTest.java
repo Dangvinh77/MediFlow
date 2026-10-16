@@ -44,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** Actual Surgery producer fixtures; only isolated PostgreSQL, never foreign/service DB access. */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Transactional(propagation=Propagation.NOT_SUPPORTED)

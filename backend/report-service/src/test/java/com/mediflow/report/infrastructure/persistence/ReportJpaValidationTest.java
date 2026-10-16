@@ -16,6 +16,7 @@ import jakarta.persistence.EntityManager;
 
 /** Boots Flyway and Hibernate validation against the real PostgreSQL schema. */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @Testcontainers(disabledWithoutDocker = true)

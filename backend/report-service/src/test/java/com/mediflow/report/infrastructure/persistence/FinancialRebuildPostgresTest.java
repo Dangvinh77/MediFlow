@@ -54,6 +54,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 @Import({FinancialRebuildApplicationService.class,FinancialRebuildPersistenceAdapter.class,
     FinancialSourceArchiveApplicationService.class, FinancialArchiveJsonCodec.class,

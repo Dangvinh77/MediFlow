@@ -42,6 +42,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.OperationalContrib
 import com.mediflow.report.infrastructure.persistence.adapter.OperationalReplayPersistenceAdapter;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({OperationalContributionPersistenceAdapter.class, OperationalContributionApplicationService.class,
         OperationalReplayPersistenceAdapter.class, OperationalReplayApplicationService.class,

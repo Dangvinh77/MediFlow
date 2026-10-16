@@ -28,8 +28,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration(proxyBeanMethods = false)
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2", "mediflow.report.settlement-consumer.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportSettlementConsumerConfiguration {
-    @Bean ApplySettlementSnapshotUseCase settlementSnapshots(JdbcTemplate jdbc, ObjectMapper mapper,
+    @Bean ApplySettlementSnapshotUseCase settlementSnapshots(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper,
             @Value("${mediflow.report.zone-id:Asia/Bangkok}") String zone) {
         return new SettlementSnapshotApplicationService(new BillingSettlementSnapshotMapper(ZoneId.of(zone)),
                 new SettlementReceivableStoreAdapter(jdbc, mapper));

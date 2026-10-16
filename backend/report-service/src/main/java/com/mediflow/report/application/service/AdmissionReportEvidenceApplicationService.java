@@ -10,7 +10,7 @@ import com.mediflow.report.application.port.out.AdmissionReportEvidencePort;
 import com.mediflow.report.domain.model.AdmissionReportHistory;
 
 @Service
-@Transactional
+@Transactional("reportTransactionManager")
 public class AdmissionReportEvidenceApplicationService implements ProjectAdmissionReportEvidenceUseCase {
     private final AdmissionReportEvidencePort evidence;
     private final AdmissionReportFactMapper mapper;

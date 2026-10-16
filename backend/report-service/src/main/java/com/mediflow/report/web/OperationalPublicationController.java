@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/reports/operations/publications")
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2", "mediflow.report.operational-publication.enabled"}, havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class OperationalPublicationController {
     private final PublishOperationalSnapshotsUseCase publications;
     public OperationalPublicationController(PublishOperationalSnapshotsUseCase publications) { this.publications = publications; }

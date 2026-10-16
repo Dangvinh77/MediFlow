@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2",
         "mediflow.report.cash-receipt-consumer.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportCashReceiptConsumerConfiguration {
     @Bean
     Declarables reportCashReceiptTopology() {

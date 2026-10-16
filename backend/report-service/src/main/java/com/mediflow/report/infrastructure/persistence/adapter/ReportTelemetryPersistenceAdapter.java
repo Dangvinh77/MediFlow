@@ -16,7 +16,7 @@ import com.mediflow.report.application.port.out.ReportTelemetryReadPort;
 
 /** One MVCC statement prevents mixing before/after states of concurrent replay commits. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY, readOnly = true)
 public class ReportTelemetryPersistenceAdapter implements ReportTelemetryReadPort {
     private static final String SQL = """
             WITH pending AS (
@@ -53,7 +53,7 @@ public class ReportTelemetryPersistenceAdapter implements ReportTelemetryReadPor
             """;
     private final JdbcTemplate jdbc;
 
-    public ReportTelemetryPersistenceAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public ReportTelemetryPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     @Override
     public ReportTelemetrySnapshot capture() {

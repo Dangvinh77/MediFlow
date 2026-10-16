@@ -191,6 +191,8 @@
                         <configuration>
                             <includes>
                                 <include>**/PharmacyDistributedRuntimeAcceptanceIT.java</include>
+                                <include>**/PharmacyOutpatientRuntimeAcceptanceIT.java</include>
+                                <include>**/PharmacyAuthorityRuntimeAcceptanceIT.java</include>
                             </includes>
                         </configuration>
                         <executions>

@@ -12,6 +12,9 @@ import com.mediflow.pharmacy.application.dto.response.DispenseDTO;
 import com.mediflow.pharmacy.application.dto.response.PrescriptionDTO;
 import com.mediflow.pharmacy.application.port.in.CancelPrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.CreatePrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.CreateOutpatientPrescriptionUseCase;
+import com.mediflow.pharmacy.application.port.in.OutpatientPrescriptionLifecycleUseCase;
+import com.mediflow.pharmacy.application.exception.OutpatientPrescriptionApiException;
 import com.mediflow.pharmacy.application.port.in.DispensePrescriptionUseCase;
 import com.mediflow.pharmacy.application.port.in.GetPrescriptionUseCase;
 import jakarta.validation.Valid;
@@ -19,6 +22,8 @@ import java.net.URI;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -46,6 +51,9 @@ public class PrescriptionController {
     private final GetPrescriptionUseCase getPrescriptionUseCase;
     private final CancelPrescriptionUseCase cancelPrescriptionUseCase;
     private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
+    private final ObjectProvider<CreateOutpatientPrescriptionUseCase> outpatientCreators;
+    private final ObjectProvider<OutpatientPrescriptionLifecycleUseCase> outpatientLifecycles;
+    private final Environment environment;
 
     /**
      * Creates a prescription whose prices are resolved exclusively by the server.
@@ -62,10 +70,25 @@ public class PrescriptionController {
             Authentication authentication,
             @RequestHeader(
                     value = JwtClaims.HEADER_CORRELATION_ID,
-                    required = false) String correlationId) {
+                    required = false) String correlationId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         CreatePrescriptionCommand command = new CreatePrescriptionCommand(
                 request, parseActor(authentication), correlationId);
-        PrescriptionDTO created = createPrescriptionUseCase.create(command);
+        PrescriptionDTO created;
+        if (Integer.valueOf(1).equals(request.careContractVersion())) {
+            CreateOutpatientPrescriptionUseCase creator = outpatientCreators.getIfAvailable();
+            if (creator == null) {
+                throw new OutpatientPrescriptionApiException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                        "Public outpatient V1 creation is not enabled");
+            }
+            created = creator.create(parseCommandId(idempotencyKey), command);
+        } else {
+            if (environment.matchesProfiles("mvp-outpatient", "outpatient-mvp")) {
+                throw new OutpatientPrescriptionApiException("PHARMACY_OUTPATIENT_V1_REQUIRED",
+                        "The outpatient MVP profile does not accept legacy prescription creation");
+            }
+            created = createPrescriptionUseCase.create(command);
+        }
         URI location = URI.create(
                 "/api/v1/pharmacy/prescriptions/" + created.prescriptionId());
         return ResponseEntity.created(location)
@@ -92,7 +115,8 @@ public class PrescriptionController {
                     required = false) String correlationId) {
         CancelPrescriptionCommand command = new CancelPrescriptionCommand(
                 prescriptionId, parseActor(authentication), request.reason(), correlationId);
-        CancelPrescriptionResult result = cancelPrescriptionUseCase.cancel(command);
+        CancelPrescriptionResult result = environment.matchesProfiles("mvp-outpatient", "outpatient-mvp")
+                ? requireOutpatientLifecycle().cancel(command) : cancelPrescriptionUseCase.cancel(command);
         return ResponseEntity.ok(ApiResponse.ok(result, command.correlationId()));
     }
 
@@ -133,9 +157,36 @@ public class PrescriptionController {
                     required = false) String correlationId) {
         ActorIdentity actor = parseActor(authentication);
         String traceId = normalizeCorrelationId(correlationId);
-        DispenseDTO result = dispensePrescriptionUseCase.dispense(
-                prescriptionId, operationalActor(actor), traceId);
+        DispenseDTO result = environment.matchesProfiles("mvp-outpatient", "outpatient-mvp")
+                ? requireOutpatientLifecycle().dispense(prescriptionId, operationalActor(actor), traceId)
+                : dispensePrescriptionUseCase.dispense(prescriptionId, operationalActor(actor), traceId);
         return ResponseEntity.ok(ApiResponse.ok(result, traceId));
+    }
+
+    private OutpatientPrescriptionLifecycleUseCase requireOutpatientLifecycle() {
+        var lifecycle = outpatientLifecycles.getIfAvailable();
+        if (lifecycle == null) {
+            throw new OutpatientPrescriptionApiException("PHARMACY_CARE_FINANCE_V2_UNAVAILABLE",
+                    "Public outpatient V1 lifecycle is not enabled");
+        }
+        return lifecycle;
+    }
+
+    /** Binds V1 retries to the existing durable command receipt instead of generating a new id. */
+    private UUID parseCommandId(String value) {
+        if (value != null && !value.isBlank()) {
+            try {
+                String key = value.trim();
+                UUID commandId = UUID.fromString(key);
+                if (commandId.toString().equalsIgnoreCase(key)) {
+                    return commandId;
+                }
+            } catch (IllegalArgumentException ignored) {
+                // The stable validation error below also rejects abbreviated UUID strings.
+            }
+        }
+        throw new OutpatientPrescriptionApiException("PHARMACY_IDEMPOTENCY_KEY_REQUIRED",
+                "V1 creation requires a canonical UUID Idempotency-Key");
     }
 
     /** Resolves the verified principal without exposing malformed identities as HTTP 500. */

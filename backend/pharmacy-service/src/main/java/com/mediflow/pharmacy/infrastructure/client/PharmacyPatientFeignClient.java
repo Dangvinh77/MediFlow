@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "patient-service", contextId = "pharmacyPatientIdentityClient",
+@FeignClient(name = "${mediflow.pharmacy.patient.service-id:patient-service}", contextId = "pharmacyPatientIdentityClient",
         url = "${mediflow.pharmacy.patient.base-url:}", fallbackFactory = PharmacyPatientFallbackFactory.class)
 public interface PharmacyPatientFeignClient {
     @GetMapping("/api/v1/patients/{id}/exists")

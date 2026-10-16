@@ -1,0 +1,4 @@
+# Canonical team profile. All V1 intake/read gates remain explicitly opt-in.
+spring:
+  config:
+    import: classpath:application-mvp-outpatient.yml

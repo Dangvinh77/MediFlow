@@ -17,7 +17,9 @@ import org.springframework.scheduling.annotation.*;
 
 @Configuration(proxyBeanMethods = false)
 @EnableRabbit @EnableScheduling
+@org.springframework.context.annotation.Import(ReportSchedulingConfiguration.class)
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2", "mediflow.report.cash-refund-consumer.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportCashRefundConsumerConfiguration {
     @Bean Declarables reportCashRefundTopology() {
         var events = new TopicExchange("mediflow.events", true, false); var dead = new TopicExchange("mediflow.events.dlx", true, false);
@@ -39,7 +41,7 @@ public class ReportCashRefundConsumerConfiguration {
     public static final class RefundRecoveryWorker {
         private final CashRefundStorePort store; private final ApplyCashRefundUseCase refunds;
         RefundRecoveryWorker(CashRefundStorePort store, ApplyCashRefundUseCase refunds) { this.store = store; this.refunds = refunds; }
-        @Scheduled(fixedDelayString = "${mediflow.report.cash-refund-consumer.recovery-delay-ms:5000}",
+        @Scheduled(scheduler = "reportTaskScheduler", fixedDelayString = "${mediflow.report.cash-refund-consumer.recovery-delay-ms:5000}",
                 initialDelayString = "${mediflow.report.cash-refund-consumer.recovery-initial-delay-ms:5000}")
         public void recover() {
             try {

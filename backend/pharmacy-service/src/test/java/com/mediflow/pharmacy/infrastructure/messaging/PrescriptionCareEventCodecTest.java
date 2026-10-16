@@ -36,6 +36,21 @@ class PrescriptionCareEventCodecTest {
     }
 
     @ParameterizedTest @EnumSource(EventType.class)
+    void allOutpatientLifecycleFixtures_roundTripWithoutAdmissionOrInferredRecord(EventType type) throws Exception {
+        String path = "/contracts/care-finance-v1/" + type.routingKey() + ".outpatient.v1.json";
+        try (var stream = getClass().getResourceAsStream(path)) {
+            assertThat(stream).isNotNull();
+            byte[] body = stream.readAllBytes();
+            var event = codec.decode(type.routingKey(), body);
+            assertThat(event.payload().careContext()).isEqualTo(CareContext.OUTPATIENT);
+            assertThat(event.payload().careEpisodeType()).isEqualTo(CareEpisodeType.OUTPATIENT_VISIT);
+            assertThat(event.payload().recordId()).isNotNull().isNotEqualTo(event.payload().careEpisodeId());
+            assertThat(event.payload().admissionId()).isNull();
+            assertThat(mapper.readTree(codec.encode(event))).isEqualTo(mapper.readTree(body));
+        }
+    }
+
+    @ParameterizedTest @EnumSource(EventType.class)
     void proposedCanonicalFixtureBytes_roundTripThroughRealCodec(EventType type) throws Exception {
         String path = "/contracts/care-finance-v1/" + type.routingKey() + ".v1.json";
         try (var stream = getClass().getResourceAsStream(path)) {

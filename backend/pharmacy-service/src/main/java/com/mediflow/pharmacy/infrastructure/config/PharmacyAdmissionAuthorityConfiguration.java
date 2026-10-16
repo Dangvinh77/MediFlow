@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @EnableFeignClients(clients = PharmacyInpatientFeignClient.class)
 @ConditionalOnProperty(name = {"mediflow.features.care-finance-v2", "mediflow.pharmacy.admission-authority.enabled"}, havingValue = "true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class PharmacyAdmissionAuthorityConfiguration {
     @Bean PharmacyAdmissionFallbackFactory pharmacyAdmissionFallbackFactory() { return new PharmacyAdmissionFallbackFactory(); }
     @Bean AdmissionAuthorityPort admissionAuthority(PharmacyInpatientFeignClient client, Clock clock, JwtProperties properties,

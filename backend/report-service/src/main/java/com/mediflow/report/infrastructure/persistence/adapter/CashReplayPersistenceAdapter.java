@@ -19,12 +19,12 @@ import com.mediflow.report.domain.model.CashReceipt;
 
 /** Frozen minimal source proof and isolated aggregates. No live reset, Billing lookup or read switch. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class CashReplayPersistenceAdapter implements CashReplayStorePort {
     private final JdbcTemplate jdbc;
     private final CashSnapshotCodec snapshots;
 
-    public CashReplayPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public CashReplayPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.snapshots = new CashSnapshotCodec(mapper);
     }

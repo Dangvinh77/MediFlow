@@ -73,6 +73,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
  * immutable acceptance/audit records and the existing read model together.</p>
  */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Transactional(propagation = Propagation.NOT_SUPPORTED)

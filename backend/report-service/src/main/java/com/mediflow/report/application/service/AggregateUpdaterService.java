@@ -29,11 +29,9 @@ import com.mediflow.report.domain.model.DrugStatistic;
 import com.mediflow.report.domain.model.PaymentContribution;
 import com.mediflow.report.domain.model.PaymentContributionStatus;
 
-import lombok.RequiredArgsConstructor;
 
 /** Application orchestration for operational and payment report projections. */
 @Service
-@RequiredArgsConstructor
 public class AggregateUpdaterService implements UpdateAggregateUseCase {
 
     private static final String MEDICAL_RECORD_CREATED = "medicalrecord.created";
@@ -47,8 +45,21 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     private final PrescriptionFillReceiptPort prescriptionFills;
     private final ZoneId reportZone;
 
+    public AggregateUpdaterService(ProcessedEventPort processedEventPort, DailyVisitReportRepositoryPort dailyReports,
+            DrugStatisticRepositoryPort drugStatistics, MonthlyRevenueReportRepositoryPort monthlyReports,
+            PaymentContributionRepositoryPort paymentContributions, PrescriptionFillReceiptPort prescriptionFills,
+            @org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZone) {
+        this.processedEventPort = processedEventPort;
+        this.dailyReports = dailyReports;
+        this.drugStatistics = drugStatistics;
+        this.monthlyReports = monthlyReports;
+        this.paymentContributions = paymentContributions;
+        this.prescriptionFills = prescriptionFills;
+        this.reportZone = reportZone;
+    }
+
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void onMedicalRecordCreated(UUID eventId, LocalDate reportDate, UUID departmentId) {
         validateOperationalEvent(eventId, reportDate, departmentId);
         if (!processedEventPort.claimIfAbsent(eventId, MEDICAL_RECORD_CREATED)) {
@@ -58,7 +69,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void onLabResultCreated(UUID eventId, LocalDate reportDate, UUID departmentId) {
         validateOperationalEvent(eventId, reportDate, departmentId);
         if (!processedEventPort.claimIfAbsent(eventId, LAB_RESULT_CREATED)) {
@@ -68,7 +79,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void onPrescriptionFilled(UUID eventId, Instant occurredAt, UUID departmentId,
                                      UUID prescriptionId, List<DispensedItem> items) {
         LocalDate reportDate = validatePrescriptionEvent(eventId, occurredAt, departmentId,
@@ -89,7 +100,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void onPaymentCompleted(UUID eventId, Instant occurredAt, UUID invoiceId,
                                    UUID departmentId, BigDecimal amount) {
         LocalDate paymentDate = validatePaymentCompleted(eventId, occurredAt, invoiceId, amount);
@@ -109,7 +120,7 @@ public class AggregateUpdaterService implements UpdateAggregateUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void onPaymentFailed(UUID eventId, Instant occurredAt, UUID invoiceId) {
         validatePaymentFailure(eventId, occurredAt, invoiceId);
         if (!processedEventPort.claimIfAbsent(eventId, "payment.failed")) {

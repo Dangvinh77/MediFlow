@@ -36,6 +36,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({CashReceiptApplicationService.class,CashReceiptPersistenceAdapter.class,CashRefundApplicationService.class,
         CashRefundPersistenceAdapter.class,CashReplayApplicationService.class,CashReplayPersistenceAdapter.class,

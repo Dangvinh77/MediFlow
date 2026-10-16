@@ -39,7 +39,7 @@ public class ReportCapabilityApplicationService implements InspectReportCapabili
     }
 
     @Override
-    @Transactional(readOnly=true, isolation=Isolation.REPEATABLE_READ, timeout=8)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly=true, isolation=Isolation.REPEATABLE_READ, timeout=8)
     public ReportCoverageDTO coverage(LocalDate from, LocalDate to, String currency, String reportZone) {
         if (from == null || to == null || from.getYear() < 2000 || to.getYear() > 2100 || to.isBefore(from)
                 || ChronoUnit.DAYS.between(from, to) >= 366 || !"VND".equals(currency) || reportZone == null) throw new ReportPeriodValidationException();

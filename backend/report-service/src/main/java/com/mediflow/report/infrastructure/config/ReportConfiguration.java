@@ -14,12 +14,12 @@ import com.mediflow.report.application.mapper.BillingCashReceiptMapper;
 @Configuration
 public class ReportConfiguration {
     @Bean
-    com.mediflow.report.application.mapper.BillingCashRefundMapper billingCashRefundMapper(ZoneId reportZoneId) {
+    com.mediflow.report.application.mapper.BillingCashRefundMapper billingCashRefundMapper(@org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZoneId) {
         return new com.mediflow.report.application.mapper.BillingCashRefundMapper(reportZoneId);
     }
 
     @Bean
-    BillingCashReceiptMapper billingCashReceiptMapper(ZoneId reportZoneId) {
+    BillingCashReceiptMapper billingCashReceiptMapper(@org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZoneId) {
         return new BillingCashReceiptMapper(reportZoneId);
     }
 
@@ -29,7 +29,7 @@ public class ReportConfiguration {
     }
 
     @Bean
-    LabOperationalContributionMapper labOperationalContributionMapper(ZoneId reportZoneId) {
+    LabOperationalContributionMapper labOperationalContributionMapper(@org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZoneId) {
         return new LabOperationalContributionMapper(reportZoneId);
     }
 

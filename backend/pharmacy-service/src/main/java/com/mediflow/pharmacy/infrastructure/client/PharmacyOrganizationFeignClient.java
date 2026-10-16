@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "organization-service", contextId = "pharmacyOrganizationIdentityClient",
+@FeignClient(name = "${mediflow.pharmacy.organization.service-id:organization-service}", contextId = "pharmacyOrganizationIdentityClient",
         url = "${mediflow.pharmacy.organization.base-url:}", fallbackFactory = PharmacyOrganizationFallbackFactory.class)
 public interface PharmacyOrganizationFeignClient {
     @GetMapping("/api/v1/org/staff/{id}/lookup")

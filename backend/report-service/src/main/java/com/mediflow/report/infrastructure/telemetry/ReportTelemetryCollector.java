@@ -55,7 +55,7 @@ public final class ReportTelemetryCollector {
     }
 
     /** Fixed delay and synchronization bound collection to one query per process at a time. */
-    @Scheduled(fixedDelayString = "${mediflow.report.telemetry.sample-interval-ms:30000}",
+    @Scheduled(scheduler = "reportTaskScheduler", fixedDelayString = "${mediflow.report.telemetry.sample-interval-ms:30000}",
             initialDelayString = "${mediflow.report.telemetry.sample-interval-ms:30000}")
     public synchronized void sample() {
         try {

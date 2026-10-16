@@ -1,0 +1,22 @@
+# Module profile only; full V2 read/publication and mixed admission/surgery intake are deferred.
+# Selected five-fact intake and reads are independently opt-in and require source/coverage acceptance.
+mediflow:
+  report:
+    outpatient-consumer:
+      enabled: ${MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED:false}
+    outpatient-read:
+      enabled: ${MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED:false}
+    financial-read:
+      enabled: false
+    financial-archive:
+      enabled: false
+    financial-publication:
+      enabled: false
+    operational-consumer:
+      enabled: false
+    operational-publication:
+      enabled: false
+    settlement-consumer:
+      enabled: false
+    final-recognition-consumer:
+      enabled: false

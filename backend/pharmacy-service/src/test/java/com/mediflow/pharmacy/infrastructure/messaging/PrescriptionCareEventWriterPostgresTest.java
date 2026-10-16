@@ -114,7 +114,7 @@ class PrescriptionCareEventWriterPostgresTest {
         var created = fixture(EventType.CREATED);
         tx(() -> writer.storeHeld(created));
         assertThatThrownBy(() -> jdbc.update("UPDATE PHARMACY_EVENT_OUTBOX SET delivery_enabled = true WHERE event_id = ?", created.eventId()))
-                .hasMessageContaining("ck_outbox_care_contract");
+                .hasMessageContaining("historical HELD");
         jdbc.update("UPDATE PHARMACY_EVENT_OUTBOX SET locked_by = 'replica-a' WHERE event_id = ?", created.eventId());
         tx(() -> assertThat(repository.markPublishedIfOwned(created.eventId(), "replica-a", Instant.now())).isZero());
         tx(() -> assertThat(repository.deletePublishedBefore(Instant.now().plusSeconds(86400))).isZero());

@@ -1,14 +1,58 @@
 # pharmacy-service
 
+2026-10-15 Core/MVP alignment: use canonical profile `outpatient-mvp`; `mvp-outpatient` remains
+a compatibility alias. Both select Core for Patient/Organization discovery and exclude legacy
+payment auto-dispense/admission authority/consumers. Explicit V1 gates remain OFF until acceptance.
+Core fixtures are read from the new source location; logical caller stays pharmacy-service.
+
+Cutover preparation: [owned runbook](../../docs/plans/huy-mvp-cutover-runbook.md).
+`src/main/resources/operations/mvp-cutover-inventory.sql` is an operator-only, bounded,
+read-only snapshot for a verified Pharmacy clone, not an app migration or HELD activation tool.
+
 Drugs, prescriptions, dispensing and stock. **Saga participant** in prescribe → pay → dispense.
 
-Reference: [`docs/ai/services/pharmacy.md`](../../docs/ai/services/pharmacy.md) · design doc `docs/eproject_general_plan/backend-spec/05-pharmacy.md`.
+Reference: [MVP design](../../docs/plans/01-system-design.md) ·
+[Huy adjustment plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md) ·
+[source manifest and verification](../../docs/plans/huy-backend-mvp-baseline.md).
 
 - **Port:** 8085 · **Base path:** `/api/v1/pharmacy` · **DB:** `mediflow_pharmacy` (PostgreSQL)
 - **Owns tables:** `DRUG`, `PRESCRIPTION`, `PRESCRIPTION_LINE`, `DISPENSE_SLIP`, `PROCESSED_EVENT`, `STOCK_RESERVATION`, `PAYMENT_RECEIPT`, `PHARMACY_EVENT_OUTBOX`, `STOCK_ADJUSTMENT`, `PHARMACY_SCHEDULER_LEASE`
 - **Architecture:** clean architecture (hexagonal) per [`docs/ai/04-microservice-blueprint.md`](../../docs/ai/04-microservice-blueprint.md) — `application → domain`; driving adapters `web`/`messaging` call `application`, `infrastructure` implements its out-ports. Dependencies inward only.
 
-## Status
+## MVP adjustment — 2026-10-14
+
+`outpatient-mvp` (alias `mvp-outpatient`) is a module profile, not the completed six-application runtime.
+Patient/Organization discovery points to Core; logical caller identity and existing lookup paths remain.
+Admission configuration and the legacy payment listener are excluded in this profile; durable queues,
+data and HELD outbox evidence are not deleted. Compatibility without this profile keeps V0 behavior.
+
+Public V1 POST/lifecycle are opt-in: profile plus global V2, identity, clinical-context, clearance-consumer, clearance-authority and
+`mediflow.pharmacy.outpatient-api.enabled` (default false) are required. V1 creation uses a canonical
+UUID `Idempotency-Key` and the proof-checked writer; V0 POST is rejected in the MVP profile.
+Dispense/cancel now route to a gated V1 facade; expiry reuses the existing lease/REQUIRES_NEW job boundary.
+Only persisted V1 outpatient rows enter that pipeline; V0 compatibility and deferred Admission stay separate.
+Stock failures return a proven FAILED outcome after rollback/re-evaluation; retries read the exact stored proof.
+Before stock effects, the locked V1 transaction reads Billing's current clearance lookup with a signed
+`pharmacy-service` credential. Exact invoice/account/patient/purpose/episode/grant times must match the
+local prescription-bound proof; expired, revoked/ineligible, stale or unavailable observations deny effects.
+This is a point-in-time observation, not a distributed lease that serializes a later Billing revocation.
+The profile disables Open EntityManager in View so preliminary reads cannot leak stale entities into writers.
+Keep the API gate OFF outside isolated tests until H6-05/06/12 pass the real provider/DB/broker chain.
+
+V20 adds an explicit delivery cohort for **new** V1 outpatient aggregates. Enrollment requires all six
+API gates, the MVP profile, `mediflow.pharmacy.outpatient-events.enabled=true` and a bounded
+`mediflow.pharmacy.outpatient-events.acceptance-reference`. Defaults are OFF/empty; the reference
+records operator approval but does not establish consumer acceptance by itself. Existing HELD rows
+cannot be enrolled by replay or flag changes. A database trigger rejects changing a V1 row's delivery
+cohort/enabled state. Accepted in-flight cohorts retain their terminal delivery when new enrollment
+is disabled. The dispatcher preserves lifecycle order and original bytes/IDs; consumers still deduplicate.
+Published V1 proof is excluded from automatic purge until a separate archive/retention policy exists.
+See [current implementation evidence](../../docs/plans/huy-backend-mvp-baseline.md#12-current-clearance-and-selective-outpatient-delivery).
+
+Fresh test counts and Docker limitations are recorded in the source manifest above. Historical
+counts below are earlier evidence, not results for this MVP batch or approval to enable deferred work.
+
+## Historical implementation notes — compatibility/deferred
 
 2026-10-12 identity continuation: the internal checked-creation preflight now also reads
 Organization's existing service-only `/api/v1/org/staff/{id}/exists` doctor-eligibility contract.
@@ -28,7 +72,7 @@ context-checked caller requires them and rechecks both identity/context after re
 Confirmed missing/ineligible identities reject; failed/malformed reads are unavailable. This is
 necessary descriptive evidence, not an order/license grant. Public V1 and held rows stay closed.
 Expiry and proof timestamps are re-evaluated after reservation reads, including crossing midnight.
-[Verification and remaining V2 work](../../docs/superpowers/plans/2026-10-09-pharmacy-report-v2-priority.md).
+[Verification and remaining V2 work](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md).
 
 2026-10-09: opt-in Clinical context transport and internal context-checked creation now match
 exact record/patient/prescriber/department/episode and recheck freshness after receipt/stock lock
@@ -168,19 +212,37 @@ Reservation TTL defaults to 24 hours and is configurable with
 
 ### Packaged distributed-flow acceptance
 
-The owned `distributed-acceptance` profile starts current Pharmacy/Billing/Report/Notification
-JVMs, four separate PostgreSQL databases and RabbitMQ. It creates prescriptions and payments
-through authenticated HTTP only; it does not seed/query service databases or fake Billing facts.
-It tests duplicate delivery, Report JVM outage/catch-up and broker outage/producer JVM recovery.
-Notification is needed to receive the mandatory `invoice.created` predecessor.
-This is CURRENT V0 acceptance, not V1/admission activation, Gateway or a complete finance rollout.
+The owned `distributed-acceptance` profile contains three isolated packaged suites:
+
+- `PharmacyDistributedRuntimeAcceptanceIT`: current Pharmacy/Billing/Report/Notification,
+  four private PostgreSQL stores and RabbitMQ. Twelve cases cover V0 duplicate delivery,
+  JVM/broker recovery, exact committed-stock/finalize/ACK/publish-mark crash windows,
+  real Billing cancel/expiry/stock-shortage compensation and retained DLQ/redrive.
+- `PharmacyAuthorityRuntimeAcceptanceIT`: actual packaged Core/Clinical, their three private
+  context stores and signed production Pharmacy adapters. Setup uses producer HTTP APIs only.
+  Clinical's supported compatibility seed disables its durable publisher because of the regression
+  recorded in the activation handoff; lookup/security remain real. Not MVP exam/publisher acceptance.
+- `PharmacyOutpatientRuntimeAcceptanceIT`: packaged MVP negative guards and unchanged Billing
+  grant/cash fixtures over RabbitMQ. Grant survives two JVM restarts without auto-dispense.
+  The live V1 issuer-chain case is explicitly skipped by default: Billing's new `invoice.created`
+  source remains HELD. Run it with `-Dmediflow.acceptance.billing-v1-published=true` only after
+  producer-owner acceptance, never by releasing foreign rows from this test.
+
+The test-only `acceptancefixture` bootstrap injects faults/observes **Pharmacy's own** store in
+disposable containers. It is outside the production scan and absent from the shipped Boot JAR;
+its endpoints are not production APIs. No foreign database is queried or seeded. Success snapshots
+in Failsafe XML contain synthetic IDs, states and payload hashes, not tokens or raw payloads.
+Notification receives V0's mandatory `invoice.created` predecessor. These tests do not establish
+Gateway/Support acceptance, V1 rollout, admission activation or a complete finance rollout.
 
 ```powershell
-mvn -pl backend/pharmacy-service,backend/billing-service,backend/report-service,backend/notification-service -am -DskipTests package
-mvn -f backend/pharmacy-service/pom.xml -Pdistributed-acceptance verify
+mvn -pl backend/core-service,backend/clinical-service,backend/billing-service,backend/report-service,backend/notification-service -am -DskipTests package
+mvn -pl backend/pharmacy-service -am -Pdistributed-acceptance -DskipUnitTests=true verify
 ```
 
-See [scope, priority and evidence](../../docs/superpowers/plans/2026-10-08-huy-distributed-flow-priority.md).
+See [batch 8 results and limitations](../../docs/plans/huy-mvp-batch-8-acceptance.md).
+
+See [scope, priority and evidence](../../docs/plans/04-data-reliability.md).
 
 ### Default-off admission integrations (2026-10-08)
 
@@ -192,7 +254,7 @@ The lookup uses a short-lived Pharmacy service credential, Eureka, bounded timeo
 and strict identity/correlation/freshness validation; failure is unavailable, not confirmed absence.
 No REST call is allowed within a mutation transaction. Neither path opens public V1 admission
 commands or held outbox delivery, and current placement/order authority remains an activation gate.
-See [current evidence and limitations](../../docs/superpowers/plans/2026-10-08-huy-ready-task-completion.md).
+See [current evidence and limitations](../../docs/plans/huy-backend-mvp-baseline.md).
 
 ```bash
 mvn -pl backend/pharmacy-service test        # unit (domain + application, no Spring)

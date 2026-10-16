@@ -2,6 +2,11 @@
 
 Root `AGENTS.md` rules continue to apply.
 
+Current MVP scope defers Surgery. Preserve source/data/migrations and default-OFF gates.
+Historical policy/full-V2 specs are not new MVP tasks. Only compatibility/regression work explicitly
+needed by the [Huy adjustment plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md)
+is active; use the [handoff registry](../../docs/handoffs/README.md) for later reactivation.
+
 - **Owner:** Huy (`LQHuy0210`)
 - **Writable scope:** `backend/surgery-service/**`
 - **Task types:** implement Surgery-owned code here; update the registered handoffs when an external contract or shared owner action is required.

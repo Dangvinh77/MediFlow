@@ -27,12 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Accepted local cash evidence only. No foreign database, live lookup or automatic publication. */
 @Component
-@Transactional(propagation=Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation=Propagation.MANDATORY)
 public class FinalSettlementRecognitionStoreAdapter implements FinalSettlementRecognitionStorePort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final CashSnapshotCodec codec;
-    public FinalSettlementRecognitionStoreAdapter(JdbcTemplate jdbc,ObjectMapper mapper) {
+    public FinalSettlementRecognitionStoreAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc,ObjectMapper mapper) {
         this.jdbc=jdbc;this.mapper=mapper.copy();this.codec=new CashSnapshotCodec(mapper);
     }
     @Override public void apply(DecodedCareFinanceEvent event,FinalSettlementRecognition fact) {
@@ -123,11 +123,11 @@ public class FinalSettlementRecognitionStoreAdapter implements FinalSettlementRe
                     deposit_released=report_final_recognition_daily.deposit_released+EXCLUDED.deposit_released
                 """,Date.valueOf(fact.businessDate()),fact.currency(),fact.reportZone(),department,earned,released);
     }
-    @Override @Transactional(readOnly=true,propagation=Propagation.REQUIRES_NEW,timeout=5) public List<UUID> pending(int limit) {
+    @Override @Transactional(transactionManager = "reportTransactionManager", readOnly=true,propagation=Propagation.REQUIRES_NEW,timeout=5) public List<UUID> pending(int limit) {
         require(limit>=1 && limit<=20,"REPORT_FINAL_BATCH_INVALID");
         return jdbc.queryForList("SELECT recognition_operation_id FROM report_final_recognition WHERE state='PENDING' AND next_attempt_at<=now() ORDER BY created_at,recognition_operation_id LIMIT ?",UUID.class,limit);
     }
-    @Override @Transactional(propagation=Propagation.REQUIRES_NEW,timeout=5) public void defer(UUID operationId) {
+    @Override @Transactional(transactionManager = "reportTransactionManager", propagation=Propagation.REQUIRES_NEW,timeout=5) public void defer(UUID operationId) {
         jdbc.update("UPDATE report_final_recognition SET next_attempt_at=now()+interval '60 seconds',recovery_attempts=recovery_attempts+1 WHERE recognition_operation_id=? AND state='PENDING'",operationId);
     }
     private void lockAccount(UUID accountId) {

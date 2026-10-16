@@ -84,8 +84,8 @@ class PrescriptionIdentityHttpTest {
     @AfterAll static void close() { if (server != null) server.stop(0); }
     @BeforeEach void replies() throws Exception {
         REPLIES.clear(); TOKENS.clear();
-        put(PATIENT_PATH, producer("../patient-service/src/test/resources/contracts/patient.lookup.exists.json"));
-        put(STAFF_PATH, producer("../organization-service/src/test/resources/contracts/organization.staff.lookup.json"));
+        put(PATIENT_PATH, producer("../core-service/src/test/resources/contracts/patient.lookup.exists.json"));
+        put(STAFF_PATH, producer("../core-service/src/test/resources/contracts/organization.staff.lookup.json"));
         var eligibility = json.createObjectNode(); eligibility.put("success", true).putNull("error");
         eligibility.put("correlationId", CORRELATION); eligibility.put("timestamp", NOW.toString());
         eligibility.putObject("data").put("exists", true).put("eligibleDoctor", true)

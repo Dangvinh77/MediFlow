@@ -39,6 +39,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.ProcessedEventPers
 
 /** PostgreSQL race tests for idempotency claims, natural-key upserts and payment effects. */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ReportConfiguration.class, AggregateUpdaterService.class,
         DailyVisitReportPersistenceAdapter.class, DrugStatisticPersistenceAdapter.class,

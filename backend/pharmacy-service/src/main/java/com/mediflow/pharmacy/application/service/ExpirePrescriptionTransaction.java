@@ -16,13 +16,15 @@ import com.mediflow.pharmacy.application.port.out.DispenseSlipRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.PharmacyEventPublisherPort;
 import com.mediflow.pharmacy.application.port.out.PrescriptionRepositoryPort;
 import com.mediflow.pharmacy.application.port.out.StockReservationRepositoryPort;
+import com.mediflow.pharmacy.application.port.in.OutpatientPrescriptionLifecycleUseCase;
 import com.mediflow.pharmacy.domain.model.DispenseSlip;
 import com.mediflow.pharmacy.domain.model.Prescription;
 import com.mediflow.pharmacy.domain.model.PrescriptionLine;
 import com.mediflow.pharmacy.domain.model.StockReservation;
 import com.mediflow.pharmacy.domain.model.enums.CareContractVersion;
+import com.mediflow.pharmacy.domain.model.enums.CareContext;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Kết thúc một prescription hết TTL trong một transaction độc lập.
@@ -31,13 +33,33 @@ import lombok.RequiredArgsConstructor;
  * Nếu một đơn lỗi hoặc bị transaction khác xử lý, các đơn trước đó vẫn giữ kết quả đã commit.</p>
  */
 @Service
-@RequiredArgsConstructor
 public class ExpirePrescriptionTransaction {
 
     private final PrescriptionRepositoryPort prescriptionRepository;
     private final DispenseSlipRepositoryPort dispenseSlipRepository;
     private final StockReservationRepositoryPort reservationRepository;
     private final PharmacyEventPublisherPort eventPublisher;
+    private final java.util.Optional<OutpatientPrescriptionLifecycleUseCase> outpatientLifecycle;
+
+    @Autowired
+    public ExpirePrescriptionTransaction(PrescriptionRepositoryPort prescriptionRepository,
+            DispenseSlipRepositoryPort dispenseSlipRepository, StockReservationRepositoryPort reservationRepository,
+            PharmacyEventPublisherPort eventPublisher,
+            java.util.Optional<OutpatientPrescriptionLifecycleUseCase> outpatientLifecycle) {
+        this.prescriptionRepository = prescriptionRepository;
+        this.dispenseSlipRepository = dispenseSlipRepository;
+        this.reservationRepository = reservationRepository;
+        this.eventPublisher = eventPublisher;
+        this.outpatientLifecycle = outpatientLifecycle;
+    }
+
+    /** Compatibility construction has no activation authority for V1 expiry. */
+    public ExpirePrescriptionTransaction(PrescriptionRepositoryPort prescriptionRepository,
+            DispenseSlipRepositoryPort dispenseSlipRepository, StockReservationRepositoryPort reservationRepository,
+            PharmacyEventPublisherPort eventPublisher) {
+        this(prescriptionRepository, dispenseSlipRepository, reservationRepository, eventPublisher,
+                java.util.Optional.empty());
+    }
 
     /**
      * Hết hạn một đơn nếu đơn, phiếu và toàn bộ reservation vẫn ở trạng thái hoạt động và
@@ -54,8 +76,12 @@ public class ExpirePrescriptionTransaction {
         if (prescription == null || !prescription.isActive()) {
             return 0;
         }
-        // Never expire an unsupported V1 prescription through a V0 event/adjustment path.
-        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) return 0;
+        // The existing REQUIRES_NEW job boundary/lease remains; no V1 event uses the legacy publisher.
+        if (prescription.getCareContext().contractVersion() != CareContractVersion.LEGACY) {
+            if (prescription.getCareContext().careContext() != CareContext.OUTPATIENT) return 0;
+            return outpatientLifecycle.map(lifecycle -> lifecycle.expire(prescriptionId,
+                    "outpatient-expiry-" + prescriptionId)).orElse(0);
+        }
 
         DispenseSlip slip = dispenseSlipRepository
                 .findByPrescriptionForUpdate(prescriptionId)

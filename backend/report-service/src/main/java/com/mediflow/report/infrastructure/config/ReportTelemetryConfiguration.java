@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 @ConditionalOnProperty(name = "mediflow.report.telemetry.enabled", havingValue = "true")
 @EnableConfigurationProperties(ReportTelemetryProperties.class)
 @EnableScheduling
+@org.springframework.context.annotation.Import(ReportSchedulingConfiguration.class)
 public class ReportTelemetryConfiguration {
     @Bean
     ReportTelemetryCollector reportTelemetryCollector(ReadReportTelemetryUseCase reader,

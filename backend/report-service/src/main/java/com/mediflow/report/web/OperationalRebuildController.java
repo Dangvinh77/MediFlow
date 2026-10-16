@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/reports/operations/rebuilds")
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2", "mediflow.report.operational-publication.enabled"}, havingValue="true")
 @PreAuthorize("hasRole('ADMIN')")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class OperationalRebuildController {
     private final ReplayOperationalProjectionUseCase replay;
     private final GetOperationalPublicationCandidateUseCase candidates;

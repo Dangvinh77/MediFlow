@@ -24,7 +24,7 @@ public class CashReceiptApplicationService implements ApplyCashReceiptUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public void apply(DecodedCareFinanceEvent event) {
         var receipt = mapper.map(event);
         if (store.record(event, receipt)) {

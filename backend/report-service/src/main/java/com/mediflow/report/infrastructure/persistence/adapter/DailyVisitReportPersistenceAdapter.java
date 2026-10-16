@@ -24,7 +24,7 @@ public class DailyVisitReportPersistenceAdapter implements DailyVisitReportRepos
     private final DailyVisitReportJpaRepository repository;
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public DailyVisitReport findOrCreate(LocalDate reportDate, UUID departmentId) {
         DailyVisitReport.initialize(reportDate, departmentId);
         repository.insertIfAbsent(UUID.randomUUID(), reportDate, departmentId);
@@ -34,20 +34,20 @@ public class DailyVisitReportPersistenceAdapter implements DailyVisitReportRepos
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public DailyVisitReport save(DailyVisitReport report) {
         DailyVisitReportJpaEntity saved = repository.save(DailyVisitReportPersistenceMapper.toEntity(report));
         return DailyVisitReportPersistenceMapper.toDomain(saved);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public Optional<DailyVisitReport> find(LocalDate reportDate, UUID departmentId) {
         return repository.findByScope(reportDate, departmentId).map(DailyVisitReportPersistenceMapper::toDomain);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "reportTransactionManager", readOnly = true)
     public List<DailyVisitReport> findRange(LocalDate fromDate, LocalDate toDate, UUID departmentId) {
         return repository.findRangeByScope(fromDate, toDate, departmentId).stream()
                 .map(DailyVisitReportPersistenceMapper::toDomain)

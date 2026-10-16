@@ -241,6 +241,33 @@ class CareDispenseTransactionServiceTest {
         verify(writer, times(1)).storeHeld(any());
     }
 
+    @Test void execute_failedRetryReadsExactProofWithoutStockOrExpiredGrantReauthorization() {
+        drug = Drug.restore(drug.getDrugId(), drug.getDrugName(), null, "tablet", BigDecimal.ONE, 1,
+                LocalDate.of(2027, 1, 1), null, 0, now, now);
+        wire();
+        var failed = service.recordStockFailure(grant.prescriptionId(), DispenseActor.staff(UUID.randomUUID()), "failure")
+                .orElseThrow();
+        clearInvocations(drugs, reservations, clearances, writer);
+        when(clock.instant()).thenReturn(now.plusSeconds(100000));
+        assertThat(execute(DispenseActor.staff(UUID.randomUUID()))).isEqualTo(failed);
+        verifyNoInteractions(drugs, reservations, clearances);
+        verify(writer, never()).storeHeld(any());
+        assertThat(drug.getStockQuantity()).isOne();
+    }
+
+    @Test void execute_failedRetryWithoutStoredProofCannotInventTerminalOutcome() {
+        drug = Drug.restore(drug.getDrugId(), drug.getDrugName(), null, "tablet", BigDecimal.ONE, 1,
+                LocalDate.of(2027, 1, 1), null, 0, now, now);
+        wire();
+        service.recordStockFailure(grant.prescriptionId(), DispenseActor.staff(UUID.randomUUID()), "failure");
+        when(writer.findHeld(grant.prescriptionId(), PrescriptionCareEvent.EventType.DISPENSE_FAILED))
+                .thenReturn(Optional.empty());
+        assertThatThrownBy(() -> execute(DispenseActor.staff(UUID.randomUUID())))
+                .hasMessageContaining("Held failed proof is missing");
+        verify(writer, times(1)).storeHeld(any());
+        verify(drugs, never()).save(any());
+    }
+
     @Test void failure_stockNowHealthy_doesNotApplyStaleFailureOrDispense() {
         assertThat(service.recordStockFailure(grant.prescriptionId(), DispenseActor.staff(UUID.randomUUID()), "retry")).isEmpty();
         unchanged();

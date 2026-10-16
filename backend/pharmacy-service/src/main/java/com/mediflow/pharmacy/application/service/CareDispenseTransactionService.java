@@ -49,8 +49,8 @@ import com.mediflow.pharmacy.domain.model.enums.PrescriptionStatus;
 import com.mediflow.pharmacy.domain.model.enums.ReservationReleaseReason;
 
 /**
- * Internal, held-event V1 outpatient transaction. No public/legacy caller activates this path.
- * Authorization, stock, reservation, slip, prescription and held lifecycle bytes commit together.
+ * V1 outpatient transaction selected only by the gated authenticated lifecycle facade, never V0.
+ * Authorization, stock, reservation, slip, prescription and immutable lifecycle bytes commit together.
  * Failures roll back; this class never calls V0 terminal failure/refund compensation.
  */
 @Service
@@ -108,13 +108,16 @@ public class CareDispenseTransactionService implements DispenseCarePrescriptionU
         if (slip.getStatus() == DispenseStatus.DISPENSED) {
             return readCompletedProof(prescription, slip);
         }
+        if (prescription.getStatus() == PrescriptionStatus.DISPENSE_FAILED) {
+            return readFailedProof(prescription, slip);
+        }
         if (!slip.isPending() || !prescription.isActive()) {
             throw new DispenseRuleException("DISPENSE_INVALID_TRANSITION", "Only an active prescription/pending slip can dispense");
         }
         List<PrescriptionLine> lines = prescription.getLines().stream()
                 .sorted(java.util.Comparator.comparing(PrescriptionLine::getDrugId)).toList();
         var stock = lockStock(prescriptionId, lines);
-        var grant = authorization.requireValidAfterLocks(prescription);
+        var grant = authorization.requireValidAfterLocks(prescription,correlationId);
         // Verification may itself wait/write. Re-evaluate every temporal guard after that wait,
         // immediately before effects, instead of carrying an earlier stock/authorization clock.
         Instant now = clock.instant();
@@ -192,7 +195,7 @@ public class CareDispenseTransactionService implements DispenseCarePrescriptionU
         var lines = prescription.getLines().stream().sorted(java.util.Comparator.comparing(PrescriptionLine::getDrugId)).toList();
         var stock = lockStock(prescriptionId, lines);
         if (stockFailureReason(stock, lines, clock.instant()) == null) return Optional.empty();
-        var grant = authorization.requireValidAfterLocks(prescription);
+        var grant = authorization.requireValidAfterLocks(prescription,correlationId);
         Instant now = clock.instant();
         if (!grant.isValidAt(now)) throw new DispenseAuthorizationException("PHARMACY_CLEARANCE_REQUIRED", "Clearance expired before failure effects");
         if (prescription.getCreatedAt() == null || now.isBefore(prescription.getCreatedAt())) throw reservationInvalid();

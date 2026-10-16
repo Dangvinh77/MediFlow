@@ -20,7 +20,7 @@ import com.mediflow.report.application.port.out.FinancialSnapshotReadPort;
 import com.mediflow.report.domain.model.FinancialAmounts;
 
 /** Requires an explicit complete row for every day/scope: absent closing stock cannot be zero-filled. */
-@Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ,timeout=8)
+@Transactional(transactionManager = "reportTransactionManager", readOnly=true,isolation=Isolation.REPEATABLE_READ,timeout=8)
 public class FinancialSnapshotReadService implements ReadFinancialSnapshotUseCase {
     private final FinancialSnapshotReadPort store;
     private final ZoneId zone;

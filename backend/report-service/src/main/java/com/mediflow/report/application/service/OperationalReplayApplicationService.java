@@ -21,14 +21,14 @@ public class OperationalReplayApplicationService implements ReplayOperationalPro
     public OperationalReplayApplicationService(OperationalReplayStorePort store) { this.store = store; }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public OperationalReplayProgress start() {
         var progress = store.freeze(UUID.randomUUID());
         return progress.sourceEvents() == 0 ? store.reconcile(progress.generationId()) : progress;
     }
 
     @Override
-    @Transactional
+    @Transactional("reportTransactionManager")
     public OperationalReplayProgress advance(UUID generationId, int batchSize) {
         if (generationId == null || batchSize < 1 || batchSize > 500) {
             throw new IllegalArgumentException("Replay generation and batch size 1..500 are required");

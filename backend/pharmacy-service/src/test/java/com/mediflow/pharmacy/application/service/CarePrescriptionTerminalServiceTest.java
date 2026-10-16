@@ -60,6 +60,21 @@ class CarePrescriptionTerminalServiceTest {
                 new PrescriptionCareEventCaptureService(prescriptions, slips, writer), writer, clock);
     }
 
+    @Test void deferredAdmissionIsRejectedInsideTheLockedKernel() {
+        UUID admission = UUID.randomUUID();
+        var inpatient = Prescription.restore(prescription.getPrescriptionId(), null, prescription.getPatientId(),
+                doctor.staffId(), prescription.getDepartmentId(), prescription.getPrescribedDate(),
+                prescription.getTotalAmount(), prescription.getLines(), PrescriptionStatus.ACTIVE,
+                null, null, null, prescription.getCreatedAt(), prescription.getUpdatedAt(),
+                PrescriptionCareContext.v1(CareContext.ADMISSION,
+                        new CareEpisode(CareEpisodeType.ADMISSION, admission), admission, "RX"));
+        when(prescriptions.findByIdForUpdate(prescription.getPrescriptionId())).thenReturn(Optional.of(inpatient));
+        assertThatThrownBy(() -> cancel(doctor, "Reason")).hasMessageContaining("outpatient");
+        assertThatThrownBy(() -> service.expireCare(prescription.getPrescriptionId(), "trace"))
+                .hasMessageContaining("outpatient");
+        verifyNoInteractions(slips, reservations, writer);
+    }
+
     @Test void cancel_ownedDoctor_releasesReservationAndStoresExactHeldProof() {
         var result = cancel(doctor, " Changed treatment ");
         assertThat(result.releasedReservations()).isOne();

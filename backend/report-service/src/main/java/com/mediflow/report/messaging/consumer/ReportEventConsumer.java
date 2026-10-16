@@ -27,6 +27,7 @@ import com.mediflow.report.messaging.consumer.payload.PrescriptionFilledPayload;
 
 /** Single driving adapter that dispatches the five report event contracts. */
 @Component
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(ReportEventConsumer.class);
@@ -46,7 +47,7 @@ public class ReportEventConsumer {
      * Exceptions deliberately escape so the listener retry interceptor can route poison messages
      * to the DLQ. Idempotency and all projection effects remain in the application transaction.
      */
-    @RabbitListener(queues = RabbitConfig.QUEUE)
+    @RabbitListener(queues = RabbitConfig.QUEUE, containerFactory = "reportLegacyListenerFactory")
     public void onMessage(Message message) {
         if (message == null || message.getMessageProperties() == null) {
             throw invalid("message không hợp lệ");

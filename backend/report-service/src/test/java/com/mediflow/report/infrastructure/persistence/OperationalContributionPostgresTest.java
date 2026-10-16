@@ -43,6 +43,7 @@ import com.mediflow.report.domain.model.OperationalContribution.Metric;
 import com.mediflow.report.infrastructure.persistence.adapter.OperationalContributionPersistenceAdapter;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({OperationalContributionPersistenceAdapter.class, OperationalContributionApplicationService.class,
         OperationalContributionPostgresTest.JsonConfig.class})

@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.*;
 
 /** Actual Inpatient bytes, real transaction boundaries/replicas; not historical coverage approval. */
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({AdmissionReportEvidencePersistenceAdapter.class, AdmissionReportEvidenceApplicationService.class,
         OperationalContributionPersistenceAdapter.class, OperationalContributionApplicationService.class,

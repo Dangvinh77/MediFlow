@@ -18,12 +18,12 @@ import com.mediflow.report.domain.exception.ReportRuleException;
 import com.mediflow.report.domain.model.OperationalContribution;
 
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class OperationalReplayPersistenceAdapter implements OperationalReplayStorePort {
     private final JdbcTemplate jdbc;
     private final OperationalSnapshotCodec snapshots;
 
-    public OperationalReplayPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public OperationalReplayPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.snapshots = new OperationalSnapshotCodec(mapper);
     }

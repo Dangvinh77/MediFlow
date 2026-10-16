@@ -34,6 +34,7 @@ import com.mediflow.report.infrastructure.persistence.adapter.AdmissionReportEvi
 import com.mediflow.report.support.AdmissionEvidenceTestFixtures;
 
 @DataJpaTest
+@com.mediflow.report.support.ReportPersistenceTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({AdmissionReportEvidencePersistenceAdapter.class, AdmissionReportEvidenceApplicationService.class,
         AdmissionReportEvidencePostgresTest.Config.class})

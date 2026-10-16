@@ -20,7 +20,7 @@ import com.mediflow.report.domain.model.OperationalContribution.Metric;
 
 /** Zero-fill only inside explicitly accepted finite coverage, not merely because a row is absent. */
 @Service
-@Transactional(readOnly = true)
+@Transactional(transactionManager = "reportTransactionManager", readOnly = true)
 public class OperationalSnapshotReadService implements ReadOperationalSnapshotUseCase {
     private static final Set<Metric> DAILY = Set.of(Metric.COMPLETED_VISITS, Metric.ADMISSIONS, Metric.DISCHARGES,
             Metric.LAB_TESTS, Metric.DISPENSED_PRESCRIPTIONS, Metric.DISPENSED_UNITS);

@@ -13,12 +13,27 @@ Code chưa được chuyển thành 6 service chỉ bằng việc thay tài li�
 | [Hợp đồng tích hợp](03-contracts.md) | REST, event, identifier, quyền và tương thích với code |
 | [Dữ liệu và độ tin cậy](04-data-reliability.md) | Database, transaction, outbox/inbox, concurrency và recovery |
 | [Plan triển khai](05-implementation-plan.md) | 18 task chính, 72 subtask, owner, dependency và tiêu chí đóng |
+| [Plan backend riêng Huy](2026-10-14-huy-backend-mvp-adjustment-plan.md) | Phân rã M6: 12 task/48 subtask cho Pharmacy, Report và phối hợp Support; Surgery hoãn |
 | [Nghiệm thu và vận hành](06-acceptance-runbook.md) | Test matrix, demo, triển khai, rollback và bằng chứng |
 | [Quy tắc coding](../ai/README.md) | Backend, FE/mobile, ownership và Git |
 
 Chỉ sáu tài liệu đánh số và quy tắc coding chứa nội dung canonical. Các file ở đường dẫn cũ còn
 được AGENTS/README/skill tham chiếu, nếu tồn tại, là chỉ dẫn ngắn tới bộ này, không phải một
 bản spec hoặc backlog thứ hai. Không dùng checklist lịch sử để giao thêm việc ngoài MVP.
+
+Plan riêng Huy là workboard triển khai phái sinh từ M6, không nguồn kiến trúc/contract mới;
+48 subtask ở đó không cộng vào 72 subtask để tính tiến độ toàn team.
+
+Evidence phần Huy: [baseline/source manifest](huy-backend-mvp-baseline.md) và
+[migration/fixture hashes](huy-backend-mvp-protected-files.json); đây không nguồn schema thứ hai.
+
+Chuẩn bị chuyển đổi phần Huy: [inventory chỉ đọc, cutover và rollback](huy-mvp-cutover-runbook.md).
+Checklist này không là bằng chứng deployment hoặc cấp quyền sửa host/shared modules.
+
+Kiểm chứng batch 6: [10 phần việc và kết quả PostgreSQL/RabbitMQ](huy-mvp-batch-6-acceptance.md).
+Tiếp nối batch 7: [current Billing clearance và selective delivery](huy-backend-mvp-baseline.md#12-current-clearance-and-selective-outpatient-delivery),
+và [batch 8 runtime acceptance](huy-mvp-batch-8-acceptance.md). Plan Huy đạt 37/48 subtask;
+producer rollout/Support và nghiệm thu chung vẫn có gate riêng.
 
 ## Quyết định phạm vi
 

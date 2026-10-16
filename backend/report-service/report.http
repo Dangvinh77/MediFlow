@@ -22,6 +22,18 @@
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
+### MVP outpatient DAILY — proposed Gateway route, default OFF, ADMIN/MANAGER only
+### Requires outpatient-mvp (mvp-outpatient alias) + care-finance-v2 + outpatient-read and accepted real source coverage.
+### No coverage => 404 REPORT_NOT_FOUND; never treat fixture seed/quiet queue as true zero.
+GET {{host}}/api/v1/reports/outpatient/daily?fromDate=2026-10-01&toDate=2026-10-07
+Authorization: Bearer {{token}}
+X-Correlation-Id: mvp-outpatient-daily-example
+
+### MVP outpatient MONTHLY — full calendar-year coverage required, cash != earned revenue
+GET {{host}}/api/v1/reports/outpatient/monthly?year=2025
+Authorization: Bearer {{token}}
+X-Correlation-Id: mvp-outpatient-monthly-example
+
 ### Báo cáo khám theo ngày (toàn viện — bỏ departmentId)
 GET {{host}}/api/v1/reports/daily?date=2026-08-14
 Authorization: Bearer {{token}}

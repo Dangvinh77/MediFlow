@@ -18,12 +18,12 @@ import com.mediflow.report.domain.model.CashReceipt;
 
 /** Minimal receipt evidence and hashes, never a raw patient/clinical payload archive. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class CashReceiptPersistenceAdapter implements CashReceiptStorePort {
     private final JdbcTemplate jdbc;
     private final CashSnapshotCodec snapshots;
 
-    public CashReceiptPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public CashReceiptPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.snapshots = new CashSnapshotCodec(mapper);
     }

@@ -82,6 +82,6 @@ class SurgeryAuthorityChangeDecoderTest {
     }
     private ObjectNode root(String kind) throws Exception { return (ObjectNode)mapper.readTree(fixture(kind)); }
     static byte[] fixture(String kind) throws Exception {
-        return Files.readAllBytes(Path.of("../organization-service/src/test/resources/contracts/surgery-authority-v1/event." + kind + ".changed.json"));
+        return Files.readAllBytes(Path.of("../core-service/src/test/resources/contracts/surgery-authority-v1/event." + kind + ".changed.json"));
     }
 }

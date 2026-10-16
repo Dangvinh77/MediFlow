@@ -297,7 +297,7 @@ class OperationalPublicationConfigurationGateTest {
                     () -> mock(OperationalPublicationStorePort.class))
             .withBean(ReplayOperationalProjectionUseCase.class,
                     () -> mock(ReplayOperationalProjectionUseCase.class))
-            .withBean(ZoneId.class, () -> ZoneId.of("Asia/Bangkok"));
+            .withBean("reportZoneId", ZoneId.class, () -> ZoneId.of("Asia/Bangkok"));
 
     @ParameterizedTest
     @ValueSource(strings = {"default", "care-only", "publication-only", "both"})

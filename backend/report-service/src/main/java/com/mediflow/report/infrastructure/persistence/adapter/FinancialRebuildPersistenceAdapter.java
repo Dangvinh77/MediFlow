@@ -47,7 +47,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /** Finite, local-only replay. Four source reads share one RR snapshot, never live totals or foreign I/O. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class FinancialRebuildPersistenceAdapter implements FinancialRebuildStorePort, FinancialSourceArchiveStorePort {
     private static final int MAX_INPUTS = 10_000;
     private static final int MAX_MANIFEST_BYTES = 16 * 1024 * 1024;
@@ -58,7 +58,7 @@ public class FinancialRebuildPersistenceAdapter implements FinancialRebuildStore
     private record Source(String kind, UUID id, UUID firstEventId, String state, String sourceHash, String envelopeHash,
             String snapshot, String snapshotHash) { }
 
-    public FinancialRebuildPersistenceAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public FinancialRebuildPersistenceAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.mapper = mapper.copy().findAndRegisterModules()
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
@@ -174,7 +174,7 @@ public class FinancialRebuildPersistenceAdapter implements FinancialRebuildStore
 
     // Pure validation errors must let the caller persist FAILED. Database errors still mark rollback-only.
     @Override
-    @Transactional(propagation = Propagation.MANDATORY, noRollbackFor = {ReportRuleException.class, IllegalArgumentException.class})
+    @Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY, noRollbackFor = {ReportRuleException.class, IllegalArgumentException.class})
     public FinancialSourceManifest manifest(FinancialRebuildProgress progress) {
         var sources = limited("SELECT * FROM financial_source_rebuild_input WHERE generation_id=? ORDER BY source_kind,source_id",
                 (rs, row) -> new Source(rs.getString("source_kind"), rs.getObject("source_id", UUID.class), rs.getObject("first_event_id", UUID.class), rs.getString("source_state"),

@@ -1,0 +1,20 @@
+# Module profile only: this does not create Core/Support or alter Gateway routes.
+# Existing V1 feature gates stay opt-in; no HELD outbox rows are released here.
+spring:
+  jpa:
+    # Classification reads must not leak a stale persistence context into a later locked writer.
+    open-in-view: false
+mediflow:
+  pharmacy:
+    patient:
+      service-id: core-service
+    organization:
+      service-id: core-service
+    admission-consumer:
+      enabled: false
+    admission-authority:
+      enabled: false
+    outpatient-api:
+      enabled: ${MEDIFLOW_PHARMACY_OUTPATIENT_API_ENABLED:false}
+    clearance-authority:
+      required: true

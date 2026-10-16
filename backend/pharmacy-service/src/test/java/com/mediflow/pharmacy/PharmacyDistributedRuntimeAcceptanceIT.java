@@ -12,6 +12,8 @@ import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -46,8 +48,9 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * Packaged Pharmacy/Billing/Report plus Notification, private databases and a real broker. All business commands
- * and observations use HTTP; the test neither seeds nor queries any service database. The broker
- * probe captures actual committed producer bytes, never consumer-shaped replacement fixtures.
+ * and foreign observations use HTTP. The isolated test-only bootstrap observes/injects faults into
+ * Pharmacy's own store; foreign databases are never seeded or queried. Broker probes capture
+ * actual committed producer bytes, never consumer-shaped replacement fixtures.
  * This proves the CURRENT V0 saga, not V1 clearance/admission activation or upstream identity lookup.
  */
 @Testcontainers
@@ -82,7 +85,8 @@ class PharmacyDistributedRuntimeAcceptanceIT {
             // These are isolated synthetic test apps. Persist diagnostics before Testcontainers removes them.
             for (var app : List.of(PHARMACY, BILLING, REPORT, NOTIFICATION)) {
                 System.err.println("Runtime diagnostics: " + app.getDockerImageName());
-                System.err.println(app.getLogs().replaceAll("(?m)^Using generated security password:.*$", "[redacted development password]"));
+                var lines=app.getLogs().replaceAll("(?m)^Using generated security password:.*$", "[redacted development password]").split("\\R");
+                System.err.println(String.join("\n",java.util.Arrays.copyOfRange(lines,Math.max(0,lines.length-80),lines.length)));
             }
         }
     };
@@ -176,6 +180,187 @@ class PharmacyDistributedRuntimeAcceptanceIT {
         assertStableResult(drugId, prescriptionId, invoice.path("invoiceId").asText(), 1, "30.00");
     }
 
+    @Test
+    void pharmacyJvmDownPaymentWaitsDurablyAndRestartCompletesV0SagaOnce() throws Exception {
+        UUID drugId=createDrug();UUID prescriptionId=createPrescription(drugId);
+        String invoiceId=awaitInvoice(prescriptionId).path("invoiceId").asText();
+        assertThat(drug(drugId).path("stockQuantity").asInt()).isEqualTo(20);
+        PHARMACY.getDockerClient().stopContainerCmd(PHARMACY.getContainerId()).withTimeout(0).exec();
+        try {
+            pay(invoiceId);
+            try(Connection connection=brokerConnection();Channel channel=connection.createChannel()) {
+                await().atMost(Duration.ofSeconds(20)).untilAsserted(()->
+                        assertThat(channel.queueDeclarePassive("pharmacy.q").getMessageCount()).isGreaterThanOrEqualTo(1));
+            }
+            assertThat(get(BILLING,8086,"/api/v1/billing/invoices/"+invoiceId).path("sagaStatus").asText())
+                    .isNotEqualTo("COMPLETED");
+        } finally {
+            PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();
+            awaitHealthy(PHARMACY,8085);
+        }
+        awaitCompletion(prescriptionId,invoiceId);awaitReport(drugId,1,"30.00");
+        assertStableResult(drugId,prescriptionId,invoiceId,1,"30.00");
+    }
+
+    @ParameterizedTest @ValueSource(strings={"BEFORE_FINALIZE","BEFORE_ACK","BEFORE_PUBLISH_MARK"})
+    void actualJvmCrashAtCommittedEffectBoundaryNeverRepeatsStockOrFilledProof(String point)throws Exception {
+        UUID drugId=createDrug(),prescriptionId=createPrescription(drugId);
+        String invoiceId=awaitInvoice(prescriptionId).path("invoiceId").asText();
+        acceptance("/faults/"+point+"/"+prescriptionId,"POST",null);
+        try {
+            pay(invoiceId);
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(()->assertThat(state(prescriptionId).path("paused").asBoolean()).isTrue());
+            JsonNode before=state(prescriptionId);
+            assertThat(before.path("stock").get(0).asInt()).isEqualTo(17);
+            assertThat(before.path("slip").path("status").asText()).isEqualTo("DISPENSED");
+            assertThat(before.path("receipts").get(0).asText()).isEqualTo(point.equals("BEFORE_FINALIZE")?"RECEIVED":"DISPENSED");
+            JsonNode proof=filledProof(before);
+            if(point.equals("BEFORE_PUBLISH_MARK"))assertThat(proof.path("published").asBoolean()).isFalse();
+            recordSnapshot(point+"_BEFORE_CRASH",prescriptionId,invoiceId,before);
+            PHARMACY.getDockerClient().stopContainerCmd(PHARMACY.getContainerId()).withTimeout(0).exec();
+            PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();awaitHealthy(PHARMACY,8085);
+            awaitCompletion(prescriptionId,invoiceId);awaitReport(drugId,1,"30.00");
+            await().atMost(Duration.ofSeconds(30)).untilAsserted(()->{
+                JsonNode after=state(prescriptionId),same=filledProof(after);
+                assertThat(after.path("receipts").get(0).asText()).isEqualTo("DISPENSED");
+                assertThat(same.path("event_id")).isEqualTo(proof.path("event_id"));
+                assertThat(same.path("payload")).isEqualTo(proof.path("payload"));
+                assertThat(same.path("published").asBoolean()).isTrue();
+            });
+            assertStableResult(drugId,prescriptionId,invoiceId,1,"30.00");
+            recordSnapshot(point+"_RECOVERED",prescriptionId,invoiceId,state(prescriptionId));
+        } finally {
+            if(!Boolean.TRUE.equals(PHARMACY.getDockerClient().inspectContainerCmd(PHARMACY.getContainerId()).exec().getState().getRunning())) {
+                PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();awaitHealthy(PHARMACY,8085);
+            }
+            acceptance("/faults/NONE/"+prescriptionId,"POST",null);
+        }
+    }
+
+    @ParameterizedTest @ValueSource(strings={"cancel","expire","shortage"})
+    void realBillingCompensatesTerminalOrStockFailureAndLateDuplicatePaymentOnce(String scenario)throws Exception {
+        try(Connection connection=brokerConnection();Channel channel=connection.createChannel()) {
+            String payments=probe(channel,"payment.completed"),failures=probe(channel,"prescription.dispense.failed");
+            String reversals=probe(channel,"payment.failed"),completedRefunds=probe(channel,"payment.refunded");
+            UUID drugId=createDrug(),prescriptionId=createPrescription(drugId);
+            String invoiceId=awaitInvoice(prescriptionId).path("invoiceId").asText();
+            if(scenario.equals("cancel"))command(PHARMACY,8085,"/api/v1/pharmacy/prescriptions/"+prescriptionId+"/cancel",
+                    "PUT","{\"reason\":\"Isolated late payment acceptance\"}",200);
+            else acceptance("/"+scenario+"/"+prescriptionId,"POST",null);
+            pay(invoiceId);awaitCompensated(invoiceId);
+            GetResponse payment=captured(channel,payments),failure=captured(channel,failures);
+            GetResponse reversal=captured(channel,reversals);
+            assertThat(mapper.readTree(reversal.getBody()).path("invoiceId").asText()).isEqualTo(invoiceId);
+            assertThat(mapper.readTree(reversal.getBody()).path("patientId").asText()).isEqualTo(patientId.toString());
+            JsonNode terminal=state(prescriptionId);
+            assertThat(terminal.path("receipts").get(0).asText()).isEqualTo("COMPENSATED");
+            assertThat(terminal.path("slip").path("status").asText()).isIn("CANCELLED","EXPIRED","FAILED");
+            assertThat(terminal.path("stock").get(0).asInt()).isEqualTo(scenario.equals("shortage")?0:20);
+            publish(channel,"payment.completed",payment.getBody(),payment.getProps());
+            publish(channel,"prescription.dispense.failed",failure.getBody(),failure.getProps());
+            publishNewDelivery(channel,"payment.completed",payment);publishNewDelivery(channel,"prescription.dispense.failed",failure);
+            await().during(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(30)).untilAsserted(()->{
+                assertThat(state(prescriptionId).path("stock")).isEqualTo(terminal.path("stock"));
+                assertThat(state(prescriptionId).path("slip")).isEqualTo(terminal.path("slip"));
+                JsonNode invoice=get(BILLING,8086,"/api/v1/billing/invoices/"+invoiceId);
+                assertThat(invoice.path("sagaStatus").asText()).isEqualTo("REFUNDED");
+                assertThat(invoice.path("isPaid").asBoolean()).isFalse();
+                for(var fee:invoice.path("fees"))assertThat(fee.path("isPaid").asBoolean()).isFalse();
+                assertThat(channel.queueDeclarePassive(reversals).getMessageCount()).isZero();
+                assertThat(channel.queueDeclarePassive(completedRefunds).getMessageCount()).isZero();
+            });
+            assertThat(state(prescriptionId).path("outbox")).noneSatisfy(e->assertThat(e.path("routing_key").asText()).isEqualTo("prescription.filled"));
+            assertTransportDrained();
+            assertThat(channel.queueDeclarePassive(reversals).getMessageCount()).isZero();
+            assertThat(channel.queueDeclarePassive(completedRefunds).getMessageCount()).isZero();
+            recordSnapshot("COMPENSATION_"+scenario,prescriptionId,invoiceId,state(prescriptionId));
+        }
+    }
+
+    @Test void realListenerConflictingPaymentRetainsOriginalBytesInDlqWithoutChangingCommittedEffects()throws Exception {
+        try(Connection connection=brokerConnection();Channel channel=connection.createChannel()) {
+            String payments=probe(channel,"payment.completed");UUID drugId=createDrug(),prescriptionId=createPrescription(drugId);
+            String invoiceId=awaitInvoice(prescriptionId).path("invoiceId").asText();pay(invoiceId);
+            awaitCompletion(prescriptionId,invoiceId);awaitReport(drugId,1,"30.00");
+            GetResponse payment=captured(channel,payments);
+            var conflicting=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(payment.getBody());conflicting.put("totalAmount",31);
+            byte[] bytes=mapper.writeValueAsBytes(conflicting);
+            // Direct to Pharmacy's test-owned input queue: foreign consumers must not receive poison test data.
+            channel.basicPublish("","pharmacy.q",payment.getProps(),bytes);
+            GetResponse dead=captured(channel,"pharmacy.dlq");assertThat(dead.getBody()).isEqualTo(bytes);
+            assertThat(state(prescriptionId).path("receipts").get(0).asText()).isEqualTo("DISPENSED");
+            assertStableResult(drugId,prescriptionId,invoiceId,1,"30.00");
+            recordSnapshot("CONFLICT_RETAINED_DLQ",prescriptionId,invoiceId,state(prescriptionId));
+            recordMessageProof("CONFLICT_RETAINED_DLQ",dead);
+        }
+    }
+
+    @Test void realListenerDatabaseRollbackRetainsReceiptAndDlqThenRedriveCommitsOnce()throws Exception {
+        UUID drugId=createDrug(),prescriptionId=createPrescription(drugId);
+        String invoiceId=awaitInvoice(prescriptionId).path("invoiceId").asText();
+        acceptance("/outbox-rejection/true","POST",null);
+        try(Connection connection=brokerConnection();Channel channel=connection.createChannel()) {
+            pay(invoiceId);GetResponse failed=captured(channel,"pharmacy.dlq");
+            JsonNode pending=state(prescriptionId);
+            assertThat(pending.path("stock").get(0).asInt()).isEqualTo(20);
+            assertThat(pending.path("slip").path("status").asText()).isEqualTo("PENDING");
+            assertThat(pending.path("receipts").get(0).asText()).isEqualTo("RECEIVED");
+            assertThat(pending.path("reservations").get(0).asText()).isEqualTo("RESERVED");
+            assertThat(pending.path("outbox")).noneSatisfy(e->assertThat(e.path("routing_key").asText()).isEqualTo("prescription.filled"));
+            recordSnapshot("DB_ROLLBACK_RETAINED_DLQ",prescriptionId,invoiceId,pending);
+            recordMessageProof("DB_ROLLBACK_RETAINED_DLQ",failed);
+            acceptance("/outbox-rejection/false","POST",null);
+            channel.basicPublish("","pharmacy.q",failed.getProps(),failed.getBody());
+            awaitCompletion(prescriptionId,invoiceId);awaitReport(drugId,1,"30.00");
+            assertStableResult(drugId,prescriptionId,invoiceId,1,"30.00");
+            recordSnapshot("DB_ROLLBACK_REDRIVEN",prescriptionId,invoiceId,state(prescriptionId));
+        } finally {acceptance("/outbox-rejection/false","POST",null);}
+    }
+
+    /** Synthetic acceptance evidence only: allowlisted IDs/states/hashes, never JWTs or raw payloads. */
+    private void recordSnapshot(String scenario, UUID prescriptionId, String invoiceId, JsonNode state)
+            throws Exception {
+        var evidence=mapper.createObjectNode();
+        evidence.put("scenario",scenario).put("prescriptionId",prescriptionId.toString()).put("invoiceId",invoiceId);
+        for(String field:List.of("stock","slip","receipts","reservations"))evidence.set(field,state.path(field));
+        evidence.put("outboxCount",state.path("outbox").size());
+        var outbox=evidence.putArray("outbox");
+        for(var row:state.path("outbox"))outbox.addObject()
+                .put("eventId",row.path("event_id").asText()).put("routingKey",row.path("routing_key").asText())
+                .put("published",row.path("published").asBoolean())
+                .put("payloadSha256",sha256(row.path("payload").asText().getBytes(StandardCharsets.UTF_8)));
+        var invoice=get(BILLING,8086,"/api/v1/billing/invoices/"+invoiceId);
+        evidence.put("billingSagaStatus",invoice.path("sagaStatus").asText())
+                .put("billingIsPaid",invoice.path("isPaid").asBoolean());
+        evidence.set("billingTotalAmount",invoice.path("totalAmount"));
+        System.out.println("ACCEPTANCE_SNAPSHOT "+mapper.writeValueAsString(evidence));
+    }
+
+    private void recordMessageProof(String scenario, GetResponse message) throws Exception {
+        System.out.println("ACCEPTANCE_MESSAGE "+mapper.writeValueAsString(Map.of(
+                "scenario",scenario,"eventId",mapper.readTree(message.getBody()).path("eventId").asText(),
+                "bodySha256",sha256(message.getBody()),"bodyLength",message.getBody().length)));
+    }
+
+    private static String sha256(byte[] bytes) throws java.security.NoSuchAlgorithmException {
+        return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes));
+    }
+
+    private JsonNode filledProof(JsonNode state) {
+        var rows=new java.util.ArrayList<JsonNode>();state.path("outbox").forEach(e->{if(e.path("routing_key").asText().equals("prescription.filled"))rows.add(e);});
+        assertThat(rows).hasSize(1);return rows.getFirst();
+    }
+    private JsonNode state(UUID prescription){try{return acceptance("/state/"+prescription,"GET",null);}catch(Exception failure){throw new AssertionError(failure);}}
+    private JsonNode acceptance(String path,String method,String body)throws Exception {
+        var request=HttpRequest.newBuilder(URI.create(base(PHARMACY,8085)+"/api/v1/pharmacy/admin/acceptance"+path))
+                .timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+token()).header("Content-Type","application/json")
+                .method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build();
+        var response=http.send(request,HttpResponse.BodyHandlers.ofString());assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        return mapper.readTree(response.body());
+    }
+    private void awaitCompensated(String invoice) {await().atMost(Duration.ofSeconds(45)).untilAsserted(()->
+            assertThat(get(BILLING,8086,"/api/v1/billing/invoices/"+invoice).path("sagaStatus").asText()).isEqualTo("REFUNDED"));}
+
     private UUID createDrug() throws Exception {
         String body = """
                 {"drugName":"Distributed runtime test drug","unit":"tablet","price":10.00,
@@ -256,6 +441,10 @@ class PharmacyDistributedRuntimeAcceptanceIT {
                     .isEqualTo("COMPLETED");
             assertReport(drugId, fills, revenue);
         });
+        assertTransportDrained();
+    }
+
+    private void assertTransportDrained() {
         try (Connection connection = brokerConnection(); Channel channel = connection.createChannel()) {
             // Effects alone are insufficient: a valid duplicate must not be quietly poisoned into a DLQ.
             await().during(Duration.ofSeconds(4)).atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
@@ -346,15 +535,25 @@ class PharmacyDistributedRuntimeAcceptanceIT {
     private static GenericContainer<?> service(String name, int port, PostgreSQLContainer<?> database, String alias) {
         Path jar = Path.of("../" + name + "-service/target/" + name + "-service-0.0.1-SNAPSHOT.jar");
         if (!Files.isRegularFile(jar)) throw new IllegalStateException("Package current " + name + " before distributed acceptance");
-        var image = new ImageFromDockerfile().withFileFromPath("app.jar", jar).withDockerfileFromBuilder(builder ->
-                builder.from("eclipse-temurin:21-jre-alpine").copy("app.jar", "/app/app.jar").user("10001")
-                        .entryPoint("java", "-jar", "/app/app.jar").build());
+        var image = new ImageFromDockerfile().withFileFromPath("app.jar", jar);
+        if(name.equals("pharmacy")) image.withFileFromPath("support",Path.of("target/test-classes/com/mediflow/acceptancefixture"));
+        image.withDockerfileFromBuilder(builder->{
+            builder.from("eclipse-temurin:21-jre-alpine").copy("app.jar","/app/app.jar");
+            if(name.equals("pharmacy"))builder.copy("support/","/test-support/com/mediflow/acceptancefixture/");
+            builder.user("10001");
+            if(name.equals("pharmacy"))builder.entryPoint("java","-Dloader.path=/test-support",
+                    "-Dloader.main=com.mediflow.acceptancefixture.PharmacyFaultBootApplication","-cp","/app/app.jar",
+                    "org.springframework.boot.loader.launch.PropertiesLauncher");
+            else builder.entryPoint("java","-jar","/app/app.jar");
+            builder.build();
+        });
         return new GenericContainer<>(image).dependsOn(database, BROKER).withNetwork(NETWORK).withExposedPorts(port)
                 .withEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://" + alias + ":5432/" + database.getDatabaseName())
                 .withEnv("MEDIFLOW_DB_USER", database.getUsername()).withEnv("MEDIFLOW_DB_PASSWORD", database.getPassword())
                 .withEnv("MEDIFLOW_RABBIT_HOST", "rabbit").withEnv("MEDIFLOW_RABBIT_USER", BROKER.getAdminUsername())
                 .withEnv("MEDIFLOW_RABBIT_PASSWORD", BROKER.getAdminPassword()).withEnv("MEDIFLOW_JWT_SECRET", SECRET)
                 .withEnv("EUREKA_CLIENT_ENABLED", "false").withEnv("MEDIFLOW_CARE_FINANCE_V2", "false")
+                .withEnv("MEDIFLOW_PHARMACY_OUTBOX_LEASE_SECONDS","5")
                 .withEnv("JAVA_TOOL_OPTIONS", "-Xms64m -Xmx256m")
                 .waitingFor(Wait.forHttp("/actuator/health").forPort(port).forStatusCode(200)
                         .withStartupTimeout(Duration.ofSeconds(180)));

@@ -19,11 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Retains only the exact five-field proof and envelope metadata, never a discharge summary. */
 @Component
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
 public class MedicalDischargeStoreAdapter implements MedicalDischargeStorePort {
     private final JdbcTemplate jdbc;
     private final OperationalSnapshotCodec codec;
-    public MedicalDischargeStoreAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+    public MedicalDischargeStoreAdapter(@org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) {
         this.jdbc = jdbc;
         codec = new OperationalSnapshotCodec(mapper.copy().enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS));
     }

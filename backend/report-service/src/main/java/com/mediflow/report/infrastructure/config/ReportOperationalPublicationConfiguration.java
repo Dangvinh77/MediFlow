@@ -11,9 +11,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods=false)
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2", "mediflow.report.operational-publication.enabled"}, havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportOperationalPublicationConfiguration {
     @Bean OperationalPublicationApplicationService operationalPublications(OperationalPublicationStorePort store,
-            ObjectProvider<Clock> clocks, ZoneId reportZoneId) {
+            ObjectProvider<Clock> clocks, @org.springframework.beans.factory.annotation.Qualifier("reportZoneId") ZoneId reportZoneId) {
         return new OperationalPublicationApplicationService(store, clocks.getIfAvailable(Clock::systemUTC), reportZoneId);
     }
 }

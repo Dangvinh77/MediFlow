@@ -27,8 +27,8 @@ class PrescriptionCareEventWriterAdapterTest {
         var event = fixture(EventType.CREATED);
         readback(event, false, new String(codec.encode(event), StandardCharsets.UTF_8));
         writer.storeHeld(event);
-        verify(jdbc).update(contains("false, 1, ?"), eq(event.eventId()), eq("prescription.created"),
-                eq(event.payload().prescriptionId()), eq(new String(codec.encode(event), StandardCharsets.UTF_8)), eq(0));
+        verify(jdbc).update(contains("care_delivery_cohort_id"), eq(event.eventId()), eq("prescription.created"),
+                eq(event.payload().prescriptionId()), eq(new String(codec.encode(event), StandardCharsets.UTF_8)),eq(false), eq(0),isNull());
         verify(jdbc, never()).queryForObject(anyString(), eq(Boolean.class), any(Object.class));
     }
 
@@ -65,7 +65,7 @@ class PrescriptionCareEventWriterAdapterTest {
         when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(Object.class), anyString()))
                 .thenAnswer(call -> List.of(call.<RowMapper<Object>>getArgument(1).mapRow(row, 0)));
         assertThat(writer.findHeld(event.payload().prescriptionId(), EventType.FILLED)).contains(event);
-        verify(jdbc).query(contains("care_contract_version = 1 AND NOT delivery_enabled"),
+        verify(jdbc).query(contains("care_contract_version = 1"),
                 org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), eq(event.payload().prescriptionId()), eq("prescription.filled"));
     }
 
@@ -76,7 +76,8 @@ class PrescriptionCareEventWriterAdapterTest {
         when(result.getBoolean("delivery_enabled")).thenReturn(enabled);
         when(result.getShort("care_contract_version")).thenReturn((short) 1);
         when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Object>>any(), any(Object.class), anyInt()))
-                .thenAnswer(invocation -> List.of(invocation.<RowMapper<Object>>getArgument(1).mapRow(result, 0)));
+                .thenAnswer(invocation -> invocation.<String>getArgument(0).startsWith("SELECT event_id,payload")?List.of():
+                        List.of(invocation.<RowMapper<Object>>getArgument(1).mapRow(result, 0)));
     }
 
     private PrescriptionCareEvent fixture(EventType type) throws Exception {

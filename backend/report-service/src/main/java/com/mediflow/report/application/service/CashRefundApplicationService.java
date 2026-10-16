@@ -14,7 +14,7 @@ public class CashRefundApplicationService implements ApplyCashRefundUseCase {
     private final CashRefundStorePort store;
     private final BillingCashRefundMapper mapper;
     public CashRefundApplicationService(CashRefundStorePort store, BillingCashRefundMapper mapper) { this.store = store; this.mapper = mapper; }
-    @Override @Transactional(timeout = 5)
+    @Override @Transactional(transactionManager = "reportTransactionManager", timeout = 5)
     public void apply(DecodedCareFinanceEvent event) {
         var refund = mapper.map(event);
         // All financial writers acquire account before original, including final recognition.
@@ -29,7 +29,7 @@ public class CashRefundApplicationService implements ApplyCashRefundUseCase {
         requireSupportedAccount(refund.accountId());
         store.apply(refund, original.get());
     }
-    @Override @Transactional(timeout = 5)
+    @Override @Transactional(transactionManager = "reportTransactionManager", timeout = 5)
     public void recover(UUID originalId) {
         // Original identity is immutable. Resolve it before locking, then re-read under both
         // fences; acquiring account after original would deadlock against the final writer.

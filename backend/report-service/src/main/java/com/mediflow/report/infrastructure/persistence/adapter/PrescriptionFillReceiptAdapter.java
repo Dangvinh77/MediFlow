@@ -23,10 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class PrescriptionFillReceiptAdapter implements PrescriptionFillReceiptPort {
     private final JdbcTemplate jdbc;
 
-    public PrescriptionFillReceiptAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public PrescriptionFillReceiptAdapter(
+            @org.springframework.beans.factory.annotation.Qualifier("reportJdbcTemplate") JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(transactionManager = "reportTransactionManager", propagation = Propagation.MANDATORY)
     public boolean claim(UUID prescriptionId, Instant filledAt, UUID departmentId, ZoneId reportZone,
                          List<DispensedItem> groupedItems) {
         String fingerprint = fingerprint(prescriptionId, filledAt, departmentId, reportZone, groupedItems);

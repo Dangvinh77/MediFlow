@@ -61,9 +61,11 @@ public interface PharmacyEventOutboxJpaRepository
                                     AND candidate.aggregate_id IS NULL)
                            )
                            AND (
-                                predecessor.created_at < candidate.created_at
-                                OR (predecessor.created_at = candidate.created_at
-                                    AND predecessor.event_id < candidate.event_id)
+                                (predecessor.care_contract_version=1 AND candidate.care_contract_version=1
+                                    AND predecessor.care_lifecycle_order < candidate.care_lifecycle_order)
+                                OR (NOT (predecessor.care_contract_version=1 AND candidate.care_contract_version=1)
+                                    AND (predecessor.created_at < candidate.created_at
+                                        OR (predecessor.created_at = candidate.created_at AND predecessor.event_id < candidate.event_id)))
                            )
                     )
                )
@@ -114,11 +116,11 @@ public interface PharmacyEventOutboxJpaRepository
             """)
     int replay(@Param("eventId") UUID eventId, @Param("availableAt") Instant availableAt);
 
-    /** Deletes only published rows older than the retention cutoff. */
+    /** Deletes old published V0 rows only; V1 terminal retries still require the immutable proof. */
     @Modifying
     @org.springframework.data.jpa.repository.Query("""
             delete from PharmacyEventOutboxJpaEntity e
-             where e.publishedAt is not null and e.publishedAt < :cutoff
+             where e.publishedAt is not null and e.publishedAt < :cutoff and e.careContractVersion = 0
             """)
     int deletePublishedBefore(@Param("cutoff") Instant cutoff);
 

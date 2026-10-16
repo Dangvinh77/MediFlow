@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Component
 @RequiredArgsConstructor
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class PaymentCompletedConsumer {
 
     private final ReactToPaymentUseCase reactToPaymentUseCase;

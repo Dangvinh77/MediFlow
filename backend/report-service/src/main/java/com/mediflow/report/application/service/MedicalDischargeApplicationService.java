@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
+@Transactional("reportTransactionManager")
 public class MedicalDischargeApplicationService implements ProjectMedicalDischargeUseCase {
     private final AdmissionReportEvidencePort admissions;
     private final MedicalDischargeStorePort store;

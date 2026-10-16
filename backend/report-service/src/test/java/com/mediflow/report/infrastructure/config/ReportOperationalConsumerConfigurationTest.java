@@ -60,7 +60,7 @@ class ReportOperationalConsumerConfigurationTest {
                 .withBean(ProjectAdmissionReportEvidenceUseCase.class, () -> mock(ProjectAdmissionReportEvidenceUseCase.class))
                 .withBean(com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase.class,
                         () -> mock(com.mediflow.report.application.port.in.ProjectMedicalDischargeUseCase.class))
-                .withBean(ZoneId.class, () -> ZoneId.of("Asia/Bangkok"))
+                .withBean("reportZoneId", ZoneId.class, () -> ZoneId.of("Asia/Bangkok"))
                 .withPropertyValues("spring.rabbitmq.listener.simple.auto-startup=false");
     }
 }

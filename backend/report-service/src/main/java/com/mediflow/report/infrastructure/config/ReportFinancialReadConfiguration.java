@@ -13,6 +13,7 @@ import com.mediflow.report.application.service.FinancialSnapshotReadService;
 
 @Configuration(proxyBeanMethods=false)
 @ConditionalOnProperty(name={"mediflow.features.care-finance-v2","mediflow.report.financial-read.enabled"},havingValue="true")
+@org.springframework.context.annotation.Profile("!mvp-outpatient & !outpatient-mvp")
 public class ReportFinancialReadConfiguration {
     @Bean ReadFinancialSnapshotUseCase financialSnapshotReader(FinancialSnapshotReadPort store,
             @Value("${mediflow.report.zone-id:Asia/Bangkok}") String zone,
