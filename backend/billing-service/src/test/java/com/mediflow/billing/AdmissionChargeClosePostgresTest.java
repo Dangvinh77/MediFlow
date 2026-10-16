@@ -36,6 +36,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 class AdmissionChargeClosePostgresTest {
+    private static final com.mediflow.billing.application.port.out.LedgerEventPort NO_OP_EVENTS =
+            new com.mediflow.billing.application.port.out.LedgerEventPort() {
+                public void appendHeld(UUID accountId, com.mediflow.billing.application.event.LedgerIntegrationEvent event) { }
+                public void appendForOutpatientRequest(UUID accountId, UUID paymentRequestId,
+                        com.mediflow.billing.application.event.LedgerIntegrationEvent event) { }
+            };
     @Container static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
     private static DriverManagerDataSource source;
     private static JdbcTemplate jdbc;
@@ -191,7 +197,7 @@ class AdmissionChargeClosePostgresTest {
         payload.put("careEpisodeId", proof.admissionId().toString());
         payload.put("createdAt", "2026-09-28T02:10:00Z"); root.put("occurredAt", "2026-09-28T02:10:00Z");
         var charge = new PrescriptionChargeDecoder(mapper).decode("prescription.created", mapper.writeValueAsBytes(root));
-        var issuer = new PrescriptionChargeService(new PrescriptionChargeRepositoryAdapter(jdbc), (id, event) -> { }, Clock.systemUTC(), code -> { });
+        var issuer = new PrescriptionChargeService(new PrescriptionChargeRepositoryAdapter(jdbc, id -> { }), NO_OP_EVENTS, Clock.systemUTC(), code -> { });
         tx(() -> issuer.issue(charge)); close(proof); tx(() -> issuer.issue(charge));
         UUID next = UUID.randomUUID(); root.put("eventId", UUID.randomUUID().toString());
         payload.put("prescriptionId", next.toString()); payload.put("sourceId", next.toString());
@@ -208,7 +214,7 @@ class AdmissionChargeClosePostgresTest {
         payload.put("patientId", proof.patientId().toString()).put("admissionId", proof.admissionId().toString())
                 .put("careEpisodeId", proof.admissionId().toString());
         var command = new PrescriptionChargeDecoder(mapper).decode("prescription.created", mapper.writeValueAsBytes(root));
-        var issuer = new PrescriptionChargeService(new PrescriptionChargeRepositoryAdapter(jdbc), (id, event) -> { }, Clock.systemUTC(), code -> { });
+        var issuer = new PrescriptionChargeService(new PrescriptionChargeRepositoryAdapter(jdbc, id -> { }), NO_OP_EVENTS, Clock.systemUTC(), code -> { });
         try (var pool = Executors.newFixedThreadPool(2)) {
             var ready = new CountDownLatch(2); var go = new CountDownLatch(1);
             var issue = pool.submit(() -> {

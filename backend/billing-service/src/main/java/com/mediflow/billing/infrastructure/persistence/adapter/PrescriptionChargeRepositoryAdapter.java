@@ -1,6 +1,7 @@
 package com.mediflow.billing.infrastructure.persistence.adapter;
 
 import com.mediflow.billing.application.dto.command.PrescriptionChargeCommand;
+import com.mediflow.billing.application.port.out.OutpatientPublicationCohortPort;
 import com.mediflow.billing.application.port.out.PrescriptionChargeRepositoryPort;
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Charge;
@@ -18,7 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.MANDATORY)
 public class PrescriptionChargeRepositoryAdapter implements PrescriptionChargeRepositoryPort {
     private final JdbcTemplate jdbc;
-    public PrescriptionChargeRepositoryAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final OutpatientPublicationCohortPort cohort;
+    public PrescriptionChargeRepositoryAdapter(JdbcTemplate jdbc, OutpatientPublicationCohortPort cohort) {
+        this.jdbc = jdbc;
+        this.cohort = cohort;
+    }
 
     @Override public void claimDelivery(PrescriptionChargeCommand command) {
         jdbc.execute("SET LOCAL lock_timeout='3s'");
@@ -70,6 +75,7 @@ public class PrescriptionChargeRepositoryAdapter implements PrescriptionChargeRe
             // recordId is context evidence, never an EXAM permission bundled into an Rx grant.
             jdbc.update("INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,prescription_id) VALUES (?,?)", request, command.prescriptionId());
             jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)", request, chargeId, command.totalAmount());
+            cohort.enrollIfEligible(request);
         }
         jdbc.update("""
                 INSERT INTO prescription_charge_source(prescription_id,source_fingerprint,account_id,charge_id,payment_request_id,invoice_id,

@@ -42,7 +42,14 @@ eureka:
 mediflow:
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+  features:
+    outpatient-mvp:
+      enabled: ${MEDIFLOW_FEATURES_OUTPATIENT_MVP_ENABLED:false}
   billing:
+    outpatient-publication:
+      enabled: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED:false}
+      purposes: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES:}
+      acceptance-reference: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE:}
     clearance-lookup:
       enabled: ${MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED:false}
     ledger:

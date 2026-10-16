@@ -35,7 +35,7 @@ public final class PrescriptionChargeService implements IssuePrescriptionChargeU
         var now = clock.instant();
         var issued = repository.saveChargeAndRequest(command, account, charge, now);
         if ("OUTPATIENT".equals(command.careContext())) {
-            events.appendHeld(account, new LedgerIntegrationEvent(UUID.randomUUID(), "invoice.created", 1, now,
+            events.appendForOutpatientRequest(account, issued.paymentRequestId(), new LedgerIntegrationEvent(UUID.randomUUID(), "invoice.created", 1, now,
                     command.correlationId(), "billing-service", new LedgerIntegrationEvent.PrescriptionPaymentRequestPayload(
                         issued.invoiceId(), issued.paymentRequestId(), account, command.patientId(), command.departmentId(),
                         command.careEpisodeType(), command.careEpisodeId(), "PRESCRIPTION", command.prescriptionId(),

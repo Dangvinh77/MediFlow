@@ -56,7 +56,7 @@ class FinalAdmissionSettlementPostgresTest {
         pay("initial-cash","100");
         var completed=new SurgeryCompletionDecoder(mapper).decode("surgery.completed",SurgeryCompletionDecoderTest.fixture("admission"));
         tx(false).executeWithoutResult(status->new SurgeryCompletionProofService(new SurgeryCompletionStoreAdapter(jdbc),
-                new SurgeryChargeService(processed(),new SurgeryChargeRepositoryAdapter(jdbc),prices,(id,event)->{}),Clock.systemUTC()).capture(completed));
+                new SurgeryChargeService(processed(),new SurgeryChargeRepositoryAdapter(jdbc),prices,new HeldOnlyLedgerEventPort((id,event)->{})),Clock.systemUTC()).capture(completed));
         // Diagnostic medical scenario derived from the Inpatient schema, not claimed as unchanged
         // Inpatient bytes or a live medical-policy workflow: exact Surgery admission/patient/time.
         var root=(ObjectNode)mapper.readTree(AdmissionChargeCloseDecoderTest.fixture());var payload=(ObjectNode)root.path("payload");
@@ -93,7 +93,7 @@ class FinalAdmissionSettlementPostgresTest {
     }
     @Test void secondOutboxFaultRollsBackFirstFactFinalStateAndOperationThenRetryWorks() {
         long version=jdbc.queryForObject("SELECT version FROM billing_account",Long.class);var outbox=new LedgerEventOutboxAdapter(jdbc,mapper);
-        assertThatThrownBy(()->finalizeAccount("retry",(id,event)->{if(event.eventType().equals("settlement.recognition.completed"))throw new IllegalStateException("outbox fault");outbox.appendHeld(id,event);}))
+        assertThatThrownBy(()->finalizeAccount("retry",new HeldOnlyLedgerEventPort((id,event)->{if(event.eventType().equals("settlement.recognition.completed"))throw new IllegalStateException("outbox fault");outbox.appendHeld(id,event);})))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(count("settlement")).isZero();assertThat(count("final_admission_settlement_operation")).isZero();
         assertThat(jdbc.queryForObject("SELECT version FROM billing_account",Long.class)).isEqualTo(version);

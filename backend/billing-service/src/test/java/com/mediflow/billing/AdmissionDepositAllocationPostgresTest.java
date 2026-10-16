@@ -102,7 +102,7 @@ class AdmissionDepositAllocationPostgresTest {
     }
     @Test void outboxFailureRollsBackAllocationsProofAndAccountFenceThenRetryWorks() {
         long version=jdbc.queryForObject("SELECT version FROM billing_account",Long.class);
-        assertThatThrownBy(() -> run("retry",Map.of(first,new BigDecimal("48")),(id,event) -> {throw new IllegalStateException("test failure");}))
+        assertThatThrownBy(() -> run("retry",Map.of(first,new BigDecimal("48")),new HeldOnlyLedgerEventPort((id,event) -> {throw new IllegalStateException("test failure");})))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM payment_allocation",Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM deposit_allocation_operation",Integer.class)).isZero();
@@ -215,7 +215,7 @@ class AdmissionDepositAllocationPostgresTest {
     }
     @Test void refundOutboxFailureRollsBackCashAuditAndVersionWithoutTouchingAllocations() {
         run("allocate"); long version=jdbc.queryForObject("SELECT version FROM billing_account",Long.class);
-        assertThatThrownBy(() -> refund("retry","20",(id,event) -> {throw new IllegalStateException("outbox test fault");}))
+        assertThatThrownBy(() -> refund("retry","20",new HeldOnlyLedgerEventPort((id,event) -> {throw new IllegalStateException("outbox test fault");})))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(jdbc.queryForObject("SELECT version FROM billing_account",Long.class)).isEqualTo(version);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM ledger_refund_evidence",Integer.class)).isZero();

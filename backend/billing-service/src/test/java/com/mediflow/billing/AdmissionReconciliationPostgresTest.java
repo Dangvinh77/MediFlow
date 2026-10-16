@@ -79,7 +79,7 @@ class AdmissionReconciliationPostgresTest {
         assertThat(row.path("payload").path("finalSettlement").booleanValue()).isFalse();
     }
     @Test void reconcile_outboxFailure_rollsBackSnapshotAndAccountFence() {
-        assertThatThrownBy(() -> run("failure",(account,event) -> { throw new IllegalStateException("broker serialization failure"); })).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> run("failure",new HeldOnlyLedgerEventPort((account,event) -> { throw new IllegalStateException("broker serialization failure"); }))).isInstanceOf(IllegalStateException.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM admission_reconciliation",Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT version FROM billing_account WHERE account_id=?",Long.class,account)).isZero();
         assertThat(run("failure").settlementVersion()).isOne();

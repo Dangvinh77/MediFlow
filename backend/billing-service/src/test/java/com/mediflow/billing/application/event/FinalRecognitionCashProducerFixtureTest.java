@@ -33,7 +33,7 @@ class FinalRecognitionCashProducerFixtureTest {
         var paymentMapper=Mappers.getMapper(LedgerPaymentMapper.class);
         new LedgerPaymentService(payments,events,paymentMapper,Clock.fixed(at,ZoneOffset.UTC)).complete(id(31),
                 new CompleteLedgerPaymentRequest("final-deposit",new BigDecimal("120.00"),"VND",PaymentMethod.CASH,null),id(21),"final-recognition-cash-fixture");
-        var captured=ArgumentCaptor.forClass(LedgerIntegrationEvent.class);verify(events,times(2)).appendHeld(eq(id(1)),captured.capture());
+        var captured=ArgumentCaptor.forClass(LedgerIntegrationEvent.class);verify(events,times(2)).appendForOutpatientRequest(eq(id(1)),eq(id(31)),captured.capture());
         compare(captured.getAllValues().getFirst(),paid,"transactionId");verify(payments,never()).allocate(any());clearInvocations(events);
         var original=PaymentTransaction.restore(id(11),id(1),id(31),PaymentTransactionType.PAYMENT,PaymentClassification.ADMISSION_DEPOSIT,
                 PaymentTransactionStatus.COMPLETED,new BigDecimal("120.00"),"VND","CASH",null,"final-deposit",null,at,at);
