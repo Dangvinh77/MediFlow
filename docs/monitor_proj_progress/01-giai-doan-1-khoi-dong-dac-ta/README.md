@@ -16,7 +16,7 @@ Chỉ duy trì hai bản Standard có nội dung tương ứng:
 - [Bản tiếng Việt](review-1/02-review-1-standard-vi.md).
 - [English version](review-1/01-review-1-standard-en.md).
 
-Kèm [Frontend Task Sheet](review-1/Tasksheet_review1.md) cập nhật ngày 16/10/2026: phân công theo owner, trạng thái local so với nghiệm thu runtime, phụ thuộc Gateway/Billing/identity/Support và công việc deferred. Task sheet là bảng theo dõi triển khai, không phải phiên bản báo cáo thứ ba.
+Kèm [Task Sheet](review-1/Tasksheet_review1.md) lập ngày 16/10/2026: kế hoạch backend, frontend và mobile từ 17/10 đến 24/10/2026, có người phụ trách, ngày thực hiện, trạng thái và kết quả cần đạt.
 
 Mỗi bản gồm **Phần A — Xác định vấn đề** và **Phần B — CRS**. Functional Requirements nằm trong phần B, được liệt kê bằng danh sách theo từng role. Yêu cầu phần cứng dùng cấu hình tham khảo cho demo/tích hợp, không cam kết công suất production.
 

@@ -1,69 +1,89 @@
-# MediFlow Review 1 — Frontend Task Sheet
+# Task Sheet — Kế hoạch hoàn thiện MediFlow
 
-- **Plan preparation / refresh date:** 2026-10-16.
-- **Scope:** Outpatient MVP; six target deployments: Core, Clinical, Lab, Pharmacy, Billing, Support.
-- **Evidence baseline:** Dated frontend workboard, owner service guides, and active handoffs linked below. This is a documentation reconciliation, not a new runtime verification run.
-- **Relationship to Review 1:** The two Standard reports define customer requirements. This sheet tracks frontend delivery and integration dependencies; a listed requirement is not proof of a delivered screen.
+- **Ngày lập kế hoạch:** 16/10/2026.
+- **Thời gian thực hiện:** 17/10/2026–24/10/2026.
+- **Ngày kết thúc dự kiến:** 24/10/2026.
+- **Phạm vi:** hoàn thiện backend, frontend web và ứng dụng mobile phục vụ tiếp nhận, khám ngoại trú, xét nghiệm, cấp thuốc, thanh toán, báo cáo và thông báo.
 
-## Scheduling and Evidence Rules
+Đây là kế hoạch công việc sắp tới, dựa trên chức năng đã có để hoàn thiện và tích hợp. Ngày bắt đầu và ngày kết thúc trong bảng là ngày dự kiến; trạng thái được khởi tạo tại ngày lập kế hoạch, chưa xác nhận công việc đã triển khai hoặc hoàn thành. Chỉ chuyển sang **Đang thực hiện**, **Chờ xử lý phụ thuộc** hoặc **Hoàn thành** khi có cập nhật thực tế. Công việc chỉ hoàn thành khi đạt kết quả và kiểm tra tương ứng trong bảng.
 
-- Keep frontend features and routes organized by logical context. Core groups Organization/Patient and Support groups Report/Notification at deployment level; ownership remains separate.
-- Use the existing task IDs where available. Sheet row numbers identify this summary only and do not create replacement implementation tasks.
-- `Planned Start`, `Actual Start`, and `Actual Days` are `—` where no task-specific schedule or time record has been verified for this revised scope. A checkpoint date is not a start date; test counts and elapsed days are not person-days.
-- The former 2026-10-12 forward schedule is superseded. Sequence work by the dependencies below; do not invent replacement dates or infer progress percentages from historical task totals.
-- `BASELINE` and `LOCAL VERIFIED` do not mean accepted against the outpatient backend. Close a task only after the required contract, activation, signed-role Gateway, and runtime evidence is recorded.
-- Missing contracts remain owner handoffs. Frontend code must not guess source IDs, identity mappings, prices, financial clearance, or unavailable report values.
+## Phân công
 
-## Status Legend
+| Thành viên | Backend | Frontend và mobile theo nghiệp vụ |
+|---|---|---|
+| Vinh | Khám bệnh, xét nghiệm; điều phối tích hợp | Lịch khám, hồ sơ khám, xét nghiệm; điều phối giao diện chung |
+| Huy | Dược, báo cáo | Thuốc, đơn thuốc, báo cáo |
+| Hoàng Anh | Tổ chức, người bệnh, Gateway | Nhân sự, khoa phòng, người bệnh; phối hợp đăng nhập và phân quyền |
+| Lộc | Thanh toán, thông báo | Hóa đơn, thanh toán, thông báo |
 
-| Status | Meaning |
+Phân công mobile là kế hoạch phối hợp theo nghiệp vụ. Mỗi thành viên sử dụng giao diện và hợp đồng backend đã được thống nhất; phần tích hợp chung được Vinh điều phối, giữ trách nhiệm từng thành viên đối với nghiệp vụ của mình.
+
+## Kế hoạch backend
+
+| STT | Công việc | Phụ trách | Bắt đầu | Kết thúc | Trạng thái | Kết quả cần đạt |
+|---:|---|---|---|---|---|---|
+| 1 | Rà soát chức năng còn thiếu, thống nhất dữ liệu trao đổi và thứ tự tích hợp | Cả nhóm; Vinh tổng hợp | 17/10/2026 | 17/10/2026 | Chưa bắt đầu | Danh sách việc cần sửa, API, quyền và dữ liệu kiểm thử được thống nhất cho web và mobile |
+| 2 | Hoàn thiện Core, quản lý tài khoản, nhân sự, khoa phòng và người bệnh | Hoàng Anh | 17/10/2026 | 18/10/2026 | Chưa bắt đầu | Đăng nhập và quản lý hồ sơ đúng quyền; dữ liệu Organization và Patient được quản lý độc lập |
+| 3 | Hoàn thiện định tuyến Gateway và kiểm tra danh tính người gọi | Hoàng Anh | 18/10/2026 | 19/10/2026 | Chưa bắt đầu | Các API được phép sử dụng truy cập được qua Gateway; từ chối yêu cầu sai quyền hoặc hết phiên |
+| 4 | Hoàn thiện lịch khám, tiếp nhận, bắt đầu khám và kết thúc khám | Vinh | 17/10/2026 | 19/10/2026 | Chưa bắt đầu | Luồng khám chuyển trạng thái đúng; kiểm tra điều kiện thanh toán trước thao tác cần thu phí |
+| 5 | Hoàn thiện chỉ định, tiếp nhận mẫu và trả kết quả xét nghiệm | Vinh | 18/10/2026 | 20/10/2026 | Chưa bắt đầu | Chỉ định liên kết đúng hồ sơ; kết quả và trạng thái được đồng bộ; không tạo trùng khi gửi lại |
+| 6 | Hoàn thiện quản lý thuốc, tồn kho, đơn thuốc và cấp thuốc | Huy | 17/10/2026 | 20/10/2026 | Chưa bắt đầu | Kiểm tra tồn kho và thanh toán; cấp hoặc hủy đúng quyền, không cấp trùng |
+| 7 | Hoàn thiện khoản phí, hóa đơn và ghi nhận thanh toán | Lộc | 17/10/2026 | 20/10/2026 | Chưa bắt đầu | Thu đúng khoản phí của lượt khám, xét nghiệm và đơn thuốc; tính tiền chính xác, không ghi nhận trùng |
+| 8 | Hoàn thiện báo cáo và kiểm tra nguồn dữ liệu | Huy | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Báo cáo có bộ lọc phù hợp, số liệu đối chiếu được; thể hiện rõ khi dữ liệu chưa có |
+| 9 | Hoàn thiện thông báo trong hệ thống và quyền xem của người nhận | Lộc | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Thông báo đến đúng người; không lộ thông tin người bệnh khác; xử lý gửi lại không tạo trùng |
+| 10 | Hoàn thiện đóng gói Support và cấu hình kết nối các dịch vụ | Huy, Lộc; Vinh điều phối; Hoàng Anh phối hợp Gateway | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Core, Clinical, Lab, Pharmacy, Billing và Support khởi chạy, định tuyến và kết nối dữ liệu đúng cấu hình |
+| 11 | Kiểm thử backend, phân quyền và phục hồi khi có lỗi | Từng thành viên theo nghiệp vụ | 21/10/2026 | 22/10/2026 | Chưa bắt đầu | Kiểm tra thành công, sai quyền, sai trạng thái, gửi trùng, mất kết nối và xử lý lại; sửa lỗi phát hiện |
+
+## Kế hoạch frontend web
+
+| STT | Công việc | Phụ trách | Bắt đầu | Kết thúc | Trạng thái | Kết quả cần đạt |
+|---:|---|---|---|---|---|---|
+| 12 | Rà soát đăng nhập, phân quyền menu, bố cục và hiển thị trên điện thoại | Vinh điều phối; Hoàng Anh phối hợp tài khoản | 17/10/2026 | 18/10/2026 | Chưa bắt đầu | Menu đúng vai trò; xử lý hết phiên; bố cục sử dụng được trên màn hình nhỏ |
+| 13 | Hoàn thiện giao diện nhân sự, khoa phòng và người bệnh | Hoàng Anh | 18/10/2026 | 20/10/2026 | Chưa bắt đầu | Tìm kiếm, phân trang, xem và cập nhật đúng quyền; kiểm tra dữ liệu nhập và lỗi API |
+| 14 | Hoàn thiện giao diện lịch khám, tiếp nhận và hồ sơ khám | Vinh | 18/10/2026 | 20/10/2026 | Chưa bắt đầu | Thực hiện được luồng khám qua Gateway; hiển thị đúng trạng thái và điều kiện thanh toán |
+| 15 | Hoàn thiện giao diện chỉ định và kết quả xét nghiệm | Vinh | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Hiển thị chỉ định, cập nhật trạng thái và kết quả đúng hồ sơ, đúng quyền |
+| 16 | Hoàn thiện giao diện thuốc, tồn kho và cấp thuốc | Huy | 18/10/2026 | 21/10/2026 | Chưa bắt đầu | Tìm thuốc, xem tồn, xử lý đơn và cấp thuốc theo trạng thái backend; dùng giá do máy chủ cung cấp |
+| 17 | Hoàn thiện giao diện hóa đơn và thanh toán | Lộc | 18/10/2026 | 21/10/2026 | Chưa bắt đầu | Chọn đúng khoản phí, xem hóa đơn và ghi nhận thanh toán; ngăn thao tác lặp và hiển thị lỗi rõ ràng |
+| 18 | Hoàn thiện giao diện báo cáo | Huy | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Bộ lọc và số liệu khớp backend; có trạng thái đang tải, không có dữ liệu và lỗi |
+| 19 | Hoàn thiện giao diện thông báo | Lộc | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Danh sách và chi tiết đúng người nhận; thao tác chỉ xuất hiện khi backend hỗ trợ |
+| 20 | Kiểm thử giao diện theo vai trò và luồng nghiệp vụ | Từng thành viên theo nghiệp vụ | 21/10/2026 | 22/10/2026 | Chưa bắt đầu | Các trang chính sử dụng API thật, xử lý lỗi và phân quyền đúng; ghi lại lỗi cần sửa |
+
+## Kế hoạch mobile
+
+Ứng dụng mobile ưu tiên hoàn thiện luồng đã được backend hỗ trợ. Ngày 17/10, nhóm chốt màn hình và vai trò trên ứng dụng; chỉ đưa chức năng vào bàn giao khi API và quyền truy cập đã sẵn sàng. Những chức năng chưa có hợp đồng backend được ghi nhận để xử lý phụ thuộc, không giả lập thành chức năng đã hoàn thành.
+
+| STT | Công việc | Phụ trách | Bắt đầu | Kết thúc | Trạng thái | Kết quả cần đạt |
+|---:|---|---|---|---|---|---|
+| 21 | Rà soát ứng dụng hiện có, chốt màn hình và chuẩn bị cấu hình kết nối | Vinh điều phối; cả nhóm rà soát nghiệp vụ | 17/10/2026 | 18/10/2026 | Chưa bắt đầu | Danh sách màn hình, vai trò và môi trường chạy được thống nhất; ứng dụng kết nối qua Gateway |
+| 22 | Hoàn thiện đăng nhập, lưu phiên an toàn và điều hướng theo quyền | Vinh điều phối phần chung; Hoàng Anh phối hợp xác thực | 18/10/2026 | 19/10/2026 | Chưa bắt đầu | Đăng nhập, đăng xuất và hết phiên được xử lý; không hiển thị màn hình ngoài quyền được cấp |
+| 23 | Hoàn thiện tra cứu và hiển thị thông tin người bệnh | Hoàng Anh | 19/10/2026 | 20/10/2026 | Chưa bắt đầu | Xem, tìm kiếm hồ sơ theo vai trò và API được cấp; bảo vệ dữ liệu cá nhân |
+| 24 | Hoàn thiện màn hình lịch khám và thông tin khám | Vinh | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Xem lịch, trạng thái và thông tin khám theo quyền; thao tác cập nhật chỉ dùng API được hỗ trợ |
+| 25 | Hoàn thiện màn hình kết quả xét nghiệm | Vinh | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Kết quả gắn đúng người bệnh và hồ sơ; xử lý tải lại, dữ liệu trống và lỗi |
+| 26 | Hoàn thiện màn hình thông tin thuốc và đơn thuốc | Huy | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Hiển thị thuốc, hướng dẫn và trạng thái đơn theo dữ liệu backend và quyền người dùng |
+| 27 | Hoàn thiện màn hình hóa đơn và trạng thái thanh toán | Lộc | 19/10/2026 | 21/10/2026 | Chưa bắt đầu | Xem đúng khoản phí, số tiền và trạng thái; chỉ cung cấp thao tác thanh toán đã có backend hỗ trợ |
+| 28 | Hoàn thiện màn hình thông báo của người dùng | Lộc | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Hiển thị đúng người nhận; không truy cập thông báo của tài khoản khác |
+| 29 | Kiểm thử mobile trên thiết bị và chuẩn bị bản cài Android | Từng thành viên kiểm tra nghiệp vụ; Vinh tổng hợp bản cài | 21/10/2026 | 22/10/2026 | Chưa bắt đầu | Kiểm tra kích thước màn hình, bàn phím, mạng chậm, mất mạng và hết phiên; cài và chạy được bản thử nghiệm |
+
+## Tích hợp, nghiệm thu và bàn giao
+
+| STT | Công việc | Phụ trách | Bắt đầu | Kết thúc | Trạng thái | Kết quả cần đạt |
+|---:|---|---|---|---|---|---|
+| 30 | Chuẩn bị tài khoản theo vai trò, dữ liệu mẫu và kịch bản kiểm thử chung | Cả nhóm; Hoàng Anh chuẩn bị tài khoản | 20/10/2026 | 21/10/2026 | Chưa bắt đầu | Có dữ liệu thống nhất để kiểm tra backend, web và mobile; không dùng dữ liệu cá nhân thật |
+| 31 | Kiểm thử xuyên suốt tiếp nhận, khám, xét nghiệm, thanh toán và cấp thuốc | Cả nhóm; Vinh điều phối | 22/10/2026 | 22/10/2026 | Chưa bắt đầu | Chạy luồng thực tế qua Gateway trên web và các màn hình mobile đã thống nhất; đối chiếu trạng thái, tiền và dữ liệu |
+| 32 | Kiểm tra báo cáo, thông báo, quyền truy cập và tính nhất quán giữa các ứng dụng | Cả nhóm theo nghiệp vụ | 22/10/2026 | 23/10/2026 | Chưa bắt đầu | Số liệu và trạng thái khớp nhau; không lộ dữ liệu; sự kiện gửi lại không tạo nghiệp vụ trùng |
+| 33 | Sửa lỗi tích hợp và kiểm thử lại các luồng bị ảnh hưởng | Từng thành viên theo nghiệp vụ | 23/10/2026 | 23/10/2026 | Chưa bắt đầu | Đóng lỗi chặn đăng nhập, luồng khám, thanh toán, cấp thuốc và lỗi bảo mật; ghi rõ hạn chế còn lại |
+| 34 | Hoàn thiện hướng dẫn cài đặt, sử dụng, báo cáo và nội dung trình bày | Cả nhóm; Vinh tổng hợp | 23/10/2026 | 24/10/2026 | Chưa bắt đầu | Hướng dẫn phản ánh đúng chức năng chạy được; có cấu hình, tài khoản demo và kịch bản trình bày |
+| 35 | Đóng gói, nghiệm thu cuối và bàn giao dự án | Cả nhóm | 24/10/2026 | 24/10/2026 | Chưa bắt đầu | Chạy lại kịch bản chính, kiểm tra bản cài và môi trường; bàn giao mã nguồn, cấu hình, tài liệu và danh sách hạn chế |
+
+## Mốc hoàn thành
+
+| Ngày | Mục tiêu |
 |---|---|
-| `BASELINE` | Existing UI reported in the workboard/service guide; outpatient runtime acceptance is still separate. |
-| `LOCAL VERIFIED` | Dated local tests or fixture-browser evidence exists for the stated work; does not close external gates. |
-| `IN PROGRESS` | Part of the task is implemented or verified; named acceptance work remains. |
-| `VERIFY CONTRACT` | Confirm the current controller, DTO, roles, activation, and Gateway contract before implementation. |
-| `BLOCKED` | A named contract, identity, Gateway, or runtime dependency remains open. |
-| `PLANNED` | Required work without completion evidence in the cited sources. |
-| `DEFERRED` | Outside outpatient MVP acceptance; retain existing source and data. |
+| 17/10/2026 | Chốt công việc, API, quyền và màn hình mobile; xác định phụ thuộc cần giải quyết |
+| 19/10/2026 | Sẵn sàng đăng nhập và định tuyến; hoàn thiện nền tảng tích hợp |
+| 21/10/2026 | Hoàn thiện chức năng theo nghiệp vụ, chuẩn bị dữ liệu và ứng dụng để kiểm thử chung |
+| 22/10/2026 | Kiểm thử xuyên suốt backend, frontend và mobile |
+| 23/10/2026 | Sửa lỗi, kiểm thử lại và ổn định bản bàn giao |
+| 24/10/2026 | Nghiệm thu, trình bày và bàn giao; kết thúc dự án theo kế hoạch |
 
-## Task Sheet
-
-| No. | Member | Contents / task reference | Page Name / scope | Planned Start | Actual Start | Actual Days | Status |
-|---:|---|---|---|---|---|---:|---|
-| 1 | Vinh | Appointment list/detail/create/edit and legacy arrival/cancel. Existing screens do not prove the V1 check-in/examination flow. | `/appointments` and child routes | — | — | — | `BASELINE` |
-| 2 | Vinh | Medical-record lookup/detail/create/edit/diagnosis. Keep completed-state and permission guards; distinguish legacy operations from outpatient V1. | `/records` and child routes | — | — | — | `BASELINE` |
-| 3 | Vinh | `FE-VINH-MVP-01/04`, `FE-LAB-04`: reconcile Clinical/Lab API/types and role/error/loading/retry states. Lab stale-response regression and local tests recorded on 16 October; signed-role smoke remains. | `/appointments`, `/records`, `/lab` | — | — | — | `IN PROGRESS` |
-| 4 | Vinh | `FE-VINH-MVP-02`: check-in → start examination → outpatient completion. Wait for exact EXAM Gateway/Billing acceptance; unpaid visits remain blocked. | Existing appointment/record workspaces; V1 controls gated | — | — | — | `BLOCKED` |
-| 5 | Vinh | `FE-VINH-MVP-03`: Clinical Lab order → Lab request using the returned source order ID → processing/results. Producer/API preparation exists; actual paid LAB_TEST and Gateway acceptance remain. | `/records`, `/lab` | — | — | — | `BLOCKED` |
-| 6 | Vinh | `FE-VINH-MVP-04`: integrate prescription status from accepted Clinical/Pharmacy contracts and run authenticated role/error smoke; no V0 fallback presented as V1. | `/records`, related outpatient read states | — | — | — | `BLOCKED` |
-| 7 | Huy | `P-02/P-03/P-05/P-07`: drug detail/create/stock, prescription form, and ADMIN outbox UX. Local tests/fixture checks recorded on 16 October; preserve server prices and exact DTOs. | `/pharmacy` and existing child routes | — | — | — | `LOCAL VERIFIED` |
-| 8 | Huy | `P-06`: cancel/dispense terminal actions; 4/4 local subtasks complete. Main task still needs GW-01 real-role smoke, including doctor-owned cancellation and denied actors. | Existing prescription detail and terminal controls | — | — | — | `IN PROGRESS` |
-| 9 | Huy | `P-08`: connect public outpatient prescription source/payment/dispense only after accepted activation, exact clearance and signed actor contracts. Do not substitute the legacy V0 flow. | Existing Pharmacy workspaces; outpatient V1 controls gated | — | — | — | `BLOCKED` |
-| 10 | Huy | `R-01/R-02/R-04/R-05`: daily/monthly/top-medicine report scope, filtering and request lifecycle. Local work recorded; numeric values keep existing contract semantics. | `/reports` and existing report views | — | — | — | `LOCAL VERIFIED` |
-| 11 | Huy; Lộc / Billing; Hoàng Anh / Organization | Resolve report currency/department display and source coverage before new MVP report snapshots. Distinguish cash received from earned revenue and unavailable from zero. Each owner supplies only their own contract. | `/reports`; display contracts for `/billing` | — | — | — | `BLOCKED` |
-| 12 | Hoàng Anh | `FE-ORG-01/02/03`: department/staff/account workflows, including transfer and account status. Service-only identity endpoints remain outside browser code. | `/organization` and child routes | — | — | — | `BASELINE` |
-| 13 | Hoàng Anh | `FE-PATIENT-01/02/03`: search/detail/create/update/delete with current roles and immutable identity number. Existing writes are staff-only; patient self-service requires an explicit contract. | `/patients` and child routes | — | — | — | `BASELINE` |
-| 14 | Hoàng Anh | `FE-ORG-04`, `FE-PATIENT-04`: verify remaining component/contract tests, independent section errors, paging, validation, role denial, retry, and actual Core routing. Shared test harness already exists; do not recreate it. | Organization/Patient owned feature and route paths | — | — | — | `PLANNED` |
-| 15 | Hoàng Anh | Gateway/Core identity liaison: document signed staff/account/patient mappings; G1 exact Billing discovery routing and GW-01 Pharmacy method/role acceptance. These are backend/Gateway prerequisites for the UI. | Gateway contracts; no new browser access to internal lookups | — | — | — | `IN PROGRESS` |
-| 16 | Lộc | `FE-BILLING-01/02/03/05/06/08`: invoice lookup/detail/create/payment, selected-charge V1 payment, department revenue view, ADMIN outbox replay. Current ledger UI accepts an exact request ID; actual source discovery integration needs G1 and Billing evidence. | `/billing`, `/billing/new`, `/billing/[invoiceId]`, `/billing/payment-requests`, `/billing/payment-requests/[id]`, `/billing/revenue`, `/billing/admin/outbox` | — | — | — | `BASELINE` |
-| 17 | Lộc | `FE-BILLING-04`: verify/add tests for pagination, monetary display, permission, terminal state, API errors, retries, and payment flow using the existing harness. Do not assume currency from locale. | Billing owned feature and route paths | — | — | — | `PLANNED` |
-| 18 | Lộc; Hoàng Anh / Gateway | `FE-BILLING-07` outpatient prescription-adjustment refund-due view: confirm exact Gateway allowlist and DTO/roles before exposing it. Read-only refund-due is not a refund command. | Planned control/view under Billing; route subject to accepted contract | — | — | — | `BLOCKED` |
-| 19 | Lộc | `FE-NOTIFICATION-01/02`: patient history, secured detail and ADMIN manual send baseline. Protect recipient data; retain exact role/privacy boundaries. MVP only requires accepted outpatient in-app intents. | `/notifications`, `/notifications/[notificationId]`, `/notifications/send` | — | — | — | `BASELINE` |
-| 20 | Lộc | `FE-NOTIFICATION-04`: verify/add pagination, status/channel, error/retry rendering, role and cross-patient denial tests using the existing harness. | Notification owned feature and route paths | — | — | — | `PLANNED` |
-| 21 | Lộc; Hoàng Anh / identity producer | Patient-owned notification entry needs authoritative patient/account mapping and ownership checks. `FE-NOTIFICATION-03` retry/read-state controls remain unavailable until a live command contract exists. | Planned patient-owned notification entry; no assumed route or claim | — | — | — | `BLOCKED` |
-| 22 | Vinh / shared coordinator; Huy / recorded frame delivery | Six-group sidebar/header/home/theme work has local evidence on 16 October. Remaining shared release work: signed-session desktop/mobile navigation, drawer, denied-role and expired-session smoke. Prior Huy frame assignment does not grant new shared scope. | Existing shared layout, home and theme paths only as authorized | — | — | — | `IN PROGRESS` |
-| 23 | Context owners; Vinh / coordination | Verify the integrated identity → EXAM → LAB_TEST → prescription/payment/dispense journey, asynchronous reports/notifications, duplicate delivery and failure recovery. Requires actual Billing publication, Gateway rules and accepted runtime gates. Six navigation groups do not prove six deployed processes. | All active outpatient routes through Gateway | — | — | — | `BLOCKED` |
-| 24 | Lộc / Notification; Huy / Report; assigned shared runtime/build owner; Hoàng Anh / Gateway | Support deployment and routing acceptance for existing Report/Notification screens. This is an external dependency, not permission to edit shared build or another owner's production files. | Existing `/reports`, `/notifications`; target Support host | — | — | — | `BLOCKED` |
-| 25 | Vinh / Inpatient; Huy / Surgery; Lộc / related Billing | Inpatient beds/admission/treatment, Surgery, admission deposit/top-up/settlement, Surgery refund views, full Report V2 and advanced reminders remain outside MVP. Preserve their existing code/data; do not activate them to close outpatient tasks. | `/inpatient` and future Surgery/advanced-care surfaces | — | — | — | `DEFERRED` |
-
-## Evidence and Dependency Register
-
-1. [Frontend workboard](../../../../frontend/docs/frontend-workboard.md): 16 October Clinical/Lab regression, Huy local work, shared frame checkpoints, and historical route baseline. Its dated current priorities override older shipped-route labels for MVP activation.
-2. [Frontend ownership](../../../ai/15-frontend-ownership.md): canonical feature/route boundaries and shared-scope rules.
-3. [Organization guide](../../../../frontend/docs/services/organization.md) and [Patient guide](../../../../frontend/docs/services/patient.md): rows 12–14 and identity dependencies. Owner guides describe their recorded baseline; they do not prove a fresh Core runtime smoke.
-4. [Billing guide](../../../../frontend/docs/services/billing.md) and [Notification guide](../../../../frontend/docs/services/notification.md): rows 16–21. Reconfirm older missing-endpoint statements against the newer discovery handoff before starting work; API implementation, Gateway exposure, publication and actual UI acceptance are separate gates.
-5. [Billing discovery/publication handoff](../../../handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md): L1/L2 merged; L3 still has open acceptance groups, L4 has owner evidence, G1 and actual paid slice remain open at its recorded checkpoint. Do not mark publication or end-to-end UI complete from API availability alone.
-6. [Huy MVP handoff](../../../handoffs/HANDOFF-HUY-MVP.md): GW-01, signed actor, Rx source/paid flow, report coverage and Support dependencies. P-06 local completion does not close these gates.
-7. [System design](../../../plans/01-system-design.md), [implementation plan](../../../plans/05-implementation-plan.md), and [acceptance runbook](../../../plans/06-acceptance-runbook.md): six-service target and required backend evidence. Core exists in source; Support composition is not yet present. Inpatient/Surgery remain deferred.
-
-This sheet records no new application test results and grants no additional production write scope. Refresh the relevant row when its owner supplies new evidence; keep detailed backend gaps in the existing handoffs rather than creating a second registry here.
+Công việc giao diện phụ thuộc API và quyền tương ứng; báo cáo và thông báo phụ thuộc dữ liệu nghiệp vụ được phát sinh đúng. Nếu phụ thuộc chưa sẵn sàng vào ngày đã đặt, người phụ trách cập nhật trạng thái và báo nhóm trong ngày để điều chỉnh phần việc trước hạn bàn giao. Không mở rộng sang nội trú và phẫu thuật trong lịch này. Tại buổi nghiệm thu, ghi rõ phần hoàn thành, lỗi còn tồn tại và phạm vi chưa bàn giao; ngày dự kiến không thay thế kết quả kiểm thử thực tế.

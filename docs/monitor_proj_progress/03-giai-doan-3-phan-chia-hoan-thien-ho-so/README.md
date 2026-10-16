@@ -19,7 +19,7 @@ Core đóng gói Organization + Patient; Support đích đóng gói Report + Not
 - [Nghiệm thu và vận hành](../../plans/06-acceptance-runbook.md): luồng demo, kiểm thử lỗi từng phần, rollout và rollback.
 - [Frontend workboard](../../../frontend/docs/frontend-workboard.md): trạng thái route và công việc theo ngày.
 - [Review 1](../01-giai-doan-1-khoi-dong-dac-ta/README.md): bộ yêu cầu Standard Việt/Anh đang duy trì.
-- [Frontend Task Sheet](../01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md): phân công frontend MVP, trạng thái có bằng chứng và các phụ thuộc còn mở.
+- [Task Sheet](../01-giai-doan-1-khoi-dong-dac-ta/review-1/Tasksheet_review1.md): kế hoạch backend, frontend và mobile đến ngày 24/10/2026, kèm phân công, ngày thực hiện và trạng thái.
 
 Chỉ xác nhận hoàn thành khi có bằng chứng tương ứng với commit, cấu hình/profile và kết quả kiểm thử. Phân biệt yêu cầu đã thiết kế, mã đã tồn tại và luồng đã nghiệm thu. Các thao tác tiền/kho phải được kiểm tra khi gửi lặp, restart và lỗi giữa các dịch vụ.
 
