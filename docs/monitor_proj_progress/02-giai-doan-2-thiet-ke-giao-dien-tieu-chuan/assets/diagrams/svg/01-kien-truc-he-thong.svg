@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1902.2519166666666 940.7" width="1902.2519166666666" height="940.7" style="--bg:#FFFFFF;--fg:#0F172A;--line:#2563EB;--accent:#0F766E;--muted:#64748B;--surface:#F0FDFA;--border:#0F766E;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Segoe%20UI:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Segoe UI', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="BUSINESS" data-label="Business microservices">
+  <rect x="592.1259166666666" y="479.1" width="1262.126" height="96.9" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="592.1259166666666" y="479.1" width="1262.126" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="604.1259166666666" y="493.1" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Business microservices</text>
+</g>
+<polyline class="edge" data-from="WEB" data-to="GW" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HTTPS /api/v1" points="1069.8044166666666,84.9 1069.8044166666666,201.2 1109.80325,201.2 1109.80325,213.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MOBILE" data-to="GW" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="HTTPS /api/v1" points="1219.8544166666666,84.9 1219.8544166666668,201.2 1179.8555833333335,201.2 1179.8555833333335,213.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="EUREKA" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Resolve service name" points="1060.7666166666668,267 1060.7666166666668,279 765.15675,279 765.1567499999999,365.3" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="ORG" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1081.7823166666667,267 1081.7823166666667,353.3 856.15275,353.3 856.15275,449.1 684.3054166666666,449.1 684.3054166666666,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="PAT" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1102.7980166666666,267 1102.7980166666666,449.1 945.82875,449.1 945.82875,461.1 850.6574166666667,461.1 850.6574166666667,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="CLI" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1123.8137166666668,267 1123.8137166666668,461.1 1027.35375,461.1 1027.35375,461.1 1000.7074166666666,461.1 1000.7074166666666,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="LAB" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1144.8294166666667,267 1144.8294166666667,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="PHA" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1165.8451166666669,267 1165.8451166666669,461.1 1297.8434166666666,461.1 1297.8434166666666,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="BIL" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1186.8608166666668,267 1186.8608166666668,449.1 1387.8222666666666,449.1 1387.8222666666666,461.1 1456.7854166666666,461.1 1456.7854166666666,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="NOTI" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1207.8765166666667,267 1207.8765166666667,437.1 1478.5421166666665,437.1 1478.5421166666665,461.1 1617.2094166666666,461.1 1617.2094166666666,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="GW" data-to="REP" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1228.8922166666666,267 1228.8922166666666,425.1 1570.3734666666664,425.1 1570.3734666666664,449.1 1779.8564166666667,449.1 1779.8564166666667,523.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORG" data-to="DORG" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="684.3054166666666,560 684.3054166666666,586 116.7695,586 116.7695,612" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="PAT" data-to="DPAT" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="850.6574166666667,560 850.6574166666667,586 280.1575,586 280.1575,612" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="CLI" data-to="DCLI" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1000.7074166666666,560 1000.7074166666666,637 423.2915,637 423.2915,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="LAB" data-to="DLAB" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1144.8294166666667,560 1144.8294166666667,637 561.609,637 561.609,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="PHA" data-to="DPHA" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1297.8434166666666,560 1297.8434166666666,637 704.1255,637 704.1255,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="BIL" data-to="DBIL" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1456.7854166666666,560 1456.7854166666666,637 857.7570000000001,637 857.7570000000001,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="NOTI" data-to="DNOTI" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1617.2094166666668,560 1617.2094166666668,637 1008.4244999999999,637 1008.4244999999999,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="REP" data-to="DREP" data-style="solid" data-arrow-start="false" data-arrow-end="false" points="1779.8564166666667,560 1779.8564166666667,637 1165.6374999999998,637 1165.6374999999998,714" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="edge" data-from="ORG" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="684.3054166666666,560 684.3054166666666,586 1551.657,586 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="PAT" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="850.6574166666667,560 850.6574166666667,586 1551.657,586 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="CLI" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1000.7074166666666,560 1000.7074166666666,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="LAB" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1144.8294166666667,560 1144.8294166666667,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="PHA" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1297.8434166666666,560 1297.8434166666666,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="BIL" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1456.7854166666666,560 1456.7854166666666,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="NOTI" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1617.2094166666668,560 1617.2094166666668,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<polyline class="edge" data-from="REP" data-to="MQ" data-style="solid" data-arrow-start="true" data-arrow-end="true" points="1779.8564166666667,560 1779.8564166666667,637 1551.657,637 1551.657,824.9000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" marker-start="url(#arrowhead-start)" />
+<g class="edge-label" data-from="WEB" data-to="GW" data-label="HTTPS /api/v1">
+  <rect x="1027.8044166666666" y="133.9" width="83.58400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1069.5964166666665" y="149.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">HTTPS /api/v1</text>
+</g>
+<g class="edge-label" data-from="MOBILE" data-to="GW" data-label="HTTPS /api/v1">
+  <rect x="1177.8544166666668" y="133.9" width="83.58400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="1219.6464166666667" y="149.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">HTTPS /api/v1</text>
+</g>
+<g class="edge-label" data-from="GW" data-to="EUREKA" data-label="Resolve service name">
+  <rect x="703.65675" y="286" width="122.19400000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="764.75375" y="301.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Resolve service name</text>
+</g>
+<g class="node" data-id="WEB" data-label="Web Next.js" data-shape="rectangle">
+  <rect x="1014.7434166666667" y="48" width="110.122" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1069.8044166666666" y="66.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Web Next.js</text>
+</g>
+<g class="node" data-id="MOBILE" data-label="Mobile Flutter" data-shape="rectangle">
+  <rect x="1158.8654166666668" y="48" width="121.978" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1219.8544166666668" y="66.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Mobile Flutter</text>
+</g>
+<g class="node" data-id="GW" data-label="API Gateway :8080
+JWT, RBAC, rate limit, routing" data-shape="rectangle">
+  <rect x="1039.7509166666669" y="213.2" width="210.15699999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1144.829416666667" y="240.1" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1144.829416666667" dy="-3.9000000000000012">API Gateway :8080</tspan><tspan x="1144.829416666667" dy="16.900000000000002">JWT, RBAC, rate limit, routing</tspan></text>
+</g>
+<g class="node" data-id="EUREKA" data-label="Eureka Server :8761
+Service discovery" data-shape="rectangle">
+  <rect x="684.1607499999999" y="365.3" width="161.99200000000002" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="765.1567499999999" y="392.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="765.1567499999999" dy="-3.9000000000000012">Eureka Server :8761</tspan><tspan x="765.1567499999999" dy="16.900000000000002">Service discovery</tspan></text>
+</g>
+<g class="node" data-id="MQ" data-label="RabbitMQ
+Topic: mediflow.events" data-shape="cylinder">
+  <rect x="1465.1035" y="831.9000000000001" width="173.10699999999997" height="53.80000000000001" fill="var(--_node-fill)" stroke="none" />
+  <line x1="1465.1035" y1="831.9000000000001" x2="1465.1035" y2="885.7" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="1638.2105" y1="831.9000000000001" x2="1638.2105" y2="885.7" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1551.657" cy="885.7" rx="86.55349999999999" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1551.657" cy="831.9000000000001" rx="86.55349999999999" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1551.657" y="858.8000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1551.657" dy="-3.9000000000000012">RabbitMQ</tspan><tspan x="1551.657" dy="16.900000000000002">Topic: mediflow.events</tspan></text>
+</g>
+<g class="node" data-id="DORG" data-label="Organization DB" data-shape="cylinder">
+  <rect x="48" y="619" width="137.539" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="48" y1="619" x2="48" y2="655.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="185.539" y1="619" x2="185.539" y2="655.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="116.7695" cy="655.9" rx="68.7695" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="116.7695" cy="619" rx="68.7695" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116.7695" y="637.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Organization DB</text>
+</g>
+<g class="node" data-id="DPAT" data-label="Patient DB" data-shape="cylinder">
+  <rect x="229.17200000000003" y="619" width="101.971" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="229.17200000000003" y1="619" x2="229.17200000000003" y2="655.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="331.14300000000003" y1="619" x2="331.14300000000003" y2="655.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="280.1575" cy="655.9" rx="50.9855" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="280.1575" cy="619" rx="50.9855" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="280.1575" y="637.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Patient DB</text>
+</g>
+<g class="node" data-id="DCLI" data-label="Clinical DB" data-shape="cylinder">
+  <rect x="370.824" y="721" width="104.93499999999999" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="370.824" y1="721" x2="370.824" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="475.759" y1="721" x2="475.759" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="423.2915" cy="757.9" rx="52.467499999999994" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="423.2915" cy="721" rx="52.467499999999994" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="423.2915" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Clinical DB</text>
+</g>
+<g class="node" data-id="DLAB" data-label="Lab DB" data-shape="cylinder">
+  <rect x="518.7745" y="721" width="85.66900000000001" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="518.7745" y1="721" x2="518.7745" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="604.4435" y1="721" x2="604.4435" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="561.609" cy="757.9" rx="42.834500000000006" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="561.609" cy="721" rx="42.834500000000006" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="561.609" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Lab DB</text>
+</g>
+<g class="node" data-id="DPHA" data-label="Pharmacy DB" data-shape="cylinder">
+  <rect x="642.766" y="721" width="122.719" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="642.766" y1="721" x2="642.766" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="765.4849999999999" y1="721" x2="765.4849999999999" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="704.1255" cy="757.9" rx="61.3595" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="704.1255" cy="721" rx="61.3595" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="704.1255" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Pharmacy DB</text>
+</g>
+<g class="node" data-id="DBIL" data-label="Billing DB" data-shape="cylinder">
+  <rect x="808.9945" y="721" width="97.525" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="808.9945" y1="721" x2="808.9945" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="906.5195" y1="721" x2="906.5195" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="857.7570000000001" cy="757.9" rx="48.7625" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="857.7570000000001" cy="721" rx="48.7625" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="857.7570000000001" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Billing DB</text>
+</g>
+<g class="node" data-id="DNOTI" data-label="Notification DB" data-shape="cylinder">
+  <rect x="945.5829999999999" y="721" width="125.68299999999999" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="945.5829999999999" y1="721" x2="945.5829999999999" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="1071.2659999999998" y1="721" x2="1071.2659999999998" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1008.4244999999999" cy="757.9" rx="62.841499999999996" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1008.4244999999999" cy="721" rx="62.841499999999996" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1008.4244999999999" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Notification DB</text>
+</g>
+<g class="node" data-id="DREP" data-label="Report DB" data-shape="cylinder">
+  <rect x="1114.6519999999998" y="721" width="101.971" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="1114.6519999999998" y1="721" x2="1114.6519999999998" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="1216.6229999999998" y1="721" x2="1216.6229999999998" y2="757.9" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1165.6374999999998" cy="757.9" rx="50.9855" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="1165.6374999999998" cy="721" rx="50.9855" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1165.6374999999998" y="739.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Report DB</text>
+</g>
+<g class="node" data-id="ORG" data-label="Organization :8089" data-shape="rectangle">
+  <rect x="608.1259166666666" y="523.1" width="152.359" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="684.3054166666666" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Organization :8089</text>
+</g>
+<g class="node" data-id="PAT" data-label="Patient :8081" data-shape="rectangle">
+  <rect x="794.4849166666667" y="523.1" width="112.34500000000001" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="850.6574166666667" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Patient :8081</text>
+</g>
+<g class="node" data-id="CLI" data-label="Clinical :8082" data-shape="rectangle">
+  <rect x="940.8299166666667" y="523.1" width="119.755" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1000.7074166666666" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Clinical :8082</text>
+</g>
+<g class="node" data-id="LAB" data-label="Lab :8084" data-shape="rectangle">
+  <rect x="1094.5849166666667" y="523.1" width="100.489" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1144.8294166666667" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Lab :8084</text>
+</g>
+<g class="node" data-id="PHA" data-label="Pharmacy :8085" data-shape="rectangle">
+  <rect x="1229.0739166666667" y="523.1" width="137.539" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1297.8434166666666" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Pharmacy :8085</text>
+</g>
+<g class="node" data-id="BIL" data-label="Billing :8086" data-shape="rectangle">
+  <rect x="1400.6129166666667" y="523.1" width="112.345" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1456.7854166666666" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Billing :8086</text>
+</g>
+<g class="node" data-id="NOTI" data-label="Notification :8087" data-shape="rectangle">
+  <rect x="1546.9579166666667" y="523.1" width="140.50300000000001" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1617.2094166666668" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Notification :8087</text>
+</g>
+<g class="node" data-id="REP" data-label="Report :8088" data-shape="rectangle">
+  <rect x="1721.4609166666667" y="523.1" width="116.791" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1779.8564166666667" y="541.5500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Report :8088</text>
+</g>
+</svg>

@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1758.776 451.9" width="1758.776" height="451.9" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<g class="subgraph" data-id="LAB" data-label="Lab Service · mediflow_lab">
+  <rect x="467.874" y="150.055" width="910.838" height="200.145" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="467.874" y="150.055" width="910.838" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="479.874" y="164.055" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Lab Service · mediflow_lab</text>
+</g>
+<polyline class="edge" data-from="CLINICAL" data-to="LAB_TEST" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="record_id · UUID logic" points="262.75600000000003,58.900000000000006 449.874,58.89999999999999 449.874,205.18000000000004 765.012,205.18000000000004 765.012,214.37500000000003 803.012,214.37500000000003" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PATIENT" data-to="LAB_TEST" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="patient_id · UUID logic" points="259.792,148.7 437.874,148.7 437.874,221.84 777.012,221.84000000000003 777.012,234.69500000000002 803.012,234.69500000000002" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ORGANIZATION" data-to="LAB_TEST" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="department_id · UUID logic" points="240.68099999999998,238.5 765.012,238.50000000000003 765.012,255.01500000000004 803.012,255.01500000000004" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RECORD_CREATED" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume · optional order" points="221.41499999999996,319.85 437.874,319.85 437.874,277.73333333333335 483.874,277.73333333333335" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAYMENT_COMPLETED" data-to="PROCESSED_EVENT" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="consume · mark paid" points="281.28099999999995,392.75 449.874,392.75 449.874,305.9666666666667 483.874,305.9666666666667" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB_TEST" data-to="REQUEST_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="1067.262,227.92166666666668 1079.262,227.92166666666668 1079.262,213.955 1422.712,213.955 1422.712,208.40500000000003 1528.814,208.405" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB_RESULT" data-to="RESULT_CREATED" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="publish after result" points="1362.712,275.755 1422.712,275.755 1422.712,281.30500000000006 1581.086,281.30500000000006" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB_TEST" data-to="LAB_RESULT" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="1:N kết quả" points="1067.262,261.78833333333336 1079.262,261.78833333333336 1079.262,275.755 1224.4319999999998,275.755" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PROCESSED_EVENT" data-to="LAB_TEST" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="dedupe" points="657.722,291.85 765.012,291.85 765.012,275.33500000000004 803.012,275.33500000000004" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="CLINICAL" data-to="LAB_TEST" data-label="record_id · UUID logic">
+  <rect x="319.086" y="42.89999999999999" width="122.78800000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="380.48" y="58.04999999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">record_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="PATIENT" data-to="LAB_TEST" data-label="patient_id · UUID logic">
+  <rect x="295.462" y="132.7" width="120.41200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="355.668" y="147.85" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="ORGANIZATION" data-to="LAB_TEST" data-label="department_id · UUID logic">
+  <rect x="274.078" y="222.50000000000003" width="141.796" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="344.976" y="237.65000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">department_id · UUID logic</text>
+</g>
+<g class="edge-label" data-from="RECORD_CREATED" data-to="PROCESSED_EVENT" data-label="consume · optional order">
+  <rect x="280.0179999999999" y="303.85" width="135.85600000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="347.9459999999999" y="319" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · optional order</text>
+</g>
+<g class="edge-label" data-from="PAYMENT_COMPLETED" data-to="PROCESSED_EVENT" data-label="consume · mark paid">
+  <rect x="326.21399999999994" y="376.75" width="115.66000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="384.0439999999999" y="391.9" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">consume · mark paid</text>
+</g>
+<g class="edge-label" data-from="LAB_TEST" data-to="REQUEST_CREATED" data-label="publish">
+  <rect x="1430.712" y="192.40500000000003" width="52.102" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1456.763" y="207.55500000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="LAB_RESULT" data-to="RESULT_CREATED" data-label="publish after result">
+  <rect x="1430.712" y="265.305" width="104.37400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1482.899" y="280.455" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish after result</text>
+</g>
+<g class="edge-label" data-from="LAB_TEST" data-to="LAB_RESULT" data-label="1:N kết quả">
+  <rect x="1113.262" y="259.75500000000005" width="65.17" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="1145.847" y="274.90500000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">1:N kết quả</text>
+</g>
+<g class="edge-label" data-from="PROCESSED_EVENT" data-to="LAB_TEST" data-label="dedupe">
+  <rect x="703.722" y="275.85" width="53.29" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text font-family="Arial" x="730.367" y="291" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">dedupe</text>
+</g>
+<g class="node" data-id="CLINICAL" data-label="Clinical Service
+record_id" data-shape="rectangle">
+  <rect x="128.18099999999998" y="32" width="134.57500000000002" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="195.4685" y="58.900000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="195.4685" dy="-3.9000000000000012">Clinical Service</tspan><tspan x="195.4685" dy="16.900000000000002">record_id</tspan></text>
+</g>
+<g class="node" data-id="PATIENT" data-label="Patient Service
+patient_id" data-shape="rectangle">
+  <rect x="128.18099999999998" y="121.8" width="131.611" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="193.98649999999998" y="148.7" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="193.98649999999998" dy="-3.9000000000000012">Patient Service</tspan><tspan x="193.98649999999998" dy="16.900000000000002">patient_id</tspan></text>
+</g>
+<g class="node" data-id="ORGANIZATION" data-label="Organization Service
+requesting_department_id" data-shape="rectangle">
+  <rect x="44.60299999999998" y="211.6" width="196.078" height="53.800000000000004" rx="0" ry="0" fill="#EFF6FF" stroke="#2563EB" stroke-width="0.75" />
+  <text font-family="Arial" x="142.642" y="238.5" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="142.642" dy="-3.9000000000000012">Organization Service</tspan><tspan x="142.642" dy="16.900000000000002">requesting_department_id</tspan></text>
+</g>
+<g class="node" data-id="RECORD_CREATED" data-label="medicalrecord.created" data-shape="stadium">
+  <rect x="44.60299999999998" y="301.4000000000001" width="176.81199999999998" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="133.00899999999996" y="319.8500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">medicalrecord.created</text>
+</g>
+<g class="node" data-id="PAYMENT_COMPLETED" data-label="payment.completed" data-shape="stadium">
+  <rect x="128.18099999999998" y="374.30000000000007" width="153.1" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="204.731" y="392.75000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">payment.completed</text>
+</g>
+<g class="node" data-id="REQUEST_CREATED" data-label="lab.request.created" data-shape="stadium">
+  <rect x="1528.814" y="189.955" width="157.546" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1607.587" y="208.40500000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">lab.request.created</text>
+</g>
+<g class="node" data-id="RESULT_CREATED" data-label="lab.result.created" data-shape="stadium">
+  <rect x="1581.086" y="262.855" width="145.69" height="36.900000000000006" rx="18.450000000000003" ry="18.450000000000003" fill="#FFF7ED" stroke="#EA580C" stroke-width="0.75" />
+  <text font-family="Arial" x="1653.931" y="281.305" text-anchor="middle" font-size="13" font-weight="500" fill="#7C2D12" dy="4.55">lab.result.created</text>
+</g>
+<g class="node" data-id="LAB_TEST" data-label="LAB_TEST
+PK test_id
+record_id · patient_id · department_id
+status · is_paid" data-shape="cylinder">
+  <rect x="803.012" y="201.055" width="264.25" height="87.60000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="803.012" y1="201.055" x2="803.012" y2="288.65500000000003" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1067.262" y1="201.055" x2="1067.262" y2="288.65500000000003" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="935.137" cy="288.65500000000003" rx="132.125" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="935.137" cy="201.055" rx="132.125" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="935.137" y="244.85500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="935.137" dy="-20.8">LAB_TEST</tspan><tspan x="935.137" dy="16.900000000000002">PK test_id</tspan><tspan x="935.137" dy="16.900000000000002">record_id · patient_id · department_id</tspan><tspan x="935.137" dy="16.900000000000002">status · is_paid</tspan></text>
+</g>
+<g class="node" data-id="LAB_RESULT" data-label="LAB_RESULT
+PK result_id
+FK test_id
+indicator · value" data-shape="cylinder">
+  <rect x="1224.4319999999998" y="231.955" width="138.28000000000003" height="87.60000000000001" fill="#ECFDF5" stroke="none" />
+  <line x1="1224.4319999999998" y1="231.955" x2="1224.4319999999998" y2="319.555" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1362.7119999999998" y1="231.955" x2="1362.7119999999998" y2="319.555" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1293.572" cy="319.555" rx="69.14000000000001" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1293.572" cy="231.955" rx="69.14000000000001" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="1293.572" y="275.755" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1293.572" dy="-20.8">LAB_RESULT</tspan><tspan x="1293.572" dy="16.900000000000002">PK result_id</tspan><tspan x="1293.572" dy="16.900000000000002">FK test_id</tspan><tspan x="1293.572" dy="16.900000000000002">indicator · value</tspan></text>
+</g>
+<g class="node" data-id="PROCESSED_EVENT" data-label="PROCESSED_EVENT
+PK event_id
+routing_key" data-shape="cylinder">
+  <rect x="483.874" y="256.5" width="173.84799999999996" height="70.7" fill="#ECFDF5" stroke="none" />
+  <line x1="483.874" y1="256.5" x2="483.874" y2="327.2" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="657.722" y1="256.5" x2="657.722" y2="327.2" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="570.798" cy="327.2" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="570.798" cy="256.5" rx="86.92399999999998" ry="7" fill="#ECFDF5" stroke="#0F766E" stroke-width="0.75" />
+  <text font-family="Arial" x="570.798" y="291.85" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="570.798" dy="-12.350000000000001">PROCESSED_EVENT</tspan><tspan x="570.798" dy="16.900000000000002">PK event_id</tspan><tspan x="570.798" dy="16.900000000000002">routing_key</tspan></text>
+</g>
+</svg>
