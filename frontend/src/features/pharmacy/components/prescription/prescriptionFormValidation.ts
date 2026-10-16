@@ -42,6 +42,7 @@ export type CreatePrescriptionFieldErrors = Partial<
 export interface CreatePrescriptionValidationErrors {
   fields: CreatePrescriptionFieldErrors;
   lines: Record<string, PrescriptionLineFieldErrors>;
+  lineList?: string;
 }
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -95,10 +96,6 @@ export function validateCreatePrescriptionForm(
     fields.prescribedDate = "Ngày kê đơn phải hợp lệ và không ở tương lai.";
   }
 
-  if (values.lines.length === 0) {
-    fields.recordId = fields.recordId ?? "Đơn thuốc phải có ít nhất một dòng thuốc.";
-  }
-
   const seenDrugIds = new Set<string>();
   values.lines.forEach((line) => {
     const lineErrors: PrescriptionLineFieldErrors = {};
@@ -127,13 +124,13 @@ export function validateCreatePrescriptionForm(
     }
   });
 
-  return { fields, lines };
+  return { fields, lines, ...(values.lines.length === 0 ? { lineList: "Đơn thuốc phải có ít nhất một dòng thuốc." } : {}) };
 }
 
 export function hasCreatePrescriptionErrors(
   errors: CreatePrescriptionValidationErrors,
 ): boolean {
-  return Object.keys(errors.fields).length > 0 || Object.keys(errors.lines).length > 0;
+  return Object.keys(errors.fields).length > 0 || Object.keys(errors.lines).length > 0 || Boolean(errors.lineList);
 }
 
 /** Serializes only fields accepted by the backend request contract. */

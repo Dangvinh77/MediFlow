@@ -141,6 +141,36 @@ class OutpatientApiPostgresTest {
             assertThat(count(table)).as(table).isZero();
         assertThat(stock()).isEqualTo(10);
     }
+    @ParameterizedTest @ValueSource(strings={"ADMISSION","TRANSFER"})
+    void deferredClinicalDispositionCannotCreateOrReplayAnOutpatientPrescription(String disposition)throws Exception {
+        UUID key=UUID.randomUUID();String body=request(drug,2);
+        create(key,body,201);
+        clearInvocations(identities);
+        when(clinical.findRecord(eq(record),anyString())).thenReturn(new OutpatientPrescriptionContextPort.Observation(
+                true,record,patient,doctor,department,"OUTPATIENT_VISIT",episode,"COMPLETED",disposition,clock.instant()));
+        for(UUID commandId:List.of(key,UUID.randomUUID())) {
+            var response=mvc.perform(post(PATH).header("Authorization",token("ADMIN","access",doctor))
+                    .header("Idempotency-Key",commandId).contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isUnprocessableEntity()).andReturn().getResponse();
+            assertThat(mapper.readTree(response.getContentAsString()).path("error").path("code").asText())
+                    .isEqualTo("PHARMACY_CARE_CONTEXT_INVALID");
+        }
+        verifyNoInteractions(identities);
+        for(String table:List.of("prescription","care_prescription_creation","stock_reservation","dispense_slip","pharmacy_event_outbox"))
+            assertThat(count(table)).as(table).isOne();
+        assertThat(stock()).isEqualTo(10);
+    }
+    @ParameterizedTest @ValueSource(strings={"PRESCRIPTION","OUTPATIENT_FOLLOW_UP","OTHER"})
+    void completedOutpatientDispositionStillAllowsExactCreationReplay(String disposition)throws Exception {
+        UUID key=UUID.randomUUID();String body=request(drug,2);
+        UUID original=create(key,body,201);
+        when(clinical.findRecord(eq(record),anyString())).thenReturn(new OutpatientPrescriptionContextPort.Observation(
+                true,record,patient,doctor,department,"OUTPATIENT_VISIT",episode,"COMPLETED",disposition,clock.instant()));
+        assertThat(create(key,body,201)).isEqualTo(original);
+        for(String table:List.of("prescription","care_prescription_creation","stock_reservation","dispense_slip","pharmacy_event_outbox"))
+            assertThat(count(table)).as(table).isOne();
+        assertThat(stock()).isEqualTo(10);
+    }
     @Test void signedWrongPrescriberAndRefreshTokenCannotCreate()throws Exception {
         mvc.perform(post(PATH).header("Authorization",token("DOCTOR","access",UUID.randomUUID())).header("Idempotency-Key",UUID.randomUUID())
                 .contentType(MediaType.APPLICATION_JSON).content(request(drug,2))).andExpect(status().isForbidden());

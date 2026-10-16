@@ -177,12 +177,15 @@ contracts/service docs; chỉ gỡ file handoff khi mọi active gate được c
 
 Theo yêu cầu chỉ dùng một handoff, phần phụ thuộc frontend tiếp tục ghi tại đây. Không tạo
 handoff FE mới hoặc coi browser fixture là bằng chứng backend chạy thật. FE local checklist nằm ở
-[plan Huy, mục 13](../../frontend/docs/huy-frontend-implementation-plan.md#13-checkpoint-pharmacyreport-và-frame-6-service--2026-10-16);
-phần kê đơn/hủy/xuất thuốc còn trong scope Huy tiếp tục thực hiện theo plan, không giao lại owner khác.
+[plan Huy, mục 14](../../frontend/docs/huy-frontend-implementation-plan.md#14-checkpoint-kê-đơn-và-terminal-actions--2026-10-16).
+P-05 đã đóng FE local; P-06 xong 4/4 subtask local và còn real-role smoke, không giao lại phần
+source Pharmacy cho owner khác. Tổng FE local 11/30 task chính, 50/123 subtask; mẫu số lịch sử
+có Surgery/full V2 deferred, không phải tỷ lệ MVP backend.
 
 | Phụ thuộc | Owner / bằng chứng cần nhận | Điều kiện nghiệm thu FE |
 |---|---|---|
 | Signed identity và Gateway runtime | Hoàng Anh + runtime operator; actual roles ADMIN/PHARMACIST/DOCTOR/MANAGER, accountId/staffId đúng source | Login → catalog/detail/create/adjust/replay/reports qua same-origin Gateway; allowed/denied paths, expired session và correlation đúng. Token fixture không thay signed staff proof |
+| GW-01 — exact Pharmacy cancel/dispense roles | Hoàng Anh; `RouteAuthorizationFilter` hiện generic PUT `/api/v1/pharmacy/prescriptions/**` chỉ ADMIN/PHARMACIST, controller cancel ADMIN/DOCTOR | DOCTOR kê đơn đúng signed actor được cancel đơn của mình; foreign doctor/PHARMACIST bị deny cancel; ADMIN/PHARMACIST dispense chỉ khi lifecycle/payment đủ. Ghi actual allowed/denied HTTP và correlation; không đổi DOCTOR thành PHARMACIST để qua Gateway |
 | Outpatient Rx source/paid flow | Vinh Clinical + Lộc Billing, theo H6-06.2/.4 và H6-12.1 ở trên | Chỉ dùng IDs trả về từ source, current charge/grant và signed actor; nối UI public outpatient sau activation acceptance, không tự fallback legacy V0 để báo V1 thành công |
 | Support host và endpoint routing | Lộc Notification + shared build/runtime owner + Hoàng Anh Gateway, theo H6-11 | Report/Notification logical routes tiếp tục đúng qua một Support host đã nghiệm thu; không đổi feature folder theo deployment hoặc coi sáu nhóm sidebar là proof sáu process |
 | Report currency, department và coverage | Huy Report + Lộc Billing + Hoàng Anh Organization và source owners | Legacy DTO giữ numeric format/department UUID khi chưa có display contract. Current accepted period/zone/currency/coverage có owner evidence trước UI snapshot mới; unavailable không biến thành zero |
@@ -190,3 +193,39 @@ phần kê đơn/hủy/xuất thuốc còn trong scope Huy tiếp tục thực h
 Đã có local test/browser evidence cho Reports, drug management và outbox; build/check results
 ghi ở workboard. Các dòng này không đóng 10 backend subtask, không cấp quyền sửa foreign/shared
 production paths và không bật Surgery/Inpatient/full-V2 operator UI.
+
+Batch kê đơn/terminal actions bổ sung 51 tests; full FE suite **262/262 tests, 34 files**,
+typecheck/lint/build đạt. Browser với gateway fixture cô lập đã kiểm tạo → response ID, hủy →
+releasedReservations, xuất → terminal read; focus/Escape/return-focus và desktop/mobile themes.
+Đã khôi phục theme System, đăng xuất và dừng server thử. Đây là bằng chứng FE local dùng mock,
+không đóng GW-01, paid/source V1, Support host hoặc real-role release acceptance.
+
+## 7. Backend continuation — Pharmacy disposition guard (2026-10-16)
+
+Đã sửa trong scope Huy: relationship Clinical có disposition `ADMISSION` hoặc `TRANSFER`
+không được tạo đơn ngoại trú hoặc replay creation command. Pharmacy trả
+`PHARMACY_CARE_CONTEXT_INVALID` (HTTP 422), không tạo thêm prescription, creation receipt,
+reservation, dispense slip hay outbox. Completed outpatient `PRESCRIPTION`,
+`OUTPATIENT_FOLLOW_UP`, `OTHER` vẫn được dùng để replay đúng đơn. Valid deferred disposition
+là business denial, không đổi thành upstream outage. Wire DTO, golden fixtures, migrations,
+V0 và activation/delivery gates giữ nguyên.
+
+Verification của lượt này: **694 tests / 85 class không cần container, tất cả đạt, không skip**.
+Phạm vi gồm observation, orchestration/writer, Clinical adapter qua HTTP và controller phân quyền;
+không phải full suite có PostgreSQL/RabbitMQ. Core/Clinical packaged sources đã build thành công
+để kiểm tra source contract, nhưng không có bằng chứng runtime tích hợp mới.
+
+Đã bổ sung 5 PostgreSQL cases vào `OutpatientApiPostgresTest`: hai disposition bị chặn cho cả
+key đã dùng và key mới (HTTP 422 + exact error code, không thêm dữ liệu/giảm stock), cùng ba
+completed outpatient dispositions replay đúng prescription. `-DskipTests test-compile` đã đạt.
+**Chưa chạy 5 case này**: Docker Desktop lỗi startup tại `dockerInference`; người dùng chọn
+tiếp tục phần không cần Docker.
+
+Huy/runtime operator chạy lại khi Docker hoạt động, từ repository root:
+
+```powershell
+mvn -q -pl backend/pharmacy-service -am '-Dtest=OutpatientApiPostgresTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+Ghi run/fail/skip và source commit vào chính file này trước khi coi database guard được nghiệm thu.
+Không đóng thêm checkbox: **38/48**; mười subtask external/operator còn mở theo các mục trên.

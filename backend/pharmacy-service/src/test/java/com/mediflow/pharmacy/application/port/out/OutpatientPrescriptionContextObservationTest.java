@@ -29,6 +29,22 @@ class OutpatientPrescriptionContextObservationTest {
     @Test void requireExact_missingIsBusinessDenialNotPermission() {
         assertThatThrownBy(() -> observation(false).requireExact(record, patient, doctor, department, episode, now)).isInstanceOf(BusinessRuleException.class);
     }
+    @ParameterizedTest @ValueSource(strings = {"ADMISSION", "TRANSFER"})
+    void requireExact_deferredDispositionCannotAuthorizeOutpatientCreation(String disposition) {
+        var proof = new OutpatientPrescriptionContextPort.Observation(true, record, patient, doctor, department,
+                "OUTPATIENT_VISIT", episode, "COMPLETED", disposition, now);
+        assertThatThrownBy(() -> proof.requireExact(record, patient, doctor, department, episode, now))
+                .isInstanceOf(BusinessRuleException.class)
+                .extracting(error -> ((BusinessRuleException) error).getCode())
+                .isEqualTo("PHARMACY_CARE_CONTEXT_INVALID");
+    }
+    @ParameterizedTest @ValueSource(strings = {"PRESCRIPTION", "OUTPATIENT_FOLLOW_UP", "OTHER"})
+    void requireExact_completedOutpatientRelationshipRemainsSupported(String disposition) {
+        var proof = new OutpatientPrescriptionContextPort.Observation(true, record, patient, doctor, department,
+                "OUTPATIENT_VISIT", episode, "COMPLETED", disposition, now);
+        assertThatCode(() -> proof.requireExact(record, patient, doctor, department, episode, now))
+                .doesNotThrowAnyException();
+    }
     @ParameterizedTest @ValueSource(longs = {31, -6})
     void requireExact_rechecksFreshnessAfterLockWait(long seconds) {
         assertThatThrownBy(() -> observation(true).requireExact(record, patient, doctor, department, episode, now.plusSeconds(seconds)))

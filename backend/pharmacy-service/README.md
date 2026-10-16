@@ -29,6 +29,10 @@ data and HELD outbox evidence are not deleted. Compatibility without this profil
 Public V1 POST/lifecycle are opt-in: profile plus global V2, identity, clinical-context, clearance-consumer, clearance-authority and
 `mediflow.pharmacy.outpatient-api.enabled` (default false) are required. V1 creation uses a canonical
 UUID `Idempotency-Key` and the proof-checked writer; V0 POST is rejected in the MVP profile.
+Clinical `ADMISSION`/`TRANSFER` dispositions deny new outpatient creation and creation-command
+replay with `PHARMACY_CARE_CONTEXT_INVALID` (HTTP 422), before receipt/reservation writes.
+A well-formed deferred disposition is a business denial, not an upstream outage. Completed
+outpatient relationships remain supported; this check does not add medication or financial authority.
 Dispense/cancel now route to a gated V1 facade; expiry reuses the existing lease/REQUIRES_NEW job boundary.
 Only persisted V1 outpatient rows enter that pipeline; V0 compatibility and deferred Admission stay separate.
 Stock failures return a proven FAILED outcome after rollback/re-evaluation; retries read the exact stored proof.

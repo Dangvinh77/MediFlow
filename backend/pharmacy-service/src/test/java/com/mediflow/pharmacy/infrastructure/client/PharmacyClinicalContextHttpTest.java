@@ -123,6 +123,19 @@ class PharmacyClinicalContextHttpTest {
         reply(200, body.getBytes(StandardCharsets.UTF_8), defect.equals("header") ? "different" : CORRELATION);
         assertThatThrownBy(() -> contexts.findRecord(ID, CORRELATION)).isInstanceOf(PharmacyUpstreamUnavailableException.class).hasNoCause();
     }
+    @ParameterizedTest @ValueSource(strings = {"ADMISSION", "TRANSFER"})
+    void lookup_deferredDispositionIsValidSourceDataButNotOutpatientCreationPermission(String disposition) throws Exception {
+        // Local negative variant; the original Clinical fixture is left byte-identical.
+        var root = (ObjectNode) mapper.readTree(fixture("appointment.json"));
+        ((ObjectNode) root.get("data")).put("recordStatus", "COMPLETED").put("disposition", disposition);
+        reply(200, mapper.writeValueAsBytes(root), CORRELATION);
+        var proof = contexts.findRecord(ID, CORRELATION);
+        assertThat(proof.exists()).isTrue();
+        assertThat(proof.disposition()).isEqualTo(disposition);
+        assertThatThrownBy(() -> proof.requireExact(ID, proof.patientId(), proof.doctorId(), proof.departmentId(), proof.careEpisodeId(), NOW))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class)
+                .isNotInstanceOf(PharmacyUpstreamUnavailableException.class);
+    }
     @ParameterizedTest @ValueSource(ints = {401, 403, 404, 500, 503})
     void lookup_transportFailureIsNotAbsence(int status) {
         reply(status, "PRIVATE".getBytes(StandardCharsets.UTF_8), CORRELATION);

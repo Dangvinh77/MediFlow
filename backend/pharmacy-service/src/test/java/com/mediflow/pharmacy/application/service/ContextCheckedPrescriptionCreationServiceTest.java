@@ -51,6 +51,15 @@ class ContextCheckedPrescriptionCreationServiceTest {
         assertThatThrownBy(() -> service.createWithContext(key, command("DOCTOR"))).isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
         verifyNoInteractions(writer);
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMISSION", "TRANSFER"})
+    void create_deferredClinicalDispositionIsDeniedBeforeIdentityReceiptOrStock(String disposition) {
+        when(contexts.findRecord(record, "context")).thenReturn(new OutpatientPrescriptionContextPort.Observation(
+                true, record, patient, doctor, department, "OUTPATIENT_VISIT", episode, "COMPLETED", disposition, now));
+        assertThatThrownBy(() -> service.createWithContext(key, command("DOCTOR")))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
+        verifyNoInteractions(identities, writer);
+    }
     @Test void create_upstreamFailureDoesNotReturnUnverifiedPrescription() {
         when(contexts.findRecord(record, "context")).thenThrow(new PharmacyUpstreamUnavailableException());
         assertThatThrownBy(() -> service.createWithContext(key, command("DOCTOR"))).isInstanceOf(PharmacyUpstreamUnavailableException.class);

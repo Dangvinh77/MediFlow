@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
@@ -28,7 +29,7 @@ import type {
   DispenseDTO,
   PrescriptionDTO,
 } from "../../types";
-import { formatDate, formatDateTime, formatVnd } from "../../utils";
+import { formatDate, formatDateTime, formatVnd, isUuid } from "../../utils";
 import { CancelPrescriptionDialog } from "./CancelPrescriptionDialog";
 import { DispensePrescriptionDialog } from "./DispensePrescriptionDialog";
 
@@ -114,6 +115,10 @@ function CopyValue({ label, value }: { label: string; value: string | null }) {
 }
 
 export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) {
+  return <PrescriptionDetailContent key={prescriptionId} prescriptionId={prescriptionId} />;
+}
+
+function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const capabilities = getPharmacyCapabilities(role);
@@ -122,6 +127,9 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   const [activeAction, setActiveAction] = useState<ActiveAction>(null);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const requestSequence = useRef(0);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
+  const actionTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const returnActionFocus = useRef(false);
   const requestKey = `${prescriptionId}\u0000${retryToken}`;
   const canRead = capabilities.canReadPrescription;
   const loading = canRead && requestState.key !== requestKey;
@@ -136,6 +144,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   }, []);
 
   const closeAction = useCallback(() => {
+    returnActionFocus.current = true;
     setActiveAction(null);
   }, []);
 
@@ -148,11 +157,10 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   const handleCancelSuccess = useCallback((result: CancelPrescriptionResult) => {
     setActiveAction(null);
     setActionFeedback({
-      tone: result.releasedReservations === 0 ? "warning" : "success",
-      message:
-        result.releasedReservations === 0
-          ? "Đơn thuốc đã được hủy trước đó; không còn reservation nào cần giải phóng."
-          : `Đã hủy đơn thuốc và giải phóng ${result.releasedReservations} reservation tồn kho.`,
+      tone: result.status === "CANCELLED" ? "success" : "warning",
+      message: result.status === "CANCELLED"
+        ? `Đã hủy đơn thuốc. Đã giải phóng ${result.releasedReservations} lượt giữ tồn kho.`
+        : `Trạng thái đơn trả về: ${result.status}. Đang tải lại chi tiết.`,
     });
     setRetryToken((value) => value + 1);
   }, []);
@@ -167,12 +175,12 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
     } else if (result.status === "DISPENSED") {
       setActionFeedback({
         tone: "success",
-        message: "Đã xuất thuốc thành công; chi tiết đơn và tồn kho đang được làm mới từ máy chủ.",
+        message: "Đã xuất thuốc thành công. Đang tải lại chi tiết đơn thuốc.",
       });
     } else {
       setActionFeedback({
         tone: "warning",
-        message: `Backend trả về trạng thái phiếu xuất ${result.status}; đang làm mới chi tiết đơn.`,
+        message: `Trạng thái phiếu xuất trả về: ${result.status}. Đang tải lại chi tiết đơn.`,
       });
     }
     setRetryToken((value) => value + 1);
@@ -185,7 +193,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
   }, []);
 
   useEffect(() => {
-    if (!canRead) return undefined;
+    if (!canRead || !isUuid(prescriptionId)) return undefined;
 
     let active = true;
     const requestId = ++requestSequence.current;
@@ -223,15 +231,37 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
     };
   }, [canRead, prescriptionId, requestKey, router]);
 
+  useEffect(() => {
+    if (actionFeedback) feedbackRef.current?.focus();
+  }, [actionFeedback]);
+
+  useEffect(() => {
+    if (activeAction === null && returnActionFocus.current) {
+      returnActionFocus.current = false;
+      actionTriggerRef.current?.focus();
+    }
+  }, [activeAction]);
+
+  const feedback = actionFeedback && (
+    <p ref={feedbackRef} tabIndex={-1} role={actionFeedback.tone === "danger" ? "alert" : "status"}
+      className={`rounded-lg border p-4 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+        actionFeedback.tone === "success" ? "border-success/40 bg-success/10 text-success"
+          : actionFeedback.tone === "warning" ? "border-warning/40 bg-warning/10 text-warning"
+            : "border-danger/40 bg-danger/10 text-danger"
+      }`}>{actionFeedback.message}</p>
+  );
+
   if (role === null) return <p className="mt-6 text-sm text-muted-foreground">Đang kiểm tra quyền…</p>;
   if (!canRead) {
     return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Tài khoản của bạn không có quyền xem đơn thuốc.</p>;
   }
+  if (!isUuid(prescriptionId)) return <p role="alert" className="mt-6 text-sm text-danger">Mã đơn thuốc phải là UUID hợp lệ.</p>;
   if (loading && !prescription && !notFound && !dispenseNotFound && !error) return <DetailLoading />;
 
   if (notFound) {
     return (
-      <section className="mt-6 rounded-xl border border-border bg-surface p-6">
+      <section className="mt-6 space-y-4 rounded-xl border border-border bg-surface p-6">
+        {feedback}
         <h2 className="text-lg font-semibold">Không tìm thấy đơn thuốc</h2>
         <p className="mt-2 text-sm text-muted-foreground">Không có đơn thuốc nào với mã <code className="break-all">{prescriptionId}</code>.</p>
         <Link href="/pharmacy/prescriptions" className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90">Quay lại tra cứu</Link>
@@ -241,7 +271,8 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
 
   if (dispenseNotFound) {
     return (
-      <section className="mt-6 rounded-xl border border-warning/40 bg-warning/10 p-6">
+      <section className="mt-6 space-y-4 rounded-xl border border-warning/40 bg-warning/10 p-6">
+        {feedback}
         <h2 className="text-lg font-semibold">Chưa có phiếu xuất thuốc</h2>
         <p className="mt-2 text-sm">Đơn thuốc tồn tại nhưng backend chưa trả về phiếu xuất tương ứng. Đây là trạng thái khác với việc không tìm thấy đơn thuốc.</p>
         <Link href="/pharmacy/prescriptions" className="mt-4 inline-flex rounded-lg border border-border px-4 py-2 font-medium hover:bg-surface-muted">Quay lại tra cứu</Link>
@@ -249,7 +280,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
     );
   }
 
-  if (error) return <DetailError message={error} onRetry={refresh} />;
+  if (error) return <div className="mt-6 space-y-4">{feedback}<DetailError message={actionFeedback ? `Chưa tải được chi tiết mới. ${error}` : error} onRetry={refresh} /></div>;
   if (!prescription) return null;
 
   const status = prescriptionStatusPresentation[prescription.status];
@@ -260,11 +291,11 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
 
   return (
     <section className="mt-6 space-y-6">
-      {loading && <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">Đang xác nhận snapshot đơn thuốc mới nhất…</p>}
+      {loading && <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">Đang tải trạng thái đơn thuốc mới nhất…</p>}
 
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-mono text-xs text-muted-foreground">{prescription.prescriptionId}</p>
+          <p className="break-all font-mono text-xs text-muted-foreground">{prescription.prescriptionId}</p>
           <h2 className="mt-1 text-xl font-semibold">Chi tiết đơn thuốc</h2>
           <p className="mt-1 text-sm text-muted-foreground">Ngày kê: {formatDate(prescription.prescribedDate)}</p>
         </div>
@@ -277,58 +308,49 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
         </div>
       </div>
 
-      {actionFeedback && (
-        <p
-          role={actionFeedback.tone === "danger" ? "alert" : "status"}
-          aria-live="polite"
-          className={`rounded-lg border p-4 text-sm ${
-            actionFeedback.tone === "success"
-              ? "border-success/40 bg-success/10 text-success"
-              : actionFeedback.tone === "warning"
-                ? "border-warning/40 bg-warning/10 text-warning"
-                : "border-danger/40 bg-danger/10 text-danger"
-          }`}
-        >
-          {actionFeedback.message}
-        </p>
-      )}
+      {feedback}
 
       {(showCancelSlot || showDispenseSlot) && (
         <section className="rounded-xl border border-border bg-surface p-5">
           <h3 className="font-semibold">Thao tác đơn thuốc</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hủy đơn sẽ giải phóng reservation. Xuất thuốc chỉ được thực hiện khi Billing đã xác nhận
-            thanh toán; backend vẫn là lớp quyết định cuối cùng.
+            Hủy đơn sẽ giải phóng số lượng đang giữ. Chỉ xuất thuốc khi thanh toán đã được xác nhận.
           </p>
           {showDispenseSlot && !prescription.paymentConfirmed && (
             <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
-              Đơn đang chờ Billing xác nhận thanh toán, nên chưa thể xuất thuốc.
+              Đơn đang chờ xác nhận thanh toán, nên chưa thể xuất thuốc.
             </p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
             {showCancelSlot && (
-              <button
+              <Button
                 type="button"
-                onClick={() => setActiveAction("cancel")}
-                disabled={activeAction !== null}
-                className="rounded-lg border border-danger/40 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={(event) => {
+                  actionTriggerRef.current = event.currentTarget;
+                  setActiveAction("cancel");
+                }}
+                disabled={loading || activeAction !== null}
+                className="border-danger/40 text-danger hover:bg-danger/10"
               >
                 Hủy đơn
-              </button>
+              </Button>
             )}
             {canDispenseNow && (
-              <button
+              <Button
                 type="button"
-                onClick={() => setActiveAction("dispense")}
-                disabled={activeAction !== null}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={(event) => {
+                  actionTriggerRef.current = event.currentTarget;
+                  setActiveAction("dispense");
+                }}
+                disabled={loading || activeAction !== null}
+                variant="primary"
               >
                 Xuất thuốc
-              </button>
+              </Button>
             )}
           </div>
 
-          {activeAction === "cancel" && showCancelSlot && (
+          {activeAction === "cancel" && showCancelSlot && !loading && (
             <CancelPrescriptionDialog
               prescriptionId={prescription.prescriptionId}
               onClose={closeAction}
@@ -337,7 +359,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
             />
           )}
 
-          {activeAction === "dispense" && showDispenseSlot && (
+          {activeAction === "dispense" && canDispenseNow && !loading && (
             <DispensePrescriptionDialog
               prescriptionId={prescription.prescriptionId}
               totalAmount={prescription.totalAmount}
@@ -352,13 +374,13 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
       )}
 
       <section className="rounded-xl border border-border bg-surface p-6">
-        <h3 className="text-base font-semibold">Ngữ cảnh nghiệp vụ</h3>
+        <h3 className="text-base font-semibold">Thông tin kê đơn</h3>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <CopyValue label="Mã hồ sơ bệnh án" value={prescription.recordId} />
           <CopyValue label="Mã bệnh nhân" value={prescription.patientId} />
           <CopyValue label="Mã bác sĩ" value={prescription.doctorId} />
           <CopyValue label="Mã khoa" value={prescription.departmentId} />
-          <div><dt className="text-xs text-muted-foreground">Tổng tiền từ backend</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Tổng tiền</dt><dd className="mt-1 font-semibold">{formatVnd(prescription.totalAmount)}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Ngày kê đơn</dt><dd className="mt-1">{formatDate(prescription.prescribedDate)}</dd></div>
         </dl>
       </section>
@@ -368,7 +390,7 @@ export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border text-xs text-muted-foreground">
-              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th><th className="px-3 py-3">Đơn giá snapshot</th><th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3 text-right">Thành tiền</th></tr>
+              <tr><th className="px-3 py-3">Thuốc</th><th className="px-3 py-3">Số lượng</th><th className="px-3 py-3">Đơn giá</th><th className="px-3 py-3">Cách dùng</th><th className="px-3 py-3 text-right">Thành tiền</th></tr>
             </thead>
             <tbody className="divide-y divide-border">
               {prescription.lines.map((line) => (
