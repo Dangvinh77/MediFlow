@@ -1,5 +1,52 @@
 # Frontend Workboard
 
+## Huy — Pharmacy/Report theo mẫu, checkpoint 2026-10-16
+
+Owner: Huy (`LQHuy0210`). Scope IMPLEMENT: Pharmacy/Report features và tài liệu tương ứng;
+shared frame chỉ trong những paths được giao ở mục kế tiếp. Không sửa foreign feature/backend.
+
+- Đóng thêm FE local: **R-01, R-02, R-04, R-05, P-02, P-03, P-07**.
+  Report ba view dùng URL/submitted scope, validation và request/error lifecycle thống nhất.
+  Drug detail/create/stock dùng theme/primitives sẵn có, khóa mutation trùng, focus lỗi,
+  cập nhật tồn bằng DTO server và refetch sau conflict/unknown stock outcome.
+  Outbox là inline confirmation ADMIN, Escape/return-focus, kết quả theo `replayed`.
+- [Plan Huy, checkpoint hiện tại](huy-frontend-implementation-plan.md#13-checkpoint-pharmacyreport-và-frame-6-service--2026-10-16):
+  **10/30 task chính, 42/123 subtasks FE local**. Mẫu số lịch sử có Surgery/full V2 deferred,
+  không dùng tỷ lệ đó để báo MVP hoàn thành. P-05/P-06 còn trong queue độc lập của Huy;
+  các activation/release gates chưa đóng.
+- Source cuối: `pnpm typecheck`, `pnpm lint`, `pnpm build` đều **PASS**;
+  `pnpm test -- --maxWorkers=2` **211/211 tests, 31 files**.
+  Lượt mặc định chạy cùng lint có hai lỗi CreateAdmissionForm của Inpatient
+  (timeout/nhập form), 209/211; nhóm flaky này đã có ở checkpoint 2026-10-15.
+  Không sửa Inpatient hoặc shared test config để làm lượt chạy đó xanh.
+- Browser fixture smoke: Daily submit/Back/Forward, Top deep link, outbox confirmation/replay,
+  drug detail/create/adjust, focus lỗi/Escape và bố cục 360×800 Sáng/Tối đạt.
+  Header nhỏ đã hết chữ phụ bị cắt; các màn hình đã đo không tràn ngang.
+  Fixture/session cô lập, không dùng DB/token thật, đã đăng xuất và dừng server kiểm tra.
+- Phụ thuộc runtime/Gateway/source/paid/Support/coverage gom vào
+  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  Local UI/test không thay signed-role hoặc sáu-app backend acceptance. Chưa commit/push.
+
+## Khung dùng chung 6 service — 2026-10-16
+
+Theo yêu cầu trực tiếp của người dùng, Huy được giao áp dụng mẫu đã chốt vào frame
+frontend toàn hệ thống. Phạm vi shared của lượt này: `src/app/page.tsx`,
+`src/components/layout/{DashboardSidebar,DashboardHeader,PageShell}.tsx`,
+`src/components/ui/DataTableShell.tsx`, `src/components/theme/ThemeToggle.tsx`
+và hai test cạnh Sidebar/ThemeToggle. Không thay API/DTO hay nghiệp vụ feature của owner khác.
+
+- Dùng mẫu tại `designs/huy-approved-ui.html` cho header, sidebar, tiêu đề trang,
+  panel và bộ chọn theme; giữ semantic tokens và ThemeProvider Light/Dark/System hiện có.
+- Sáu nhóm: Core → Tổ chức & bệnh nhân; Clinical → Khám ngoại trú; Lab → Xét nghiệm;
+  Pharmacy → Dược; Billing → Viện phí; Support → Báo cáo & thông báo.
+  Chín logical routes vẫn riêng biệt; menu lọc theo role hiện có, active cả route con.
+- Bỏ Nội trú khỏi menu MVP, Surgery tiếp tục không xuất hiện; giữ nguyên source deferred.
+- Trang đầu giới thiệu sáu nhóm nghiệp vụ, bỏ hướng dẫn kỹ thuật và tài khoản demo cũ.
+- Verification batch frame ban đầu: typecheck/lint/build đạt; Vitest **115/115, 25 files** đạt.
+  Browser kiểm tra trang đầu và chọn theme sáng/tối đạt. Chưa smoke dashboard có signed session,
+  mobile drawer hoặc nghiệp vụ liên thông qua Gateway; không coi khung này là nghiệm thu backend.
+
+
 ## Ưu tiên hiện tại — 2026-10-15
 
 Phần route-state bên dưới là baseline 2026-10-09, không phải bằng chứng đã chạy với backend

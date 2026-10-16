@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 
-type ReportRequestState<T> =
+export type ReportRequestState<T> =
   | { status: "idle" | "loading" }
   | { status: "success"; data: T }
-  | { status: "error"; message: string; correlationId: string | null; forbidden: boolean };
+  | { status: "error"; message: string; code?: string; correlationId: string | null; forbidden: boolean };
 
 /** Local read lifecycle: no cache, transport or cross-feature data ownership. */
 export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: boolean) {
@@ -30,6 +30,7 @@ export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: 
       setState({
         status: "error",
         message: cause instanceof Error ? cause.message : "Không thể tải báo cáo.",
+        code: cause instanceof ApiRequestError ? cause.code : undefined,
         correlationId: cause instanceof ApiRequestError ? cause.correlationId : null,
         forbidden: cause instanceof ApiRequestError && cause.status === 403,
       });

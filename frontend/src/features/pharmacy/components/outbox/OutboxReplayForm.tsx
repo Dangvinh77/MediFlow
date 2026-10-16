@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import {
   getRole,
@@ -42,9 +43,8 @@ function errorMessage(cause: unknown): string {
     return cause.message;
   }
 
-  return cause instanceof Error
-    ? cause.message
-    : "Không thể replay outbox event.";
+  const message = cause instanceof Error ? cause.message : "Không thể replay outbox event.";
+  return `${message} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.`;
 }
 
 function correlationIdOf(cause: unknown): string | null {
@@ -68,10 +68,19 @@ export function OutboxReplayForm() {
   const [state, setState] = useState<ReplayState>({ kind: "idle" });
   const retryRef = useRef<HTMLButtonElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const previousKind = useRef<ReplayState["kind"]>("idle");
 
   const confirming = state.kind === "confirming";
   const submitting = state.kind === "submitting";
   const showingConfirmation = confirming || submitting;
+
+  useEffect(() => {
+    // The field is disabled during confirmation; focus only after React enables it again.
+    if (state.kind === "idle" && (previousKind.current === "confirming" || previousKind.current === "success")) {
+      inputRef.current?.focus();
+    }
+    previousKind.current = state.kind;
+  }, [state.kind]);
 
   useEffect(() => {
     if (!confirming) return undefined;
@@ -112,6 +121,7 @@ export function OutboxReplayForm() {
 
   function prepareConfirmation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current || role !== "ADMIN") return;
 
     const normalizedId = eventId.trim();
     if (!isUuid(normalizedId)) {
@@ -132,7 +142,7 @@ export function OutboxReplayForm() {
   }
 
   async function confirmReplay() {
-    if (state.kind !== "confirming" || submittingRef.current) return;
+    if (state.kind !== "confirming" || submittingRef.current || role !== "ADMIN") return;
 
     const normalizedId = state.eventId;
     submittingRef.current = true;
@@ -199,7 +209,7 @@ export function OutboxReplayForm() {
         aria-live="polite"
       >
         <h2 id="outbox-replay-success-title" className="font-semibold text-success">
-          Đã đưa event trở lại hàng đợi replay
+          {state.result.replayed ? "Đã đưa event trở lại hàng đợi replay" : "Event chưa được đưa lại vào hàng đợi"}
         </h2>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -218,7 +228,7 @@ export function OutboxReplayForm() {
         <button
           type="button"
           onClick={startAnotherReplay}
-          className="mt-5 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted"
+          className="mt-5 min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted"
         >
           Replay event khác
         </button>
@@ -272,7 +282,7 @@ export function OutboxReplayForm() {
             }}
             aria-invalid={fieldError ? true : undefined}
             aria-describedby={fieldError ? "outbox-event-id-error" : undefined}
-            className={`w-full rounded-lg border bg-surface px-3 py-2 font-mono text-sm text-foreground placeholder:font-sans placeholder:text-muted-foreground ${fieldError ? "border-danger" : "border-border"}`}
+            className={`${controlClassName} font-mono ${fieldError ? "border-danger" : ""}`}
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
           />
           {fieldError && (
@@ -287,7 +297,7 @@ export function OutboxReplayForm() {
             ref={retryRef}
             type="submit"
             disabled={submitting || error?.retryable === false}
-            className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Xem xác nhận
           </button>
@@ -295,9 +305,8 @@ export function OutboxReplayForm() {
       </form>
 
       {showingConfirmation && (
-        <div
+        <section
           className="mt-5 rounded-lg border border-warning/40 bg-warning/10 p-4"
-          role="alertdialog"
           aria-labelledby="outbox-replay-confirm-title"
           aria-describedby="outbox-replay-confirm-description"
         >
@@ -313,7 +322,7 @@ export function OutboxReplayForm() {
               type="button"
               onClick={cancelConfirmation}
               disabled={submitting}
-              className="rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted disabled:opacity-50"
+              className="min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted disabled:opacity-50"
             >
               Quay lại
             </button>
@@ -322,12 +331,12 @@ export function OutboxReplayForm() {
               type="button"
               onClick={() => void confirmReplay()}
               disabled={submitting}
-              className="rounded-lg bg-warning px-4 py-2 font-medium text-warning-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-warning px-4 py-2 font-medium text-warning-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Đang replay…" : "Xác nhận replay"}
             </button>
           </div>
-        </div>
+        </section>
       )}
     </section>
   );
