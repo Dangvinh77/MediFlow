@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant Doctor as Bác sĩ
+    participant Cashier as Thu ngân
+    participant Pharmacist as Dược sĩ
+    participant GW as API Gateway
+    participant PHA as Pharmacy Service
+    participant BIL as Billing Service
+    participant MQ as RabbitMQ
+
+    Doctor->>GW: Kê đơn
+    GW->>PHA: Tạo PRESCRIPTION và các dòng thuốc
+    PHA->>MQ: prescription.created
+    MQ->>BIL: Tạo FEE và INVOICE
+    Cashier->>GW: Xác nhận thanh toán
+    GW->>BIL: Ghi nhận thanh toán
+    BIL->>MQ: payment.completed
+    MQ->>PHA: Bắt đầu cấp phát
+    PHA->>PHA: Khóa ghi và giữ tồn kho
+    alt Đủ tồn kho và đơn hợp lệ
+        Pharmacist->>PHA: Xác nhận cấp thuốc
+        PHA->>PHA: Trừ tồn và tạo DISPENSE_SLIP
+        PHA->>MQ: prescription.filled
+        MQ->>BIL: Saga COMPLETED
+    else Thiếu tồn hoặc thuốc hết hạn
+        PHA->>MQ: prescription.dispense.failed
+        MQ->>BIL: Yêu cầu bù trừ
+        BIL->>BIL: Hoàn tiền, saga REFUNDED
+        BIL->>MQ: payment.failed
+    end

@@ -1,0 +1,45 @@
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant Gateway as API Gateway
+    participant Service as Request-owning service
+    participant Authority as Authority service
+    participant Store as Local PostgreSQL and outbox
+    participant Broker as RabbitMQ
+    participant Consumer as Idempotent consumer
+
+    User->>Gateway: Authenticated HTTPS request
+    Gateway->>Gateway: Validate token and route authorization
+    Gateway->>Service: Forward versioned REST request
+
+    opt Current authority is required to finish the request
+        Service->>Authority: Resilient REST lookup with timeout
+        Authority-->>Service: Current decision or controlled failure
+    end
+
+    Service->>Store: Commit aggregate change and outbox event atomically
+    Store-->>Service: Local transaction committed
+    Service-->>Gateway: API response envelope
+    Gateway-->>User: Status, data and correlation ID
+
+    loop Outbox dispatcher
+        Service->>Store: Lock pending outbox record
+        Service->>Broker: Publish versioned integration event
+        Broker-->>Service: Publisher confirmation
+        Service->>Store: Mark event as published
+    end
+
+    Broker-->>Consumer: Deliver event from durable queue
+    Consumer->>Store: Check event ID and payload fingerprint
+
+    alt Exact duplicate
+        Store-->>Consumer: Existing receipt found
+        Consumer-->>Broker: Acknowledge without a second mutation
+    else New valid event
+        Consumer->>Store: Apply state change and save receipt
+        Store-->>Consumer: Local transaction committed
+        Consumer-->>Broker: Acknowledge after local commit
+    else Invalid or transient failure
+        Consumer--xBroker: Reject or retry with bounded attempts
+        Broker-->>Broker: Route exhausted messages to the service DLQ
+    end

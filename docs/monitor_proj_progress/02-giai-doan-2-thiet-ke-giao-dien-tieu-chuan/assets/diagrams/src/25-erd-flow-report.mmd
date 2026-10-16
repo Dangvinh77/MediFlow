@@ -1,0 +1,31 @@
+flowchart LR
+    INPUTS[Integration events<br/>medicalrecord.created<br/>lab.result.created<br/>prescription.filled<br/>payment.completed<br/>payment.failed<br/>staff.department.changed]
+    ORGANIZATION[Organization Service<br/>department_id]
+    PHARMACY[Pharmacy Service<br/>drug_id]
+
+    subgraph REPORT[Report Service · mediflow_report]
+        PROCESSED_EVENT[(PROCESSED_EVENT<br/>PK event_id<br/>routing_key)]
+        DAILY[(DAILY_VISIT_REPORT<br/>report_date + department_id<br/>visit/lab/prescription/revenue)]
+        MONTHLY[(MONTHLY_REVENUE_REPORT<br/>month + year + department_id<br/>revenue + invoice_count)]
+        DRUG_STAT[(DRUG_STATISTIC<br/>drug_id + report_date + department_id<br/>dispensed_quantity)]
+
+        PROCESSED_EVENT -.->|dedupe| DAILY
+        PROCESSED_EVENT -.->|dedupe| MONTHLY
+        PROCESSED_EVENT -.->|dedupe| DRUG_STAT
+    end
+
+    API[Read-only report APIs<br/>theo khoa và toàn viện]
+
+    INPUTS -.->|consume one queue| PROCESSED_EVENT
+    ORGANIZATION -.->|department_id · UUID logic| DAILY
+    ORGANIZATION -.->|department_id · UUID logic| MONTHLY
+    ORGANIZATION -.->|department_id · UUID logic| DRUG_STAT
+    PHARMACY -.->|drug_id · UUID logic| DRUG_STAT
+    DAILY -->|query| API
+    MONTHLY -->|query| API
+    DRUG_STAT -->|query| API
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    class INPUTS,ORGANIZATION,PHARMACY,API external
+    class PROCESSED_EVENT,DAILY,MONTHLY,DRUG_STAT owned
