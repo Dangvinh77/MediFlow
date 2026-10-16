@@ -135,6 +135,16 @@ class CarePrescriptionCreationServiceTest {
                 .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
         verifyNoInteractions(receipts, drugs, prescriptions, slips, reservations, capture);
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMISSION", "TRANSFER"})
+    void create_deferredDispositionRejectedEvenWhenCalledThroughContextWriterDirectly(String disposition) {
+        UUID record = UUID.randomUUID();
+        var proof = new OutpatientPrescriptionContextPort.Observation(true, record, patient, doctor.staffId(), department,
+                "OUTPATIENT_VISIT", episode, "COMPLETED", disposition, now);
+        assertThatThrownBy(() -> service.createCare(key, withRecord(record), proof, identity()))
+                .isInstanceOf(com.mediflow.common.exception.BusinessRuleException.class);
+        verifyNoInteractions(receipts, drugs, prescriptions, slips, reservations, capture);
+    }
     @Test void create_contextExpiresDuringStockLockWaitRejectsBeforeAnyStockOrOutboxEffect() {
         UUID record = UUID.randomUUID();
         when(drugs.findByIdForUpdate(drugId)).thenAnswer(call -> {

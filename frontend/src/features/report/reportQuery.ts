@@ -1,4 +1,7 @@
-import { validateMonthlyReportQuery, type MonthlyReportQuery } from "./validation";
+import {
+  localReportDate, validateDailyReportQuery, validateMonthlyReportQuery, validateTopMedicinesQuery,
+  type DailyReportQuery, type MonthlyReportQuery, type TopMedicinesQuery,
+} from "./validation";
 
 export type ReportView = "daily" | "monthly" | "medicines";
 export const reportViews: Record<ReportView, { title: string; label: string }> = {
@@ -27,6 +30,44 @@ export function buildMonthlyReportQuery(params: URLSearchParams, query: MonthlyR
   next.set("view", "monthly");
   next.set("month", String(query.month));
   next.set("year", String(query.year));
+  if (query.departmentId) next.set("departmentId", query.departmentId);
+  else next.delete("departmentId");
+  return next.toString();
+}
+
+export function readDailyReportQuery(params: URLSearchParams) {
+  const query: DailyReportQuery = {
+    date: params.get("date") ?? "",
+    departmentId: params.get("departmentId")?.trim() || undefined,
+  };
+  return { query, autoLoad: params.has("date") && validateDailyReportQuery(query) === null };
+}
+
+export function buildDailyReportQuery(params: URLSearchParams, query: DailyReportQuery) {
+  const next = new URLSearchParams(params);
+  next.set("view", "daily");
+  next.set("date", query.date);
+  if (query.departmentId) next.set("departmentId", query.departmentId);
+  else next.delete("departmentId");
+  return next.toString();
+}
+
+export function readTopMedicinesQuery(params: URLSearchParams, now = new Date()) {
+  const query: TopMedicinesQuery = {
+    fromDate: params.get("fromDate") ?? localReportDate(now),
+    toDate: params.get("toDate") ?? localReportDate(now),
+    limit: params.has("limit") ? Number(params.get("limit")) : 10,
+    departmentId: params.get("departmentId")?.trim() || undefined,
+  };
+  return { query, autoLoad: params.has("fromDate") && params.has("toDate") && validateTopMedicinesQuery(query) === null };
+}
+
+export function buildTopMedicinesQuery(params: URLSearchParams, query: TopMedicinesQuery) {
+  const next = new URLSearchParams(params);
+  next.set("view", "medicines");
+  next.set("fromDate", query.fromDate);
+  next.set("toDate", query.toDate);
+  next.set("limit", String(query.limit));
   if (query.departmentId) next.set("departmentId", query.departmentId);
   else next.delete("departmentId");
   return next.toString();

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
@@ -33,19 +36,16 @@ function correlationSuffix(cause: ApiRequestError): string {
 function apiErrorMessage(cause: unknown, fallback: string): string {
   if (cause instanceof ApiRequestError) {
     if (cause.code === "PRESCRIPTION_CREATION_FORBIDDEN") {
-      return `Không thể tạo đơn: JWT phải có staffId trùng với doctorId của đơn.${correlationSuffix(cause)}`;
+      return `Danh tính đăng nhập chưa được xác nhận là bác sĩ kê đơn này. Hãy kiểm tra mã bác sĩ hoặc liên hệ quản trị viên.${correlationSuffix(cause)}`;
     }
     if (cause.status === 403) return `Bạn không có quyền thực hiện thao tác này.${correlationSuffix(cause)}`;
     return `${cause.message}${correlationSuffix(cause)}`;
   }
-  return cause instanceof Error ? cause.message : fallback;
+  return fallback;
 }
 
 function fieldInputClass(invalid: boolean): string {
-  return [
-    "w-full rounded-lg border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground",
-    invalid ? "border-danger" : "border-border",
-  ].join(" ");
+  return `${controlClassName}${invalid ? " border-danger" : ""}`;
 }
 
 function mapPrescriptionValidationDetails(
@@ -79,30 +79,6 @@ function mapPrescriptionValidationDetails(
   return { fields, lines: lineErrors };
 }
 
-function FormField({
-  label,
-  name,
-  error,
-  required = true,
-  children,
-}: {
-  label: string;
-  name: string;
-  error?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={name} className="text-sm font-medium">
-        {label}{required && <span aria-hidden="true"> *</span>}
-      </label>
-      {children}
-      {error && <p id={`${name}-error`} className="text-xs text-danger">{error}</p>}
-    </div>
-  );
-}
-
 export function CreatePrescriptionForm() {
   const router = useRouter();
   const role = useSyncExternalStore(
@@ -115,6 +91,9 @@ export function CreatePrescriptionForm() {
   const [validationErrors, setValidationErrors] = useState<CreatePrescriptionValidationErrors>({ fields: {}, lines: {} });
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const active = useRef(true);
+  const focusTarget = useRef<string | undefined>(undefined);
   const [drugKeyword, setDrugKeyword] = useState("");
   const [activeDrugKeyword, setActiveDrugKeyword] = useState("");
   const [drugOptions, setDrugOptions] = useState<DrugDTO[]>([]);
@@ -125,6 +104,18 @@ export function CreatePrescriptionForm() {
   const drugSearchKey = `${activeDrugKeyword}\u0000${drugRetryToken}`;
   const drugLoading = capabilities.canCreatePrescription && settledDrugSearchKey !== drugSearchKey;
   const today = getLocalTodayIso();
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!submitting && focusTarget.current) {
+      document.getElementById(focusTarget.current)?.focus();
+      focusTarget.current = undefined;
+    }
+  }, [validationErrors, submitting]);
 
   useEffect(() => {
     if (!capabilities.canCreatePrescription) return undefined;
@@ -186,13 +177,11 @@ export function CreatePrescriptionForm() {
     const lineField = lineEntry?.[1]
       ? (Object.keys(lineEntry[1])[0] as keyof CreatePrescriptionValidationErrors["lines"][string] | undefined)
       : undefined;
-    const targetId = field
+    focusTarget.current = field
       ? field
       : lineKey && lineField
         ? `${lineField}-${lineKey}`
-        : undefined;
-    if (!targetId) return;
-    window.requestAnimationFrame(() => document.getElementById(targetId)?.focus());
+        : errors.lineList ? "prescription-add-line" : undefined;
   }
 
   function submitDrugSearch() {
@@ -203,7 +192,7 @@ export function CreatePrescriptionForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current || !getPharmacyCapabilities(getRole()).canCreatePrescription) return;
 
     setFormError(null);
     const errors = validateCreatePrescriptionForm(values, today);
@@ -213,11 +202,14 @@ export function CreatePrescriptionForm() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const created = await pharmacyApi.createPrescription(toCreatePrescriptionRequest(values));
+      if (!active.current) return;
       router.replace(`/pharmacy/prescriptions/${created.prescriptionId}`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -233,14 +225,19 @@ export function CreatePrescriptionForm() {
       }
 
       if (cause instanceof ApiRequestError && cause.code === "PRESCRIPTION_DUPLICATE_DRUG") {
-        setFormError("Đơn thuốc không được chứa thuốc trùng nhau. Hãy kiểm tra các dòng thuốc.");
+        setFormError(`Đơn thuốc không được chứa thuốc trùng nhau. Hãy kiểm tra các dòng thuốc.${correlationSuffix(cause)}`);
       } else if (cause instanceof ApiRequestError && cause.code === "INSUFFICIENT_AVAILABLE_STOCK") {
-        setFormError("Một hoặc nhiều thuốc không đủ tồn khả dụng. Hãy kiểm tra lại tồn kho rồi thử lại.");
+        setFormError(`Một hoặc nhiều thuốc không đủ tồn khả dụng. Hãy kiểm tra lại tồn kho rồi thử lại.${correlationSuffix(cause)}`);
       } else {
-        setFormError(apiErrorMessage(cause, "Không thể tạo đơn thuốc."));
+        const uncertain = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400;
+        setFormError(uncertain
+          ? "Chưa xác định được kết quả tạo đơn. Hãy kiểm tra đơn đã tạo trước khi gửi lại để tránh tạo trùng."
+            + (cause instanceof ApiRequestError ? correlationSuffix(cause) : "")
+          : apiErrorMessage(cause, "Không thể tạo đơn thuốc."));
       }
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false;
+      if (active.current) setSubmitting(false);
     }
   }
 
@@ -257,46 +254,50 @@ export function CreatePrescriptionForm() {
   }
 
   const field = (name: PrescriptionFormField) => ({
+    disabled: submitting,
+    "aria-required": true,
     "aria-invalid": validationErrors.fields[name] ? true : undefined,
     "aria-describedby": validationErrors.fields[name] ? `${name}-error` : undefined,
   });
 
   return (
-    <form onSubmit={submit} noValidate className="mt-6 space-y-6">
+    <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6">
       {formError && (
         <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
           {formError}
         </div>
       )}
 
-      <section className="rounded-xl border border-border bg-surface p-5">
-        <h2 className="text-base font-semibold">Ngữ cảnh đơn thuốc</h2>
+      <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
+        <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Các mã dưới đây phải là UUID đã tồn tại trong hệ thống. Frontend không tự tạo hoặc suy diễn danh tính.
+          Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách.
         </p>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <FormField label="Mã hồ sơ bệnh án" name="recordId" error={validationErrors.fields.recordId}>
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <Field label="Mã hồ sơ bệnh án" htmlFor="recordId" error={validationErrors.fields.recordId} required>
             <input id="recordId" {...field("recordId")} value={values.recordId} onChange={(event) => updateField("recordId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.recordId))} placeholder="UUID hồ sơ" />
-          </FormField>
-          <FormField label="Mã bệnh nhân" name="patientId" error={validationErrors.fields.patientId}>
+          </Field>
+          <Field label="Mã bệnh nhân" htmlFor="patientId" error={validationErrors.fields.patientId} required>
             <input id="patientId" {...field("patientId")} value={values.patientId} onChange={(event) => updateField("patientId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.patientId))} placeholder="UUID bệnh nhân" />
-          </FormField>
-          <FormField label="Mã bác sĩ" name="doctorId" error={validationErrors.fields.doctorId}>
+          </Field>
+          <Field label="Mã bác sĩ" htmlFor="doctorId" error={validationErrors.fields.doctorId} required>
             <input id="doctorId" {...field("doctorId")} value={values.doctorId} onChange={(event) => updateField("doctorId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.doctorId))} placeholder="UUID bác sĩ" />
-          </FormField>
-          <FormField label="Mã khoa" name="departmentId" error={validationErrors.fields.departmentId}>
+          </Field>
+          <Field label="Mã khoa" htmlFor="departmentId" error={validationErrors.fields.departmentId} required>
             <input id="departmentId" {...field("departmentId")} value={values.departmentId} onChange={(event) => updateField("departmentId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.departmentId))} placeholder="UUID khoa" />
-          </FormField>
-          <FormField label="Ngày kê đơn" name="prescribedDate" error={validationErrors.fields.prescribedDate}>
+          </Field>
+          <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
             <input id="prescribedDate" type="date" max={today} {...field("prescribedDate")} value={values.prescribedDate} onChange={(event) => updateField("prescribedDate", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.prescribedDate))} />
-          </FormField>
+          </Field>
         </div>
       </section>
 
       <PrescriptionLinesEditor
         lines={values.lines}
+        disabled={submitting}
+        listError={validationErrors.lineList}
         errors={validationErrors.lines}
-        drugOptions={drugOptions}
+        drugOptions={drugLoading || drugSearchError ? [] : drugOptions}
         drugKeyword={drugKeyword}
         drugLoading={drugLoading}
         drugError={drugSearchError}
@@ -308,14 +309,15 @@ export function CreatePrescriptionForm() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
+        <Button
           type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          loading={submitting}
+          variant="primary"
         >
-          {submitting ? "Đang tạo đơn…" : "Tạo đơn thuốc"}
-        </button>
-        <p className="text-sm text-muted-foreground">Giá/tổng tiền không được gửi từ form.</p>
+          Tạo đơn thuốc
+        </Button>
+        <Link href="/pharmacy/prescriptions" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu đơn thuốc</Link>
+        <p className="text-sm text-muted-foreground">Giá chính thức được xác định khi tạo đơn.</p>
       </div>
     </form>
   );

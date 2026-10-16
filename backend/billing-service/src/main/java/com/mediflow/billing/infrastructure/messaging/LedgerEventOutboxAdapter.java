@@ -48,10 +48,17 @@ public class LedgerEventOutboxAdapter implements LedgerEventPort {
 
     private void insert(UUID accountId, LedgerIntegrationEvent event, boolean eligible, UUID outpatientPaymentRequestId) {
         try {
+            String bytes = mapper.writeValueAsString(event);
+            if (eligible && !Boolean.TRUE.equals(jdbc.queryForObject(
+                    "SELECT billing_outpatient_event_matches(?,?,?,?,?,?)", Boolean.class,
+                    outpatientPaymentRequestId, accountId, event.eventId(), event.eventType(), bytes, event.version()))) {
+                throw new BillingRuleException("BILLING_OUTPATIENT_PUBLICATION_CONFLICT",
+                        "Outpatient event does not match persisted request " + outpatientPaymentRequestId);
+            }
             jdbc.update("""
                     INSERT INTO BILLING_EVENT_OUTBOX(event_id,routing_key,aggregate_id,payload,publication_enabled,contract_version,outpatient_payment_request_id)
                     VALUES (?,?,?,?,?,1,?)
-                    """, event.eventId(), event.eventType(), accountId, mapper.writeValueAsString(event), eligible, outpatientPaymentRequestId);
+                    """, event.eventId(), event.eventType(), accountId, bytes, eligible, outpatientPaymentRequestId);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Cannot serialize immutable ledger event", exception);
         }

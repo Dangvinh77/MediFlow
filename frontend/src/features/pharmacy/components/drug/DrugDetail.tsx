@@ -15,6 +15,7 @@ import {
   formatDateTime,
   formatVnd,
   getDrugExpiryState,
+  isUuid,
 } from "../../utils";
 import { AdjustStockForm } from "./AdjustStockForm";
 
@@ -25,7 +26,7 @@ interface DrugDetailProps {
 type DetailRequestState =
   | { key: string; status: "idle" }
   | { key: string; status: "success"; drug: DrugDTO }
-  | { key: string; status: "not-found" }
+  | { key: string; status: "not-found"; correlationId?: string }
   | { key: string; status: "error"; message: string };
 
 function getServerRole(): Role | null {
@@ -117,6 +118,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
   useEffect(() => {
     let active = true;
     const requestId = ++requestSequence.current;
+    if (!isUuid(drugId)) return;
 
     pharmacyApi
       .getDrug(drugId)
@@ -141,7 +143,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
           cause instanceof ApiRequestError &&
           (cause.status === 404 || cause.code === "DRUG_NOT_FOUND")
         ) {
-          setRequestState({ key: requestKey, status: "not-found" });
+          setRequestState({ key: requestKey, status: "not-found", correlationId: cause.correlationId ?? undefined });
           return;
         }
 
@@ -157,6 +159,10 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
     };
   }, [drugId, requestKey, router]);
 
+  if (!isUuid(drugId)) {
+    return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Mã thuốc không hợp lệ. Vui lòng dùng mã UUID đầy đủ.</p>;
+  }
+
   if (loading && !drug && !notFound && !error) return <DetailLoading />;
 
   if (notFound) {
@@ -166,6 +172,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
         <p className="mt-2 text-sm text-muted-foreground">
           Không có thuốc nào với mã <code className="break-all">{drugId}</code>.
         </p>
+        {requestState.status === "not-found" && requestState.correlationId && <p className="mt-2 break-all text-sm text-muted-foreground">Mã tra cứu: {requestState.correlationId}</p>}
         <Link
           href="/pharmacy/drugs"
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90"
@@ -195,14 +202,14 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
     <section className="mt-6 space-y-6">
       {loading && (
         <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">
-          Đang xác nhận snapshot thuốc mới nhất…
+          Đang tải tồn kho mới nhất…
         </p>
       )}
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-mono text-xs text-muted-foreground">{drug.drugId}</p>
-          <h2 className="mt-1 text-xl font-semibold">{drug.drugName}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="min-w-0">
+          <p className="break-all font-mono text-xs text-muted-foreground">{drug.drugId}</p>
+          <h2 className="mt-1 break-words text-xl font-semibold">{drug.drugName}</h2>
+          <p className="mt-1 break-words text-sm text-muted-foreground">
             {drug.activeIngredient ?? "—"}
           </p>
         </div>
@@ -210,7 +217,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
           {capabilities.canCreateDrug && (
             <Link
               href="/pharmacy/drugs/new"
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-muted"
+              className="inline-flex min-h-11 items-center rounded-lg border border-control-border bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-muted"
             >
               Tạo thuốc
             </Link>
@@ -218,10 +225,10 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-border bg-surface p-6">
           <h3 className="text-base font-semibold">Thông tin thuốc</h3>
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+          <dl className="mt-4 grid gap-4 break-words sm:grid-cols-2">
             <div><dt className="text-xs text-muted-foreground">Hoạt chất</dt><dd className="mt-1">{drug.activeIngredient ?? "—"}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Đơn vị</dt><dd className="mt-1">{drug.unit || "—"}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Nhà sản xuất</dt><dd className="mt-1">{drug.manufacturer ?? "—"}</dd></div>
@@ -233,12 +240,13 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
           <h3 className="text-base font-semibold">Giá và tồn kho</h3>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <div><dt className="text-xs text-muted-foreground">Đơn giá</dt><dd className="mt-1 font-semibold">{formatVnd(drug.price)}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">Tồn hiện tại</dt><dd className="mt-1 flex flex-wrap items-center gap-2">{drug.stockQuantity}{lowStock && <StatusBadge tone="warning">Tồn thấp</StatusBadge>}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">Tồn hiện tại</dt><dd className="mt-1 flex flex-wrap items-center gap-2">{drug.stockQuantity}{drug.stockQuantity === 0 ? <StatusBadge tone="danger">Hết hàng</StatusBadge> : lowStock && <StatusBadge tone="warning">Tồn thấp</StatusBadge>}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Ngưỡng cảnh báo</dt><dd className="mt-1">{drug.lowStockThreshold}</dd></div>
           </dl>
           {capabilities.canAdjustStock && (
             <AdjustStockForm
               drug={drug}
+              disabled={loading}
               onSuccess={(updatedDrug) => {
                 setRequestState({ key: requestKey, status: "success", drug: updatedDrug });
               }}

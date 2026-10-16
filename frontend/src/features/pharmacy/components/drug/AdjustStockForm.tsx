@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
+import { getRole } from "@/lib/auth";
+import { getPharmacyCapabilities } from "../../permissions";
 import { pharmacyApi } from "../../api";
 import type { DrugDTO } from "../../types";
 import { mapFieldErrors } from "../../utils";
@@ -11,6 +15,7 @@ interface AdjustStockFormProps {
   drug: DrugDTO;
   onSuccess: (updatedDrug: DrugDTO) => void;
   onConflict: () => void;
+  disabled?: boolean;
 }
 
 interface FieldErrors {
@@ -34,21 +39,14 @@ function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
     if (cause.status === 403) {
       const correlation = cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
-      return `Không được phép điều chỉnh tồn kho; kiểm tra quyền và staffId đã ký trong token.${correlation}`;
+      return `Bạn không có quyền điều chỉnh tồn kho. Hãy liên hệ quản trị viên.${correlation}`;
     }
     if (cause.correlationId) {
       return `${cause.message} (Mã tra cứu: ${cause.correlationId})`;
     }
     return cause.message;
   }
-  return cause instanceof Error ? cause.message : "Không thể điều chỉnh tồn kho.";
-}
-
-function inputClass(invalid: boolean): string {
-  return [
-    "w-full rounded-lg border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground",
-    invalid ? "border-danger" : "border-border",
-  ].join(" ");
+  return "Chưa xác định được kết quả điều chỉnh. Hãy kiểm tra tồn kho trước khi xác nhận lại.";
 }
 
 /** Handles the non-optimistic stock adjustment flow and confirmation preview. */
@@ -56,6 +54,7 @@ export function AdjustStockForm({
   drug,
   onSuccess,
   onConflict,
+  disabled = false,
 }: AdjustStockFormProps) {
   const router = useRouter();
   const [quantity, setQuantity] = useState("");
@@ -65,7 +64,33 @@ export function AdjustStockForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const quantityRef = useRef<HTMLInputElement>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+  const active = useRef(true);
+  const pendingErrorFocus = useRef<keyof FieldErrors | null>(null);
   const parsedQuantity = parseQuantity(quantity);
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (confirming) confirmRef.current?.focus();
+    else if (!submitting && pendingErrorFocus.current) {
+      (pendingErrorFocus.current === "reason" ? reasonRef.current : quantityRef.current)?.focus();
+      pendingErrorFocus.current = null;
+    } else if (wasConfirming.current) quantityRef.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming, submitting]);
+
+  function focusErrors(errors: FieldErrors) {
+    if (errors.quantity) quantityRef.current?.focus();
+    else if (errors.reason) reasonRef.current?.focus();
+  }
 
   function clearFeedback() {
     setFieldErrors({});
@@ -75,7 +100,7 @@ export function AdjustStockForm({
 
   function prepareConfirmation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current || disabled || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
 
     clearFeedback();
     const errors: FieldErrors = {};
@@ -90,6 +115,7 @@ export function AdjustStockForm({
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      focusErrors(errors);
       return;
     }
 
@@ -97,7 +123,7 @@ export function AdjustStockForm({
   }
 
   async function confirmAdjustment() {
-    if (submitting || parsedQuantity === null || parsedQuantity === 0) return;
+    if (submittingRef.current || disabled || !confirming || parsedQuantity === null || parsedQuantity === 0 || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
 
     if (reason.trim().length > 255) {
       setFieldErrors({ reason: "Lý do không được dài quá 255 ký tự." });
@@ -110,6 +136,7 @@ export function AdjustStockForm({
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setFormError(null);
     setSuccessMessage(null);
@@ -118,12 +145,14 @@ export function AdjustStockForm({
         quantity: parsedQuantity,
         reason: reason.trim() || undefined,
       });
+      if (!active.current) return;
       onSuccess(updatedDrug);
       setQuantity("");
       setReason("");
       setConfirming(false);
-      setSuccessMessage("Đã cập nhật tồn kho từ snapshot do máy chủ trả về.");
+      setSuccessMessage(`Đã cập nhật tồn kho: ${updatedDrug.stockQuantity.toLocaleString("vi-VN")} ${updatedDrug.unit}.`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -131,7 +160,7 @@ export function AdjustStockForm({
 
       if (
         cause instanceof ApiRequestError &&
-        (cause.code === "DRUG_OUT_OF_STOCK" || cause.code === "STOCK_BELOW_RESERVED")
+        (cause.status === 409 || cause.code === "DRUG_OUT_OF_STOCK" || cause.code === "STOCK_BELOW_RESERVED")
       ) {
         setFormError(errorMessage(cause));
         setConfirming(false);
@@ -141,6 +170,7 @@ export function AdjustStockForm({
 
       if (cause instanceof ApiRequestError && cause.details.length > 0) {
         const details = mapFieldErrors(cause.details);
+        pendingErrorFocus.current = details.quantity ? "quantity" : details.reason ? "reason" : null;
         setFieldErrors({
           quantity: details.quantity,
           reason: details.reason,
@@ -148,16 +178,24 @@ export function AdjustStockForm({
       }
       setFormError(errorMessage(cause));
       setConfirming(false);
+      // A network failure does not prove that a stock mutation was rolled back.
+      if (!(cause instanceof ApiRequestError)) onConflict();
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false;
+      if (active.current) setSubmitting(false);
     }
   }
 
   return (
-    <section className="mt-6 border-t border-border pt-6" aria-labelledby="adjust-stock-heading">
+    <section className="mt-6 border-t border-border pt-6" aria-labelledby="adjust-stock-heading" onKeyDown={(event) => {
+      if (event.key === "Escape" && confirming && !submittingRef.current) {
+        event.preventDefault();
+        setConfirming(false);
+      }
+    }}>
       <h3 id="adjust-stock-heading" className="text-base font-semibold">Điều chỉnh tồn kho</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Delta dương là nhập thêm, delta âm là giảm tồn. Backend vẫn là nguồn sự thật khi có giao dịch đồng thời.
+        Nhập số dương để thêm hàng hoặc số âm để giảm tồn. Cần ghi lý do khi giảm tồn kho.
       </p>
 
       {formError && (
@@ -171,84 +209,84 @@ export function AdjustStockForm({
         </p>
       )}
 
-      <form onSubmit={prepareConfirmation} className="mt-4 space-y-4">
+      <form onSubmit={prepareConfirmation} noValidate aria-busy={submitting || undefined} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="stock-quantity" className="text-sm font-medium">Delta tồn kho</label>
+          <Field label="Số lượng điều chỉnh" htmlFor="stock-quantity" error={fieldErrors.quantity} required>
             <input
               id="stock-quantity"
+              ref={quantityRef}
+              disabled={submitting || disabled}
+              aria-required="true"
               type="number"
               inputMode="numeric"
               step="1"
               value={quantity}
-              onChange={(event) => { setQuantity(event.target.value); setConfirming(false); clearFeedback(); }}
+              onChange={(event) => { setQuantity(event.target.value); wasConfirming.current = false; setConfirming(false); clearFeedback(); }}
               aria-invalid={fieldErrors.quantity ? true : undefined}
               aria-describedby={fieldErrors.quantity ? "stock-quantity-error" : undefined}
-              className={inputClass(Boolean(fieldErrors.quantity))}
+              className={`${controlClassName}${fieldErrors.quantity ? " border-danger" : ""}`}
               placeholder="Ví dụ: 20 hoặc -5"
             />
-            {fieldErrors.quantity && <p id="stock-quantity-error" className="text-xs text-danger">{fieldErrors.quantity}</p>}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="stock-reason" className="text-sm font-medium">Lý do</label>
+          </Field>
+          <Field label="Lý do" htmlFor="stock-reason" error={fieldErrors.reason}>
             <textarea
               id="stock-reason"
+              ref={reasonRef}
+              disabled={submitting || disabled}
               value={reason}
               maxLength={255}
-              onChange={(event) => { setReason(event.target.value); setConfirming(false); clearFeedback(); }}
+              onChange={(event) => { setReason(event.target.value); wasConfirming.current = false; setConfirming(false); clearFeedback(); }}
               aria-invalid={fieldErrors.reason ? true : undefined}
               aria-describedby={fieldErrors.reason ? "stock-reason-error" : undefined}
-              className={`${inputClass(Boolean(fieldErrors.reason))} min-h-24 resize-y`}
+              className={`${controlClassName} min-h-24 resize-y${fieldErrors.reason ? " border-danger" : ""}`}
               placeholder="Bắt buộc khi giảm tồn"
             />
-            {fieldErrors.reason && <p id="stock-reason-error" className="text-xs text-danger">{fieldErrors.reason}</p>}
-          </div>
+          </Field>
         </div>
 
         {!confirming && (
-          <button
+          <Button
             type="submit"
-            disabled={submitting}
-            className="rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={submitting || disabled}
           >
             Xem xác nhận
-          </button>
+          </Button>
         )}
       </form>
 
       {confirming && parsedQuantity !== null && (
-        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
-          <h4 className="font-semibold">Xác nhận điều chỉnh</h4>
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-            <div><dt className="text-muted-foreground">Thuốc</dt><dd className="mt-1 font-medium">{drug.drugName}</dd></div>
+        <section aria-labelledby="stock-confirm-heading" aria-describedby="stock-confirm-description" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
+          <h4 id="stock-confirm-heading" className="font-semibold">Xác nhận điều chỉnh</h4>
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="sm:col-span-2"><dt className="text-muted-foreground">Thuốc</dt><dd className="mt-1 break-words font-medium">{drug.drugName}</dd></div>
             <div><dt className="text-muted-foreground">Tồn hiện tại</dt><dd className="mt-1">{drug.stockQuantity}</dd></div>
-            <div><dt className="text-muted-foreground">Delta</dt><dd className="mt-1">{parsedQuantity > 0 ? `+${parsedQuantity}` : parsedQuantity}</dd></div>
+            <div><dt className="text-muted-foreground">Thay đổi</dt><dd className="mt-1">{parsedQuantity > 0 ? `+${parsedQuantity}` : parsedQuantity}</dd></div>
           </dl>
           <p className="mt-3 text-sm">
-            Tồn dự kiến theo snapshot: <strong>{drug.stockQuantity + parsedQuantity}</strong>
+            Tồn dự kiến: <strong>{drug.stockQuantity + parsedQuantity}</strong>
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Đây chỉ là preview; tồn kho thực tế có thể thay đổi do reservation hoặc giao dịch đồng thời.
+          <p id="stock-confirm-description" className="mt-2 text-xs text-muted-foreground">
+            Tồn thực tế có thể thay đổi khi có giao dịch khác. Hệ thống sẽ kiểm tra lượng hàng đang được giữ trước khi cập nhật.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
               onClick={() => setConfirming(false)}
               disabled={submitting}
-              className="rounded-lg border border-border bg-surface px-4 py-2 font-medium hover:bg-surface-muted disabled:opacity-50"
             >
               Hủy
-            </button>
+            </Button>
             <button
+              ref={confirmRef}
               type="button"
               onClick={() => void confirmAdjustment()}
-              disabled={submitting}
-              className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={submitting || disabled}
+              className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Đang cập nhật…" : "Xác nhận điều chỉnh"}
             </button>
           </div>
-        </div>
+        </section>
       )}
     </section>
   );

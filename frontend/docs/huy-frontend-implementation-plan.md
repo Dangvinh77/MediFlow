@@ -2,10 +2,22 @@
 
 **Ngày:** 2026-10-12. **Owner:** Huy (`LQHuy0210`).
 **Baseline đã đọc:** `c110671bd2eaa7f1e948879162506df106cbf27d`.
-**Trạng thái:** IN PROGRESS — đã triển khai batch đầu cho Pharmacy và Report theo mẫu đã duyệt.
-**Checkpoint 2026-10-12:** 3/30 task chính (P-01, P-04, R-03), 17/123 subtask đã đóng ở mức FE local;
-nghiệm thu Gateway/backend thật và các task release vẫn mở.
+**Trạng thái:** IN PROGRESS — Pharmacy/Report tiếp tục theo mẫu đã duyệt và frame 6 service.
+**Checkpoint 2026-10-16:** 11/30 task chính, 50/123 subtask đã đóng ở mức FE local;
+chi tiết tại mục 14. P-06 xong 4/4 subtask local, task chính vẫn chờ real-role smoke GW-01.
+Mẫu số 30/123 thuộc plan lịch sử có cả Surgery/full V2 deferred, không phải
+tỷ lệ hoàn thành MVP 6 service. Nghiệm thu Gateway/backend thật và các task release vẫn mở.
 **Thiết kế:** người dùng đã chốt bản dùng theme Sáng / Tối / Hệ thống của MediFlow.
+
+**Xác nhận mẫu 2026-10-16:** ảnh người dùng gửi khớp
+[`designs/huy-approved-ui.html`](designs/huy-approved-ui.html). Tiếp tục dùng sidebar/header hiện
+có, tab gạch chân, panel bo góc, bảng thuốc và tra đơn bên dưới; màu lấy từ semantic tokens của
+source (`surface`, `border`, `primary`, `warning`, `danger`), cùng bố cục cho Sáng/Tối/Hệ thống.
+Lượt này căn lại thanh tìm kiếm danh mục, chuyển chọn số dòng cạnh phân trang và ghi rõ Giá (VND).
+Giữ phân quyền/API, real data/loading/error/empty; nhãn BẢN MẪU và dữ liệu minh họa trong ảnh không
+đưa vào màn hình production. Không bật Surgery/Inpatient vì có mục đó trong hình mẫu.
+Verification: typecheck/lint, 8 tests DrugCatalog/DrugTable và production build đạt.
+Chưa có authenticated Gateway/browser smoke cho thay đổi này.
 
 ## 1. Phạm vi và cách dùng plan
 
@@ -322,26 +334,26 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### P-02 — Chi tiết thuốc
 
-**READY sau P-01.** File: `drug/DrugDetail.tsx`, `drugs/[drugId]/page.tsx` và tests.
+**DONE — FE local 2026-10-16.** File: `drug/DrugDetail.tsx`, `drugs/[drugId]/page.tsx` và tests.
 
-- [ ] P-02.1 Layout thông tin thuốc, giá, tồn/ngưỡng, hạn, hoạt chất, manufacturer theo theme.
-- [ ] P-02.2 Giữ UUID guard, 404, 403, correlation ID, retry; không biến 404 thành thuốc rỗng.
-- [ ] P-02.3 Hiện slot điều chỉnh tồn đúng capability; refresh từ server sau mutation thành công.
-- [ ] P-02.4 Test invalid-ID không gọi API, role read-only, expiry/low-stock và lỗi refresh.
+- [x] P-02.1 Layout thông tin thuốc, giá, tồn/ngưỡng, hạn, hoạt chất, manufacturer theo theme.
+- [x] P-02.2 Giữ UUID guard, 404, 403, correlation ID, retry; không biến 404 thành thuốc rỗng.
+- [x] P-02.3 Hiện slot điều chỉnh tồn đúng capability; cập nhật bằng DrugDTO máy chủ trả về sau mutation thành công; conflict refetch trước thao tác mới.
+- [x] P-02.4 Test invalid-ID không gọi API, role read-only, expiry/low-stock và lỗi refresh.
 
 **Đạt khi:** đọc đủ field backend, timestamp/date đúng loại, không trộn state thuốc cũ khi đổi route.
 
 ### P-03 — Tạo thuốc và điều chỉnh tồn
 
-**READY sau P-02.** File: `CreateDrugForm`, `AdjustStockForm`, `drugFormValidation`, create route.
+**DONE — FE local 2026-10-16.** File: `CreateDrugForm`, `AdjustStockForm`, `drugFormValidation`, create route.
 
-- [ ] P-03.1 Chuyển presentation sang shared Field/Button, lỗi gắn field và focus; giữ bounds DTO.
-- [ ] P-03.2 Tạo thuốc: tên/unit bắt buộc, tiền không âm/precision đúng, stock nguyên không âm,
+- [x] P-03.1 Chuyển presentation sang shared Field/Button, lỗi gắn field và focus; giữ bounds DTO.
+- [x] P-03.2 Tạo thuốc: tên/unit bắt buộc, tiền không âm/precision đúng, stock nguyên không âm,
   expiry theo validation backend; backend field errors vẫn hiển thị được.
-- [ ] P-03.3 Adjust: gửi delta có dấu, lý do theo contract, confirmation chỉ rõ tăng/giảm;
+- [x] P-03.3 Adjust: gửi delta có dấu, lý do theo contract, confirmation chỉ rõ tăng/giảm;
   khóa submit trùng, không optimistic stock, xung đột refetch trước thao tác mới.
-- [ ] P-03.4 Test overflow, số thập phân stock, expiry invalid, âm làm vượt tồn, 403/409/network,
-  mutation thành công rồi detail reload thất bại không tự gửi mutation lần nữa.
+- [x] P-03.4 Test overflow, số thập phân stock, expiry invalid, âm làm vượt tồn, 403/409/network,
+  mutation thành công dùng DrugDTO trả về; lỗi refetch không tự gửi mutation lần nữa.
 
 **Đạt khi:** không tạo số tồn/giá có tính authoritative ở browser; signed actor do backend xác định.
 
@@ -362,40 +374,40 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### P-05 — Form kê đơn legacy/V0
 
-**READY sau P-04.** File: `CreatePrescriptionForm`, `PrescriptionLinesEditor`, `prescriptionFormValidation`, new route.
+**DONE — FE local 2026-10-16; V0 giữ nguyên, không kích hoạt V1.** File: `CreatePrescriptionForm`, `PrescriptionLinesEditor`, `prescriptionFormValidation`, existing new route.
 
-- [ ] P-05.1 Áp dụng form grid/line editor theo theme; giữ record/patient/doctor/department IDs rõ ràng.
-- [ ] P-05.2 Ít nhất một dòng, drug ID không trùng, quantity nguyên dương, dosage bounded,
+- [x] P-05.1 Áp dụng form grid/line editor theo theme; giữ record/patient/doctor/department IDs rõ ràng.
+- [x] P-05.2 Ít nhất một dòng, drug ID không trùng, quantity nguyên dương, dosage bounded,
   prescribedDate đúng calendar và không tương lai; không gửi giá do người dùng tính.
-- [ ] P-05.3 Hiện server field errors và signed-identity denial; không lấy doctorId từ accountId.
-- [ ] P-05.4 Test add/remove line, lỗi từng dòng, serialization V0 không lẫn V1,
+- [x] P-05.3 Hiện server field errors và signed-identity denial; không lấy doctorId từ accountId.
+- [x] P-05.4 Test add/remove line, lỗi từng dòng, serialization V0 không lẫn V1,
   duplicate submit và giữ input khi lỗi; success chuyển đúng prescriptionId server trả.
 
 **Đạt khi:** V0 đang có không regress; không tự chọn hồ sơ/latest admission theo patient ID.
 
 ### P-06 — Hủy đơn và xuất thuốc
 
-**READY local; DOCTOR cancel E2E chờ GW-01.** File: cancel/dispense dialogs, detail action composition, permissions/tests.
+**LOCAL 4/4 — task chính chưa đóng; real-role smoke, gồm DOCTOR cancel, chờ GW-01.** File: cancel/dispense confirmations, detail action composition, tests.
 
-- [ ] P-06.1 Confirmation bằng primitive hiện có hoặc native dialog phù hợp; label, focus ban đầu,
+- [x] P-06.1 Confirmation bằng primitive hiện có hoặc inline section phù hợp; label, focus ban đầu,
   Escape/return-focus và trạng thái đang gửi rõ ràng.
-- [ ] P-06.2 Cancel reason theo DTO; hiển thị releasedReservations từ response; không tự xóa đơn.
-- [ ] P-06.3 Dispense bodyless PUT; canDispense UX phải xét role + ACTIVE/PENDING + paymentConfirmed;
+- [x] P-06.2 Cancel reason theo DTO; hiển thị releasedReservations từ response; không tự xóa đơn.
+- [x] P-06.3 Dispense bodyless PUT; canDispense UX phải xét role + ACTIVE/PENDING + paymentConfirmed;
   refresh lifecycle/stock từ server, không tự đánh dấu đã xuất hoặc trả tiền.
-- [ ] P-06.4 Test terminal/replay/race 409, thất bại nghiệp vụ, 401/403, timeout chưa rõ outcome;
+- [x] P-06.4 Test terminal/replay/race 409, thất bại nghiệp vụ, 401/403, timeout chưa rõ outcome;
   xử lý lỗi refresh tách lỗi mutation, không tự retry command với intent mới.
 
 **Đạt khi:** local test đủ matrix và real role smoke đạt; DOCTOR không được đổi thành PHARMACIST để qua Gateway.
 
 ### P-07 — Outbox replay và accessibility
 
-**READY.** File: `outbox/OutboxReplayForm.tsx`, outbox route, tests.
+**DONE — FE local 2026-10-16.** File: `outbox/OutboxReplayForm.tsx`, outbox route, tests.
 
-- [ ] P-07.1 Giữ ADMIN gate, known event UUID, không dựng list/monitor outbox chưa có API.
-- [ ] P-07.2 Chọn inline confirmation dạng section có heading và focus hợp lý;
+- [x] P-07.1 Giữ ADMIN gate, known event UUID, không dựng list/monitor outbox chưa có API.
+- [x] P-07.2 Chọn inline confirmation dạng section có heading và focus hợp lý;
   bỏ `alertdialog` nếu không thực sự modal. Không cần thêm shared modal chỉ cho task này.
-- [ ] P-07.3 Submit một lần; success theo `replayed`, không claim consumer đã xử lý xong.
-- [ ] P-07.4 Test cancel confirm, keyboard, double-click, 404 field focus, 403/correlation,
+- [x] P-07.3 Submit một lần; success theo `replayed`, không claim consumer đã xử lý xong.
+- [x] P-07.4 Test cancel confirm, keyboard, double-click, 404 field focus, 403/correlation,
   network không rõ outcome và retry có chủ đích.
 
 **Đạt khi:** thao tác recovery rõ mục đích, không kích hoạt chỉ do mount/refresh trang.
@@ -419,12 +431,12 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### R-01 — Workspace theo tab, route mỏng
 
-**READY sau HFE-01/02 phần Report.** File: `ReportWorkspace.tsx`, `reportQuery.ts`, `/reports/page.tsx`.
+**DONE — FE local 2026-10-16.** File: `ReportWorkspace.tsx`, `reportQuery.ts`, `/reports/page.tsx`.
 
 - [x] R-01.1 Tab Hàng ngày / Hàng tháng / Thuốc xuất nhiều; URL `view=daily|monthly|medicines`,
   default monthly theo mẫu, unknown view về default, Back/Forward nhất quán.
 - [x] R-01.2 Page giữ RoleGate ADMIN/MANAGER, compose workspace; chỉ active view gọi query.
-- [ ] R-01.3 Query ngày/tháng/năm/department phản ánh lần submit; input draft tách khỏi result scope;
+- [x] R-01.3 Query ngày/tháng/năm/department phản ánh lần submit; input draft tách khỏi result scope;
   tab đổi giữ state đã chọn theo URL, không làm ba view gọi API cùng lúc.
 - [x] R-01.4 Test deep link, invalid query, back/forward, denied role, tab keyboard và pending transition.
 
@@ -432,22 +444,22 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### R-02 — Validation và vòng đời request thống nhất trong Report
 
-**READY; làm trước R-03…05.** File: report `validation.ts`, `presentation.ts`, query helper, ba view và tests.
+**DONE — FE local 2026-10-16.** File: report `validation.ts`, `presentation.ts`, query helper, ba view và tests.
 
-- [ ] R-02.1 Calendar-valid date, range from<=to, month/year/limit bounds và UUID department;
+- [x] R-02.1 Calendar-valid date, range from<=to, month/year/limit bounds và UUID department;
   ngày mặc định theo local date, không `toISOString().slice(0,10)` gây lệch ngày.
-- [ ] R-02.2 Lưu submitted request identity, latest-request guard/unmount guard;
+- [x] R-02.2 Lưu submitted request identity, latest-request guard/unmount guard;
   kết quả query cũ không được render dưới tiêu đề query mới sau lỗi.
-- [ ] R-02.3 Idle/loading/error/empty, retry đúng last submitted request; 401 redirect,
+- [x] R-02.3 Idle/loading/error/empty, retry đúng last submitted request; 401 redirect,
   403 giữ context, error code/correlation hỗ trợ tra cứu.
-- [ ] R-02.4 Test deferred responses đảo thứ tự, đổi tab khi pending, lỗi sau success,
+- [x] R-02.4 Test deferred responses đảo thứ tự, đổi tab khi pending, lỗi sau success,
   sửa filter chưa submit và retry không lấy nhầm draft mới.
 
 **Đạt khi:** mỗi result có bộ lọc nguồn chính xác; không lặp request vô hạn hoặc ẩn dữ liệu 0 hợp lệ.
 
 ### R-03 — Báo cáo tháng: chart, tổng hợp, daily table
 
-**DONE — monthly source, tests và browser mock; R-01/02 các view khác tiếp tục riêng.** File: `MonthlyReportView`, `MonthlyRevenueChart`, `DailyDetailsTable`, tests.
+**DONE — monthly source, tests và browser mock; request lifecycle cả ba view đã đóng FE local ở mục 13.** File: `MonthlyReportView`, `MonthlyRevenueChart`, `DailyDetailsTable`, tests.
 
 - [x] R-03.1 Dựng filter panel + chart/summary 70:30 và daily table theo mẫu; mobile stack.
 - [x] R-03.2 Chart dùng toàn bộ `dailyDetails` của 28/29/30/31 ngày; trục/nhãn đọc được,
@@ -463,24 +475,24 @@ Task này được cập nhật xuyên suốt; không coi một lần audit là 
 
 ### R-04 — Báo cáo ngày
 
-**READY sau R-01/02.** File: `DailyReportView`, tests.
+**DONE — FE local 2026-10-16.** File: `DailyReportView`, tests.
 
-- [ ] R-04.1 Filter ngày + khoa theo style chung; tiêu đề/phạm vi phản ánh reportDate/departmentId.
-- [ ] R-04.2 Bốn số liệu gọn theo source, không thêm biểu đồ/KPI hoặc so sánh ngày chưa có contract.
-- [ ] R-04.3 Dữ liệu 0 vẫn là report thành công; lỗi không thành 0; missing department name giữ UUID.
-- [ ] R-04.4 Test ngày bắt buộc/không hợp lệ, 0, 401/403, correlation/retry và stale response.
+- [x] R-04.1 Filter ngày + khoa theo style chung; tiêu đề/phạm vi phản ánh reportDate/departmentId.
+- [x] R-04.2 Bốn số liệu gọn theo source, không thêm biểu đồ/KPI hoặc so sánh ngày chưa có contract.
+- [x] R-04.3 Dữ liệu 0 vẫn là report thành công; lỗi không thành 0; missing department name giữ UUID.
+- [x] R-04.4 Test ngày bắt buộc/không hợp lệ, 0, 401/403, correlation/retry và stale response.
 
 **Đạt khi:** giữ hành vi daily đã có và thống nhất request/error semantics với R-02.
 
 ### R-05 — Thuốc xuất nhiều
 
-**READY sau R-01/02.** File: `TopMedicinesView`, validation/tests.
+**DONE — FE local 2026-10-16.** File: `TopMedicinesView`, validation/tests.
 
-- [ ] R-05.1 Filter inclusive from/to, optional department, limit 1–50; rank list/table dễ đọc.
-- [ ] R-05.2 Tên và `totalQuantity` từ Report; không gọi Pharmacy để tự tổng hợp hoặc đoán tên thiếu.
-- [ ] R-05.3 Empty state đúng range đã submit; giữ drugId đầy đủ có thể xem/copy;
+- [x] R-05.1 Filter inclusive from/to, optional department, limit 1–50; rank list/table dễ đọc.
+- [x] R-05.2 Tên và `totalQuantity` từ Report; không gọi Pharmacy để tự tổng hợp hoặc đoán tên thiếu.
+- [x] R-05.3 Empty state đúng range đã submit; giữ drugId đầy đủ có thể xem/copy;
   không thêm đơn vị thuốc nếu response không có.
-- [ ] R-05.4 Test empty, thứ tự response, rank limit, date/timezone, lỗi sau kết quả cũ.
+- [x] R-05.4 Test empty, thứ tự response, rank limit, date/timezone, lỗi sau kết quả cũ.
 
 **Đạt khi:** FE không tạo ranking từ Rx/dispense khác context và không hiển thị quantity như doanh thu.
 
@@ -735,6 +747,7 @@ task LOCAL + GATE, giữ activation subtask và task chính mở; không đếm 
 | Ngày / commit | Task/subtask | File đã đổi | Kiểm tra và kết quả | Gate còn mở |
 |---|---|---|---|---|
 | 2026-10-12 / baseline `c110671b` | Lập plan + lưu mẫu đã duyệt | Tài liệu; chưa sửa `frontend/src` | Đọc source/rules/controller/Gateway; kiểm link/diff tài liệu | SH-01/02, GW-01/02/03, BE-01/02/03 |
+| 2026-10-16 / workspace, chưa commit | R-01/02/04/05, P-02/03/07 + frame được giao | Pharmacy/Report; shared paths tại workboard | Typecheck/lint/build PASS; bounded full suite 211/211; browser fixture desktop/mobile/themes | Signed Gateway/runtime/source/paid/Support/coverage tại handoff chung |
 
 Không chạy lại toàn bộ backend chỉ vì chỉnh tài liệu/UI. Chạy đúng kiểm tra của code được thay đổi;
 chỉ ghi “PASS” sau khi có kết quả thực của lượt đó.
@@ -791,3 +804,86 @@ monthly URL submit trước khi ghi PASS. Không ghi các lượt lỗi đó là
 
 Tiếp tục R-01.3 và R-02 cho Daily/Top, rồi R-04/R-05; sau đó P-02/P-03/P-05/P-06/P-07.
 Surgery/V2 đi theo gate đã ghi, có thể làm local DTO/presenter nhưng chưa tự mở route hoặc sửa shared/Gateway.
+
+## 13. Checkpoint Pharmacy/Report và frame 6 service — 2026-10-16
+
+Mục 12 giữ bằng chứng lịch sử của batch 2026-10-12. Checkpoint hiện tại ghi nhận thêm:
+
+| Task | Trạng thái | Bằng chứng |
+|---|---|---|
+| R-01 | DONE — FE local | URL của cả ba view, giữ filter theo tab, submit cùng query reload, Back/Forward; chỉ active view gọi API |
+| R-02 | DONE — FE local | Calendar/local date, UUID/range/limit, last submitted identity, stale/unmount guard, retry, 401/403/error code/correlation |
+| R-04 | DONE — FE local | Daily filter + 4 số liệu server; zero hợp lệ, tiêu đề theo response, draft không đổi kết quả cũ |
+| R-05 | DONE — FE local | Inclusive range, limit 1–50, thứ tự server, UUID đầy đủ/tên dài, empty đúng scope, không đoán đơn vị |
+| P-02 | DONE — FE local | Chi tiết đầy đủ, UUID guard, 404/correlation, read-only, expiry/stock badges; conflict refresh có khóa thao tác và read retry |
+| P-03 | DONE — FE local | Shared Field/Button, DTO validation, focus lỗi, khóa submit trùng; tạo thuốc và stock delta dùng response server, không tự gửi lại khi lỗi mạng |
+| P-07 | DONE — FE local | Inline confirmation có heading, focus/Escape/cancel, ADMIN gate, replayed true/false và explicit retry |
+
+Cộng P-01/P-04/R-03 đã hoàn tất từ batch trước thành 10 task chính FE local. Chưa đóng
+HFE-01/02, P-05/06/08, R-06/07/08, Q-01/02 chỉ vì các màn hình trên đã có code. Surgery/Inpatient
+và full-V2 operator surfaces tiếp tục deferred theo scope canonical.
+
+Shared frame được người dùng giao rõ cho toàn hệ thống: các paths và mapping sáu nhóm nằm ở
+[workboard](frontend-workboard.md). Logical feature folders/API/role của owner khác giữ riêng;
+không bật Surgery/Inpatient. Mobile header bỏ title phụ dưới breakpoint nhỏ để tránh chữ bị cắt.
+
+Kiểm tra batch này:
+
+- Report focused suite: 70/70 tests, 6 files; Pharmacy drug suite: 40/40 tests, 3 files sau sửa focus lỗi server.
+- Full suite `pnpm test -- --maxWorkers=2`: **211/211 tests, 31 files**.
+  Lượt mặc định chạy cùng lint: 209/211, hai lỗi timeout/nhập form ở CreateAdmissionForm (Inpatient),
+  cùng nhóm flaky đã ghi ở workboard 2026-10-15. Không sửa foreign/deferred source hoặc test configuration.
+- Browser dùng Next local + disposable gateway fixture tại loopback, không dùng database hoặc token thật:
+  Daily submit/Back/Forward, Top deep link/tên dài/UUID; Outbox Escape/return-focus/replay;
+  drug detail, tạo thuốc, stock confirmation/cancel/success và focus field lỗi.
+  Desktop + màn hình 360×800, theme Sáng/Tối; không tràn ngang ở các màn hình đã đo
+  (`scrollWidth=345`, `innerWidth=360`). Khôi phục theme System, đăng xuất và dừng fixture sau kiểm tra.
+- Typecheck/lint/production build trên source cuối **PASS**, chi tiết ở workboard.
+  Browser fixture chỉ chứng minh UI; không đóng signed-role Gateway, paid/source hoặc Support host acceptance.
+
+Phần việc tiếp theo trong scope Huy: P-05/P-06 (kê đơn và terminal actions legacy), sau đó đối chiếu
+outpatient MVP activation trước P-08; không lấy checkbox V0 làm bằng chứng V1 đã chạy.
+Mọi phụ thuộc backend/shared runtime được gom tại
+[handoff chung duy nhất](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+
+## 14. Checkpoint kê đơn và terminal actions — 2026-10-16
+
+Tiếp tục từ mục 13 trên branch `Huy`, HEAD `e34fbb4c53586880676c4416bbcc9b01097c3aa4`;
+thay đổi chưa commit/push. Production diff của batch chỉ nằm trong
+`src/features/pharmacy/components/prescription/**`; không sửa route, shared frame, API/types,
+Gateway hoặc backend của owner khác. Các thay đổi backend từ lượt trước giữ nguyên.
+
+| Task | Trạng thái | Bằng chứng |
+|---|---|---|
+| P-05 | DONE — FE local | Shared Field/Button và semantic theme; grid responsive; validation UUID/calendar/positive integer/duplicate/bounds; lỗi server theo dòng và focus; khóa submit trùng; V0 serializer không gửi giá hoặc V1 fields; chuyển trang theo prescriptionId server |
+| P-06 | LOCAL 4/4; GW-01 OPEN | Inline confirmation có label, initial focus, Escape và return-focus; cancel reason 1–500 ký tự; releasedReservations đúng response; dispense bodyless; khóa command trùng; refresh sau conflict/unknown outcome; giữ bằng chứng mutation thành công nếu GET mới lỗi |
+
+Tổng hiện tại: **11/30 task chính, 50/123 subtask FE local**. Không cộng P-06 vào task chính
+đã đóng vì acceptance của task còn yêu cầu real-role smoke. Mẫu số có các task Surgery/full V2
+deferred, không phải phần trăm hoàn thành MVP ngoại trú. P-08 và activation/release gates vẫn mở;
+không dùng kiểm thử V0 để xác nhận public outpatient V1, signed staff, paid/source hoặc Support host.
+
+Kiểm tra trên source cuối:
+
+- Thêm 51 tests: validation 14, create form 15, terminal actions 22. Bao phủ lỗi từng dòng,
+  role denial, wire V0, stale/unmount response, double submit, 401/403, 409, timeout/empty payload,
+  payment proof denial và read retry không gửi lại mutation.
+- Focused Pharmacy prescription/API suite **68/68**; sau sửa return-focus chạy lại action suite
+  **22/22**. Full `pnpm test -- --maxWorkers=2`: **262/262 tests, 34 files, exit 0**.
+  Các tests này mock API, không dùng PostgreSQL/RabbitMQ hoặc signed token thật.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**.
+  Build lần đầu bị EBUSY do log đặt trong `.next` đang bị build dọn; chuyển log ra thư mục tạm
+  và build lại đạt, không thay source/config để né lỗi.
+- Browser chạy source Next.js qua cùng proxy `/api/*` với gateway fixture riêng tại loopback.
+  Đã kiểm empty-submit/first-field focus, chọn thuốc/add/remove/duplicate option, tạo đơn bằng ID
+  response, hủy đơn với số reservation trả về, xuất đơn rồi đọc trạng thái terminal từ fixture.
+  Browser phát hiện trigger mất focus khi bị disabled; đã sửa và xác nhận Escape quay lại đúng
+  nút Hủy đơn/Xuất thuốc. Không khai báo inline confirmation là modal.
+- Desktop 1366×900 và mobile 360×800 Sáng/Tối; form mobile không tràn ngang
+  (`scrollWidth=345`, `innerWidth=360`). Khôi phục theme Theo hệ thống, đăng xuất, đóng tab và
+  dừng cả hai server kiểm tra. Dữ liệu/tài khoản mô phỏng không được đưa vào production source.
+
+GW-01 vẫn cần Hoàng Anh đối chiếu exact cancel/dispense policy: controller cancel cho ADMIN/DOCTOR,
+trong khi Gateway generic PUT hiện chỉ cho ADMIN/PHARMACIST. Không đổi role hoặc gọi service port
+để vượt gate. Phần còn lại tiếp tục trong
+[một handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).

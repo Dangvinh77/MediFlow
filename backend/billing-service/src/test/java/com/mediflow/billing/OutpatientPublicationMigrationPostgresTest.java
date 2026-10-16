@@ -36,13 +36,13 @@ class OutpatientPublicationMigrationPostgresTest {
         return Flyway.configure().dataSource(source).locations("classpath:db/migration").target(target).cleanDisabled(false).load();
     }
 
-    @Test void freshDatabase_migratesToV22AndCreatesCohortTable() {
+    @Test void freshDatabase_migratesToLatestAndCreatesCohortTable() {
         var flyway = flyway("latest");
         flyway.migrate();
         flyway.validate();
         assertThat(jdbc.queryForObject("SELECT to_regclass('billing_outpatient_publication_cohort') IS NOT NULL", Boolean.class)).isTrue();
         assertThat(jdbc.queryForObject("SELECT count(DISTINCT version) FROM flyway_schema_history WHERE type='SQL' AND success", Integer.class))
-                .isEqualTo(22);
+                .isEqualTo(23);
     }
 
     @Test void upgradeFromV21_preservesExistingHeldRowBytesAndLeavesCohortLinkNull() {
@@ -135,16 +135,16 @@ class OutpatientPublicationMigrationPostgresTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    @Test void outboxRowReferencingCohortWithAllowedShapeAndMatchingAccount_isAccepted() {
+    @Test void outboxRowReferencingCohortWithEmptyPayload_isRejected() {
         flyway("latest").migrate();
         UUID account = seedAccountAndRequest();
         UUID request = enrollCohort(account, "EXAM");
         UUID eventId = UUID.randomUUID();
-        jdbc.update("""
+        assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO BILLING_EVENT_OUTBOX(event_id,routing_key,aggregate_id,payload,publication_enabled,contract_version,outpatient_payment_request_id)
                 VALUES (?,?,?,?,TRUE,1,?)
-                """, eventId, "payment.completed", account, "{}", request);
-        assertThat(jdbc.queryForObject("SELECT publication_enabled FROM BILLING_EVENT_OUTBOX WHERE event_id=?", Boolean.class, eventId)).isTrue();
+                """, eventId, "payment.completed", account, "{}", request))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test void v0CompatibilityRowsPublishUnchangedAndAreAlsoImmutableAfterInsert() {

@@ -23,7 +23,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-      <div className="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-[4.5rem] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"
           aria-label="Mở điều hướng"
@@ -37,14 +37,14 @@ export function DashboardHeader({ role, onLogout, onOpenNavigation }: DashboardH
           </span>
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div className="hidden min-w-0 flex-1 sm:block">
           <p className="truncate text-sm font-semibold">Không gian vận hành MediFlow</p>
           <p className="truncate text-xs text-muted-foreground">
             {role ? roleLabels[role] ?? role : "Phiên làm việc"}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
+        <div className="ml-auto flex items-center gap-2 text-sm">
           <ThemeToggle />
           <button
             type="button"

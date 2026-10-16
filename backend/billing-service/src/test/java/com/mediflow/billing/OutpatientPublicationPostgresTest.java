@@ -1,5 +1,20 @@
 package com.mediflow.billing;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.mediflow.billing.application.dto.command.PrescriptionChargeCommand;
+import com.mediflow.billing.application.dto.request.CompleteLedgerPaymentRequest;
+import com.mediflow.billing.application.mapper.LedgerPaymentMapper;
+import com.mediflow.billing.application.service.LedgerPaymentService;
+import com.mediflow.billing.application.service.PrescriptionChargeService;
+import com.mediflow.billing.infrastructure.persistence.adapter.LedgerPaymentRepositoryAdapter;
+import com.mediflow.billing.infrastructure.persistence.adapter.PrescriptionChargeRepositoryAdapter;
+import com.mediflow.billing.domain.model.PaymentMethod;
+import org.mapstruct.factory.Mappers;
+import java.time.Clock;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -169,10 +184,7 @@ class OutpatientPublicationPostgresTest {
         UUID request = issueExam(cohort, appointment);
         UUID account = jdbc.queryForObject("SELECT account_id FROM PAYMENT_REQUEST WHERE payment_request_id=?", UUID.class, request);
         var outbox = new LedgerEventOutboxAdapter(jdbc, MAPPER);
-        var event = new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed", 1, Instant.now(), "corr", "billing-service",
-                new LedgerIntegrationEvent.PaymentCompletedPayload(UUID.randomUUID(), UUID.randomUUID(), request, account,
-                        UUID.randomUUID(), UUID.randomUUID(), "OUTPATIENT_VISIT", appointment, "SERVICE_PAYMENT",
-                        new BigDecimal("100000.00"), "VND", "CASH", Instant.now(), null, List.of()));
+        var event = completedPayment(request);
         tx().executeWithoutResult(status -> outbox.appendForOutpatientRequest(account, request, event));
         assertThat(jdbc.queryForObject("SELECT publication_enabled FROM BILLING_EVENT_OUTBOX WHERE event_id=?", Boolean.class, event.eventId())).isTrue();
         assertThat(jdbc.queryForObject("SELECT outpatient_payment_request_id FROM BILLING_EVENT_OUTBOX WHERE event_id=?", UUID.class, event.eventId()))
@@ -220,4 +232,118 @@ class OutpatientPublicationPostgresTest {
         assertThatThrownBy(() -> tx().executeWithoutResult(status -> outbox.appendForOutpatientRequest(account, request, event)))
                 .isInstanceOf(BillingRuleException.class);
     }
+    private LedgerIntegrationEvent completedPayment(UUID request) {
+        var row = jdbc.queryForMap("SELECT r.*, a.patient_id, a.department_id, a.care_episode_id FROM PAYMENT_REQUEST r JOIN BILLING_ACCOUNT a USING(account_id) WHERE payment_request_id=?", request);
+        UUID transaction = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO PAYMENT_TRANSACTION(transaction_id,account_id,payment_request_id,transaction_type,
+                    classification,status,amount,currency,payment_method,idempotency_key,completed_at)
+                VALUES (?,?,?,'PAYMENT','SERVICE_PAYMENT','COMPLETED',?,'VND','CASH',?,now())
+                """, transaction, row.get("account_id"), request, row.get("requested_amount"), UUID.randomUUID().toString());
+        return new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed", 1, Instant.now(), "corr", "billing-service",
+                new LedgerIntegrationEvent.PaymentCompletedPayload(transaction, (UUID) row.get("invoice_id"), request,
+                    (UUID) row.get("account_id"), (UUID) row.get("patient_id"), (UUID) row.get("department_id"),
+                    "OUTPATIENT_VISIT", (UUID) row.get("care_episode_id"), "SERVICE_PAYMENT",
+                    (BigDecimal) row.get("requested_amount"), "VND", "CASH", Instant.now(), null, List.of()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "paymentRequestId,foreign", "invoiceId,foreign", "patientId,foreign", "careEpisodeId,foreign",
+        "transactionId,foreign", "classification,ADMISSION_DEPOSIT", "careEpisodeType,ADMISSION",
+        "totalAmount,1", "currency,USD", "prescriptionId,foreign"
+    })
+    void mismatchedPayloadIsRejectedByWriterAndDirectSql(String field, String value) throws Exception {
+        var cohort = new OutpatientPublicationCohortAdapter(jdbc, new OutpatientMvpMode(true), properties(true, List.of("EXAM")));
+        UUID request = issueExam(cohort, UUID.randomUUID());
+        UUID account = cohortAccountOf(request);
+        var original = completedPayment(request);
+        var payload = MAPPER.valueToTree(original.payload());
+        ((ObjectNode) payload).set(field,
+                "totalAmount".equals(field) ? MAPPER.valueToTree(new BigDecimal(value))
+                : MAPPER.valueToTree("foreign".equals(value) ? UUID.randomUUID().toString() : value));
+        var event = new LedgerIntegrationEvent(original.eventId(), original.eventType(), 1, original.occurredAt(),
+                original.correlationId(), original.producer(), payload);
+        var outbox = new LedgerEventOutboxAdapter(jdbc, MAPPER);
+        assertThatThrownBy(() -> tx().executeWithoutResult(status -> outbox.appendForOutpatientRequest(account, request, event)))
+                .isInstanceOf(BillingRuleException.class);
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO BILLING_EVENT_OUTBOX(event_id,routing_key,aggregate_id,payload,publication_enabled,contract_version,outpatient_payment_request_id)
+                VALUES (?,?,?,?,TRUE,1,?)
+                """, event.eventId(), event.eventType(), account, MAPPER.writeValueAsString(event), request))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM BILLING_EVENT_OUTBOX", Integer.class)).isZero();
+    }
+
+    private UUID issuePrescription(OutpatientPublicationCohortPort cohort) {
+        var adapter = new PrescriptionChargeRepositoryAdapter(jdbc, cohort);
+        var service = new PrescriptionChargeService(adapter,
+                new LedgerEventOutboxAdapter(jdbc, MAPPER), Clock.systemUTC(), code -> {});
+        var command = new PrescriptionChargeCommand(
+                UUID.randomUUID(), "a".repeat(64), "b".repeat(64), "corr", UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), "OUTPATIENT", "OUTPATIENT_VISIT", UUID.randomUUID(), null,
+                "RX", List.of(new PrescriptionChargeCommand.Item(
+                    UUID.randomUUID(), "drug", 1, new BigDecimal("100000.00"))), new BigDecimal("100000.00"),
+                Instant.now(), "c".repeat(64));
+        return tx().execute(status -> service.issue(command).paymentRequestId());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"EXAM", "LAB_TEST", "PRESCRIPTION"})
+    void actualIssuanceAndPaymentPublishExactOriginalEvents(String purpose) throws Exception {
+        var cohort = new OutpatientPublicationCohortAdapter(jdbc, new OutpatientMvpMode(true), properties(true, List.of(purpose)));
+        UUID request = switch (purpose) {
+            case "EXAM" -> issueExam(cohort, UUID.randomUUID());
+            case "LAB_TEST" -> issueLabTest(cohort, UUID.randomUUID());
+            default -> issuePrescription(cohort);
+        };
+        jdbc.update("UPDATE PAYMENT_REQUEST SET expires_at=now()+interval '1 day' WHERE payment_request_id=?", request);
+        var service = new LedgerPaymentService(
+                new LedgerPaymentRepositoryAdapter(jdbc),
+                new LedgerEventOutboxAdapter(jdbc, MAPPER),
+                Mappers.getMapper(LedgerPaymentMapper.class),
+                Clock.systemUTC());
+        BigDecimal amount = jdbc.queryForObject("SELECT requested_amount FROM PAYMENT_REQUEST WHERE payment_request_id=?", BigDecimal.class, request);
+        tx().executeWithoutResult(status -> service.complete(request,
+                new CompleteLedgerPaymentRequest(UUID.randomUUID().toString(),
+                    amount, "VND", PaymentMethod.CASH, null), UUID.randomUUID(), "corr"));
+        var rows = jdbc.queryForList("SELECT * FROM BILLING_EVENT_OUTBOX ORDER BY created_at,event_id");
+        assertThat(rows).hasSize("PRESCRIPTION".equals(purpose) ? 3 : 2);
+        assertThat(rows).allSatisfy(row -> {
+            assertThat(row.get("publication_enabled")).isEqualTo(true);
+            assertThat(row.get("outpatient_payment_request_id")).isEqualTo(request);
+        });
+        // Reusing a real event with a forged target, purpose, or emergency flag must fail
+        // through both the adapter and SQL, even though its account and routing key are valid.
+        for (var row : rows) {
+            String type = (String) row.get("routing_key");
+            List<String> fields = switch (type) {
+                case "invoice.created" -> List.of("purpose", "prescriptionId", "invoiceId");
+                case "payment.completed" -> List.of("labTestIds");
+                default -> List.of("purpose", "prescriptionId", "emergencyOverride", "invoiceId", "labTestIds", "expiresAt", "missingExpiry");
+            };
+            for (String field : fields) {
+                var envelope = (ObjectNode) MAPPER.readTree((String) row.get("payload"));
+                UUID eventId = UUID.randomUUID();
+                envelope.put("eventId", eventId.toString());
+                var body = (ObjectNode) envelope.get("payload");
+                if ("labTestIds".equals(field)) ((com.fasterxml.jackson.databind.node.ArrayNode) body.get(field)).add(UUID.randomUUID().toString());
+                else if ("missingExpiry".equals(field)) body.putNull("expiresAt");
+                else if ("expiresAt".equals(field)) body.put(field, "2099-01-01T00:00:00Z");
+                else if ("emergencyOverride".equals(field)) body.put(field, true);
+                else body.put(field, "purpose".equals(field) ? "SURGERY" : UUID.randomUUID().toString());
+                var event = MAPPER.treeToValue(envelope, LedgerIntegrationEvent.class);
+                UUID account = (UUID) row.get("aggregate_id");
+                assertThatThrownBy(() -> tx().executeWithoutResult(status ->
+                        new LedgerEventOutboxAdapter(jdbc, MAPPER).appendForOutpatientRequest(account, request, event)))
+                        .isInstanceOf(BillingRuleException.class);
+                assertThatThrownBy(() -> jdbc.update("""
+                        INSERT INTO BILLING_EVENT_OUTBOX(event_id,routing_key,aggregate_id,payload,publication_enabled,contract_version,outpatient_payment_request_id)
+                        VALUES (?,?,?,?,TRUE,1,?)
+                        """, eventId, type, account, envelope.toString(), request))
+                        .isInstanceOf(DataIntegrityViolationException.class);
+            }
+        }
+    }
+
 }
