@@ -172,3 +172,21 @@ không trở thành acceptance mới của 48 subtask ngoại trú hoặc quyề
 Khi nhận việc, owner ghi source commit, exact scenario/IDs/hashes và run/fail/skip evidence vào
 chính file này. Mỗi subtask chỉ tick khi toàn bộ acceptance đạt. Đưa lasting rules vào canonical
 contracts/service docs; chỉ gỡ file handoff khi mọi active gate được cả producer/consumer nghiệm thu.
+
+## 6. Frontend MVP — gate tích hợp còn lại (2026-10-16)
+
+Theo yêu cầu chỉ dùng một handoff, phần phụ thuộc frontend tiếp tục ghi tại đây. Không tạo
+handoff FE mới hoặc coi browser fixture là bằng chứng backend chạy thật. FE local checklist nằm ở
+[plan Huy, mục 13](../../frontend/docs/huy-frontend-implementation-plan.md#13-checkpoint-pharmacyreport-và-frame-6-service--2026-10-16);
+phần kê đơn/hủy/xuất thuốc còn trong scope Huy tiếp tục thực hiện theo plan, không giao lại owner khác.
+
+| Phụ thuộc | Owner / bằng chứng cần nhận | Điều kiện nghiệm thu FE |
+|---|---|---|
+| Signed identity và Gateway runtime | Hoàng Anh + runtime operator; actual roles ADMIN/PHARMACIST/DOCTOR/MANAGER, accountId/staffId đúng source | Login → catalog/detail/create/adjust/replay/reports qua same-origin Gateway; allowed/denied paths, expired session và correlation đúng. Token fixture không thay signed staff proof |
+| Outpatient Rx source/paid flow | Vinh Clinical + Lộc Billing, theo H6-06.2/.4 và H6-12.1 ở trên | Chỉ dùng IDs trả về từ source, current charge/grant và signed actor; nối UI public outpatient sau activation acceptance, không tự fallback legacy V0 để báo V1 thành công |
+| Support host và endpoint routing | Lộc Notification + shared build/runtime owner + Hoàng Anh Gateway, theo H6-11 | Report/Notification logical routes tiếp tục đúng qua một Support host đã nghiệm thu; không đổi feature folder theo deployment hoặc coi sáu nhóm sidebar là proof sáu process |
+| Report currency, department và coverage | Huy Report + Lộc Billing + Hoàng Anh Organization và source owners | Legacy DTO giữ numeric format/department UUID khi chưa có display contract. Current accepted period/zone/currency/coverage có owner evidence trước UI snapshot mới; unavailable không biến thành zero |
+
+Đã có local test/browser evidence cho Reports, drug management và outbox; build/check results
+ghi ở workboard. Các dòng này không đóng 10 backend subtask, không cấp quyền sửa foreign/shared
+production paths và không bật Surgery/Inpatient/full-V2 operator UI.

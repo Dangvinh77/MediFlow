@@ -10,6 +10,7 @@ import { useReportRequest } from "../useReportRequest";
 import { validateMonthlyReportQuery, type MonthlyReportQuery } from "../validation";
 import { DailyDetailsTable } from "./DailyDetailsTable";
 import { MonthlyRevenueChart } from "./MonthlyRevenueChart";
+import { ReportRequestFeedback } from "./ReportRequestFeedback";
 
 interface MonthlyReportViewProps {
   initialQuery?: MonthlyReportQuery;
@@ -28,7 +29,7 @@ export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmi
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
   const initialRequest = useCallback(() => reportApi.monthly(initial.month, initial.year, initialDepartment), [initial.month, initial.year, initialDepartment]);
-  const { state, load, retry } = useReportRequest(initialRequest, autoLoad);
+  const { state, load, retry } = useReportRequest(initialRequest, autoLoad && validateMonthlyReportQuery(initial) === null);
   const loading = state.status === "loading";
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -56,14 +57,7 @@ export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmi
         <Button type="submit" variant="primary" loading={loading}>Xem báo cáo</Button>
         {validationError && <p id={errorId} role="alert" className="text-sm text-danger sm:col-span-2 xl:col-span-4">{validationError}</p>}
       </form>
-      {state.status === "idle" && <AsyncState kind="idle" message="Chọn tháng, năm và khoa để xem báo cáo." />}
-      {loading && <AsyncState kind="loading" message="Đang tải báo cáo tháng…" />}
-      {state.status === "error" && (state.forbidden ? (
-        <div role="alert" className="mt-5 rounded-xl border border-danger/40 bg-surface p-4 text-sm">
-          <p className="text-danger">{state.message}</p>
-          {state.correlationId && <p className="mt-1 text-xs text-muted-foreground">Mã theo dõi: {state.correlationId}</p>}
-        </div>
-      ) : <AsyncState kind="error" message={state.message} correlationId={state.correlationId} onRetry={retry} />)}
+      <ReportRequestFeedback state={state} idle="Chọn tháng, năm và khoa để xem báo cáo." loading="Đang tải báo cáo tháng…" onRetry={retry} />
       {state.status === "success" && (
         <div className="mt-6">
           <div className="grid gap-5 xl:grid-cols-[minmax(0,2.2fr)_minmax(220px,1fr)]">

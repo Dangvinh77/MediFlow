@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
@@ -32,7 +34,7 @@ function errorMessage(cause: unknown): string {
     }
     return cause.message;
   }
-  return cause instanceof Error ? cause.message : "Không thể tạo thuốc.";
+  return "Chưa xác định được kết quả tạo thuốc. Hãy kiểm tra danh mục trước khi gửi lại.";
 }
 
 export function CreateDrugForm() {
@@ -46,15 +48,26 @@ export function CreateDrugForm() {
   const [fieldErrors, setFieldErrors] = useState<CreateDrugFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const focusField = useRef<CreateDrugField | undefined>(undefined);
+  const active = useRef(true);
   const capabilities = getPharmacyCapabilities(role);
   const today = getLocalTodayIso();
 
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!submitting && focusField.current) {
+      document.getElementById(focusField.current)?.focus();
+      focusField.current = undefined;
+    }
+  }, [fieldErrors, submitting]);
+
   function focusFirstError(errors: CreateDrugFieldErrors) {
-    const firstField = Object.keys(errors)[0] as CreateDrugField | undefined;
-    if (!firstField) return;
-    window.requestAnimationFrame(() => {
-      document.getElementById(firstField)?.focus();
-    });
+    focusField.current = Object.keys(errors)[0] as CreateDrugField | undefined;
   }
 
   function updateField(field: CreateDrugField, value: string) {
@@ -65,7 +78,7 @@ export function CreateDrugForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current || !getPharmacyCapabilities(getRole()).canCreateDrug) return;
 
     setFormError(null);
     const errors = validateCreateDrugForm(values, today);
@@ -75,24 +88,32 @@ export function CreateDrugForm() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const created = await pharmacyApi.createDrug(toCreateDrugRequest(values));
+      if (!active.current) return;
       router.replace(`/pharmacy/drugs/${created.drugId}`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
 
       if (cause instanceof ApiRequestError && cause.details.length > 0) {
-        const mapped = mapFieldErrors(cause.details);
+        const details = mapFieldErrors(cause.details);
+        const mapped: CreateDrugFieldErrors = {};
+        for (const key of Object.keys(EMPTY_CREATE_DRUG_FORM) as CreateDrugField[]) {
+          if (details[key]) mapped[key] = details[key];
+        }
         setFieldErrors(mapped);
         focusFirstError(mapped);
       }
       setFormError(errorMessage(cause));
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false;
+      if (active.current) setSubmitting(false);
     }
   }
 
@@ -108,13 +129,15 @@ export function CreateDrugForm() {
     );
   }
 
-  const field = (name: CreateDrugField) => ({
+  const field = (name: CreateDrugField, hasHint = false) => ({
+    disabled: submitting,
+    "aria-required": ["drugName", "unit", "price", "stockQuantity", "expiryDate"].includes(name) || undefined,
     "aria-invalid": fieldErrors[name] ? true : undefined,
-    "aria-describedby": fieldErrors[name] ? `${name}-error` : undefined,
+    "aria-describedby": fieldErrors[name] ? `${name}-error` : hasHint ? `${name}-hint` : undefined,
   });
 
   return (
-    <form onSubmit={submit} noValidate className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
+    <form onSubmit={submit} noValidate aria-busy={submitting || undefined} className="mt-6 space-y-6 rounded-xl border border-border bg-surface p-6">
       {formError && (
         <div role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
           {formError}
@@ -122,7 +145,7 @@ export function CreateDrugForm() {
       )}
 
       <div className="grid gap-5 md:grid-cols-2">
-        <FormField label="Tên thuốc" name="drugName" error={fieldErrors.drugName} required>
+        <Field label="Tên thuốc" htmlFor="drugName" error={fieldErrors.drugName} required>
           <input
             {...field("drugName")}
             id="drugName"
@@ -131,40 +154,40 @@ export function CreateDrugForm() {
             onChange={(event) => updateField("drugName", event.target.value)}
             className={inputClass(Boolean(fieldErrors.drugName))}
           />
-        </FormField>
-        <FormField label="Đơn vị" name="unit" error={fieldErrors.unit} required hint="Tối đa 20 ký tự">
+        </Field>
+        <Field label="Đơn vị" htmlFor="unit" error={fieldErrors.unit} required hint="Tối đa 20 ký tự">
           <input
-            {...field("unit")}
+            {...field("unit", true)}
             id="unit"
             value={values.unit}
             maxLength={20}
             onChange={(event) => updateField("unit", event.target.value)}
             className={inputClass(Boolean(fieldErrors.unit))}
           />
-        </FormField>
-        <FormField label="Hoạt chất" name="activeIngredient" error={fieldErrors.activeIngredient} hint="Không bắt buộc, tối đa 150 ký tự">
+        </Field>
+        <Field label="Hoạt chất" htmlFor="activeIngredient" error={fieldErrors.activeIngredient} hint="Không bắt buộc, tối đa 150 ký tự">
           <input
-            {...field("activeIngredient")}
+            {...field("activeIngredient", true)}
             id="activeIngredient"
             value={values.activeIngredient}
             maxLength={150}
             onChange={(event) => updateField("activeIngredient", event.target.value)}
             className={inputClass(Boolean(fieldErrors.activeIngredient))}
           />
-        </FormField>
-        <FormField label="Nhà sản xuất" name="manufacturer" error={fieldErrors.manufacturer} hint="Không bắt buộc, tối đa 150 ký tự">
+        </Field>
+        <Field label="Nhà sản xuất" htmlFor="manufacturer" error={fieldErrors.manufacturer} hint="Không bắt buộc, tối đa 150 ký tự">
           <input
-            {...field("manufacturer")}
+            {...field("manufacturer", true)}
             id="manufacturer"
             value={values.manufacturer}
             maxLength={150}
             onChange={(event) => updateField("manufacturer", event.target.value)}
             className={inputClass(Boolean(fieldErrors.manufacturer))}
           />
-        </FormField>
-        <FormField label="Giá thuốc (VND)" name="price" error={fieldErrors.price} required hint="Không âm, tối đa 2 chữ số thập phân">
+        </Field>
+        <Field label="Giá thuốc (VND)" htmlFor="price" error={fieldErrors.price} required hint="Không âm, tối đa 2 chữ số thập phân">
           <input
-            {...field("price")}
+            {...field("price", true)}
             id="price"
             type="number"
             inputMode="decimal"
@@ -174,8 +197,8 @@ export function CreateDrugForm() {
             onChange={(event) => updateField("price", event.target.value)}
             className={inputClass(Boolean(fieldErrors.price))}
           />
-        </FormField>
-        <FormField label="Tồn kho ban đầu" name="stockQuantity" error={fieldErrors.stockQuantity} required>
+        </Field>
+        <Field label="Tồn kho ban đầu" htmlFor="stockQuantity" error={fieldErrors.stockQuantity} required>
           <input
             {...field("stockQuantity")}
             id="stockQuantity"
@@ -187,10 +210,10 @@ export function CreateDrugForm() {
             onChange={(event) => updateField("stockQuantity", event.target.value)}
             className={inputClass(Boolean(fieldErrors.stockQuantity))}
           />
-        </FormField>
-        <FormField label="Hạn sử dụng" name="expiryDate" error={fieldErrors.expiryDate} required hint="Không được trước ngày hiện tại">
+        </Field>
+        <Field label="Hạn sử dụng" htmlFor="expiryDate" error={fieldErrors.expiryDate} required hint="Không được trước ngày hiện tại">
           <input
-            {...field("expiryDate")}
+            {...field("expiryDate", true)}
             id="expiryDate"
             type="date"
             min={today}
@@ -198,10 +221,10 @@ export function CreateDrugForm() {
             onChange={(event) => updateField("expiryDate", event.target.value)}
             className={inputClass(Boolean(fieldErrors.expiryDate))}
           />
-        </FormField>
-        <FormField label="Ngưỡng tồn thấp" name="lowStockThreshold" error={fieldErrors.lowStockThreshold} hint="Không bắt buộc; bỏ trống để dùng mặc định 10">
+        </Field>
+        <Field label="Ngưỡng tồn thấp" htmlFor="lowStockThreshold" error={fieldErrors.lowStockThreshold} hint="Không bắt buộc; bỏ trống để dùng mặc định 10">
           <input
-            {...field("lowStockThreshold")}
+            {...field("lowStockThreshold", true)}
             id="lowStockThreshold"
             type="number"
             inputMode="numeric"
@@ -211,17 +234,17 @@ export function CreateDrugForm() {
             onChange={(event) => updateField("lowStockThreshold", event.target.value)}
             className={inputClass(Boolean(fieldErrors.lowStockThreshold))}
           />
-        </FormField>
+        </Field>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
+        <Button
           type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          loading={submitting}
+          variant="primary"
         >
-          {submitting ? "Đang lưu…" : "Tạo thuốc"}
-        </button>
+          Tạo thuốc
+        </Button>
         <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
       </div>
     </form>
@@ -229,35 +252,5 @@ export function CreateDrugForm() {
 }
 
 function inputClass(invalid: boolean): string {
-  return [
-    "w-full rounded-lg border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground",
-    invalid ? "border-danger" : "border-border",
-  ].join(" ");
-}
-
-function FormField({
-  label,
-  name,
-  error,
-  required = false,
-  hint,
-  children,
-}: {
-  label: string;
-  name: string;
-  error?: string;
-  required?: boolean;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={name} className="text-sm font-medium">
-        {label}{required && <span aria-hidden="true"> *</span>}
-      </label>
-      {children}
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p id={`${name}-error`} className="text-xs text-danger">{error}</p>}
-    </div>
-  );
+  return `${controlClassName}${invalid ? " border-danger" : ""}`;
 }

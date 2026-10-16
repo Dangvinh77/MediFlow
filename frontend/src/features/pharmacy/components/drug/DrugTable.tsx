@@ -34,7 +34,7 @@ export function DrugTable({ drugs }: DrugTableProps) {
             <th scope="col" className="px-4 py-3">Đơn vị</th>
             <th scope="col" className="px-4 py-3 text-right">Tồn kho</th>
             <th scope="col" className="px-4 py-3">Hạn dùng</th>
-            <th scope="col" className="px-4 py-3 text-right">Giá</th>
+            <th scope="col" className="px-4 py-3 text-right">Giá (VND)</th>
             <th scope="col" className="px-4 py-3">Thao tác</th>
           </tr>
         </thead>
@@ -48,7 +48,7 @@ export function DrugTable({ drugs }: DrugTableProps) {
                 key={drug.drugId}
                 className="border-b border-border last:border-0"
               >
-                <td className="px-4 py-3">
+                <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted font-semibold text-primary">{drug.drugName.trim().slice(0, 1).toLocaleUpperCase("vi-VN")}</span>
                     <div>
