@@ -2,6 +2,7 @@ package com.mediflow.billing.infrastructure.persistence.adapter;
 
 import com.mediflow.billing.application.dto.command.LabTestChargeCommand;
 import com.mediflow.billing.application.port.out.LabTestChargeRepositoryPort;
+import com.mediflow.billing.application.port.out.OutpatientPublicationCohortPort;
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Charge;
 import java.sql.Timestamp;
@@ -17,7 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.MANDATORY)
 public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPort {
     private final JdbcTemplate jdbc;
-    public LabTestChargeRepositoryAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    private final OutpatientPublicationCohortPort cohort;
+    public LabTestChargeRepositoryAdapter(JdbcTemplate jdbc, OutpatientPublicationCohortPort cohort) {
+        this.jdbc = jdbc;
+        this.cohort = cohort;
+    }
 
     @Override public void claimDelivery(LabTestChargeCommand command) {
         jdbc.execute("SET LOCAL lock_timeout='3s'");
@@ -72,6 +77,7 @@ public class LabTestChargeRepositoryAdapter implements LabTestChargeRepositoryPo
                 charge.getGrossAmount(), Timestamp.from(charge.getIncurredAt()));
         jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
                 request, chargeId, charge.getGrossAmount());
+        cohort.enrollIfEligible(request);
         return new IssuedRequest(request, invoice, charge.getGrossAmount());
     }
     private static void same(Object expected, Object actual) { require(Objects.equals(expected, actual), "BILLING_LAB_TEST_SOURCE_CONFLICT"); }

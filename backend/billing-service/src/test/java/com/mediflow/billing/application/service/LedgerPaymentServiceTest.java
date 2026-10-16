@@ -62,7 +62,7 @@ class LedgerPaymentServiceTest {
         assertThat(request.getStatus()).isEqualTo(PaymentRequestStatus.PARTIALLY_PAID);
         verify(repository, never()).saveClearance(any());
         var event = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
-        verify(events).appendHeld(eq(account.getAccountId()), event.capture());
+        verify(events).appendForOutpatientRequest(eq(account.getAccountId()), eq(requestId), event.capture());
         assertThat(event.getValue().eventType()).isEqualTo("payment.completed");
         assertThat(((LedgerIntegrationEvent.PaymentCompletedPayload) event.getValue().payload()).classification())
                 .isEqualTo("SERVICE_PAYMENT");
@@ -77,7 +77,7 @@ class LedgerPaymentServiceTest {
         verify(repository).saveClearance(clearance.capture());
         assertThat(clearance.getValue().getPrescriptionId()).isEqualTo(target.prescriptionId());
         assertThat(clearance.getValue().getAmount()).isEqualByComparingTo("100");
-        verify(events, times(2)).appendHeld(any(), any());
+        verify(events, times(2)).appendForOutpatientRequest(any(), any(), any());
     }
 
     @Test void anotherPartialInstallmentDoesNotRejectValidTransition() {
