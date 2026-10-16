@@ -226,18 +226,23 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
   `deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker`). Nhận actual original bytes từ
   broker qua SHA-256, không chỉ assert JSON trong table. (Riêng "same key/different bytes conflict"
   đã có test ở tầng service — `LedgerPaymentServiceTest`/idempotency unit tests — không lặp lại ở L3.)
-- [ ] **CHƯA LÀM đầy đủ** — chỉ làm đúng nhánh "kill JVM sau broker publish trước mark + restart
-  resume cùng bytes, không phát trùng" (`OutpatientPublicationProcessRecoveryIT` +
-  profile `outpatient-publication-acceptance`, 1/1 pass). **Chưa** có test riêng cho: unroutable
-  message, NACK, confirm timeout, retry-exhaustion→quarantine, expired lease/stale owner reclaim,
-  admin replay chỉ-eligible-quarantined-row. Đây là việc còn lại nếu muốn L3 đầy đủ theo đúng tinh
-  thần handoff; dispatcher hiện có cơ chế retry/lease/quarantine chung (không riêng cho outpatient)
-  nhưng chưa được viết test riêng khẳng định cho nhánh publication này.
-- [ ] **CHƯA LÀM** — equal-timestamp payment/grant và nhiều requests cùng account (receipt/clearance
-  không mất, không dựa UUID order để suy causality, consumer nhận grant trước receipt vẫn đúng,
-  quarantine predecessor không bị skip). Không có test riêng; hành vi ordering hiện dựa vào
-  `findClaimable`'s `created_at`+`event_id` tie-break đã có từ trước (không phải phần mới của
-  handoff này) nhưng chưa được viết test khẳng định riêng cho cohort outpatient.
+- [x] Thêm `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` (4 test, real PG/Rabbit,
+  dispatcher thật): unroutable (không binding) → retry → quarantine đúng `maxAttempts`, không bao
+  giờ `published_at`; admin replay (`POST /api/v1/billing/admin/outbox/{id}/replay`) chỉ publish
+  lại **đúng một lần** cho row đang quarantined, replay lần 2 trên row đã publish bị từ chối 404;
+  expired lease/stale owner (`locked_at` giả cũ hơn `lease-seconds`) được dispatcher thật reclaim
+  và publish đúng một lần. Kill JVM sau broker publish trước mark vẫn ở
+  `OutpatientPublicationProcessRecoveryIT` (mục trên) + profile `outpatient-publication-acceptance`.
+  NACK/confirm-timeout không có test riêng (khó ép broker NACK một publish hợp lệ mà không giả
+  broker; rủi ro này đã được "unroutable" + "expired lease" che phủ phần lớn: cùng đường code
+  `markFailure`/retry/quarantine).
+- [x] Cùng file trên: equal-timestamp (`created_at` ép bằng nhau qua SQL) + hai request cùng account
+  — event có `event_id` nhỏ hơn bị thử trước; khi nó bị quarantine (chưa resolve), event thứ hai
+  **không bị mất, không bị bỏ qua (skip)** — `attempts=0`, chưa publish, đứng im đúng như spec
+  "quarantine predecessor không bị skip để che lỗi" — tới khi replay cái đầu, cái thứ hai mới được
+  publish, đúng thứ tự. (Phát hiện phụ lúc viết test: dispatcher không có lỗi; lỗi là do test tự
+  để queue cũ từ lần test trước rò sang lần sau trên cùng container Rabbit chia sẻ — đã sửa test,
+  không sửa `BillingOutboxDispatcher.java`.)
 
 ### L4 — verification và giao evidence
 
@@ -301,7 +306,7 @@ vẫn `false` — hành vi hiện tại không đổi khi chưa bật.
 |---|---|
 | L1 discovery | `mvn -pl backend/billing-service -am test` — nằm trong 1007/1007 pass (0 fail/error/skip, xem L4). Endpoint `GET /api/v1/billing/payment-requests/by-source`. Golden response thật (ADMIN token) lưu ở `src/test/resources/contracts/payment-request-discovery-v1/{exam,lab,prescription,not-found}.json`; ví dụ `.http` ở `backend/billing-service/payment-request-discovery.http`. Request mẫu đã nghiệm thu: EXAM `paymentRequestId=b7943beb-9a7e-4abc-9f68-04d43e210741`, LAB_TEST `67d05904-4eee-46f2-9008-1076249e6ddf`, PRESCRIPTION `94346737-ce0b-43fb-be01-3a4f18eca121`. |
 | L2 migration/cohort | `OutpatientPublicationMigrationPostgresTest` (10 test) + `OutpatientPublicationPostgresTest` (nay do V23 mở rộng thêm, bao gồm `mismatchedPayloadIsRejectedByWriterAndDirectSql` và `actualIssuanceAndPaymentPublishExactOriginalEvents`) — toàn bộ nằm trong 1007/1007. Fresh-migrate tới V23 và upgrade-từ-V21 đều giữ nguyên historical bytes/publication status; direct-SQL vi phạm fence (sửa `publication_enabled`, `payload`, `routing_key`, cohort row, hoặc insert với account/purpose/payload sai) đều bị `DataIntegrityViolationException`. |
-| L3 Rabbit/recovery | `OutpatientPublicationRabbitIntegrationTest` (6/6 pass, real PG+Rabbit+`BillingOutboxDispatcher`, không mock). Broker bytes SHA-256 khớp đúng bytes lưu `BILLING_EVENT_OUTBOX.payload` — ví dụ thật: EXAM `payment.completed` sha256 `525c365d364e1403c5180631e5a8dc1ff571feb2c91c5223df9403a5e5c442e5`, EXAM `financial.clearance.granted` sha256 `6e87afff8c45362ac04ac7b34c176ea48ad99e146b18b22ecb956f37061269a0`, PRESCRIPTION `invoice.created` sha256 `bbc8e5cc4e51c386aaab421a4d30c131f50fa34cf6bbbb70b487f759e0a77ff5` (shape khớp fixture có sẵn `contracts/ledger-v1/{payment-service,clearance-exam,invoice-prescription}.json`). `OutpatientPublicationProcessRecoveryIT` qua `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: 1/1 pass (kill JVM thật sau broker confirm, trước commit `published_at`; restart cùng jar resume đúng eventId/bytes, không phát trùng). Không IT nào bị Surefire chạy trùng (mặc định Surefire không khớp `*IT.java`). |
-| L4 full regression/delivery | `mvn -pl backend/billing-service -am test`: **1007/1007 pass, 0 fail/error/skip**. `mvn -pl backend/billing-service -am -DskipTests package`: build thành công, jar `billing-service-0.0.1-SNAPSHOT.jar`. `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: **1/1 pass** (yêu cầu Docker + Java 21; môi trường chạy thật, không skip). Không ghi token/PII; mọi ID ở trên là UUID nghiệp vụ (account/request/transaction/clearance/event), không phải thông tin bệnh nhân thật. |
+| L3 Rabbit/recovery | `OutpatientPublicationRabbitIntegrationTest` (6/6 pass, real PG+Rabbit+`BillingOutboxDispatcher`, không mock). Broker bytes SHA-256 khớp đúng bytes lưu `BILLING_EVENT_OUTBOX.payload` — ví dụ thật: EXAM `payment.completed` sha256 `525c365d364e1403c5180631e5a8dc1ff571feb2c91c5223df9403a5e5c442e5`, EXAM `financial.clearance.granted` sha256 `6e87afff8c45362ac04ac7b34c176ea48ad99e146b18b22ecb956f37061269a0`, PRESCRIPTION `invoice.created` sha256 `bbc8e5cc4e51c386aaab421a4d30c131f50fa34cf6bbbb70b487f759e0a77ff5` (shape khớp fixture có sẵn `contracts/ledger-v1/{payment-service,clearance-exam,invoice-prescription}.json`). `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` (4/4 pass, real PG+Rabbit): unroutable→retry→quarantine, admin replay chỉ-eligible-quarantined-row (publish lại đúng một lần, lần 2 bị 404), expired-lease/stale-owner reclaim đúng một lần, same-timestamp same-account ordering với quarantined predecessor không bị skip. `OutpatientPublicationProcessRecoveryIT` qua `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: 1/1 pass (kill JVM thật sau broker confirm, trước commit `published_at`; restart cùng jar resume đúng eventId/bytes, không phát trùng). Không IT nào bị Surefire chạy trùng (mặc định Surefire không khớp `*IT.java`). |
+| L4 full regression/delivery | `mvn -pl backend/billing-service -am test`: **1011/1011 pass, 0 fail/error/skip** (chạy lặp lại 2 lần, ổn định). `mvn -pl backend/billing-service -am -DskipTests package`: build thành công, jar `billing-service-0.0.1-SNAPSHOT.jar`. `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: **1/1 pass** (yêu cầu Docker + Java 21; môi trường chạy thật, không skip). Không ghi token/PII; mọi ID ở trên là UUID nghiệp vụ (account/request/transaction/clearance/event), không phải thông tin bệnh nhân thật. |
 | G1 Gateway + actual Billing | Chưa chạy — ngoài phạm vi Lộc, giao Hoàng Anh (xem mục 5, G1). Endpoint/DTO/error đã khóa ở mục 3, có golden fixtures ở trên để đối chiếu khi mở route Gateway. |
 | V-CLOSE-03 consumer acceptance | Chưa chạy — chờ G1 xong; Vinh tự chứng minh theo mục 6. |
