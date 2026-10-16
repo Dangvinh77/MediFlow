@@ -1,0 +1,39 @@
+### G1 actual Billing smoke through Gateway. Populate variables privately from the test environment.
+### Never commit tokens or patient PII. Source tuple must come from its producer, not Billing SQL.
+### Use a fresh source and source-verified Billing test flags/catalog; coordinate with Lộc for a shared environment.
+### No request here enables deployment gates. Do not use the historical golden fixture IDs as live IDs.
+@gateway = http://localhost:8080
+
+### Human ADMIN access token; exact EXAM appointmentId / LAB_TEST labId / PRESCRIPTION prescriptionId.
+GET {{gateway}}/api/v1/billing/payment-requests/by-source?purpose={{purpose}}&sourceId={{sourceId}}&patientId={{patientId}}&careEpisodeId={{careEpisodeId}}
+Authorization: Bearer {{adminAccessToken}}
+X-Correlation-Id: {{discoveryCorrelationUuid}}
+
+### Repeat with CASHIER, expect the same exact persisted source relationships.
+GET {{gateway}}/api/v1/billing/payment-requests/by-source?purpose={{purpose}}&sourceId={{sourceId}}&patientId={{patientId}}&careEpisodeId={{careEpisodeId}}
+Authorization: Bearer {{cashierAccessToken}}
+X-Correlation-Id: {{cashierCorrelationUuid}}
+
+### Payment ID, currency and amount come exclusively from the successful discovery response.
+### CompleteLedgerPaymentRequest wire shape; only use a payable new request approved for this test.
+POST {{gateway}}/api/v1/billing/payment-requests/{{paymentRequestIdFromDiscovery}}/payments
+Authorization: Bearer {{cashierAccessToken}}
+X-Correlation-Id: {{paymentCorrelationUuid}}
+Content-Type: application/json
+
+{
+  "idempotencyKey": "{{newPaymentOperationKey}}",
+  "amount": {{remainingAmountFromDiscovery}},
+  "currency": "{{currencyFromDiscovery}}",
+  "paymentMethod": "CASH"
+}
+
+### Read back the same source tuple: compare paidAmount / remainingAmount / status and request ID.
+GET {{gateway}}/api/v1/billing/payment-requests/by-source?purpose={{purpose}}&sourceId={{sourceId}}&patientId={{patientId}}&careEpisodeId={{careEpisodeId}}
+Authorization: Bearer {{adminAccessToken}}
+X-Correlation-Id: {{readbackCorrelationUuid}}
+
+### Billing validation: forwarded to Billing, expected 400 INVALID_REQUEST with same correlation.
+GET {{gateway}}/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=malformed&patientId={{patientId}}&careEpisodeId={{careEpisodeId}}
+Authorization: Bearer {{adminAccessToken}}
+X-Correlation-Id: {{validationCorrelationUuid}}
