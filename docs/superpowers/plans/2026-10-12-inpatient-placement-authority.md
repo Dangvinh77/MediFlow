@@ -364,7 +364,7 @@ git commit -m "test(inpatient): prove placement producer contracts"
 **Files:**
 - Modify: `docs/handoffs/care-finance/CONTRACT-INPATIENT-SURGERY-01.md`
 - Modify: `docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md`
-- Modify: `docs/handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md`
+- Modify: `docs/handoffs/HANDOFF-HUY-MVP.md`
 - Modify: `docs/handoffs/README.md`
 - Modify: `docs/ai/services/inpatient.md`
 - Modify: `docs/eproject_general_plan/backend-spec/care-finance-v2/10-inpatient.md`

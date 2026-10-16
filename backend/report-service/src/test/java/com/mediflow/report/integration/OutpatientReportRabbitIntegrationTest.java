@@ -19,6 +19,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -44,6 +45,7 @@ class OutpatientReportRabbitIntegrationTest {
     @Autowired RabbitTemplate rabbit;
     @Autowired RabbitAdmin admin;
     @Autowired RabbitListenerEndpointRegistry registry;
+    @SpyBean com.mediflow.report.messaging.consumer.OutpatientReportFactConsumer consumer;
     private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach void startIsolatedScenario() {
@@ -77,6 +79,96 @@ class OutpatientReportRabbitIntegrationTest {
         assertThat(jdbc.queryForList("SELECT completed_refunds FROM report_refund_cash_daily", java.math.BigDecimal.class))
                 .hasSize(2).allSatisfy(v -> assertThat(v).isEqualByComparingTo("20.00"));
         assertThat(count("financial_contribution")).isZero();
+    }
+
+    @Test void labProducerBytesSurviveRestartAndNewDeliveryIdWithoutAnotherTestCount() throws Exception {
+        byte[] body = Files.readAllBytes(Path.of(
+                "../lab-service/src/test/resources/contracts/lab.result.created.v1.json"));
+        send("lab.result.created", body);
+        settle(() -> assertThat(count("operational_event_journal")).isOne());
+        var original = mapper.readTree(body).path("payload");
+        var replay = (ObjectNode) mapper.readTree(body);
+        replay.put("eventId", UUID.randomUUID().toString());
+        listener().start();
+        send("lab.result.created", body);
+        send("lab.result.created", mapper.writeValueAsBytes(replay));
+        settle(() -> assertThat(count("operational_event_journal")).isEqualTo(2));
+        var contribution = jdbc.queryForMap("""
+                SELECT source_id, source_revision, department_id, care_episode_type, care_episode_id,
+                       numeric_value FROM operational_contribution WHERE metric_type='LAB_TESTS'
+                """);
+        assertThat(contribution.get("source_id").toString()).isEqualTo(original.path("labId").asText());
+        assertThat(contribution.get("source_revision")).isEqualTo(1);
+        assertThat(contribution.get("department_id").toString()).isEqualTo(original.path("departmentId").asText());
+        assertThat(contribution.get("care_episode_type")).isEqualTo("OUTPATIENT_VISIT");
+        assertThat(contribution.get("care_episode_id").toString()).isEqualTo(original.path("careEpisodeId").asText());
+        assertThat(((Number) contribution.get("numeric_value")).longValue()).isOne();
+        assertThat(count("report_cash_receipt")).isZero();
+        assertThat(count("financial_contribution")).isZero();
+
+        replay.put("eventId", UUID.randomUUID().toString());
+        ((ObjectNode) replay.path("payload")).put("departmentId", UUID.randomUUID().toString());
+        byte[] conflict = mapper.writeValueAsBytes(replay);
+        listener().start();
+        send("lab.result.created", conflict);
+        assertDlq(conflict);
+        assertThat(count("operational_event_journal")).isEqualTo(2);
+        assertThat(jdbc.queryForMap("""
+                SELECT source_id, source_revision, department_id, care_episode_type, care_episode_id,
+                       numeric_value FROM operational_contribution WHERE metric_type='LAB_TESTS'
+                """)).isEqualTo(contribution);
+    }
+
+    @Test void clinicalAdmissionProducerBytesRemainOnDurableDlqWithoutVisitContribution() throws Exception {
+        byte[] body = Files.readAllBytes(Path.of(
+                "../clinical-service/src/test/resources/contracts/medicalrecord.completed.v1.json"));
+        send("medicalrecord.completed", body);
+        assertDlq(body);
+        assertThat(count("operational_event_journal")).isZero();
+        assertThat(count("operational_contribution")).isZero();
+        assertThat(count("report_cash_receipt")).isZero();
+    }
+
+    @Test void legacyBacklogStaysDurableWhileMvpListenerProcessesItsSeparateQueue() throws Exception {
+        String legacy = "report.q";
+        // This broker is disposable and belongs exclusively to this suite. Capture the existing
+        // backlog rather than purge it: MVP startup must neither repurpose nor consume that queue.
+        int before = admin.getQueueInfo(legacy).getMessageCount();
+        byte[] body = prescription();
+        send("prescription.filled", body);
+        settle(() -> assertThat(count("operational_event_journal")).isOne());
+        listener().start();
+        admin.initialize();
+        listener().stop();
+        assertThat(admin.getQueueInfo(legacy).getConsumerCount()).isZero();
+        assertThat(admin.getQueueInfo(legacy).getMessageCount()).isEqualTo(before + 1);
+        assertThat(count("payment_contribution")).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM operational_contribution WHERE metric_type='DISPENSED_PRESCRIPTIONS'",
+                Long.class)).isOne();
+    }
+
+    @Test void deliveryFailureAfterCommittedEffectBeforeAckRetriesWithoutAnotherContribution() throws Exception {
+        byte[] body = prescription();
+        var attempts = new java.util.concurrent.atomic.AtomicInteger();
+        org.mockito.Mockito.doAnswer(invocation -> {
+            invocation.callRealMethod(); // The receiver's real Report transaction has already committed.
+            if (attempts.incrementAndGet() == 1) {
+                assertThat(count("operational_event_journal")).isOne();
+                throw new IllegalStateException("Isolated delivery failure after commit before listener ACK");
+            }
+            return null;
+        }).when(consumer).consume(org.mockito.ArgumentMatchers.any(Message.class));
+        send("prescription.filled", body);
+        settle(() -> {
+            assertThat(attempts.get()).isEqualTo(2);
+            assertThat(count("operational_event_journal")).isOne();
+        });
+        assertThat(jdbc.queryForObject("SELECT sum(numeric_value) FROM operational_contribution WHERE metric_type='DISPENSED_PRESCRIPTIONS'",
+                Long.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT sum(numeric_value) FROM operational_contribution WHERE metric_type='DISPENSED_UNITS'",
+                Long.class)).isEqualTo(2);
+        assertThat(admin.getQueueInfo(DLQ).getMessageCount()).isZero();
+        assertThat(count("report_cash_receipt")).isZero();
     }
 
     @Test void admissionDepositIsRetainedInDlqWithoutFinancialOrOperationalEffects() throws Exception {

@@ -13,7 +13,7 @@ Namespaced migration copies live at `classpath:mediflow/report/db/migration`, by
 Standalone keeps its original datasource and aliases for compatibility. All Report transactions
 select reportTransactionManager; native adapters select reportJdbcTemplate. Security/advice/Rabbit
 beans and scheduled work are now namespaced, module security matches Report routes only.
-Full composition contract and owner actions: [Support handoff](../../docs/handoffs/HANDOFF-HUY-SUPPORT-COMPOSITION.md).
+Full composition contract and owner actions: [Support handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
 Local wiring does not prove real DB/broker/Support startup acceptance.
 
 Cutover preparation and rollback checklist: [owned runbook](../../docs/plans/huy-mvp-cutover-runbook.md).

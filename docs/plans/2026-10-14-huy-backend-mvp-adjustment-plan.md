@@ -1,9 +1,12 @@
 # Plan backend riêng Huy sau khi rút gọn MediFlow
 
 Ngày: 2026-10-14. Owner: Huy (`LQHuy0210`). Baseline source: `5f40b32c6c24333ff46f9ae9826ffdd9403ba788`.
-Bảy batch đã triển khai Pharmacy–Report; batch 4–7 dựa trên master `e9480758` (2026-10-15).
-Chưa commit/push; không bật gate hoặc sửa database đang vận hành. Database/broker kiểm thử
-được tạo riêng bằng Testcontainers. [Manifest/evidence](huy-backend-mvp-baseline.md).
+Chín batch đã triển khai Pharmacy–Report; batch 4–8 dựa trên master `e9480758` (2026-10-15).
+Implementation Huy đã merge qua PR #385 (`7610cb97`, merge `f15430dc`). Lượt tiếp tục ngày
+2026-10-16 dựa trên `9ef3b151`, chỉ sửa Pharmacy/Report và tài liệu Huy theo xác nhận của user;
+phần foreign/shared được bàn giao, không bật gate hoặc sửa database đang vận hành.
+Database/broker kiểm thử được tạo riêng bằng Testcontainers.
+[Manifest/evidence](huy-backend-mvp-baseline.md).
 
 ## 1. Mục tiêu và nguồn quyết định
 
@@ -79,7 +82,7 @@ Inventory đầy đủ exact DTO/errors/role/queue/profile sẽ được khóa �
 
 ## 3. Cách theo dõi
 
-**12 task chính / 48 subtask**; tám batch đóng **37/48 subtask**, còn **11 subtask**; hai task chính H6-01 và H6-10
+**12 task chính / 48 subtask**; chín batch đóng **38/48 subtask**, còn **10 subtask**; hai task chính H6-01 và H6-10
 (Report library composition-ready, chưa phải Support host). H6-09 đạt 4/4 phần code/test local;
 điều kiện đóng tích hợp vẫn cần source coverage và rollout được owner nghiệm thu.
 Đây là tiến độ adjustment phần Huy, không tỷ lệ hoàn thiện toàn backend hay proof runtime sáu-app.
@@ -150,6 +153,10 @@ phân loại Pharmacy HELD/quarantine/mode/receipt/reservation/lease và Report 
 rebuild. Có resource guards và disposable PG preservation tests. Chưa chạy inventory trên DB/broker
 được duyệt; .3/.4 vẫn mở. [Runbook phần Huy](huy-mvp-cutover-runbook.md) không tự cấp quyền cutover.
 
+Refresh 2026-10-16: `MvpCutoverInventoryResourceTest` của cả Pharmacy và Report đạt (2/2),
+xác nhận script inventory vẫn chỉ đọc, bounded và không lộ payload/định danh nhạy cảm. Đây chỉ là
+kiểm tra resource; không thay thế quan sát DB clone/broker được duyệt nên H6-02.3 vẫn mở.
+
 ### H6-03 — Retarget identity sang Core, giữ Clinical authority
 
 Map M6-05. P0. Dependency: H6-01; nghiệm thu cần Core M6-04. **CONTRACT**.
@@ -179,6 +186,11 @@ Pharmacy adapters bằng service JWT. Exact IDs, absence/unavailable, UUID corre
 Core destination, role/security pass. Clinical's supported compatibility seed ran with its durable
 publisher OFF because the actual durable legacy writer returned HTTP 500; see activation handoff.
 Thus .4 closes for packaged lookup only, not Clinical publisher or public V1 creation end-to-end.
+
+Refresh chốt độc lập 2026-10-16: `PharmacyAuthorityRuntimeAcceptanceIT` đã bỏ workaround tắt
+Clinical durable publisher và chạy lại với durable-events=true: 2 passed, 0 failed/errors/skipped,
+Maven exit 0. Lỗi timestamp cũ đã được sửa upstream; không còn là active blocker. Lookup vẫn
+không chứng minh Gateway hoặc actual paid chain. Original completion source proof ở batch 9.
 
 ### H6-04 — Nối public creation vào kernel outpatient V1
 
@@ -322,7 +334,7 @@ Map M6-08.1/08.2/14. P1. Dependency: H6-01/02; fixtures của H6-06 có thể d�
 - [x] **H6-08.3** Reuse cash/refund kernels, original payment linkage và refund-before-payment recovery;
   filter outpatient classification đúng contract, deposit/settlement không thành cash ngoại trú/earned.
   Partial refund và nhiều dòng Rx không double-count gross payment/items.
-- [ ] **H6-08.4** Same-byte + PG/Rabbit tests duplicate/out-of-order/conflict/crash;
+- [x] **H6-08.4** Same-byte + PG/Rabbit tests duplicate/out-of-order/conflict/crash;
   legacy queue không nhận V1 như payload flat. Deferred evidence còn trên durable path có owner,
   không bị silently ACK-drop hoặc xóa binding/queue lịch sử trong broker thật.
 
@@ -333,7 +345,18 @@ effects, operational/cash/refund receipt kernels reuse, bounded outpatient-only 
 Actual Lab/outpatient filled/Billing service payment+refund bytes và admission/deposit negatives đạt;
 original dedupe/refund/partial/operation tests vẫn đạt regression. Clinical fixture hiện là ADMISSION;
 outpatient completion positive chỉ là LOCAL VARIANT, cần fixture thật Vinh trước activation.
-.4 DB/broker/fault acceptance còn mở; không xóa hoặc drain các queue cũ.
+  .4 DB/broker/fault acceptance còn mở ở batch 3; không xóa hoặc drain các queue cũ.
+
+Batch 9 (2026-10-16) supersedes trạng thái .4 và source-positive gap ở trên: real PG/Rabbit
+tests giữ nguyên Lab/Rx/Billing bytes, duplicate/new delivery ID, conflict DLQ, early refund,
+storage rollback và retry. Fault sau commit trước ACK gọi receiver/transaction thật lần nữa mà
+không thêm contribution; đây là mô phỏng cửa sổ crash trong JVM, không kill producer/Support JVM.
+Legacy queue giữ backlog, không có MVP consumer và không cộng flat payment. Packaged Core/Clinical
+hiện tại tạo OUTPATIENT_FOLLOW_UP bằng public API với audited emergency override; original producer
+bytes tạo đúng một completed visit sau listener restart/replay, conflict giữ trên DLQ, coverage
+không tự được chấp nhận. Actual ADMISSION fixture vẫn là negative. H6-08 đạt 4/4 LOCAL;
+paid chain, Notification/Support, historical coverage và rollout vẫn mở ở H6-06/11/12.
+Commands, source hash và giới hạn proof: [batch 9 acceptance](huy-mvp-batch-9-acceptance.md).
 
 ### H6-09 — Reader MVP: số lượt/thuốc và cash/refund có coverage
 
@@ -419,7 +442,7 @@ Source Core đã chuyển Patient/Organization nên batch 4 sửa fixture paths 
 test classes (compatibility only), không đổi payload/logical producer hoặc bật Surgery. 40 identity
 HTTP tests local chạy lại; real Core .03.4 còn mở. Huy hỗ trợ profile canonical outpatient-mvp,
 không sửa mode của Vinh, Gateway, Notification, Compose/root build/CI.
-Owner actions chi tiết: [Support handoff](../handoffs/HANDOFF-HUY-SUPPORT-COMPOSITION.md).
+Owner actions chi tiết: [Support handoff](../handoffs/HANDOFF-HUY-MVP.md).
 
 Batch 6: Docker đã chạy; [10 đầu việc kiểm chứng](huy-mvp-batch-6-acceptance.md) bổ sung
 public creation/lifecycle → real PG, Report five-key intake → real Rabbit/PG, duplicate/conflict,
@@ -542,13 +565,31 @@ security/fault/race/replay/rollback có evidence. Full V2/Surgery readiness báo
 |---|---|---|
 | H6-01 | DONE — 4/4 | Baseline/manifest/golden slice/hashes; không là full runtime acceptance |
 | H6-02 | IN PROGRESS — 3/4 | Packaged MVP negative matrix đạt; historical DB/broker inventory + profile tổng mở |
-| H6-03 | LOCAL LOOKUP 4/4 — V1 CONTRACT OPEN | Packaged Core/Clinical identity/context lookup đạt; Clinical durable producer lỗi riêng, live Billing chain mở |
+| H6-03 | LOCAL LOOKUP 4/4 — V1 CONTRACT OPEN | Packaged Core/Clinical identity/context lookup đạt; timestamp regression đã fix và actual completion đã pass batch 9, live Billing chain mở |
 | H6-04 | LOCAL 4/4 — CONTRACT OPEN | Signed API→writer/PG create race/price/rollback/stale-after-lock đạt; packaged upstream/real chain mở |
 | H6-05 | LOCAL 4/4 — CONTRACT OPEN | Current authority + API/PG race/expiry/late-grant matrix đạt local; live Billing issuer/rollout mở |
 | H6-06 | IN PROGRESS — 2/4 | Five fixtures + selective new delivery cohort đạt local; cross-owner chain/rollout mở, historical HELD không release |
 | H6-07 | LOCAL/COMPAT 4/4 — V1 CONTRACT OPEN | 12 packaged V0 cases pass: JVM crashes, real Billing V0 compensation, bounded DLQ/redrive; live V1 issuer remains held |
-| H6-08 | IN PROGRESS — 3/4 | Selected five-fact intake + kernel reuse đạt local; PG/broker/Clinical owner bytes mở |
+| H6-08 | LOCAL 4/4 — CONTRACT OPEN | PG/Rabbit/retry/legacy retention và actual Clinical outpatient source đạt; integrated rollout/coverage vẫn mở |
 | H6-09 | LOCAL 4/4 — CONTRACT OPEN | Reader + PG scope/refund/zone/coverage/replay tests đạt; real source coverage/Gateway rollout chưa nghiệm thu |
 | H6-10 | DONE — 4/4 LOCAL | Plain lib, context/security/architecture/JVM smoke và fresh/upgrade PG đạt; Support host thuộc H6-11 |
 | H6-11 | TODO | Support host/path/shared assignment + Notification export |
 | H6-12 | IN PROGRESS — 1/4 | Owned source guides/manifest/commands/checklist cập nhật; integrated chain/cutover/rollback thật mở |
+
+H6-12.2 progress note (2026-10-16): added the owned evidence-to-runbook map in
+[`huy-mvp-cutover-runbook.md`](huy-mvp-cutover-runbook.md#6-h6-122-evidence-map--refreshed-2026-10-16).
+The map records this refresh's 15 non-container Pharmacy/Report suites (215 passing tests) without
+claiming container-backed or foreign-owner acceptance. The subtask stays open until source IDs,
+fixture hashes and integrated owner/runtime evidence are recorded.
+
+### Rà soát phần độc lập — 2026-10-16
+
+Đã đối chiếu đủ 10 checkbox còn mở với owned code/tests, source foreign hiện tại và điều kiện
+nghiệm thu gốc. Không còn subtask có thể đóng toàn bộ chỉ bằng production paths của Huy và
+disposable local tests. Phần local của H6-06.4/H6-12.2 đã có evidence; live issuer/consumer,
+Support/Gateway và historical/operator proof vẫn cần owner nên không tick thay.
+
+Toàn bộ việc cần nhận, owner, exact source gap và acceptance nằm trong **một file**
+[handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md). Sáu handoff/pointer backend Huy cũ đã được gộp, không giữ
+thêm file pointer/backlog trùng. Core retarget đã có packaged acceptance; Surgery chỉ ghi deferred,
+không tạo việc mới để tăng scope. Giữ nguyên mẫu số và tiến độ 38/48, không đổi tiêu chí để tăng %.

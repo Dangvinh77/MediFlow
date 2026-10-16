@@ -70,7 +70,7 @@ Các lần fail trước kết quả cuối được giữ nguyên ý nghĩa:
 - Live Billing V1 probe timeout 35 giây chờ `invoice.created`; source vẫn `appendHeld` dù charge consumer,
   ledger, DRUG price code và clearance lookup bật. Không release foreign row. Ca này nay opt-in, mặc định
   **SKIPPED**, không đổi thành pass. H6-06.2/.4 và end-to-end giữ mở trong
-  [activation handoff](../handoffs/HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md).
+  [activation handoff](../handoffs/HANDOFF-HUY-MVP.md).
 - Một selector trước đó chạy Core setup lỗi rồi V0 12/12 đạt vẫn exit 1 overall. Core đã rerun riêng
   thành công; không mô tả selector cũ là Maven exit 0.
 

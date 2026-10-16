@@ -2,7 +2,7 @@
 
 Supplement to the unchanged historical fixture README. Canonical decisions are now in
 [MVP contracts](../../../../../../../docs/plans/03-contracts.md) and the
-[Huy activation handoff](../../../../../../../docs/handoffs/HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md).
+[Huy activation handoff](../../../../../../../docs/handoffs/HANDOFF-HUY-MVP.md).
 
 The existing `prescription.created.outpatient.v1.json` plus four new
 `prescription.{filled,cancelled,expired,dispense.failed}.outpatient.v1.json` files are five

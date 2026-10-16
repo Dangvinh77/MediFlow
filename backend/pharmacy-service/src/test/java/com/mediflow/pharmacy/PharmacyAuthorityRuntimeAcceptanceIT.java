@@ -44,9 +44,9 @@ class PharmacyAuthorityRuntimeAcceptanceIT {
             .withEnv("SPRING_DATASOURCE_URL",url("clinical-db")).withEnv("MEDIFLOW_DB_USER",CLINICAL_DB.getUsername())
             .withEnv("MEDIFLOW_DB_PASSWORD",CLINICAL_DB.getPassword())
             .withEnv("MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED","true")
-            // This suite accepts lookup contracts, not Clinical's separate MVP publisher.
-            // Seed through the supported compatibility API; durable publisher regression is recorded in handoff.
-            .withEnv("MEDIFLOW_CLINICAL_DURABLE_EVENTS_ENABLED","false")
+            // Use the current durable producer during public API setup; lookup acceptance must
+            // not depend on the old workaround for Clinical's already-fixed timestamp regression.
+            .withEnv("MEDIFLOW_CLINICAL_DURABLE_EVENTS_ENABLED","true")
             .withEnv("MEDIFLOW_ORGANIZATION_SERVICE","core-service").withEnv("MEDIFLOW_PATIENT_SERVICE","core-service")
             .withEnv("SPRING_APPLICATION_JSON","{\"spring\":{\"cloud\":{\"discovery\":{\"client\":{\"simple\":{\"instances\":{\"core-service\":[{\"uri\":\"http://core:8089\"}]}}}}}}}");
     private final ObjectMapper mapper=new ObjectMapper();

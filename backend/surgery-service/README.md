@@ -7,7 +7,7 @@ The implementation notes and historical test counts below are not an active back
 runtime acceptance. Do not enable Surgery or delete its source/data to close the Huy MVP plan.
 Only compatibility fixture paths were aligned to Core; production callers still require a separate
 reactivation task. Current scope: [Huy plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
-[Core compatibility handoff](../../docs/handoffs/HANDOFF-SURGERY-CORE-PATHS.md).
+[Core compatibility handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
 
 Owner: Huy (`LQHuy0210`). Port `8091`, owned DB `mediflow_surgery`, base path `/api/v1/surgery`.
 Current scope: [MVP design](../../docs/plans/01-system-design.md), [bounded-context pointer](../../docs/ai/services/surgery.md).

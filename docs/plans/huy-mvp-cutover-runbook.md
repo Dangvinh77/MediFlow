@@ -106,7 +106,7 @@ Zero rows do not certify no in-flight work, historical completeness, or readines
    or a JAR smoke pass alone cannot close H6-10.4/H6-11/H6-12.
 
 The host/shared changes above are **not implemented by Huy in this scope**. See the
-[composition handoff](../handoffs/HANDOFF-HUY-SUPPORT-COMPOSITION.md). Do not start a second
+[composition handoff](../handoffs/HANDOFF-HUY-MVP.md). Do not start a second
 standalone Report alongside Support on the same DB to simulate a safe canary.
 
 ## 4. Rollback without deleting accepted writes
@@ -139,3 +139,54 @@ The third requires Docker for disposable PostgreSQL tests; report executed/faile
 
 Packaging probes do not create Support, prove producer acceptance, or validate migration upgrade
 against real historical data. Record those gates separately rather than relabel skipped as done.
+
+## 6. H6-12.2 evidence map — refreshed 2026-10-16
+
+This map separates Huy-owned evidence from integrated acceptance. A named test is not evidence for
+another service's producer, the live six-service topology, or a test that was not executed. In the
+2026-10-16 continuation, only the explicitly listed non-container suites below were rerun; Docker
+was unavailable, so container-backed rows remain **NOT RUN in this refresh**.
+
+| Runbook case | Huy-owned evidence | Refresh result / remaining acceptance |
+|---|---|---|
+| T02 — identity lookup denied/unavailable, no guessed IDs | `PrescriptionIdentityHttpTest`; `PrescriptionIdentityAdapterTest`; `PharmacyCoreDestinationTest` | Packaged Core lookup and owner acceptance not rerun in this refresh. |
+| T07 — server price, insufficient multi-drug stock | `OutpatientApiPostgresTest` create/rollback cases | Isolated-PostgreSQL tests exist; **not rerun** in this refresh. |
+| T08 — dispense/payment duplicate and concurrency | `OutpatientApiPostgresTest` dispense-race cases; `OutpatientPrescriptionLifecycleApplicationServiceTest` | Lifecycle application suite rerun: 17 tests passed. PostgreSQL race cases not rerun. |
+| T09 — Pharmacy restart/recovery | `PharmacyOutpatientRuntimeAcceptanceIT` | Packaged multi-container test not run; Billing V1 publication is separately held by the active handoff. |
+| T10 — terminal state and late payment | `OutpatientApiPostgresTest` cancel/expiry/late-grant cases; `PrescriptionClearanceRabbitIntegrationTest` | Isolated PostgreSQL/RabbitMQ acceptance not rerun. |
+| T11 — payment/allocation/refund races and wrong episode | Pharmacy wrong-episode/current-authority cases in `OutpatientApiPostgresTest`; Billing ledger tests are Lộc-owned | Huy-side PostgreSQL cases not rerun; Billing allocation/refund acceptance is not Huy evidence. |
+| T12 — receipt/grant does not auto-dispense | `PrescriptionClearanceRabbitIntegrationTest`; `PrescriptionCareEventCodecTest`; `OutpatientEventActivationTest` | Codec/activation suites rerun: 23 + 10 tests passed. RabbitMQ grant test not rerun. |
+| T13 — Report replay/conflicting bytes | `OutpatientReportRabbitIntegrationTest`; `OperationalContributionPostgresTest`; `OperationalReportFactReceiverTest` | Receiver unit suite rerun: 10 passed. Container-backed replay/conflict cases not rerun. |
+| T14 — cash/refund/coverage unavailable vs zero | `OutpatientReportRabbitIntegrationTest`; `FinancialSnapshotReadServiceTest`; `OperationalSnapshotReadServiceTest` | Snapshot-reader suites rerun: 21 + 9 passed. Cash/refund PostgreSQL/RabbitMQ cases not rerun. |
+| T15 — replay/publication/owner-only reads | Report replay/publication services and web tests | Publication-service suites rerun: 30 operational + 9 financial passed. Packaged Support/Notification isolation remains unaccepted. |
+| T16 — poison, retry, rollback, confirms | Pharmacy/Report Rabbit integration suites and outbox tests | **Not rerun** in this refresh; Docker broker/DB evidence is required. |
+| T17 — deferred services remain off | Pharmacy/Report MVP deferred-configuration and profile-alias tests | Pharmacy configuration suites rerun: 2 + 2 passed. Report configuration suites and full six-app flag matrix remain open. |
+| T18 — six-service startup and rollback | [Handoff chung Huy, sections 3–4](../handoffs/HANDOFF-HUY-MVP.md#3-support-composition--hợp-đồng-report-đã-cung-cấp) | No Support host or runtime change was made; remains shared-scope work. |
+| T19 — Gateway policy and FE smoke | Gateway owner acceptance and frontend workboard | Outside Huy backend scope; no Gateway/FE test was run or claimed. |
+
+The refresh executed 15 non-container test classes across Pharmacy and Report (215 tests,
+0 failures/errors), including both services' static inventory-safety tests. It is regression
+evidence for the named local logic only. H6-12.2 remains open until the integrated evidence/source
+IDs and owner/runtime acceptance required by T02/T07–T19 are recorded; none of the container or
+external-owner cases above is closed by these unit results.
+
+## 7. Batch 9 — Docker/source refresh 2026-10-16
+
+Lượt tiếp tục sau section 6 đã có Docker. Các dòng NOT RUN ở section 6 ghi đúng trạng thái
+lượt 215 tests trước đó; không còn mô tả lượt mới. [Batch 9 evidence](huy-mvp-batch-9-acceptance.md)
+ghi commands, counts, original source SHA-256 và ranh giới nghiệm thu.
+
+- Pharmacy full regression và rerun API bổ sung: 822 unique tests, không failure/error/skip.
+  T07/T08/T10/T11 phía Huy có PostgreSQL evidence; upstream test doubles không đóng Billing chain.
+- Report full regression và rerun Rabbit bổ sung: 1.330 unique tests, không failure/error/skip.
+  T13/T14/T16 có PG/Rabbit retry, rollback, early-refund recovery, duplicate/conflict và fault
+  sau commit trước ACK; legacy queue backlog không bị drain. Không gọi fault này là JVM kill.
+- Source acceptance: packaged Core/Clinical qua public HTTP phát completion ngoại trú thật,
+  Report giữ một contribution sau listener restart/replay; conflicting bytes đi DLQ, coverage=0.
+  Một integration test passed, không skipped. Emergency override không là paid-flow evidence.
+- Report packaging acceptance: 5 passed, không failure/error/skip; artifact resources và ba JVM
+  library probes đạt. Support host và Notification composition vẫn cần owner nghiệm thu riêng.
+
+H6-08.4 đóng LOCAL. H6-12.2 vẫn mở vì chưa có integrated Billing/Notification/Gateway/Support
+acceptance và operator coverage/cutover. Owner queue ở active activation/Support handoffs là
+điều kiện tiếp tục; không sửa hoặc tự đóng task của owner khác trong phạm vi Huy.
