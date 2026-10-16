@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "data": {
+    "paymentRequestId": "67d05904-4eee-46f2-9008-1076249e6ddf",
+    "invoiceId": "9bb16d99-cd31-48a3-8fd4-dd20eded3d67",
+    "accountId": "c5e598e9-d231-49ad-b6de-17cf6748fd4d",
+    "patientId": "00000000-0000-4000-8000-000000000003",
+    "departmentId": "00000000-0000-4000-8000-000000000005",
+    "purpose": "LAB_TEST",
+    "sourceType": "LAB_TEST",
+    "sourceId": "00000000-0000-4000-8000-000000000002",
+    "careEpisodeId": "00000000-0000-4000-8000-000000000006",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "appointmentId": null,
+    "recordId": "00000000-0000-4000-8000-000000000004",
+    "prescriptionId": null,
+    "labTestIds": ["00000000-0000-4000-8000-000000000002"],
+    "requestedAmount": 150000.00,
+    "paidAmount": 0,
+    "remainingAmount": 150000.00,
+    "currency": "VND",
+    "status": "PENDING",
+    "accountStatus": "OPEN",
+    "expiresAt": null,
+    "observedAt": "2026-10-16T09:46:22.850122Z"
+  },
+  "error": null,
+  "timestamp": "2026-10-16T09:46:22.852362Z",
+  "correlationId": "0aad3df9-6ca1-43ea-9770-9c6b0a9b77b5"
+}
