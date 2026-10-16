@@ -181,6 +181,41 @@ class OutpatientApiPostgresTest {
         assertThat(context.getBeansOfType(com.mediflow.pharmacy.messaging.consumer.AdmissionLifecycleConsumer.class)).isEmpty();
         assertThat(context.getBeansOfType(com.mediflow.pharmacy.messaging.consumer.PaymentCompletedConsumer.class)).isEmpty();
     }
+    @Test void filledProducerRelationshipComesFromPersistedPrescriptionAndSlipAndReplayKeepsExactBytes() throws Exception {
+        UUID prescriptionId = create(UUID.randomUUID(), request(drug, 2), 201);
+        seedGrant(prescriptionId);
+        var result = mapper.readTree(dispense(prescriptionId, 200)).path("data");
+        var persisted = jdbc.queryForMap("""
+                SELECT p.record_id, p.patient_id, p.department_id, p.care_episode_id, s.dispense_id
+                FROM prescription p JOIN dispense_slip s ON s.prescription_id=p.prescription_id
+                WHERE p.prescription_id=?
+                """, prescriptionId);
+        String original = jdbc.queryForObject("""
+                SELECT payload FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'
+                """, String.class, prescriptionId);
+        var envelope = mapper.readTree(original);
+        var payload = envelope.path("payload");
+        for (var field : Map.of("recordId", "record_id", "patientId", "patient_id", "departmentId", "department_id",
+                "careEpisodeId", "care_episode_id", "dispenseId", "dispense_id").entrySet()) {
+            assertThat(payload.path(field.getKey()).asText()).as(field.getKey())
+                    .isEqualTo(persisted.get(field.getValue()).toString());
+        }
+        assertThat(payload.path("recordId").asText()).isEqualTo(record.toString()).isNotEqualTo(episode.toString());
+        assertThat(payload.path("dispenseId")).isEqualTo(result.path("dispenseId"));
+        assertThat(payload.path("sourceId").asText()).isEqualTo(prescriptionId.toString());
+        assertThat(payload.path("careContext").asText()).isEqualTo("OUTPATIENT");
+        assertThat(payload.path("careEpisodeType").asText()).isEqualTo("OUTPATIENT_VISIT");
+        assertThat(payload.has("admissionId")).isFalse();
+        dispense(prescriptionId, 200);
+        assertThat(jdbc.queryForObject("""
+                SELECT payload FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'
+                """, String.class, prescriptionId)).isEqualTo(original);
+        assertThat(stock()).isEqualTo(8);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'
+                AND NOT delivery_enabled
+                """, Long.class, prescriptionId)).isOne();
+    }
     @ParameterizedTest @ValueSource(strings={"expiry","revocation","unavailable"})
     void authorizationChangesDuringRealDrugLockWaitAreCheckedBeforeAnyStockEffect(String change)throws Exception {
         UUID id=create(UUID.randomUUID(),request(drug,2),201);UUID grant=seedGrant(id);

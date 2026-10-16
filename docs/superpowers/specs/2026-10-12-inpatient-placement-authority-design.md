@@ -230,7 +230,7 @@ Update together with code:
   and placement fact consumed by Pharmacy;
 - `docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md` for placement/capacity facts and Report
   source semantics;
-- `docs/handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md` and registry status for Huy's remaining
+- `docs/handoffs/HANDOFF-HUY-MVP.md` and registry status for Huy's remaining
   consumer work;
 - `docs/ai/services/inpatient.md` and the implementation-ready Inpatient backend spec;
 - checked-in canonical JSON fixtures under the Inpatient test resources.

@@ -215,9 +215,9 @@ Không tạo nút revoke-consent/safety-pause hoặc phê duyệt pháp lý từ
 |---|---|---|---|
 | SH-01 | Vinh: public API wrapper nhận header Idempotency-Key tương thích ngược | Nối Surgery commands qua Gateway | [FE handoff](handoffs/HANDOFF-SHARED-HUY-IDEMPOTENCY-HEADERS.md) |
 | SH-02 | Vinh: shared nav/activation composition sau khi Surgery runtime được duyệt | Sidebar/khả dụng Surgery | Task release Q-02; không cần sửa shared để làm presenter |
-| GW-01 | Hoàng Anh: exact cancel/dispense Pharmacy role/method policy | DOCTOR cancel smoke | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) |
-| GW-02 | Hoàng Anh: các Surgery command còn thiếu; giữ default-off và deny unknown paths | Surgery command E2E | [Surgery handoff](../../docs/handoffs/HANDOFF-SURGERY-IMPLEMENTATION-DECISIONS.md) |
-| GW-03 | Hoàng Anh: reviewed ADMIN-only Report operator POST ingress | Rebuild/publication/rollback E2E | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-CARE-FINANCE-CONSUMERS.md) |
+| GW-01 | Hoàng Anh: exact cancel/dispense Pharmacy role/method policy | DOCTOR cancel smoke | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
+| GW-02 | Hoàng Anh: các Surgery command còn thiếu; giữ default-off và deny unknown paths | Surgery command E2E | [Surgery handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
+| GW-03 | Hoàng Anh: reviewed ADMIN-only Report operator POST ingress | Rebuild/publication/rollback E2E | [Huy care-finance handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md) |
 | BE-01 | Huy + producer owners: Pharmacy V1 authority/activation, exact care context | P-08 public activation | Huy care-finance handoff, không đoán từ generic staff/record |
 | BE-02 | Huy + producer owners: Surgery authority/intake/consent/team/financial freshness và release | Surgery live workflow | Surgery handoff và canonical contracts |
 | BE-03 | Huy: Report published snapshot/coverage và capability gates đúng môi trường | R-06…08 public activation | Huy care-finance handoff; acceptance lịch sử theo quyết định supported release mới nhất |

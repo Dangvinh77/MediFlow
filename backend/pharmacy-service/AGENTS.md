@@ -19,7 +19,7 @@ authorize release of historical HELD outbox rows or changes to foreign/shared mo
 - **Integration gate:** before changing prescription/payment/dispense contracts, queues or
   fixtures, read [MVP contracts](../../docs/plans/03-contracts.md),
   [reliability](../../docs/plans/04-data-reliability.md) and the
-  [active Huy MVP handoff](../../docs/handoffs/HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md).
+  [active Huy MVP handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
   Old care-finance handoffs were retired in the docs reset; they do not reopen deferred scope.
 - Never infer `recordId`/`admissionId`; update Billing, Clinical/Inpatient and Report/Notification
   fixtures/tests together or keep the dependent work blocked.

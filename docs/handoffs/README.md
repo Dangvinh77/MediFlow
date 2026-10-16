@@ -5,14 +5,11 @@ Handoff/backlog lịch sử đã thay bằng [plan MVP](../plans/05-implementati
 
 ## Active MVP gates
 
-- [Huy Report export → Support composition](HANDOFF-HUY-SUPPORT-COMPOSITION.md): module entry,
-  scoped persistence/security/resources and remaining Notification/shared/Gateway owner actions.
-
-- [Huy outpatient activation](HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md): Core/Clinical authority,
-  Gateway idempotency header, Billing/lifecycle consumer acceptance và Support packaging.
-  API gate mặc định OFF; không phục hồi backlog Admission/Surgery/full V2.
-  Packaged probes ngày 2026-10-15 còn phát hiện Billing V1 invoice publication HELD và
-  Clinical durable legacy metadata mismatch; lookup compatibility pass không đóng hai publisher gates.
+- [Handoff chung Huy — Pharmacy, Report và Support](HANDOFF-HUY-MVP.md): **một đầu mối** cho
+  toàn bộ 10 subtask Huy còn mở, owner/acceptance, Billing publication, Clinical attachment,
+  Notification, Gateway, Support composition, historical coverage và operator cutover/rollback.
+  Gộp/thay sáu handoff/pointer backend Huy cũ; Core lookup retarget đã có acceptance, Surgery ghi deferred trong
+  cùng file. Phần độc lập đạt 38/48; API/event gates vẫn OFF tới khi owner nghiệm thu đủ.
 
 [Contracts canonical](../plans/03-contracts.md) quy định source truth và modes.
 Mỗi gap MVP ghi trong task: producer, consumer, missing behavior/field, owner và acceptance
@@ -33,9 +30,4 @@ Inpatient/Surgery/full V2 deferred, không trở thành blocker để đóng lu�
   ghi rõ; không dùng các proof này thay actual Billing payment hoặc Report/Rx acceptance.
   Kết quả cuối batch: Clinical 311 + 3, Lab 216 + 2 + 1 = 533 tests, 0 failures/errors/skips;
   independent static review không còn finding. Owner delivery queue vẫn mở.
-- [Pharmacy Core identity lookup retarget](HANDOFF-PHARMACY-CORE-LOOKUPS.md) — Huy-owned caller update after Organization and Patient source modules move into Core.
 - [Gateway allowlist missing for two live Billing read endpoints](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) — Hoàng Anh-owned allowlist rule for `prescription-adjustments` and `surgery-cancellations`, found while building their frontend.
-
-## Deferred compatibility
-
-- [Surgery references to Core](HANDOFF-SURGERY-CORE-PATHS.md) — Huy-owned caller and fixture path update when Surgery is reactivated; outside outpatient MVP acceptance.

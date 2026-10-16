@@ -19,7 +19,7 @@ Support composition does not grant write access to Notification, root build, Com
 - **Integration gate:** before changing event bindings, revenue/payment semantics or projection
   fixtures, read [MVP contracts](../../docs/plans/03-contracts.md),
   [reliability](../../docs/plans/04-data-reliability.md) and the
-  [active Huy MVP handoff](../../docs/handoffs/HANDOFF-HUY-MVP-OUTPATIENT-ACTIVATION.md).
+  [active Huy MVP handoff](../../docs/handoffs/HANDOFF-HUY-MVP.md).
   New outpatient reads require accepted coverage; absence is not zero. Gates default OFF.
   Support must use the `lib` classifier and exclude the standalone Report application from scans;
   the library artifact alone does not establish multi-store/security composition readiness.
