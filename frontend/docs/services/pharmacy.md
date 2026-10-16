@@ -19,6 +19,16 @@ outbox confirmation supports Escape/cancel and distinguishes replayed=false. Dru
 outbox tests: 11/11. Browser fixture smoke covers create/detail/adjust and mobile layouts. Signed
 actor/Gateway/paid-source integration stays open in the [single Huy handoff](../../../docs/handoffs/HANDOFF-HUY-MVP.md).
 
+2026-10-16 prescription continuation: P-05 is FE-local complete; P-06 has all four local subtasks
+complete but remains open for real-role Gateway smoke. V0 create uses the shared themed controls,
+line-level validation/focus, duplicate-submit locking and the exact server prescription ID. Cancel
+and bodyless dispense use labelled inline confirmations with Escape/return-focus, server results
+and a fresh read after conflict or an unknown outcome. A failed follow-up read preserves successful
+mutation evidence and retries only the read. Added tests: 51; full FE suite: 262/262 across 34 files;
+typecheck/lint/production build pass. Isolated browser fixtures cover create/cancel/dispense and
+desktop/mobile themes; they do not prove signed identity, Gateway roles or outpatient V1 activation.
+See [checkpoint 14](../huy-frontend-implementation-plan.md#14-checkpoint-kê-đơn-và-terminal-actions--2026-10-16).
+
 ## Writable frontend scope
 
 - `frontend/src/features/pharmacy/**`

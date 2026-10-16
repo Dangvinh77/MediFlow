@@ -5,23 +5,29 @@
 Owner: Huy (`LQHuy0210`). Scope IMPLEMENT: Pharmacy/Report features và tài liệu tương ứng;
 shared frame chỉ trong những paths được giao ở mục kế tiếp. Không sửa foreign feature/backend.
 
-- Đóng thêm FE local: **R-01, R-02, R-04, R-05, P-02, P-03, P-07**.
+- Đóng thêm FE local: **R-01, R-02, R-04, R-05, P-02, P-03, P-05, P-07**.
   Report ba view dùng URL/submitted scope, validation và request/error lifecycle thống nhất.
   Drug detail/create/stock dùng theme/primitives sẵn có, khóa mutation trùng, focus lỗi,
   cập nhật tồn bằng DTO server và refetch sau conflict/unknown stock outcome.
   Outbox là inline confirmation ADMIN, Escape/return-focus, kết quả theo `replayed`.
-- [Plan Huy, checkpoint hiện tại](huy-frontend-implementation-plan.md#13-checkpoint-pharmacyreport-và-frame-6-service--2026-10-16):
-  **10/30 task chính, 42/123 subtasks FE local**. Mẫu số lịch sử có Surgery/full V2 deferred,
-  không dùng tỷ lệ đó để báo MVP hoàn thành. P-05/P-06 còn trong queue độc lập của Huy;
+  Form kê đơn dùng Field/Button, validation và lỗi server theo dòng, khóa submit trùng và giữ wire V0.
+- **P-06 xong 4/4 subtask local**, gồm inline hủy/xuất thuốc, focus/Escape/return-focus,
+  duplicate-submit lock và xử lý conflict/unknown outcome; task chính còn real-role smoke GW-01.
+- [Plan Huy, checkpoint hiện tại](huy-frontend-implementation-plan.md#14-checkpoint-kê-đơn-và-terminal-actions--2026-10-16):
+  **11/30 task chính, 50/123 subtasks FE local**. Mẫu số lịch sử có Surgery/full V2 deferred,
+  không dùng tỷ lệ đó để báo MVP hoàn thành. P-08 cần đối chiếu activation ngoại trú trước khi nối UI;
   các activation/release gates chưa đóng.
 - Source cuối: `pnpm typecheck`, `pnpm lint`, `pnpm build` đều **PASS**;
-  `pnpm test -- --maxWorkers=2` **211/211 tests, 31 files**.
-  Lượt mặc định chạy cùng lint có hai lỗi CreateAdmissionForm của Inpatient
+  `pnpm test -- --maxWorkers=2` **262/262 tests, 34 files**; thêm 51 tests kê đơn/terminal actions.
+  Build cuối đạt sau khi chuyển log kiểm tra ra ngoài `.next` để tránh EBUSY khi dọn output.
+  Lượt mặc định lịch sử ở mục 13 chạy cùng lint có hai lỗi CreateAdmissionForm của Inpatient
   (timeout/nhập form), 209/211; nhóm flaky này đã có ở checkpoint 2026-10-15.
   Không sửa Inpatient hoặc shared test config để làm lượt chạy đó xanh.
 - Browser fixture smoke: Daily submit/Back/Forward, Top deep link, outbox confirmation/replay,
   drug detail/create/adjust, focus lỗi/Escape và bố cục 360×800 Sáng/Tối đạt.
   Header nhỏ đã hết chữ phụ bị cắt; các màn hình đã đo không tràn ngang.
+  Batch mới kiểm kê đơn → ID server, hủy → releasedReservations, xuất → terminal read;
+  xác nhận bằng bàn phím và bố cục desktop/mobile dùng cùng theme Sáng/Tối/Hệ thống.
   Fixture/session cô lập, không dùng DB/token thật, đã đăng xuất và dừng server kiểm tra.
 - Phụ thuộc runtime/Gateway/source/paid/Support/coverage gom vào
   [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
