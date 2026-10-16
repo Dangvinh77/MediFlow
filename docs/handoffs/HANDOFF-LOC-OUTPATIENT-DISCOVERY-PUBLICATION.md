@@ -1,11 +1,31 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
-Ngày giao: **2026-10-16**. Source lock: **`71e2684d`**. Trạng thái: **L1–L4 ĐÃ TRIỂN KHAI VÀ CÓ
-EVIDENCE** (xem mục 7, source SHA `8bf1be00`); **G1 (Hoàng Anh, Gateway) và V-CLOSE-03 (Vinh) còn
-chờ**. API/migration/publication boundary mô tả dưới đây mô tả đúng trạng thái đã triển khai.
+Ngày giao: **2026-10-16**. Refresh: PR **#401**, source `bea617db` tích hợp master.
+**Trạng thái: L1/L2 đã merge; L3 có Rabbit/recovery proof nhưng CHƯA ĐÓNG; L4 có evidence owner.**
+Hai nhóm L3 còn thiếu: unroutable/NACK/timeout/retry exhaustion/quarantine/stale owner và
+equal-timestamp/multi-request ordering. G1 và V-CLOSE-03 vẫn mở.
 
-**Goal:** Lộc triển khai source-bound payment-request discovery và selective publication cho
-request ngoại trú mới, để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
+## Current delivery — Hoàng Anh và Lộc nhận đúng phần còn lại
+
+| Owner | Đã giao | Công việc tiếp theo |
+|---|---|---|
+| Lộc | L1 `9b89a355`; L2 `1624cbd3`, V22 cohort/V23 payload fence, writer và PG tests | PR #401 thêm actual Rabbit/dispatcher, packaged recovery và L4 artifacts; còn hai nhóm L3 chưa tick ở mục 5 |
+| Hoàng Anh | Public Lab-order và Core migration paths tại `0a8636cd` | G1 exact GET discovery ADMIN/CASHIER, query/correlation forwarding và deny tests; actual Billing smoke |
+| Vinh | Rx V1 consumer + public Lab-order acceptance | V-CLOSE-03 actual paid EXAM/LAB_TEST và paid Rx sau producer/Gateway evidence |
+
+Fresh targeted rerun 2026-10-16: **61 Billing tests, 0 failures/errors/skips**, Java 21,
+real PostgreSQL; discovery 27, publication/migration 34. Gateway care matrix/Lab-order
+**183 tests, 0 failures/errors/skips**. Hai commands exit 0, không thay full Billing/Gateway
+regression hoặc actual publication. Logs và reproduce ở [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#verification-refresh--2026-10-16).
+
+PR #401 đã thêm `OutpatientPublicationRabbitIntegrationTest` (6 cases),
+`OutpatientPublicationProcessRecoveryIT` và profile `outpatient-publication-acceptance`.
+Bằng chứng này bổ sung cho eligible DB rows, không thay nghiệm thu consumer/Gateway.
+Gateway allowlist chưa có exact GET by-source ở master tích hợp, nên public paid slice còn mở.
+Các gates deployment giữ nguyên; handoff này không là rollout approval.
+
+**Goal còn lại:** hoàn thiện actual publication/recovery và evidence của discovery/cohort đã merge,
+để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
 
 **Architecture:** Giữ Billing là money authority, đọc duy nhất Billing store; dùng application
 ports và infrastructure adapters hiện có. Tái sử dụng `BILLING_EVENT_OUTBOX` và dispatcher có
@@ -16,7 +36,7 @@ confirm/retry/lease; cohort được ghi lúc issue request mới, không releas
 [M6 plan](../plans/05-implementation-plan.md), [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md),
 [Huy handoff](HANDOFF-HUY-MVP.md). Đây là kế hoạch triển khai cho gap đã xác nhận, không backlog mới.
 
-Lộc thực hiện checklist theo thứ tự, **không cần viết thêm proposal/design/implementation plan**.
+Lộc tiếp tục checklist còn lại L3/L4, **không cần viết thêm proposal/design/implementation plan**.
 Các lựa chọn API/cohort/flags đã chốt trong handoff này cho phần việc được giao. Đọc nearest
 AGENTS và canonical docs trước code; nếu source upstream thay đổi, ghi delta thật, không tự
 coi API/event ở tài liệu này là live. Không tự push/merge hoặc bật deployment vì checklist local đạt.
@@ -34,7 +54,9 @@ Không giao Lộc Support composition, full refunds/settlement, Surgery/Inpatien
 hoặc frontend trong handoff này. Rx discovery/issuer publication được đưa vào cùng boundary để
 đóng đúng dependency Billing đã nêu trong Huy handoff; terminal/refund acceptance còn theo file Huy.
 
-## 2. Source gap và giới hạn evidence
+## 2. Source gap tại baseline `71e2684d` — historical rationale
+
+Các bullet dưới mô tả trước L1/L2, không dùng làm current owner queue. Refresh ở đầu file.
 
 - `web/LedgerPaymentController.java` chỉ có `POST /api/v1/billing/payment-requests/{id}/payments`.
   EXAM/LAB_TEST/PRESCRIPTION issuers sinh request ID, chưa có HTTP discovery từ exact source.
@@ -221,13 +243,13 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
   LAB_TEST request; Pharmacy outpatient creation fixture → PRESCRIPTION request/invoice.
   Tìm request bằng L1 HTTP, thanh toán bằng existing signed ADMIN/CASHIER POST; không SQL lấy ID.
   SQL chỉ assert Billing-owned state. Partial payment chưa có grant; paid-full có exact grant.
-- [x] Assert duplicate input/new eventId cùng operation/payment retry không tạo charge/payment/
-  grant logic lần hai; V0 compatibility/deferred và historical HELD không bị phát (test
-  `deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker`). Nhận actual original bytes từ
-  broker qua SHA-256, không chỉ assert JSON trong table. (Riêng "same key/different bytes conflict"
-  đã có test ở tầng service — `LedgerPaymentServiceTest`/idempotency unit tests — không lặp lại ở L3.)
+- [ ] **PARTIAL** — Rabbit case hiện chứng minh same-actor/same-key payment retry không có
+  second broker delivery và deferred ADMISSION_DEPOSIT không phát. Chưa dùng hai cases này
+  để kết luận duplicate input/new eventId cùng operation hoặc historical outpatient HELD
+  đều có actual broker proof; đối chiếu existing service/PG tests và bổ sung phần còn thiếu.
+  Same key/different bytes conflict có service tests, chưa là Rabbit-specific evidence.
 - [ ] **CHƯA LÀM đầy đủ** — chỉ làm đúng nhánh "kill JVM sau broker publish trước mark + restart
-  resume cùng bytes, không phát trùng" (`OutpatientPublicationProcessRecoveryIT` +
+  resume cùng bytes (at-least-once redelivery, không republish sau commit)" (`OutpatientPublicationProcessRecoveryIT` +
   profile `outpatient-publication-acceptance`, 1/1 pass). **Chưa** có test riêng cho: unroutable
   message, NACK, confirm timeout, retry-exhaustion→quarantine, expired lease/stale owner reclaim,
   admin replay chỉ-eligible-quarantined-row. Đây là việc còn lại nếu muốn L3 đầy đủ theo đúng tinh
@@ -239,11 +261,17 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
   `findClaimable`'s `created_at`+`event_id` tie-break đã có từ trước (không phải phần mới của
   handoff này) nhưng chưa được viết test khẳng định riêng cho cohort outpatient.
 
+Review PR #401 còn lưu ý: helper `received()` hiện chỉ buffer một message mỗi eventType;
+case Rx hai installments mới kiểm một `payment.completed`, nên chưa chứng minh đủ cả hai
+receipts hoặc no-loss ordering. Khi làm ordering proof, dùng collector theo eventId/deque và
+assert đủ receipts/transactions. Recovery IT seed Billing-only state để kiểm outbox replay;
+không suy thành HTTP financial-operation/consumer dedup proof từ outbox count/bytes.
+
 ### L4 — verification và giao evidence
 
-- [ ] Full module: `mvn -q -pl backend/billing-service -am test`.
-- [ ] Package: `mvn -q -pl backend/billing-service -am -DskipTests package`.
-- [ ] Recovery: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`;
+- [x] Full module: `mvn -q -pl backend/billing-service -am test`.
+- [x] Package (package phase được chạy trong verify bên dưới; command riêng nếu cần): `mvn -q -pl backend/billing-service -am -DskipTests package`.
+- [x] Recovery: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`;
   profile phải đăng ký Failsafe `OutpatientPublicationProcessRecoveryIT` và không duplicate IT
   trong Surefire. Docker/Java 21 bắt buộc; skipped không tính passed.
 - [ ] Ghi source SHA, migration/checksums, flags/profile/purposes, run/fail/skip counts, actual
@@ -282,9 +310,9 @@ tự giả price/expiry/identities hoặc tắt clearance gate.
 V-CLOSE-02 và public Lab-order acceptance có thể thực hiện ngay, độc lập với handoff này.
 Không làm lại Lab authority/inbox hoặc Clinical/Lab recovery proof đã merge.
 
-## 7. Evidence điền sau triển khai
+## 7. Evidence refresh — 2026-10-16
 
-Source SHA cho L1–L4: `8bf1be00171b9849d38603fc9542cbf93956a3c5` (nhánh
+Source SHA cho evidence owner L1–L4 (L3 còn các gaps ghi ở mục 5): `8bf1be00171b9849d38603fc9542cbf93956a3c5` (nhánh
 `feat/billing-outpatient-discovery-publication`, dựa trên `master` đã có PR #396 — bao gồm cả
 phần V23 payload fence do một thành viên khác tiếp tục hoàn thiện trên cùng nhánh). Migration
 `V22__outpatient_publication_cohort.sql` (cohort + fence) và `V23__outpatient_publication_payload_fence.sql`
@@ -301,7 +329,25 @@ vẫn `false` — hành vi hiện tại không đổi khi chưa bật.
 |---|---|
 | L1 discovery | `mvn -pl backend/billing-service -am test` — nằm trong 1007/1007 pass (0 fail/error/skip, xem L4). Endpoint `GET /api/v1/billing/payment-requests/by-source`. Golden response thật (ADMIN token) lưu ở `src/test/resources/contracts/payment-request-discovery-v1/{exam,lab,prescription,not-found}.json`; ví dụ `.http` ở `backend/billing-service/payment-request-discovery.http`. Request mẫu đã nghiệm thu: EXAM `paymentRequestId=b7943beb-9a7e-4abc-9f68-04d43e210741`, LAB_TEST `67d05904-4eee-46f2-9008-1076249e6ddf`, PRESCRIPTION `94346737-ce0b-43fb-be01-3a4f18eca121`. |
 | L2 migration/cohort | `OutpatientPublicationMigrationPostgresTest` (10 test) + `OutpatientPublicationPostgresTest` (nay do V23 mở rộng thêm, bao gồm `mismatchedPayloadIsRejectedByWriterAndDirectSql` và `actualIssuanceAndPaymentPublishExactOriginalEvents`) — toàn bộ nằm trong 1007/1007. Fresh-migrate tới V23 và upgrade-từ-V21 đều giữ nguyên historical bytes/publication status; direct-SQL vi phạm fence (sửa `publication_enabled`, `payload`, `routing_key`, cohort row, hoặc insert với account/purpose/payload sai) đều bị `DataIntegrityViolationException`. |
-| L3 Rabbit/recovery | `OutpatientPublicationRabbitIntegrationTest` (6/6 pass, real PG+Rabbit+`BillingOutboxDispatcher`, không mock). Broker bytes SHA-256 khớp đúng bytes lưu `BILLING_EVENT_OUTBOX.payload` — ví dụ thật: EXAM `payment.completed` sha256 `525c365d364e1403c5180631e5a8dc1ff571feb2c91c5223df9403a5e5c442e5`, EXAM `financial.clearance.granted` sha256 `6e87afff8c45362ac04ac7b34c176ea48ad99e146b18b22ecb956f37061269a0`, PRESCRIPTION `invoice.created` sha256 `bbc8e5cc4e51c386aaab421a4d30c131f50fa34cf6bbbb70b487f759e0a77ff5` (shape khớp fixture có sẵn `contracts/ledger-v1/{payment-service,clearance-exam,invoice-prescription}.json`). `OutpatientPublicationProcessRecoveryIT` qua `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: 1/1 pass (kill JVM thật sau broker confirm, trước commit `published_at`; restart cùng jar resume đúng eventId/bytes, không phát trùng). Không IT nào bị Surefire chạy trùng (mặc định Surefire không khớp `*IT.java`). |
+| L3 Rabbit/recovery | `OutpatientPublicationRabbitIntegrationTest` (6/6 pass, real PG+Rabbit+`BillingOutboxDispatcher`, không mock). Broker bytes SHA-256 khớp đúng bytes lưu `BILLING_EVENT_OUTBOX.payload` — ví dụ thật: EXAM `payment.completed` sha256 `525c365d364e1403c5180631e5a8dc1ff571feb2c91c5223df9403a5e5c442e5`, EXAM `financial.clearance.granted` sha256 `6e87afff8c45362ac04ac7b34c176ea48ad99e146b18b22ecb956f37061269a0`, PRESCRIPTION `invoice.created` sha256 `bbc8e5cc4e51c386aaab421a4d30c131f50fa34cf6bbbb70b487f759e0a77ff5` (shape khớp fixture có sẵn `contracts/ledger-v1/{payment-service,clearance-exam,invoice-prescription}.json`). `OutpatientPublicationProcessRecoveryIT` qua `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: 1/1 pass (kill JVM thật sau broker confirm, trước commit `published_at`; restart cùng jar resume đúng eventId/bytes theo at-least-once; có redelivery sau crash, không republish sau khi published_at đã commit). Không IT nào bị Surefire chạy trùng (mặc định Surefire không khớp `*IT.java`). |
 | L4 full regression/delivery | `mvn -pl backend/billing-service -am test`: **1007/1007 pass, 0 fail/error/skip**. `mvn -pl backend/billing-service -am -DskipTests package`: build thành công, jar `billing-service-0.0.1-SNAPSHOT.jar`. `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: **1/1 pass** (yêu cầu Docker + Java 21; môi trường chạy thật, không skip). Không ghi token/PII; mọi ID ở trên là UUID nghiệp vụ (account/request/transaction/clearance/event), không phải thông tin bệnh nhân thật. |
 | G1 Gateway + actual Billing | Chưa chạy — ngoài phạm vi Lộc, giao Hoàng Anh (xem mục 5, G1). Endpoint/DTO/error đã khóa ở mục 3, có golden fixtures ở trên để đối chiếu khi mở route Gateway. |
 | V-CLOSE-03 consumer acceptance | Chưa chạy — chờ G1 xong; Vinh tự chứng minh theo mục 6. |
+
+### Review/rerun PR #401 — 2026-10-16
+
+Reviewed Billing code `bea617db` integrated with master `07cc2ad0`; integration edits only
+resolve changelog and refresh handoff/plan claims. Java 21.0.11, Docker Desktop 29.8.0,
+PostgreSQL `postgres:16-alpine`, RabbitMQ `rabbitmq:3.13-alpine`.
+
+Command from repository root: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`,
+exit **0**. Fresh Surefire Billing: **1007 tests, 0 failures/errors/skips**, including
+`OutpatientPublicationRabbitIntegrationTest` **6/6**. Package phase produced executable Billing
+JAR; Failsafe `OutpatientPublicationProcessRecoveryIT`: **1 test, 0 failures/errors/skips**.
+IT was not duplicated in Surefire. Log: `%TEMP%/pr401-billing-verify.log`; XML reports:
+`backend/billing-service/target/{surefire-reports,failsafe-reports}/`.
+
+Review: **GO for partial-evidence merge; NO-GO for closing L3/L4 in full**. The remaining L3
+cases above and L4 artifact checklist stay open. Owner hashes/IDs in section 7 are historical
+owner captures; fresh test rerun verifies byte equality but does not export a new full raw
+event/hash/ID bundle. G1, V-CLOSE-03 and deployment flags remain unchanged.

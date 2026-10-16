@@ -1,37 +1,33 @@
 # Registry hợp đồng MVP
 
-Handoff/backlog lịch sử đã thay bằng [plan MVP](../plans/05-implementation-plan.md).
-Đây không là xác nhận mọi integration gap đã được giải quyết.
+Refresh **2026-10-16**, PR #401 tích hợp master. Registry chỉ giữ dependencies còn mở;
+implementation đã merge không được giao lại. Không suy full MVP done từ owner-local tests.
 
 ## Active MVP gates
 
-- [Lộc — discovery và selective publication V1 ngoại trú](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
-  — **READY TO IMPLEMENT**, source `71e2684d`: exact source-bound discovery API, immutable
-  new-request cohort, append-only migration, dispatcher/Rabbit/JVM proof; checklist L1–L4 để
-  Lộc vào code ngay, không cần lập kế hoạch khác. G1 là Hoàng Anh/Gateway; Vinh nhận V-CLOSE-03
-  sau producer/Gateway acceptance. API/boundary chưa tồn tại ở baseline, không phải rollout approval.
-
-- [Handoff chung Huy — Pharmacy, Report và Support](HANDOFF-HUY-MVP.md): **một đầu mối** cho
-  toàn bộ 10 subtask Huy còn mở, owner/acceptance, Billing publication, Clinical attachment,
-  Notification, Gateway, Support composition, historical coverage và operator cutover/rollback.
-  Gộp/thay sáu handoff/pointer backend Huy cũ; Core lookup retarget đã có acceptance, Surgery ghi deferred trong
-  cùng file. Phần độc lập đạt 38/48; API/event gates vẫn OFF tới khi owner nghiệm thu đủ.
-
-[Contracts canonical](../plans/03-contracts.md) quy định source truth và modes.
-Mỗi gap MVP ghi trong task: producer, consumer, missing behavior/field, owner và acceptance
-fixture/test. Không copy payload thành nhiều file handoff. Không vượt service ownership.
-Inpatient/Surgery/full V2 deferred, không trở thành blocker để đóng luồng ngoại trú.
+- [Lộc L3/L4 + Hoàng Anh G1 — discovery/publication ngoại trú](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+  — **PARTIAL DELIVERY**. L1 discovery và L2 cohort/eligible writer V22/V23 đã merge;
+  PR #401 giao actual Rabbit happy-path, packaged JVM recovery và discovery fixtures.
+  Còn L3 failure/ordering coverage và L4 artifact delivery (Lộc), exact public discovery GET
+  + actual Billing smoke (Hoàng Anh). Không làm lại L1/L2 hoặc Lab-order route đã giao.
+- [Huy — Pharmacy, Report và Support](HANDOFF-HUY-MVP.md)
+  — một đầu mối cho owner acceptance/activation, Billing/Rx/Report/Notification và Support.
+  Outpatient filled relationship và Clinical consumer đã có; paid integration/coverage/global
+  rollout vẫn theo acceptance của từng owner. Không giao lại Rx producer recordId fixture.
+- [Gateway Billing adjustment routes](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md)
+  — Hoàng Anh: prescription-adjustment read rule còn mở; Surgery counterpart deferred.
 
 ## Active source lock
 
-- [Vinh Clinical/Lab closeout và owner handoffs — cập nhật 2026-10-16](HANDOFF-VINH-OUTPATIENT-MVP.md) — owned implementation/test evidence; M6 toàn nhóm và actual paid acceptance còn mở. V-CLOSE-01 đã có standalone recovery proof; V-CLOSE-02 đã implement Rx V1 consumer; V-CLOSE-03 còn chờ Billing/Gateway discovery và actual publication.
-  H-VINH-01: Hoàng Anh/Gateway-Core; H-VINH-02: Huy/Pharmacy-Report + Vinh/Clinical consumer;
-  H-VINH-03: Lộc/Billing. Từng handoff có source gap, producer/consumer, fixture/test và điều kiện đóng.
-  Refresh `71e2684d`: Billing chưa expose source → EXAM/LAB_TEST paymentRequestId,
-  nên hai paid public slices chưa drive được qua HTTP; Lộc giao discovery contract,
-  Hoàng Anh mở exact Gateway discovery rule tương ứng. Huy đã giao outpatient Rx producer
-  relationship; Hoàng Anh đã giao Lab-order route. Vinh bổ sung Rx V1 consumer và chuyển
-  packaged Lab-order acceptance qua Gateway; evidence mới nhất nằm đầu closeout.
-  Full owned-module regression: Clinical 339 + Lab 216 = 555 tests, 0 failures/errors/skips.
-  Không dùng fixture clearance hoặc persisted HELD grant thay actual Billing payment/publication.
-- [Gateway allowlist missing for two live Billing read endpoints](HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md) — Hoàng Anh-owned allowlist rule for `prescription-adjustments` and `surgery-cancellations`, found while building their frontend.
+- [Vinh Clinical/Lab closeout](HANDOFF-VINH-OUTPATIENT-MVP.md)
+  — V-CLOSE-01 standalone reliability, V-CLOSE-02 Rx implementation và public Lab-order
+  acceptance đã có. **V-CLOSE-03 actual paid EXAM/LAB_TEST/Rx còn mở** sau producer/Gateway
+  evidence. Source/test limits và việc còn lại của từng owner nằm ở đầu file; đã dọn các
+  backlog lịch sử lặp lại. Lượt implementation trước có 559 tests đạt; đây là evidence lịch sử.
+  Fresh Gateway targeted care/Lab-order 183 tests đạt, không failure/error/skip.
+
+[Plan MVP](../plans/05-implementation-plan.md), [contracts](../plans/03-contracts.md) và
+[reliability](../plans/04-data-reliability.md) là canonical. Handoff không đổi contract hoặc
+bật deployment flags. Xóa handoff khi cả producer/consumer đạt acceptance, chuyển lasting rules
+vào canonical docs. Hiện còn gaps nên các handoff active được giữ và cập nhật, không xóa sớm.
+Inpatient/Surgery/full V2 deferred, không là blocker đóng ngoại trú.

@@ -44,8 +44,11 @@ Billing and Clinical acceptance and V1 create controls remain open under `FE-VIN
   success navigation, and 400/403/404/409/business-rule handling.
 - `FE-LAB-03` — `DONE`: start, multi-indicator result entry and audited cancellation use the exact
   live request records and roles.
-- `FE-LAB-04` — `IN PROGRESS`: source identity, normal start, payment/lifecycle separation and
-  blocked/unavailable HTTP tests added; queue filters/pagination and component retry coverage remain open.
+- `FE-LAB-04` — `IN PROGRESS`: source identity/normal start HTTP tests plus 15 detail component
+  regressions for loading/retry/correlation, stale read/mutation, roles/terminal states and payment
+  separation. Detail workspace resets by testId so an old start response cannot blank the current
+  detail. Queue filters/pagination and authenticated Gateway/browser smoke remain open; API/session
+  are mocked in component tests, not proof of runtime authorization or actual payment.
 
 ## Handoffs and blockers
 
