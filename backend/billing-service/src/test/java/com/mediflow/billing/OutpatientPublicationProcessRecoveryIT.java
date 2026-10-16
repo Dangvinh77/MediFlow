@@ -146,14 +146,16 @@ class OutpatientPublicationProcessRecoveryIT {
 
     /**
      * Seeds exactly what L1/L2 production code would have produced for a brand-new enrolled EXAM
-     * request: account, request, cohort row, and one eligible {@code payment.completed} outbox row
-     * — without going through the full consumer/HTTP flow, since only dispatcher/process recovery
-     * is under test here.
+     * request: account, request, charge, cohort row, a completed payment transaction, and one
+     * eligible {@code payment.completed} outbox row — without going through the full consumer/HTTP
+     * flow, since only dispatcher/process recovery is under test here. Every field the V23
+     * {@code billing_outpatient_event_matches} fence cross-checks must be real and consistent, the
+     * same as it would be for a genuine payment: a hand-written payload alone is now rejected.
      */
     private UUID seedEnrolledEligibleEvent(JdbcTemplate jdbc, UUID eventId) {
         UUID account = UUID.randomUUID(), request = UUID.randomUUID(), invoice = UUID.randomUUID();
         UUID patient = UUID.randomUUID(), department = UUID.randomUUID(), appointment = UUID.randomUUID();
-        UUID transaction = UUID.randomUUID();
+        UUID transaction = UUID.randomUUID(), charge = UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO BILLING_ACCOUNT(account_id,patient_id,department_id,care_episode_type,care_episode_id,currency,opened_at)
                 VALUES (?,?,?,'OUTPATIENT_VISIT',?,'VND',now())
@@ -161,6 +163,17 @@ class OutpatientPublicationProcessRecoveryIT {
         jdbc.update("INSERT INTO PAYMENT_REQUEST(payment_request_id,invoice_id,account_id,purpose,status,requested_amount,currency) "
                 + "VALUES (?,?,?,'EXAM','PAID',?,'VND')", request, invoice, account, new BigDecimal("100000.00"));
         jdbc.update("INSERT INTO PAYMENT_REQUEST_TARGET(payment_request_id,appointment_id) VALUES (?,?)", request, appointment);
+        jdbc.update("""
+                INSERT INTO CHARGE(charge_id,account_id,patient_id,department_id,source_type,source_id,price_code,
+                    description,quantity,unit_amount,gross_amount,incurred_at) VALUES (?,?,?,?,'EXAM',?,'EXAM','exam',1,?,?,now())
+                """, charge, account, patient, department, appointment, new BigDecimal("100000.00"), new BigDecimal("100000.00"));
+        jdbc.update("INSERT INTO PAYMENT_REQUEST_CHARGE(payment_request_id,charge_id,requested_amount) VALUES (?,?,?)",
+                request, charge, new BigDecimal("100000.00"));
+        jdbc.update("""
+                INSERT INTO PAYMENT_TRANSACTION(transaction_id,account_id,payment_request_id,transaction_type,classification,
+                    status,amount,currency,payment_method,idempotency_key,completed_at)
+                VALUES (?,?,?,'PAYMENT','SERVICE_PAYMENT','COMPLETED',?,'VND','CASH',?,now())
+                """, transaction, account, request, new BigDecimal("100000.00"), UUID.randomUUID().toString());
         jdbc.update("""
                 INSERT INTO billing_outpatient_publication_cohort(payment_request_id,account_id,purpose,source_id,acceptance_reference)
                 VALUES (?,?,'EXAM',?,'L3-RECOVERY-RUN')
