@@ -1,0 +1,42 @@
+erDiagram
+    DEPARTMENT ||--o{ STAFF : "quản lý nhân sự"
+    STAFF ||--o| ACCOUNT : "được cấp"
+    DEPARTMENT o|--o| STAFF : "trưởng khoa"
+
+    DEPARTMENT {
+        uuid department_id PK
+        varchar department_name
+        varchar abbreviation UK
+        varchar department_type
+        uuid department_head_id FK
+        varchar location
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STAFF {
+        uuid staff_id PK
+        varchar full_name
+        uuid department_id FK
+        varchar job_title
+        varchar specialization
+        varchar license_number
+        varchar phone_number
+        varchar email
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ACCOUNT {
+        uuid account_id PK
+        varchar username UK
+        varchar password_hash
+        uuid staff_id FK
+        varchar role
+        boolean is_active
+        timestamp last_login_at
+        timestamp created_at
+        timestamp updated_at
+    }

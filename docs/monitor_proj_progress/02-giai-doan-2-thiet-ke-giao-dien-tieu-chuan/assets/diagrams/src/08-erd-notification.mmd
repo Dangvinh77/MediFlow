@@ -1,0 +1,20 @@
+erDiagram
+    NOTIFICATION {
+        uuid notification_id PK
+        uuid patient_id
+        varchar title
+        text content
+        varchar channel
+        varchar recipient_address
+        varchar status
+        varchar failure_reason
+        int retry_count
+        timestamp created_at
+        timestamp sent_at
+    }
+
+    PROCESSED_EVENT {
+        uuid event_id PK
+        varchar routing_key
+        timestamp processed_at
+    }

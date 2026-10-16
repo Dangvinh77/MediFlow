@@ -1,0 +1,43 @@
+flowchart LR
+    PATIENT[Patient Service<br/>patient_id]
+    ORGANIZATION[Organization Service<br/>doctor_id, department_id]
+    LAB_RESULT([lab.result.created])
+    PRESCRIPTION_FILLED([prescription.filled])
+
+    subgraph CLINICAL[Clinical Service · mediflow_clinical]
+        APPOINTMENT[(APPOINTMENT<br/>PK appointment_id<br/>patient_id · doctor_id · department_id)]
+        MEDICAL_RECORD[(MEDICAL_RECORD<br/>PK record_id<br/>FK appointment_id)]
+        DIAGNOSIS[(DIAGNOSIS<br/>PK diagnosis_id<br/>FK record_id)]
+        PROCESSED_EVENT[(PROCESSED_EVENT · planned V2<br/>PK event_id<br/>routing_key)]
+        ATTACHED_RESULT[(ATTACHED_RESULT · planned V2<br/>FK record_id<br/>type · reference_id · summary)]
+
+        APPOINTMENT -->|1:0..1 lượt khám| MEDICAL_RECORD
+        MEDICAL_RECORD -->|1:N chẩn đoán| DIAGNOSIS
+        MEDICAL_RECORD -.->|planned attachment| ATTACHED_RESULT
+        PROCESSED_EVENT -.->|dedupe| ATTACHED_RESULT
+    end
+
+    APPOINTMENT_CREATED([appointment.created])
+    APPOINTMENT_CHANGED([appointment.status.changed])
+    RECORD_CREATED([medicalrecord.created])
+    DIAGNOSIS_ADDED([diagnosis.added])
+
+    PATIENT -.->|REST validation · UUID logic| APPOINTMENT
+    ORGANIZATION -.->|REST validation · UUID logic| APPOINTMENT
+    PATIENT -.->|patient_id · UUID logic| MEDICAL_RECORD
+    ORGANIZATION -.->|doctor_id, department_id · UUID logic| MEDICAL_RECORD
+    LAB_RESULT -.->|consume| PROCESSED_EVENT
+    PRESCRIPTION_FILLED -.->|consume| PROCESSED_EVENT
+    APPOINTMENT -.->|publish| APPOINTMENT_CREATED
+    APPOINTMENT -.->|publish| APPOINTMENT_CHANGED
+    MEDICAL_RECORD -.->|publish| RECORD_CREATED
+    DIAGNOSIS -.->|publish| DIAGNOSIS_ADDED
+
+    classDef external fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef owned fill:#ECFDF5,stroke:#0F766E,color:#0F172A
+    classDef planned fill:#F8FAFC,stroke:#64748B,color:#334155,stroke-dasharray:6 4
+    classDef event fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class PATIENT,ORGANIZATION external
+    class APPOINTMENT,MEDICAL_RECORD,DIAGNOSIS owned
+    class PROCESSED_EVENT,ATTACHED_RESULT planned
+    class LAB_RESULT,PRESCRIPTION_FILLED,APPOINTMENT_CREATED,APPOINTMENT_CHANGED,RECORD_CREATED,DIAGNOSIS_ADDED event

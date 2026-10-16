@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 851.77 687.5000000000001" width="851.77" height="687.5000000000001" style="--bg:#FFFFFF;--fg:#0F172A;--line:#2563EB;--accent:#0F766E;--muted:#64748B;--surface:#F0FDFA;--border:#0F766E;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Segoe%20UI:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Segoe UI', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="ORG" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="staff.department.changed" points="194.92,550.1500000000001 363.462,550.1500000000001 363.462,344.11923076923074 387.462,344.11923076923074" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PAT" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="patient.created" points="229.71999999999997,621.0500000000001 375.462,621.0500000000001 375.462,349.3346153846154 387.462,349.3346153846154" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CLI" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="appointment.created
+medicalrecord.created" points="162.31599999999997,83.64999999999998 233.70399999999995,83.64999999999998 233.70399999999995,66 375.462,66 375.462,291.9653846153846 387.462,291.9653846153846" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="LAB" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="lab.result.created" points="143.04999999999998,168.2 234.65199999999996,168.2 234.65199999999996,154.2 351.462,154.2 351.462,302.3961538461538 387.462,302.3961538461538" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PHA" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.created
+prescription.filled
+stock.low" points="180.09999999999997,266.9 196.39599999999996,266.9 196.39599999999996,249.10000000000002 327.462,249.10000000000002 327.462,312.8269230769231 387.462,312.8269230769231" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="BIL" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="invoice.created
+payment.completed
+payment.failed" points="154.90599999999998,365.6 192.712,365.6 192.712,344.3 315.462,344.3 315.462,323.2576923076923 387.462,323.2576923076923" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NOTI" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="notification.sent" points="183.06399999999996,453.80000000000007 233.34399999999997,453.80000000000007 233.34399999999997,439.80000000000007 339.462,439.80000000000007 339.462,333.6884615384615 387.462,333.6884615384615" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="NOTI" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="patient, appointment,
+lab, payment, dispense" points="387.462,338.90384615384613 351.462,338.90384615384613 351.462,480.1 212.07999999999996,480.1 212.07999999999996,466.1 183.06399999999996,466.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="REP" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="clinical, lab,
+pharmacy, billing events" points="521.296,303.7 533.296,303.7 533.296,246.25 721.806,246.25000000000006" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="LAB" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="medicalrecord.created
+payment.completed" points="387.462,307.6115384615385 339.462,307.6115384615385 339.462,194.5 197.70399999999995,194.5 197.70399999999995,180.5 143.04999999999998,180.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="PHA" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="payment.completed" points="387.462,318.0423076923077 315.462,318.0423076923077 315.462,297 192.712,297 192.712,279.2 180.09999999999997,279.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="BIL" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="prescription.created
+dispense result" points="387.462,328.4730769230769 327.462,328.4730769230769 327.462,399.20000000000005 196.39599999999996,399.20000000000005 196.39599999999996,377.9 154.90599999999998,377.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="CLI" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="lab.result.created
+prescription.filled" points="387.462,297.1807692307692 363.462,297.1807692307692 363.462,113.60000000000002 246.65199999999996,113.60000000000002 246.65199999999996,95.95000000000005 162.31599999999997,95.95000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="OPS" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="stock.low" points="521.296,320.65 563.296,320.65 563.296,317.15000000000003 687.801,317.15000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="DLQ" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="retry vượt giới hạn" points="521.296,337.6 533.296,337.6 533.296,395.05 687.801,395.05" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="ORG" data-to="MQ" data-label="staff.department.changed">
+  <rect x="220.20000000000002" y="534.1500000000001" width="135.262" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="287.831" y="549.3000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">staff.department.changed</text>
+</g>
+<g class="edge-label" data-from="PAT" data-to="MQ" data-label="patient.created">
+  <rect x="279.72" y="605.0500000000001" width="87.74200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="323.591" y="620.2" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">patient.created</text>
+</g>
+<g class="edge-label" data-from="CLI" data-to="MQ" data-label="appointment.created
+medicalrecord.created">
+  <rect x="241.70399999999995" y="43" width="125.75800000000004" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="304.58299999999997" y="65.3" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="304.58299999999997" dy="-3.3000000000000007">appointment.created</tspan><tspan x="304.58299999999997" dy="14.3">medicalrecord.created</tspan></text>
+</g>
+<g class="edge-label" data-from="LAB" data-to="MQ" data-label="lab.result.created">
+  <rect x="242.65199999999993" y="138.2" width="100.81000000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="293.05699999999996" y="153.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">lab.result.created</text>
+</g>
+<g class="edge-label" data-from="PHA" data-to="MQ" data-label="prescription.created
+prescription.filled
+stock.low">
+  <rect x="204.39599999999996" y="219.10000000000002" width="115.06600000000003" height="58.900000000000006" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="261.929" y="248.55" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="261.929" dy="-10.450000000000001">prescription.created</tspan><tspan x="261.929" dy="14.3">prescription.filled</tspan><tspan x="261.929" dy="14.3">stock.low</tspan></text>
+</g>
+<g class="edge-label" data-from="BIL" data-to="MQ" data-label="invoice.created
+payment.completed
+payment.failed">
+  <rect x="200.712" y="314.3" width="106.75000000000001" height="58.900000000000006" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="254.087" y="343.75" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="254.087" dy="-10.450000000000001">invoice.created</tspan><tspan x="254.087" dy="14.3">payment.completed</tspan><tspan x="254.087" dy="14.3">payment.failed</tspan></text>
+</g>
+<g class="edge-label" data-from="NOTI" data-to="MQ" data-label="notification.sent">
+  <rect x="241.34399999999994" y="423.80000000000007" width="90.11800000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="286.40299999999996" y="438.95000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">notification.sent</text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="NOTI" data-label="patient, appointment,
+lab, payment, dispense">
+  <rect x="220.07999999999993" y="457.1" width="123.38200000000003" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="281.77099999999996" y="479.40000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="281.77099999999996" dy="-3.3000000000000007">patient, appointment,</tspan><tspan x="281.77099999999996" dy="14.3">lab, payment, dispense</tspan></text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="REP" data-label="clinical, lab,
+pharmacy, billing events">
+  <rect x="541.296" y="223.25" width="130.51000000000002" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="606.551" y="245.55" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="606.551" dy="-3.3000000000000007">clinical, lab,</tspan><tspan x="606.551" dy="14.3">pharmacy, billing events</tspan></text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="LAB" data-label="medicalrecord.created
+payment.completed">
+  <rect x="205.70399999999995" y="171.5" width="125.75800000000004" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="268.58299999999997" y="193.8" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="268.58299999999997" dy="-3.3000000000000007">medicalrecord.created</tspan><tspan x="268.58299999999997" dy="14.3">payment.completed</tspan></text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="PHA" data-label="payment.completed">
+  <rect x="200.712" y="281" width="106.75000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="254.087" y="296.15" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">payment.completed</text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="BIL" data-label="prescription.created
+dispense result">
+  <rect x="204.39599999999996" y="376.20000000000005" width="115.06600000000003" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="261.929" y="398.50000000000006" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="261.929" dy="-3.3000000000000007">prescription.created</tspan><tspan x="261.929" dy="14.3">dispense result</tspan></text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="CLI" data-label="lab.result.created
+prescription.filled">
+  <rect x="254.65199999999993" y="90.60000000000002" width="100.81000000000003" height="44.6" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="305.05699999999996" y="112.90000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)"><tspan x="305.05699999999996" dy="-3.3000000000000007">lab.result.created</tspan><tspan x="305.05699999999996" dy="14.3">prescription.filled</tspan></text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="OPS" data-label="stock.low">
+  <rect x="571.296" y="301.15000000000003" width="61.60600000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="602.099" y="316.3" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">stock.low</text>
+</g>
+<g class="edge-label" data-from="MQ" data-to="DLQ" data-label="retry vượt giới hạn">
+  <rect x="541.296" y="379.05" width="101.40400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="591.998" y="394.2" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">retry vượt giới hạn</text>
+</g>
+<g class="node" data-id="ORG" data-label="Organization" data-shape="rectangle">
+  <rect x="77.38799999999998" y="531.7" width="117.53200000000001" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="136.154" y="550.1500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Organization</text>
+</g>
+<g class="node" data-id="PAT" data-label="Patient" data-shape="rectangle">
+  <rect x="147.75599999999997" y="602.6000000000001" width="81.964" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="188.73799999999997" y="621.0500000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Patient</text>
+</g>
+<g class="node" data-id="CLI" data-label="Clinical" data-shape="rectangle">
+  <rect x="77.38799999999998" y="71.35000000000002" width="84.928" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="119.85199999999998" y="89.80000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Clinical</text>
+</g>
+<g class="node" data-id="LAB" data-label="Lab" data-shape="rectangle">
+  <rect x="77.38799999999998" y="155.89999999999998" width="65.662" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="110.21899999999998" y="174.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Lab</text>
+</g>
+<g class="node" data-id="PHA" data-label="Pharmacy" data-shape="rectangle">
+  <rect x="77.38799999999998" y="254.59999999999997" width="102.71199999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="128.74399999999997" y="273.04999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Pharmacy</text>
+</g>
+<g class="node" data-id="BIL" data-label="Billing" data-shape="rectangle">
+  <rect x="77.38799999999998" y="353.3" width="77.518" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="116.14699999999998" y="371.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Billing</text>
+</g>
+<g class="node" data-id="NOTI" data-label="Notification" data-shape="rectangle">
+  <rect x="77.38799999999998" y="441.50000000000006" width="105.676" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="130.22599999999997" y="459.95000000000005" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Notification</text>
+</g>
+<g class="node" data-id="REP" data-label="Report" data-shape="rectangle">
+  <rect x="721.806" y="227.80000000000007" width="81.964" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="762.788" y="246.25000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Report</text>
+</g>
+<g class="node" data-id="OPS" data-label="Operations" data-shape="rectangle">
+  <rect x="687.801" y="298.70000000000005" width="107.158" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="741.38" y="317.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Operations</text>
+</g>
+<g class="node" data-id="MQ" data-label="RabbitMQ
+mediflow.events" data-shape="cylinder">
+  <rect x="387.462" y="293.75" width="133.834" height="53.80000000000001" fill="var(--_node-fill)" stroke="none" />
+  <line x1="387.462" y1="293.75" x2="387.462" y2="347.55" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="521.296" y1="293.75" x2="521.296" y2="347.55" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="454.379" cy="347.55" rx="66.917" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="454.379" cy="293.75" rx="66.917" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="454.379" y="320.65" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="454.379" dy="-3.9000000000000012">RabbitMQ</tspan><tspan x="454.379" dy="16.900000000000002">mediflow.events</tspan></text>
+</g>
+<g class="node" data-id="DLQ" data-label="DLX / DLQ" data-shape="cylinder">
+  <rect x="687.801" y="376.6" width="103.453" height="36.900000000000006" fill="var(--_node-fill)" stroke="none" />
+  <line x1="687.801" y1="376.6" x2="687.801" y2="413.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <line x1="791.254" y1="376.6" x2="791.254" y2="413.5" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="739.5275" cy="413.5" rx="51.7265" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <ellipse cx="739.5275" cy="376.6" rx="51.7265" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="739.5275" y="395.05" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">DLX / DLQ</text>
+</g>
+</svg>
