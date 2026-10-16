@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -43,7 +44,12 @@ public class InboxEvidenceFactory {
         }
         try (JsonParser parser = objectMapper.getFactory().createParser(rawBody)) {
             parser.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
-            JsonNode root = objectMapper.readTree(parser);
+            // Rx V1 is a new fingerprint contract. Preserve decimal price/item evidence exactly,
+            // without changing the canonical bytes already persisted for older contracts.
+            JsonNode root = "clinical-prescription".equals(consumerName)
+                    && operationKey.startsWith("clinical:prescription:v1:")
+                    ? objectMapper.reader().with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).readTree(parser)
+                    : objectMapper.readTree(parser);
             if (root == null || !root.isObject() || parser.nextToken() != null) {
                 throw new IllegalArgumentException("Inbox body must contain exactly one JSON object");
             }

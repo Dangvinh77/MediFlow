@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.amqp.core.Message;
@@ -36,18 +37,24 @@ class ConsumerProcessRecoveryIT {
     @Container static final RabbitMQContainer MQ = new RabbitMQContainer("rabbitmq:3.13-alpine");
     @TempDir(cleanup = CleanupMode.ON_SUCCESS) Path work;
 
-    @Test
-    void committedAttachmentSurvivesConsumerJvmDeathAndExactBrokerRedelivery() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"LAB", "PRESCRIPTION"})
+    void committedAttachmentSurvivesConsumerJvmDeathAndExactBrokerRedelivery(String type) throws Exception {
         Path jar = Path.of(System.getProperty("recovery.jar")).toAbsolutePath();
         assertThat(jar).isRegularFile();
         Path fixtureClasses = copyTestLauncherOnly();
         var source = new DriverManagerDataSource(PG.getJdbcUrl(), PG.getUsername(), PG.getPassword());
         Flyway.configure().dataSource(source).load().migrate();
         var jdbc = new JdbcTemplate(source);
+        jdbc.execute("TRUNCATE consumer_inbox_delivery, consumer_inbox_operation, attached_result, diagnosis, clinical_lab_order, medical_record, appointment CASCADE");
         byte[] body;
-        try (var input = getClass().getResourceAsStream("/contracts/lab.result.created.v1.json")) {
-            assertThat(input).isNotNull();
-            body = input.readAllBytes();
+        if ("PRESCRIPTION".equals(type)) {
+            body = Files.readAllBytes(Path.of("../pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json"));
+        } else {
+            try (var input = getClass().getResourceAsStream("/contracts/lab.result.created.v1.json")) {
+                assertThat(input).isNotNull();
+                body = input.readAllBytes();
+            }
         }
         var root = new ObjectMapper().readTree(body);
         var payload = root.path("payload");
@@ -56,7 +63,7 @@ class ConsumerProcessRecoveryIT {
         UUID patientId = UUID.fromString(payload.path("patientId").asText());
         UUID departmentId = UUID.fromString(payload.path("departmentId").asText());
         UUID appointmentId = UUID.fromString(payload.path("careEpisodeId").asText());
-        UUID labId = UUID.fromString(payload.path("labId").asText());
+        UUID referenceId = UUID.fromString(payload.path("LAB".equals(type) ? "labId" : "prescriptionId").asText());
         // Seed only the Clinical-owned target of the canonical producer fixture; no foreign store is queried.
         UUID doctorId = UUID.randomUUID();
         jdbc.update("""
@@ -88,24 +95,24 @@ class ConsumerProcessRecoveryIT {
             properties.setMessageId(eventId.toString());
             properties.setCorrelationId(root.path("correlationId").asText());
             rabbit.invoke(operations -> {
-                operations.send("mediflow.events", "lab.result.created", new Message(body, properties));
+                operations.send("mediflow.events", root.path("eventType").asText(), new Message(body, properties));
                 operations.waitForConfirmsOrDie(10000);
                 return null;
             });
             delivered("first", body, false);
-            assertCommitted(jdbc, eventId, recordId, labId, body);
+            assertCommitted(jdbc, eventId, recordId, referenceId, type, body);
             assertQueueState(0, 1);
             long pid = first.pid();
             kill(first);
             await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertQueueState(1, 0));
-            assertCommitted(jdbc, eventId, recordId, labId, body);
+            assertCommitted(jdbc, eventId, recordId, referenceId, type, body);
 
             second = start(jar, fixtureClasses, "second", false);
             assertThat(second.pid()).isNotEqualTo(pid);
             started("second");
             delivered("second", body, true);
             await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertQueueState(0, 0));
-            assertCommitted(jdbc, eventId, recordId, labId, body);
+            assertCommitted(jdbc, eventId, recordId, referenceId, type, body);
             assertThat(admin.getQueueInfo("clinical.dlq").getMessageCount()).isZero();
         } finally {
             try { kill(first); }
@@ -116,15 +123,15 @@ class ConsumerProcessRecoveryIT {
         }
     }
 
-    private void assertCommitted(JdbcTemplate jdbc, UUID eventId, UUID recordId, UUID labId, byte[] body) {
+    private void assertCommitted(JdbcTemplate jdbc, UUID eventId, UUID recordId, UUID referenceId, String type, byte[] body) {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_delivery", Integer.class)).isOne();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_operation", Integer.class)).isOne();
         assertThat(jdbc.queryForObject("SELECT raw_body FROM consumer_inbox_delivery WHERE event_id=?",
                 byte[].class, eventId)).isEqualTo(body);
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM attached_result
-                WHERE record_id=? AND type='LAB' AND reference_id=? AND summary='Normal'
-                """, Integer.class, recordId, labId)).isOne();
+                WHERE record_id=? AND type=? AND reference_id=?
+                """, Integer.class, recordId, type, referenceId)).isOne();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM attached_result", Integer.class)).isOne();
     }
 

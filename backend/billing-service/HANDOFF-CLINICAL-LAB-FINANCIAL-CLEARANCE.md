@@ -4,6 +4,18 @@
 **Owner:** Lộc (`locgit-89`), Billing.
 **Unblocks:** Vinh's Clinical EXAM gate and Lab LAB_TEST gate.
 
+## Current implementation handoff — 2026-10-16
+
+Source `71e2684d`: thực hiện [Lộc discovery/publication L1–L4](../../docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
+theo contract/checklist đã chốt; không cần viết kế hoạch khác. Hoàng Anh owns G1 Gateway.
+Các mục lịch sử bên dưới nói "published clearance" phải được đọc với giới hạn này:
+`ExamChargeRabbitIntegrationTest`/`LabTestChargeRabbitIntegrationTest` tắt dispatcher, lấy
+request bằng SQL và assert grant từ BILLING_EVENT_OUTBOX. Chúng chứng minh persisted grant,
+chưa chứng minh broker delivery. Live LedgerEventOutboxAdapter giữ V1 HELD và V6 còn fence.
+L1 bổ sung public source discovery; L2–L3 bổ sung new-cohort publication/actual broker recovery.
+Producer/consumer phải nghiệm thu cùng bytes trước deployment activation; historical HELD
+không được release. Lượt 2026-10-16 chỉ rà source/tài liệu, không rerun Billing Docker suite.
+
 ## Producer
 
 Billing produces `financial.clearance.granted` version 1 after an authoritative charge request is paid or an approved emergency path is recorded. The durable payload and target rules are defined in [`CONTRACT-CARE-BILLING-01`](../../docs/handoffs/care-finance/CONTRACT-CARE-BILLING-01.md).
