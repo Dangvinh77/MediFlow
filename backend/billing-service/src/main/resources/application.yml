@@ -53,6 +53,8 @@ mediflow:
       enabled: ${MEDIFLOW_BILLING_EXAM_CHARGE_CONSUMER_ENABLED:false}
     lab-test-charge-consumer:
       enabled: ${MEDIFLOW_BILLING_LAB_TEST_CHARGE_CONSUMER_ENABLED:false}
+    payment-request-discovery:
+      enabled: ${MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED:false}
     settlement-preview:
       enabled: ${MEDIFLOW_BILLING_SETTLEMENT_PREVIEW_ENABLED:false}
     reconciliation:
