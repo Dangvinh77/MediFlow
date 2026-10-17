@@ -23,4 +23,3 @@ Flutter 3.47.0 stable / Dart 3.13.0. Web browser available. Android SDK present,
 ## Ready for owners
 
 Follow README.md and docs/contributing.md. Run tool/run_web.ps1 to use the real Gateway without changing backend CORS; run tool/check.ps1 before handoff. Shared app/core/auth and platform changes coordinate with Vinh. Each owner implements its context from exact backend contracts; missing contracts become registered handoffs.
-

@@ -1,5 +1,172 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
+## 0. Phiếu thực thi hiện hành — 2026-10-17, Lộc đọc mục này trước
+
+**Owner:** Lộc (`locgit-89`). **Người nhận nghiệm thu:** Vinh; Huy nhận phần PRESCRIPTION.
+Source đối chiếu: `d80d23b2` + working changes Vinh được ghi trong
+[Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#fresh-vinh-source-verification--2026-10-17).
+Đây là task tiếp tục Billing, không giao lại L1/L2 và không cấp quyền sửa service khác.
+Các mục 1–7 bên dưới giữ contract và lịch sử; khi trạng thái cũ mâu thuẫn, dùng mục 0 này.
+
+### 0.1. Trạng thái đã kiểm và phần không làm lại
+
+| Hạng mục | Trạng thái hiện hành | Hành động của Lộc |
+|---|---|---|
+| L1 discovery, L2 cohort/V22/V23 | Đã có implementation và tests | Giữ regression; không tạo endpoint/cohort mới |
+| Gateway exact GET by-source | Đã có; #417 sửa Billing error correlation | Không code Gateway; không mở lại lỗi 404 correlation đã sửa |
+| Actual paid EXAM/LAB_TEST | Vinh chạy PASS qua Gateway/Billing/Rabbit → Clinical/Lab ngày 17/10 | Dùng làm đối chiếu; không gọi đây là full Billing/G1 acceptance |
+| Rabbit happy path + Rx hai installments | Đã có collector FIFO và kiểm đủ hai receipts | Giữ nguyên các assertions và original bytes |
+| Unroutable/retry/quarantine, admin replay happy path, expired lease reclaim, equal-timestamp ordering | Source hiện có 4 tests trong `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` | Chạy lại và trích evidence; không viết lại từ đầu |
+| Duplicate source với eventId mới; historical outpatient request trước activation tại broker | Còn thiếu Rabbit-level proof theo review #401 | Làm LOC-01 và LOC-02 |
+| NACK và confirm timeout | Chưa có case riêng; unroutable không chứng minh hai nhánh này | Làm LOC-03 |
+| Full L4 evidence bundle | Có historical owner counts, thiếu bộ bàn giao mới đầy đủ | Làm LOC-05; không chép số cũ thành fresh result |
+| paidRx actual producer/consumer | Còn mở, phụ thuộc Huy + Vinh | Lộc làm Billing trong LOC-06; không tự đóng consumer |
+
+Không suy Billing có bug chỉ vì còn thiếu test. Nếu test mới chứng minh implementation đúng,
+deliverable có thể chỉ là tests/evidence; chỉ sửa production khi đã tái hiện lỗi.
+
+### 0.2. Phạm vi và điểm bắt đầu
+
+Được sửa `backend/billing-service/**` và evidence trong handoff này. Service khác, root POM,
+common, Compose, scripts/CI và frontend chỉ đọc. Không sửa producer/consumer để test Billing đạt.
+Trước code: chạy changelog; đọc root/module AGENTS, `docs/ai/README.md`, canonical plans 03/04/06
+và các care-finance contracts được module AGENTS chỉ định. Đối chiếu live DTO/serializer/fixtures.
+Không thêm migration nếu chỉ cần bổ sung test; không sửa checksum migration đã giao.
+
+Đường dẫn bắt đầu, tương đối với `backend/billing-service/`:
+
+| Nhu cầu | File hiện có |
+|---|---|
+| Rabbit happy path, source fixture → HTTP discovery/payment → broker bytes | `src/test/java/com/mediflow/billing/OutpatientPublicationRabbitIntegrationTest.java` |
+| Failure/replay/lease/ordering với real PG/Rabbit | `src/test/java/com/mediflow/billing/OutpatientPublicationDispatcherResilienceRabbitIntegrationTest.java` |
+| Kill JVM/restart cùng JAR | `src/test/java/com/mediflow/billing/OutpatientPublicationProcessRecoveryIT.java` |
+| Nhánh NACK/timeout và retry | `src/main/java/com/mediflow/billing/infrastructure/messaging/BillingOutboxDispatcher.java` |
+| Unit seam dispatcher | `src/test/java/com/mediflow/billing/infrastructure/messaging/BillingOutboxDispatcherTest.java` |
+| Cohort/history/immutability | `src/test/java/com/mediflow/billing/OutpatientPublicationPostgresTest.java`, `OutpatientPublicationMigrationPostgresTest.java` cùng thư mục |
+
+### 0.3. Thứ tự thực hiện và tiêu chí từng task
+
+**LOC-01 — Duplicate source, eventId mới, cùng operation (L3; bắt buộc).**
+
+- [ ] Mở rộng Rabbit integration hiện có. Tạo source từ original producer fixture như happy path;
+  discovery qua HTTP để lấy request. Phát lại cùng source operation với eventId mới theo đúng
+  producer contract; giữ business payload/target, không ngẫu nhiên thay UUID quan hệ.
+- [ ] Chứng minh vẫn một charge/request/cohort; discovery trả cùng request. Thanh toán qua HTTP
+  với cùng operation key khi retry. Assert một logical transaction/clearance, không grant mới
+  do duplicate source; partial payment không cấp grant. Đối soát đủ event set theo purpose.
+- [ ] Observer nhận original bytes từ actual dispatcher. So eventId, số lượng và SHA-256 với
+  stored outbox; dùng bounded polling/quiet window có timeout, không chỉ `sleep` rồi thấy rỗng.
+  Duplicate do delivery/recovery được phân biệt với logical outbox event mới.
+
+**LOC-02 — Historical outpatient request không được enroll muộn (L3; bắt buộc).**
+
+- [ ] Issue request ngoại trú bằng issuer thật khi enrollment OFF; ghi lại request/cohort/outbox
+  baseline. Sau đó bật enrollment trong isolated test context/process trên cùng DB và thanh toán
+  request cũ qua HTTP. Không SQL thêm cohort hoặc sửa publication eligibility.
+- [ ] Assert request cũ vẫn không có cohort, V1 rows vẫn HELD, original eventId/body không đổi;
+  actual dispatcher không phát các historical event đó. Retry payment/admin replay không biến
+  HELD thành eligible; dùng đúng live error/status của replay contract.
+- [ ] Cùng bài test có request mới sau activation được enroll và phát được: positive control này
+  chứng minh broker/observer/dispatcher hoạt động, tránh kết luận sai từ một queue luôn rỗng.
+
+**LOC-03 — NACK và confirm timeout (L3; bắt buộc, ghi đúng tầng bằng chứng).**
+
+- [ ] Thêm hai test riêng gọi actual `dispatchPending()`: correlated confirm NACK và future không
+  hoàn tất trong `confirm-timeout-ms`. Tái sử dụng constructor/test seam hiện có; không gọi private
+  method bằng reflection, không đưa test hook vào API production.
+- [ ] Với từng case: không gọi thành công `markPublished`, đi `markFailure`, retry có giới hạn/
+  backoff và không vượt max; event tiếp theo không vượt predecessor lỗi. Dùng PG integration
+  kiểm durable attempts/availableAt/quarantine nếu assertions đó vượt phạm vi unit test.
+- [ ] Nếu không ép được broker NACK/timeout ổn định: dùng controlled RabbitTemplate/confirm future
+  ở tầng unit/adapter; ghi rõ đó là injected-confirm proof. Real PG/Rabbit unroutable/recovery
+  tests vẫn phải chạy. Không ghi NACK/timeout là actual-broker proof khi chưa làm được.
+  Timeout có thể xảy ra sau khi broker nhận body: không assert tuyệt đối zero deliveries hoặc
+  exactly-once transport; eventId/bytes phải giữ nguyên và consumer xử lý idempotent.
+- [ ] Audit admin replay eligibility và stale-owner fencing hiện có: ngoài happy reclaim, owner
+  cũ không được commit `published`/failure sau khi lease đã bị owner mới claim. Nếu chưa có case
+  đúng tầng PG, thêm test; HELD/historical/ineligible rows không được mở bằng admin replay.
+
+**LOC-04 — completedAt ở payment replay (xác minh và chốt hành vi).**
+
+Vinh ghi nhận first `2026-10-17T10:04:52.023375300Z`, replay
+`2026-10-17T10:04:52.023375Z`: PostgreSQL microsecond precision; cùng transaction/business fields.
+Đây chưa phải bằng chứng thu tiền hai lần.
+
+- [ ] Tái hiện first POST và retry cùng key qua HTTP + PG, so mọi business field và số transaction.
+  Đọc canonical idempotency/response contract trước khi chọn cách xử lý.
+- [ ] Nếu cần stable response, chuẩn hóa timestamp một lần ở boundary lưu/response phù hợp rồi
+  trả cùng giá trị first/replay; thêm regression cho nanosecond input và persisted readback.
+  Không sửa event bytes cũ, không sửa DB history, không bỏ `completedAt` khỏi response.
+- [ ] Nếu contract cho phép precision hiện tại, ghi rõ căn cứ/giới hạn vào evidence để Vinh review;
+  không tự tuyên bố byte-equivalent. Không thêm tolerance chung cho amount/IDs/status.
+
+**LOC-05 — Full regression và bộ bàn giao (L4; bắt buộc).**
+
+Từ repository root, Java 21 và Docker sẵn sàng; mỗi lệnh phải exit 0:
+
+```powershell
+mvn -version
+docker info
+mvn -q -pl backend/billing-service -am '-Dtest=OutpatientPublicationRabbitIntegrationTest,OutpatientPublicationDispatcherResilienceRabbitIntegrationTest,BillingOutboxDispatcherTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -q -pl backend/billing-service -am test
+mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify
+git diff --check
+```
+
+`verify` phải package JAR mới và chạy Failsafe recovery IT; `test` không chạy `*IT`.
+Nếu thêm class mới, thêm vào targeted command. Không skip Docker tests để lấy màu xanh.
+Ghi counts Surefire/Failsafe riêng, không cộng full `test` hai lần với suite chạy lại trong `verify`.
+Lệnh kiểm tra dưới đây không bật deployment flags; test profiles chỉ dùng tài nguyên isolated.
+
+- [ ] Lưu raw JSON broker bytes + discovery/payment responses đã bỏ credentials trong
+  `backend/billing-service/target/outpatient-handoff/` (đề xuất thư mục evidence, chưa phải tool có sẵn).
+  Export phải giữ raw bytes trước parse/format để hash đúng. Không ghi Bearer token/password/PII.
+- [ ] Tạo manifest ở đó: source SHA + trạng thái dirty/diff, JDK/Maven/Docker/image version,
+  commands/exit codes/counts, migration versions/checksums, effective profile/flags/purposes,
+  catalog/priceCode/currency, exact source/patient-test/episode/request/account/transaction/
+  clearance/event IDs, filenames/SHA-256, expected-vs-actual và kết quả từng LOC task.
+- [ ] Ghi summary bền vững + commands tái lập trong mục 7 handoff này. `target/` bị ignore:
+  bàn giao bundle qua artifact/PR attachment hoặc vị trí chung truy cập được và đặt link tại đây;
+  không chỉ gửi đường dẫn máy cá nhân. Fixture đưa vào Git chỉ dùng dữ liệu test an toàn.
+- [ ] Rerun correlation regression hiện có; không sửa lại #417 nếu không có lỗi mới. Counts cũ
+  1007/1011 chỉ là lịch sử, không hardcode làm acceptance của source mới.
+
+**LOC-06 — Gói phối hợp paidRx cho Huy/Vinh (Billing deliverable).**
+
+- [ ] Thống nhất với Huy actual prescription source + priceCode/quantity/episode theo live
+  Pharmacy contract. Lộc cung cấp flags/catalog isolated, hướng dẫn login CASHIER và bốn query
+  values `purpose=PRESCRIPTION/sourceId=prescriptionId/patientId/careEpisodeId` từ API thật.
+  Không dùng golden UUID cũ như dữ liệu môi trường đang chạy; không SQL lấy request ID.
+- [ ] Public discovery → partial/full payment → original invoice/receipt/clearance broker bytes;
+  ghi actual IDs/hash và thử payment retry. Invoice không thay clearance; receipt không cấp quyền
+  dispense. Fixture publisher chỉ chứng minh producer-local integration, không phải actual paidRx.
+- [ ] Huy nghiệm thu grant → dispense/filled; Vinh nghiệm thu original filled bytes → Clinical.
+  Ghi phần nào PASS/BLOCKED, owner và input còn thiếu. Không tự sửa Pharmacy/Clinical, không đóng
+  paidRx khi chỉ Billing tests đạt. Integrated JVM recovery là một gate phối hợp riêng.
+
+### 0.4. Mẫu báo cáo bắt buộc khi giao lại
+
+Điền sau khi chạy, không thay ô chưa chạy bằng dự đoán:
+
+| Task | PASS / FAIL / BLOCKED | Test/method hoặc command | Fresh counts, exit code | Artifact + hash / owner dependency |
+|---|---|---|---|---|
+| LOC-01 duplicate new eventId | Chưa nghiệm thu | Chưa ghi | Chưa chạy | Chưa giao |
+| LOC-02 historical HELD tại broker | Chưa nghiệm thu | Chưa ghi | Chưa chạy | Chưa giao |
+| LOC-03 NACK/timeout + fencing/replay audit | Chưa nghiệm thu | Chưa ghi; tách unit/PG/broker | Chưa chạy | Chưa giao |
+| LOC-04 timestamp replay | Chưa nghiệm thu | Chưa ghi | Chưa chạy | Chưa giao |
+| LOC-05 regression/recovery/artifacts | Chưa nghiệm thu | Chưa ghi | Chưa chạy | Chưa giao |
+| LOC-06 Billing paidRx package | Chưa nghiệm thu | Chưa ghi | Chưa chạy | Huy/Vinh nhận consumer |
+
+Vinh nhận khi từng assertion có test/evidence đúng tầng, full suite và recovery đạt không skip,
+bundle mở được và tái lập được. Nếu thiếu môi trường/input: ghi blocker chính xác, log lỗi và
+owner cần cung cấp; tiếp tục task độc lập. Không bỏ assertion, tắt gate, purge DLQ hoặc release
+historical HELD để làm test đạt. Publication purposes ở deployment vẫn OFF nếu consumer chưa
+nghiệm thu. Không đóng toàn MVP/G1/paidRx dựa vào Billing owner-local tests.
+
+---
+
+## Snapshot lịch sử ngày 2026-10-16
+
 Ngày giao: **2026-10-16**. Refresh: PR **#401**, source `bea617db` tích hợp master.
 **Trạng thái: L1/L2 đã merge; L3 có Rabbit/recovery proof nhưng CHƯA ĐÓNG; L4 có evidence owner.**
 Hai nhóm L3 còn thiếu: unroutable/NACK/timeout/retry exhaustion/quarantine/stale owner và
