@@ -1,5 +1,12 @@
 # billing-service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Billing owns examination, test and medication fees, payments and financial effects for the outpatient MVP. Preserved inpatient/surgery financial code does not expand MVP scope.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 2026-10-11 integration: master's Lab/deposit V12/V13 are retained; unchanged prescription SQL is
 V19/V20. One dispatcher keeps both groups; shared medical discharge chooses the proof-retaining
 handler if present, otherwise master's freeze-only handler, never both or a failure fallback.
@@ -27,7 +34,7 @@ creates a completed refund or emits a refund receipt. The gated ADMIN/CASHIER re
 `GET /api/v1/billing/surgery-cancellations/{id}/refunds-due` returns remaining own-allocation budgets;
 the existing cashier refund endpoint records money actually returned. Raw narrative is not retained.
 Gateway/default false/held fences remain unchanged. See the canonical Surgery/Billing contract and
-[verification](../../docs/superpowers/plans/2026-10-08-surgery-cancellation-adjustment.md).
+[current Surgery/Billing contract](../../docs/handoffs/care-finance/CONTRACT-SURGERY-BILLING-01.md). The retired 2026-10-08 verification plan is not current acceptance evidence.
 
 Compatibility saga, ledger installment payment and current Surgery clearance lookup are implemented.
 The opt-in `surgery.case.created` consumer atomically opens/reuses the exact episode account, prices
@@ -53,7 +60,7 @@ reason audit; immutable completed CASH/TRANSFER refunds are bounded by the origi
 reverse only its own allocations and revoke unsatisfied grants atomically with a held V1 fact.
 This records a completed refund, not bank execution or automatic surgery cancellation. Closed/settled
 accounts and already-allocated deposits require a later policy; no grant supersession/revoke event.
-Full module **314/314**, zero failure/error/skip, PG/RabbitMQ; [evidence and exact limits](../../docs/superpowers/plans/2026-10-08-billing-refund-closure.md).
+Full module **314/314**, zero failure/error/skip, PG/RabbitMQ; historical result from the retired 2026-10-08 refund closure plan. Current acceptance must be rerun under the [canonical runbook](../../docs/plans/06-acceptance-runbook.md).
 
 Package layout:
 

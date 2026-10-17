@@ -1,4 +1,6 @@
-# MediFlow Mobile
+# MediFlow Mobile — Outpatient Care Management
+
+Client cho **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**, hướng tới phòng khám đa khoa và khoa khám bệnh ngoại trú của bệnh viện. Nội trú/phẫu thuật hoãn; feature có thư mục hoặc route chưa đồng nghĩa đã hoàn tất nghiệp vụ.
 
 Flutter client dùng **backend thật qua Gateway**. Không có demo, tài khoản giả hay dữ liệu mẫu trong ứng dụng. Backend tắt thì ứng dụng báo lỗi kết nối.
 

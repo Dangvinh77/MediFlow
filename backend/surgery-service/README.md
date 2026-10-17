@@ -1,5 +1,8 @@
 # Surgery Service
 
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Surgery is future scope; the retained implementation does not make the outpatient MVP a completed hospital-wide system. Canonical positioning: [system design](../../docs/plans/01-system-design.md).
+
+
 ## Current MVP scope — deferred (2026-10-15)
 
 Surgery is preserved but not running/routed/activated in the simplified six-deployment MVP.

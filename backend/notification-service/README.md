@@ -1,5 +1,12 @@
 # notification-service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Notification covers source-authorized in-app outpatient notifications; it remains a separate app pending target Support composition. Advanced email/SMS and deferred care projections are not mandatory MVP scope.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 Private notification history (`NOTIFICATION`). Mostly event-driven.
 
 Reference: [`service rules`](../../docs/ai/services/notification.md) and the canonical [projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md).
@@ -26,7 +33,7 @@ gate a separate refund queue/DLQ. Actual Billing fixtures produce one private `P
 history and held sent event per immutable refund source, with atomic rollback/dedupe/conflict and
 retained-byte recovery. It does not imply final settlement or surgery authorization and does not send
 email/SMS. Latest complete suite: **171/171**, zero fail/error/skip, actual PG/RabbitMQ.
-[Canonical contract and evidence](../../docs/superpowers/plans/2026-10-08-billing-refund-closure.md).
+The retired 2026-10-08 refund closure plan is historical; use the [current projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md) and rerun acceptance rather than treating the count above as fresh evidence.
 
 Package layout:
 

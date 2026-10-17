@@ -1,5 +1,12 @@
 # Core Service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Core hosts Organization and Patient for outpatient identity, staff and departments, retaining separate data authority.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 Core is the single deployment for the Organization and Patient bounded contexts. Their source,
 business rules, wire DTOs, migrations, and PostgreSQL stores live in this module while retaining
 their separate `com.mediflow.organization` and `com.mediflow.patient` packages. Existing API routes

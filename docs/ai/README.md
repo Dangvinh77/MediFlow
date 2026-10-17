@@ -1,5 +1,7 @@
 # Quy tắc coding MediFlow
 
+Định vị sản phẩm: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Phạm vi triển khai đồ án là ngoại trú cho phòng khám đa khoa hoặc khoa khám bệnh của bệnh viện; nội trú/phẫu thuật hoãn. [Thiết kế hệ thống](../plans/01-system-design.md) phân biệt source hiện tại, sáu business deployments đích và tiêu chí nghiệm thu.
+
 Bộ quy tắc viết lại ngày 2026-10-14 cho [thiết kế tối giản](../README.md).
 Chỉ giữ quy tắc cần cho correctness, bảo mật, phối hợp owner và nghiệm thu phân tán.
 Các entry files/skill cũ có thể trỏ qua tài liệu ngắn trong thư mục này; không dùng spec cũ

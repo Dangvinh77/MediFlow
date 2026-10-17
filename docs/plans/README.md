@@ -1,8 +1,12 @@
-# MediFlow thiết kế hệ thống tối giản
+# MediFlow — thiết kế MVP ngoại trú
 
 Cập nhật ngày 2026-10-14 theo yêu cầu giảm khối lượng công việc và tập trung minh chứng hệ thống phân tán.
 Đây là bộ tài liệu đích mới, thay các thiết kế, spec, plan và handoff cũ trong thư mục docs.
 Code chưa được chuyển thành 6 service chỉ bằng việc thay tài liệu.
+
+Định vị thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Giữ định hướng HIS; phạm vi đồ án là phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện, không phải toàn bộ quy trình nội trú/phẫu thuật. Xem [định vị và CURRENT/TARGET](01-system-design.md).
+
+Source hiện tại đã có Core chứa Organization/Patient; Support host chưa có. Cập nhật mô tả này không đóng các task/gate nghiệm thu còn mở.
 
 ## Đọc gì
 

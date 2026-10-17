@@ -2,9 +2,9 @@
 
 | Hạng mục | Nội dung |
 |---|---|
-| Dự án | MediFlow — Hệ thống quản lý bệnh viện, MVP ngoại trú |
+| Dự án | MediFlow — Hệ thống thông tin bệnh viện dựa trên microservices, tập trung quản lý khám chữa bệnh ngoại trú |
 | Đợt đánh giá | Review 1 — Xác định vấn đề và đặc tả yêu cầu khách hàng |
-| Phiên bản | Standard — cập nhật 16/10/2026 |
+| Phiên bản | Standard — cập nhật 17/10/2026 |
 | Cơ sở yêu cầu | Thiết kế MVP trong `docs/plans/`, đối chiếu cấu trúc repository |
 | Trạng thái | Đặc tả yêu cầu; không phải biên bản xác nhận mọi chức năng đã hoàn tất |
 
@@ -12,7 +12,9 @@
 
 ### A1. Giới thiệu và bối cảnh
 
-MediFlow hỗ trợ phối hợp các bộ phận trong hành trình khám ngoại trú: tiếp nhận người bệnh, khám, xét nghiệm, kê đơn, thanh toán và cấp thuốc. Hồ sơ dùng chung định danh người bệnh nhưng mỗi bộ phận chịu trách nhiệm về dữ liệu và quyết định nghiệp vụ của mình. Người dùng thao tác trên ứng dụng web thông qua API Gateway.
+Tên tiếng Anh thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Quy mô hướng tới là phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện. Nội trú, giường bệnh và phẫu thuật dành cho phát triển sau; giữ source/data hiện có. Đây là phạm vi đồ án, chưa xác nhận hệ thống bệnh viện hoàn chỉnh đã sẵn sàng vận hành.
+
+MediFlow hỗ trợ phối hợp các bộ phận trong hành trình khám ngoại trú: tiếp nhận người bệnh, khám, xét nghiệm, kê đơn, thanh toán và cấp thuốc. Hồ sơ dùng chung định danh người bệnh nhưng mỗi bộ phận chịu trách nhiệm về dữ liệu và quyết định nghiệp vụ của mình. Web và Flutter truy cập backend qua API Gateway. Mobile hiện có nền tảng đăng nhập thật và danh sách Lịch hẹn/Lab chỉ đọc; các context mobile khác còn đang phát triển.
 
 Đồ án tập trung vào một luồng ngoại trú có thể kiểm tra xuyên suốt, kể cả khi thông điệp bị gửi lại hoặc một dịch vụ tạm ngừng. Phạm vi Review 1 bám theo mục tiêu sáu service; không đưa nội trú và phẫu thuật vào yêu cầu bắt buộc của MVP.
 
@@ -71,7 +73,7 @@ Luồng chính: **định danh → check-in → thanh toán khám → khám → 
 
 ### A7. Hiện trạng và giới hạn bằng chứng
 
-Repository đã có `backend/core-service`; Organization và Patient vẫn là các module ngữ cảnh riêng. Chưa có thư mục `backend/support-service`; Report và Notification còn ở module riêng. Source vẫn giữ Inpatient và Surgery. Vì vậy topology sáu service là đích triển khai, chưa phải xác nhận sáu deployment đã được nghiệm thu.
+Repository đã có `backend/core-service`; Organization và Patient đã nằm trong Core, giữ package và ranh giới lưu trữ riêng; không còn hai module standalone trong root Maven reactor. Root reactor hiện có 12 module Maven, gồm common/hạ tầng và cả ứng dụng hoãn. Chưa có thư mục `backend/support-service`; Report và Notification còn ở module riêng. Source vẫn giữ Inpatient và Surgery. Vì vậy topology sáu service là đích triển khai, chưa phải xác nhận sáu deployment đã được nghiệm thu.
 
 Các API, giao diện và luồng có cờ kích hoạt phải được kiểm tra theo hợp đồng thực tế và profile nghiệm thu. Báo cáo này không xác nhận mọi chức năng dưới đây đã được cung cấp, và không dùng kết quả kiểm thử lịch sử làm kết quả mới.
 

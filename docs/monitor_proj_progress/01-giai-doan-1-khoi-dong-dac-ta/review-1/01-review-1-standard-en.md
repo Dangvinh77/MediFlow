@@ -2,9 +2,9 @@
 
 | Item | Description |
 |---|---|
-| Project | MediFlow — Hospital Management System, outpatient MVP |
+| Project | MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management |
 | Review | Review 1 — Problem Definition and Customer Requirements Specification |
-| Version | Standard — updated 16 October 2026 |
+| Version | Standard — updated 17 October 2026 |
 | Requirements baseline | MVP design in `docs/plans/`, checked against repository structure |
 | Status | Requirements specification; does not certify that every function is complete |
 
@@ -12,7 +12,9 @@
 
 ### A1. Introduction and Context
 
-MediFlow coordinates departments throughout an outpatient journey: reception, examination, laboratory tests, prescribing, payment, and dispensing. Records share a patient identity while each department remains responsible for its own data and business decisions. Users access the web application through the API Gateway.
+MediFlow is a distributed hospital information system focused on multi-specialty clinics and hospital outpatient departments. Its academic MVP covers outpatient care; admission, beds, inpatient treatment and surgery are reserved for future development. It is not a completed hospital-wide production system.
+
+MediFlow coordinates departments throughout an outpatient journey: reception, examination, laboratory tests, prescribing, payment, and dispensing. Records share a patient identity while each department remains responsible for its own data and business decisions. Web and Flutter clients access the backend through the API Gateway. The mobile foundation currently implements real login and read-only Appointment/Lab slices; other mobile contexts remain unfinished.
 
 The project focuses on an outpatient workflow that can be verified end to end, including message redelivery and temporary service outages. Review 1 follows the six-service target; inpatient care and surgery are outside mandatory MVP requirements.
 
@@ -71,7 +73,7 @@ The main workflow is **identity → check-in → examination payment → examina
 
 ### A7. Current State and Evidence Limits
 
-The repository contains `backend/core-service`; Organization and Patient remain separate context modules. There is no `backend/support-service` directory yet; Report and Notification remain separate modules. Inpatient and Surgery source is retained. Therefore, six services describe the deployment target, not evidence that six deployments have passed acceptance.
+The repository contains `backend/core-service`; Organization and Patient source packages and persistence boundaries are hosted inside Core; their old standalone source modules are no longer in the root Maven reactor. The root reactor contains 12 Maven modules, including infrastructure/common and retained deferred apps. There is no `backend/support-service` directory yet; Report and Notification remain separate modules. Inpatient and Surgery source is retained. Therefore, six services describe the deployment target, not evidence that six deployments have passed acceptance.
 
 APIs, screens, and gated workflows must be checked against live contracts and the acceptance profile. This report does not certify that every function below is delivered, and historical test results do not count as current verification.
 

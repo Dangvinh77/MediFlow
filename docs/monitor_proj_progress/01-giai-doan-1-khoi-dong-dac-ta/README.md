@@ -1,6 +1,8 @@
 # Giai đoạn 1 — Khởi động và đặc tả yêu cầu
 
-Cập nhật ngày **16/10/2026**. Hồ sơ giai đoạn 1 tập trung vào **MVP ngoại trú** của MediFlow, bám theo [thiết kế hệ thống hiện hành](../../plans/01-system-design.md).
+Cập nhật ngày **17/10/2026**. Hồ sơ giai đoạn 1 tập trung vào **MVP ngoại trú** của MediFlow, bám theo [thiết kế hệ thống hiện hành](../../plans/01-system-design.md).
+
+Tên mô tả thống nhất: **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Hai bản Standard Việt/Anh định vị phòng khám đa khoa và khoa ngoại trú của bệnh viện, với nội trú/phẫu thuật dành cho giai đoạn sau.
 
 ## Mục tiêu và đầu ra
 

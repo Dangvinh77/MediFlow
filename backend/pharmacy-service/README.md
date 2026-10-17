@@ -1,5 +1,12 @@
 # pharmacy-service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Pharmacy owns drugs, prescriptions, stock and dispensing in the outpatient MVP; current activation/acceptance gates below still apply.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 2026-10-15 Core/MVP alignment: use canonical profile `outpatient-mvp`; `mvp-outpatient` remains
 a compatibility alias. Both select Core for Patient/Organization discovery and exclude legacy
 payment auto-dispense/admission authority/consumers. Explicit V1 gates remain OFF until acceptance.

@@ -1,6 +1,8 @@
 # MediFlow Frontend
 
-Web client for MediFlow — **Next.js 16 (App Router) + TypeScript + Tailwind v4**, package manager **pnpm**.
+Web client for **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. The MVP serves multi-specialty clinics and hospital outpatient departments; inpatient care and surgery remain deferred.
+
+Stack — **Next.js 16 (App Router) + TypeScript + Tailwind v4**, package manager **pnpm**.
 Conventions and the full guide: [`docs/ai/12-frontend.md`](../docs/ai/12-frontend.md). Ownership
 and shared-scope rules: [`docs/ai/15-frontend-ownership.md`](../docs/ai/15-frontend-ownership.md).
 Current route state and next task IDs: [`docs/frontend-workboard.md`](docs/frontend-workboard.md).
@@ -14,9 +16,9 @@ pnpm dev          # http://localhost:3000
 ```
 
 The gateway must be running on `http://localhost:8080` (Next proxies `/api/*` to it — see `next.config.ts`).
-Full stack start order: **eureka-server → gateway → patient-service → `pnpm dev`**.
+Full stack start order: **PostgreSQL/RabbitMQ → Eureka → Core and Gateway → required business services → `pnpm dev`**. Organization and Patient source now lives in `backend/core-service`; the target Support host has not replaced separate Report/Notification apps.
 
-Demo login: `admin / admin123` (stub auth on the gateway).
+Login uses a real account verified by Core through Gateway. Provision an account for your environment; no universal demo credentials or stub authentication are assumed. Feature/gate availability follows the live backend and the workboard; a route existing does not certify workflow acceptance.
 
 ## Structure — feature-based
 
@@ -30,10 +32,10 @@ src/
 │   └── (dashboard)/        # route group: everything behind auth
 │       ├── patients/  appointments/  records/  lab/
 │       └── pharmacy/  billing/  notifications/  reports/
-├── features/               # ONE FOLDER PER BOUNDED CONTEXT (mirrors the backend services)
+├── features/               # ONE FOLDER PER BOUNDED CONTEXT (independent of deployment packaging)
 │   └── <context>/
 │       ├── api.ts          # this context's endpoints, built on lib/api.ts
-│       ├── types.ts        # this context's DTOs (VN camelCase)
+│       ├── types.ts        # exact wire DTOs; naming differs by context
 │       └── components/     # UI used only here
 ├── components/
 │   ├── ui/                 # shared primitives: Button, Table, Modal…
@@ -68,7 +70,8 @@ labels should use `src/components/ui/StatusBadge.tsx`.
 
 ```bash
 pnpm dev        # dev server
-pnpm build      # production build (runs tsc + eslint)
+pnpm build      # Next production build; run typecheck/lint separately
 pnpm typecheck  # tsc --noEmit
 pnpm lint
+pnpm test -- --maxWorkers=1
 ```
