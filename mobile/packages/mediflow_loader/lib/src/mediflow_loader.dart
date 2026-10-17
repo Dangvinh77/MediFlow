@@ -1,3 +1,4 @@
+import 'dart:ui' show PathMetric;
 import 'package:flutter/material.dart';
 
 /// MediFlow's reusable triangular loading animation.

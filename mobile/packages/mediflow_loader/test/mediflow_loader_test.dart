@@ -15,7 +15,11 @@ void main() {
       ),
     );
 
-    expect(find.byType(CustomPaint), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(MediFlowLoader),
+            matching: find.byType(CustomPaint)),
+        findsOneWidget);
     expect(find.text('Loading patient data...'), findsOneWidget);
   });
 }
