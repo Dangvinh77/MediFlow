@@ -19,6 +19,17 @@ closeout; không dùng test lịch sử làm verification bản hiện tại.
 Chỉ đóng task khi bốn subtask + điều kiện đóng có evidence. User scope docs không cấp quyền
 Huy sửa production Gateway/shared/Clinical/Lab/Billing/Notification.
 
+Refresh 2026-10-17: người dùng giao Huy trực tiếp hoàn thiện Billing/Notification liên quan
+và Support, gồm shared POM/Dockerfile/Compose/CI/Gateway cần thiết. Phần Huy đạt **48/48 cho local hiện có**
+trong plan riêng, với real-store/broker isolation, packaged Support và actual sáu-app EXAM/Rx
+payment/dispense/current-store rollback. [Evidence](huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17)
+áp dụng các phần liên quan M6-06/08/10/12–18; không tự tick 72 checkbox toàn team hoặc nghiệm
+thu lại paid Lab. H6-02.3/H6-12.3 đã inventory và rehearsal trên cold copies của actual
+persisted local volumes: nguồn trong phạm vi không có historical business rows, cả hai Rabbit
+nodes không có queues; giữ bốn writes mới/probe bytes qua chuyển đổi và original-volume hashes
+không đổi. [Evidence/giới hạn local](huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17)
+và [một handoff Huy](../handoffs/HANDOFF-HUY-MVP.md) ghi kết quả, không cấp production activation.
+
 ## P0 Scope và baseline
 
 ### M6-01 Chốt scope và quy tắc

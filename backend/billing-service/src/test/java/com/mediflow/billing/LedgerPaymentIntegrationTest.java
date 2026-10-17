@@ -268,6 +268,51 @@ class LedgerPaymentIntegrationTest {
         assertThat(count("PAYMENT_TRANSACTION")).isZero();
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"valid","revoked","expired","refund","voided-charge",
+            "wrong-patient","wrong-invoice","wrong-target","cancelled-request","closed-account","emergency-override",
+            "missing-target","wrong-currency","wrong-source","mixed-target","wrong-record","missing-charge",
+            "missing-allocation","partial-allocation","wrong-charge-patient"})
+    void prescriptionLookupUsesCurrentExactOutpatientLedger(String changed) throws Exception {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        var payment = payments.complete(request, command("lookup-paid", "100"), actor, "lookup-trace");
+        UUID clearance = jdbc.queryForObject("SELECT clearance_id FROM FINANCIAL_CLEARANCE", UUID.class);
+        switch (changed) {
+            case "valid" -> { }
+            case "revoked" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET revoked_at=now()");
+            case "expired" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET expires_at=granted_at");
+            case "refund" -> refunds.refund(payment.transactionId(), refundCommand("lookup-refund", "1"), actor, "refund");
+            case "voided-charge" -> jdbc.update("UPDATE CHARGE SET status='VOIDED'");
+            case "wrong-patient" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET patient_id=?", UUID.randomUUID());
+            case "wrong-invoice" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET invoice_id=?", UUID.randomUUID());
+            case "wrong-target" -> jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET prescription_id=?", UUID.randomUUID());
+            case "cancelled-request" -> jdbc.update("UPDATE PAYMENT_REQUEST SET status='CANCELLED'");
+            case "closed-account" -> jdbc.update("UPDATE BILLING_ACCOUNT SET status='CLOSED'");
+            case "emergency-override" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET emergency_override=TRUE");
+            case "missing-target" -> jdbc.update("DELETE FROM PAYMENT_REQUEST_TARGET");
+            case "wrong-currency" -> jdbc.update("UPDATE FINANCIAL_CLEARANCE SET currency='USD'");
+            case "wrong-source" -> jdbc.update("UPDATE CHARGE SET source_id=?", UUID.randomUUID());
+            case "mixed-target" -> jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET surgery_case_id=?", UUID.randomUUID());
+            case "wrong-record" -> jdbc.update("UPDATE PAYMENT_REQUEST_TARGET SET record_id=?", UUID.randomUUID());
+            case "missing-charge" -> jdbc.update("DELETE FROM PAYMENT_REQUEST_CHARGE");
+            case "missing-allocation" -> jdbc.update("DELETE FROM PAYMENT_ALLOCATION");
+            case "partial-allocation" -> jdbc.update("UPDATE PAYMENT_ALLOCATION SET amount=1");
+            case "wrong-charge-patient" -> jdbc.update("UPDATE CHARGE SET patient_id=?", UUID.randomUUID());
+            default -> throw new AssertionError(changed);
+        }
+        var response = lookup(clearance, serviceHeaders("service", "SYSTEM", "pharmacy-service", 60));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var data = mapper.readTree(response.getBody()).path("data");
+        assertThat(data.path("exists").asBoolean()).isTrue();
+        assertThat(data.path("purpose").asText()).isEqualTo("PRESCRIPTION");
+        assertThat(data.path("eligible").asBoolean()).isEqualTo(changed.equals("valid"));
+        var originalGrant = mapper.readTree(jdbc.queryForObject(
+                "SELECT payload FROM BILLING_EVENT_OUTBOX WHERE routing_key='financial.clearance.granted'", String.class));
+        assertThat(Instant.parse(data.path("grantedAt").asText()))
+                .as("Lookup retains the original grant instant rather than PostgreSQL's rounded timestamp")
+                .isEqualTo(Instant.parse(originalGrant.path("occurredAt").asText()));
+    }
+
     private UUID paidSurgery() {
         seed("SURGERY","ADMISSION","100");
         payments.complete(request,command("lookup-paid","100"),actor,"lookup-trace");

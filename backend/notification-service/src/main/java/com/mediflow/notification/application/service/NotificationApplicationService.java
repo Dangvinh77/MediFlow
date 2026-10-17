@@ -64,7 +64,7 @@ public class NotificationApplicationService implements SendNotificationUseCase, 
 
     /** Gửi theo yêu cầu API. Địa chỉ không hợp lệ theo kênh → {@code Notification.create} ném 422 (BR-N1/N2). */
     @Override
-    @Transactional
+    @Transactional("notificationTransactionManager")
     public NotificationDTO send(SendNotificationRequest r) {
         Notification n = Notification.create(r.patientId(), r.title(), r.content(), r.channel(), r.recipientAddress());
         Notification pending = repo.save(n);
@@ -77,7 +77,7 @@ public class NotificationApplicationService implements SendNotificationUseCase, 
      * với bước lưu {@code PENDING} (§7 bước 6).
      */
     @Override
-    @Transactional
+    @Transactional("notificationTransactionManager")
     public void handleEvent(NotificationTrigger trigger) {
         if (processedEvent.alreadyProcessed(trigger.eventId())) {
             return;
@@ -98,7 +98,7 @@ public class NotificationApplicationService implements SendNotificationUseCase, 
 
     /** BR-N6: {@code PATIENT} chỉ đọc được thông báo của chính mình; nhân viên đọc được của mọi bệnh nhân. */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "notificationTransactionManager", readOnly = true)
     public NotificationDTO getById(UUID id, UUID callerPatientId, boolean isStaff) {
         Notification n = repo.findById(id)
                 .orElseThrow(() -> new NotificationNotFoundException("Không tìm thấy thông báo id=" + id));
@@ -109,7 +109,7 @@ public class NotificationApplicationService implements SendNotificationUseCase, 
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(transactionManager = "notificationTransactionManager", readOnly = true)
     public PageResult<NotificationDTO> byPatient(UUID patientId, PageQuery page, UUID callerPatientId, boolean isStaff) {
         if (!isStaff && (callerPatientId == null || !callerPatientId.equals(patientId))) {
             throw new NotificationAccessDeniedException("Cannot read another patient's notifications");

@@ -27,7 +27,7 @@ import com.mediflow.notification.domain.exception.NotificationAccessDeniedExcept
  * handler riêng ngoài bảng chuẩn — nó không kế thừa {@code common}'s base nào vì mã 403 chưa có
  * base dùng chung (backend-spec/07-notification.md §13.6).
  */
-@RestControllerAdvice
+@RestControllerAdvice(name = "notificationGlobalExceptionHandler", basePackages = "com.mediflow.notification.web")
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);

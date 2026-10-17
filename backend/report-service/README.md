@@ -2,15 +2,16 @@
 
 ## Product scope — 2026-10-17
 
-Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Report covers outpatient read models and source-evidenced reporting; it remains a separate app pending target Support composition.
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Report covers outpatient read models and source-evidenced reporting. The [Support host](../support-service/README.md) now composes its plain library with Notification; the standalone launcher remains for rollback.
 
 Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
 
 
 ## MVP adjustment — 2026-10-14
 
-Scope: outpatient counts/dispensed items and source-evidenced cash/refund; future Report module
-inside Support with Notification remaining Lộc-owned. Support host is not created by this batch.
+Scope: outpatient counts/dispensed items and source-evidenced cash/refund. Report is composed
+inside Support with Notification remaining Lộc-owned. Host source was added on 2026-10-17;
+real packaged PostgreSQL/RabbitMQ and cutover acceptance remain open.
 
 2026-10-15: canonical mode is `outpatient-mvp`; earlier `mvp-outpatient` is an alias.
 For co-hosting, import `ReportModuleConfiguration` from classifier `lib` and activate
@@ -56,7 +57,7 @@ reads only Report stores; late facts invalidate the accepted local witness. Gate
 real Clinical outpatient/source-coverage acceptance are still owner gates; do not enable after pull.
 
 Packaging preserves executable `report-service-0.0.1-SNAPSHOT.jar` for standalone rollback and
-adds plain `report-service-0.0.1-SNAPSHOT-lib.jar`. Future Support dependency must explicitly use
+adds plain `report-service-0.0.1-SNAPSHOT-lib.jar`. The Support dependency explicitly uses
 classifier `lib`, never the executable BOOT-INF JAR; exclude ReportServiceApplication from host
 scans. Module datasource/EMF/Flyway/transaction manager/security wiring is supplied locally;
 real PostgreSQL/upgrade and co-host startup acceptance remains H6-10.4/H6-11.

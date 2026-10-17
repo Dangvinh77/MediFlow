@@ -14,7 +14,7 @@ Bộ tài liệu chính hiện nằm trong [docs/plans](plans/README.md).
 - [Nghiệm thu và vận hành](plans/06-acceptance-runbook.md)
 - [Quy tắc coding](ai/README.md)
 
-Đích có 6 business deployment ngoại trú: Core, Clinical, Lab, Pharmacy, Billing, Support. Core đã chứa Organization/Patient; Report/Notification còn là ứng dụng riêng, Support host chưa có. Gateway/Eureka là hạ tầng, common là thư viện. 8 context stores active vẫn tách biệt; không gộp DB để đạt số 6.
+Compose mặc định có 6 business deployment ngoại trú: Core, Clinical, Lab, Pharmacy, Billing, Support. Core chứa Organization/Patient; [Support host](../backend/support-service/README.md) nhúng hai plain libraries Report/Notification, giữ launchers cũ để rollback. Gateway/Eureka là hạ tầng, common là thư viện. 8 context stores active vẫn tách biệt; không gộp DB để đạt số 6. Ngày 2026-10-17 đã đạt real PG/Rabbit, packaged Support restart và luồng EXAM/Rx thật trong sáu apps qua Gateway, gồm current-store rollback giữ accepted writes. Sau đó đã cold-copy chính persisted Compose volumes hiện có, inventory hai Rabbit nodes cũ và đạt Support cutover/rollback/broker restart giữ bốn writes mới; original-volume hashes không đổi. Huy 48/48 cho môi trường local đã quan sát, không tự bật activation gates hoặc ký thay dữ liệu môi trường khác. Evidence ở [runbook Huy mục 8–9](plans/huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
 
 Inpatient/Surgery và V2 nâng cao tạm hoãn.
 Code, database và các thay đổi FE được giữ nguyên. Các đường dẫn cũ chỉ là chỉ dẫn đọc,

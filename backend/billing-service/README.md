@@ -23,6 +23,27 @@ Reference: [`service rules`](../../docs/ai/services/billing.md) and [Surgery/Bil
 
 ## Status
 
+The gated `GET /api/v1/billing/financial-clearances/{id}/lookup` accepts signed service
+credentials from `pharmacy-service` and the existing `surgery-service` caller only. It requires
+`type=service`, `role=SYSTEM`, issue/expiry timestamps and a lifetime of at most 60 seconds;
+these credentials cannot call other Billing paths or methods. Pharmacy uses this read-only
+authority to revalidate a PRESCRIPTION grant before dispensing. The endpoint remains opt-in
+through `MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED`; this does not activate deferred Surgery.
+
+Current eligibility supports outpatient PRESCRIPTION as well as the preserved Surgery predicate.
+It checks the exact patient/account/episode, request target, posted source charges, currency,
+completed net payment and each requested charge's net allocation in one database snapshot.
+Refunded, revoked, expired, overridden or mismatched grants cannot authorize dispensing.
+The live prescription issuer's target may omit `recordId`; lookup compares that nullable wire
+value exactly and does not invent a Clinical identifier. The immutable Pharmacy grant binds
+the prescription locally. Twenty PostgreSQL/HTTP regression scenarios cover this predicate
+inside `LedgerPaymentIntegrationTest`, alongside the existing payment/refund/race tests.
+For a retained prescription grant, lookup reads the original outbox envelope's `occurredAt`
+for `grantedAt`: PostgreSQL timestamps round sub-microsecond digits, while Pharmacy retains
+the exact source instant. This preserves exact comparison without relaxing authorization or
+rewriting historical events. Outbox cleanup remains disabled by default; a missing original
+falls back to the persisted instant and cannot bypass Pharmacy's exact-match check.
+
 Automatic published-outbox cleanup defaults OFF via `MEDIFLOW_BILLING_OUTBOX_PURGE_PUBLISHED_ENABLED`.
 Review archived source completeness and backup/restore before enabling it; 7-day retention is not a
 historical replay archive. Dispatch and operator replay remain available with cleanup disabled.

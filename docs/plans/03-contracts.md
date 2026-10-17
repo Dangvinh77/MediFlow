@@ -54,6 +54,13 @@ Confirmed absence khác timeout/5xx/malformed; unavailable không là exists=fal
 permission. Có timeout/circuit breaker/bounded retry, không retry write tạo effect mới.
 Discovery name khác logical JWT subject; giữ allowlist/module caller identities compatibility.
 
+Pharmacy dùng service subject `pharmacy-service`, role SYSTEM, TTL tối đa 60 giây cho đúng
+`GET /api/v1/billing/financial-clearances/{id}/lookup`; đây không là quyền gọi Billing human APIs.
+Current PRESCRIPTION eligibility phải đối soát exact request/charge/allocation/payment cùng
+patient/account/episode. `grantedAt` phải giữ instant từ original grant envelope khi còn bằng
+chứng đó: làm tròn TIMESTAMPTZ không được biến cùng một source thành authorization khác.
+Không sửa original bytes hoặc nới so khớp để bỏ qua revoked/expired/refunded/mismatched grants.
+
 ## Event manifest
 
 Đây là routing/semantics manifest, không schema mới. Khóa schema bằng fixtures tại M6-02.

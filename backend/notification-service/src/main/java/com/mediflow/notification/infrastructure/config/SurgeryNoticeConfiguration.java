@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@org.springframework.context.annotation.Profile("!notification-module")
 @Configuration(proxyBeanMethods = false)
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.notification.care-v1.enabled", "mediflow.notification.surgery-consumer.enabled"}, havingValue = "true")
@@ -42,7 +43,7 @@ public class SurgeryNoticeConfiguration {
                 BindingBuilder.bind(dlq).to(dead).with(dlq.getName()));
     }
     @Bean ReactToSurgeryNoticeUseCase surgeryNotices(CareNotificationRepositoryPort history, SurgeryNoticeStatePort state,
-            PlatformTransactionManager manager) {
+            @org.springframework.beans.factory.annotation.Qualifier("notificationTransactionManager") PlatformTransactionManager manager) {
         var service = new SurgeryNoticeService(history, state);
         var transaction = new TransactionTemplate(manager); transaction.setTimeout(5);
         return command -> transaction.executeWithoutResult(status -> service.receive(command));

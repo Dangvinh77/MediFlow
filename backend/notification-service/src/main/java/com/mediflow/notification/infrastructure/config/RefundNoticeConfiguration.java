@@ -26,7 +26,7 @@ public class RefundNoticeConfiguration {
         var dlq = QueueBuilder.durable("notification.refunds-v1.dlq").build();
         return new Declarables(events, dead, queue, dlq, BindingBuilder.bind(queue).to(events).with("payment.refunded"), BindingBuilder.bind(dlq).to(dead).with(dlq.getName()));
     }
-    @Bean ReactToRefundNoticeUseCase refundNotices(CareNotificationRepositoryPort history, NotificationSourcePort sources, PlatformTransactionManager manager) {
+    @Bean ReactToRefundNoticeUseCase refundNotices(CareNotificationRepositoryPort history, NotificationSourcePort sources, @org.springframework.beans.factory.annotation.Qualifier("notificationTransactionManager") PlatformTransactionManager manager) {
         var service = new RefundNoticeService(history, sources); var tx = new TransactionTemplate(manager); tx.setTimeout(5);
         return command -> tx.executeWithoutResult(status -> service.receive(command));
     }

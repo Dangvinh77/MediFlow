@@ -110,6 +110,9 @@ public class RabbitConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(converter);
         factory.setAutoStartup(autoStartup);
+        factory.setConcurrentConsumers(1);
+        factory.setMaxConcurrentConsumers(2);
+        factory.setPrefetchCount(10);
         factory.setDefaultRequeueRejected(false);
         factory.setAdviceChain(RetryInterceptorBuilder.stateless()
                 .maxAttempts(maxAttempts)

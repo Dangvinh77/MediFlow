@@ -11,7 +11,7 @@
 #   - PostgreSQL (DB) + RabbitMQ (message queue) — infrastructure
 #   - Eureka Server (service discovery)
 #   - Gateway (API gateway, JWT auth)
-#   - 8 business services + Inpatient/Surgery foundations
+#   - 6 business deployments; legacy Support/deferred apps require explicit profiles
 #   - Frontend (Next.js)
 #
 # Thứ tự khởi động: PostgreSQL → RabbitMQ → Eureka → Gateway → Business → Frontend
@@ -106,6 +106,9 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      MEDIFLOW_REPORT_DESTINATION: ${MEDIFLOW_REPORT_DESTINATION:-support-service}
+      MEDIFLOW_NOTIFICATION_DESTINATION: ${MEDIFLOW_NOTIFICATION_DESTINATION:-support-service}
+      SPRING_PROFILES_ACTIVE: outpatient-mvp
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -126,45 +129,23 @@ services:
   #   - database name
   # ======================================================================
 
-  organization-service:
+  core-service:
     build:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        SERVICE_NAME: organization-service
-    container_name: mediflow-organization
+        SERVICE_NAME: core-service
+    container_name: mediflow-core
     ports:
       - "8089:8089"
     environment:
       SERVER_PORT: 8089
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_organization
-      SPRING_RABBITMQ_HOST: rabbitmq
-      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - mediflow-net
-
-  patient-service:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-      args:
-        SERVICE_NAME: patient-service
-    container_name: mediflow-patient
-    ports:
-      - "8081:8081"
-    environment:
-      SERVER_PORT: 8081
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_patient
-      SPRING_RABBITMQ_HOST: rabbitmq
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      MEDIFLOW_ORGANIZATION_DB_URL: jdbc:postgresql://postgres:5432/mediflow_organization
+      MEDIFLOW_PATIENT_DB_URL: jdbc:postgresql://postgres:5432/mediflow_patient
+      MEDIFLOW_DB_USER: postgres
+      MEDIFLOW_DB_PASSWORD: postgres
+      MEDIFLOW_RABBIT_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
     depends_on:
       postgres:
@@ -191,6 +172,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_clinical
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      SPRING_PROFILES_ACTIVE: outpatient-mvp
+      MEDIFLOW_CARE_FINANCE_V2_ENABLED: ${MEDIFLOW_CARE_FINANCE_V2_ENABLED:-false}
+      MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED: ${MEDIFLOW_CLINICAL_PRESCRIPTION_CONTEXT_LOOKUP_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -216,6 +200,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_lab
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      SPRING_PROFILES_ACTIVE: outpatient-mvp
+      MEDIFLOW_CARE_FINANCE_V2: ${MEDIFLOW_CARE_FINANCE_V2:-false}
+      MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED: ${MEDIFLOW_LAB_CLINICAL_CONTEXT_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -241,6 +228,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_pharmacy
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      SPRING_PROFILES_ACTIVE: outpatient-mvp
+      MEDIFLOW_CARE_FINANCE_V2: ${MEDIFLOW_CARE_FINANCE_V2:-false}
+      MEDIFLOW_PHARMACY_IDENTITY_ENABLED: ${MEDIFLOW_PHARMACY_IDENTITY_ENABLED:-false}
+      MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED: ${MEDIFLOW_PHARMACY_CLINICAL_CONTEXT_ENABLED:-false}
+      MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED: ${MEDIFLOW_PHARMACY_CLEARANCE_CONSUMER_ENABLED:-false}
+      MEDIFLOW_PHARMACY_CLEARANCE_AUTHORITY_ENABLED: ${MEDIFLOW_PHARMACY_CLEARANCE_AUTHORITY_ENABLED:-false}
+      MEDIFLOW_PHARMACY_OUTPATIENT_API_ENABLED: ${MEDIFLOW_PHARMACY_OUTPATIENT_API_ENABLED:-false}
+      MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ENABLED:-false}
+      MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE: ${MEDIFLOW_PHARMACY_OUTPATIENT_EVENTS_ACCEPTANCE_REFERENCE:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -266,6 +262,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mediflow_billing
       SPRING_RABBITMQ_HOST: rabbitmq
       MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      SPRING_PROFILES_ACTIVE: outpatient-mvp
+      MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED: ${MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED:-false}
+      MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES: ${MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES:-}
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED:-false}
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES:-}
+      MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE: ${MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE:-}
       # MVP ngoại trú (docs/plans/05-implementation-plan.md M6-12): mở đúng các cờ Billing V1
       # cần cho EXAM/LAB_TEST/Rx — Admission/Surgery vẫn giữ false (deferred), không bật nhầm.
       MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED: "true"
@@ -284,7 +286,48 @@ services:
     networks:
       - mediflow-net
 
+  support-service:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE_NAME: support-service
+    container_name: mediflow-support
+    ports:
+      - "8087:8087"
+    environment:
+      SERVER_PORT: 8087
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      MEDIFLOW_REPORT_DB_URL: jdbc:postgresql://postgres:5432/mediflow_report
+      MEDIFLOW_REPORT_DB_USER: ${MEDIFLOW_REPORT_DB_USER:-postgres}
+      MEDIFLOW_REPORT_DB_PASSWORD: ${MEDIFLOW_REPORT_DB_PASSWORD:-postgres}
+      MEDIFLOW_REPORT_DB_POOL_SIZE: ${MEDIFLOW_REPORT_DB_POOL_SIZE:-4}
+      MEDIFLOW_NOTIFICATION_DB_URL: jdbc:postgresql://postgres:5432/mediflow_notification
+      MEDIFLOW_NOTIFICATION_DB_USER: ${MEDIFLOW_NOTIFICATION_DB_USER:-postgres}
+      MEDIFLOW_NOTIFICATION_DB_PASSWORD: ${MEDIFLOW_NOTIFICATION_DB_PASSWORD:-postgres}
+      MEDIFLOW_NOTIFICATION_DB_POOL_SIZE: ${MEDIFLOW_NOTIFICATION_DB_POOL_SIZE:-4}
+      MEDIFLOW_RABBIT_HOST: rabbitmq
+      MEDIFLOW_JWT_SECRET: dev-secret-key-change-in-production-32bytes-min!!
+      # New projection/producer gates remain OFF until original-byte acceptance.
+      MEDIFLOW_CARE_FINANCE_V2: ${MEDIFLOW_CARE_FINANCE_V2:-false}
+      MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED: ${MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED:-false}
+      MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED: ${MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED:-false}
+      MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED: ${MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED:-false}
+      MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED:-false}
+      MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED: ${MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - mediflow-net
+
+  # Rollback launchers only: stop Support before explicitly starting either legacy app.
   notification-service:
+    profiles: [legacy-support]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -314,6 +357,7 @@ services:
       - mediflow-net
 
   report-service:
+    profiles: [legacy-support]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -342,6 +386,7 @@ services:
   # PLANNED CARE CONTEXT — bootable foundation only, no business API yet
   # ======================================================================
   inpatient-service:
+    profiles: [deferred]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -372,6 +417,7 @@ services:
       - mediflow-net
 
   surgery-service:
+    profiles: [deferred]
     build:
       context: .
       dockerfile: backend/Dockerfile

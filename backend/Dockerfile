@@ -5,8 +5,8 @@
 #   2. runtime — chỉ copy JAR của service cần chạy (image rất nhỏ)
 #
 # Cách dùng:
-#   docker build -t mediflow/patient-service \
-#     --build-arg SERVICE_NAME=patient-service \
+#   docker build -t mediflow/support-service \
+#     --build-arg SERVICE_NAME=support-service \
 #     -f backend/Dockerfile .
 #
 #   Hoặc để docker-compose lo — không cần gõ tay.
@@ -27,14 +27,14 @@ COPY pom.xml ./
 COPY backend/common/pom.xml backend/common/pom.xml
 COPY backend/eureka-server/pom.xml backend/eureka-server/pom.xml
 COPY backend/gateway/pom.xml backend/gateway/pom.xml
-COPY backend/organization-service/pom.xml backend/organization-service/pom.xml
-COPY backend/patient-service/pom.xml backend/patient-service/pom.xml
+COPY backend/core-service/pom.xml backend/core-service/pom.xml
 COPY backend/clinical-service/pom.xml backend/clinical-service/pom.xml
 COPY backend/lab-service/pom.xml backend/lab-service/pom.xml
 COPY backend/pharmacy-service/pom.xml backend/pharmacy-service/pom.xml
 COPY backend/billing-service/pom.xml backend/billing-service/pom.xml
 COPY backend/notification-service/pom.xml backend/notification-service/pom.xml
 COPY backend/report-service/pom.xml backend/report-service/pom.xml
+COPY backend/support-service/pom.xml backend/support-service/pom.xml
 COPY backend/inpatient-service/pom.xml backend/inpatient-service/pom.xml
 COPY backend/surgery-service/pom.xml backend/surgery-service/pom.xml
 
@@ -61,7 +61,7 @@ RUN addgroup -S mediflow && adduser -S mediflow -G mediflow
 WORKDIR /app
 
 # Copy JAR từ stage build — chỉ 1 file duy nhất
-COPY --from=build /build/backend/${SERVICE_NAME}/target/*.jar app.jar
+COPY --from=build /build/backend/${SERVICE_NAME}/target/${SERVICE_NAME}-0.0.1-SNAPSHOT.jar app.jar
 
 # Chạy với quyền không root
 USER mediflow

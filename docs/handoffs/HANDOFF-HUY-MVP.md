@@ -1,11 +1,19 @@
 # Handoff chung Huy — Pharmacy, Report và Support
 
-Ngày rà soát: 2026-10-16. Baseline `9ef3b151f895cef4c05916bf53331ff1d525f920`
+Rà soát mới nhất: **2026-10-17**, Support baseline `27b8832d` + working tree chưa commit/push,
+chi tiết ở mục 11. Baseline lịch sử `9ef3b151f895cef4c05916bf53331ff1d525f920`
 cộng thay đổi owned trong workspace; implementation trước đó đã merge PR #385 (`7610cb97`,
 merge `f15430dc`). User giao: hoàn tất phần độc lập trong phạm vi Huy, gom phần còn lại vào
 **một file handoff**. Đây là đầu mối duy nhất thay các handoff activation, Support, Pharmacy
 Core lookup, Surgery Core paths và hai retired pointers care-finance/Surgery decisions cũ;
-không phải quyền sửa production foreign/shared paths.
+không tự cấp quyền sửa production foreign/shared paths. **Override của người dùng ngày
+2026-10-17:** Huy trực tiếp xử lý phần Billing/Notification của Lộc liên quan Pharmacy/Report,
+không chờ bàn giao cho Lộc. Quyền này áp dụng `backend/billing-service/**` và
+`backend/notification-service/**` trong task; không tự mở shared build/Compose/CI/Gateway.
+Tiến độ triển khai/kiểm thử của override được ghi tiếp ở mục 8, không tạo handoff mới.
+**Giao quyền tiếp theo cùng ngày:** hoàn thiện phần Lộc còn thiếu và tích hợp thành Support,
+bao gồm `backend/support-service/**`, Notification/Report và shared root POM, Dockerfile,
+Compose, CI, Gateway cần thiết. Source/verification ở mục 9; ownership lâu dài không đổi.
 
 Nguồn: [plan Huy](../plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
 [contracts](../plans/03-contracts.md), [reliability](../plans/04-data-reliability.md),
@@ -13,23 +21,21 @@ Nguồn: [plan Huy](../plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
 [cutover runbook](../plans/huy-mvp-cutover-runbook.md).
 Không copy payload thành spec mới; exact wire lấy từ DTO/serializer/fixture source đã khóa.
 
-## 1. Chốt phần Huy và 10 subtask còn mở
+## 1. Chốt phần Huy — 48/48 trong môi trường local hiện có
 
-Plan giữ **38/48**, còn 10 mục dưới đây. Không tăng số done chỉ vì đã bàn giao.
-Mỗi hàng tách phần Huy đã tự hoàn tất với điều kiện cần nhận để đóng subtask gốc.
+Không còn subtask Huy cần bàn giao. Người dùng giao thực hiện tiếp H6-02.3/H6-12.3; đã cold-copy
+chính các persisted Compose volumes cũ, inventory cả hai Rabbit node identities và diễn tập
+actual legacy → Support → rollback legacy → Support cùng broker restart. Source không có
+historical business rows trong ba context thuộc phạm vi; không tự tạo dữ liệu lịch sử.
+Giữ bốn API writes mới, Report rows/histories và durable probe bytes. Original-volume SHA-256
+trước/sau trùng nhau; không baseline schema Pharmacy, không dual writer, purge hoặc release HELD.
 
-| Subtask | Phần Huy độc lập đã có | Phần cần bàn giao / owner | Điều kiện đóng |
-|---|---|---|---|
-| H6-02.3 | SQL inventory chỉ đọc, bounded, ROLLBACK; resource/PG preservation tests | Operator + source owners cung cấp approved historical clone và broker observations | Kiểm kê pending/HELD/reservations/jobs/queues, phân loại deferred/quarantine, lưu source/time và phê duyệt; không purge hoặc release HELD |
-| H6-06.2 | Năm lifecycle fixtures, codec và API/PG producer relationship proof; Report same-byte intake | Lộc Billing/Notification; Vinh Clinical attachment | Original bytes được từng consumer chấp nhận, đúng source/episode/patient/record, một charge/attachment/notice và đúng terminal adjustment |
-| H6-06.4 | Pharmacy confirms/unroutable/restart/bounded retry/quarantine/fencing/grant tests, selected new cohort | Lộc Billing thực thi/accept selective outpatient issuer và current PRESCRIPTION grant; các consumer liên quan | Live source charge → invoice/request → payment → exact grant → authenticated dispense/terminal; PG/Rabbit thật, không fixture thay issuer |
-| H6-11.1 | Report lib/export và scoped composition contract ở section 3 | Shared build owner + Lộc Notification | Thống nhất/create Support host, plain module exports, launcher/profiles/discovery; không broad-scan standalone applications |
-| H6-11.2 | Report named DS/Flyway/EMF/tx/JDBC và fresh/upgrade PG proof | Shared build/runtime + Lộc; Hoàng Anh Gateway | Hai stores/credentials/migrations/transaction managers đúng scope; reactor/Compose/CI và Gateway trỏ host được owner triển khai |
-| H6-11.3 | Report scoped security/advice/listeners/scheduler; legacy backlog retention | Lộc Notification + shared host owner | Hai module giữ queue/DLQ/pools/jobs riêng, host default deny, không bean override hoặc mượn scheduler/transaction manager |
-| H6-11.4 | Report module PG isolation/upgrade + lib/JVM probes | Shared host owner + Lộc Notification | Packaged Support chạy hai PG/Rabbit, Report replay không resend notice, lỗi Notification không rollback Report, một process và không dual writers |
-| H6-12.1 | Huy API/PG, producer/consumer, authority và Report source slices | Hoàng Anh Gateway/Core + Vinh Clinical/Lab + Lộc Billing/Notification | Gateway → actual source/paid grant → authenticated dispense → Clinical/Report/notice, role/token/path negatives và đối soát effects |
-| H6-12.2 | Evidence map T02/T07–T19 và batch 6–9, full regression và owned packaged/fault proof | Từng producer/consumer owner + Support/Gateway owners + operators | Bổ sung integrated host/paid/source/coverage evidence với source IDs, hashes, run/fail/skip; local tests không thay integrated acceptance |
-| H6-12.3 | Read-only inventory/stop-drain-switch/rollback checklist, Report resource-location upgrade preservation | Shared runtime/operator + Lộc Notification và source owners | Rehearse standalone Report → Support → rollback trên approved current clone; giữ accepted writes/bytes/cursors/pending/HELD, không dual writers hoặc restore snapshot cũ |
+Evidence hiện hành ở mục 11 và [runbook mục 9](../plans/huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
+**2.129 unique tests / 196 class, zero failure/error/skip**, gồm selection mục 10 và một
+persisted-volume IT mới; running-source refusal guard và năm JSON checks ghi riêng.
+Billing/Pharmacy vẫn là selected suites. Kết quả không tự đóng global M6/paid Lab/FE hoặc
+production activation. Một môi trường khác có historical data cần inventory/coverage proof
+của chính nó; không dùng kết quả local để ký thay.
 
 Phần độc lập H6-08.4 đã đóng: real PG/Rabbit same-byte replay/conflict/early refund/rollback,
 fault sau commit trước ACK, legacy queue retention và actual Clinical outpatient completion.
@@ -37,7 +43,11 @@ Fault receiver trong JVM không được gọi là JVM kill; batch 8 có JVM cra
 Current full regression: Pharmacy 822, Report 1.330; source acceptance 1; packaging probes 5,
 đều 0 failures/errors/skips. Xem batch 9 để không cộng trùng rerun hoặc nhầm coverage.
 
-## 2. Giao việc theo owner
+## 2. Dấu vết phối hợp theo owner trước khi chốt
+
+Các checklist mục 2–9 là lịch sử và ràng buộc hợp đồng của từng lượt. Trạng thái hiện tại ở
+mục 1/11 thay các nhận định cũ về Docker, paid Rx hoặc Support chưa chạy; không giao lại
+những phần code và nghiệm thu đã hoàn thành.
 
 ### Lộc — Billing và Notification
 
@@ -47,10 +57,12 @@ Lộc triển khai trực tiếp checklist đó; không cần lên kế hoạch 
 để nhận các bytes/purposes đã được consumer nghiệm thu, không tự đóng Notification,
 terminal/refund, Support hoặc các subtask Huy còn mở bên dưới.
 
-- `PrescriptionChargeService.issue` hiện dùng `LedgerEventPort.appendHeld` cho V1 `invoice.created`.
-  Packaged probe trước đó timeout 35 giây khi chờ invoice. Cần selective **NEW outpatient**
-  publication boundary có confirms/retry/fencing; giữ historical HELD. Không cấp invoiceId hoặc
-  paymentRequestId giả, không cho Huy update Billing DB để vượt gate.
+- Source refresh tại `16a5e06e`: `PrescriptionChargeService.issue` đã dùng
+  `appendForOutpatientRequest` cho V1 `invoice.created`; discovery và immutable **NEW outpatient**
+  publication cohort đã có trong Billing. Timeout packaged probe trước đây là evidence lịch sử,
+  không còn là khẳng định issuer chưa được viết. Hai Rabbit acceptance cases còn thiếu đã được
+  bổ sung ở mục 8; runtime paid chain vẫn phải chạy thật. Không cấp invoiceId/paymentRequestId giả
+  hoặc cập nhật Billing DB để vượt gate.
 - Chạy actual PRESCRIPTION/OUTPATIENT_VISIT issuer, allocation/payment, grant, current eligibility,
   revocation và original-linked cancel/expiry/failure adjustment/refund. Pending refund không completed.
   Billing lookup fixture SURGERY/ADMISSION không phải Rx permission proof.
@@ -253,3 +265,225 @@ mvn -q -pl backend/pharmacy-service -am '-Dtest=OutpatientApiPostgresTest' '-Dsu
 
 Ghi run/fail/skip và source commit vào chính file này trước khi coi database guard được nghiệm thu.
 Không đóng thêm checkbox: **38/48**; mười subtask external/operator còn mở theo các mục trên.
+
+## 8. Trực tiếp xử lý Billing/Notification liên quan Huy (2026-10-17)
+
+Theo override của người dùng, phần code dưới đây đã được thực hiện ngay trên nhánh Huy;
+không giao lại cho Lộc và không tạo thêm file handoff. Baseline `16a5e06e`, các thay đổi trong
+working tree chưa commit/push. Không thay golden producer fixtures, migrations, default rollout
+flags, money authority hoặc shared paths.
+
+**Notification:** sửa đường nhận V1 trước đây đưa sự kiện đơn thuốc vào bộ đọc
+`payment.completed` rồi từ chối. Một reader trên `notification.q` nhận đủ năm original Pharmacy
+outpatient lifecycle fixtures, kiểm logical producer/version/source/record/patient/department/episode
+và full snapshot. Event claim, semantic source claim, private IN_APP history và HELD sent-outbox
+cùng transaction; same operation/new event ID không sinh notice thứ hai, changed snapshot là conflict.
+Thông báo hủy/hết hạn/lỗi cấp thuốc không được hiểu thành đã hoàn tiền. Không chép tên thuốc,
+giá hoặc lý do terminal vào nội dung lifecycle notice, không suy contact hoặc account=patient.
+
+Billing PRESCRIPTION `invoice.created` cũng được nhận trên queue hiện có, tái sử dụng decoder,
+template và service đã có, không cần bật Surgery. Reader này không nhận deferred Surgery purpose.
+Hai flag bắt buộc là `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED` và
+`MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED`, đều default OFF.
+Transient storage errors retry tối đa ba lần rồi DLQ; wire/conflict errors reject ngay.
+Đã kiểm cả lỗi permanent bọc trong listener exception; không requeue vô hạn hoặc tự release DLQ.
+
+**Billing:** kiểm source xác nhận issuer, exact source discovery, selected publication và original-linked
+terminal/refund obligation đã có; không viết một money flow song song. Bổ sung hai actual
+PG/Rabbit acceptance cases vào `OutpatientPublicationRabbitIntegrationTest`:
+
+- New delivery IDs cho cùng prescription trước/sau thanh toán vẫn một charge/request/payment/grant,
+  không phát invoice/receipt/grant lần hai; request tìm qua signed public HTTP, bytes nhận từ dispatcher.
+- Issue outpatient Rx bằng một application context thật với publication OFF; sau đó dùng context ON
+  để replay source và retry payment. Historical request không được enroll, cả ba facts vẫn HELD và
+  original invoice bytes giữ nguyên. Không SQL seed request hoặc mock cohort để thay prior issuance.
+
+**Verification thực chạy:** Billing **734 tests / 93 class** không cần container đạt; Notification
+**221 tests / 23 class** không cần container đạt, gồm **37** contract/config/retry cases mới.
+Tất cả đều zero failure/error/skip; không cộng trùng các lần rerun. Các class còn lại có
+Testcontainers được loại khỏi selection này, vì vậy đây không phải full PG/Rabbit suite.
+`test-compile` của hai module đạt, bao gồm integration tests mới.
+
+**Chưa chạy:** 11 cases trong `PrescriptionNoticeRabbitIntegrationTest`, hai Billing Rabbit cases
+mới và actual paid Pharmacy/Report/Notification chain. Docker Desktop vẫn chưa sẵn sàng; tiếp tục
+theo lựa chọn trước đó của người dùng là làm phần không cần Docker. Khi có runtime, chạy:
+
+```powershell
+mvn -q -pl backend/notification-service -am '-Dtest=PrescriptionNoticeRabbitIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -q -pl backend/billing-service -am '-Dtest=OutpatientPublicationRabbitIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+H6-06.2/.4 vẫn cần runtime acceptance trước khi tick; không còn chờ Lộc viết intake Rx Notification
+hoặc viết hai Billing cases ở trên. Support export/host/shared wiring, source coverage và operator
+cutover là các phần khác chưa được chứng minh bởi batch này. Tổng plan giữ **38/48** cho tới khi
+các tiêu chí gốc đạt, không đổi tiêu chí hoặc bật deployment để tăng tiến độ.
+
+## 9. Support host — 2026-10-17
+
+Người dùng giao trực tiếp phần Lộc còn thiếu và tích hợp Support. Đã thực hiện code trong
+Notification/Report, tạo `backend/support-service` và sửa các shared paths cần thiết:
+root POM, backend Dockerfile, Compose, Service integration CI và Gateway destinations.
+Không chờ Lộc viết module export, không tạo handoff thứ hai. Source tại nhánh **Huy**,
+HEAD `27b8832d25daee8218250224af3f8334318a37df`, cộng working tree chưa commit/push.
+
+**Phần đã triển khai:**
+
+- Notification xuất plain `lib` bên cạnh executable cũ, entry point
+  `NotificationModuleConfiguration`; Support import hai entry points rõ ràng, không broad-scan
+  launcher hoặc chép business code. Một executable/discovery name `support-service`, port 8087.
+  Host dùng skill new-microservice theo blueprint composition-only.
+- Hai named DS/Flyway/EMF/tx/JDBC/pools, credentials bắt buộc và resource locations riêng.
+  Không default tx/datasource, không cross-store SQL/transaction. Giữ nguyên 24 Report và
+  4 Notification SQL files, không repair/renumber checksum hoặc merge schema/data.
+- Notification transaction/JDBC/Rabbit beans được qualify; repository trùng simple name được
+  đặt tên riêng. JWT filters không tự đăng ký servlet filter; hai security chains/advice giữ
+  path/role/patient semantics. Fallback host default deny. Report role không mở quyền Notification.
+- Listener factories/queues/DLQs giữ tên cũ, budget tách module; Report giữ scheduler riêng.
+  Không purge, auto redrive hay release HELD. Host chặn CareProjection/Surgery/deferred Report
+  features; ngay cả khi outpatient/global gates ON, receipt/refund ADMISSION bị reject trước
+  effects. Standalone compatibility vẫn nhận các contract đã có như trước.
+- Root reactor có 13 module, Compose mặc định sáu business deployments: Core, Clinical, Lab,
+  Pharmacy, Billing, Support. Hai legacy Report/Notification launchers ở `legacy-support`,
+  Inpatient/Surgery ở `deferred`. Dockerfile dùng đúng executable filename, tránh copy cả lib.
+  Gateway giữ route IDs/public paths; hai logical Support routes mặc định `lb://support-service`,
+  destinations có override để rollback. Compose Gateway bật outpatient-mvp, không route deferred.
+- New intake/read/delivery gates vẫn default OFF. Shared CI chạy `support-acceptance`, yêu cầu
+  Docker, kiểm cả Surefire/Failsafe, không nhận skips hoặc thiếu packaged acceptance report.
+
+**Verification thực chạy**, không cộng trùng reruns:
+
+| Module | Concrete non-container classes | Tests | Failure / error / skip |
+|---|---:|---:|---|
+| Report | 96 | 940 | 0 / 0 / 0 |
+| Notification | 24 | 226 | 0 / 0 / 0 |
+| Gateway | 12 | 257 | 0 / 0 / 0 |
+| Support | 4 | 13 | 0 / 0 / 0 |
+| Tổng | **136** | **1.436** | **0 / 0 / 0** |
+
+Selection loại rõ các Testcontainers classes; `ReportPersistenceTest` là annotation hỗ trợ,
+không là một suite. Một Report unit class trùng tên với Notification container class được
+chạy bổ sung bằng fully qualified name, không dùng XML lịch sử để tính. Kết quả aggregate
+ở local ignored `backend/support-service/target/non-container-results.json`; logs
+`non-container-regression.log`, `outpatient-regression.log`, `report-persistence-regression.log`.
+Không gọi selection này là full suite PostgreSQL/RabbitMQ.
+
+Build Support/Gateway với test selection đạt; **toàn reactor 13 module** cũng đạt
+`mvn -q -DskipTests package` (biên dịch test sources, không chạy container tests). Actual boot JAR
+inspection xác nhận đúng Start-Class, hai nested plain lib không có BOOT-INF riêng và mọi
+SQL namespaced copy nguyên bytes. SHA-256 của toàn bộ 29 original migration resources
+(28 SQL + .gitkeep) khớp trước/sau. Actual `java -jar` guard smoke load hai module profiles và
+reject khi bật deferred Surgery trước store startup; đây không là real DB startup acceptance.
+Static `docker compose config` đạt, danh sách default có đúng sáu business deployments.
+
+**Đã code/biên dịch, chưa chạy do Docker chưa sẵn sàng:**
+
+- Năm `SupportStoreIsolationTest` cases: hai stores/histories/pools không lẫn; original Pharmacy
+  bytes cùng tới hai context, Report replay không thêm notice/outbox; Notification outbox fault
+  rollback/DLQ độc lập với Report, original bytes recover, PATIENT other-owner denied.
+  Hai pool-exhaustion cases giữ toàn bộ connections của từng context, kiểm context kia vẫn
+  commit, context bị nghẽn bounded timeout/DLQ rồi recover từ original bytes mà không double effect.
+- Một `SupportPackagedAcceptanceIT` case: migrate hai stores từ original standalone locations,
+  launch actual JAR, accepted notification write + Report read, stop/restart, giữ write và
+  Flyway checksums. Failsafe profile chạy sau package, không dùng IDE classpath làm proof.
+- 11 Rx Notification integration cases và hai Billing Rabbit cases ở mục 8 vẫn chưa chạy.
+  Current paid-chain/coverage/inventory/cutover/rollback cũng chưa có evidence mới.
+
+Chạy khi có Docker, từ repository root:
+
+```powershell
+mvn -q -pl backend/support-service -am -Psupport-acceptance verify
+mvn -q -pl backend/billing-service -am '-Dtest=OutpatientPublicationRabbitIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+[Support README](../../backend/support-service/README.md) có exact env namespaces và stop/drain/
+switch/rollback: trước khi chạy Support phải dừng hai standalone writers/jobs; rollback dừng
+Support trước rồi mới chạy hai explicit legacy services và đổi Gateway destinations. Giữ
+current stores/queues/accepted writes, không restore snapshot cũ. Chưa thao tác cutover hoặc
+khởi động lại Docker trên máy người dùng.
+
+Đóng **H6-11.1**, hiện **39/48**. H6-11.2/.3 implementation và mock-infrastructure composition
+đã đạt nhưng còn real-store/broker acceptance; H6-11.4 chưa đạt. Không tick runtime items từ
+unit/web/mocked component tests hoặc từ việc compile container tests.
+
+## 10. Integrated backend closeout — 2026-10-17
+
+User giao trực tiếp hoàn thiện Billing/Notification liên quan và Support/shared integration.
+HEAD `27b8832d25daee8218250224af3f8334318a37df` cộng working tree hiện tại. Không sửa
+production Core/Clinical/Lab; các app thật được dùng qua public Gateway APIs trong disposable
+acceptance. Không chờ Lộc viết export hoặc bổ sung code cho luồng Rx/Support đã nghiệm thu.
+
+- Support import hai plain libraries, hai stores/Flyway/EMF/tx/pools, JWT/advice/listeners/jobs
+  tách biệt và host default deny. Real PG/Rabbit/pool-exhaustion/fault/DLQ isolation và actual
+  packaged upgrade/restart đều đạt. Default Compose sáu business apps, một Support discovery.
+- Actual Gateway flow: đăng nhập/Core identity → Clinical check-in → EXAM payment/grant →
+  khám/record → Rx create → Billing payment/current grant → authenticated dispense → Clinical
+  attachment/Report/private notice. Pharmacy dừng trước payment rồi restart nhận durable grant;
+  stock không tự giảm khi payment đến, 20 → 17 chỉ sau dispense; retries không nhân effect.
+- Ledger một Rx charge/payment/current grant; Clinical một attachment, Report một filled
+  journal và hai cash receipts tổng 130.000 VND, Notification một private filled notice.
+  Wrong roles/other patient/refresh token/unsupported nested Pharmacy paths đều bị từ chối.
+- Current-store rollback: stop Support → hai legacy launchers → nhận write mới → stop legacy
+  → restart Support. Giữ original bytes, journal, notices mới/cũ và HELD outbox; không restore
+  snapshot cũ, không dual writers. Chưa thay approved historical-data rehearsal của H6-12.3.
+- Sửa Billing exact Pharmacy caller/current Rx allocation eligibility và original grant Instant
+  để tránh DB rounding mismatch; Report scheduled refund poll dùng named read transaction;
+  Gateway exact Pharmacy method/path/role matrix. Không đổi SQL migration bytes hoặc fixtures.
+
+Verification selection **2.128 unique tests / 195 class, 0 fail/error/skip**: Notification
+279, Report 1.331, Support 18, Billing selected 133, Pharmacy selected 26, Gateway 339,
+packaged Support 1, six-app acceptance 1. Năm JSON contract checks đạt. Không gọi selected
+Billing/Pharmacy là full module run; Report impacted rerun thay kết quả cũ, không cộng trùng.
+Lab chỉ startup/discovery trong bài sáu-app; không claim paid Lab/FE/global M6 release.
+
+Commands, raw artifact paths, actual patient/episode/record/Rx/payment/event IDs và original-byte
+hashes nằm trong [runbook mục 8](../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Generated local XML/log/JSON evidence được giữ dưới `target/`, CI upload artifacts; không biến
+test data thành lịch sử vận hành. Source harness SHA-256:
+`749bc9b465b83cfa8da7beffc002feff7356b8deadf68dc234b059d4e33f520d`.
+
+Đóng H6-06.2/.4, H6-11.2/.3/.4 và H6-12.1/.2: **46/48**. Chỉ còn **H6-02.3/H6-12.3**
+với đầu vào/checklist mục 1. Historical completeness/coverage cần export/cursor/operator proof;
+legacy-version rejected traffic vẫn giữ ở durable DLQ, không purge hoặc ký backlog đã drained.
+Default activation/publication gates không được bật bởi lượt này. Không tạo thêm handoff.
+
+## 11. H6-02.3 / H6-12.3 hoàn tất trên persisted local volumes — 2026-10-17
+
+Người dùng yêu cầu thực hiện luôn hai task còn lại. Đã chọn đúng hai volume Compose có sẵn
+`mediflow_mediflow-pgdata` và `mediflow_mediflow-rabbitdata`, xác nhận không có running source
+writer, cold-copy bằng read-only mounts rồi chạy trên bản sao. Không dùng audit/test volume cũ
+hoặc DB tạo mới để thay inventory. Hai Rabbit node identities cũ đều được boot đúng tên và
+inventory riêng trước khi chọn một node cho bài diễn tập.
+
+| Mục | Kết quả quan sát / nghiệm thu |
+|---|---|
+| Pharmacy nguồn | Năm bảng legacy pre-Flyway đều zero rows; các bảng outbox/reservation/receipt/job chưa tồn tại. Ghi ABSENT_IN_LEGACY_SCHEMA, không đoán zero từ query lỗi, không baseline/repair/migrate schema đó. Rows/digests trước và sau giữ nguyên. |
+| Report và Notification nguồn | Cả hai chưa có public tables/Flyway history. Không có lịch sử nghiệp vụ để di chuyển ở hai stores này; original stores giữ nguyên. Standalone launchers initialize chính copied stores. |
+| Broker nguồn | Hai nodes rabbit@95d905c52c13 và rabbit@fb86c4142a76: mỗi node vhost /, zero queues. Không có backlog/DLQ được purge hoặc tự xác nhận drained. |
+| Chuyển đổi | Legacy pair → Support → broker restart → legacy rollback → Support return. Bốn API writes mới tồn tại, row SHA-256 giữ nguyên; PATIENT khác bị denied. Report read đạt, all Report rows và hai Flyway histories khớp qua các lần chuyển. |
+| Broker retention | Một administrative durable probe queue giữ đúng một persistent message và bytes qua actual container restart; không là fabricated business event. |
+| Bảo vệ nguồn | Original PG/Rabbit volume SHA-256 trước/sau trùng nhau. Source guard từ chối volume đang có writer đã chạy đạt. Clone containers dừng sau bài test, volumes/evidence giữ lại. |
+
+Run `mediflow-h6-20261017211337-8ca8df`, hoàn tất 21:17:17 +07:00.
+`HistoricalSupportCutoverIT`: **1 test / 1 class, 0 failure/error/skip**, Maven exit 0.
+Tổng selection cùng mục 10: **2.129 unique tests / 196 class**, zero failure/error/skip;
+không gọi đây là fresh full Billing/Pharmacy/backend suite. Running-source guard và năm JSON
+checks ghi riêng. Lượt fail trước đó do IDE build stubs và Docker restart đổi ephemeral port
+không tính passed; source snapshot build và port rediscovery đã xử lý, lượt cuối chạy lại đầy đủ.
+
+H6-02.3 và H6-12.3 đóng: **48/48 cho môi trường phát triển hiện có**. Source thật rỗng là
+kết quả inventory, không là lịch sử giả; không ký thay external coverage hoặc một production
+dataset khác. Không bật default activation/publication gates hoặc thay schema volume gốc.
+Schema Pharmacy legacy pre-Flyway vẫn là bản lưu nguyên trạng; bài này không chứng nhận chạy
+nguyên schema cũ đó bằng artifact mới. Không còn task Huy chờ code hoặc handoff owner khác.
+
+Reproduce từ repo root:
+
+```powershell
+& ./backend/support-service/operations/Invoke-HistoricalSupportRehearsal.ps1
+```
+
+Script từ chối source có running writer và existing output directory; không tự stop user apps.
+Build dùng source snapshot byte-identical để tránh IDE ghi error stubs vào Maven outputs.
+Hash/source IDs/raw artifact locations và đầy đủ giới hạn ở
+[runbook mục 9](../plans/huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
+Giữ đúng một file handoff chung này; các mục 2–10 là lịch sử, không giao lại hai task vừa đóng.

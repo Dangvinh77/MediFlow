@@ -29,28 +29,34 @@ import java.nio.charset.StandardCharsets;
  * application ({@code NotificationApplicationService}), không diễn đạt được bằng
  * {@code @PreAuthorize}.
  */
-@Configuration
+@Configuration("notificationSecurityConfig")
 @EnableMethodSecurity
 @EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
 
-    @Bean
+    @Bean("notificationJwtAuthFilter")
     public JwtAuthFilter jwtAuthFilter(JwtProperties properties) {
         return new JwtAuthFilter(properties);
     }
 
-    @Bean
-    public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration(JwtAuthFilter jwtAuthFilter) {
+    @Bean("notificationJwtAuthFilterRegistration")
+    public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration(@org.springframework.beans.factory.annotation.Qualifier("notificationJwtAuthFilter") JwtAuthFilter jwtAuthFilter) {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(jwtAuthFilter);
         registration.setEnabled(false);
         return registration;
     }
 
-    @Bean
+    @Bean("notificationSecurityFilterChain")
+    @org.springframework.core.annotation.Order(30)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthFilter jwtAuthFilter,
-            ObjectMapper objectMapper) throws Exception {
+            @org.springframework.beans.factory.annotation.Qualifier("notificationJwtAuthFilter") JwtAuthFilter jwtAuthFilter,
+            ObjectMapper objectMapper,
+            org.springframework.core.env.Environment environment) throws Exception {
+
+        if (environment.matchesProfiles("notification-module")) {
+            http.securityMatcher("/api/v1/notifications/**");
+        }
 
         return http
                 .csrf(csrf -> csrf.disable())

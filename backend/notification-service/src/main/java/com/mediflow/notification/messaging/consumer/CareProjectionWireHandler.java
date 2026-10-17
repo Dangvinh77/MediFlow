@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
  * dạng wire (AGENTS.md "Do not infer... producer payloads"). {@code settlement.completed} đã có
  * fixture thật từ Billing (2026-10-10, same-byte với bản Inpatient đã copy) nên được thêm ở đây.
  */
+@org.springframework.context.annotation.Profile("!notification-module")
 @Component
 public class CareProjectionWireHandler {
     private final ObjectMapper mapper;

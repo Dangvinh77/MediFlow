@@ -248,6 +248,79 @@ class OutpatientPublicationRabbitIntegrationTest {
                 .hasSize(2).allMatch(enabled -> !enabled);
     }
 
+    @Test void newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain() throws Exception {
+        byte[] original = PrescriptionChargeContractTest.outpatientFixture();
+        send("prescription.created", original); drainPrescription(1);
+        var source = mapper.readTree(original).path("payload");
+        UUID prescription = uuid(source, "prescriptionId");
+        assertMatchesBrokerByEventType("invoice.created", prescription);
+        var first = discover("PRESCRIPTION", prescription, uuid(source, "patientId"), uuid(source, "careEpisodeId"));
+
+        var redelivery = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(original);
+        redelivery.put("eventId", UUID.randomUUID().toString());
+        listener().start(); send("prescription.created", mapper.writeValueAsBytes(redelivery)); drainPrescription(2);
+        var second = discover("PRESCRIPTION", prescription, uuid(source, "patientId"), uuid(source, "careEpisodeId"));
+        assertThat(second.path("paymentRequestId")).isEqualTo(first.path("paymentRequestId"));
+        assertThat(received("invoice.created", Duration.ofSeconds(2))).isNull();
+
+        UUID request = UUID.fromString(first.path("paymentRequestId").asText());
+        pay(request, "rx-new-delivery", "2000.00");
+        assertMatchesBroker("payment.completed", request);
+        assertMatchesBroker("financial.clearance.granted", request);
+        redelivery.put("eventId", UUID.randomUUID().toString());
+        listener().start(); send("prescription.created", mapper.writeValueAsBytes(redelivery)); drainPrescription(3);
+        pay(request, "rx-new-delivery", "2000.00");
+        assertThat(received("invoice.created", Duration.ofSeconds(2))).isNull();
+        assertThat(received("payment.completed", Duration.ofSeconds(2))).isNull();
+        assertThat(received("financial.clearance.granted", Duration.ofSeconds(2))).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM CHARGE", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM PAYMENT_REQUEST", Integer.class)).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM BILLING_EVENT_OUTBOX", Integer.class)).isEqualTo(3);
+    }
+
+    @Test void outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment() throws Exception {
+        listener().stop();
+        byte[] original = PrescriptionChargeContractTest.outpatientFixture();
+        // A second actual application context uses the same disposable stores and real consumer,
+        // with publication OFF. No SQL seed or mocked enrollment stands in for historical issuance.
+        try (var beforeActivation = new org.springframework.boot.builder.SpringApplicationBuilder(BillingServiceApplication.class).run(
+                "--server.port=0", "--eureka.client.enabled=false",
+                "--spring.datasource.url=" + PG.getJdbcUrl(), "--spring.datasource.username=" + PG.getUsername(),
+                "--spring.datasource.password=" + PG.getPassword(), "--spring.rabbitmq.host=" + MQ.getHost(),
+                "--spring.rabbitmq.port=" + MQ.getAmqpPort(), "--spring.rabbitmq.username=" + MQ.getAdminUsername(),
+                "--spring.rabbitmq.password=" + MQ.getAdminPassword(), "--spring.rabbitmq.listener.simple.auto-startup=false",
+                "--mediflow.billing.ledger.enabled=true", "--mediflow.billing.prescription-charge-consumer.enabled=true",
+                "--mediflow.billing.prescription-charges.allowed-price-codes=RX-DEFAULT",
+                "--mediflow.features.outpatient-mvp.enabled=true", "--mediflow.billing.outpatient-publication.enabled=false",
+                "--mediflow.billing.outbox.enabled=false", "--mediflow.billing.outbox.maintenance-enabled=false")) {
+            beforeActivation.getBean(RabbitListenerEndpointRegistry.class).getListenerContainer("billingEvents").start();
+            send("prescription.created", original);
+            await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                    assertThat(jdbc.queryForObject("SELECT count(*) FROM prescription_charge_delivery", Integer.class)).isOne());
+        }
+        var storedInvoice = jdbc.queryForMap("SELECT event_id,payload FROM BILLING_EVENT_OUTBOX");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM billing_outpatient_publication_cohort", Integer.class)).isZero();
+        assertThat(received("invoice.created", Duration.ofSeconds(2))).isNull();
+
+        // The main context is already publication-enabled. Retrying the existing operation cannot
+        // enroll it retroactively, and paying it must not silently release historical events.
+        var redelivery = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(original);
+        redelivery.put("eventId", UUID.randomUUID().toString());
+        listener().start(); send("prescription.created", mapper.writeValueAsBytes(redelivery)); drainPrescription(2);
+        var source = mapper.readTree(original).path("payload");
+        var discovered = discover("PRESCRIPTION", uuid(source, "prescriptionId"), uuid(source, "patientId"), uuid(source, "careEpisodeId"));
+        UUID request = UUID.fromString(discovered.path("paymentRequestId").asText());
+        pay(request, "historical-rx", "2000.00");
+        pay(request, "historical-rx", "2000.00");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM billing_outpatient_publication_cohort", Integer.class)).isZero();
+        assertThat(jdbc.queryForList("SELECT publication_enabled FROM BILLING_EVENT_OUTBOX", Boolean.class)).hasSize(3).containsOnly(false);
+        assertThat(jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE event_id=?", String.class, storedInvoice.get("event_id")))
+                .isEqualTo(storedInvoice.get("payload"));
+        for (String key : new String[]{"invoice.created", "payment.completed", "financial.clearance.granted"}) {
+            assertThat(received(key, Duration.ofSeconds(2))).isNull();
+        }
+    }
+
     private void assertMatchesBroker(String eventType, UUID paymentRequestId) throws Exception {
         Message message = received(eventType, Duration.ofSeconds(20));
         assertThat(message).as("%s delivered on the broker", eventType).isNotNull();

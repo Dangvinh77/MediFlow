@@ -77,7 +77,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 var issued = claims.getIssuedAt();
                 var expires = claims.getExpiration();
                 var now = java.time.Instant.now();
-                if (!lookup || !serviceToken || !"SYSTEM".equals(role) || !"surgery-service".equals(subject)
+                boolean permittedCaller = "surgery-service".equals(subject) || "pharmacy-service".equals(subject);
+                if (!lookup || !serviceToken || !"SYSTEM".equals(role) || !permittedCaller
                         || issued == null || expires == null || !expires.after(issued)
                         || expires.toInstant().isAfter(issued.toInstant().plusSeconds(60))
                         || issued.toInstant().isAfter(now.plusSeconds(5))) {

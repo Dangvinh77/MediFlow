@@ -8,6 +8,17 @@ Source đối chiếu: `d80d23b2` + working changes Vinh được ghi trong
 Đây là task tiếp tục Billing, không giao lại L1/L2 và không cấp quyền sửa service khác.
 Các mục 1–7 bên dưới giữ contract và lịch sử; khi trạng thái cũ mâu thuẫn, dùng mục 0 này.
 
+**Refresh tích hợp Huy ngày 2026-10-17:** theo giao quyền người dùng, hai Rabbit cases
+duplicate-new-event-ID và historical-outpatient-held đã chạy đạt trong suite 8/8; không còn
+chờ Docker/compile-only cho hai case này. Actual sáu-app paid Rx/current authority/dispense/
+Clinical attachment/Report/private notice và Pharmacy restart cũng đã đạt. Huy sửa các lỗi
+exact Pharmacy service caller, current Rx ledger/allocations và original grant Instant ở Billing.
+Evidence mới nằm trong đúng [handoff chung Huy mục 10](HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17)
+và [runbook mục 8](../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Các dòng “chưa chạy/paidRx còn mở” bên dưới là trạng thái trước lượt tích hợp này. Không suy
+full LOC-03/04/05, full Billing regression/recovery bundle hoặc global release đã được nghiệm
+thu từ selected Billing 133 tests và sáu-app test; không giao lại code Rx/Support đã đạt.
+
 ### 0.1. Trạng thái đã kiểm và phần không làm lại
 
 | Hạng mục | Trạng thái hiện hành | Hành động của Lộc |
@@ -168,6 +179,11 @@ nghiệm thu. Không đóng toàn MVP/G1/paidRx dựa vào Billing owner-local t
 ## Snapshot lịch sử ngày 2026-10-16
 
 Ngày giao: **2026-10-16**. Refresh: PR **#401**, source `bea617db` tích hợp master.
+Refresh **2026-10-17**, baseline `16a5e06e`: người dùng đã giao Huy làm trực tiếp phần Lộc
+liên quan Pharmacy/Report. Đã bổ sung hai Rabbit cases new-event-ID và historical-outpatient-held
+trong working tree; test sources compile nhưng chưa chạy do Docker chưa sẵn sàng. Đây không phải
+full L3 acceptance. Evidence hiện hành ghi trong [file chung Huy, mục 8](HANDOFF-HUY-MVP.md#8-trực-tiếp-xử-lý-billingnotification-liên-quan-huy-2026-10-17);
+không tạo handoff mới hoặc yêu cầu Lộc nhận lại phần code đã làm.
 **Trạng thái: L1/L2 đã merge; L3 có Rabbit/recovery proof nhưng CHƯA ĐÓNG; L4 có evidence owner.**
 Hai nhóm L3 còn thiếu: unroutable/NACK/timeout/retry exhaustion/quarantine/stale owner và
 equal-timestamp/multi-request ordering. G1 và V-CLOSE-03 vẫn mở.
@@ -423,8 +439,10 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
   (`Map<String, Deque<Message>>`) + sửa `prescriptionOutpatient...TwoInstallments` để kiểm **cả
   hai** receipt (750.00 rồi 1250.00) đúng thứ tự, đúng bytes, không mất — 6/6 pass lại sau sửa.
   (2) duplicate input với **eventId mới** cùng một operation và (3) **historical outpatient
-  request issued trước khi bật flag** vẫn HELD — cả hai vẫn **CHƯA LÀM** ở Rabbit-level (chỉ có
-  DB/service-level evidence từ L1/L2), còn treo, chưa đóng.
+  request issued trước khi bật flag** vẫn HELD — hai Rabbit-level cases đã được Huy bổ sung
+  ngày 2026-10-17 theo override người dùng. Case historical dùng prior application context thật
+  với publication OFF, không SQL seed/mock enrollment. Đã compile; chưa chạy PG/Rabbit trong
+  refresh này, vì vậy runtime acceptance vẫn mở.
 - [x] Thêm `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` (4 test, real PG/Rabbit,
   dispatcher thật): unroutable (không binding) → retry → quarantine đúng `maxAttempts`, không bao
   giờ `published_at`; admin replay (`POST /api/v1/billing/admin/outbox/{id}/replay`) chỉ publish
@@ -444,10 +462,8 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
   để queue cũ từ lần test trước rò sang lần sau trên cùng container Rabbit chia sẻ — đã sửa test,
   không sửa `BillingOutboxDispatcher.java`.)
 
-Review PR #401 còn lưu ý: helper `received()` hiện chỉ buffer một message mỗi eventType;
-case Rx hai installments mới kiểm một `payment.completed`, nên chưa chứng minh đủ cả hai
-receipts hoặc no-loss ordering. Khi làm ordering proof, dùng collector theo eventId/deque và
-assert đủ receipts/transactions. Recovery IT seed Billing-only state để kiểm outbox replay;
+Lưu ý lịch sử PR #401 về helper `received()` đã được sửa bằng FIFO deque và kiểm đủ hai
+installment receipts như mô tả ở trên; không giao lại bug đã sửa. Recovery IT seed Billing-only state để kiểm outbox replay;
 không suy thành HTTP financial-operation/consumer dedup proof từ outbox count/bytes.
 
 ### L4 — verification và giao evidence

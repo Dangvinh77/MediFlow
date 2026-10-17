@@ -39,9 +39,10 @@ theo scope mới, không có nghĩa các service hiện chưa có code.
 
 **Quyền sửa:** Huy tự thực hiện trong `backend/pharmacy-service/**`, `backend/report-service/**`
 và tài liệu phần mình; chỉ chỉnh Surgery-owned gate/source guide nếu cần bảo toàn trạng thái hoãn.
-`backend/support-service/` là đường dẫn đích **chưa tồn tại/chưa mặc nhiên được giao**.
-Notification, Core/Organization/Patient, Clinical/Lab/Billing/Gateway, root POM/common/Compose/CI/scripts
-là phần phối hợp hoặc cần giao scope riêng. Điều phối Support không chuyển ownership Notification.
+Ngày 2026-10-17 người dùng giao hoàn thiện Billing/Notification liên quan và tích hợp
+`backend/support-service/`, gồm root POM, Dockerfile, Compose, CI và Gateway cần thiết.
+Host và hai exports đã được triển khai theo quyền task-scoped này; ownership lâu dài giữ nguyên.
+Core/Organization/Patient, Clinical/Lab và common không tự mở rộng production write scope.
 Không đọc SQL/repository của module khác, kể cả khi hai module cùng JVM.
 
 ## 2. Đối chiếu baseline trước implementation (giữ để truy vết)
@@ -82,10 +83,16 @@ Inventory đầy đủ exact DTO/errors/role/queue/profile sẽ được khóa �
 
 ## 3. Cách theo dõi
 
-**12 task chính / 48 subtask**; chín batch đóng **38/48 subtask**, còn **10 subtask**; hai task chính H6-01 và H6-10
-(Report library composition-ready, chưa phải Support host). H6-09 đạt 4/4 phần code/test local;
-điều kiện đóng tích hợp vẫn cần source coverage và rollout được owner nghiệm thu.
-Đây là tiến độ adjustment phần Huy, không tỷ lệ hoàn thiện toàn backend hay proof runtime sáu-app.
+**12 task chính / 48 subtask**, hiện **48/48 subtask trong môi trường phát triển hiện có**,
+nghiệm thu ngày 2026-10-17. H6-02.3/H6-12.3 đã chạy inventory và cutover/rollback trên cold
+copies của chính hai Compose volumes cũ theo yêu cầu tiếp tục của người dùng; kiểm cả hai
+persisted Rabbit node identities. Dữ liệu nguồn quan sát được: Pharmacy năm bảng legacy đều
+rỗng, Report/Notification chưa có bảng, hai broker nodes không có queue. Không giả lập lịch sử
+hoặc tự baseline schema Pharmacy. Bốn writes mới giữ nguyên qua legacy → Support → legacy
+→ Support, broker restart giữ probe bytes; source volume SHA-256 trước/sau không đổi.
+H6-09 có code/test reader, không ký thay external completeness/coverage. Đây là tiến độ Huy,
+không là tỷ lệ toàn backend, paid Lab acceptance hay xác nhận production đã cutover.
+Commands/counts/source IDs/hashes ở [runbook mục 8–9](huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
 
 - **LOCAL:** Huy có thể implement/test trong module sở hữu, chưa cần service khác chạy.
 - **CONTRACT:** Huy có thể code/test local trước; đóng end-to-end/bật gate cần producer/owner thật.
@@ -130,7 +137,7 @@ Files: Pharmacy/Report configs, `application.yml`, listener/job conditions và t
 - [x] **H6-02.2** Giữ admission-consumer/authority, settlement/final-recognition,
   Surgery/Admission operational intake và full publication/archive OFF ở MVP;
   test bean/client/listener/job absence cả khi environment bật global flag.
-- [ ] **H6-02.3** Kiểm kê historical pending/HELD/outbox và reservation jobs trước cutover.
+- [x] **H6-02.3** Kiểm kê historical pending/HELD/outbox và reservation jobs trước cutover.
   Phân loại deferred deliveries bằng policy durable/quarantine; không ACK-drop, purge,
   reset inbox, hoặc phát effect nội trú do job đang dùng chung.
 - [x] **H6-02.4** Thêm startup/negative matrix chứng minh luồng ngoại trú không gọi Inpatient/Surgery;
@@ -262,13 +269,13 @@ Files: Pharmacy codecs/writer/outbox adapters/consumer, fixtures và tests; fore
 
 - [x] **H6-06.1** Khóa created/filled/cancelled/expired/dispense.failed ngoại trú cùng bytes nguồn;
   preserve eventId/occurredAt/correlation/logical producer và giá snapshot; filled có dispenseId thật.
-- [ ] **H6-06.2** Verify Billing issuer/adjustment, Clinical attachment, Report và Notification
+- [x] **H6-06.2** Verify Billing issuer/adjustment, Clinical attachment, Report và Notification
   bằng fixture byte-identical. Billing quyết charge/refund; Pharmacy không invent invoiceId hoặc
   gửi lệnh “đã hoàn tiền”. Purpose/episode/source mismatch phải bị reject.
 - [x] **H6-06.3** Thêm admission-free activation boundary cho V1 outpatient producer đã accepted;
   transaction/lease/fence bảo toàn ordering và replay original bytes. Historical HELD chỉ release
   sau audit/approval riêng, không đổi hàng loạt `delivery_enabled` vì đã bật profile MVP.
-- [ ] **H6-06.4** Rabbit/PG test confirms, unroutable, broker restart, retry/DLQ và duplicate grants;
+- [x] **H6-06.4** Rabbit/PG test confirms, unroutable, broker restart, retry/DLQ và duplicate grants;
   chỉ bật selected gate trong isolated acceptance khi issuer/consumer cùng đạt, production cần rollout.
 
 Đóng khi: source-bound chain được consumer chấp nhận và new outpatient facts publish được an toàn.
@@ -459,18 +466,26 @@ Real producer current-authority, historical inventory/coverage và Support/Gatew
 ### H6-11 — Phối hợp Support host và resource isolation
 
 Map M6-03/06/07. P2. Dependency: H6-10 và Lộc hoàn tất Notification module export.
-**SHARED + RUNTIME**. Target `backend/support-service/` chưa có; cần giao path/root-build rõ trước code.
+**SHARED + RUNTIME**. Ngày 2026-10-17 người dùng giao trực tiếp hoàn thiện phần Lộc còn thiếu
+và tích hợp Support, gồm host và shared build/runtime/Gateway cần thiết. Source hiện có
+`backend/support-service/`; quyền này là task-scoped, không chuyển ownership lâu dài.
 
-- [ ] **H6-11.1** Chốt host path, artifact/launcher/discovery, property namespaces và composition API
+- [x] **H6-11.1** Chốt host path, artifact/launcher/discovery, property namespaces và composition API
   với Lộc/shared owner; Huy cung cấp Report export, Lộc cung cấp Notification export.
   Scaffold host khi được giao phải dùng skill hiện hành; không copy Notification business code vào Report.
-- [ ] **H6-11.2** Wire hai datasource/EMF/Flyway/tx riêng với migration resource locations không lẫn;
+  Evidence 2026-10-17: baseline `27b8832d` + working tree chưa commit; skill new-microservice,
+  hai classifier lib, host executable/discovery support-service, explicit module imports/profiles,
+  namespaces/credentials và scoped security. Build/package đạt, actual JAR guard probe đạt,
+  28 SQL copies nguyên bytes; [runbook](../../backend/support-service/README.md) và
+  [verification/giới hạn](../handoffs/HANDOFF-HUY-MVP.md#9-support-host--2026-10-17).
+  Không dùng mục này để coi real PG/Rabbit hoặc cả task H6-11 đã đạt.
+- [x] **H6-11.2** Wire hai datasource/EMF/Flyway/tx riêng với migration resource locations không lẫn;
   Report và Notification giữ credentials/stores riêng, không cross-store transaction/SQL.
   Shared owner đăng ký reactor/Compose/CI; Hoàng Anh đổi Gateway target Support, URLs giữ nguyên.
-- [ ] **H6-11.3** Giữ report.q/notification.q và specialized queues/DLQ/factories riêng;
+- [x] **H6-11.3** Giữ report.q/notification.q và specialized queues/DLQ/factories riêng;
   budget listener/rebuild/delivery/pool tách cấu hình, host JWT/security/advice có exact path scopes.
   Host crash vẫn chung failure domain; không hứa isolation tuyệt đối trong một JVM.
-- [ ] **H6-11.4** Packaged Support chạy hai PG stores/Rabbit thật: Report replay/load không resend
+- [x] **H6-11.4** Packaged Support chạy hai PG stores/Rabbit thật: Report replay/load không resend
   notification hoặc chiếm toàn pool; Notification timeout không rollback Report effects;
   một process/discovery registration, không song song standalone writers/jobs trên cùng stores.
 
@@ -482,12 +497,12 @@ Map M6-03/06/07. P2. Dependency: H6-10 và Lộc hoàn tất Notification module
 Map M6-15/16/17/18. P2. Dependency: H6-03 đến H6-11 đạt phần liên quan. **RUNTIME + CONTRACT + SHARED**.
 Files owned: module README/AGENTS/.http, fixtures/tests/evidence; profile/Gateway/CI do owner phụ trách.
 
-- [ ] **H6-12.1** Chạy Gateway → creation → Billing selected Rx payment/grant → authenticated dispense
+- [x] **H6-12.1** Chạy Gateway → creation → Billing selected Rx payment/grant → authenticated dispense
   → Clinical/Report/Notification slice thật, thêm wrong role/target/refresh token/nested path negatives.
   Đối soát IDs, stock, ledger, counts/cash/refund/notice; Huy không sửa Gateway policy để cho test qua.
-- [ ] **H6-12.2** Map evidence bắt buộc T07–T10/T12–T18 và phần T02/T11/T19 liên quan ở runbook;
+- [x] **H6-12.2** Map evidence bắt buộc T07–T10/T12–T18 và phần T02/T11/T19 liên quan ở runbook;
   chạy module/packaged-host PG/Rabbit tests và fault scenarios, ghi run/failed/skipped thay vì chỉ số %.
-- [ ] **H6-12.3** Rehearse stop/drain standalone Report → Support và rollback trên clone giữ current DB;
+- [x] **H6-12.3** Rehearse stop/drain standalone Report → Support và rollback trên clone giữ current DB;
   preserve original bytes/cursors/pending receipts/HELD và accepted writes, no dual writers/no restore
   snapshot cũ đè payments mới. Shared/operator chịu trách nhiệm topology đủ sáu business apps.
 - [x] **H6-12.4** Update source guides owned trỏ scope mới, manifest/.http/test commands và bảng completion;
@@ -516,7 +531,7 @@ không phục hồi các handoff lịch sử làm dependency bắt buộc.
 | Failure/cancel/expiry adjustment (H6-06/07) | Terminal fact/source proof + replay tests | Lộc: original-linked obligation/refund operation | One compensation đúng mode; grant invalidation/late payment handling theo accepted contract; pending không completed |
 | Operational facts (H6-08) | Report receiver/dedupe/replay | Vinh: Clinical completed và Lab result producer | Byte-identical completion/result fixture, exact source/result revision, không created/completed double-count |
 | Cash/refund/coverage (H6-08/09) | Projection + reader, không fake history | Lộc: payment/refund facts và nguồn đối soát/cutover coverage | Link payment gốc, sum đối soát theo episode/currency; cursor coverage có evidence, missing khác zero |
-| Support composition (H6-10/11) | Report library/export, host coordination | Lộc: Notification export/intent/owner-only reads; shared owner: host/reactor/CI/profile | Two stores/tx/queue riêng; packaged host, signed human rules và no notification replay |
+| Support composition (H6-10/11) | Hai exports, host/reactor/Compose/CI/Gateway đã code theo override 2026-10-17 | Runtime/operator: chạy hai stores/broker và cutover thật; không còn chờ Lộc viết export | Two stores/tx/queue riêng; packaged host, signed human rules và no notification replay |
 | Route/header/cutover (H6-04/09/12) | API manifest/tests, client impact notes | Hoàng Anh: Gateway targets/policy/header; Vinh/shared: six-app runtime | Exact method/path/role denial, passthrough nếu cần idempotency header, six apps không deferred calls |
 
 Producer code hiện đã có một phần. Mỗi owner gate cần kiểm cùng source mới, không mặc định họ
@@ -561,20 +576,24 @@ security/fault/race/replay/rollback có evidence. Full V2/Surgery readiness báo
 
 ### Bảng cập nhật sau triển khai
 
+Trạng thái hiện hành được chốt theo nghiệm thu ngày 2026-10-17 ở bảng này và mục cuối file.
+Các progress note/batch bên dưới giữ ngày chạy và giới hạn lịch sử; nhận định cũ “chưa có
+Docker/Support/paid chain” đã được thay bởi kết quả mới, không là việc phải giao lại.
+
 | Task | Trạng thái | Evidence / gap còn mở |
 |---|---|---|
 | H6-01 | DONE — 4/4 | Baseline/manifest/golden slice/hashes; không là full runtime acceptance |
-| H6-02 | IN PROGRESS — 3/4 | Packaged MVP negative matrix đạt; historical DB/broker inventory + profile tổng mở |
-| H6-03 | LOCAL LOOKUP 4/4 — V1 CONTRACT OPEN | Packaged Core/Clinical identity/context lookup đạt; timestamp regression đã fix và actual completion đã pass batch 9, live Billing chain mở |
-| H6-04 | LOCAL 4/4 — CONTRACT OPEN | Signed API→writer/PG create race/price/rollback/stale-after-lock đạt; packaged upstream/real chain mở |
-| H6-05 | LOCAL 4/4 — CONTRACT OPEN | Current authority + API/PG race/expiry/late-grant matrix đạt local; live Billing issuer/rollout mở |
-| H6-06 | IN PROGRESS — 2/4 | Five fixtures + selective new delivery cohort đạt local; cross-owner chain/rollout mở, historical HELD không release |
-| H6-07 | LOCAL/COMPAT 4/4 — V1 CONTRACT OPEN | 12 packaged V0 cases pass: JVM crashes, real Billing V0 compensation, bounded DLQ/redrive; live V1 issuer remains held |
-| H6-08 | LOCAL 4/4 — CONTRACT OPEN | PG/Rabbit/retry/legacy retention và actual Clinical outpatient source đạt; integrated rollout/coverage vẫn mở |
-| H6-09 | LOCAL 4/4 — CONTRACT OPEN | Reader + PG scope/refund/zone/coverage/replay tests đạt; real source coverage/Gateway rollout chưa nghiệm thu |
+| H6-02 | DONE — 4/4 local environment | Profile tổng sáu app + inventory cold copies của persisted Compose volumes; schema/data gốc không đổi |
+| H6-03 | DONE — 4/4 isolated acceptance | Core/Clinical authority thật trong public Gateway Rx flow; production activation chưa thực hiện |
+| H6-04 | DONE — 4/4 isolated acceptance | Fresh API PG cases + actual source/paid chain; server price/reservation/rollback giữ đúng |
+| H6-05 | DONE — 4/4 isolated acceptance | Billing issuer/current eligibility thật, JWT/source/allocation/refund negatives; no auto-dispense |
+| H6-06 | DONE — 4/4 isolated acceptance | Five lifecycle consumer fixtures + real paid Rx/filled chain; historical HELD không release |
+| H6-07 | DONE — 4/4 isolated acceptance | Batch 8 V0 crash/fault evidence giữ riêng; actual V1 payment lúc Pharmacy down và restart đạt |
+| H6-08 | DONE — 4/4 isolated acceptance | Full Report + actual source/cash/Rx + replay/recovery; không tự approve historical source coverage |
+| H6-09 | LOCAL 4/4 — COVERAGE OPERATIONS OPEN | Reader/PG scope/refund/zone/coverage/replay đạt; external completeness/coverage chỉ nhận khi có operator proof |
 | H6-10 | DONE — 4/4 LOCAL | Plain lib, context/security/architecture/JVM smoke và fresh/upgrade PG đạt; Support host thuộc H6-11 |
-| H6-11 | TODO | Support host/path/shared assignment + Notification export |
-| H6-12 | IN PROGRESS — 1/4 | Owned source guides/manifest/commands/checklist cập nhật; integrated chain/cutover/rollback thật mở |
+| H6-11 | DONE — 4/4 isolated acceptance | Hai PG stores/Rabbit, pool/fault/DLQ isolation, packaged migration/restart và một discovery identity đạt |
+| H6-12 | DONE — 4/4 local environment | Actual paid chain + persisted-volume cold-copy inventory/rollback/broker restart; giữ bốn writes mới, không dual writer |
 
 H6-12.2 progress note (2026-10-16): added the owned evidence-to-runbook map in
 [`huy-mvp-cutover-runbook.md`](huy-mvp-cutover-runbook.md#6-h6-122-evidence-map--refreshed-2026-10-16).
@@ -612,3 +631,73 @@ phần không cần Docker; không dùng kết quả biên dịch thay cho datab
 
 Tiến độ vẫn **38/48**. Mục còn mở và yêu cầu chạy lại PostgreSQL tiếp tục nằm trong
 [handoff chung Huy](../handoffs/HANDOFF-HUY-MVP.md#7-backend-continuation--pharmacy-disposition-guard-2026-10-16).
+
+### Support composition — 2026-10-17
+
+Theo giao quyền mới, hoàn thiện Notification module export và tạo Support host, đăng ký
+reactor/Dockerfile/Compose/CI, Gateway giữ public paths nhưng chuyển hai targets tới Support.
+Default Compose có sáu business deployments. Original stores/SQL/queues/HELD được giữ;
+standalone launchers chỉ dùng rollback sau stop/drain host. Deferred receipt/refund và
+CareProjection/Surgery bị chặn trong host cả khi global outpatient gates được bật.
+
+Verification không cần Docker: **1.436 tests / 136 class, zero failure/error/skip**:
+Report 940, Notification 226, Gateway 257, Support 13. Bao gồm default-OFF và opt-in component
+graphs, JWT/roles/patient identity/advice, named transaction manager selection và guards.
+Packaged JAR inspection/guard smoke đạt, không là real store startup. New container cases
+đã biên dịch nhưng chưa chạy: hai stores/Rabbit isolation và actual packaged restart/upgrade.
+Các test Billing/Notification container từ mục 8 handoff vẫn chưa chạy trong lượt này.
+
+Đóng **H6-11.1**, tiến độ **39/48**. H6-11.2/.3 đã có implementation và non-container checks,
+giữ mở cho runtime resource/security acceptance; H6-11.4 và paid-chain/cutover vẫn cần Docker
+và operator evidence. Tất cả phần còn lại cập nhật trong đúng
+[một handoff chung](../handoffs/HANDOFF-HUY-MVP.md#9-support-host--2026-10-17).
+
+### Chốt tích hợp backend — 2026-10-17
+
+Đã thực chạy Core, Clinical, Lab, Pharmacy, Billing, Support cùng Gateway/Eureka trên tám
+context stores tạo mới và RabbitMQ. Tài khoản/đăng nhập/patient/check-in, EXAM payment và
+Rx payment/dispense dùng public API. Khi Pharmacy dừng, Billing vẫn ghi payment/grant; sau
+restart, grant đến nhưng chưa trừ tồn. Dispense hợp lệ trừ đúng 3 đơn vị, retry không nhân
+effect; Clinical một attachment, Report một filled contribution và hai cash receipts tổng
+130.000 VND, Notification một private filled notice. Negative role/token/ownership/path đạt.
+
+Support đã đạt real two-store/broker/pool/fault isolation và packaged migration/restart.
+Diễn tập current-store: dừng Support → chạy hai legacy launchers → nhận write mới → dừng
+legacy → chạy lại Support; giữ write mới, original bytes/journal/HELD, không dual writers.
+Đây là disposable acceptance, chưa là historical-clone/broker cutover được operator duyệt.
+
+Sửa các gap phát hiện khi chạy thật: Billing cho đúng Pharmacy service credential lookup,
+kiểm current PRESCRIPTION ledger/allocations và giữ original source Instant thay timestamp
+đã bị DB làm tròn; Report refund recovery poll tự mở named read transaction; Gateway giới
+hạn exact Pharmacy paths/methods/roles. Không đổi migration/fixture hoặc Core/Clinical/Lab
+production code. Các activation gates mặc định giữ OFF.
+
+**2.128 unique tests / 195 class, zero failure/error/skip**, cộng năm JSON contract checks.
+Billing/Pharmacy là selected suites; Report full regression cộng impacted rerun, không cộng
+trùng lượt chạy. Source IDs/hashes/commands và map T02/T07–T19 ở
+[runbook mục 8](huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+
+Đóng H6-06.2/.4, H6-11.2/.3/.4, H6-12.1/.2: **46/48**. Chỉ H6-02.3/H6-12.3 còn mở vì
+thiếu approved historical clone/broker inventory và rehearsal. Checklist duy nhất ở
+[handoff chung](../handoffs/HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17).
+Không suy ra global M6, paid Lab hoặc frontend acceptance từ slice này.
+
+### Hoàn tất hai task vận hành còn lại — 2026-10-17
+
+Người dùng giao tiếp thực hiện H6-02.3/H6-12.3. Đã quan sát và cold-copy các volume Compose
+có sẵn, không dùng DB tạo mới để thay bản inventory nguồn. Nguồn thực tế không có historical
+business rows trong Pharmacy/Report/Notification; Rabbit có hai node identities cũ, mỗi node
+vhost `/` và không có queues. Ghi missing legacy tables là ABSENT_IN_LEGACY_SCHEMA; không
+coi query thiếu bảng là zero, không baseline/repair hoặc migrate Pharmacy để làm bài test đạt.
+
+Actual standalone pair → Support → broker restart → legacy rollback → Support return trên
+bản sao: bốn notification writes qua API còn nguyên bytes/IDs; Report rows và hai Flyway
+histories giữ nguyên; một durable probe message giữ bytes qua restart. Chỉ một writer set
+chạy mỗi thời điểm. Toàn bộ original volumes SHA-256 trước/sau trùng nhau, clone containers
+đã dừng và clone volumes giữ lại. Guard từ chối nguồn đang có writer đã được kiểm tra.
+
+`HistoricalSupportCutoverIT` **1/1 passed, zero failure/error/skip**, cộng selection trước:
+**2.129 unique tests / 196 class**. Chốt **48/48** cho môi trường local đã quan sát. Đây không
+là production rollout hoặc chứng nhận một lịch sử dữ liệu khác. Commands/hash/nguồn/phân loại
+và giới hạn ở [runbook mục 9](huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
+Trạng thái 46/48 ở các batch trước giữ làm lịch sử; không còn Huy task phải bàn giao tiếp.

@@ -135,7 +135,7 @@ public class CashRefundPersistenceAdapter implements CashRefundStorePort {
                 ORDER BY MIN(r.created_at),r.original_transaction_id LIMIT ?
                 """, UUID.class, limit);
     }
-    @Override
+    @Override @Transactional(transactionManager = "reportTransactionManager", readOnly = true, propagation = Propagation.REQUIRES_NEW, timeout = 5)
     public List<UUID> readyOutpatientOriginals(int limit) {
         require(limit >= 1 && limit <= 20, "CASH_REFUND_BATCH_INVALID");
         return jdbc.queryForList("""

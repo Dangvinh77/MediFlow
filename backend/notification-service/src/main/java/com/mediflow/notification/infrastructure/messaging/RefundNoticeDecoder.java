@@ -12,7 +12,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class RefundNoticeDecoder implements RefundNoticeWirePort {
     private final ObjectMapper mapper;
+    private final boolean outpatientOnly;
     public RefundNoticeDecoder(ObjectMapper mapper) {
+        this(mapper, false);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public RefundNoticeDecoder(ObjectMapper mapper, org.springframework.core.env.Environment environment) {
+        this(mapper, environment.matchesProfiles("notification-module"));
+    }
+    private RefundNoticeDecoder(ObjectMapper mapper, boolean outpatientOnly) {
+        this.outpatientOnly = outpatientOnly;
         this.mapper = mapper.copy().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                 .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
                 .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
@@ -26,6 +35,8 @@ public class RefundNoticeDecoder implements RefundNoticeWirePort {
                     || !p.path("amount").isNumber() || p.has("sourceRevision") || p.has("supersedesTransactionId")
                     || !"CASHIER_RECORDED_REFUND".equals(text(p, "reason"))) throw new IllegalArgumentException();
             uuid(p, "accountId"); uuid(p, "departmentId"); uuid(p, "careEpisodeId");
+            if (outpatientOnly && !"OUTPATIENT_VISIT".equals(text(p, "careEpisodeType")))
+                throw new IllegalArgumentException("Deferred refund cannot run in Support");
             if (!Set.of("ADMISSION", "OUTPATIENT_VISIT").contains(text(p, "careEpisodeType"))
                     || !Instant.parse(text(root, "occurredAt")).equals(Instant.parse(text(p, "completedAt")))) throw new IllegalArgumentException();
             return new RefundNoticeCommand(uuid(root, "eventId"), hash(root), hash(p), text(root, "correlationId"),

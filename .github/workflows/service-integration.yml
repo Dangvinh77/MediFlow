@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'pom.xml'
+      - 'docker-compose.yml'
       - 'scripts/contract-checks/**'
       - '.github/workflows/service-integration.yml'
   workflow_dispatch:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -26,8 +27,14 @@ jobs:
           cache: maven
       - name: Require Docker for PostgreSQL and RabbitMQ tests
         run: docker info
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
       - name: Verify all backend modules
-        run: mvn -B -q verify
+        run: mvn -B -q -Psupport-acceptance verify
+      - name: Verify six packaged deployments and actual paid prescription
+        run: >-
+          mvn -B -q -pl backend/support-service -am -Psix-service-acceptance
+          -Dtest=__NoUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false verify
       - name: Verify cross-service JSON contracts
         shell: pwsh
         run: ./scripts/contract-checks/check-clinical-lab.ps1
@@ -36,11 +43,32 @@ jobs:
           python3 - <<'PY'
           import glob
           import xml.etree.ElementTree as ET
-          reports = [ET.parse(p).getroot() for p in glob.glob('backend/*/target/surefire-reports/TEST-*.xml')]
+          paths = glob.glob('backend/*/target/surefire-reports/TEST-*.xml') + glob.glob('backend/*/target/failsafe-reports/TEST-*.xml')
+          reports = [ET.parse(p).getroot() for p in paths]
           if not reports:
               raise SystemExit('No test reports found')
           skipped = sum(int(r.get('skipped', 0)) for r in reports)
           if skipped:
               raise SystemExit(f'{skipped} tests skipped; container verification is incomplete')
+          support = glob.glob('backend/support-service/target/failsafe-reports/TEST-*SupportPackagedAcceptanceIT.xml')
+          if not support or sum(int(ET.parse(p).getroot().get('tests', 0)) for p in support) == 0:
+              raise SystemExit('Support packaged acceptance did not execute')
+          topology = glob.glob('backend/support-service/target/failsafe-reports/TEST-*SixServiceOutpatientAcceptanceIT.xml')
+          if not topology or sum(int(ET.parse(p).getroot().get('tests', 0)) for p in topology) == 0:
+              raise SystemExit('Six-service paid prescription acceptance did not execute')
+          failures = sum(int(r.get('failures', 0)) + int(r.get('errors', 0)) for r in reports)
+          if failures:
+              raise SystemExit(f'{failures} test failures/errors; acceptance is incomplete')
           print(f"All {sum(int(r.get('tests', 0)) for r in reports)} tests executed")
           PY
+      - name: Keep packaged acceptance evidence and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-acceptance-evidence
+          path: |
+            backend/*/target/surefire-reports/TEST-*.xml
+            backend/*/target/failsafe-reports/TEST-*.xml
+            backend/support-service/target/six-service-acceptance/
+            backend/support-service/target/six-service-paid-exam-evidence.json
+            backend/support-service/target/support-packaged-*.log
