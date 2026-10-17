@@ -1,0 +1,61 @@
+server:
+  port: ${SERVER_PORT:8087}
+spring:
+  application:
+    name: support-service
+  profiles:
+    include: report-module,notification-module,outpatient-mvp
+  main:
+    allow-bean-definition-overriding: false
+  jpa:
+    open-in-view: false
+  rabbitmq:
+    host: ${MEDIFLOW_RABBIT_HOST:localhost}
+    port: ${MEDIFLOW_RABBIT_PORT:5672}
+    username: ${MEDIFLOW_RABBIT_USER:guest}
+    password: ${MEDIFLOW_RABBIT_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+mediflow:
+  jwt:
+    secret: ${MEDIFLOW_JWT_SECRET}
+  features:
+    care-finance-v2: ${MEDIFLOW_CARE_FINANCE_V2:false}
+  report:
+    datasource:
+      url: ${MEDIFLOW_REPORT_DB_URL}
+      username: ${MEDIFLOW_REPORT_DB_USER}
+      password: ${MEDIFLOW_REPORT_DB_PASSWORD}
+      maximum-pool-size: ${MEDIFLOW_REPORT_DB_POOL_SIZE:4}
+    zone-id: ${MEDIFLOW_REPORT_ZONE_ID:Asia/Bangkok}
+    outpatient-consumer:
+      enabled: ${MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED:false}
+    outpatient-read:
+      enabled: ${MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED:false}
+  notification:
+    datasource:
+      url: ${MEDIFLOW_NOTIFICATION_DB_URL}
+      username: ${MEDIFLOW_NOTIFICATION_DB_USER}
+      password: ${MEDIFLOW_NOTIFICATION_DB_PASSWORD}
+      maximum-pool-size: ${MEDIFLOW_NOTIFICATION_DB_POOL_SIZE:4}
+    care-v1:
+      enabled: ${MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED:false}
+    outpatient-prescription-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED:false}
+    refund-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED:false}
+    surgery-consumer:
+      enabled: false
+    surgery-payment-request-consumer:
+      enabled: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

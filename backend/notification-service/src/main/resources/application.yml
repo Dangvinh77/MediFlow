@@ -45,6 +45,8 @@ mediflow:
       enabled: ${MEDIFLOW_NOTIFICATION_SURGERY_PAYMENT_REQUEST_CONSUMER_ENABLED:false}
     refund-consumer:
       enabled: ${MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED:false}
+    outpatient-prescription-consumer:
+      enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED:false}
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
 

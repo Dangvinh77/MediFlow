@@ -1,0 +1,16 @@
+@gateway = http://localhost:8080
+@managerToken = replace-with-signed-access-token
+@patientToken = replace-with-signed-patient-access-token
+@notificationId = 00000000-0000-0000-0000-000000000001
+
+### Existing Report API through Gateway -> Support (ADMIN/MANAGER)
+GET {{gateway}}/api/v1/reports/daily?date=2026-10-17
+Authorization: Bearer {{managerToken}}
+
+### Existing Notification API; patient must own the notification
+GET {{gateway}}/api/v1/notifications/{{notificationId}}
+Authorization: Bearer {{patientToken}}
+
+### Report role must not grant Notification access (MANAGER -> 403)
+GET {{gateway}}/api/v1/notifications/{{notificationId}}
+Authorization: Bearer {{managerToken}}

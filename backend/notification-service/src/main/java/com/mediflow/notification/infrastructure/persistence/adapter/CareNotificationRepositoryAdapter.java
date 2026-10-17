@@ -13,11 +13,11 @@ import com.mediflow.notification.application.port.out.CareNotificationRepository
 import com.mediflow.notification.domain.model.CareNotificationIntent;
 
 @Repository
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "notificationTransactionManager", propagation = Propagation.MANDATORY)
 public class CareNotificationRepositoryAdapter implements CareNotificationRepositoryPort {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
-    public CareNotificationRepositoryAdapter(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc = jdbc; this.mapper = mapper; }
+    public CareNotificationRepositoryAdapter(@org.springframework.beans.factory.annotation.Qualifier("notificationJdbcTemplate") JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc = jdbc; this.mapper = mapper; }
 
     @Override public boolean claim(UUID eventId, String eventType, String fingerprint) {
         int inserted = jdbc.update("""

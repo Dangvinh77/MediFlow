@@ -32,8 +32,47 @@ Completed-refund follow-up: care-v1 AND `MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_E
 gate a separate refund queue/DLQ. Actual Billing fixtures produce one private `PAYMENT_REFUNDED`
 history and held sent event per immutable refund source, with atomic rollback/dedupe/conflict and
 retained-byte recovery. It does not imply final settlement or surgery authorization and does not send
-email/SMS. Latest complete suite: **171/171**, zero fail/error/skip, actual PG/RabbitMQ.
+email/SMS. Historical complete-suite evidence before the outpatient Rx additions: **171/171**,
+zero fail/error/skip, actual PG/RabbitMQ. Current verification is recorded below.
 The retired 2026-10-08 refund closure plan is historical; use the [current projection contract](../../docs/handoffs/care-finance/CONTRACT-CARE-PROJECTIONS-01.md) and rerun acceptance rather than treating the count above as fresh evidence.
+
+### Outpatient prescription notices
+
+Enable both `MEDIFLOW_NOTIFICATION_CARE_V1_ENABLED=true` and
+`MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED=true` for the new intake;
+both default to false. The existing single `notification.q` reader accepts the original Pharmacy
+V1 outpatient `prescription.created`, `prescription.filled`, `prescription.cancelled`,
+`prescription.expired`, and `prescription.dispense.failed` fixtures. Four new gated bindings reuse
+that queue and its DLQ; the existing filled binding and flat V0 compatibility reader are retained.
+Admission facts are rejected by this intake. No contact lookup or external delivery is introduced.
+
+The same gates also route Billing's original outpatient PRESCRIPTION `invoice.created` to the
+existing payment-request decoder/template and transaction-backed notice service. This does not
+require the Surgery consumer flag or create another queue. The reused internal types retain their
+historical Surgery names but this reader accepts only PRESCRIPTION; Surgery requests remain
+outside this gate. A request notice does not assert payment or dispensing. Terminal prescription
+notices do not assert completed refunds. Existing Billing receipt/refund intake keeps its own gates.
+
+Delivery identity, business-operation identity, private IN_APP history and a HELD
+`notification.sent` outbox row commit atomically. Operation keys are event type plus prescription ID
+for lifecycle facts, and `invoice.created` plus payment-request ID for Billing requests. Same operation
+with a new event ID is a no-op only when its business snapshot matches; conflicts reject without
+changing the original recipient/history. The lifecycle decoder validates the original producer,
+version, exact outpatient/source/record identities, timestamps and complete price/item snapshot;
+history messages exclude drug names, prices and terminal reasons. Reads retain signed patient-claim
+ownership checks.
+
+The shared queue listener retries transient storage failures at most three times; malformed/conflicting
+contracts reject immediately, including wrapped listener failures. Exhaustion dead-letters to the
+existing `notification.dlq`. Replay retains original bytes/IDs; no automatic DLQ release is added.
+
+Verification on 2026-10-17, baseline `16a5e06e` plus these uncommitted changes: **221 tests across
+23 non-container classes**, zero failures/errors/skips (218 existing/new selected tests plus three
+listener-retry tests; no duplicate reruns counted). All test sources compile, including the new
+`PrescriptionNoticeRabbitIntegrationTest`. Its **11** PostgreSQL/Rabbit cases have **not run** in this
+refresh because Docker is unavailable. The prepared acceptance covers all five original Pharmacy
+facts through the real queue, Billing request routing, concurrent/new-ID dedupe, conflict, outbox
+rollback/recovery and signed private-history reads. This is not Support-host or paid E2E acceptance.
 
 Package layout:
 
@@ -46,6 +85,17 @@ infrastructure/security   infrastructure/config
 ```
 
 ## Run locally
+
+The default six-deployment runtime now uses the [Support host](../support-service/README.md).
+Notification exports `notification-service-0.0.1-SNAPSHOT-lib.jar`; the host imports only
+`NotificationModuleConfiguration` with `notification-module,outpatient-mvp`. Its datasource,
+EMF, transaction manager and JDBC template are explicitly named `notification*`, migrations
+use `classpath:mediflow/notification/db/migration`, and credentials use
+`mediflow.notification.datasource.*`. Original SQL bytes and store/history are retained.
+Standalone execution below is for compatibility/rollback; stop Support before starting it
+against the same store. The host excludes deferred CareProjection/Surgery consumers, scopes
+JWT/advice to Notification paths, and preserves patient ownership. New host container/restart
+tests are prepared but unrun locally; see the single Huy handoff section 9.
 
 1. Create the database once: `CREATE DATABASE mediflow_notification;`
 2. Start `eureka-server` (8761), then `gateway` (8080), then this service.
@@ -63,12 +113,15 @@ Swagger UI: http://localhost:8087/swagger-ui.html
 - **Subscribe:** `patient.created`, `appointment.created`, `lab.result.created`, `prescription.filled`, `payment.completed`, `payment.failed`
 - **Opt-in Surgery:** `surgery.ready`, `surgery.readiness.invalidated`, `surgery.cancelled`, `surgery.completed`.
 - **Opt-in completed refunds:** `payment.refunded`, with independent care-v1 + refund-consumer gates.
+- **Opt-in outpatient Rx:** the five Pharmacy lifecycle facts above and Billing PRESCRIPTION
+  `invoice.created`, with independent care-v1 + outpatient-prescription-consumer gates.
 
 Topic exchange `mediflow.events`; see [`docs/ai/06-events-rabbitmq.md`](../../docs/ai/06-events-rabbitmq.md). Consumers must be idempotent (dedupe on `eventId`).
 
 ## Tests
 
 ```bash
-mvn -pl backend/notification-service test        # unit (domain + application, no Spring)
-mvn -pl backend/notification-service verify      # + integration (Testcontainers, needs Docker)
+mvn -pl backend/notification-service -am test    # complete suite, includes Testcontainers; needs Docker
+mvn -pl backend/notification-service -am '-Dtest=PrescriptionNoticeContractTest,PrescriptionNoticeConfigurationTest,NotificationListenerRetryTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -pl backend/notification-service -am '-Dtest=PrescriptionNoticeRabbitIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false' test # needs Docker
 ```

@@ -25,6 +25,17 @@ class CarePaymentReceiptWireHandlerTest {
     private final ReactToCarePaymentReceiptUseCase receipts = mock(ReactToCarePaymentReceiptUseCase.class);
     private final CarePaymentReceiptWireHandler handler = new CarePaymentReceiptWireHandler(mapper, receipts, true);
 
+    @Test void supportAcceptsOriginalOutpatientReceiptButRejectsDeferredDepositBeforeEffects() throws Exception {
+        var environment = new org.springframework.mock.env.MockEnvironment();
+        environment.setActiveProfiles("notification-module", "outpatient-mvp");
+        var module = new CarePaymentReceiptWireHandler(mapper, receipts, true, environment);
+        assertThatThrownBy(() -> module.receive("payment.completed", fixture("deposit")))
+                .isInstanceOf(AmqpRejectAndDontRequeueException.class);
+        verifyNoInteractions(receipts);
+        module.receive("payment.completed", fixture("service"));
+        verify(receipts).receive(any());
+    }
+
     @ParameterizedTest @ValueSource(strings = {"service", "deposit"})
     void consumesExactBillingProducerBytes(String name) throws Exception {
         handler.receive("payment.completed", fixture(name));

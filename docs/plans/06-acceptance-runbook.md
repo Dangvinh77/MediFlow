@@ -45,11 +45,19 @@ Không xóa volumes, xóa inbox/outbox hay HELD để dựng lại demo.
 
 ## Verification
 
-Chạy source suites hiện có và host suites mới theo M6 plan. Lệnh chỉ dùng khi modules/profile
-đã được tạo, không khẳng định core-service/support-service đã có ở baseline này.
+Chạy source suites và host suites theo M6 plan. Core/Support source và default Compose topology
+đã có. Refresh 2026-10-17: real PG/Rabbit isolation, packaged Support restart, actual sáu-app
+EXAM/Rx paid/dispense và current-store rollback đã đạt; [commands/counts/source IDs/hashes](huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Lượt tiếp theo đã inventory và rehearsal trên cold copies của actual persisted local Compose
+volumes: bốn writes mới/probe bytes giữ qua cutover/rollback/broker restart, original-volume
+hashes không đổi. [Evidence local](huy-mvp-cutover-runbook.md#9-local-persisted-volume-inventory-and-cutover--2026-10-17).
+Huy 48/48 cho local đã quan sát; global M6/paid Lab/FE/production acceptance không suy ra từ slice này.
 
     mvn -q -pl backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service -am test
     mvn -q -pl backend/gateway -am test
+    mvn -q -pl backend/support-service -am -Psupport-acceptance verify
+    mvn -q -DskipTests package
+    mvn -q -pl backend/support-service -am -Psix-service-acceptance -Dtest=__NoUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false verify
     mvn verify
     cd frontend
     pnpm typecheck

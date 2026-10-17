@@ -45,6 +45,7 @@ class OutpatientReportRabbitIntegrationTest {
     @Autowired RabbitTemplate rabbit;
     @Autowired RabbitAdmin admin;
     @Autowired RabbitListenerEndpointRegistry registry;
+    @Autowired com.mediflow.report.application.port.out.CashRefundStorePort refundStore;
     @SpyBean com.mediflow.report.messaging.consumer.OutpatientReportFactConsumer consumer;
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -79,6 +80,14 @@ class OutpatientReportRabbitIntegrationTest {
         assertThat(jdbc.queryForList("SELECT completed_refunds FROM report_refund_cash_daily", java.math.BigDecimal.class))
                 .hasSize(2).allSatisfy(v -> assertThat(v).isEqualByComparingTo("20.00"));
         assertThat(count("financial_contribution")).isZero();
+    }
+
+    @Test void scheduledOutpatientPollStartsItsOwnReadTransaction() {
+        // A scheduler has no ambient transaction. The adapter's MANDATORY write policy must
+        // not prevent its separately bounded read poll from reaching PostgreSQL.
+        assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+        assertThat(refundStore.readyOutpatientOriginals(20)).isEmpty();
+        assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
     }
 
     @Test void labProducerBytesSurviveRestartAndNewDeliveryIdWithoutAnotherTestCount() throws Exception {

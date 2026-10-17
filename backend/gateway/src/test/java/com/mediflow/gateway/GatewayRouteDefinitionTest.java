@@ -27,6 +27,20 @@ class GatewayRouteDefinitionTest {
     private RouteLocator routeLocator;
 
     @Test
+    void supportRoutesKeepPublicPathsAndTargetTheSharedHost() {
+        for (String context : new String[]{"report", "notification"}) {
+            Route route = routeLocator.getRoutes()
+                    .filter(candidate -> (context + "-service").equals(candidate.getId())).next().block();
+            assertThat(route).isNotNull();
+            assertThat(route.getUri()).isEqualTo(URI.create("lb://support-service"));
+            assertThat(route.getFilters()).isEmpty();
+            String path = context.equals("report") ? "/api/v1/reports/daily" : "/api/v1/notifications/123";
+            assertThat(Mono.from(route.getPredicate().apply(MockServerWebExchange.from(
+                    MockServerHttpRequest.get(path).build()))).block()).isTrue();
+        }
+    }
+
+    @Test
     void surgeryRoute_defaultFlag_hasNoRoute() {
         assertThat(routeLocator.getRoutes()
                 .filter(candidate -> "surgery-service".equals(candidate.getId()))

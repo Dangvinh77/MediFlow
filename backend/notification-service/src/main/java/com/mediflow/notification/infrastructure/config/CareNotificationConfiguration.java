@@ -19,14 +19,15 @@ import com.mediflow.notification.application.service.CareProjectionService;
 @Configuration(proxyBeanMethods = false)
 public class CareNotificationConfiguration {
     @Bean ReactToCarePaymentReceiptUseCase carePaymentReceipts(CareNotificationRepositoryPort repository,
-            PlatformTransactionManager manager) {
+            @org.springframework.beans.factory.annotation.Qualifier("notificationTransactionManager") PlatformTransactionManager manager) {
         var service = new CarePaymentReceiptService(repository);
         var transactions = new TransactionTemplate(manager);
         return command -> transactions.executeWithoutResult(status -> service.receive(command));
     }
 
+    @org.springframework.context.annotation.Profile("!notification-module")
     @Bean ReactToCareProjectionUseCase careProjections(CareNotificationRepositoryPort repository,
-            PlatformTransactionManager manager) {
+            @org.springframework.beans.factory.annotation.Qualifier("notificationTransactionManager") PlatformTransactionManager manager) {
         var service = new CareProjectionService(repository);
         var transactions = new TransactionTemplate(manager);
         return new TransactionalCareProjections(service, transactions);

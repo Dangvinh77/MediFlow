@@ -18,6 +18,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RefundNoticeContractTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private final RefundNoticeDecoder decoder = new RefundNoticeDecoder(mapper);
+
+    @Test void supportRejectsDeferredDepositRefundButKeepsOriginalOutpatientRefund() throws Exception {
+        var environment = new org.springframework.mock.env.MockEnvironment();
+        environment.setActiveProfiles("notification-module", "outpatient-mvp");
+        var module = new RefundNoticeDecoder(mapper, environment);
+        assertThatThrownBy(() -> module.decode("payment.refunded", fixture("deposit")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(module.decode("payment.refunded", fixture("service")))
+                .isEqualTo(decoder.decode("payment.refunded", fixture("service")));
+    }
     @ParameterizedTest @ValueSource(strings = {"service", "deposit", "prescription-first", "prescription-remainder", "prescription-last"})
     void consume_actualBillingBytes_privateLinkedRefundNotFinalSettlement(String context) throws Exception {
         var command = decoder.decode("payment.refunded", fixture(context));

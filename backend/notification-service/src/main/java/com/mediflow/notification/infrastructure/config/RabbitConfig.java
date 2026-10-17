@@ -21,6 +21,28 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitConfig {
 
+    /** Bound retries for transient storage failures; permanent wire conflicts go directly to DLQ. */
+    @Bean
+    public org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory notificationListenerFactory(
+            ConnectionFactory connection,
+            @org.springframework.beans.factory.annotation.Value("${spring.rabbitmq.listener.simple.auto-startup:true}") boolean autoStartup) {
+        var factory = new org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connection);
+        factory.setAutoStartup(autoStartup);
+        factory.setAcknowledgeMode(org.springframework.amqp.core.AcknowledgeMode.AUTO);
+        factory.setDefaultRequeueRejected(false);
+        factory.setConcurrentConsumers(1);
+        factory.setMaxConcurrentConsumers(2);
+        factory.setPrefetchCount(10);
+        factory.setAdviceChain(org.springframework.amqp.rabbit.config.RetryInterceptorBuilder.stateless()
+                .retryPolicy(new org.springframework.retry.policy.SimpleRetryPolicy(3,
+                        java.util.Map.of(org.springframework.amqp.AmqpRejectAndDontRequeueException.class, false), true, true))
+                .backOffOptions(100, 2, 500)
+                .recoverer((message, error) -> { throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("Notification retries exhausted", error); })
+                .build());
+        return factory;
+    }
+
     public static final String EXCHANGE = "mediflow.events";
     public static final String DLX = "mediflow.events.dlx";
 
@@ -93,7 +115,7 @@ public class RabbitConfig {
      * khai báo được từng binding.
      */
     @Bean
-    public Declarables notificationQueueBindings(Queue notificationQueue, TopicExchange mediflowEventsExchange) {
+    public Declarables notificationQueueBindings(Queue notificationQueue, @org.springframework.beans.factory.annotation.Qualifier("mediflowEventsExchange") TopicExchange mediflowEventsExchange) {
         Binding[] bindings = new Binding[SUBSCRIBED_ROUTING_KEYS.length];
         for (int i = 0; i < SUBSCRIBED_ROUTING_KEYS.length; i++) {
             bindings[i] = BindingBuilder.bind(notificationQueue).to(mediflowEventsExchange)
@@ -103,17 +125,17 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Binding notificationDeadLetterBinding(Queue notificationDeadLetterQueue, TopicExchange mediflowEventsDlx) {
+    public Binding notificationDeadLetterBinding(Queue notificationDeadLetterQueue, @org.springframework.beans.factory.annotation.Qualifier("mediflowEventsDlx") TopicExchange mediflowEventsDlx) {
         return BindingBuilder.bind(notificationDeadLetterQueue).to(mediflowEventsDlx).with(DEAD_LETTER_ROUTING_KEY);
     }
 
-    @Bean
+    @Bean("notificationJsonMessageConverter")
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory cf, MessageConverter converter) {
+    @Bean("notificationRabbitTemplate")
+    public RabbitTemplate rabbitTemplate(ConnectionFactory cf, @org.springframework.beans.factory.annotation.Qualifier("notificationJsonMessageConverter") MessageConverter converter) {
         RabbitTemplate template = new RabbitTemplate(cf);
         template.setMessageConverter(converter);
         return template;

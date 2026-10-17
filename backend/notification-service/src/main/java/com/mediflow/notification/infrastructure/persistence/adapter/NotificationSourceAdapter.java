@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "notificationTransactionManager", propagation = Propagation.MANDATORY)
 public class NotificationSourceAdapter implements NotificationSourcePort {
     private final JdbcTemplate jdbc;
-    public NotificationSourceAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public NotificationSourceAdapter(@org.springframework.beans.factory.annotation.Qualifier("notificationJdbcTemplate") JdbcTemplate jdbc) { this.jdbc = jdbc; }
     @Override public boolean claim(String eventType, UUID sourceId, String sourceFingerprint) {
         int inserted = jdbc.update("INSERT INTO care_notification_source(event_type,source_id,payload_fingerprint) VALUES (?,?,?) ON CONFLICT(event_type,source_id) DO NOTHING",
                 eventType, sourceId, sourceFingerprint);

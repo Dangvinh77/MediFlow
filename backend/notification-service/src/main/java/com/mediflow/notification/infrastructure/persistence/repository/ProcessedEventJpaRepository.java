@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.mediflow.notification.infrastructure.persistence.jpaEntity.ProcessedEventJpaEntity;
 
 /** Spring Data repository cho bảng {@code PROCESSED_EVENT} — sổ chống xử lý trùng (BR-N5). */
+@org.springframework.stereotype.Repository("notificationProcessedEventJpaRepository")
 public interface ProcessedEventJpaRepository extends JpaRepository<ProcessedEventJpaEntity, UUID> {
     /** Insert-only marker: duplicate delivery must roll back, never merge an existing marker. */
     @org.springframework.data.jpa.repository.Modifying

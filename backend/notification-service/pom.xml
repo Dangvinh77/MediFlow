@@ -147,7 +147,24 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource><directory>src/main/resources</directory></resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes><include>db/migration/**</include></includes>
+                <targetPath>mediflow/notification</targetPath>
+            </resource>
+        </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions><execution>
+                    <id>notification-context-library</id><phase>package</phase>
+                    <goals><goal>jar</goal></goals>
+                    <configuration><classifier>lib</classifier></configuration>
+                </execution></executions>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

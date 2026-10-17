@@ -40,11 +40,11 @@ spring:
           predicates:
             - Path=/api/v1/billing/**
         - id: notification-service
-          uri: lb://notification-service
+          uri: lb://${MEDIFLOW_NOTIFICATION_DESTINATION:support-service}
           predicates:
             - Path=/api/v1/notifications/**
         - id: report-service
-          uri: lb://report-service
+          uri: lb://${MEDIFLOW_REPORT_DESTINATION:support-service}
           predicates:
             - Path=/api/v1/reports/**
       # Redis rate limiting (100 req/min per IP, see docs/ai/07) is intentionally

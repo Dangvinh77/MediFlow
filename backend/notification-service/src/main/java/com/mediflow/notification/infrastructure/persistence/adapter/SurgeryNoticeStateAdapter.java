@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-@Transactional(propagation = Propagation.MANDATORY)
+@Transactional(transactionManager = "notificationTransactionManager", propagation = Propagation.MANDATORY)
 public class SurgeryNoticeStateAdapter implements SurgeryNoticeStatePort {
     private final JdbcTemplate jdbc;
-    public SurgeryNoticeStateAdapter(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public SurgeryNoticeStateAdapter(@org.springframework.beans.factory.annotation.Qualifier("notificationJdbcTemplate") JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     @Override public void lockExactCase(SurgeryNoticeCommand.Context context) {
         jdbc.update("""

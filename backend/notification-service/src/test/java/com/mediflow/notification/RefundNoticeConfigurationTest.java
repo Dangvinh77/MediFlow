@@ -35,7 +35,7 @@ class RefundNoticeConfigurationTest {
     private ApplicationContextRunner runner() {
         return new ApplicationContextRunner().withUserConfiguration(RefundNoticeConfiguration.class)
                 .withBean(ConnectionFactory.class, () -> mock(ConnectionFactory.class))
-                .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
+                .withBean("notificationTransactionManager", PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
                 .withBean(CareNotificationRepositoryPort.class, () -> mock(CareNotificationRepositoryPort.class))
                 .withBean(NotificationSourcePort.class, () -> mock(NotificationSourcePort.class))
                 .withBean(RefundNoticeWirePort.class, () -> mock(RefundNoticeWirePort.class))

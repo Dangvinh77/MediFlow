@@ -20,14 +20,27 @@ public class CarePaymentReceiptWireHandler {
     private final ObjectMapper mapper;
     private final ReactToCarePaymentReceiptUseCase receipts;
     private final boolean enabled;
+    private final boolean outpatientOnly;
+
+    public CarePaymentReceiptWireHandler(ObjectMapper mapper, ReactToCarePaymentReceiptUseCase receipts, boolean enabled) {
+        this(mapper, receipts, enabled, false);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
     public CarePaymentReceiptWireHandler(ObjectMapper mapper, ReactToCarePaymentReceiptUseCase receipts,
-            @Value("${mediflow.notification.care-v1.enabled:false}") boolean enabled) {
+            @Value("${mediflow.notification.care-v1.enabled:false}") boolean enabled,
+            org.springframework.core.env.Environment environment) {
+        this(mapper, receipts, enabled, environment.matchesProfiles("notification-module"));
+    }
+
+    private CarePaymentReceiptWireHandler(ObjectMapper mapper, ReactToCarePaymentReceiptUseCase receipts,
+            boolean enabled, boolean outpatientOnly) {
         this.mapper = mapper.copy().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                 .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
                 .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
                 .enable(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS)
                 .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-        this.receipts = receipts; this.enabled = enabled;
+        this.receipts = receipts; this.enabled = enabled; this.outpatientOnly = outpatientOnly;
     }
     public void receive(String routingKey, byte[] body) {
         if (!enabled) throw new AmqpRejectAndDontRequeueException("Care V1 notification intake is disabled");
@@ -47,6 +60,8 @@ public class CarePaymentReceiptWireHandler {
             uuid(payload, "careEpisodeId");
             String episode = text(payload, "careEpisodeType");
             String classification = text(payload, "classification");
+            if (outpatientOnly && !"OUTPATIENT_VISIT".equals(episode))
+                throw new IllegalArgumentException("Deferred receipt cannot run in Support");
             if (!java.util.Set.of("OUTPATIENT_VISIT", "ADMISSION").contains(episode)
                     || !"SERVICE_PAYMENT".equals(classification) && !"ADMISSION".equals(episode))
                 throw new IllegalArgumentException("Receipt classification/episode mismatch");

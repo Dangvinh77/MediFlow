@@ -35,7 +35,7 @@ class SurgeryPaymentNoticeConfigurationTest {
     }
     private ApplicationContextRunner runner() {
         return new ApplicationContextRunner().withUserConfiguration(SurgeryPaymentNoticeConfiguration.class)
-                .withBean(ConnectionFactory.class, () -> mock(ConnectionFactory.class)).withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
+                .withBean(ConnectionFactory.class, () -> mock(ConnectionFactory.class)).withBean("notificationTransactionManager", PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
                 .withBean(CareNotificationRepositoryPort.class, () -> mock(CareNotificationRepositoryPort.class))
                 .withBean(NotificationSourcePort.class, () -> mock(NotificationSourcePort.class))
                 .withBean(SurgeryPaymentNoticeWirePort.class, () -> mock(SurgeryPaymentNoticeWirePort.class))

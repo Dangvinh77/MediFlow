@@ -30,6 +30,15 @@ class CareRouteAuthorizationTest {
 
     static Stream<Arguments> matrix() {
         List<MatrixRow> rows = List.of(
+                new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/drugs", Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/drugs/" + ID, Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/drugs", Set.of("ADMIN", "PHARMACIST")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/drugs/" + ID + "/stock", Set.of("ADMIN", "PHARMACIST")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/prescriptions", Set.of("ADMIN", "DOCTOR")),
+                new MatrixRow(HttpMethod.GET, "/api/v1/pharmacy/prescriptions/" + ID, Set.of("ADMIN", "DOCTOR", "PHARMACIST")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/cancel", Set.of("ADMIN", "DOCTOR")),
+                new MatrixRow(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions/" + ID + "/dispense", Set.of("ADMIN", "PHARMACIST")),
+                new MatrixRow(HttpMethod.POST, "/api/v1/pharmacy/admin/outbox/" + ID + "/replay", Set.of("ADMIN")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases", Set.of("ADMIN","MANAGER","DOCTOR","NURSE")),
                 new MatrixRow(HttpMethod.GET, "/api/v1/surgery/cases/" + ID, Set.of("ADMIN","MANAGER","DOCTOR","NURSE")),
                 new MatrixRow(HttpMethod.PUT, "/api/v1/surgery/cases/" + ID + "/schedule", Set.of("ADMIN","MANAGER","DOCTOR")),
@@ -63,6 +72,21 @@ class CareRouteAuthorizationTest {
         filter.filter(exchange, request -> { forwarded.set(true); return Mono.empty(); }).block();
         assertThat(forwarded.get()).isEqualTo(allowed);
         if (!allowed) assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test void unknownPharmacyPathsAndMethodsCannotReachAnUpstream() {
+        for (String role : ROLES) {
+            for (String path : List.of("/api/v1/pharmacy/drugs/" + ID + "/fake/nested",
+                    "/api/v1/pharmacy/prescriptions/" + ID + "/dispense/extra",
+                    "/api/v1/pharmacy/prescriptions/" + ID + "/nested/cancel",
+                    "/api/v1/pharmacy/admin/outbox/" + ID + "/nested/replay")) {
+                everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, path, role, false);
+                everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT, path, role, false);
+                everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, path, role, false);
+            }
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.PUT, "/api/v1/pharmacy/drugs/" + ID, role, false);
+            everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/pharmacy/prescriptions/" + ID + "/dispense", role, false);
+        }
     }
 
     @Test void unknownNestedCommandsAndWrongMethodsAreDenied() {

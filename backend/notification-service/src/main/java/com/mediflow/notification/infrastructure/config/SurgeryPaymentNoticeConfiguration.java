@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@org.springframework.context.annotation.Profile("!notification-module")
 @Configuration(proxyBeanMethods = false)
 @EnableRabbit
 @ConditionalOnProperty(name = {"mediflow.notification.care-v1.enabled", "mediflow.notification.surgery-payment-request-consumer.enabled"}, havingValue = "true")
@@ -35,7 +36,7 @@ public class SurgeryPaymentNoticeConfiguration {
         var dlq = QueueBuilder.durable("notification.surgery-payment-requests-v1.dlq").build();
         return new Declarables(events, dead, queue, dlq, BindingBuilder.bind(queue).to(events).with("invoice.created"), BindingBuilder.bind(dlq).to(dead).with(dlq.getName()));
     }
-    @Bean ReactToSurgeryPaymentNoticeUseCase surgeryPaymentNotices(CareNotificationRepositoryPort history, NotificationSourcePort sources, PlatformTransactionManager manager) {
+    @Bean ReactToSurgeryPaymentNoticeUseCase surgeryPaymentNotices(CareNotificationRepositoryPort history, NotificationSourcePort sources, @org.springframework.beans.factory.annotation.Qualifier("notificationTransactionManager") PlatformTransactionManager manager) {
         var service = new SurgeryPaymentNoticeService(history, sources); var tx = new TransactionTemplate(manager); tx.setTimeout(5);
         return command -> tx.executeWithoutResult(status -> service.receive(command));
     }

@@ -30,13 +30,14 @@ The academic MVP targets multi-specialty clinics and hospital outpatient departm
 Inpatient care and surgery remain deferred; preserving their source does not activate them.
 Backend, web and mobile clients share this scope:
 
-- **Backend** — Spring Boot/Maven monorepo with 12 reactor modules. Core contains Organization
-  and Patient packages with separate persistence boundaries; Report/Notification are still separate
-  applications and Support host is absent. The MVP targets 6 business deployments:
+- **Backend** — Spring Boot/Maven monorepo with 13 reactor modules. Core contains Organization
+  and Patient packages with separate persistence boundaries; Support composes Report/Notification
+  plain libraries with separate stores. Compose defaults to 6 business deployments:
   Core, Clinical, Lab, Pharmacy, Billing, Support. Eight active contexts plus deferred
   Inpatient/Surgery must not be confused with the number of deployment applications.
   Inpatient/Surgery are deferred, not deleted. Gateway/Eureka are infrastructure; common is a library.
-  PostgreSQL context-owned stores and RabbitMQ remain; the documentation change does not migrate code/data.
+  PostgreSQL context-owned stores and RabbitMQ remain. Packaged DB/broker acceptance and cutover
+  are separate from the configured six-deployment topology; see backend/support-service/README.md.
 - **Frontend** — `frontend/`: Next.js 16 App Router, TypeScript, Tailwind v4, pnpm.
 - **Mobile** — `mobile/`: Flutter real-Gateway foundation; see `mobile/README.md` for current
   read-only slices, unfinished context workspaces and native toolchain limits.

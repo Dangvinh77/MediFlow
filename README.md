@@ -54,7 +54,7 @@ _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitH
 
 The MVP targets **six business deployments**: Core, Clinical, Lab, Pharmacy, Billing and Support. Gateway and Eureka are infrastructure; common is a library. Six deployments do not imply six databases: the eight active business contexts keep their own stores.
 
-The current root Maven reactor lists 12 modules. Core already contains Organization and Patient packages with separate persistence boundaries. Report and Notification remain separate applications; there is no support-service host yet. Inpatient and Surgery modules remain in source but are deferred from the outpatient acceptance profile. The six-deployment topology remains a target until composition, routing, flags and runtime acceptance pass; a documentation change does not migrate data or activate gates.
+The root Maven reactor lists 13 modules. Core contains Organization and Patient packages with separate persistence boundaries. Support composes the Report and Notification plain libraries with separate stores, transactions, security and worker budgets; their standalone launchers remain available for rollback. Compose defaults to six business deployments and Gateway forwards both Support API groups without changing public paths. Inpatient and Surgery remain under the deferred Compose profile. On 2026-10-17, real PostgreSQL/RabbitMQ, packaged Support restart and an actual six-app EXAM/Rx payment/dispense/current-store rollback test passed. The subsequent cold-copy inventory/rehearsal of the existing local Compose volumes also passed, preserving four new writes and original-volume fingerprints; default activation gates remain OFF. Other environments require their own historical-data reconciliation. See the [Support runbook](backend/support-service/README.md).
 
 The repository also includes a shared AI coding framework so contributors using Claude Code, Codex, Cursor, or other AGENTS.md-compatible tools follow the same engineering standards after a `git pull`.
 
@@ -74,7 +74,7 @@ The repository also includes a shared AI coding framework so contributors using 
 
 - **Design docs (authoritative):** [`docs/README.md`](docs/README.md) — simplified system design, contracts, plan and acceptance.
 - **AI coding rules (single source of truth):** [`docs/ai/`](docs/ai/README.md).
-- **Current structure and target:** see the deployment section above and [system design](docs/plans/01-system-design.md). Core is present; Support composition and full six-deployment acceptance remain separate work.
+- **Current structure and target:** see the deployment section above and [system design](docs/plans/01-system-design.md). Core and Support composition and the isolated six-app EXAM/Rx acceptance are present; historical-data rollout and separate owner workflow acceptance remain distinct.
 - **Platform and infrastructure:** API gateway, Netflix Eureka, RabbitMQ, and PostgreSQL with database-per-service ownership.
 
 ---
@@ -237,7 +237,7 @@ That starts **PostgreSQL** on `5432` (running [`scripts/init-databases.sql`](scr
 `mediflow_inpatient` and `mediflow_surgery` deferred databases) and
 **RabbitMQ** on `5672` with its management UI at http://localhost:15672 (`guest`/`guest`).
 
-The checked-in Compose file still names legacy Organization/Patient application builds; it is not evidence of the current Core or target six-deployment topology. Use Compose for PostgreSQL/RabbitMQ and run the current Maven modules separately until the shared runtime profile is aligned and accepted.
+The checked-in Compose file builds Core and Support and selects six business deployments by default. Report/Notification standalone launchers require `legacy-support`; Inpatient/Surgery require `deferred`. New outpatient integration flags remain opt-in. Follow the [Support runbook](backend/support-service/README.md) before switching existing stores or activating delivery.
 
 | | |
 |---|---|
@@ -261,7 +261,7 @@ The Eureka server (8761) must also be running before any business service starts
 
 ## Building & running
 
-The root reactor has **12 Maven modules**, including common, Eureka, Gateway and nine business application modules. Organization/Patient source now lives inside Core; Support is not yet a source module. Use the current source layout below rather than launching removed standalone modules.
+The root reactor has **13 Maven modules**, including common, Eureka, Gateway, six default business deployments, two compatibility library/launcher modules and two deferred modules. Organization/Patient live inside Core; Support hosts Report/Notification. The module count includes libraries and preserved launchers, so it exceeds the default running business service count.
 
 | Module | Default port | Stores / public Gateway paths | MVP position |
 |---|---:|---|---|
@@ -272,8 +272,9 @@ The root reactor has **12 Maven modules**, including common, Eureka, Gateway and
 | lab-service | 8084 | Lab store; /api/v1/lab | Outpatient |
 | pharmacy-service | 8085 | Pharmacy store; /api/v1/pharmacy | Outpatient |
 | billing-service | 8086 | Billing store; /api/v1/billing | Outpatient |
-| notification-service | 8087 | Notification store; /api/v1/notifications | Current app; target Support |
-| report-service | 8088 | Report store; /api/v1/reports | Current app; target Support |
+| support-service | 8087 | Separate Report/Notification stores; /api/v1/reports, /api/v1/notifications | Support deployment |
+| notification-service | 8087 | Notification library + original store | Standalone rollback only (`legacy-support`) |
+| report-service | 8088 | Report library + original store | Standalone rollback only (`legacy-support`) |
 | inpatient-service | 8090 | Preserved Inpatient store/code | Deferred from MVP |
 | surgery-service | 8091 | Preserved Surgery store/code | Deferred from MVP |
 
@@ -342,7 +343,8 @@ MediFlow/
 │   ├── lab-service/              ← Khoa Xét nghiệm
 │   ├── pharmacy-service/         ← Khoa Dược
 │   ├── billing-service/          ← Phòng Viện phí
-│   ├── notification-service/ report-service/ ← separate apps; target Support
+│   ├── support-service/          ← Report + Notification host
+│   ├── notification-service/ report-service/ ← context libraries + rollback launchers
 │   └── inpatient-service/ surgery-service/   ← preserved, deferred from MVP
 ├── mobile/                       ← Flutter mobile app (Clean Architecture, Riverpod)
 │   ├── AGENTS.md                 ← nested mobile instructions

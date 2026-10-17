@@ -35,6 +35,7 @@
     <!-- support -->
     <module>backend/notification-service</module>
     <module>backend/report-service</module>
+    <module>backend/support-service</module>
 
     <!-- planned care contexts; preliminary foundation only -->
     <module>backend/inpatient-service</module>

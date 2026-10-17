@@ -23,7 +23,7 @@ public class NotificationEventPublisherAdapter implements NotificationEventPubli
 
     private final RabbitTemplate rabbitTemplate;
 
-    public NotificationEventPublisherAdapter(RabbitTemplate rabbitTemplate) {
+    public NotificationEventPublisherAdapter(@org.springframework.beans.factory.annotation.Qualifier("notificationRabbitTemplate") RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
 

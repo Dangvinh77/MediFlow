@@ -56,6 +56,8 @@ public class NotificationEventConsumer {
     private final ObjectMapper objectMapper;
     private final CarePaymentReceiptWireHandler careReceipts;
     private final CareProjectionWireHandler careProjections;
+    private final PrescriptionNoticeWireHandler prescriptionNotices;
+    private final PrescriptionPaymentNoticeWireHandler prescriptionPaymentNotices;
 
     public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
                                      ObjectMapper objectMapper) {
@@ -67,18 +69,35 @@ public class NotificationEventConsumer {
         this(sendNotificationUseCase, templates, objectMapper, careReceipts, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
     public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
                                      ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts,
                                      CareProjectionWireHandler careProjections) {
+        this(sendNotificationUseCase, templates, objectMapper, careReceipts, careProjections, null);
+    }
+
+    public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
+                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts,
+                                     @org.springframework.lang.Nullable CareProjectionWireHandler careProjections,
+                                     @org.springframework.lang.Nullable PrescriptionNoticeWireHandler prescriptionNotices) {
+        this(sendNotificationUseCase, templates, objectMapper, careReceipts, careProjections, prescriptionNotices, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public NotificationEventConsumer(SendNotificationUseCase sendNotificationUseCase, NotificationTemplates templates,
+                                     ObjectMapper objectMapper, CarePaymentReceiptWireHandler careReceipts,
+                                     @org.springframework.lang.Nullable CareProjectionWireHandler careProjections,
+                                     @org.springframework.lang.Nullable PrescriptionNoticeWireHandler prescriptionNotices,
+                                     @org.springframework.lang.Nullable PrescriptionPaymentNoticeWireHandler prescriptionPaymentNotices) {
         this.sendNotificationUseCase = sendNotificationUseCase;
         this.templates = templates;
         this.objectMapper = objectMapper;
         this.careReceipts = careReceipts;
         this.careProjections = careProjections;
+        this.prescriptionNotices = prescriptionNotices;
+        this.prescriptionPaymentNotices = prescriptionPaymentNotices;
     }
 
-    @RabbitListener(queues = RabbitConfig.QUEUE)
+    @RabbitListener(queues = RabbitConfig.QUEUE, containerFactory = "notificationListenerFactory")
     public void onMessage(Message message) throws IOException {
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         byte[] body = message.getBody();
@@ -92,6 +111,16 @@ public class NotificationEventConsumer {
 
         var root = objectMapper.readTree(body);
         if (root != null && (root.has("version") || root.has("payload") || root.has("eventType"))) {
+            if (com.mediflow.notification.application.dto.command.PrescriptionNoticeCommand.EVENT_TYPES.contains(routingKey)) {
+                if (prescriptionNotices == null)
+                    throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("Outpatient prescription notices disabled");
+                prescriptionNotices.receive(routingKey, body);
+                return;
+            }
+            if (RabbitConfig.RK_INVOICE_CREATED.equals(routingKey) && prescriptionPaymentNotices != null) {
+                prescriptionPaymentNotices.receive(routingKey, body);
+                return;
+            }
             if (careReceipts == null) throw new org.springframework.amqp.AmqpRejectAndDontRequeueException("V1 intake unavailable");
             careReceipts.receive(routingKey, body);
             return;
