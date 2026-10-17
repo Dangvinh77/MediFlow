@@ -132,6 +132,23 @@ class PaymentRequestDiscoveryControllerTest {
     }
 
     @Test @WithMockUser(roles = "ADMIN")
+    void bySource_notFound_carriesCorrelationId() throws Exception {
+        when(discovery.discover(any())).thenThrow(new LedgerPaymentRequestNotFoundException("patient mismatch"));
+        http.perform(validRequest().header("X-Correlation-Id", "web-trace"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.correlationId").value("web-trace"))
+                .andExpect(header().string("X-Correlation-Id", "web-trace"));
+    }
+
+    @Test @WithMockUser(roles = "ADMIN")
+    void bySource_notFound_generatesCorrelationIdWhenMissing() throws Exception {
+        when(discovery.discover(any())).thenThrow(new LedgerPaymentRequestNotFoundException("patient mismatch"));
+        http.perform(validRequest())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.correlationId").isNotEmpty());
+    }
+
+    @Test @WithMockUser(roles = "ADMIN")
     void bySource_brokenMapping_returns503WithoutLeakingDetail() throws Exception {
         when(discovery.discover(any())).thenThrow(new DataIntegrityViolationException("private row detail"));
         http.perform(validRequest())
