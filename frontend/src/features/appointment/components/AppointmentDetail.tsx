@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -52,7 +52,16 @@ function Identifier({ label, value }: { label: string; value: string }) {
 }
 
 export function AppointmentDetail({ appointmentId }: AppointmentDetailProps) {
+  return <AppointmentDetailContent key={appointmentId} appointmentId={appointmentId} />;
+}
+
+function AppointmentDetailContent({ appointmentId }: AppointmentDetailProps) {
   const router = useRouter();
+  const active = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [requestState, setRequestState] = useState<DetailRequestState>({
     key: "",
@@ -110,16 +119,18 @@ export function AppointmentDetail({ appointmentId }: AppointmentDetailProps) {
     setActionError(null);
     try {
       const updated = await appointmentApi.changeStatus(appointmentId, { status });
+      if (!active.current) return;
       setRequestState({ key: requestKey, status: "success", appointment: updated });
       setProposedStatus(null);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
       setActionError(getRequestError(cause));
     } finally {
-      setChangingStatus(false);
+      if (active.current) setChangingStatus(false);
     }
   }
 

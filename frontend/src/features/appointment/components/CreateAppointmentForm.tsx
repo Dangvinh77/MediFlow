@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { appointmentApi } from "../api";
@@ -24,10 +24,17 @@ interface RequestError {
 
 export function CreateAppointmentForm() {
   const router = useRouter();
+  const active = useRef(true);
+  const submissionLocked = useRef(false);
   const [values, setValues] = useState<AppointmentFormValues>(EMPTY_APPOINTMENT_FORM);
   const [fieldErrors, setFieldErrors] = useState<AppointmentFieldErrors>({});
   const [requestError, setRequestError] = useState<RequestError | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   function updateField(field: AppointmentFormField, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -38,12 +45,14 @@ export function CreateAppointmentForm() {
   function focusFirstError(errors: AppointmentFieldErrors) {
     const firstField = Object.keys(errors)[0] as AppointmentFormField | undefined;
     if (!firstField) return;
-    window.requestAnimationFrame(() => document.getElementById(firstField)?.focus());
+    window.requestAnimationFrame(() => {
+      if (active.current) document.getElementById(firstField)?.focus();
+    });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || submissionLocked.current) return;
 
     setRequestError(null);
     const errors = validateAppointmentForm(values, true);
@@ -53,12 +62,18 @@ export function CreateAppointmentForm() {
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
+    let leavingPage = false;
     try {
       const created = await appointmentApi.create(toCreateAppointmentRequest(values));
+      if (!active.current) return;
+      leavingPage = true;
       router.replace(`/appointments/${created.appointmentId}`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        leavingPage = true;
         router.replace("/login");
         return;
       }
@@ -79,7 +94,10 @@ export function CreateAppointmentForm() {
         });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        if (!leavingPage) submissionLocked.current = false;
+        setSubmitting(leavingPage);
+      }
     }
   }
 

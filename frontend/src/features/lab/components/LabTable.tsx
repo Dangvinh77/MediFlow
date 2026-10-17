@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -64,6 +64,7 @@ function getRequestError(cause: unknown): RequestError {
 
 export function LabTable() {
   const router = useRouter();
+  const requestSequence = useRef(0);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [tests, setTests] = useState<LabTestDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ export function LabTable() {
   });
 
   const loadTests = useCallback(async (page: number, filters: LabSearchParams) => {
+    const sequence = ++requestSequence.current;
     setLastRequest({ page, filters });
     setLoading(true);
     setError(null);
@@ -93,11 +95,13 @@ export function LabTable() {
         page,
         size: LAB_PAGE_SIZE,
       });
+      if (sequence !== requestSequence.current) return;
       setTests(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
     } catch (cause: unknown) {
+      if (sequence !== requestSequence.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -105,7 +109,7 @@ export function LabTable() {
 
       setError(getRequestError(cause));
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.current) setLoading(false);
     }
   }, [router]);
 
@@ -114,7 +118,10 @@ export function LabTable() {
       void loadTests(0, {});
     }, 0);
 
-    return () => window.clearTimeout(initialLoad);
+    return () => {
+      window.clearTimeout(initialLoad);
+      requestSequence.current += 1;
+    };
   }, [loadTests]);
 
   function onFilter(event: FormEvent<HTMLFormElement>) {

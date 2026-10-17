@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -28,6 +28,8 @@ function getRequestError(cause: unknown): RequestError {
 
 export function MedicalRecordTable() {
   const router = useRouter();
+  const requestSequence = useRef(0);
+  const mounted = useRef(false);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
   const [patientId, setPatientId] = useState("");
   const [activePatientId, setActivePatientId] = useState("");
@@ -38,20 +40,32 @@ export function MedicalRecordTable() {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const loadRecords = useCallback(async (id: string) => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError(null);
     try {
-      setRecords(await medicalRecordApi.byPatient(id));
+      const result = await medicalRecordApi.byPatient(id);
+      if (!mounted.current || requestId !== requestSequence.current) return;
+      setRecords(result);
     } catch (cause: unknown) {
+      if (!mounted.current || requestId !== requestSequence.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
       setError(getRequestError(cause));
     } finally {
-      setLoading(false);
+      if (mounted.current && requestId === requestSequence.current) setLoading(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      requestSequence.current += 1;
+    };
+  }, []);
 
   function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

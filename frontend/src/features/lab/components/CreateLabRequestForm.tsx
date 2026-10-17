@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { labApi } from "../api";
@@ -26,11 +26,18 @@ interface RequestError {
 export function CreateLabRequestForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const active = useRef(true);
+  const submissionLocked = useRef(false);
   const [values, setValues] = useState<LabRequestFormValues>(EMPTY_LAB_REQUEST_FORM);
   const [fieldErrors, setFieldErrors] = useState<LabRequestFieldErrors>({});
   const [requestError, setRequestError] = useState<RequestError | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const today = getLocalTodayIso();
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   function updateField(field: LabRequestFormField, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -40,12 +47,14 @@ export function CreateLabRequestForm() {
 
   function focusFirstError(errors: LabRequestFieldErrors) {
     const first = Object.keys(errors)[0];
-    if (first) window.requestAnimationFrame(() => document.getElementById(first)?.focus());
+    if (first) window.requestAnimationFrame(() => {
+      if (active.current) document.getElementById(first)?.focus();
+    });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || submissionLocked.current) return;
     const errors = validateLabRequest(values, today);
     setFieldErrors(errors);
     setRequestError(null);
@@ -54,12 +63,18 @@ export function CreateLabRequestForm() {
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
+    let leavingPage = false;
     try {
       const created = await labApi.create(toCreateLabRequest(values));
+      if (!active.current) return;
+      leavingPage = true;
       router.replace(`/lab/${created.testId}?notice=created`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        leavingPage = true;
         router.replace("/login");
         return;
       }
@@ -72,7 +87,10 @@ export function CreateLabRequestForm() {
         setRequestError({ status: null, message: cause instanceof Error ? cause.message : "Không thể tạo yêu cầu xét nghiệm.", correlationId: null });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        if (!leavingPage) submissionLocked.current = false;
+        setSubmitting(leavingPage);
+      }
     }
   }
 

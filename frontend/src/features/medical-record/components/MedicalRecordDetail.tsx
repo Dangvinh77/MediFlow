@@ -58,6 +58,10 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
 const getServerRole = () => null;
 
 export function MedicalRecordDetail({ recordId, notice }: MedicalRecordDetailProps) {
+  return <MedicalRecordDetailContent key={recordId} recordId={recordId} notice={notice} />;
+}
+
+function MedicalRecordDetailContent({ recordId, notice }: MedicalRecordDetailProps) {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
