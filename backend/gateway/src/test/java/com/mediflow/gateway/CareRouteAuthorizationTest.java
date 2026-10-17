@@ -110,4 +110,28 @@ class CareRouteAuthorizationTest {
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.POST, "/api/v1/surgery/cases/" + ID + "/schedule", "ADMIN", false);
         everyCanonicalRoleMatchesDownstreamPolicy(HttpMethod.GET, "/api/v1/surgery/cases/" + ID + "/evidence", "ADMIN", false);
     }
+
+    static Stream<Arguments> unsupportedPrescriptionCommands() {
+        String base = "/api/v1/pharmacy/prescriptions/" + ID;
+        return Stream.of(
+                Arguments.of(HttpMethod.PUT, "/api/v1/pharmacy/prescriptions"),
+                Arguments.of(HttpMethod.PUT, base),
+                Arguments.of(HttpMethod.PUT, base + "/update"),
+                Arguments.of(HttpMethod.PUT, base + "/nested/cancel"),
+                Arguments.of(HttpMethod.PUT, base + "/cancel/extra"),
+                Arguments.of(HttpMethod.PUT, base + "/nested/dispense"),
+                Arguments.of(HttpMethod.PUT, base + "/dispense/extra"),
+                Arguments.of(HttpMethod.POST, base + "/cancel"),
+                Arguments.of(HttpMethod.POST, base + "/dispense"),
+                Arguments.of(HttpMethod.PATCH, base + "/cancel"),
+                Arguments.of(HttpMethod.DELETE, base + "/dispense"));
+    }
+
+    @ParameterizedTest(name = "Reject unsupported prescription command: {0} {1}")
+    @MethodSource("unsupportedPrescriptionCommands")
+    void unsupportedPrescriptionCommandsAreNotForwarded(HttpMethod method, String path) {
+        for (String role : ROLES) {
+            everyCanonicalRoleMatchesDownstreamPolicy(method, path, role, false);
+        }
+    }
 }

@@ -151,7 +151,19 @@ public class RouteAuthorizationFilter implements GlobalFilter, Ordered {
 
             rule("/api/v1/reports/operations/daily", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
             rule("/api/v1/reports/operations/surgery", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER, Roles.DOCTOR),
-            rule("/api/v1/reports/**", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER)
+            // Read/report roles must not leak into ADMIN-only maintenance endpoints.
+            rule("/api/v1/reports/daily", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/monthly", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/top-medicines", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/outpatient/daily", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/outpatient/monthly", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/financial/daily", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/financial/monthly", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/financial/coverage", HttpMethod.GET, Roles.ADMIN, Roles.MANAGER),
+            rule("/api/v1/reports/financial/capabilities", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v1/reports/financial/rebuilds/{generationId}", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v1/reports/financial/source-archives/{generationId}", HttpMethod.GET, Roles.ADMIN),
+            rule("/api/v1/reports/operations/rebuilds/{id}", HttpMethod.GET, Roles.ADMIN)
     );
 
     private final GatewayErrorResponseWriter errors;

@@ -41,6 +41,35 @@ import static org.mockito.Mockito.when;
 @AutoConfigureWebTestClient
 class GatewayWebTest {
     @Test
+    void reportMaintenanceReadsRequireAdminWhileReportReadersKeepTheirRoles() {
+        String id = UUID.randomUUID().toString();
+        for (String path : java.util.List.of(
+                "/api/v1/reports/financial/capabilities",
+                "/api/v1/reports/financial/rebuilds/" + id,
+                "/api/v1/reports/financial/source-archives/" + id,
+                "/api/v1/reports/operations/rebuilds/" + id)) {
+            expectDownstreamUnavailable(HttpMethod.GET, path, Roles.ADMIN);
+            expectForbidden(HttpMethod.GET, path, Roles.MANAGER);
+            expectForbidden(HttpMethod.GET, path, Roles.DOCTOR);
+            expectForbidden(HttpMethod.GET, path + "/extra", Roles.ADMIN);
+            expectForbidden(HttpMethod.POST, path, Roles.ADMIN);
+            webTestClient.get().uri(path).exchange().expectStatus().isUnauthorized();
+            webTestClient.get().uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(jwt.issueRefreshToken(UUID.randomUUID(), Roles.ADMIN)))
+                    .exchange().expectStatus().isUnauthorized();
+            webTestClient.get().uri(path)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(jwt.issueServiceToken(
+                            "report-service", Roles.SYSTEM, UUID.randomUUID().toString())))
+                    .exchange().expectStatus().isForbidden();
+        }
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/financial/coverage", Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/outpatient/daily", Roles.MANAGER);
+        expectDownstreamUnavailable(HttpMethod.GET, "/api/v1/reports/operations/daily", Roles.DOCTOR);
+        expectForbidden(HttpMethod.GET, "/api/v1/reports/financial/daily", Roles.DOCTOR);
+        expectForbidden(HttpMethod.GET, "/api/v1/reports/unknown", Roles.ADMIN);
+    }
+
+    @Test
     void careCommandsEnforceSpecificSignedRolesWithoutBroadAppointmentFallback() {
         String nurse = jwt.issueAccessToken(UUID.randomUUID(), Roles.NURSE);
         String doctor = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);
