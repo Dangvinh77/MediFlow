@@ -43,59 +43,67 @@ public class GlobalExceptionHandler {
                 || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/deposit-allocations")
                 || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")
                 || request.getRequestURI().startsWith("/api/v1/billing/prescription-adjustments/");
-        if (!lookup && !ledger) return unexpected(ex);
-        String correlation = request.getHeader(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID);
-        if (correlation == null || correlation.isBlank()) correlation = java.util.UUID.randomUUID().toString();
+        if (!lookup && !ledger) return unexpected(ex, request);
         // Do not leak SQL, ledger values or connection details to this service contract.
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .header(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID, correlation)
-                .body(ApiResponse.fail(ApiError.of(lookup ? "BILLING_CLEARANCE_UNAVAILABLE" : "BILLING_LEDGER_UNAVAILABLE",
-                        lookup ? "Financial authority unavailable" : "Financial ledger unavailable; retry with the same operation key"), correlation));
+        return build(HttpStatus.SERVICE_UNAVAILABLE,
+                lookup ? "BILLING_CLEARANCE_UNAVAILABLE" : "BILLING_LEDGER_UNAVAILABLE",
+                lookup ? "Financial authority unavailable" : "Financial ledger unavailable; retry with the same operation key",
+                request);
     }
 
     @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
-    public ResponseEntity<ApiResponse<Void>> missingHeader(org.springframework.web.bind.MissingRequestHeaderException ex) {
-        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Required request header is missing");
+    public ResponseEntity<ApiResponse<Void>> missingHeader(org.springframework.web.bind.MissingRequestHeaderException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Required request header is missing", request);
     }
 
     /** 404 — {@code INVOICE_NOT_FOUND} / {@code FEE_NOT_FOUND}. */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> notFound(ResourceNotFoundException ex) {
-        return build(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage());
+    public ResponseEntity<ApiResponse<Void>> notFound(ResourceNotFoundException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage(), request);
     }
 
     /** 409 — an idempotency key cannot be reused for different payment intent or actor. */
     @ExceptionHandler(com.mediflow.common.exception.DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<Void>> conflict(com.mediflow.common.exception.DuplicateResourceException ex) {
-        return build(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage());
+    public ResponseEntity<ApiResponse<Void>> conflict(com.mediflow.common.exception.DuplicateResourceException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
     }
 
     /** 422 — business invariants (BR-B1, BR-B2, BR-B8, BR-B9, ...). */
     @ExceptionHandler(BusinessRuleException.class)
-    public ResponseEntity<ApiResponse<Void>> businessRule(BusinessRuleException ex) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage());
+    public ResponseEntity<ApiResponse<Void>> businessRule(BusinessRuleException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage(), request);
     }
 
     /** 400 — DTO request không qua Bean Validation. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> validation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Void>> validation(MethodArgumentNotValidException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
         List<ErrorDetail> details = ex.getBindingResult().getFieldErrors().stream()
                 .map(this::toDetail)
                 .toList();
         ApiError error = new ApiError("VALIDATION_ERROR", "Dữ liệu không hợp lệ", details);
-        return ResponseEntity.badRequest().body(ApiResponse.fail(error));
+        String correlation = correlationId(request);
+        return ResponseEntity.badRequest()
+                .header(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID, correlation)
+                .body(ApiResponse.fail(error, correlation));
     }
 
     /** 400 — JSON hỏng, sai kiểu tham số. */
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
-    public ResponseEntity<ApiResponse<Void>> malformedRequest(Exception ex) {
-        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Request không đúng định dạng");
+    public ResponseEntity<ApiResponse<Void>> malformedRequest(Exception ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Request không đúng định dạng", request);
     }
 
     /** 403 — đã xác thực nhưng không đủ role (Spring Security {@code @PreAuthorize}). */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> accessDenied(AccessDeniedException ex) {
-        return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "Bạn không có quyền thực hiện thao tác này");
+    public ResponseEntity<ApiResponse<Void>> accessDenied(AccessDeniedException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "FORBIDDEN", "Bạn không có quyền thực hiện thao tác này", request);
     }
 
     /** A contended transaction is unavailable, never a successful or fabricated financial result. */
@@ -106,21 +114,32 @@ public class GlobalExceptionHandler {
         if (!request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")) {
             return storageFailure(ex, request);
         }
-        return build(HttpStatus.SERVICE_UNAVAILABLE, "BILLING_RETRY_FRESH_SNAPSHOT", "Retry the same operation key from a fresh snapshot");
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "BILLING_RETRY_FRESH_SNAPSHOT", "Retry the same operation key from a fresh snapshot", request);
     }
 
     /** 500 — mọi lỗi chưa xử lý riêng; không lộ stack trace ra ngoài. */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> unexpected(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> unexpected(Exception ex,
+            jakarta.servlet.http.HttpServletRequest request) {
         log.error("Lỗi không mong đợi", ex);
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống");
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Đã xảy ra lỗi hệ thống", request);
     }
 
     private ErrorDetail toDetail(FieldError fe) {
         return new ErrorDetail(fe.getField(), fe.getDefaultMessage());
     }
 
-    private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message) {
-        return ResponseEntity.status(status).body(ApiResponse.fail(ApiError.of(code, message)));
+    private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String correlation = correlationId(request);
+        return ResponseEntity.status(status)
+                .header(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID, correlation)
+                .body(ApiResponse.fail(ApiError.of(code, message), correlation));
+    }
+
+    /** Always carries a correlation id on error responses, generating one if the caller sent none. */
+    private static String correlationId(jakarta.servlet.http.HttpServletRequest request) {
+        String supplied = request.getHeader(com.mediflow.common.security.JwtClaims.HEADER_CORRELATION_ID);
+        return supplied == null || supplied.isBlank() ? java.util.UUID.randomUUID().toString() : supplied;
     }
 }
