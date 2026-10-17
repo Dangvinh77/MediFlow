@@ -1,6 +1,28 @@
 # Frontend Workboard
 
-## Huy — Pharmacy/Report theo mẫu, checkpoint 2026-10-16
+## Huy — Report ngoại trú MVP, rà soát mới nhất 2026-10-17
+
+- `R-MVP-01`: **4/4 FE local**, release OPEN. Route `/reports/outpatient` dùng đúng API
+  daily range/monthly year và DTO coverage/currency/zone/periods của backend mới.
+  Theo mẫu/theme hiện có; URL filters, Back/Forward, validation/focus, stale/unmount guards,
+  401/403/correlation/retry; accepted zero khác unavailable, netCash lấy nguyên response.
+- Entry và direct route mặc định đóng, không gọi API. Server chỉ mở UI khi
+  `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true`, sau runtime/coverage/Gateway acceptance.
+  Không bật backend flags, không fallback legacy khi endpoint chưa sẵn sàng.
+- Verification: typecheck/lint/build PASS; full suite **291/291 tests, 36 files**.
+  Browser production build với Gateway fixture kiểm gate OFF/ON, ngày/tháng, 12 kỳ/năm,
+  Back/Forward, thiếu coverage; desktop Sáng/mobile Tối 360px không tràn ngang.
+  Các lượt kiểm tra này chạy ngày 2026-10-16; ngày 2026-10-17 rà soát source và phụ thuộc tiếp theo.
+  Đây là local evidence; signed-role/real-source/Support acceptance còn mở.
+- Chi tiết [plan mục 15](huy-frontend-implementation-plan.md#15-checkpoint-report-ngoại-trú-theo-backend-mvp--2026-10-16).
+  Đây là task MVP bổ sung; giữ mẫu số lịch sử 11/30 và 50/123, không mở Surgery/full V2.
+  Phụ thuộc dùng [handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+  Thay đổi batch mới chưa commit/push.
+- P-08 còn cần shared API hỗ trợ header `Idempotency-Key`, cùng source/paid/activation acceptance.
+  DTO đọc đơn hiện chưa xuất metadata V1; không suy diễn fields hoặc tự mở public mutation.
+  Yêu cầu shared owner và acceptance được ghi tiếp trong cùng handoff Huy.
+
+## Huy — Pharmacy/Report theo mẫu, checkpoint trước 2026-10-16
 
 Owner: Huy (`LQHuy0210`). Scope IMPLEMENT: Pharmacy/Report features và tài liệu tương ứng;
 shared frame chỉ trong những paths được giao ở mục kế tiếp. Không sửa foreign feature/backend.
