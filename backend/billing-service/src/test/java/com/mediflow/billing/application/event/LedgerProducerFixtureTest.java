@@ -49,7 +49,7 @@ class LedgerProducerFixtureTest {
         new LedgerPaymentService(repository, events, Mappers.getMapper(LedgerPaymentMapper.class), Clock.fixed(now(), ZoneOffset.UTC))
                 .complete(id(12), new CompleteLedgerPaymentRequest("fixture", payload.amount(), "VND", PaymentMethod.CASH, null), id(9), id(9).toString());
         var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
-        verify(events, times(2)).appendHeld(eq(account.getAccountId()), capture.capture());
+        verify(events, times(2)).appendForOutpatientRequest(eq(account.getAccountId()), eq(id(12)), capture.capture());
         var emitted = capture.getAllValues().getLast();
         assertThat(mapper.<JsonNode>valueToTree(emitted.payload())).isEqualTo(fixture.path("payload"));
         assertThat(emitted.eventType()).isEqualTo(fixture.path("eventType").asText());

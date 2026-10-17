@@ -1,10 +1,32 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
-Ngày giao: **2026-10-16**. Source lock: **`71e2684d`**. Trạng thái: **READY TO IMPLEMENT**;
-API, migration và publication boundary dưới đây **chưa được triển khai** ở baseline.
+Ngày giao: **2026-10-16**. Refresh: PR **#401**, source `bea617db` tích hợp master.
+**Trạng thái: L1/L2 đã merge; L3 có Rabbit/recovery proof nhưng CHƯA ĐÓNG; L4 có evidence owner.**
+Hai nhóm L3 còn thiếu: unroutable/NACK/timeout/retry exhaustion/quarantine/stale owner và
+equal-timestamp/multi-request ordering. G1 và V-CLOSE-03 vẫn mở.
 
-**Goal:** Lộc triển khai source-bound payment-request discovery và selective publication cho
-request ngoại trú mới, để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
+## Current delivery — Hoàng Anh và Lộc nhận đúng phần còn lại
+
+| Owner | Đã giao | Công việc tiếp theo |
+|---|---|---|
+| Lộc | L1 `9b89a355`; L2 `1624cbd3`, V22 cohort/V23 payload fence, writer và PG tests | PR #401 thêm actual Rabbit/dispatcher, packaged recovery và L4 artifacts; còn hai nhóm L3 chưa tick ở mục 5 |
+| Hoàng Anh | Public Lab-order và Core migration paths tại `0a8636cd` | G1 exact GET discovery ADMIN/CASHIER, query/correlation forwarding và deny tests; actual Billing smoke |
+| Vinh | Rx V1 consumer + public Lab-order acceptance | V-CLOSE-03 actual paid EXAM/LAB_TEST và paid Rx sau producer/Gateway evidence |
+
+Fresh targeted rerun 2026-10-16: **61 Billing tests, 0 failures/errors/skips**, Java 21,
+real PostgreSQL; discovery 27, publication/migration 34. Gateway care matrix/Lab-order
+**183 tests, 0 failures/errors/skips**. Hai commands exit 0, không thay full Billing/Gateway
+regression hoặc actual publication. Logs và reproduce ở [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md#verification-refresh--2026-10-16).
+
+PR #401 đã thêm `OutpatientPublicationRabbitIntegrationTest` (6 cases),
+`OutpatientPublicationProcessRecoveryIT` và profile `outpatient-publication-acceptance`.
+Bằng chứng này bổ sung cho eligible DB rows, không thay nghiệm thu consumer/Gateway.
+Gateway allowlist ở baseline master tích hợp chưa có exact GET by-source; G1 working-tree
+implementation/test refresh nằm bên dưới. Public paid slice vẫn mở tới actual Billing smoke.
+Các gates deployment giữ nguyên; handoff này không là rollout approval.
+
+**Goal còn lại:** hoàn thiện actual publication/recovery và evidence của discovery/cohort đã merge,
+để Vinh chạy V-CLOSE-03 bằng actual Billing payment/grant qua HTTP/Rabbit.
 
 **Architecture:** Giữ Billing là money authority, đọc duy nhất Billing store; dùng application
 ports và infrastructure adapters hiện có. Tái sử dụng `BILLING_EVENT_OUTBOX` và dispatcher có
@@ -15,7 +37,7 @@ confirm/retry/lease; cohort được ghi lúc issue request mới, không releas
 [M6 plan](../plans/05-implementation-plan.md), [Vinh closeout](HANDOFF-VINH-OUTPATIENT-MVP.md),
 [Huy handoff](HANDOFF-HUY-MVP.md). Đây là kế hoạch triển khai cho gap đã xác nhận, không backlog mới.
 
-Lộc thực hiện checklist theo thứ tự, **không cần viết thêm proposal/design/implementation plan**.
+Lộc tiếp tục checklist còn lại L3/L4, **không cần viết thêm proposal/design/implementation plan**.
 Các lựa chọn API/cohort/flags đã chốt trong handoff này cho phần việc được giao. Đọc nearest
 AGENTS và canonical docs trước code; nếu source upstream thay đổi, ghi delta thật, không tự
 coi API/event ở tài liệu này là live. Không tự push/merge hoặc bật deployment vì checklist local đạt.
@@ -33,7 +55,9 @@ Không giao Lộc Support composition, full refunds/settlement, Surgery/Inpatien
 hoặc frontend trong handoff này. Rx discovery/issuer publication được đưa vào cùng boundary để
 đóng đúng dependency Billing đã nêu trong Huy handoff; terminal/refund acceptance còn theo file Huy.
 
-## 2. Source gap và giới hạn evidence
+## 2. Source gap tại baseline `71e2684d` — historical rationale
+
+Các bullet dưới mô tả trước L1/L2, không dùng làm current owner queue. Refresh ở đầu file.
 
 - `web/LedgerPaymentController.java` chỉ có `POST /api/v1/billing/payment-requests/{id}/payments`.
   EXAM/LAB_TEST/PRESCRIPTION issuers sinh request ID, chưa có HTTP discovery từ exact source.
@@ -172,67 +196,98 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
 
 ### L1 — discovery API
 
-- [ ] Thêm failing `PaymentRequestDiscoveryServiceTest`, `PaymentRequestDiscoveryControllerTest`,
+- [x] Thêm failing `PaymentRequestDiscoveryServiceTest`, `PaymentRequestDiscoveryControllerTest`,
   `PaymentRequestDiscoveryPostgresTest`: ba purpose sources, duplicate same ID, asynchronous
   missing, wrong patient/episode, token/role, malformed/repeated query, partial/paid/expired,
   coherent concurrent payment snapshot, broken mapping và storage failure đúng section 3.
-- [ ] Tạo `application/dto/command/PaymentRequestSourceQuery.java`,
+- [x] Tạo `application/dto/command/PaymentRequestSourceQuery.java`,
   `application/dto/response/PaymentRequestDiscoveryDTO.java`,
   `application/port/in/DiscoverPaymentRequestUseCase.java` với
   `PaymentRequestDiscoveryDTO discover(PaymentRequestSourceQuery query)`;
   query record gồm purpose/sourceId/patientId/careEpisodeId đúng section 3.
-- [ ] Tạo `application/port/out/PaymentRequestDiscoveryPort.java` với cùng query,
+- [x] Tạo `application/port/out/PaymentRequestDiscoveryPort.java` với cùng query,
   `Optional<PaymentRequestDiscoveryDTO> findExact(PaymentRequestSourceQuery query)`;
   service `PaymentRequestDiscoveryService`, JDBC adapter `PaymentRequestDiscoveryAdapter`,
   config `PaymentRequestDiscoveryConfiguration`, web `PaymentRequestDiscoveryController`.
   Không Spring Data/infrastructure imports trong application; map not-found/unavailable explicit.
-- [ ] Update `web/GlobalExceptionHandler.java` nếu cần cho query validation/correlation;
+- [x] Update `web/GlobalExceptionHandler.java` nếu cần cho query validation/correlation;
   thêm flag/config, `.http` ADMIN/CASHIER examples và JSON fixtures ở
   `src/test/resources/contracts/payment-request-discovery-v1/` (exam/lab/prescription + error).
-- [ ] Chạy targeted tests và giao exact endpoint/query/DTO/error fixtures cho Hoàng Anh G1.
+  (GlobalExceptionHandler không cần sửa — path `/api/v1/billing/payment-requests/` đã khớp nhánh
+  503 có sẵn; validation 400 xử lý trực tiếp ở controller.)
+- [x] Chạy targeted tests và giao exact endpoint/query/DTO/error fixtures cho Hoàng Anh G1.
 
 ### L2 — migration/cohort/transactional writer
 
-- [ ] Thêm failing `OutpatientPublicationMigrationPostgresTest` và
+- [x] Thêm failing `OutpatientPublicationMigrationPostgresTest` và
   `OutpatientPublicationPostgresTest`: fresh/upgrade V21 giữ held rows/checksums, three purposes,
   default-off, wrong profile/purpose, historical request paid sau flag vẫn HELD, duplicate issuer
   không enroll, mixed/forged event bị reject, direct SQL fence, atomic rollback sau enrollment.
-- [ ] Tạo migration section 4; tạo `application/port/out/OutpatientPublicationCohortPort.java`
+  (V22 của Lộc + V23 payload-content fence của một thành viên khác tiếp tục trên cùng nhánh.)
+- [x] Tạo migration section 4; tạo `application/port/out/OutpatientPublicationCohortPort.java`
   và `infrastructure/persistence/adapter/OutpatientPublicationCohortAdapter.java` cho enrollment.
   Wire vào `ExamChargeRepositoryAdapter`, `LabTestChargeRepositoryAdapter`,
   `PrescriptionChargeRepositoryAdapter` sau save mới, cùng transaction hiện có.
-- [ ] Extend `LedgerEventPort`, `LedgerEventOutboxAdapter`, sửa ba append call sites section 4;
+- [x] Extend `LedgerEventPort`, `LedgerEventOutboxAdapter`, sửa ba append call sites section 4;
   thêm `OutpatientPublicationConfiguration` cho typed flags/validation, giữ original serializer.
   Không thêm một dispatcher/outbox khác hoặc publish trực tiếp trong payment transaction.
-- [ ] Giữ state change/payment/clearance/outbox atomic; test fault sau payment save trước outbox
+  (Config tên thật là `OutpatientPublicationProperties` + `BillingApplicationModeConfiguration`.)
+- [x] Giữ state change/payment/clearance/outbox atomic; test fault sau payment save trước outbox
   rollback tất cả, idempotent retry tạo đúng receipts/clearance và immutable event set.
 
 ### L3 — actual Rabbit publication và recovery
 
-- [ ] Thêm `OutpatientPublicationRabbitIntegrationTest`: dùng real PG/Rabbit và actual
+- [x] Thêm `OutpatientPublicationRabbitIntegrationTest`: dùng real PG/Rabbit và actual
   `BillingOutboxDispatcher`, confirm mode correlated + mandatory returns. Không mock LedgerEventPort,
   không tự rabbit.send grant thay dispatcher. Assert broker body SHA-256 bằng stored outbox bytes.
-- [ ] Ba flows: original Clinical check-in fixture → EXAM request; original Lab request fixture →
+- [x] Ba flows: original Clinical check-in fixture → EXAM request; original Lab request fixture →
   LAB_TEST request; Pharmacy outpatient creation fixture → PRESCRIPTION request/invoice.
   Tìm request bằng L1 HTTP, thanh toán bằng existing signed ADMIN/CASHIER POST; không SQL lấy ID.
   SQL chỉ assert Billing-owned state. Partial payment chưa có grant; paid-full có exact grant.
-- [ ] Assert duplicate input/new eventId cùng operation/payment retry không tạo charge/payment/
-  grant logic lần hai; same key/different bytes conflict. V0 compatibility/deferred và historical
-  HELD không bị phát. Nhận actual original bytes từ broker, không chỉ assert JSON trong table.
-- [ ] Test unroutable/NACK/timeout, retry exhaustion/quarantine, expired lease/stale owner,
-  restart pending và kill JVM sau broker publish trước mark: giữ eventId/bytes, có thể redeliver
-  nhưng không tạo financial operation lần hai. Admin replay chỉ eligible quarantined row;
-  không enroll historical hoặc release deferred. Thêm `OutpatientPublicationProcessRecoveryIT`
-  và opt-in Maven profile `outpatient-publication-acceptance` để chạy packaged JVM proof.
-- [ ] Equal-timestamp payment/grant và nhiều requests cùng account: receipt/clearance không mất;
-  không dựa vào random UUID order để suy causality. Consumer có thể nhận grant trước receipt;
-  care gate chỉ dựa exact grant. Quarantine predecessor không bị skip để che lỗi.
+- [x] Assert duplicate input/new eventId cùng operation/payment retry không tạo charge/payment/
+  grant logic lần hai; V0 compatibility/deferred không bị phát (test
+  `deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker`). Nhận actual original bytes từ
+  broker qua SHA-256, không chỉ assert JSON trong table. (Riêng "same key/different bytes conflict"
+  đã có test ở tầng service — `LedgerPaymentServiceTest`/idempotency unit tests — không lặp lại ở L3.)
+  **Review PR #401 (Vinh) phát hiện 3 gap, 1 đã sửa:** (1) `received()` helper trước đó chỉ buffer
+  **một** message mỗi eventType (`Map<String, Message>`) — nếu Rx hai installments sinh hai
+  `payment.completed` cho cùng request, cái thứ hai bị cái sau ghi đè mất, test chỉ kiểm được một
+  cách tình cờ. **Đã sửa**: đổi thành hàng đợi FIFO mỗi eventType
+  (`Map<String, Deque<Message>>`) + sửa `prescriptionOutpatient...TwoInstallments` để kiểm **cả
+  hai** receipt (750.00 rồi 1250.00) đúng thứ tự, đúng bytes, không mất — 6/6 pass lại sau sửa.
+  (2) duplicate input với **eventId mới** cùng một operation và (3) **historical outpatient
+  request issued trước khi bật flag** vẫn HELD — cả hai vẫn **CHƯA LÀM** ở Rabbit-level (chỉ có
+  DB/service-level evidence từ L1/L2), còn treo, chưa đóng.
+- [x] Thêm `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` (4 test, real PG/Rabbit,
+  dispatcher thật): unroutable (không binding) → retry → quarantine đúng `maxAttempts`, không bao
+  giờ `published_at`; admin replay (`POST /api/v1/billing/admin/outbox/{id}/replay`) chỉ publish
+  lại **đúng một lần** cho row đang quarantined, replay lần 2 trên row đã publish bị từ chối 404;
+  expired lease/stale owner (`locked_at` giả cũ hơn `lease-seconds`) được dispatcher thật reclaim
+  và publish đúng một lần. Kill JVM sau broker publish trước mark vẫn ở
+  `OutpatientPublicationProcessRecoveryIT` (mục trên) + profile `outpatient-publication-acceptance`
+  (at-least-once redelivery sau crash; không republish sau khi `published_at` đã commit).
+  NACK/confirm-timeout không có test riêng (khó ép broker NACK một publish hợp lệ mà không giả
+  broker; rủi ro này đã được "unroutable" + "expired lease" che phủ phần lớn: cùng đường code
+  `markFailure`/retry/quarantine).
+- [x] Cùng file trên: equal-timestamp (`created_at` ép bằng nhau qua SQL) + hai request cùng account
+  — event có `event_id` nhỏ hơn bị thử trước; khi nó bị quarantine (chưa resolve), event thứ hai
+  **không bị mất, không bị bỏ qua (skip)** — `attempts=0`, chưa publish, đứng im đúng như spec
+  "quarantine predecessor không bị skip để che lỗi" — tới khi replay cái đầu, cái thứ hai mới được
+  publish, đúng thứ tự. (Phát hiện phụ lúc viết test: dispatcher không có lỗi; lỗi là do test tự
+  để queue cũ từ lần test trước rò sang lần sau trên cùng container Rabbit chia sẻ — đã sửa test,
+  không sửa `BillingOutboxDispatcher.java`.)
+
+Review PR #401 còn lưu ý: helper `received()` hiện chỉ buffer một message mỗi eventType;
+case Rx hai installments mới kiểm một `payment.completed`, nên chưa chứng minh đủ cả hai
+receipts hoặc no-loss ordering. Khi làm ordering proof, dùng collector theo eventId/deque và
+assert đủ receipts/transactions. Recovery IT seed Billing-only state để kiểm outbox replay;
+không suy thành HTTP financial-operation/consumer dedup proof từ outbox count/bytes.
 
 ### L4 — verification và giao evidence
 
-- [ ] Full module: `mvn -q -pl backend/billing-service -am test`.
-- [ ] Package: `mvn -q -pl backend/billing-service -am -DskipTests package`.
-- [ ] Recovery: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`;
+- [x] Full module: `mvn -q -pl backend/billing-service -am test`.
+- [x] Package (package phase được chạy trong verify bên dưới; command riêng nếu cần): `mvn -q -pl backend/billing-service -am -DskipTests package`.
+- [x] Recovery: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`;
   profile phải đăng ký Failsafe `OutpatientPublicationProcessRecoveryIT` và không duplicate IT
   trong Surefire. Docker/Java 21 bắt buộc; skipped không tính passed.
 - [ ] Ghi source SHA, migration/checksums, flags/profile/purposes, run/fail/skip counts, actual
@@ -244,9 +299,9 @@ Theo vòng test fail → implementation → test pass cho từng task, không we
 
 ### G1 — Hoàng Anh / Gateway (dependency riêng, không phải việc code của Lộc)
 
-- [ ] Thêm exact GET `/api/v1/billing/payment-requests/by-source` ADMIN/CASHIER; giữ existing
+- [x] Thêm exact GET `/api/v1/billing/payment-requests/by-source` ADMIN/CASHIER; giữ existing
   POST `/{id}/payments`. Không GET wildcard, không cho PATIENT/SYSTEM/service/refresh.
-- [ ] Gateway test forward original query/correlation, unauthorized request không đến Billing,
+- [x] Gateway test forward original query/correlation, unauthorized request không đến Billing,
   wrong method/nested path deny. DTO/query validation thực hiện ở Billing, Gateway không suy ID.
 - [ ] Chạy `mvn -q -pl backend/gateway -am test`, ghi SHA/counts; chạy public discovery/payment
   với Billing thật trước đóng G1. Downstream double chỉ chứng minh routing/security.
@@ -271,13 +326,212 @@ tự giả price/expiry/identities hoặc tắt clearance gate.
 V-CLOSE-02 và public Lab-order acceptance có thể thực hiện ngay, độc lập với handoff này.
 Không làm lại Lab authority/inbox hoặc Clinical/Lab recovery proof đã merge.
 
-## 7. Evidence điền sau triển khai
+## 7. Evidence refresh — 2026-10-16
+
+Source SHA cho evidence owner L1–L4 (L3 còn các gaps ghi ở mục 5): `8bf1be00171b9849d38603fc9542cbf93956a3c5` (nhánh
+`feat/billing-outpatient-discovery-publication`, dựa trên `master` đã có PR #396 — bao gồm cả
+phần V23 payload fence do một thành viên khác tiếp tục hoàn thiện trên cùng nhánh). Migration
+`V22__outpatient_publication_cohort.sql` (cohort + fence) và `V23__outpatient_publication_payload_fence.sql`
+(kiểm nội dung payload đúng thực tế persisted, không chỉ account/event-type); `V1`–`V21` không đổi.
+Flags dùng khi test: `mediflow.billing.ledger.enabled=true`,
+`mediflow.billing.payment-request-discovery.enabled=true`,
+`mediflow.billing.outpatient-publication.enabled=true`,
+`mediflow.billing.outpatient-publication.purposes=EXAM,LAB_TEST,PRESCRIPTION`,
+`mediflow.billing.outpatient-publication.acceptance-reference=<non-blank>`,
+`mediflow.features.outpatient-mvp.enabled=true`. Mặc định cả hai flags publication/discovery
+vẫn `false` — hành vi hiện tại không đổi khi chưa bật.
 
 | Gate | Source SHA / command / counts / IDs-hashes / kết quả |
 |---|---|
-| L1 discovery | Chưa chạy — chưa implement |
-| L2 migration/cohort | Chưa chạy — chưa implement |
-| L3 Rabbit/recovery | Chưa chạy — chưa implement |
-| L4 full regression/delivery | Chưa chạy — chưa implement |
-| G1 Gateway + actual Billing | Chưa chạy — chưa implement |
-| V-CLOSE-03 consumer acceptance | Chưa chạy — chờ producer/Gateway |
+| L1 discovery | `mvn -pl backend/billing-service -am test` — nằm trong 1007/1007 pass (0 fail/error/skip, xem L4). Endpoint `GET /api/v1/billing/payment-requests/by-source`. Golden response thật (ADMIN token) lưu ở `src/test/resources/contracts/payment-request-discovery-v1/{exam,lab,prescription,not-found}.json`; ví dụ `.http` ở `backend/billing-service/payment-request-discovery.http`. Request mẫu đã nghiệm thu: EXAM `paymentRequestId=b7943beb-9a7e-4abc-9f68-04d43e210741`, LAB_TEST `67d05904-4eee-46f2-9008-1076249e6ddf`, PRESCRIPTION `94346737-ce0b-43fb-be01-3a4f18eca121`. |
+| L2 migration/cohort | `OutpatientPublicationMigrationPostgresTest` (10 test) + `OutpatientPublicationPostgresTest` (nay do V23 mở rộng thêm, bao gồm `mismatchedPayloadIsRejectedByWriterAndDirectSql` và `actualIssuanceAndPaymentPublishExactOriginalEvents`) — toàn bộ nằm trong 1007/1007. Fresh-migrate tới V23 và upgrade-từ-V21 đều giữ nguyên historical bytes/publication status; direct-SQL vi phạm fence (sửa `publication_enabled`, `payload`, `routing_key`, cohort row, hoặc insert với account/purpose/payload sai) đều bị `DataIntegrityViolationException`. |
+| L3 Rabbit/recovery | `OutpatientPublicationRabbitIntegrationTest` (6/6 pass, real PG+Rabbit+`BillingOutboxDispatcher`, không mock). Broker bytes SHA-256 khớp đúng bytes lưu `BILLING_EVENT_OUTBOX.payload` — ví dụ thật: EXAM `payment.completed` sha256 `525c365d364e1403c5180631e5a8dc1ff571feb2c91c5223df9403a5e5c442e5`, EXAM `financial.clearance.granted` sha256 `6e87afff8c45362ac04ac7b34c176ea48ad99e146b18b22ecb956f37061269a0`, PRESCRIPTION `invoice.created` sha256 `bbc8e5cc4e51c386aaab421a4d30c131f50fa34cf6bbbb70b487f759e0a77ff5` (shape khớp fixture có sẵn `contracts/ledger-v1/{payment-service,clearance-exam,invoice-prescription}.json`). `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` (4/4 pass, real PG+Rabbit): unroutable→retry→quarantine, admin replay chỉ-eligible-quarantined-row (publish lại đúng một lần, lần 2 bị 404), expired-lease/stale-owner reclaim đúng một lần, same-timestamp same-account ordering với quarantined predecessor không bị skip. `OutpatientPublicationProcessRecoveryIT` qua `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: 1/1 pass (kill JVM thật sau broker confirm, trước commit `published_at`; restart cùng jar resume đúng eventId/bytes theo at-least-once; có redelivery sau crash, không republish sau khi `published_at` đã commit). Không IT nào bị Surefire chạy trùng (mặc định Surefire không khớp `*IT.java`). **Review PR #401 (Vinh) phát hiện 3 gap, 1 đã sửa** (xem mục 5): (1) `received()` helper chỉ buffer một message mỗi eventType — **đã sửa** thành FIFO queue mỗi eventType, `prescriptionOutpatient...TwoInstallments` nay kiểm cả hai `payment.completed` (750.00 rồi 1250.00) đúng thứ tự/bytes; (2) duplicate input với eventId mới cùng operation chưa có Rabbit-level proof — còn treo; (3) historical outpatient request issued trước khi bật flag vẫn HELD chưa có actual-broker proof (chỉ có DB-level ở L2) — còn treo. |
+| L4 full regression/delivery | `mvn -pl backend/billing-service -am test`: **1011/1011 pass, 0 fail/error/skip** (chạy lặp lại 2 lần, ổn định). `mvn -pl backend/billing-service -am -DskipTests package`: build thành công, jar `billing-service-0.0.1-SNAPSHOT.jar`. `mvn -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`: **1/1 pass** (yêu cầu Docker + Java 21; môi trường chạy thật, không skip). Không ghi token/PII; mọi ID ở trên là UUID nghiệp vụ (account/request/transaction/clearance/event), không phải thông tin bệnh nhân thật. |
+| G1 Gateway + actual Billing | Full Gateway suite **256 tests, 0 failures/errors/skips**, rerun với Docker. Actual EXAM source → public discovery/payment → PAID + Rabbit receipt/grant đã chạy; smoke exit 1 do Billing 404 thiếu body correlation (xác nhận direct Billing). G1 chưa đóng; chi tiết refresh Docker bên dưới. |
+| V-CLOSE-03 consumer acceptance | Chưa chạy — chờ G1 xong; Vinh tự chứng minh theo mục 6. |
+
+### Review/rerun PR #401 — 2026-10-16
+
+Reviewed Billing code `bea617db` integrated with master `07cc2ad0`; integration edits only
+resolve changelog and refresh handoff/plan claims. Java 21.0.11, Docker Desktop 29.8.0,
+PostgreSQL `postgres:16-alpine`, RabbitMQ `rabbitmq:3.13-alpine`.
+
+Command from repository root: `mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify`,
+exit **0**. Fresh Surefire Billing: **1007 tests, 0 failures/errors/skips**, including
+`OutpatientPublicationRabbitIntegrationTest` **6/6**. Package phase produced executable Billing
+JAR; Failsafe `OutpatientPublicationProcessRecoveryIT`: **1 test, 0 failures/errors/skips**.
+IT was not duplicated in Surefire. Log: `%TEMP%/pr401-billing-verify.log`; XML reports:
+`backend/billing-service/target/{surefire-reports,failsafe-reports}/`.
+
+Review: **GO for partial-evidence merge; NO-GO for closing L3/L4 in full**. The remaining L3
+cases above and L4 artifact checklist stay open. Owner hashes/IDs in section 7 are historical
+owner captures; fresh test rerun verifies byte equality but does not export a new full raw
+event/hash/ID bundle. G1, V-CLOSE-03 and deployment flags remain unchanged.
+
+### G1 Gateway working-tree evidence — Hoàng Anh, 2026-10-16
+
+Snapshot trước Docker; trạng thái actual smoke được thay bằng refresh Docker ở cuối file.
+
+**PARTIAL: implementation và routing/security regression đạt; actual Billing smoke chưa chạy.
+G1 vẫn OPEN.** Source baseline `da99a906ffd410f1ab8a9698b1103e8649ca7a38`, khớp
+`origin/master` sau `git fetch origin` trong lượt này. Evidence dùng baseline + uncommitted
+Gateway changes, không phải một commit/PR đã merge. Không push/merge trong lượt này.
+
+Đã đọc root/Gateway AGENTS, canonical `docs/ai/README.md`, `docs/plans/01`–`06`, security/API
+compatibility pointers và mục 3/G1. Đối chiếu live Billing files tại baseline:
+`web/PaymentRequestDiscoveryController.java` (GET, bốn single-value query, ADMIN/CASHIER),
+`infrastructure/config/SecurityConfig.java`, `infrastructure/security/JwtAuthFilter.java`
+(signed access + account UUID, không service/refresh/SYSTEM cho payment-requests),
+`web/LedgerPaymentController.java` và `application/dto/request/CompleteLedgerPaymentRequest.java`.
+Không thay DTO/contracts, Billing/source relationships hoặc code ngoài production Gateway.
+
+Production diff đúng một rule trong `RouteAuthorizationFilter`: exact GET
+`/api/v1/billing/payment-requests/by-source`, ADMIN/CASHIER. Existing POST
+`/api/v1/billing/payment-requests/{id}/payments` giữ nguyên. Query/correlation đi qua existing
+`lb://billing-service` route và JWT/correlation filters; không thêm parser, ID lookup hoặc
+query rewrite. Correlation UUID hợp lệ được giữ nguyên; thiếu/invalid correlation tiếp tục
+theo convention existing filter: cấp UUID mới.
+
+`BillingDiscoveryGatewayWebTest` dùng actual Gateway HTTP/JWT/filter chain + simple service
+discovery tới JDK HttpServer **downstream double**, không phải Billing thật. 22 cases:
+ADMIN/CASHIER, ba purposes; giữ raw query, Authorization, signed identity thay forged headers,
+correlation; missing/malformed/wrong-signature/expired JWT; tất cả forbidden human roles và
+SYSTEM; service/refresh kể cả service giả ADMIN/CASHIER; wrong POST/PUT/PATCH/DELETE/HEAD/OPTIONS;
+extra/trailing/nested/unknown GET paths. Mỗi denial assert forwarded count = 0. Missing/repeated/
+malformed/unknown query vẫn forward để Billing validate. Double trả 400 `INVALID_REQUEST`,
+404 `BILLING_PAYMENT_REQUEST_NOT_FOUND`, 503 `BILLING_LEDGER_UNAVAILABLE`: assert exact body,
+HTTP status và correlation giữ nguyên. Existing ADMIN/CASHIER payment POST giữ body/path/method.
+Đây chỉ là routing/security/pass-through evidence, không chứng minh Billing storage/business.
+
+Reproduce từ repository root trên Windows PowerShell, Maven 3.9.16 dùng Java **21.0.11**
+(`JAVA_HOME=C:\Program Files\Java\jdk-21.0.11`; `java` trên PATH riêng là 24 nên dùng Maven đã
+verify bằng `mvn -version`). Tests dùng test-only key trong annotation, random Gateway/downstream
+ports, `eureka.client.enabled=false`, `spring.cloud.gateway.discovery.locator.enabled=false`,
+`spring.cloud.discovery.client.simple.instances.billing-service[0].uri=http://127.0.0.1:<random>`.
+Không cần PG/Rabbit/Docker cho suite Gateway; không bật Billing/deployment flags.
+
+| Command | Fresh result |
+|---|---|
+| `node scripts/changelog.js --summary` | Sandbox EPERM khi spawn cmd; chạy lại ngoài sandbox: thiếu sqlite3. `node scripts/changelog.js --limit 5` chạy thành công; đối chiếu thêm `git log -5 --oneline`. |
+| `mvn -q -pl backend/gateway -am '-Dtest=BillingDiscoveryGatewayWebTest' '-Dsurefire.failIfNoSpecifiedTests=false' test` trước production rule | RED: 22 tests, 10 failures, 0 errors/skips. 8 cases thiếu rule GET, 2 cases test helper đọc body HEAD; đã sửa helper theo HTTP HEAD semantics. Lần gọi đầu thiếu quote Maven property trong PowerShell bị CLI parse error, không phải test run. |
+| `mvn -q -pl backend/gateway -am test` | Exit 0; Gateway **256 tests, 0 failures, 0 errors, 0 skips**, gồm discovery **22/22**. Parent/common reactor không có test reports; không cộng test lịch sử/Billing vào số này. |
+| Targeted command ở trên sau khi chỉnh payment test body mirror live DTO | Exit 0; **22 tests, 0 failures/errors/skips**. |
+| `git diff --check` | Exit 0. |
+
+Logs local (ignored): `backend/gateway/target/g1-gateway-full.log`,
+`backend/gateway/target/g1-discovery-final.log`, `backend/gateway/target/billing-discovery-red.log`
+(Bearer values đã redact); XML fresh ở `backend/gateway/target/surefire-reports/TEST-*.xml`.
+
+**Actual public discovery/payment: NOT RUN, không có source/request/account/transaction/
+clearance/event IDs hoặc hashes mới để báo cáo.** Không có listener trên cổng Gateway/Billing/
+business thông thường khi kiểm tra local; `docker` không có trong PATH và executable Docker
+Desktop mặc định không tồn tại. Chưa có endpoint/môi trường test hoặc approved fresh source tuple,
+catalog và account từ Lộc. Đã hỏi người dùng cung cấp thông tin phối hợp; chưa nhắn chat khác
+khi chưa có explicit authorization. Không dùng golden fixture UUIDs/historical IDs hay SQL để
+giả discovery, không bật deployment gates để thay nghiệm thu.
+
+Lộc cần giao môi trường isolated, flags/profile đang chạy (ledger/discovery, issuer theo purpose,
+publication/cohort/dispatcher khi nghiệm thu grant), catalog/priceCode thực và **request mới đủ
+điều kiện** từ actual producer: `purpose/sourceId/patientId/careEpisodeId`, cách login ADMIN/CASHIER.
+Không suy ID hoặc tự cấu hình giá/expiry. Bộ request chuẩn bị tại
+`backend/gateway/billing-discovery.http`: public ADMIN/CASHIER GET → dùng duy nhất request ID/
+currency/remainingAmount từ response để POST payment → GET lại cùng tuple; giữ operation key
+khi retry cùng payment. Điền biến privately, không commit token/PII. Nếu async chưa issue, chỉ
+bounded retry GET 404; 503 là unavailable, không coi là không có phí.
+
+Khi chạy được, ghi cấu hình thực, source/request/account/transaction/clearance IDs, correlation,
+HTTP/error/status trước/sau thanh toán và reference raw broker bytes do Lộc cung cấp vào đây.
+Chỉ sau actual smoke mới tick dòng cuối G1. Consumer V-CLOSE-03, public Lab-order/Core fix,
+Lộc L3/L4 và toàn MVP không được đóng bởi bộ Gateway tests này.
+
+### G1 actual Billing / Docker refresh — 2026-10-16, 23:38 Asia/Bangkok
+
+**Actual EXAM happy path PASS; tổng smoke FAIL với 1 contract failure, 0 skipped. G1 OPEN.**
+Người dùng đã chuẩn bị Docker và yêu cầu chạy test. Source vẫn
+`da99a906ffd410f1ab8a9698b1103e8649ca7a38` + Gateway working-tree diff; production rule blob
+`f16c6958dfe7ec3c3400cc81471f2b4758a20653`. Không sửa Billing/Clinical/shared config,
+không SQL tạo hoặc tìm charge/request/payment, không fixture source event/grant. Root Compose
+không dùng để khởi động business apps vì còn topology legacy; test chạy JAR mới build.
+
+**Cấu hình isolated:** Docker Desktop 4.48.0, Engine 28.5.1; Java 21.0.11 / Maven 3.9.16.
+Hai container riêng, bind loopback: `mediflow-g1-postgres` (`postgres:16-alpine`, image SHA-256
+`721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea`, port 15432),
+`mediflow-g1-rabbit` (`rabbitmq:3.13-management-alpine`, image SHA-256
+`606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281`, AMQP 15672,
+management 15673). Fresh databases organization/patient/clinical/billing tạo bằng `createdb`,
+schema do actual Flyway chạy. SQL không được dùng cho business data/discovery.
+
+Core 18089, Clinical 18082, Billing 18086, Gateway 18080. `eureka.client.enabled=false`;
+simple discovery ánh xạ các service names tới các JAR thật trên loopback, Gateway vẫn dùng
+existing `lb://billing-service`. Đây không phải Eureka registry acceptance. Bootstrap ADMIN
+signed token chỉ dùng tạo staff/accounts qua API theo packaged acceptance hiện có; ADMIN/CASHIER/
+DOCTOR dùng cho smoke đều login thật qua Gateway → Core. Test credentials chỉ trong harness,
+không xuất tokens vào evidence/handoff.
+
+Clinical dùng profile `outpatient-mvp`, care-finance-v2=true cho EXAM API/clearance, admission
+referral=false theo profile. Billing bật ledger/discovery/EXAM issuer, outpatient-mvp=true,
+publication=true **chỉ EXAM**, acceptance-reference=`G1-local-da99a906`, outbox dispatcher mặc định
+true; deferred và các issuer khác không bật. Catalog test lấy đúng owner fixture trong
+`OutpatientPublicationRabbitIntegrationTest`: `OUTPATIENT_EXAM`, description `Kham ngoai tru`,
+unitAmount `100000.00`, không dùng V0 default-exam-fee để suy giá V1. Chỉ cấu hình process test
+isolated, không thay deployment gates/config.
+
+| Command | Kết quả fresh |
+|---|---|
+| `mvn -q -pl backend/core-service,backend/clinical-service,backend/billing-service,backend/gateway,backend/eureka-server -am -DskipTests package` | Exit 0; đóng gói JAR từ source hiện tại. Đây là package với tests skipped, không tính là test pass. Eureka JAR không dùng trong slice này. |
+| `mvn -q -pl backend/gateway -am test` | Exit 0, **256 tests, 0 failures/errors/skips**, discovery 22/22. Log `backend/gateway/target/g1-gateway-docker-refresh.log`. |
+| `pwsh -File backend/gateway/src/test/scripts/g1-live-smoke.ps1 -Phase Start` | Bốn actual apps healthy. Docker named pipe cần chạy tool ngoài sandbox; thêm Docker resources/bin vào PATH cho credential helper. |
+| `pwsh -File backend/gateway/src/test/scripts/g1-live-smoke.ps1 -Phase Smoke` | Final run exit **1** vì **1 body-correlation contract failure**. **23 captured non-login HTTP responses** có đúng status/header correlation; **22/23** có đúng body correlation; **17 independent business/error/broker assertions PASS**, 0 skipped. Ba actual logins + direct Billing diagnostic + bounded discovery polling không cộng vào 23. |
+
+Harness nằm hoàn toàn trong Gateway; mỗi Smoke tạo source mới, không purge/reset data. Hai lần
+đầu sửa lỗi harness (POST create trả 201; collector phải match clearance theo appointment/episode,
+không yêu cầu clearance chứa paymentRequestId). Không tính các lượt dừng sớm thành nghiệm thu.
+Lỗi Billing 404 được giữ là failure, harness tiếp tục kiểm tra payment/503 độc lập rồi exit 1.
+
+**Final actual source và result:** Clinical API tạo appointment rồi check-in
+`AWAITING_PAYMENT`, actual durable event tới Billing issuer. Source/episode/appointment
+`195939d9-3efd-4653-82ab-21359437020a`; patient `10e073bd-3696-4a79-8514-443f5a5f1bcd`;
+department `e981f3a8-2374-4f59-9b3e-d2f2e1e90e99`. ADMIN và CASHIER public GET cùng trả request
+`bffc5472-26f5-497d-bdc8-06a812c6a724`, account `6c866957-1181-4357-8138-7aea6f2454a9`,
+invoice `3b2bd788-92a4-4baf-a30a-4400bf122c14`, PENDING/remaining 100000.00 VND.
+POST CASHIER trả transaction `0015f8d0-31da-46d6-90c9-a5bd852b494d`, COMPLETED; retry cùng
+idempotency key trả cùng transaction. GET readback: PAID, paidAmount 100000.00, remainingAmount 0.
+Payment correlation `ca754f06-79cd-4976-8181-d9ff8ef17a84`.
+
+Observer queue riêng `g1-evidence` bound exchange `mediflow.events`, không inject grant và không
+đụng consumer queue. Nhận actual dispatcher events cho exact request/target:
+
+| Event | ID / SHA-256 raw bytes nhận từ Rabbit |
+|---|---|
+| `payment.completed` | `3e81f718-8be4-42c7-932f-fa7ad3b12701` / `d21b1312d68c0670dceecb1f0ade4a26612be0f63f99a6b0868c90b6f7127632` |
+| `financial.clearance.granted` | `7bf23b50-ad7a-458e-80ab-f2741302ef4b` / `e4b24e262b505ff7c4cf609f9b2821fa6bc98295edcf7a1d86ac209a5ca32455`; clearance `7be20610-839f-4d3e-bd28-7cfe4d2f466e` |
+
+Đây là actual broker receipt proof trong slice G1; không claim stored-outbox-byte equality,
+consumer care effects, full L3 hoặc V-CLOSE-03. LAB_TEST/PRESCRIPTION actual smoke chưa chạy.
+
+Validation malformed UUID: 400 `INVALID_REQUEST`, correlation giữ. Missing token 401,
+DOCTOR 403, refresh 401, SYSTEM/service 403. Sau payment dừng riêng PostgreSQL test:
+GET trả **503 `BILLING_LEDGER_UNAVAILABLE`** với header/body correlation
+`639c0691-3945-47ba-91a8-819436eb625f`; restart PG → cùng request vẫn PAID.
+
+**HANDOFF cho Lộc — lỗi 404 correlation:** gửi wrong patient expectation qua Gateway với
+correlation `28ca4af3-feb4-4bae-bd91-18ede2c6a3b9`: HTTP 404,
+`error.code=BILLING_PAYMENT_REQUEST_NOT_FOUND`, header Gateway giữ đúng correlation nhưng
+`body.correlationId=null`. Gọi trực tiếp Billing cùng query/token/header: vẫn 404, cùng error,
+body correlation null, không có response correlation header. Live
+`GlobalExceptionHandler.notFound()` gọi `build()` → `ApiResponse.fail(error)` không truyền
+request correlation. Gateway không sửa response body để che lỗi downstream.
+Lộc cần sửa trong Billing và thêm regression cho not-found discovery; acceptance: direct và
+Gateway 404 giữ supplied UUID ở response header/body, không thay error/status hoặc reveal wrong
+patient result. Sau fix chạy lại actual smoke, không tạo lại route hoặc relax Gateway guards.
+
+Evidence local ignored ở `backend/gateway/target/g1-live/`: `result.json`, `http-evidence.json`,
+`direct-billing-404.json`, `broker-evidence.json`, `<eventId>.json` raw bytes và process logs;
+summary log `backend/gateway/target/g1-live-smoke.log`. Không lưu login tokens trong evidence.
+Để tái lập từ containers fresh, thêm `C:\Program Files\Docker\Docker\resources\bin` vào PATH,
+chạy `docker run -d --name mediflow-g1-postgres -e POSTGRES_PASSWORD=g1-local-test -p 127.0.0.1:15432:5432 postgres:16-alpine`
+và `docker run -d --name mediflow-g1-rabbit -p 127.0.0.1:15672:5672 -p 127.0.0.1:15673:15672 rabbitmq:3.13-management-alpine`,
+đợi infra ready rồi package/Start/Smoke như trên. `Start` tạo fresh DB và observer queue;
+`Smoke` rerun được trên apps đang chạy với source mới; `Stop` dừng đúng các JAR test, không xóa DB.
+Không xóa containers/volumes hiện có để chạy lại. G1 chưa tick đóng, không push/merge hoặc kết luận MVP.
+Sau lượt chạy đã dừng bốn JAR và hai container test riêng; dữ liệu và artifacts giữ nguyên.

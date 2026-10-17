@@ -87,7 +87,7 @@ public class LedgerPaymentService implements ProcessLedgerPaymentUseCase {
         repository.save(payment, request, actorAccountId);
         if (classification != PaymentClassification.ADMISSION_DEPOSIT) repository.allocate(payment);
         var target = context.target();
-        events.appendHeld(account.getAccountId(), new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed",
+        events.appendForOutpatientRequest(account.getAccountId(), requestId, new LedgerIntegrationEvent(UUID.randomUUID(), "payment.completed",
                 1, now, correlationId, "billing-service", new PaymentCompletedPayload(payment.getTransactionId(),
                 request.getInvoiceId(), requestId, account.getAccountId(), account.getPatientId(), account.getDepartmentId(),
                 account.getCareEpisodeType().name(), account.getCareEpisodeId(), classification.name(), payment.getAmount(),
@@ -100,7 +100,7 @@ public class LedgerPaymentService implements ProcessLedgerPaymentUseCase {
                     target.admissionId(), target.surgeryCaseId(), request.getRequestedAmount(), request.getCurrency(),
                     payment.getPaymentMethod(), false, request.getExpiresAt(), now);
             clearance = repository.saveClearance(clearance);
-            events.appendHeld(account.getAccountId(), new LedgerIntegrationEvent(UUID.randomUUID(), "financial.clearance.granted",
+            events.appendForOutpatientRequest(account.getAccountId(), requestId, new LedgerIntegrationEvent(UUID.randomUUID(), "financial.clearance.granted",
                     1, now, correlationId, "billing-service", new ClearanceGrantedPayload(clearance.getClearanceId(),
                     clearance.getInvoiceId(), clearance.getAccountId(), clearance.getPatientId(), clearance.getCareEpisodeType().name(),
                     clearance.getCareEpisodeId(), clearance.getPurpose().name(), clearance.getAppointmentId(), clearance.getRecordId(),

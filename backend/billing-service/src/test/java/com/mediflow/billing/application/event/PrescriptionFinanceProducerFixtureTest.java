@@ -35,7 +35,8 @@ class PrescriptionFinanceProducerFixtureTest {
         when(sources.lockRecordedSource(c)).thenReturn(Optional.empty()); when(sources.openAndLockExactAccount(c)).thenReturn(accountId);
         when(sources.saveChargeAndRequest(eq(c), eq(accountId), any(), eq(now))).thenReturn(issued);
         new PrescriptionChargeService(sources, events, clock, mock(PrescriptionPricePolicyPort.class)).issue(c);
-        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(accountId), capture.capture());
+        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        verify(events).appendForOutpatientRequest(eq(accountId), eq(requestId), capture.capture());
         compare(capture.getValue(), notice, false);
         clearInvocations(events);
         var account = BillingAccount.restore(accountId, c.patientId(), c.departmentId(), CareEpisodeType.OUTPATIENT_VISIT,
@@ -58,7 +59,8 @@ class PrescriptionFinanceProducerFixtureTest {
         verify(repository, never()).saveClearance(any());
         when(repository.lockRequest(requestId)).thenReturn(new LedgerPaymentRepositoryPort.PaymentContext(account, request, target, new BigDecimal("750.00")));
         payments.complete(requestId, new CompleteLedgerPaymentRequest("last", new BigDecimal("1250.00"), "VND", PaymentMethod.CASH, null), UUID.randomUUID(), c.correlationId());
-        var paid = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events, times(3)).appendHeld(eq(accountId), paid.capture());
+        var paid = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        verify(events, times(3)).appendForOutpatientRequest(eq(accountId), eq(requestId), paid.capture());
         compare(paid.getAllValues().get(0), fixture("payment-prescription-first"), true);
         compare(paid.getAllValues().get(1), fixture("payment-prescription-last"), true);
         compare(paid.getAllValues().get(2), grantFixture, false);

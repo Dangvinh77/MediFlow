@@ -1,0 +1,31 @@
+### Billing V1 payment-request discovery — implemented, opt-in, NOT live by default
+### Requires MEDIFLOW_BILLING_LEDGER_ENABLED=true and MEDIFLOW_BILLING_PAYMENT_REQUEST_DISCOVERY_ENABLED=true.
+### ADMIN/CASHIER signed access token only (no SYSTEM/service/refresh/PATIENT). GET only, no side effect.
+### sourceId is appointmentId for EXAM, labId for LAB_TEST, prescriptionId for PRESCRIPTION.
+### All four query values must match the persisted Billing relationship exactly; none grant access alone.
+### Golden captured responses for these three shapes + a not-found error live at
+### src/test/resources/contracts/payment-request-discovery-v1/{exam,lab,prescription,not-found}.json.
+
+@host = http://localhost:8080
+# @token = paste-admin-or-cashier-access-token-here
+
+### EXAM — appointmentId doubles as careEpisodeId for this purpose.
+GET {{host}}/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=00000000-0000-4000-8000-000000000002&patientId=00000000-0000-4000-8000-000000000003&careEpisodeId=00000000-0000-4000-8000-000000000002
+Authorization: Bearer {{token}}
+X-Correlation-Id: discovery-exam-example
+
+### LAB_TEST — sourceId is the labId; careEpisodeId is a separate outpatient-visit identity.
+GET {{host}}/api/v1/billing/payment-requests/by-source?purpose=LAB_TEST&sourceId=00000000-0000-4000-8000-000000000002&patientId=00000000-0000-4000-8000-000000000003&careEpisodeId=00000000-0000-4000-8000-000000000006
+Authorization: Bearer {{token}}
+X-Correlation-Id: discovery-lab-example
+
+### PRESCRIPTION — sourceId is the prescriptionId.
+GET {{host}}/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=10000000-0000-4000-8000-000000000001&patientId=10000000-0000-4000-8000-000000000002&careEpisodeId=10000000-0000-4000-8000-000000000004
+Authorization: Bearer {{token}}
+X-Correlation-Id: discovery-prescription-example
+
+### Not yet issued / wrong patient-episode expectation -> 404 BILLING_PAYMENT_REQUEST_NOT_FOUND
+### (same shape either way; never reveals a different patient's request). Bounded retry is safe.
+GET {{host}}/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=01b75190-2efb-472c-bbaa-dbc41d049db9&patientId=00000000-0000-0000-0000-000000000000&careEpisodeId=00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+X-Correlation-Id: discovery-not-found-example

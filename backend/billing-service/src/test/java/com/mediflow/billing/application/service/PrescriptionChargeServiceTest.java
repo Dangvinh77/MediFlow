@@ -37,7 +37,8 @@ class PrescriptionChargeServiceTest {
         assertThat(charge.getValue().getSourceId()).isEqualTo(c.prescriptionId());
         assertThat(charge.getValue().getQuantity()).isEqualByComparingTo("1");
         assertThat(charge.getValue().getGrossAmount()).isEqualByComparingTo("2000");
-        var event = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(account), event.capture());
+        var event = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        verify(events).appendForOutpatientRequest(eq(account), eq(issued.paymentRequestId()), event.capture());
         var payload = (LedgerIntegrationEvent.PrescriptionPaymentRequestPayload) event.getValue().payload();
         assertThat(payload.prescriptionId()).isEqualTo(c.prescriptionId());
         assertThat(payload.invoiceId()).isEqualTo(issued.invoiceId()).isNotEqualTo(issued.paymentRequestId());

@@ -22,6 +22,31 @@
   DTO đọc đơn hiện chưa xuất metadata V1; không suy diễn fields hoặc tự mở public mutation.
   Yêu cầu shared owner và acceptance được ghi tiếp trong cùng handoff Huy.
 
+## Vinh — Lab read/async regression, 2026-10-16
+
+**IMPLEMENT**, actor Vinh; source paths chỉ `src/features/lab/components/LabDetail.tsx` và
+`LabDetail.test.tsx`. Không đụng shared frame/config, foreign feature/route hoặc backend production.
+Task: một phần **FE-VINH-MVP-01/04 / FE-LAB-04**, theo component lifecycle/permission coverage.
+
+- Cô lập detail state theo testId: phản hồi start của xét nghiệm cũ sau khi chuyển sang xét nghiệm
+  khác không còn làm mất detail hiện tại và kẹt màn hình loading. Tái hiện bằng failing regression
+  trước fix; remount detail workspace theo identity để callback cũ chỉ thuộc instance đã unmount.
+- Thêm 15 component tests: loading, retry chủ động/correlation, 401/403/404, stale read/401,
+  stale mutation, đổi hồ sơ xóa cancel draft, quyền NURSE/DOCTOR/LAB_TECH/ADMIN, terminal states,
+  payment/lifecycle riêng biệt và giữ nguyên textual results. Mock API/session; không paid E2E.
+- Backend dependencies đã refresh: Lộc L1/L2 đã có; Lộc L3/L4 và Hoàng Anh G1 còn mở tại
+  [handoff backend](../../docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
+  Không mở lại Lab-order/Rx producer implementation; FE-02/03 V1 controls vẫn chờ runtime acceptance.
+- Verification final: `pnpm typecheck`, `pnpm lint`, `pnpm build` đều exit 0;
+  `pnpm test -- --maxWorkers=2`: **277/277 tests, 35 files**, không failures/skips;
+  focused Lab **19/19** gồm 15 component + 4 API tests. Red regression trước fix: 14 pass,
+  1 fail do old start response làm mất current detail; sau fix đạt.
+  Full suite có một jsdom warning `Not implemented: navigation to another Document`, exit 0.
+  Logs ở `%TEMP%/vinh-frontend-closeout-{tests,typecheck,lint,build}.log` và
+  `%TEMP%/vinh-lab-detail-{red,green}.log`. Chưa chạy signed-role browser/Gateway smoke;
+  FE-VINH-MVP-01/04 và FE-LAB-04 vẫn IN PROGRESS, không đánh dấu toàn task DONE.
+
+
 ## Huy — Pharmacy/Report theo mẫu, checkpoint trước 2026-10-16
 
 Owner: Huy (`LQHuy0210`). Scope IMPLEMENT: Pharmacy/Report features và tài liệu tương ứng;

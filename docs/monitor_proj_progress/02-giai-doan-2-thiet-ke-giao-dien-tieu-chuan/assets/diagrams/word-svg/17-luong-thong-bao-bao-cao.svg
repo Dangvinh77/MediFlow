@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1285.7089999999998 562.4509" width="1285.7089999999998" height="562.4509" style="background:#FFFFFF">
+<style>text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+
+
+
+
+
+
+
+
+
+
+
+
+  }</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="#0F766E" stroke="#0F766E" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="PUB" data-to="MQ" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="event + correlationId" points="208.96299999999997,301.78533333333337 394.841,301.78533333333337" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="NDEDUP" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="528.675,301.78533333333337 540.675,301.78533333333337 540.675,109.2155 552.675,109.2155" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="MQ" data-to="RDEDUP" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="528.675,301.78533333333337 540.675,301.78533333333337 540.675,453.2354 552.675,453.2354" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NDEDUP" data-to="NOTICE" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa" points="694.7008333333333,80.81033333333335 783.672,80.81033333333335 783.672,74.54049999999995 868.9390000000001,74.54049999999995" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NOTICE" data-to="SEND" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1009.442,74.54049999999995 1022.7730000000001,74.54049999999995 1022.7730000000001,254.4007666666667 1087.045,254.4007666666667" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="SEND" data-to="RETRY" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1087.045,267.8507666666667 1068.9850000000001,267.8507666666667 1068.9850000000001,283.9001333333334 1068.9850000000001,283.9001333333334 1068.9850000000001,262.06606666666676 915.1601,262.06606666666676" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="NDEDUP" data-to="IGNORE1" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Rồi" points="694.7008333333333,137.6206666666667 790.5140000000001,137.6206666666667 790.5140000000001,143.89050000000003 868.9390000000001,143.89050000000003" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RETRY" data-to="HISTORY" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="881.3703,228.27626666666674 960.0550000000001,228.27626666666674 960.0550000000001,204.66040000000004 1010.7730000000001,204.66040000000004 1010.7730000000001,183.0507666666667 1034.7730000000001,183.0507666666667" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RETRY" data-to="SEND" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Không, còn lượt" points="915.1601,295.8558666666667 960.0550000000001,295.8558666666667 960.0550000000001,312.43533333333335 1080.9850000000001,312.43533333333335 1080.9850000000001,281.30076666666673 1087.045,281.30076666666673" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RETRY" data-to="DLQ" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Vượt giới hạn" points="881.3703,329.6456666666667 960.0550000000001,329.6456666666667 960.0550000000001,360.1399333333334 1087.045,360.1399333333334" fill="none" stroke="#2563EB" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RDEDUP" data-to="READMODEL" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa" points="694.7008333333333,481.6405666666667 751.106,481.6405666666667 751.106,487.91040000000004 832.952,487.91040000000004" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="READMODEL" data-to="DASH" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1042.368,487.91040000000004 1087.12,487.91040000000004" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RDEDUP" data-to="IGNORE2" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Rồi" points="694.7008333333333,424.83023333333335 751.106,424.83023333333335 751.106,418.5604000000001 832.952,418.5604000000001" fill="none" stroke="#2563EB" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="PUB" data-to="MQ" data-label="event + correlationId">
+  <rect x="244.96299999999997" y="285.78533333333337" width="113.87800000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="301.902" y="300.93533333333335" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">event + correlationId</text>
+</g>
+<g class="edge-label" data-from="NDEDUP" data-to="NOTICE" data-label="Chưa">
+  <rect x="791.672" y="58.54049999999996" width="42.598" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="812.971" y="73.69049999999996" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Chưa</text>
+</g>
+<g class="edge-label" data-from="NDEDUP" data-to="IGNORE1" data-label="Rồi">
+  <rect x="798.5140000000001" y="127.89050000000003" width="33.094" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="815.0610000000001" y="143.04050000000004" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Rồi</text>
+</g>
+<g class="edge-label" data-from="RETRY" data-to="HISTORY" data-label="Có">
+  <rect x="968.0550000000001" y="188.66040000000004" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="983.4140000000001" y="203.81040000000004" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Có</text>
+</g>
+<g class="edge-label" data-from="RETRY" data-to="SEND" data-label="Không, còn lượt">
+  <rect x="968.0550000000001" y="296.43533333333335" width="88.93000000000002" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="1012.5200000000001" y="311.5853333333333" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Không, còn lượt</text>
+</g>
+<g class="edge-label" data-from="RETRY" data-to="DLQ" data-label="Vượt giới hạn">
+  <rect x="968.0550000000001" y="344.1399333333334" width="77.05000000000001" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="1006.58" y="359.28993333333335" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Vượt giới hạn</text>
+</g>
+<g class="edge-label" data-from="RDEDUP" data-to="READMODEL" data-label="Chưa">
+  <rect x="759.106" y="471.91040000000004" width="42.598" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="780.405" y="487.0604" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Chưa</text>
+</g>
+<g class="edge-label" data-from="RDEDUP" data-to="IGNORE2" data-label="Rồi">
+  <rect x="759.106" y="402.5604000000001" width="33.094" height="30.3" rx="2" ry="2" fill="#FFFFFF" stroke="#e2e3e5" stroke-width="1" />
+  <text x="775.653" y="417.71040000000005" text-anchor="middle" font-size="11" font-weight="400" fill="#64748B" dy="3.8499999999999996">Rồi</text>
+</g>
+<g class="node" data-id="PUB" data-label="Microservice phát event" data-shape="rectangle">
+  <rect x="24" y="283.3353333333334" width="184.96299999999997" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="116.48149999999998" y="301.78533333333337" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Microservice phát event</text>
+</g>
+<g class="node" data-id="MQ" data-label="RabbitMQ
+mediflow.events" data-shape="cylinder">
+  <rect x="394.841" y="274.8853333333334" width="133.834" height="53.80000000000001" fill="#F0FDFA" stroke="none" />
+  <line x1="394.841" y1="274.8853333333334" x2="394.841" y2="328.6853333333334" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="528.675" y1="274.8853333333334" x2="528.675" y2="328.6853333333334" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="461.75800000000004" cy="328.6853333333334" rx="66.917" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="461.75800000000004" cy="274.8853333333334" rx="66.917" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="461.75800000000004" y="301.78533333333337" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="461.75800000000004" dy="-3.9000000000000012">RabbitMQ</tspan><tspan x="461.75800000000004" dy="16.900000000000002">mediflow.events</tspan></text>
+</g>
+<g class="node" data-id="NDEDUP" data-label="Notification
+event_id đã xử lý?" data-shape="diamond">
+  <polygon points="637.8905,24 723.106,109.2155 637.8905,194.431 552.675,109.2155" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="637.8905" y="109.2155" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="637.8905" dy="-3.9000000000000012">Notification</tspan><tspan x="637.8905" dy="16.900000000000002">event_id đã xử lý?</tspan></text>
+</g>
+<g class="node" data-id="RDEDUP" data-label="Report
+event_id đã xử lý?" data-shape="diamond">
+  <polygon points="637.8905,368.0199 723.106,453.2354 637.8905,538.4509 552.675,453.2354" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="637.8905" y="453.2354" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="637.8905" dy="-3.9000000000000012">Report</tspan><tspan x="637.8905" dy="16.900000000000002">event_id đã xử lý?</tspan></text>
+</g>
+<g class="node" data-id="NOTICE" data-label="Tạo nội dung
+và chọn kênh gửi" data-shape="rectangle">
+  <rect x="868.9390000000001" y="47.640499999999975" width="140.503" height="53.800000000000004" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="939.1905" y="74.54049999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="939.1905" dy="-3.9000000000000012">Tạo nội dung</tspan><tspan x="939.1905" dy="16.900000000000002">và chọn kênh gửi</tspan></text>
+</g>
+<g class="node" data-id="SEND" data-label="Gửi SMS, Email
+hoặc In-App" data-shape="rectangle">
+  <rect x="1087.045" y="240.9507666666667" width="128.647" height="53.800000000000004" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1151.3685" y="267.8507666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1151.3685" dy="-3.9000000000000012">Gửi SMS, Email</tspan><tspan x="1151.3685" dy="16.900000000000002">hoặc In-App</tspan></text>
+</g>
+<g class="node" data-id="HISTORY" data-label="NOTIFICATION
+Lịch sử gửi" data-shape="cylinder">
+  <rect x="1034.7730000000001" y="156.1507666666667" width="130.86999999999998" height="53.80000000000001" fill="#F0FDFA" stroke="none" />
+  <line x1="1034.7730000000001" y1="156.1507666666667" x2="1034.7730000000001" y2="209.9507666666667" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1165.643" y1="156.1507666666667" x2="1165.643" y2="209.9507666666667" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1100.208" cy="209.9507666666667" rx="65.43499999999999" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1100.208" cy="156.1507666666667" rx="65.43499999999999" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1100.208" y="183.0507666666667" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="1100.208" dy="-3.9000000000000012">NOTIFICATION</tspan><tspan x="1100.208" dy="16.900000000000002">Lịch sử gửi</tspan></text>
+</g>
+<g class="node" data-id="READMODEL" data-label="Cập nhật read model
+theo ngày, tháng, khoa, thuốc" data-shape="rectangle">
+  <rect x="832.952" y="461.0104" width="209.41599999999994" height="53.800000000000004" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="937.66" y="487.9104" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A"><tspan x="937.66" dy="-3.9000000000000012">Cập nhật read model</tspan><tspan x="937.66" dy="16.900000000000002">theo ngày, tháng, khoa, thuốc</tspan></text>
+</g>
+<g class="node" data-id="DASH" data-label="Dashboard và báo cáo" data-shape="rectangle">
+  <rect x="1087.12" y="469.46040000000005" width="174.589" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1174.4144999999999" y="487.91040000000004" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Dashboard và báo cáo</text>
+</g>
+<g class="node" data-id="IGNORE1" data-label="Bỏ qua an toàn" data-shape="rectangle">
+  <rect x="868.9390000000001" y="125.44050000000001" width="127.16499999999999" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="932.5215000000001" y="143.89050000000003" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bỏ qua an toàn</text>
+</g>
+<g class="node" data-id="IGNORE2" data-label="Bỏ qua an toàn" data-shape="rectangle">
+  <rect x="832.952" y="400.1104" width="127.16499999999999" height="36.900000000000006" rx="0" ry="0" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="896.5345" y="418.5604" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Bỏ qua an toàn</text>
+</g>
+<g class="node" data-id="RETRY" data-label="Xử lý thành công?" data-shape="diamond">
+  <polygon points="847.5805,194.48646666666676 932.0550000000001,278.96096666666676 847.5805,363.4354666666668 763.106,278.96096666666676" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="847.5805" y="278.96096666666676" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Xử lý thành công?</text>
+</g>
+<g class="node" data-id="DLQ" data-label="Dead-letter queue" data-shape="cylinder">
+  <rect x="1087.045" y="341.6899333333334" width="145.69" height="36.900000000000006" fill="#F0FDFA" stroke="none" />
+  <line x1="1087.045" y1="341.6899333333334" x2="1087.045" y2="378.5899333333334" stroke="#0F766E" stroke-width="0.75" />
+  <line x1="1232.7350000000001" y1="341.6899333333334" x2="1232.7350000000001" y2="378.5899333333334" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1159.89" cy="378.5899333333334" rx="72.845" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <ellipse cx="1159.89" cy="341.6899333333334" rx="72.845" ry="7" fill="#F0FDFA" stroke="#0F766E" stroke-width="0.75" />
+  <text x="1159.89" y="360.1399333333334" text-anchor="middle" font-size="13" font-weight="500" fill="#0F172A" dy="4.55">Dead-letter queue</text>
+</g>
+</svg>

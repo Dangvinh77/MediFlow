@@ -52,7 +52,7 @@ class SurgeryCompletionPostgresTest {
         var planned=new SurgeryChargeDecoder(mapper).decode("surgery.case.created",Files.readAllBytes(Path.of(
                 "../surgery-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.case.created.admission.v1.json")));
         tx().executeWithoutResult(status->new SurgeryPlannedRequestService(new SurgeryPlannedRequestRepositoryAdapter(jdbc),prices,
-                (id,event)->{},Clock.systemUTC()).issue(planned));
+                new HeldOnlyLedgerEventPort((id,event)->{}),Clock.systemUTC()).issue(planned));
     }
     private TransactionTemplate tx(){var tx=new TransactionTemplate(new DataSourceTransactionManager(source));tx.setTimeout(5);return tx;}
     private ProcessedEventPort events(){return new ProcessedEventPort(){
@@ -62,7 +62,7 @@ class SurgeryCompletionPostgresTest {
     private void capture(byte[] bytes) {
         var command=decoder.decode("surgery.completed",bytes);
         tx().executeWithoutResult(status->new SurgeryCompletionProofService(new SurgeryCompletionStoreAdapter(jdbc),
-                new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),prices,(id,event)->{}),Clock.systemUTC()).capture(command));
+                new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),prices,new HeldOnlyLedgerEventPort((id,event)->{})),Clock.systemUTC()).capture(command));
     }
     private byte[] fixture()throws Exception{return SurgeryCompletionDecoderTest.fixture("admission");}
     private byte[] changed(String field,String value)throws Exception {
@@ -113,12 +113,12 @@ class SurgeryCompletionPostgresTest {
         capture(fixture());jdbc.update("UPDATE billing_account SET status='CHARGE_CLOSED',charge_closed_at=now()");
         var command=decoder.decode("surgery.completed",fixture());
         tx().executeWithoutResult(status->new SurgeryCompletionProofService(new SurgeryCompletionStoreAdapter(jdbc),
-                new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),(code,at)->{throw new IllegalStateException("price should not be read");},(id,event)->{}),Clock.systemUTC()).capture(command));
+                new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),(code,at)->{throw new IllegalStateException("price should not be read");},new HeldOnlyLedgerEventPort((id,event)->{})),Clock.systemUTC()).capture(command));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM surgery_completion_delivery",Integer.class)).isOne();
     }
     @Test void noCanonicalHistoricalProofMeansNoRetroactiveUpgradeAfterClose()throws Exception {
         var command=decoder.decode("surgery.completed",fixture());
-        tx().executeWithoutResult(status->new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),prices,(id,event)->{}).onSurgeryCompleted(command.event()));
+        tx().executeWithoutResult(status->new SurgeryChargeService(events(),new SurgeryChargeRepositoryAdapter(jdbc),prices,new HeldOnlyLedgerEventPort((id,event)->{})).onSurgeryCompleted(command.event()));
         assertThatThrownBy(()->capture(fixture())).isInstanceOf(BillingRuleException.class);
         var root=(ObjectNode)mapper.readTree(fixture());root.put("eventId",UUID.randomUUID().toString());
         assertThatThrownBy(()->capture(mapper.writeValueAsBytes(root))).isInstanceOf(BillingRuleException.class);

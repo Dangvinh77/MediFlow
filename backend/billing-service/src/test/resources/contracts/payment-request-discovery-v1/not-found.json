@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "BILLING_PAYMENT_REQUEST_NOT_FOUND",
+    "message": "Payment request not found for EXAM source 01b75190-2efb-472c-bbaa-dbc41d049db9",
+    "details": []
+  },
+  "timestamp": "2026-10-16T09:46:23.963154700Z",
+  "correlationId": null
+}
