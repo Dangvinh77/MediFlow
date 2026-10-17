@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -41,6 +41,8 @@ function getRequestError(cause: unknown): RequestError {
 
 export function AppointmentTable() {
   const router = useRouter();
+  const requestSequence = useRef(0);
+  const mounted = useRef(false);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const canViewDetail = role !== null && detailRoles.includes(role);
   const canCreate = role !== null && createRoles.includes(role);
@@ -60,54 +62,41 @@ export function AppointmentTable() {
   });
 
   const loadAppointments = useCallback(async (page: number, filters: AppointmentSearchParams) => {
+    const requestId = ++requestSequence.current;
     setLastRequest({ page, filters });
     setLoading(true);
     setError(null);
     try {
       const result = await appointmentApi.search({ ...filters, page });
+      if (!mounted.current || requestId !== requestSequence.current) return;
       setAppointments(result.content);
       setPageNumber(result.number);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
     } catch (cause: unknown) {
+      if (!mounted.current || requestId !== requestSequence.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
       setError(getRequestError(cause));
     } finally {
-      setLoading(false);
+      if (mounted.current && requestId === requestSequence.current) setLoading(false);
     }
   }, [router]);
 
   useEffect(() => {
     let active = true;
-    const initialRequest: AppointmentRequest = { page: 0, filters: {} };
-
-    appointmentApi.search({ ...initialRequest.filters, page: initialRequest.page })
-      .then((result) => {
-        if (!active) return;
-        setAppointments(result.content);
-        setPageNumber(result.number);
-        setTotalPages(result.totalPages);
-        setTotalElements(result.totalElements);
-      })
-      .catch((cause: unknown) => {
-        if (!active) return;
-        if (cause instanceof ApiRequestError && cause.status === 401) {
-          router.replace("/login");
-          return;
-        }
-        setError(getRequestError(cause));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
+    mounted.current = true;
+    void Promise.resolve().then(() => {
+      if (active) void loadAppointments(0, {});
+    });
     return () => {
       active = false;
+      mounted.current = false;
+      requestSequence.current += 1;
     };
-  }, [router]);
+  }, [loadAppointments]);
 
   function onFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

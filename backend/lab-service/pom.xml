@@ -220,6 +220,7 @@
                                 <lab.acceptance.eureka.jar>${lab.acceptance.eureka.jar}</lab.acceptance.eureka.jar>
                                 <lab.acceptance.clinical.jar>${lab.acceptance.clinical.jar}</lab.acceptance.clinical.jar>
                                 <lab.acceptance.lab.jar>${lab.acceptance.lab.jar}</lab.acceptance.lab.jar>
+                                <lab.acceptance.billing.jar>${lab.acceptance.billing.jar}</lab.acceptance.billing.jar>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mediflow.common.security.JwtClaims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -39,21 +38,14 @@ import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageDeliveryMode;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Live HTTP acceptance for the Clinical-owned EXAM gate. The positive clearance case sends a
- * canonical Billing contract fixture with runtime Clinical target IDs; it is not a Billing
- * producer, invoice, or payment acceptance test.
+ * Live EXAM acceptance: actual Clinical source -> Gateway discovery/payment -> Billing outbox
+ * and Rabbit -> Clinical clearance -> one examination. Foreign business stores are never read.
  */
 @Testcontainers
 class ClinicalExamPackagedAcceptanceIT {
@@ -71,17 +63,19 @@ class ClinicalExamPackagedAcceptanceIT {
     Path work;
 
     @Test
-    void packagedHttpCheckInFailsClosedUntilCanonicalClearanceThenStartsOneExam() throws Exception {
+    void packagedHttpCheckInFailsClosedUntilActualPaymentThenStartsOneExam() throws Exception {
         Path clinicalJar = requiredJar("acceptance.clinical.jar");
         Path coreJar = requiredJar("acceptance.core.jar");
         Path gatewayJar = requiredJar("acceptance.gateway.jar");
         Path eurekaJar = requiredJar("acceptance.eureka.jar");
+        Path billingJar = requiredJar("acceptance.billing.jar");
         createDatabases();
 
         int eurekaPort = freePort();
         int corePort = freePort();
         int clinicalPort = freePort();
         int gatewayPort = freePort();
+        int billingPort = freePort();
         String eurekaUrl = "http://127.0.0.1:" + eurekaPort + "/eureka/";
         String organizationUrl = databaseUrl("mediflow_organization");
         String patientUrl = databaseUrl("mediflow_patient");
@@ -129,6 +123,36 @@ class ClinicalExamPackagedAcceptanceIT {
             awaitHealthy(clinicalPort, "clinical");
             awaitRegistered(eurekaPort, "CLINICAL-SERVICE", "clinical");
 
+            Path catalog = work.resolve("billing-catalog.yml");
+            Files.writeString(catalog, """
+                    billing:
+                      care-finance:
+                        prices:
+                          OUTPATIENT_EXAM:
+                            description: Outpatient exam acceptance
+                            unit-amount: 100000.00
+                    """);
+            processes.add(start("billing", billingJar, billingPort, Map.ofEntries(
+                    Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
+                    Map.entry("SPRING_DATASOURCE_URL", databaseUrl("mediflow_billing")),
+                    Map.entry("SPRING_DATASOURCE_USERNAME", POSTGRES.getUsername()),
+                    Map.entry("SPRING_DATASOURCE_PASSWORD", POSTGRES.getPassword()),
+                    Map.entry("SPRING_RABBITMQ_HOST", RABBIT.getHost()),
+                    Map.entry("SPRING_RABBITMQ_PORT", Integer.toString(RABBIT.getAmqpPort())),
+                    Map.entry("SPRING_RABBITMQ_USERNAME", RABBIT.getAdminUsername()),
+                    Map.entry("SPRING_RABBITMQ_PASSWORD", RABBIT.getAdminPassword())),
+                    "--eureka.client.service-url.defaultZone=" + eurekaUrl,
+                    "--spring.config.additional-location=" + catalog.toUri(),
+                    "--mediflow.features.outpatient-mvp.enabled=true",
+                    "--mediflow.billing.ledger.enabled=true",
+                    "--mediflow.billing.payment-request-discovery.enabled=true",
+                    "--mediflow.billing.exam-charge-consumer.enabled=true",
+                    "--mediflow.billing.outpatient-publication.enabled=true",
+                    "--mediflow.billing.outpatient-publication.purposes=EXAM",
+                    "--mediflow.billing.outpatient-publication.acceptance-reference=V-CLOSE-03-isolated-EXAM"));
+            awaitHealthy(billingPort, "billing");
+            awaitRegistered(eurekaPort, "BILLING-SERVICE", "billing");
+
             processes.add(start("gateway", gatewayJar, gatewayPort, Map.of(
                     "MEDIFLOW_JWT_SECRET", JWT_SECRET),
                     "--eureka.client.service-url.defaultZone=" + eurekaUrl,
@@ -147,9 +171,11 @@ class ClinicalExamPackagedAcceptanceIT {
             UUID doctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "assigned");
             UUID otherDoctorId = createStaff(gateway, setupAdmin, departmentId, unique, "DOCTOR", "other");
             UUID nurseId = createStaff(gateway, setupAdmin, departmentId, unique, "NURSE", "nurse");
+            UUID cashierId = createStaff(gateway, setupAdmin, departmentId, unique, "CASHIER", "cashier");
             createAccount(gateway, setupAdmin, "doctor-" + unique, "DOCTOR", doctorId);
             createAccount(gateway, setupAdmin, "other-doctor-" + unique, "DOCTOR", otherDoctorId);
             createAccount(gateway, setupAdmin, "nurse-" + unique, "NURSE", nurseId);
+            createAccount(gateway, setupAdmin, "cashier-" + unique, "CASHIER", cashierId);
 
             UUID patientId = UUID.fromString(data(post(gateway, "/api/v1/patients", setupAdmin,
                     "hoTen", "Acceptance Patient " + unique,
@@ -161,6 +187,7 @@ class ClinicalExamPackagedAcceptanceIT {
             String nurseToken = login(gateway, "nurse-" + unique);
             String doctorToken = login(gateway, "doctor-" + unique);
             String otherDoctorToken = login(gateway, "other-doctor-" + unique);
+            String cashierToken = login(gateway, "cashier-" + unique);
             JsonNode createdAppointment = data(post(gateway, "/api/v1/appointments", nurseToken,
                     "patientId", patientId.toString(), "doctorId", doctorId.toString(),
                     "departmentId", departmentId.toString(), "appointmentDate", LocalDate.now().plusDays(1).toString(),
@@ -211,8 +238,7 @@ class ClinicalExamPackagedAcceptanceIT {
             assertThat(count(clinicalDb, "SELECT count(*) FROM medical_record WHERE appointment_id = ?", appointmentId))
                     .isZero();
 
-            String fixtureLabel = publishCanonicalClearanceFixture(appointmentId, patientId);
-            assertThat(fixtureLabel).isEqualTo("synthetic-contract-fixture");
+            JsonNode payment = payActualExam(gateway, appointmentId, patientId, cashierToken, nurseToken);
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
                 assertThat(count(clinicalDb,
                         "SELECT count(*) FROM exam_clearance WHERE appointment_id=? AND patient_id=?",
@@ -239,7 +265,31 @@ class ClinicalExamPackagedAcceptanceIT {
                       AND payload->'payload'->>'recordId'=?
                       AND payload->'payload'->>'sourceType'='EXAM'
                     """, recordId, recordId.toString())).isOne();
+            HttpResponse<String> repeatedStart = request(gateway, "PUT",
+                    "/api/v1/appointments/" + appointmentId + "/start-exam", doctorToken, "{}");
+            assertClinicalFailure(repeatedStart, 422, "CLINICAL_INVALID_STATUS_TRANSITION");
+            assertThat(count(clinicalDb, "SELECT count(*) FROM medical_record WHERE appointment_id=?", appointmentId)).isOne();
+            byte[] grant = clinicalDb.queryForObject("""
+                    SELECT raw_body FROM consumer_inbox_delivery
+                    WHERE routing_key='financial.clearance.granted'
+                      AND convert_from(raw_body, 'UTF8')::jsonb->'payload'->>'appointmentId'=?
+                    """, byte[].class, appointmentId.toString());
+            JsonNode payload = JSON.readTree(grant).path("payload");
+            assertThat(payload.path("patientId").asText()).isEqualTo(patientId.toString());
+            assertThat(payload.path("careEpisodeId").asText()).isEqualTo(appointmentId.toString());
+            assertThat(payload.path("purpose").asText()).isEqualTo("EXAM");
+            assertThat(payload.path("accountId").asText()).isEqualTo(payment.path("accountId").asText());
+            assertThat(data(get(gateway, "/api/v1/appointments/" + appointmentId, nurseToken))
+                    .path("examClearanceId").asText()).isEqualTo(payload.path("clearanceId").asText());
+            Path evidence = Path.of("target", "paid-exam-evidence.json");
+            Files.createDirectories(evidence.getParent());
+            Files.writeString(evidence, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(Map.of(
+                    "appointmentId", appointmentId, "recordId", recordId, "payment", payment,
+                    "grant", JSON.readTree(grant), "grantSha256", java.util.HexFormat.of().formatHex(
+                            java.security.MessageDigest.getInstance("SHA-256").digest(grant)))));
         } finally {
+            for (ServerSocket reservation : reservedPorts.values()) reservation.close();
+            reservedPorts.clear();
             AssertionError cleanupFailure = new AssertionError("Packaged service processes did not all stop");
             for (int i = processes.size() - 1; i >= 0; i--) {
                 try {
@@ -281,50 +331,47 @@ class ClinicalExamPackagedAcceptanceIT {
         return request(gateway, "PUT", "/api/v1/appointments/" + appointmentId + "/check-in", token, "{}");
     }
 
-    private String publishCanonicalClearanceFixture(UUID appointmentId, UUID patientId) throws Exception {
-        JsonNode fixture;
-        try (var input = getClass().getResourceAsStream("/contracts/financial.clearance.granted.v1.json")) {
-            assertThat(input).isNotNull();
-            fixture = JSON.readTree(input);
-        }
-        ObjectNode event = (ObjectNode) fixture;
-        ObjectNode payload = (ObjectNode) event.path("payload");
-        event.put("eventId", UUID.randomUUID().toString());
-        event.put("occurredAt", Instant.now().toString());
-        event.put("correlationId", UUID.randomUUID().toString());
-        payload.put("clearanceId", UUID.randomUUID().toString());
-        payload.put("invoiceId", UUID.randomUUID().toString());
-        payload.put("accountId", UUID.randomUUID().toString());
-        payload.put("appointmentId", appointmentId.toString());
-        payload.put("careEpisodeId", appointmentId.toString());
-        payload.put("patientId", patientId.toString());
-
-        CachingConnectionFactory connection = new CachingConnectionFactory(RABBIT.getHost(), RABBIT.getAmqpPort());
-        connection.setUsername(RABBIT.getAdminUsername());
-        connection.setPassword(RABBIT.getAdminPassword());
-        connection.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.SIMPLE);
-        try {
-            RabbitAdmin admin = new RabbitAdmin(connection);
-            await().atMost(Duration.ofSeconds(20))
-                    .ignoreExceptionsMatching(ClinicalExamPackagedAcceptanceIT::isTransientConnectionFailure)
-                    .untilAsserted(() ->
-                    assertThat(admin.getQueueInfo("clinical.clearance.q")).isNotNull());
-            RabbitTemplate rabbit = new RabbitTemplate(connection);
-            MessageProperties properties = new MessageProperties();
-            properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
-            properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-            properties.setMessageId(event.path("eventId").asText());
-            properties.setCorrelationId(event.path("correlationId").asText());
-            byte[] body = JSON.writeValueAsBytes(event);
-            rabbit.invoke(operations -> {
-                operations.send("mediflow.events", "financial.clearance.granted", new Message(body, properties));
-                operations.waitForConfirmsOrDie(10_000);
-                return null;
-            });
-            return "synthetic-contract-fixture";
-        } finally {
-            connection.destroy();
-        }
+    private JsonNode payActualExam(String gateway, UUID appointmentId, UUID patientId,
+                                   String cashierToken, String nurseToken) throws Exception {
+        String discovery = "/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId="
+                + appointmentId + "&patientId=" + patientId + "&careEpisodeId=" + appointmentId;
+        JsonNode[] found = new JsonNode[1];
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofMillis(300)).untilAsserted(() -> {
+            HttpResponse<String> response = request(gateway, "GET", discovery, cashierToken, null);
+            assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+            found[0] = data(response);
+        });
+        JsonNode request = found[0];
+        assertThat(request.path("sourceId").asText()).isEqualTo(appointmentId.toString());
+        assertThat(request.path("patientId").asText()).isEqualTo(patientId.toString());
+        assertThat(request.path("careEpisodeId").asText()).isEqualTo(appointmentId.toString());
+        assertThat(request.path("remainingAmount").decimalValue()).isEqualByComparingTo("100000.00");
+        assertThat(request.path("paidAmount").decimalValue()).isZero();
+        assertThat(request.path("status").asText()).isEqualTo("PENDING");
+        assertThat(request(gateway, "GET", discovery, nurseToken, null).statusCode()).isEqualTo(403);
+        String paymentPath = "/api/v1/billing/payment-requests/" + request.path("paymentRequestId").asText() + "/payments";
+        String body = JSON.writeValueAsString(Map.of("idempotencyKey", "paid-exam-" + appointmentId,
+                "amount", request.path("remainingAmount").decimalValue(),
+                "currency", request.path("currency").asText(), "paymentMethod", "CASH"));
+        assertThat(request(gateway, "POST", paymentPath, nurseToken, body).statusCode()).isEqualTo(403);
+        JsonNode payment = data(request(gateway, "POST", paymentPath, cashierToken, body));
+        JsonNode replay = data(request(gateway, "POST", paymentPath, cashierToken, body));
+        assertThat(payment.path("transactionId").asText()).isNotBlank();
+        // PostgreSQL persists microseconds; compare the business response exactly apart from that precision.
+        assertThat(Duration.between(Instant.parse(payment.path("completedAt").asText()),
+                Instant.parse(replay.path("completedAt").asText())).abs())
+                .isLessThan(Duration.ofNanos(1_000));
+        JsonNode replayFields = replay.deepCopy();
+        JsonNode paymentFields = payment.deepCopy();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) replayFields).remove("completedAt");
+        ((com.fasterxml.jackson.databind.node.ObjectNode) paymentFields).remove("completedAt");
+        assertThat(replayFields).isEqualTo(paymentFields);
+        assertThat(payment.path("paymentRequestId")).isEqualTo(request.path("paymentRequestId"));
+        JsonNode paid = data(get(gateway, discovery, cashierToken));
+        assertThat(paid.path("status").asText()).isEqualTo("PAID");
+        assertThat(paid.path("remainingAmount").decimalValue()).isZero();
+        assertThat(paid.path("paidAmount").decimalValue()).isEqualByComparingTo("100000.00");
+        return payment;
     }
 
     private UUID createStaff(String gateway, String token, UUID departmentId, String unique,
@@ -450,6 +497,7 @@ class ClinicalExamPackagedAcceptanceIT {
             statement.execute("CREATE DATABASE mediflow_organization");
             statement.execute("CREATE DATABASE mediflow_patient");
             statement.execute("CREATE DATABASE mediflow_clinical");
+            statement.execute("CREATE DATABASE mediflow_billing");
         }
     }
 
@@ -463,6 +511,8 @@ class ClinicalExamPackagedAcceptanceIT {
 
     private Process start(String name, Path jar, int port, Map<String, String> environment, String... arguments)
             throws IOException {
+        ServerSocket reservation = reservedPorts.remove(port);
+        if (reservation != null) reservation.close();
         String java = Path.of(System.getProperty("java.home"), "bin",
                 System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java").toString();
         List<String> command = new ArrayList<>(List.of(java, "-Xmx256m", "-jar", jar.toString(),
@@ -548,10 +598,14 @@ class ClinicalExamPackagedAcceptanceIT {
         }
     }
 
+    private final Map<Integer, ServerSocket> reservedPorts = new java.util.HashMap<>();
+
     private int freePort() throws IOException {
-        try (var socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        }
+        // Keep the reservation until this JVM is ready to launch its child. Otherwise Windows
+        // may reuse a future service port for an outgoing discovery/HTTP connection during startup.
+        ServerSocket socket = new ServerSocket(0);
+        reservedPorts.put(socket.getLocalPort(), socket);
+        return socket.getLocalPort();
     }
 
     private String digits(int length) {

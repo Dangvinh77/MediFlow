@@ -53,6 +53,16 @@ identity, validation details, 403/422 errors and correlation IDs without mutatio
 fallback. These are contract-preparation tests, not authenticated Gateway or integrated acceptance.
 V1 command controls remain gated by `FE-VINH-MVP-02/03` and the backend closeout handoffs.
 
+2026-10-17 continuation extends the appointment/record detail regressions with list and form
+lifecycle coverage. Appointment pagination/retry preserves submitted filters and rejects invalid
+department UUIDs; record lookup rejects malformed patient UUIDs and ignores stale/unmounted
+responses. Create/edit and diagnosis mutations use a synchronous duplicate-submit lock, ignore
+late responses after unmount, and keep edit state tied to the current appointment/record identity.
+Component checks cover backend field errors and correlation IDs, roles, retry, and immutable
+completed records. Tests use mocked API/session; full frontend suite 363/363 (45 files),
+typecheck/lint/build pass. Authenticated browser smoke remains open. See the dated
+[workboard](../frontend-workboard.md).
+
 ## Owner queue
 
 - `FE-CLINICAL-01` — `DONE`: appointment detail with UUID validation, role gate, loading,
@@ -61,8 +71,8 @@ V1 command controls remain gated by `FE-VINH-MVP-02/03` and the backend closeout
   request, response, role, validation, conflict, correlation-ID, and transition contracts.
 - `FE-CLINICAL-03` — `DONE`: record detail, create, update and add-diagnosis commands mirror the
   live controller DTOs, roles, validation and error states.
-- `FE-CLINICAL-04` — `IN PROGRESS`: focused MVP command API tests added; component role/loading/
-  retry coverage and authenticated runtime smoke remain open.
+- `FE-CLINICAL-04` — `IN PROGRESS`: focused MVP command API and detail tests plus appointment/record
+  list/form lifecycle regressions; authenticated runtime smoke remains open.
 - `FE-CLINICAL-05` — `BLOCKED`: enable and smoke Care/Finance V2 through Gateway before adding its
   conditional command controls.
 

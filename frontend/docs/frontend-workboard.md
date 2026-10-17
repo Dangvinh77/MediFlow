@@ -1,5 +1,30 @@
 # Frontend Workboard
 
+## Vinh — Clinical/Lab lists and forms, 2026-10-17
+
+Source baseline `d80d23b2`; scope appointment/medical-record/Lab của Vinh.
+Tiếp tục **FE-VINH-MVP-01/04**, chưa đóng toàn task hoặc mở V1 controls FE-02/03.
+
+- Giữ nguyên các regression detail đã thêm: appointment detail remount theo `appointmentId`,
+  medical-record detail remount theo `recordId`, và diagnosis của hồ sơ cũ không gắn vào hồ sơ mới.
+  Mutation/401 sau unmount không đổi trang hoặc gọi callback cũ.
+- Appointment và Lab list loại bỏ response/error/loading từ request cũ; medical-record lookup
+  thêm stale/unmount guard. Pagination và retry dùng bộ lọc đã submit; validation UUID/episode,
+  role visibility, retry, correlation ID và lỗi backend được kiểm tra.
+- Create/edit appointment, record, diagnosis và Lab request khóa submit đồng bộ để ngăn gửi trùng,
+  bỏ qua kết quả sau unmount, và giữ state edit gắn với `appointmentId`/`recordId` hiện tại.
+  Server field errors và correlation ID vẫn hiển thị; API/role contracts, theme và V1 gates giữ nguyên.
+- Red runs tái hiện stale query, late 401, duplicate mutation và navigation từ edit identity cũ.
+  Focused suite đạt **57/57 tests, 8 files**; full suite `pnpm test -- --maxWorkers=1` đạt
+  **363/363 tests, 45 files**. `pnpm typecheck`, `pnpm lint`, `pnpm build` đều PASS.
+  Chỉ còn jsdom warning `Not implemented: navigation to another Document`; exit code vẫn 0.
+- Follow-up review found a missing type-only `LabTestDTO` import in the Lab form test. The prior
+  typecheck log predated its removal; a fresh run reproduced TS2304 at both deferred-promise types.
+  Restored the import and reran `pnpm typecheck`, `pnpm build`, and the focused Lab form suite
+  (4/4 PASS). `tsconfig.json` includes `**/*.ts` and `**/*.tsx` and excludes only `node_modules`.
+- Đây là kiểm thử với API/session mocks; authenticated browser/Gateway smoke còn mở.
+  Logs ở `%TEMP%/mediflow-vinh-frontend-continuation-{tests,typecheck,lint,build}.log`.
+
 ## Huy — Report ngoại trú MVP, rà soát mới nhất 2026-10-17
 
 - `R-MVP-01`: **4/4 FE local**, release OPEN. Route `/reports/outpatient` dùng đúng API

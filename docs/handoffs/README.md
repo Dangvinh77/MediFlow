@@ -1,15 +1,18 @@
 # Registry hợp đồng MVP
 
-Refresh **2026-10-16**, PR #401 tích hợp master. Registry chỉ giữ dependencies còn mở;
+Refresh **2026-10-17**, đối chiếu baseline `d80d23b2` và Vinh working-tree evidence. Registry chỉ giữ dependencies còn mở;
 implementation đã merge không được giao lại. Không suy full MVP done từ owner-local tests.
 
 ## Active MVP gates
 
 - [Lộc L3/L4 + Hoàng Anh G1 — discovery/publication ngoại trú](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md)
   — **PARTIAL DELIVERY**. L1 discovery và L2 cohort/eligible writer V22/V23 đã merge;
-  PR #401 giao actual Rabbit happy-path, packaged JVM recovery và discovery fixtures.
-  Còn L3 failure/ordering coverage và L4 artifact delivery (Lộc), exact public discovery GET
-  + actual Billing smoke (Hoàng Anh). Không làm lại L1/L2 hoặc Lab-order route đã giao.
+  PR #401 giao actual Rabbit happy-path, packaged JVM recovery và discovery fixtures;
+  source đã có unroutable/retry/quarantine/replay/lease/equal-timestamp tests.
+  **Lộc đọc mục 0, làm LOC-01 → LOC-06**: duplicate new-event/historical HELD broker proof,
+  NACK/timeout + fencing audit, timestamp replay, fresh L4 bundle và phối hợp paidRx.
+  Exact Gateway discovery và #417 correlation fix đã có; Vinh paid EXAM/LAB_TEST slices PASS.
+  Full G1 owner acceptance vẫn mở; không làm lại route, L1/L2 hoặc Lab-order đã giao.
 - [Huy — Pharmacy, Report và Support](HANDOFF-HUY-MVP.md)
   — một đầu mối cho owner acceptance/activation, Billing/Rx/Report/Notification và Support.
   Outpatient filled relationship và Clinical consumer đã có; paid integration/coverage/global
@@ -21,8 +24,8 @@ implementation đã merge không được giao lại. Không suy full MVP done t
 
 - [Vinh Clinical/Lab closeout](HANDOFF-VINH-OUTPATIENT-MVP.md)
   — V-CLOSE-01 standalone reliability, V-CLOSE-02 Rx implementation và public Lab-order
-  acceptance đã có. **V-CLOSE-03 actual paid EXAM/LAB_TEST/Rx còn mở** sau producer/Gateway
-  evidence. Source/test limits và việc còn lại của từng owner nằm ở đầu file; đã dọn các
+  acceptance đã có. **V-CLOSE-03 actual paid EXAM/LAB_TEST PASS; paid Rx, integrated recovery
+  và release còn mở**. Source/test limits và việc còn lại của từng owner nằm ở đầu file; đã dọn các
   backlog lịch sử lặp lại. Lượt implementation trước có 559 tests đạt; đây là evidence lịch sử.
   Fresh Gateway targeted care/Lab-order 183 tests đạt, không failure/error/skip.
 

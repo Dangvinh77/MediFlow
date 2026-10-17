@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { medicalRecordApi } from "../api";
@@ -27,11 +27,18 @@ interface RequestError {
 export function CreateMedicalRecordForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const active = useRef(true);
+  const submissionLocked = useRef(false);
   const [values, setValues] = useState<MedicalRecordFormValues>(EMPTY_MEDICAL_RECORD_FORM);
   const [fieldErrors, setFieldErrors] = useState<MedicalRecordFieldErrors>({});
   const [requestError, setRequestError] = useState<RequestError | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const today = getLocalTodayIso();
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   function updateField(field: MedicalRecordFormField, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -41,12 +48,14 @@ export function CreateMedicalRecordForm() {
 
   function focusFirstError(errors: MedicalRecordFieldErrors) {
     const firstField = Object.keys(errors)[0] as MedicalRecordFormField | undefined;
-    if (firstField) window.requestAnimationFrame(() => document.getElementById(firstField)?.focus());
+    if (firstField) window.requestAnimationFrame(() => {
+      if (active.current) document.getElementById(firstField)?.focus();
+    });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || submissionLocked.current) return;
     const errors = validateCreateMedicalRecord(values, today);
     setFieldErrors(errors);
     setRequestError(null);
@@ -55,12 +64,18 @@ export function CreateMedicalRecordForm() {
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
+    let leavingPage = false;
     try {
       const created = await medicalRecordApi.create(toCreateMedicalRecordRequest(values));
+      if (!active.current) return;
+      leavingPage = true;
       router.replace(`/records/${created.recordId}?notice=created`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        leavingPage = true;
         router.replace("/login");
         return;
       }
@@ -79,7 +94,10 @@ export function CreateMedicalRecordForm() {
         });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        if (!leavingPage) submissionLocked.current = false;
+        setSubmitting(leavingPage);
+      }
     }
   }
 

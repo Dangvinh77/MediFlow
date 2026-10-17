@@ -47,8 +47,23 @@ Billing and Clinical acceptance and V1 create controls remain open under `FE-VIN
 - `FE-LAB-04` — `IN PROGRESS`: source identity/normal start HTTP tests plus 15 detail component
   regressions for loading/retry/correlation, stale read/mutation, roles/terminal states and payment
   separation. Detail workspace resets by testId so an old start response cannot blank the current
-  detail. Queue filters/pagination and authenticated Gateway/browser smoke remain open; API/session
-  are mocked in component tests, not proof of runtime authorization or actual payment.
+  detail. Queue filter/pagination and create-form lifecycle are now component-tested; authenticated
+  Gateway/browser smoke remains open. API/session are mocked, not proof of runtime authorization or
+  actual payment.
+
+2026-10-17 continuation adds queue pagination/filter coverage and the Lab create-form lifecycle.
+Pagination keeps the submitted status/episode filters; retry ignores unsent drafts. Validation
+rejects an incomplete episode pair, stale and post-unmount responses cannot replace the queue or
+redirect, and role visibility is checked. Lab create locks duplicate submits, ignores late results
+after unmount, and preserves backend field errors/correlation IDs. Full frontend suite 363/363
+(45 files), typecheck/lint/build pass. Tests mock API/session; authenticated Gateway smoke remains
+open. See the dated [workboard](../frontend-workboard.md).
+
+Follow-up type audit found the Lab form test used `LabTestDTO` in deferred promises without a
+type-only import. A fresh `pnpm typecheck` reproduced two TS2304 errors; restoring the import made
+the focused form suite pass 4/4 and fresh `pnpm typecheck`/`pnpm build` pass. The frontend
+`tsconfig.json` includes test `.ts`/`.tsx` files; the earlier typecheck evidence predated that import
+removal and is superseded by the fresh result.
 
 ## Handoffs and blockers
 

@@ -1,7 +1,8 @@
 # Vinh Clinical/Lab outpatient MVP closeout
 
-**Cập nhật:** 2026-10-16, PR #401 tích hợp master (Lộc evidence source `bea617db`; giữ các gate consumer mở).
-**Trạng thái:** owned implementation đã có; **chưa đóng actual paid acceptance / toàn MVP**.
+**Cập nhật:** 2026-10-17, audit tại `d80d23b2`; giữ các gate consumer/release chưa nghiệm thu mở.
+**Trạng thái:** owned implementation đã có; actual paid EXAM/LAB_TEST slices đạt;
+**paid Rx / integrated recovery / release toàn MVP còn mở**.
 Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 
 ## Current owner queue
@@ -11,11 +12,96 @@ Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 | V-CLOSE-01 reliability | Standalone Clinical/Lab PG/Rabbit/outbox/consumer JVM recovery đã có | Không làm lại; integrated paid recovery thuộc V-CLOSE-03 |
 | V-CLOSE-02 Rx V1 | Huy đã giao outpatient recordId/dispense relationship; Clinical consumer đã merge ở `c4cf810f` | Không giao lại producer/consumer implementation; actual paid Rx vẫn cần nghiệm thu |
 | Public Lab-order | Hoàng Anh `0a8636cd` đã giao exact route và sửa Core migration test paths; Vinh đã chạy packaged public slice | Không giao lại route Lab-order hoặc migration-path fix; không suy full Core suite đã đạt |
-| L1 discovery | `9b89a355`: Billing đã có source-bound GET, DTO, authorization/validation và PG tests | Đã có implementation + discovery fixtures PR #401; HTTP Billing thật qua Gateway còn mở |
+| L1 discovery | `9b89a355`: Billing đã có source-bound GET, DTO, authorization/validation và PG tests | Actual paid EXAM Gateway/Billing slice PASS 2026-10-17; không thay full Billing acceptance |
 | L2 selective publication | `1624cbd3`: cohort + eligible writer; V22/V23 fences giữ historical HELD | Đã có implementation/DB proof + partial broker/recovery PR #401; chưa đóng toàn L3 |
-| G1 Gateway discovery | Allowlist hiện chưa có exact GET by-source | Hoàng Anh: mục H-VINH-01 bên dưới |
+| G1 Gateway discovery | Source đã có exact GET by-source cho ADMIN/CASHIER; #417 sửa Billing error correlation | Không giao lại implementation; full G1 owner evidence theo H-VINH-01 |
 | L3/L4 publication delivery | PR #401 thêm 6 Rabbit cases + packaged JVM recovery IT/profile; còn failure/ordering proof | Lộc: hoàn thiện L3 gaps + L4 artifacts tại H-VINH-03 |
-| V-CLOSE-03 | Actual paid EXAM/LAB_TEST và paid Rx chưa đóng | Vinh nhận sau producer + Gateway evidence; không inject grant hoặc SQL discovery |
+| V-CLOSE-03 | Actual paid EXAM/LAB_TEST + outpatient completion PASS 2026-10-17; paid Rx còn mở | Không inject grant hoặc SQL discovery; full integrated recovery vẫn mở |
+
+## Fresh Vinh source verification — 2026-10-17
+
+Baseline `d80d23b2` + working changes in Clinical/Lab acceptance and Vinh frontend.
+Java 21.0.11, Maven 3.9.16, Docker 29.8.0, PostgreSQL `16-alpine`, RabbitMQ `3.13-alpine`.
+Package fresh Eureka/Core/Gateway/Billing/Clinical/Lab; không sửa foreign production modules,
+root build hoặc deployment flags. Billing flags/catalog chỉ bật trong disposable child processes.
+
+| Verification | Tests | Failures / errors / skips |
+|---|---:|---|
+| Full Clinical `test` | 339 | 0 / 0 / 0 |
+| Full Lab `test` | 216 | 0 / 0 / 0 |
+| Clinical `packaged-acceptance`, actual paid EXAM | 1 | 0 / 0 / 0 |
+| Lab `packaged-slice`, actual paid EXAM/LAB_TEST + completion | 1 | 0 / 0 / 0 |
+| Frontend full Vitest, one worker | 327 | 0 / 0 / 0 |
+
+Commands cuối của các rows trên exit 0. Frontend typecheck/lint/build exit 0, independent review
+không có finding cần sửa. Không cộng process-recovery reports cũ vào counts lượt này.
+
+EXAM đi toàn bộ source check-in → public Gateway exact-source discovery → signed CASHIER payment
+→ actual Billing dispatcher/Rabbit → Clinical clearance/READY → assigned doctor start-exam.
+Kiểm unpaid/role/assigned doctor/concurrent check-in/repeated start và one record/outbox;
+payment retry giữ nguyên transaction và mọi business field, thời gian dưới 1µs như note Billing.
+Chỉ đọc Clinical-owned tables để đối soát receipt/effect/outbox, không đọc Billing business DB.
+
+EXAM identities: appointment `2eed353a-44f7-4d7a-ac8f-45ddaa3e3677`, record
+`2031fd09-dcd9-44e6-b87b-b2efb1b98538`, payment request
+`31dddcdb-2cac-4162-8573-18afe4715236`, transaction
+`bb8bbf24-6291-467d-a0b0-f6ea6874f24b`, clearance
+`54af2767-4348-4404-a088-39efda4ff003`, event
+`48597459-46ef-46a9-a7e3-acf6a1d5b707`. Original grant body SHA-256:
+`7acec4acef2994349e2d091ae24c1794606cce4e4be0bdb00e0ed7c066bb8380`.
+Local evidence `backend/clinical-service/target/paid-exam-evidence.json` và failsafe XML.
+
+Lab slice không dùng test-only EXAM override hoặc synthetic LAB_TEST grant nữa. Tạo Clinical
+sourceOrderId qua public API, Lab xác thực source bằng signed service call, unpaid start bị chặn;
+thanh toán EXAM 100000 VND và LAB_TEST 150000 VND qua Gateway/Billing. Phát lại original received
+clearance bytes hai lần vẫn một clearance/inbox effect. Public Lab start/result → Rabbit → một
+Clinical attachment; final result edit bị chặn. Chỉ assigned doctor hoàn tất OUTPATIENT_FOLLOW_UP;
+nurse/wrong doctor bị từ chối, record/appointment COMPLETED, một completion outbox, terminal edit bị chặn.
+
+Đối soát quarantine đúng MVP: `lab.q` rỗng, `lab.dlq` đúng hai `payment.completed` receipts
+của hai giao dịch, kiểm transaction/request/account/amount/patient/episode. Đọc original bytes
+rồi nack/requeue, không purge/ACK-drop; không có unexpected clearance DLQ. Receipt không thay V1 grant.
+Đây là assertion mới cần thiết khi thay synthetic payment bằng Billing thật; production consumer giữ nguyên.
+
+Lab identities: appointment `a73208a5-fead-45a3-a8e4-069a65274510`, record
+`2511e359-2cda-4d1a-85de-e0c912497d4f`, sourceOrderId
+`646503fd-64ee-41da-a5ea-e1e4b3487265`, labTestId
+`1150b0e1-11ba-4c78-b7ec-0137295ab35c`, LAB payment request
+`d30cfe94-acee-487b-a8a9-792f2e6e3933`, transaction
+`95d15803-361a-439e-a4f8-f3e7f459edec`, clearance
+`4bba292e-8a6e-427a-a9f1-9113ce7ece3a`, grant event
+`bc9945e6-d3d1-4e10-9767-94545f96b835`, result event
+`685f76de-60bf-4792-943f-7b2758669aad`.
+Local `backend/lab-service/target/paid-lab-evidence.json`, original `paid-lab-clearance.json`
+SHA-256 `fbd2b2cda13e232f9f2dd68daac23cedd5d7d31e49d9ee5639702251e86e4786`.
+Original quarantine receipt files `quarantined-payment-{transactionId}.json`:
+EXAM transaction `f61f5c87-5e56-4f4a-ac52-70da2bf14bae`, hash
+`d787c8efba7e8e5b0fd61eea426a34bfbc33a8b879b772dc16fcd9b8e195de15`;
+LAB transaction ở trên, hash
+`aceb554c610d6f406ba3ebf1bf0b3fd576dc553acdb2812df22d70aad048eaca`.
+
+Reproduce EXAM sau khi package dependencies từ cùng source:
+
+```powershell
+mvn -q -pl backend/eureka-server,backend/core-service,backend/gateway,backend/billing-service,backend/clinical-service,backend/lab-service -am -DskipTests package
+mvn -q -f backend/clinical-service/pom.xml -Ppackaged-acceptance test-compile failsafe:integration-test failsafe:verify
+$taskRoot=(Get-Location).Path
+mvn -q -f backend/lab-service/pom.xml -Ppackaged-slice test-compile `
+  "-Dlab.acceptance.core.jar=$taskRoot/backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.gateway.jar=$taskRoot/backend/gateway/target/gateway-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.eureka.jar=$taskRoot/backend/eureka-server/target/eureka-server-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.clinical.jar=$taskRoot/backend/clinical-service/target/clinical-service-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.lab.jar=$taskRoot/backend/lab-service/target/lab-service-0.0.1-SNAPSHOT.jar" `
+  "-Dlab.acceptance.billing.jar=$taskRoot/backend/billing-service/target/billing-service-0.0.1-SNAPSHOT.jar" `
+  failsafe:integration-test failsafe:verify
+```
+
+Logs local `%TEMP%/mediflow-vinh-{audit-backend,paid-exam,paid-lab}.log`;
+frontend `%TEMP%/mediflow-vinh-final-{frontend-tests,typecheck,lint,build}.log`.
+Lượt đầu EXAM đụng ephemeral port và sau đó khác timestamp precision; sửa reservation/check như
+audit plan. Lab harness thêm mapping Billing registration và kiểm quarantine receipts đúng MVP.
+Chỉ các lượt cuối PASS được tính. Tổng backend fresh 557 tests, không cộng historical recovery.
+Không đóng paid Rx, integrated recovery, full G1/L3/L4 hoặc signed-role browser/six-app release.
 
 ## Verification refresh — 2026-10-16
 
@@ -41,10 +127,11 @@ mvn -q -pl backend/gateway -am '-Dtest=CareRouteAuthorizationTest,ClinicalLabOrd
 
 ### H-VINH-01 — Hoàng Anh / Gateway discovery
 
-**OPEN — G1**, public client → Gateway → Billing. Implement chính xác
-`GET /api/v1/billing/payment-requests/by-source`, ADMIN/CASHIER signed human access only;
-giữ POST `/{id}/payments`, không GET wildcard. Query bắt buộc: purpose/sourceId/patientId/
-careEpisodeId, giữ nguyên query/correlation khi forward. Billing sở hữu validation/DTO.
+**Implementation delivered; full G1 acceptance còn mở.** Audit 2026-10-17 thấy exact
+`GET /api/v1/billing/payment-requests/by-source` trong RouteAuthorizationFilter, ADMIN/CASHIER.
+Không yêu cầu Hoàng Anh code lại route. Giữ POST `/{id}/payments`, không GET wildcard.
+Query bắt buộc: purpose/sourceId/patientId/careEpisodeId, giữ nguyên query/correlation khi forward.
+Billing sở hữu validation/DTO; PR #417 đã sửa correlation cho lỗi thiếu dữ liệu discovery.
 
 Acceptance: authorized forward, unauthenticated/denied role/service/refresh, wrong method và
 nested path không forward. Full Gateway tests; sau đó dùng actual Billing discovery/payment
@@ -60,6 +147,20 @@ Actual paid Rx và Report/Support activation/coverage theo
 [handoff chung Huy](HANDOFF-HUY-MVP.md); không dùng Clinical/Lab local tests để đóng Report.
 
 ### H-VINH-03 — Lộc / Billing; phối hợp slice với Vinh
+
+**Phiếu thực thi hiện hành cho Lộc:** [mục 0, LOC-01 → LOC-06](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md#0-phiếu-thực-thi-hiện-hành--2026-10-17-lộc-đọc-mục-này-trước).
+Đối chiếu source thấy unroutable/retry/quarantine/admin replay/expired lease/equal-timestamp
+đã có tests; không giao làm lại. Còn duplicate new-event/historical HELD broker proof,
+NACK/timeout riêng và audit stale-owner fencing/replay eligibility, fresh artifact bundle,
+timestamp decision và Billing package cho paidRx. Các yêu cầu failure/ordering bên dưới là
+acceptance tổng; không có nghĩa mọi case đều chưa được implement.
+
+Audit HTTP payment/replay 2026-10-17: cùng transactionId/accountId/amount/status nhưng
+`completedAt` của first response `2026-10-17T10:04:52.023375300Z`, replay
+`2026-10-17T10:04:52.023375Z`. PostgreSQL lưu microseconds; Vinh acceptance so mọi field khác
+chính xác, riêng thời gian chênh dưới 1 microsecond. Lộc cần xác nhận/chuẩn hóa response precision
+nếu contract yêu cầu replay byte-equivalent; không suy payment bị thực hiện lần hai.
+Không chỉnh production Billing trong scope Vinh.
 
 **PARTIAL — L3/L4**. PR #401 đã giao actual Rabbit tests, process recovery và discovery fixtures;
 không làm lại L1/L2 hoặc happy-path/recovery đã có. Hoàn thiện

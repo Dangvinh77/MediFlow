@@ -1,3 +1,3 @@
-library mediflow_loader;
+library;
 
 export 'src/mediflow_loader.dart';

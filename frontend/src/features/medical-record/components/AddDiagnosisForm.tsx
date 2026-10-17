@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { medicalRecordApi } from "../api";
@@ -31,6 +31,12 @@ interface RequestError {
 export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const active = useRef(false);
+  const submissionLocked = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
   const [values, setValues] = useState<DiagnosisFormValues>(EMPTY_DIAGNOSIS_FORM);
   const [errors, setErrors] = useState<MedicalRecordFieldErrors>({});
   const [requestError, setRequestError] = useState<RequestError | null>(null);
@@ -47,12 +53,14 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
 
   function focusFirstError(nextErrors: MedicalRecordFieldErrors) {
     const first = Object.keys(nextErrors)[0];
-    if (first) window.requestAnimationFrame(() => document.getElementById(first)?.focus());
+    if (first) window.requestAnimationFrame(() => {
+      if (active.current) document.getElementById(first)?.focus();
+    });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || submissionLocked.current) return;
     const nextErrors = validateDiagnosis(values);
     setErrors(nextErrors);
     setRequestError(null);
@@ -62,13 +70,16 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
     try {
       const diagnosis = await medicalRecordApi.addDiagnosis(recordId, toDiagnosisRequest(values));
+      if (!active.current) return;
       onCreated(diagnosis);
       setValues(EMPTY_DIAGNOSIS_FORM);
       setSuccess(true);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -86,7 +97,10 @@ export function AddDiagnosisForm({ recordId, onCreated }: AddDiagnosisFormProps)
         });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        submissionLocked.current = false;
+        setSubmitting(false);
+      }
     }
   }
 

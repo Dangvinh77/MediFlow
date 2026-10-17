@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { ApiRequestError } from "@/lib/api";
@@ -36,13 +36,24 @@ type LoadState =
   | { status: "error"; error: RequestError };
 
 export function EditAppointmentForm({ appointmentId }: EditAppointmentFormProps) {
+  return <EditAppointmentFormContent key={appointmentId} appointmentId={appointmentId} />;
+}
+
+function EditAppointmentFormContent({ appointmentId }: EditAppointmentFormProps) {
   const router = useRouter();
+  const active = useRef(true);
+  const submissionLocked = useRef(false);
   const [retryToken, setRetryToken] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [values, setValues] = useState<AppointmentFormValues>(EMPTY_APPOINTMENT_FORM);
   const [fieldErrors, setFieldErrors] = useState<AppointmentFieldErrors>({});
   const [requestError, setRequestError] = useState<Omit<RequestError, "retryable"> | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -98,12 +109,14 @@ export function EditAppointmentForm({ appointmentId }: EditAppointmentFormProps)
   function focusFirstError(errors: AppointmentFieldErrors) {
     const firstField = Object.keys(errors)[0] as AppointmentFormField | undefined;
     if (!firstField) return;
-    window.requestAnimationFrame(() => document.getElementById(firstField)?.focus());
+    window.requestAnimationFrame(() => {
+      if (active.current) document.getElementById(firstField)?.focus();
+    });
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting || loadState.status !== "success") return;
+    if (submitting || submissionLocked.current || loadState.status !== "success") return;
 
     setRequestError(null);
     const errors = validateAppointmentForm(values, false);
@@ -113,15 +126,21 @@ export function EditAppointmentForm({ appointmentId }: EditAppointmentFormProps)
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
+    let leavingPage = false;
     try {
       const updated = await appointmentApi.update(
         appointmentId,
         toUpdateAppointmentRequest(values),
       );
+      if (!active.current) return;
+      leavingPage = true;
       router.replace(`/appointments/${updated.appointmentId}`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        leavingPage = true;
         router.replace("/login");
         return;
       }
@@ -142,7 +161,10 @@ export function EditAppointmentForm({ appointmentId }: EditAppointmentFormProps)
         });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        if (!leavingPage) submissionLocked.current = false;
+        setSubmitting(leavingPage);
+      }
     }
   }
 

@@ -34,14 +34,25 @@ type LoadState =
   | { status: "error"; error: RequestError };
 
 export function EditMedicalRecordForm({ recordId }: EditMedicalRecordFormProps) {
+  return <EditMedicalRecordFormContent key={recordId} recordId={recordId} />;
+}
+
+function EditMedicalRecordFormContent({ recordId }: EditMedicalRecordFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const active = useRef(true);
+  const submissionLocked = useRef(false);
   const [retryToken, setRetryToken] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [symptoms, setSymptoms] = useState("");
   const [errors, setErrors] = useState<MedicalRecordFieldErrors>({});
   const [requestError, setRequestError] = useState<RequestError | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -77,7 +88,7 @@ export function EditMedicalRecordForm({ recordId }: EditMedicalRecordFormProps) 
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting || loadState.status !== "success") return;
+    if (submitting || submissionLocked.current || loadState.status !== "success") return;
     const nextErrors = validateRecordUpdate(symptoms);
     setErrors(nextErrors);
     setRequestError(null);
@@ -86,12 +97,18 @@ export function EditMedicalRecordForm({ recordId }: EditMedicalRecordFormProps) 
       return;
     }
 
+    submissionLocked.current = true;
     setSubmitting(true);
+    let leavingPage = false;
     try {
       const updated = await medicalRecordApi.update(recordId, toUpdateMedicalRecordRequest(symptoms));
+      if (!active.current) return;
+      leavingPage = true;
       router.replace(`/records/${updated.recordId}?notice=updated`);
     } catch (cause: unknown) {
+      if (!active.current) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
+        leavingPage = true;
         router.replace("/login");
         return;
       }
@@ -103,7 +120,10 @@ export function EditMedicalRecordForm({ recordId }: EditMedicalRecordFormProps) 
         setRequestError({ status: null, message: cause instanceof Error ? cause.message : "Không thể cập nhật hồ sơ.", correlationId: null });
       }
     } finally {
-      setSubmitting(false);
+      if (active.current) {
+        if (!leavingPage) submissionLocked.current = false;
+        setSubmitting(leavingPage);
+      }
     }
   }
 
