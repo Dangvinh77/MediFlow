@@ -1,4 +1,4 @@
-# MediFlow: A Microservices-Based Distributed Hospital Management System
+# MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management
 
 <!-- commit-activity:start -->
 ## Commit activity
@@ -21,19 +21,40 @@ _Source: `.changelog/entries.jsonl`; this is repository changelog data, not GitH
 
 ## Project overview
 
-**MediFlow** is a distributed hospital management system built on a microservices architecture. It is designed to streamline hospital operations, coordinate healthcare workflows, and enable reliable communication across departments and services.
+**MediFlow** is a distributed hospital information system designed to coordinate outpatient workflows, including patient registration, appointments, medical examinations, laboratory testing, prescriptions, billing, dispensing, reporting and in-app notifications. Inpatient care and surgery management are reserved for future development; their existing source and data are preserved.
 
-The system covers the end-to-end care journey: patient registration, appointment scheduling, clinical consultation, laboratory testing, prescription management, billing, medication dispensing, notifications, and operational reporting. This combination of hospital management and healthcare workflow orchestration helps departments coordinate handoffs while keeping each bounded context independently maintainable.
-
-MediFlow uses domain-driven service decomposition, database-per-service ownership, centralized API gateway routing, service discovery, and event-driven communication to promote modularity, scalability, maintainability, and fault isolation.
+**Định hướng:** Hệ thống thông tin bệnh viện dựa trên microservices, tập trung quản lý khám chữa bệnh ngoại trú. MVP hướng tới phòng khám đa khoa có nhiều bộ phận hoặc khoa khám bệnh ngoại trú của bệnh viện. Phòng mạch nhỏ có thể dùng một phần chức năng; việc vận hành nhiều service và broker cần được cân nhắc theo nhu cầu. Đây là phạm vi thiết kế của đồ án, chưa phải xác nhận triển khai vận hành tại cơ sở y tế.
 
 | | |
 |---|---|
-| **Official title** | Microservices-Based Distributed Hospital Management System |
-| **Extended description** | Distributed Hospital Management and Healthcare Workflow Orchestration System |
-| **Architecture** | Distributed systems, microservices, and event-driven architecture |
-| **Application domain** | Healthcare Information Systems (HIS) and Hospital Management Systems (HMS) |
-| **Technology stack** | Java, Spring Boot, Spring Cloud Gateway, Netflix Eureka, RabbitMQ, PostgreSQL, Next.js, and Flutter |
+| **Project title** | MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management |
+| **Current scope** | Outpatient Healthcare Management; HIS with an outpatient MVP |
+| **Intended setting** | Multi-specialty clinics and hospital outpatient departments |
+| **Architecture** | Microservices, Gateway, context-owned PostgreSQL stores, RabbitMQ events and Eureka discovery |
+| **Clients** | Next.js web; Flutter foundation using the real Gateway |
+| **Deferred** | Admission, beds, inpatient treatment and surgery; full advanced Report/Billing scope |
+
+### Outpatient MVP scope
+
+“In MVP” means included in requirements. It does **not** mean every API, screen, cross-service gate or recovery scenario has passed release acceptance. Current evidence and remaining dependencies are in the [implementation plan](docs/plans/05-implementation-plan.md), [handoffs](docs/handoffs/README.md) and [frontend workboard](frontend/docs/frontend-workboard.md).
+
+| Capability | MVP scope |
+|---|---|
+| Patients, doctors, staff and departments | Included — Core, retaining separate Organization/Patient authority |
+| Appointments and reception/check-in | Included — Clinical |
+| Examination, diagnoses and outpatient records | Included — Clinical |
+| Laboratory orders, processing and results | Included — Lab |
+| Prescribing and medication dispensing | Included — Clinical/Pharmacy contracts |
+| Examination, test and medication fees | Included — Billing; authorization/clearance gates still apply |
+| Reporting and notifications | Included — outpatient read models and in-app notifications |
+| Admission, beds and inpatient treatment | Deferred; preserve existing source/data |
+| Surgery | Deferred; preserve existing source/data |
+
+### Deployment target and current source
+
+The MVP targets **six business deployments**: Core, Clinical, Lab, Pharmacy, Billing and Support. Gateway and Eureka are infrastructure; common is a library. Six deployments do not imply six databases: the eight active business contexts keep their own stores.
+
+The current root Maven reactor lists 12 modules. Core already contains Organization and Patient packages with separate persistence boundaries. Report and Notification remain separate applications; there is no support-service host yet. Inpatient and Surgery modules remain in source but are deferred from the outpatient acceptance profile. The six-deployment topology remains a target until composition, routing, flags and runtime acceptance pass; a documentation change does not migrate data or activate gates.
 
 The repository also includes a shared AI coding framework so contributors using Claude Code, Codex, Cursor, or other AGENTS.md-compatible tools follow the same engineering standards after a `git pull`.
 
@@ -53,7 +74,7 @@ The repository also includes a shared AI coding framework so contributors using 
 
 - **Design docs (authoritative):** [`docs/README.md`](docs/README.md) — simplified system design, contracts, plan and acceptance.
 - **AI coding rules (single source of truth):** [`docs/ai/`](docs/ai/README.md).
-- **Current source:** 10 business modules. **MVP target:** Core, Clinical, Lab, Pharmacy, Billing and Support; Inpatient/Surgery are deferred, with code and data preserved. This documentation update does not migrate deployments.
+- **Current structure and target:** see the deployment section above and [system design](docs/plans/01-system-design.md). Core is present; Support composition and full six-deployment acceptance remain separate work.
 - **Platform and infrastructure:** API gateway, Netflix Eureka, RabbitMQ, and PostgreSQL with database-per-service ownership.
 
 ---
@@ -175,7 +196,7 @@ Then restart Claude Code or Codex and build the per-machine index (`.codebase-me
 
 > **Portability:** if the binary isn't on your PATH, copy `.mcp.local.json.example` → `.mcp.local.json` (gitignored) and point `command` to the absolute path.
 >
-> The graph MCP is optional in both clients. When absent, agents fall back to `docs/ai/`, `docs/eproject_general_plan/*.html`, and text search.
+> The graph MCP is optional in both clients. When absent, agents fall back to `docs/ai/`, `docs/plans/`, live source and text search.
 
 ### Understand-Anything — visual dashboard for humans
 
@@ -204,20 +225,19 @@ scripts\setup-tools.bat                   # Windows (installs both)
 
 ## Infrastructure (PostgreSQL + RabbitMQ)
 
-The fastest path — one command, all nine databases created for you:
+Start the shared infrastructure; fresh volumes initialize ten context databases, including the two deferred stores:
 
 ```bash
-docker compose up -d
+docker compose up -d postgres rabbitmq
 ```
 
 That starts **PostgreSQL** on `5432` (running [`scripts/init-databases.sql`](scripts/init-databases.sql), which creates
 `mediflow_organization`, `mediflow_patient`, `mediflow_clinical`, `mediflow_lab`,
-`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`, and the
-empty `mediflow_inpatient` foundation database) and
+`mediflow_pharmacy`, `mediflow_billing`, `mediflow_notification`, `mediflow_report`, plus
+`mediflow_inpatient` and `mediflow_surgery` deferred databases) and
 **RabbitMQ** on `5672` with its management UI at http://localhost:15672 (`guest`/`guest`).
 
-Compose can also build and run the Java services and frontend. For hot reload and the debugger,
-start the shared infrastructure and the selected service from your IDE.
+The checked-in Compose file still names legacy Organization/Patient application builds; it is not evidence of the current Core or target six-deployment topology. Use Compose for PostgreSQL/RabbitMQ and run the current Maven modules separately until the shared runtime profile is aligned and accepted.
 
 | | |
 |---|---|
@@ -241,38 +261,32 @@ The Eureka server (8761) must also be running before any business service starts
 
 ## Building & running
 
-All 12 backend Maven modules exist. Eight business services have their implementations; Inpatient
-has a bootable configuration/security shell only, and Surgery remains planned. Inpatient has no
-business API, domain model, or schema until its implementation-ready spec is approved.
+The root reactor has **12 Maven modules**, including common, Eureka, Gateway and nine business application modules. Organization/Patient source now lives inside Core; Support is not yet a source module. Use the current source layout below rather than launching removed standalone modules.
 
-Eight implemented business services, plus the preliminary Inpatient foundation:
+| Module | Default port | Stores / public Gateway paths | MVP position |
+|---|---:|---|---|
+| eureka-server | 8761 | Service discovery | Infrastructure |
+| gateway | 8080 | /api/* entry point and auth facade | Infrastructure |
+| core-service | 8089 | Organization/Patient stores; /api/v1/org, /api/v1/patients | Core deployment |
+| clinical-service | 8082 | Clinical store; /api/v1/appointments, /api/v1/records | Outpatient |
+| lab-service | 8084 | Lab store; /api/v1/lab | Outpatient |
+| pharmacy-service | 8085 | Pharmacy store; /api/v1/pharmacy | Outpatient |
+| billing-service | 8086 | Billing store; /api/v1/billing | Outpatient |
+| notification-service | 8087 | Notification store; /api/v1/notifications | Current app; target Support |
+| report-service | 8088 | Report store; /api/v1/reports | Current app; target Support |
+| inpatient-service | 8090 | Preserved Inpatient store/code | Deferred from MVP |
+| surgery-service | 8091 | Preserved Surgery store/code | Deferred from MVP |
 
-| Module | Port | Database | Base path | Why it exists |
-|--------|------|----------|-----------|---------------|
-| `eureka-server` | 8761 | — | — | service registry |
-| `gateway` | 8080 | — | routes everything below | one entry point, JWT |
-| **Reference data** | | | | |
-| `organization-service` | 8089 | `mediflow_organization` | `/api/v1/org` | departments, staff, accounts |
-| `patient-service` | 8081 | `mediflow_patient` | `/api/v1/patients` | master patient index |
-| **Departments (khoa/phòng)** | | | | |
-| `clinical-service` | 8082 | `mediflow_clinical` | `/api/v1/appointments`, `/api/v1/records` | Khoa Khám bệnh |
-| `lab-service` | 8084 | `mediflow_lab` | `/api/v1/lab` | Khoa Xét nghiệm |
-| `pharmacy-service` | 8085 | `mediflow_pharmacy` | `/api/v1/pharmacy` | Khoa Dược |
-| `billing-service` | 8086 | `mediflow_billing` | `/api/v1/billing` | Phòng Viện phí |
-| **Support** | | | | |
-| `notification-service` | 8087 | `mediflow_notification` | `/api/v1/notifications` | email/SMS/in-app |
-| `report-service` | 8088 | `mediflow_report` | `/api/v1/reports` | read model from events |
-| **Planned care context** | | | | |
-| `inpatient-service` | 8090 | `mediflow_inpatient` | planned `/api/v1/inpatient` (no business route yet) | bootable foundation only |
+The common library has no runtime port. Public paths above describe Gateway routes; clients call Gateway, never service ports directly.
 
 ```bash
 mvn -q -DskipTests install                   # build all modules
-mvn -pl backend/patient-service -am test         # test one service (+ its deps)
-mvn -pl backend/patient-service -am verify       # integration tests (needs Docker)
+mvn -pl backend/core-service -am test         # test one service (+ its deps)
+mvn -pl backend/core-service -am verify       # integration tests (needs Docker)
 ```
 
 **Start order:** `eureka-server` (8761) → `gateway` (8080) → any business service.
-Each is a Spring Boot app: `mvn -pl backend/<module> -am spring-boot:run`.
+Build dependencies first, then launch the selected executable JAR, for example `java -jar backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar`, or run its application class from the IDE. Configure shared JWT secrets and context database credentials consistently; consult each module README and the [acceptance runbook](docs/plans/06-acceptance-runbook.md).
 
 ### Frontend (Next.js)
 
@@ -282,21 +296,22 @@ pnpm install
 pnpm dev            # http://localhost:3000  (proxies /api/* to the gateway on :8080)
 ```
 
-See [`docs/ai/12-frontend.md`](docs/ai/12-frontend.md). Full-stack order: eureka → gateway → patient-service → `pnpm dev`.
+See [`docs/ai/12-frontend.md`](docs/ai/12-frontend.md). Full-stack order: PostgreSQL/RabbitMQ → Eureka → Core and Gateway → required business services → web client. Gateway login verifies real Core Organization accounts.
 
 ### Mobile (Flutter)
 
-```bash
-cd mobile
-flutter pub get
-flutter run                         # connected device / emulator
-flutter test                        # run all tests
+The Flutter client uses the real backend only. From mobile/ on Windows:
+
+```powershell
+./tool/run_web.ps1    # http://localhost:4300, same-origin proxy to actual Gateway
+./tool/check.ps1      # format, analyzer, app/loader tests and web build
 ```
 
-Full docs: [`docs/ai/14-flutter.md`](docs/ai/14-flutter.md).
+[Mobile README](mobile/README.md) covers device Gateway URLs, Android/iOS/Windows toolchains and current feature coverage. [Contribution instructions](mobile/docs/contributing.md) divide contexts among all four owners. The foundation includes login, role-aware navigation and read-only Appointment/Lab slices; other workspaces remain unfinished. Native hosts being present does not certify native releases.
 
-Demo login (stub auth on the gateway — replace before real use):
-`POST http://localhost:8080/api/v1/auth/login` with `{"username":"admin","password":"admin123"}`.
+### Authentication
+
+POST /api/v1/auth/login is a real Gateway facade: it verifies an account through Core's Organization authority and returns signed tokens. Use an account provisioned for your environment; there is no documented universal admin/admin123 or stub login. A missing upstream is an availability error, not a reason to bypass authentication.
 
 Add a new service with **`/new-service <name>`** in Claude or **`$new-service`** in Codex. Both adapters use the same blueprint and [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md).
 
@@ -318,27 +333,27 @@ MediFlow/
 ├── .codex/                       ← Codex config, agents, and hooks
 ├── .agents/skills/               ← team-shared Codex workflows
 ├── scripts/                      ← bootstrap.ps1 / .sh + tool setup scripts
-├── backend/                      ← ALL Java microservices (common, eureka, gateway, 8 implemented services + Inpatient foundation)
+├── backend/                      ← current Maven modules; six business deployments remain the MVP target
 │   ├── common/                   ← shared lib (envelope, pagination, base exceptions)
 │   ├── eureka-server/            ← service registry
 │   ├── gateway/                  ← API gateway (JWT, routing)
-│   ├── organization-service/     ← reference: departments, staff, accounts
-│   ├── patient-service/          ← reference: master patient index
+│   ├── core-service/             ← Organization + Patient, separate persistence boundaries
 │   ├── clinical-service/         ← Khoa Khám bệnh (appointments + records)
 │   ├── lab-service/              ← Khoa Xét nghiệm
 │   ├── pharmacy-service/         ← Khoa Dược
 │   ├── billing-service/          ← Phòng Viện phí
-│   └── notification-service/ report-service/ ← support
+│   ├── notification-service/ report-service/ ← separate apps; target Support
+│   └── inpatient-service/ surgery-service/   ← preserved, deferred from MVP
 ├── mobile/                       ← Flutter mobile app (Clean Architecture, Riverpod)
 │   ├── AGENTS.md                 ← nested mobile instructions
 │   └── lib/
 │       ├── app/                  ← app config, GoRouter, DI
-│       ├── core/                 ← theme, network (Dio), storage
-│       └── features/             ← 10 feature folders (mirror backend services)
+│       ├── core/                 ← shared Gateway network, config, domain types and widgets
+│       └── features/             ← auth + 9 feature folders; ownership follows bounded contexts
 ├── frontend/                     ← Next.js web client (App Router, TS, Tailwind, pnpm)
 ```
 
-Every business service has the same internal shape (clean architecture — see
+Each business context keeps its own clean-architecture layers; Core co-hosts two contexts without merging their persistence boundaries (see
 [`docs/ai/04-microservice-blueprint.md`](docs/ai/04-microservice-blueprint.md)):
 
 ```

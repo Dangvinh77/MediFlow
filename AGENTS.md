@@ -25,13 +25,21 @@ node scripts/changelog.js --files     # chi tiết từng file + tác giả + s�
 
 ## Project
 
-**MediFlow** — a hospital management system. Two halves:
+**MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management.**
+The academic MVP targets multi-specialty clinics and hospital outpatient departments.
+Inpatient care and surgery remain deferred; preserving their source does not activate them.
+Backend, web and mobile clients share this scope:
 
-- **Backend** — Spring Boot/Maven monorepo. Source currently contains 10 business modules.
-  The simplified MVP targets 6 deployments: Core, Clinical, Lab, Pharmacy, Billing, Support.
+- **Backend** — Spring Boot/Maven monorepo with 12 reactor modules. Core contains Organization
+  and Patient packages with separate persistence boundaries; Report/Notification are still separate
+  applications and Support host is absent. The MVP targets 6 business deployments:
+  Core, Clinical, Lab, Pharmacy, Billing, Support. Eight active contexts plus deferred
+  Inpatient/Surgery must not be confused with the number of deployment applications.
   Inpatient/Surgery are deferred, not deleted. Gateway/Eureka are infrastructure; common is a library.
   PostgreSQL context-owned stores and RabbitMQ remain; the documentation change does not migrate code/data.
 - **Frontend** — `frontend/`: Next.js 16 App Router, TypeScript, Tailwind v4, pnpm.
+- **Mobile** — `mobile/`: Flutter real-Gateway foundation; see `mobile/README.md` for current
+  read-only slices, unfinished context workspaces and native toolchain limits.
 
 Authoritative business design and scope: [`docs/README.md`](docs/README.md).
 Coding standards: [`docs/ai/README.md`](docs/ai/README.md). Old-path documents are compatibility
@@ -43,7 +51,7 @@ pointers, not additional specs or backlogs.
 |---|---|
 | Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service`, deferred `inpatient-service` |
 | Huy (`LQHuy0210`) | `pharmacy-service`, `report-service`, deferred `surgery-service` |
-| Hoàng Anh (`TranHoangAnh94`) | `organization-service`, `patient-service`, `gateway` |
+| Hoàng Anh (`TranHoangAnh94`) | Organization/Patient packages in `core-service`, `gateway` |
 | Lộc (`locgit-89`) | `billing-service`, `notification-service` |
 
 Frontend ownership mirrors these bounded contexts. The exact feature and route paths are canonical
@@ -130,11 +138,11 @@ trees, ports, or adapters in `frontend/`. The only thing that crosses is the wir
 ## Build & run
 
 ```bash
-docker compose up -d                  # PostgreSQL (8 DBs) + RabbitMQ
+docker compose up -d postgres rabbitmq # shared infrastructure; 8 active + 2 deferred context DBs on fresh init
 mvn -q -DskipTests install            # build all modules
-mvn -pl backend/<module> -am spring-boot:run  # run one service
+java -jar backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar # after build; or launch selected app in IDE
 cd frontend && pnpm install && pnpm dev
-cd mobile && flutter pub get && flutter run  # Flutter app
+cd mobile && flutter pub get && flutter run  # device config: mobile/README.md; Windows web: tool/run_web.ps1
 
 # Optional: install AI codebase tools (one-time per machine)
 scripts/setup-codebase-memory.sh      # codebase-memory-mcp (macOS/Linux)
@@ -149,8 +157,8 @@ git config core.hooksPath scripts/git-hooks   # or: scripts\setup-hooks.bat / ba
 ```
 
 Start order: `eureka-server` (8761) → `gateway` (8080) → implemented business services
-(8081–8089) → planned Inpatient/Surgery (8090/8091, only after scaffold) → `pnpm dev` (3000) →
-`flutter run`.
+(Core 8089; Clinical/Lab/Pharmacy/Billing/Notification/Report 8082,8084–8088) → `pnpm dev` (3000) →
+`flutter run`. Inpatient/Surgery (8090/8091) remain outside the MVP start profile.
 
 ## Git workflow
 

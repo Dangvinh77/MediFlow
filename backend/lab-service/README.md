@@ -1,8 +1,15 @@
 # lab-service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Lab owns outpatient test requests, processing and results; laboratory lifecycle and payment authority remain separate.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 Lab tests and results (`LAB_TEST`, `LAB_RESULT`).
 
-Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · design doc [`docs/eproject_general_plan/lab-service.html`](../../docs/eproject_general_plan/lab-service.html).
+Reference: [`docs/ai/services/lab.md`](../../docs/ai/services/lab.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
 
 - **Port:** 8084 · **Base path:** `/api/v1/lab` · **DB:** `mediflow_lab` (PostgreSQL)
 - **Owns tables:** `LAB_TEST`, `LAB_RESULT`

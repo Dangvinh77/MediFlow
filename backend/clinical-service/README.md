@@ -1,8 +1,15 @@
 # clinical-service
 
+## Product scope — 2026-10-17
+
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Clinical owns appointments, reception/check-in, examinations and outpatient medical records.
+
+Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
+
+
 **Khoa Khám bệnh** — the outpatient examination workflow end to end: booking an appointment, the examination, the medical record and its diagnoses.
 
-Reference: [service rules](../../docs/ai/services/clinical.md) · [design](../../docs/eproject_general_plan/clinical-service.html) · [implementation spec](../../docs/eproject_general_plan/backend-spec/03-clinical.md).
+Reference: [service rules](../../docs/ai/services/clinical.md) · [business flows](../../docs/plans/02-business-flows.md) · [Vinh handoff/evidence](../../docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md).
 
 - **Port:** 8082 · **Base paths:** `/api/v1/appointments`, `/api/v1/records` · **DB:** `mediflow_clinical`
 - **Owns tables:** `APPOINTMENT`, `MEDICAL_RECORD`, `DIAGNOSIS`, `ATTACHED_RESULT`

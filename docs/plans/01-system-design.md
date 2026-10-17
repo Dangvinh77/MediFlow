@@ -1,4 +1,14 @@
-# Thiết kế hệ thống MediFlow tối giản
+# Thiết kế MediFlow — hệ thống thông tin bệnh viện cho ngoại trú
+
+## Định vị sản phẩm
+
+**MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management.**
+
+MediFlow là hệ thống thông tin bệnh viện phân tán, với phạm vi triển khai đồ án tập trung vào quản lý khám chữa bệnh ngoại trú. Quy mô hướng tới là phòng khám đa khoa hoặc khoa khám bệnh ngoại trú của bệnh viện: có tiếp nhận, bác sĩ/khoa, Lab, quầy thuốc, thu ngân và quản lý. Phòng mạch nhỏ có thể sử dụng một phần chức năng nhưng chi phí vận hành microservices/broker cần được cân nhắc; đây là định hướng thiết kế, chưa phải kết luận triển khai thực tế.
+
+MVP bao gồm quản lý bệnh nhân và tổ chức, lịch hẹn/tiếp nhận, khám/hồ sơ/diagnosis, xét nghiệm, kê đơn/cấp thuốc, thu phí khám/xét nghiệm/thuốc, báo cáo ngoại trú và thông báo in-app. Admission, giường bệnh, điều trị nội trú và phẫu thuật dành cho giai đoạn sau; không xóa code/data đã có. Mô tả “HIS cho ngoại trú” không chứng nhận hệ thống quản lý toàn bộ bệnh viện đã hoàn chỉnh.
+
+Phạm vi có trong MVP khác với tính năng đã nghiệm thu: implementation, gate, contract và acceptance vẫn theo tài liệu 03/05/06 và handoff owner.
 
 ## Mục tiêu
 
@@ -38,10 +48,10 @@ cấp thuốc lỗi, redelivery, crash recovery, compensation và eventual consi
 
 ## CURRENT khác TARGET
 
-Source hiện có 10 business modules; Core/Support host chưa được tạo trong lượt viết tài liệu.
-Đây là baseline của lượt thiết kế 2026-10-14, không mô tả source mới nhất: rà soát
-2026-10-15 tại `5411acfa` đã có `backend/core-service` sau PR #368; chưa có
-`backend/support-service`. Sự hiện diện Core không chứng minh đã nghiệm thu sáu deployments.
+Rà source ngày 2026-10-17: root Maven reactor có 12 module gồm common, Eureka, Gateway và 9 ứng dụng nghiệp vụ (Core, Clinical, Lab, Pharmacy, Billing, Notification, Report, Inpatient, Surgery). Organization và Patient đã nằm trong backend/core-service, giữ package/domain và hai datasource riêng; không còn hai module Maven standalone trong reactor. Tám context active vẫn là Organization, Patient, Clinical, Lab, Pharmacy, Billing, Notification và Report; thêm Inpatient/Surgery hoãn là mười context, không phải mười ứng dụng đang triển khai.
+
+Chưa có backend/support-service. Notification/Report vẫn là hai ứng dụng riêng, vì vậy Core hiện diện chưa đồng nghĩa đã chạy/nghiệm thu sáu business deployments. Gateway hiện trỏ Organization/Patient tới Core và Notification/Report tới từng app riêng. Compose còn tên build legacy Organization/Patient; không dùng file đó làm bằng chứng profile sáu deployment đã sẵn sàng. Các nhận định “host chưa tạo” ngày 2026-10-14 là baseline lịch sử, không mô tả source hiện tại.
+
 Clinical/Lab có các use case V1/EXAM/LAB clearance và Billing có issuer opt-in; flags/producer
 publication phải nghiệm thu lại. Pharmacy có V0 public/receipt saga và V1 outpatient internal
 creation/dispense; không coi internal service/test là public V1 workflow đã chạy.
