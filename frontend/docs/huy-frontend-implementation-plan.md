@@ -7,6 +7,9 @@
 chi tiết tại mục 14. P-06 xong 4/4 subtask local, task chính vẫn chờ real-role smoke GW-01.
 Mẫu số 30/123 thuộc plan lịch sử có cả Surgery/full V2 deferred, không phải
 tỷ lệ hoàn thành MVP 6 service. Nghiệm thu Gateway/backend thật và các task release vẫn mở.
+**Bổ sung MVP ngoại trú:** `R-MVP-01` hoàn tất 4/4 phần FE local tại mục 15;
+route mới mặc định đóng, chờ runtime/coverage acceptance. Đây là task bổ sung theo backend mới,
+không phải R-06/full V2 và không sửa mẫu số lịch sử 30/123.
 **Thiết kế:** người dùng đã chốt bản dùng theme Sáng / Tối / Hệ thống của MediFlow.
 
 **Xác nhận mẫu 2026-10-16:** ảnh người dùng gửi khớp
@@ -887,3 +890,62 @@ GW-01 vẫn cần Hoàng Anh đối chiếu exact cancel/dispense policy: contro
 trong khi Gateway generic PUT hiện chỉ cho ADMIN/PHARMACIST. Không đổi role hoặc gọi service port
 để vượt gate. Phần còn lại tiếp tục trong
 [một handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+
+## 15. Checkpoint Report ngoại trú theo backend MVP — 2026-10-16
+
+Baseline `ebef450853e982552c8f95fc9ddd496b5b2e0f72`, thay đổi chưa commit/push.
+IMPLEMENT trong Report feature/matching routes và tài liệu; VERIFY CONTRACT read-only ở
+Report controller/DTO/read service/security và Gateway. Không sửa shared frontend, foreign
+features, backend hoặc runtime configuration của owner khác.
+
+### R-MVP-01 — Báo cáo ngoại trú có coverage
+
+- [x] R-MVP-01.1 Mirror `OutpatientReportDTO`/nested `Period`; API facade dùng
+  `GET /v1/reports/outpatient/daily?fromDate&toDate&departmentId?` và
+  `GET /v1/reports/outpatient/monthly?year&departmentId?`. Monthly lấy 12 kỳ của năm,
+  không gửi month hoặc gọi legacy monthly. Numeric JSON theo DTO/controller tests hiện tại.
+- [x] R-MVP-01.2 Route `/reports/outpatient`: hai view ngày/tháng theo theme sẵn có;
+  URL lưu bộ lọc, Back/Forward, calendar-valid dates 2000–2100, tối đa 366 ngày inclusive,
+  year integer/UUID và focus lỗi. Kết quả giữ scope/periods/currency/zone từ response;
+  bảy chỉ số mỗi kỳ, không cộng lại total hoặc tự tính netCash. Instant hiển thị theo zone server.
+- [x] R-MVP-01.3 Route và entry trong Reports mặc định đóng. Server chỉ truyền enabled khi
+  `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true`; hai pages dùng dynamic rendering để đọc
+  cấu hình lúc chạy. Tắt gate: URL trực tiếp chỉ hiện unavailable, không mount view/gọi API.
+  Gate FE là UX, không cấp quyền hoặc bật profile/consumer/reader backend.
+- [x] R-MVP-01.4 Component/query/API tests và browser fixture đạt. `covered=false`, periods
+  trống và `REPORT_NOT_FOUND` giữ unavailable khác accepted zero; 401/403/correlation/retry,
+  stale response/unmount, đổi view/gate, giá trị netCash âm và draft/submitted scope được kiểm tra.
+
+Backend source lock: `web/OutpatientReportController.java`,
+`application/dto/response/OutpatientReportDTO.java`, `application/service/OutpatientReportReadService.java`,
+`web/OutpatientReportControllerTest.java`; Gateway `filter/RouteAuthorizationFilter.java` hiện có
+GET Reports ADMIN/MANAGER. Reader cần profile `mvp-outpatient` hoặc `outpatient-mvp` và cả
+`mediflow.features.care-finance-v2=true`, `mediflow.report.outpatient-read.enabled=true`.
+Thiếu/unaccepted/stale coverage trả 404 `REPORT_NOT_FOUND`; FE không fallback legacy.
+Không thêm capability endpoint chưa tồn tại, không phát triển Financial/Operational/Surgery V2.
+
+Verification trên candidate:
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: PASS. Build liệt kê `/reports` và
+  `/reports/outpatient` là dynamic routes. Không thêm dependency hoặc sửa shared config.
+- Full `pnpm test -- --maxWorkers=2`: **291/291 tests, 36 files, exit 0**; thêm 29 tests.
+  Lượt focused đầu có một assertion hard-code định dạng ngày của Intl khác môi trường;
+  sửa assertion kiểm đúng giờ theo zone, full suite sau đó đạt. Không sửa implementation để né lỗi.
+- Browser dùng production build + loopback Gateway fixture, tài khoản/dữ liệu giả cô lập.
+  Đã kiểm gate OFF qua direct URL và quan sát **không request Report**; restart cùng build với
+  gate ON mới tải. Daily hai kỳ có dữ liệu/zero; monthly đúng year trả 12 kỳ; Back/Forward,
+  UUID/focus lỗi và missing coverage 404/correlation đạt. Không có legacy report fallback request.
+- Desktop Sáng viewport 1280×720 (`scrollWidth=1265`), mobile Tối 360×800
+  (`scrollWidth=345`), không tràn ngang. Browser chỉ chứng minh FE/fixture, không chứng minh
+  signed ADMIN/MANAGER, real coverage, source completeness hoặc Support runtime.
+
+Trước mở môi trường thật, owner phải nghiệm thu reader/profile/coverage và exact Gateway roles;
+sau đó mới cấu hình env server trên frontend và restart. Không tự bật backend flags, sửa Compose
+hoặc đóng H6-11/H6-12. Các điều kiện còn lại ghi trong **một handoff Huy hiện có**.
+Mẫu số lịch sử vẫn 11/30 task chính, 50/123 subtasks; R-MVP-01 có 4/4 local, release OPEN.
+
+Rà soát tiếp tục ngày **2026-10-17**: phần độc lập R-MVP-01 đã hoàn tất; các kết quả kiểm tra
+ở trên được thực hiện ngày 2026-10-16. P-08 còn phụ thuộc shared API hỗ trợ
+`Idempotency-Key` và nghiệm thu source/paid/activation. DTO đọc đơn hiện chưa có metadata V1;
+không tự bổ sung wire fields hoặc suy diễn mode từ recordId. Chi tiết và acceptance của shared
+header được bổ sung vào mục 6 của handoff chung; không tạo file bàn giao mới.

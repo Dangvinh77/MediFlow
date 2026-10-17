@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { PageShell } from "@/components/layout/PageShell";
 import { buildDailyReportQuery, buildMonthlyReportQuery, buildTopMedicinesQuery, getReportView, readDailyReportQuery, readMonthlyReportQuery, readTopMedicinesQuery, reportViews, type ReportView } from "../reportQuery";
 import { DailyReportView } from "./DailyReportView";
 import { MonthlyReportView } from "./MonthlyReportView";
 import { TopMedicinesView } from "./TopMedicinesView";
 
-export function ReportWorkspace() {
+export function ReportWorkspace({ outpatientEnabled = false }: { outpatientEnabled?: boolean }) {
   const params = useSearchParams();
   const pathname = usePathname();
   const rawQuery = params.toString();
@@ -26,6 +27,7 @@ export function ReportWorkspace() {
 
   return (
     <PageShell title={reportViews[view].title} description="Số liệu tổng hợp từ Report.">
+      {outpatientEnabled && <Link href="/reports/outpatient" className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline">Báo cáo ngoại trú</Link>}
       <nav aria-label="Loại báo cáo" className="mt-4 flex flex-wrap gap-x-6 border-b border-border">
         {(Object.keys(reportViews) as ReportView[]).map((key) => {
           const next = new URLSearchParams(rawQuery); next.set("view", key);

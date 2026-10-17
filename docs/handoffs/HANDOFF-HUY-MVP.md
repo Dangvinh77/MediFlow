@@ -187,6 +187,7 @@ có Surgery/full V2 deferred, không phải tỷ lệ MVP backend.
 | Signed identity và Gateway runtime | Hoàng Anh + runtime operator; actual roles ADMIN/PHARMACIST/DOCTOR/MANAGER, accountId/staffId đúng source | Login → catalog/detail/create/adjust/replay/reports qua same-origin Gateway; allowed/denied paths, expired session và correlation đúng. Token fixture không thay signed staff proof |
 | GW-01 — exact Pharmacy cancel/dispense roles | Hoàng Anh; `RouteAuthorizationFilter` hiện generic PUT `/api/v1/pharmacy/prescriptions/**` chỉ ADMIN/PHARMACIST, controller cancel ADMIN/DOCTOR | DOCTOR kê đơn đúng signed actor được cancel đơn của mình; foreign doctor/PHARMACIST bị deny cancel; ADMIN/PHARMACIST dispense chỉ khi lifecycle/payment đủ. Ghi actual allowed/denied HTTP và correlation; không đổi DOCTOR thành PHARMACIST để qua Gateway |
 | Outpatient Rx source/paid flow | Vinh Clinical + Lộc Billing, theo H6-06.2/.4 và H6-12.1 ở trên | Chỉ dùng IDs trả về từ source, current charge/grant và signed actor; nối UI public outpatient sau activation acceptance, không tự fallback legacy V0 để báo V1 thành công |
+| P-08 — hỗ trợ header cho public Rx V1 | Vinh, owner shared frontend `frontend/src/lib/api.ts`; Huy nối Pharmacy sau khi shared contract sẵn sàng | API wrapper hỗ trợ truyền `Idempotency-Key` cho POST mà vẫn giữ envelope, bearer và xử lý lỗi hiện có. FE dùng canonical UUID cho một creation command, giữ cùng key/payload khi retry cùng command; command mới dùng key mới. Kiểm chứng header qua Gateway, không đặt key vào JSON và không gọi raw fetch trong feature |
 | Support host và endpoint routing | Lộc Notification + shared build/runtime owner + Hoàng Anh Gateway, theo H6-11 | Report/Notification logical routes tiếp tục đúng qua một Support host đã nghiệm thu; không đổi feature folder theo deployment hoặc coi sáu nhóm sidebar là proof sáu process |
 | Report currency, department và coverage | Huy Report + Lộc Billing + Hoàng Anh Organization và source owners | Legacy DTO giữ numeric format/department UUID khi chưa có display contract. Current accepted period/zone/currency/coverage có owner evidence trước UI snapshot mới; unavailable không biến thành zero |
 
@@ -199,6 +200,29 @@ typecheck/lint/build đạt. Browser với gateway fixture cô lập đã kiểm
 releasedReservations, xuất → terminal read; focus/Escape/return-focus và desktop/mobile themes.
 Đã khôi phục theme System, đăng xuất và dừng server thử. Đây là bằng chứng FE local dùng mock,
 không đóng GW-01, paid/source V1, Support host hoặc real-role release acceptance.
+
+Bổ sung FE MVP cùng ngày — `R-MVP-01` đã có route `/reports/outpatient`, daily inclusive
+range/monthly whole-year facade, exact OutpatientReportDTO và UI coverage/currency/zone/periods.
+Xem [plan mục 15](../../frontend/docs/huy-frontend-implementation-plan.md#15-checkpoint-report-ngoại-trú-theo-backend-mvp--2026-10-16).
+29 tests mới; full FE suite **291/291, 36 files**, typecheck/lint/build đạt; browser fixture đã kiểm
+gate OFF không request Report, gate ON ngày/tháng/12 kỳ, Back/Forward, thiếu coverage và mobile.
+Đây là local FE acceptance, không thay các điều kiện source/coverage/Support/Gateway trong bảng.
+
+Owner/runtime chỉ mở `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=true` trên server frontend rồi restart
+sau khi reader chạy dưới profile outpatient, hai backend flags hiện hành đã được owner nghiệm thu,
+coverage thật đúng khoa/period/currency/zone và signed ADMIN/MANAGER qua Gateway được xác nhận.
+Không cần thêm capability endpoint hoặc mở Financial/Operational/Surgery V2. UI mặc định đóng cả
+direct URL và entry, không fallback sang legacy nếu `REPORT_NOT_FOUND`; unavailable không thành zero.
+Không đóng thêm H6-11/H6-12 hoặc sửa topology/foreign paths trong batch FE này.
+
+Rà soát tiếp theo ngày **2026-10-17**, source baseline `ebef4508`: public
+`api.post(path, data)` chưa nhận headers, dù transport nội bộ đã dùng `Headers`.
+`PrescriptionController` yêu cầu canonical UUID `Idempotency-Key` khi
+`careContractVersion=1`; thiếu/sai key bị từ chối. Cần shared owner cung cấp khả năng này
+trước khi Huy nối P-08; chưa có quyền sửa shared API trong task hiện tại. Response
+`PrescriptionDTO` hiện không xuất careContractVersion/careContext/episode/priceCode;
+FE không thêm metadata suy diễn hoặc dùng `recordId=null` làm bằng chứng V1.
+Đây là phụ thuộc FE bổ sung trong cùng file, không đóng gate activation hoặc backend subtask.
 
 ## 7. Backend continuation — Pharmacy disposition guard (2026-10-16)
 

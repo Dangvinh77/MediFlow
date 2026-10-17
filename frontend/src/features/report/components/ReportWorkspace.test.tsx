@@ -14,6 +14,12 @@ describe("ReportWorkspace", () => {
     expect(screen.getByRole("link", { name: "Hàng ngày" })).toHaveAttribute("href", "/reports?view=daily");
     expect(screen.queryByLabelText("Ngày báo cáo")).not.toBeInTheDocument();
     expect(mocks.monthly).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: "Báo cáo ngoại trú" })).not.toBeInTheDocument();
+  });
+  it("only exposes the outpatient entry after the server UI gate is enabled", () => {
+    render(<ReportWorkspace outpatientEnabled />);
+    expect(screen.getByRole("link", { name: "Báo cáo ngoại trú" })).toHaveAttribute("href", "/reports/outpatient");
+    expect(mocks.monthly).not.toHaveBeenCalled(); expect(mocks.daily).not.toHaveBeenCalled();
   });
   it("reads monthly URL filters and does not request inactive report types", async () => {
     mocks.query = "view=monthly&month=2&year=2024";
