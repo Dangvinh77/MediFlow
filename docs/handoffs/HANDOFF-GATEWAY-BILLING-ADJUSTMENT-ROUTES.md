@@ -1,47 +1,67 @@
-# HANDOFF — Gateway allowlist missing for two live Billing read endpoints
+# Hoàng Anh — bổ sung Gateway routes hoàn tiền ngoại trú
 
-**Owner:** Hoàng Anh / Gateway
-**Status:** Open
-**Reason:** `RouteAuthorizationFilter` is default-deny. Two live, always-reachable Billing
-controllers have no matching rule, so a request that already passes Billing's own
-`@PreAuthorize` is still rejected at the Gateway boundary.
+**Refresh:** 2026-10-18, master `025ef39e` đã merge PR #427.
+**Trạng thái:** OPEN — cần code. **Dev code:** Hoàng Anh (`TranHoangAnh94`).
+**Toàn bộ kiểm thử/nghiệm thu:** Vinh, theo phân công người dùng ngày 2026-10-18;
+xem [queue kiểm thử chung](HANDOFF-VINH-BACKEND-VERIFICATION.md).
+Phiếu này thay yêu cầu cũ mở cả Surgery và dùng wildcard `/**`.
 
-**Found 2026-10-15** while building the frontend for `backend/billing-service/.../web/
-PrescriptionAdjustmentController.java` (`GET /api/v1/billing/prescription-adjustments/{id}/
-refunds-due`, roles `ADMIN`/`CASHIER`) and `backend/billing-service/.../web/
-SurgeryCancellationController.java` (`GET /api/v1/billing/surgery-cancellations/{id}/
-refunds-due`, roles presumably `ADMIN`/`CASHIER` — verify against its live `@PreAuthorize`).
-`backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java` has
-rules for every other live Billing path (`invoices/**`, `patient/**`, `revenue`,
-`admin/outbox/**`) but none for `prescription-adjustments/**` or `surgery-cancellations/**`, so
-both currently return the filter's default deny regardless of caller role.
+## Gap đã xác nhận
 
-## Required change
+Hai controllers có role guards nhưng `RouteAuthorizationFilter` chưa cho qua;
+`backend/gateway/src/test/resources/route-role-contracts.csv` đánh dấu cả hai `false`:
 
-Add two `rule(...)` entries in `RouteAuthorizationFilter` mirroring the existing Billing rules'
-style, matching each controller's exact live path/method/role set:
+| Task | Method / exact path | Roles | Controller Billing |
+|---|---|---|---|
+| HA-CODE-01 | `GET /api/v1/billing/prescription-adjustments/{id}/refunds-due` | ADMIN, CASHIER | PrescriptionAdjustmentController |
+| HA-CODE-02 | `POST /api/v1/billing/transactions/{id}/refunds` | ADMIN, CASHIER | LedgerRefundController |
 
+Controllers nằm tại `backend/billing-service/src/main/java/com/mediflow/billing/web/`.
+Default `docker-compose.yml` đã bật `MEDIFLOW_BILLING_LEDGER_ENABLED`,
+`MEDIFLOW_BILLING_PRESCRIPTION_CHARGE_CONSUMER_ENABLED`, `MEDIFLOW_BILLING_REFUNDS_ENABLED`.
+Đây là gap public outpatient hiện tại. HA-CODE-02 là phát hiện bổ sung trong lượt này:
+command ghi nhận hoàn tiền thực tế cũng bị Gateway default deny.
+
+## Hoàng Anh thực hiện code
+
+- Thêm đúng hai exact method/path rules trong
+  `backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java`,
+  roles ADMIN/CASHIER theo controller. Không mở prefix hoặc nested paths bằng `/**`.
+- Đổi đúng hai dòng tương ứng trong `route-role-contracts.csv` thành `true`, giữ policy
+  các endpoints khác. Đây là fixture đi kèm code; Vinh nhận viết/chạy tests xác minh.
+- Giữ JWT types, signed actor, correlation, query/body và downstream response/error forwarding.
+  Không đổi Billing DTO/business semantics hoặc deployment flags để vượt gap.
+- Bàn giao commit SHA/diff cho Vinh; không giao full regression/integration lại Hoàng Anh.
+
+## Vinh kiểm thử và đóng
+
+- ADMIN/CASHIER hợp lệ qua hai exact routes tới Billing thật; adjustment read trả đúng
+  resource, refund command dùng original payment thật và live request DTO.
+- Wrong role, SYSTEM/human-token mismatch, refresh token, thiếu token, sai method,
+  thiếu ID, extra/nested segment đều bị từ chối theo existing policy.
+- Giữ signed actor/correlation; refund retry/race/over-refund vẫn đúng business guards.
+  Refund obligation pending không được coi là completed refund.
+- RouteRoleContractTest, Gateway/Billing regression và actual Gateway/Billing slice đạt
+  trên cùng revision; counts/skips/exit codes và evidence do Vinh ghi vào queue chung.
+
+Frontend FE-BILLING-07 đọc adjustment phụ thuộc HA-CODE-01; frontend không thuộc phiếu code này.
+Không mở Surgery cancellation, account deposit/settlement hoặc Report maintenance writes chỉ vì
+CSV cũng có dòng `false`. Surgery/Inpatient/full V2 deferred, không là blocker ngoại trú.
+Chỉ đóng phiếu sau khi cả code và nghiệm thu Vinh đạt.
+
+## Tái hiện thực tế — 18/10/2026
+
+Vinh đã thêm test `backend/gateway/src/test/java/com/mediflow/gateway/GatewayRefundRoutesAcceptanceIT.java`.
+Chạy explicit (tên IT không nằm trong default Surefire):
+
+```powershell
+mvn -B -ntp -pl backend/gateway -am '-Dtest=GatewayRefundRoutesAcceptanceIT' '-Dsurefire.failIfNoSpecifiedTests=false' test
 ```
-rule("/api/v1/billing/prescription-adjustments/**", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
-rule("/api/v1/billing/surgery-cancellations/**", HttpMethod.GET, Roles.ADMIN, Roles.CASHIER),
-```
 
-Verify the exact role set against each controller's live `@PreAuthorize` before adding — this
-handoff only reports the missing rule, not a verified final role list for the Surgery one.
+11 cases: 4 failures ở ADMIN/CASHIER của hai route trên, 7 negative controls pass; exit 1.
+Test dùng actual RouteAuthorizationFilter với mock exchange/downstream chain để chứng minh
+policy gap; chưa thay thế HTTP/JWT/Billing refund acceptance. Default Gateway suite 1.449/1.449
+pass vì route-role CSV hiện ghi hai routes chưa publish. Sau sửa, Vinh chạy lại test này và
+kiểm thử Gateway/Billing thật như acceptance phía trên.
 
-## Acceptance
-
-- `GatewayWebTest` (or equivalent) covers allowed role, denied role, wrong method, and
-  extra/nested path for both new rules, matching the existing Billing route tests' style.
-- No other Billing rule is widened or narrowed.
-- `mvn -q -pl backend/gateway -am test` passes.
-
-## Why this matters now
-
-`prescription-adjustments` is a live MVP path — Rx compensation (`mediflow.billing.ledger.enabled`
-+ `mediflow.billing.prescription-charge-consumer.enabled`) is already turned on in
-`docker-compose.yml`. The frontend queue item `FE-BILLING-07` in
-`frontend/docs/services/billing.md` stays `BLOCKED` on the prescription-adjustments half until
-this is fixed; the Surgery-cancellation half stays out of MVP scope regardless (Surgery is
-deferred), so only the prescription-adjustments rule is needed to unblock FE-BILLING-07's first
-half.
+[Evidence source/counts/failures](../acceptance/backend-2026-10-18/README.md).

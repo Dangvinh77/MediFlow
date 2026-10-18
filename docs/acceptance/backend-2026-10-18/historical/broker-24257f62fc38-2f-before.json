@@ -1,0 +1,6 @@
+[
+{"name":"lab.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"clinical.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","clinical.dead-letter"]]}
+,{"name":"lab.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","lab.dead-letter"]]}
+,{"name":"clinical.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+]

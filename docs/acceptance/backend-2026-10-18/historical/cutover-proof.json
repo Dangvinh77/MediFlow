@@ -1,0 +1,21 @@
+{
+  "completedAt" : "2026-10-18T11:21:05.354017500Z",
+  "sourceHead" : "025ef39e358756a28043d9809fad165096528fbf",
+  "sourceManifestSha256" : "a0dfd8bfdae2a755dbd14d923afff6740dd60ca73577557404ddf95774a409fc",
+  "phases" : [ "legacy", "support", "broker-restart", "legacy-rollback", "support-return" ],
+  "notificationIds" : [ "2bb42b00-6fe1-4056-86fc-1bd8190dc8eb", "48e3024e-4360-42e4-b409-092f5ce160e3", "20899742-1d14-456d-95e5-f248adc81d9c", "5bd183d4-5f22-4c21-a64a-dc9e657babba" ],
+  "notificationRowSha256" : {
+    "2bb42b00-6fe1-4056-86fc-1bd8190dc8eb" : "d4b88a6f61359271a7fe47dd3fc728e2bbbc3c9f370fbc945ea17283460158c6",
+    "48e3024e-4360-42e4-b409-092f5ce160e3" : "276c17a0293a2d972582ad5eec73c2bea31c8a668ceedea7ae7ff29e69ee4a82",
+    "20899742-1d14-456d-95e5-f248adc81d9c" : "d4f2a5bc40b867568e6234803ff76f19e7f9f06e67d434231c12071de4313582",
+    "5bd183d4-5f22-4c21-a64a-dc9e657babba" : "2b3e536dac85040288d7a89129ffbf7501a74a00706790470e2cb8a8b5d66eae"
+  },
+  "reportRowsSha256" : "36f034b5468b392f0495d0b13d423af8cb42dc23b54e5bab5e1269b5b058b840",
+  "reportHistorySha256" : "4df249133548b85397e55037a542c2ed244612a0fd84e5a0dcf9fbf19cef5e7f",
+  "notificationHistorySha256" : "b2b45367abf5cdc7d779c647691b4b872dba33179f38b57b6091adcf18f776c8",
+  "retainedProbeQueue" : "h6.rehearsal.retention.6f664878-c1dd-4465-88ca-59fdad43717d",
+  "retainedProbeBodySha256" : "b664870c5007ac06b1373b5d15e4dfc40dd979863bf38dddbc3439c0e8d4c065",
+  "originalVolumesMountedReadOnly" : true,
+  "activationGates" : "OFF",
+  "historicalScope" : "actual stopped local development volumes; source inventory records empty Report/Notification stores"
+}

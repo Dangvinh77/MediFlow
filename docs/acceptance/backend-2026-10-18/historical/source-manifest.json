@@ -1,0 +1,26 @@
+{
+  "tag": "mediflow-h6-20261018181802-c6efa6",
+  "startedAt": "2026-10-18T18:19:24.3568876+07:00",
+  "sourceHead": "025ef39e358756a28043d9809fad165096528fbf",
+  "dirtyWorkingTree": true,
+  "sourcePgVolume": "source_mediflow-pgdata",
+  "sourceRabbitVolume": "source_mediflow-rabbitdata",
+  "pgCloneVolume": "mediflow-h6-20261018181802-c6efa6-pg",
+  "rabbitCloneVolume": "mediflow-h6-20261018181802-c6efa6-rabbit",
+  "pgContainer": "mediflow-h6-20261018181802-c6efa6-pg",
+  "rabbitContainer": "mediflow-h6-20261018181802-c6efa6-rabbit-d790b1fced67",
+  "rabbitNodes": [
+    "004bdd2ef315",
+    "16555e1b81f0",
+    "24257f62fc38",
+    "c63d11cf211a",
+    "d790b1fced67"
+  ],
+  "sourcePgSha256": "b56745dcd144d5c299926248bd4c8969075c925812244d5f91283352a21bec3d",
+  "sourceRabbitSha256": "44fc58ae038c50bc6021980d6a7cce4bd7527b619c35dffd9a23bd7c626d9627",
+  "scope": "User-authorized local development volume rehearsal, not production activation",
+  "images": {
+    "rabbit": "sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281",
+    "postgres": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea"
+  }
+}

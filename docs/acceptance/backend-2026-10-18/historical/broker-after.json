@@ -1,0 +1,11 @@
+[
+{"name":"lab.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"notification.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"report.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"clinical.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","clinical.dead-letter"]]}
+,{"name":"notification.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","notification.dead-letter"]]}
+,{"name":"h6.rehearsal.retention.6f664878-c1dd-4465-88ca-59fdad43717d","messages_ready":1,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"lab.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","lab.dead-letter"]]}
+,{"name":"clinical.dlq","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[]}
+,{"name":"report.q","messages_ready":0,"messages_unacknowledged":0,"consumers":0,"durable":true,"arguments":[["x-dead-letter-exchange","longstr","mediflow.events.dlx"],["x-dead-letter-routing-key","longstr","report.dead-letter"]]}
+]

@@ -1,0 +1,2 @@
+# Preserve original evidence bytes, including CRLF, for hashes/proof references.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
