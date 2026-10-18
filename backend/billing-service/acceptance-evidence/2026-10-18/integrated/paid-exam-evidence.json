@@ -1,0 +1,44 @@
+{
+  "appointmentId" : "d91d363f-53ba-4806-b80b-8829ed915efb",
+  "payment" : {
+    "transactionId" : "a99e8696-6340-4a0b-8982-05d550696541",
+    "accountId" : "62135a64-54d0-4f30-88d7-4284baa6457b",
+    "paymentRequestId" : "7d311958-bf2c-422b-b707-d14c890b170c",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 100000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-18T06:11:52.770522Z"
+  },
+  "grant" : {
+    "eventId" : "d4d83e32-959f-4cef-bb14-620b6fd0a269",
+    "eventType" : "financial.clearance.granted",
+    "version" : 1,
+    "occurredAt" : "2026-10-18T06:11:52.770522100Z",
+    "correlationId" : "8f873a73-a71d-4d20-8daa-2bb681bb3f7e",
+    "producer" : "billing-service",
+    "payload" : {
+      "clearanceId" : "1074b25f-5b53-46eb-b139-22b989e539ae",
+      "invoiceId" : "800d9a58-5e26-494f-9b3c-20a166d1f25c",
+      "accountId" : "62135a64-54d0-4f30-88d7-4284baa6457b",
+      "patientId" : "c9100588-de53-4e14-9d9d-466d003d821a",
+      "careEpisodeType" : "OUTPATIENT_VISIT",
+      "careEpisodeId" : "d91d363f-53ba-4806-b80b-8829ed915efb",
+      "purpose" : "EXAM",
+      "appointmentId" : "d91d363f-53ba-4806-b80b-8829ed915efb",
+      "recordId" : null,
+      "labTestIds" : [ ],
+      "prescriptionId" : null,
+      "admissionId" : null,
+      "surgeryCaseId" : null,
+      "amount" : 100000.0,
+      "currency" : "VND",
+      "paymentMethod" : "CASH",
+      "expiresAt" : null,
+      "emergencyOverride" : false
+    }
+  },
+  "recordId" : "eadb2c47-24dc-43cc-be94-75c7b9737c51",
+  "grantSha256" : "0701b7bed5111a00341a8226cf86c3a3bbaa8b54cbb4ae4899916d01260f7882"
+}

@@ -1,6 +1,53 @@
 # Lộc — implementation handoff: discovery và publication V1 ngoại trú
 
-## 0. Phiếu thực thi hiện hành — 2026-10-17, Lộc đọc mục này trước
+## Nghiệm thu Vinh/Lộc — 2026-10-18
+
+Mục này thay trạng thái còn mở trong phiếu ngày 17/10 và LOC-03 continuation bên dưới.
+Baseline `e44ddf487523f8e781e53196d28f17db32beed1e`, branch
+`codex/vinh-loc-billing-closeout`, working patch chưa commit; manifest ghi hash source diff.
+Người dùng đã giao Vinh hoàn thiện Billing/Notification của Lộc trong tác vụ này.
+
+| Task | Kết quả và bằng chứng |
+|---|---|
+| LOC-01 | PASS: duplicate source với eventId mới, cùng operation; fresh Rabbit suite 8 cases giữ một logical effect |
+| LOC-02 | PASS: historical OFF → ON vẫn HELD; request mới là positive control; HELD replay bị từ chối |
+| LOC-03 | PASS: controlled NACK/timeout + PostgreSQL durable attempts/backoff/quarantine; stale-owner fencing; real-broker regression và packaged recovery |
+| LOC-04 | PASS: first/retry HTTP, PG readback và receipt có cùng `completedAt`; hai input nanosecond kiểm cả sát ranh giới giây |
+| LOC-05 | PASS: full regression và bundle dữ liệu test bền vững bên dưới; không dùng riêng đường dẫn target làm bàn giao |
+| LOC-06 | Billing producer regression mới PASS, gồm Rx partial/full và hai receipts đúng thứ tự. Actual Pharmacy → paid Rx → dispense → Clinical và Pharmacy restart dùng nghiệm thu Huy 17/10 đã dẫn bên dưới; không gọi fixture producer là actual Pharmacy mới |
+
+Hai lỗi production đã tái hiện và sửa trong Billing: atomic replay phải yêu cầu
+`publication_enabled=TRUE`; payment receipt/response chuẩn hóa `completedAt` đến microsecond
+trước lưu. Expiry, envelope `occurredAt` và authority `grantedAt` giữ full clock precision.
+Không thay historical bytes hoặc migration. Precision tolerance trong packaged tests đã bỏ.
+
+| Fresh verification, exit 0 | Tests | Failure / error / skip |
+|---|---:|---|
+| Billing full Surefire trong verify | 1060 | 0 / 0 / 0 |
+| Billing packaged publisher recovery, Failsafe | 1 | 0 / 0 / 0 |
+| Clinical / Lab full Surefire | 339 / 216 | 0 / 0 / 0 |
+| Notification full Surefire | 279 | 0 / 0 / 0 |
+| Gateway full Surefire, gồm correlation regression | 1449 | 0 / 0 / 0 |
+| Clinical packaged EXAM + standalone LAB/Rx consumer recovery, Failsafe | 1 + 2 | 0 / 0 / 0 |
+| Lab standalone consumer recovery, Failsafe | 1 | 0 / 0 / 0 |
+| Actual packaged Gateway/Core/Clinical/Lab/Billing paid flow + 3 crash checkpoints, Failsafe | 1 | 0 / 0 / 0 |
+
+**Bundle:** [README và lệnh tái lập](../../backend/billing-service/acceptance-evidence/2026-10-18/README.md),
+[manifest/source hash/file hashes/IDs](../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
+14 broker bodies khớp original stored bytes. Có raw discovery/payment responses, Flyway
+versions/checksums, outbox progress và original/redelivered bytes tại ba điểm crash:
+Clinical EXAM clearance, Lab clearance, Clinical result attachment. Mỗi điểm có PID khác nhau,
+unacked trước kill, redelivery thật, một inbox/effect và queue ready/unacked đều 0 sau recovery.
+
+Lỗi Windows dọn thư mục tạm khi redirected log còn bị khóa được xử lý ở test harness:
+giữ log dưới `target/acceptance-logs/`, vẫn assert tiến trình con đã dừng; chạy lại các IT bị ảnh hưởng.
+Không bỏ assertion nghiệp vụ, không purge DLQ để làm đạt. NACK/timeout là injected confirms
+với PG thật, không claim ép actual broker phát NACK.
+Notification không cần đổi production sau regression. Global deployment activation, full
+Core/Pharmacy regression mới, frontend/mobile và deferred Inpatient/Surgery ngoài phạm vi này.
+Những checkbox/counts cũ bên dưới là lịch sử; bảng nghiệm thu và manifest hiện hành ở trên thay thế chúng.
+
+## 0. Phiếu thực thi 2026-10-17 — lịch sử, trạng thái mới ở mục nghiệm thu phía trên
 
 **Owner:** Lộc (`locgit-89`). **Người nhận nghiệm thu:** Vinh; Huy nhận phần PRESCRIPTION.
 Source đối chiếu: `d80d23b2` + working changes Vinh được ghi trong
@@ -19,6 +66,57 @@ Các dòng “chưa chạy/paidRx còn mở” bên dưới là trạng thái tr
 full LOC-03/04/05, full Billing regression/recovery bundle hoặc global release đã được nghiệm
 thu từ selected Billing 133 tests và sáu-app test; không giao lại code Rx/Support đã đạt.
 
+### LOC-03 continuation — 2026-10-18, Vinh theo ủy quyền người dùng
+
+Source baseline `e44ddf487523f8e781e53196d28f17db32beed1e`, branch
+`codex/vinh-loc-billing-closeout`. Production change chỉ trong Billing; không đổi schema,
+event bytes, contracts hoặc activation flags.
+
+`BillingOutboxDeliveryPostgresTest` chạy PG 16 thật, actual JPA repository và transactional
+claim service. RabbitTemplate được kiểm soát cho hai trường hợp confirm NACK/không hoàn tất:
+đây là **injected-confirm + durable PG proof**, không phải actual broker NACK/timeout.
+Kiểm attempts chính xác 1/2/3, exponential backoff 1000/2000/2000 ms, không retry sớm,
+quarantine tại max=3, không gửi thêm sau max, successor cùng aggregate bị chặn, original
+event ID/body giữ nguyên. Clock cố định dùng để tiến thời gian, không sleep dự đoán backoff.
+
+Hai owner thực sự claim nối tiếp qua expired lease; old owner không thể mark published/failure
+hoặc sửa attempts/last_error/lock của new owner. New owner vẫn hoàn tất được.
+Replay positive control giữ original bytes; pending/already-published bị từ chối.
+
+**Lỗi tái hiện:** quarantined HELD V0/V1 được admin replay chấp nhận và reset evidence dù
+`publication_enabled=false`. HELD vẫn không được dispatcher publish, nên không gọi đây là
+unauthorized broker delivery. Sửa atomic replay update yêu cầu `publication_enabled=TRUE`;
+HELD trả false theo existing 404 controller contract và giữ nguyên toàn bộ row. Không sửa migration.
+
+| Fresh verification | Result |
+|---|---|
+| Baseline `BillingOutboxDispatcherTest` | Exit 0, 3 tests, 0 failure/error/skip |
+| RED `BillingOutboxDeliveryPostgresTest` trước fix | 5 tests, 2 failures đúng HELD V0/V1; 0 errors/skips |
+| GREEN delivery PG + dispatcher | Exit 0, 6 + 3 tests, 0 failure/error/skip |
+| Full Billing `verify` với acceptance profile | Exit 0, Surefire **1056 tests**, 0 failure/error/skip; không cộng lại targeted run |
+| Packaged JVM recovery trong cùng `verify` | Failsafe **1 test**, 0 failure/error/skip; actual fresh JAR kill/restart, original bytes và durable progress |
+| Actual PG/Rabbit resilience + publication trong full suite | **4 + 8 tests**, 0 failure/error/skip; gồm eligible replay, duplicate-new-event và historical HELD positive/negative controls |
+| `git diff --check` | Exit 0 |
+| Read-only code review | Không có finding cần sửa; không thay bằng test evidence |
+
+Hai lần thử trước RED gặp Docker Desktop chưa sẵn sàng (infrastructure error); không tính là
+test tái hiện lỗi. Docker sau khởi động: Engine 29.8.0, Java 21.0.11 (Zulu), Maven 3.9.16.
+Reproduce từ root:
+
+```powershell
+mvn -q -pl backend/billing-service -am '-Dtest=BillingOutboxDeliveryPostgresTest,BillingOutboxDispatcherTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify
+```
+
+Local ignored logs ở root worktree: `billing-delivery-red.log`, `billing-delivery-green.log`,
+`billing-full-verify.log`; reports ở Billing `target/surefire-reports` và `target/failsafe-reports`.
+LOC-03 hoàn tất cho controlled-confirm/PG fencing/replay cùng fresh real-broker regression và
+packaged recovery ở trên. Không claim actual-broker NACK/timeout. Full regression/package/recovery
+đã có fresh evidence cho LOC-05, nhưng full broker-response artifact bundle vẫn mở.
+LOC-04 timestamp decision và LOC-05 full broker-response artifact bundle không được đóng bởi
+các test mới này. Paid Rx historical evidence đã có trong refresh Huy phía trên; integrated
+paid Clinical/Lab JVM recovery và global release vẫn là gate riêng.
+
 ### 0.1. Trạng thái đã kiểm và phần không làm lại
 
 | Hạng mục | Trạng thái hiện hành | Hành động của Lộc |
@@ -28,10 +126,10 @@ thu từ selected Billing 133 tests và sáu-app test; không giao lại code Rx
 | Actual paid EXAM/LAB_TEST | Vinh chạy PASS qua Gateway/Billing/Rabbit → Clinical/Lab ngày 17/10 | Dùng làm đối chiếu; không gọi đây là full Billing/G1 acceptance |
 | Rabbit happy path + Rx hai installments | Đã có collector FIFO và kiểm đủ hai receipts | Giữ nguyên các assertions và original bytes |
 | Unroutable/retry/quarantine, admin replay happy path, expired lease reclaim, equal-timestamp ordering | Source hiện có 4 tests trong `OutpatientPublicationDispatcherResilienceRabbitIntegrationTest` | Chạy lại và trích evidence; không viết lại từ đầu |
-| Duplicate source với eventId mới; historical outpatient request trước activation tại broker | Còn thiếu Rabbit-level proof theo review #401 | Làm LOC-01 và LOC-02 |
-| NACK và confirm timeout | Chưa có case riêng; unroutable không chứng minh hai nhánh này | Làm LOC-03 |
+| Duplicate source với eventId mới; historical outpatient request trước activation tại broker | Refresh Huy 2026-10-17: hai cases đạt trong suite 8/8 | Giữ regression; không làm lại LOC-01/02 |
+| NACK và confirm timeout | Continuation 2026-10-18: controlled confirms + actual PG đạt; có stale-owner và HELD replay regression | Evidence đúng tầng tại LOC-03 continuation phía trên |
 | Full L4 evidence bundle | Có historical owner counts, thiếu bộ bàn giao mới đầy đủ | Làm LOC-05; không chép số cũ thành fresh result |
-| paidRx actual producer/consumer | Còn mở, phụ thuộc Huy + Vinh | Lộc làm Billing trong LOC-06; không tự đóng consumer |
+| paidRx actual producer/consumer | Refresh Huy 2026-10-17: sáu-app payment/dispense/Clinical attachment/private notice đã đạt | Không giao lại happy path; integrated recovery/release là gate riêng |
 
 Không suy Billing có bug chỉ vì còn thiếu test. Nếu test mới chứng minh implementation đúng,
 deliverable có thể chỉ là tests/evidence; chỉ sửa production khi đã tái hiện lỗi.

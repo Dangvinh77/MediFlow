@@ -49,6 +49,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 class PackagedOutpatientLabAcceptanceIT {
+    // Retain child logs outside JUnit's temporary directory: Windows can briefly lock
+    // redirected output after the child exits. Process termination is still asserted.
+    private Path processLog(String name) throws java.io.IOException {
+        Path logs = Path.of("target", "acceptance-logs", work.getFileName().toString());
+        Files.createDirectories(logs);
+        return logs.resolve(name + ".log");
+    }
+
     private static final String JWT_SECRET = "lab-packaged-acceptance-shared-secret-0123456789";
     private static final String PASSWORD = "Acceptance-pass-2026";
     private static final String RESULT_CONCLUSION = "No abnormality observed";
@@ -65,6 +73,7 @@ class PackagedOutpatientLabAcceptanceIT {
     Path work;
 
     private final Map<String, Process> processesByName = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, ProcessBuilder> launchers = new java.util.HashMap<>();
 
     @Test
     void persistedClinicalOrderCanBeStartedAndAttachedAfterActualPayment() throws Exception {
@@ -232,10 +241,12 @@ class PackagedOutpatientLabAcceptanceIT {
 
             assertThat(gatewayRequest(gatewayUrl, "PUT", "/api/v1/appointments/" + appointmentId + "/check-in",
                     nurseToken, "{}").statusCode()).isEqualTo(200);
+            armRecovery("clinical", "financial.clearance.granted");
             JsonNode examPayment = payActualSource(gatewayUrl, "EXAM", appointmentId, patientId, appointmentId, cashierToken, "100000.00");
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
                     assertThat(data(get(gatewayUrl, "/api/v1/appointments/" + appointmentId, nurseToken))
                             .path("status").asText()).isEqualTo("READY_FOR_EXAM"));
+            recoverAfterCommittedEffect("clinical", clinicalPort, "financial.clearance.granted");
             HttpResponse<String> examStarted = gatewayRequest(gatewayUrl, "PUT",
                     "/api/v1/appointments/" + appointmentId + "/start-exam", doctorToken, "{}");
             assertThat(examStarted.statusCode()).as(examStarted.body()).isEqualTo(200);
@@ -311,10 +322,12 @@ class PackagedOutpatientLabAcceptanceIT {
             assertThat(data(get(labBase, "/api/v1/lab/" + labTestId, labTechToken))
                     .path("status").asText()).isEqualTo("AWAITING_PAYMENT");
 
+            armRecovery("lab", "financial.clearance.granted");
             JsonNode labPayment = payActualSource(gatewayUrl, "LAB_TEST", labTestId, patientId, appointmentId, cashierToken, "150000.00");
             await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
                     assertThat(data(get(labBase, "/api/v1/lab/" + labTestId, labTechToken))
                             .path("status").asText()).isEqualTo("READY"));
+            recoverAfterCommittedEffect("lab", labPort, "financial.clearance.granted");
             JsonNode clearance = replayActualLabClearance(labTestId);
             assertQuarantinedPaymentReceipts(examPayment, labPayment, patientId, appointmentId);
             assertThat(count(database("mediflow_lab"), "SELECT count(*) FROM lab_financial_clearance WHERE test_id=?",
@@ -326,6 +339,7 @@ class PackagedOutpatientLabAcceptanceIT {
             assertThat(data(started).path("status").asText()).isEqualTo("IN_PROGRESS");
 
             String performedDate = LocalDate.now().toString();
+            armRecovery("clinical", "lab.result.created");
             HttpResponse<String> resultResponse = request(labBase, "PUT",
                     "/api/v1/lab/" + labTestId + "/results", labTechToken,
                     JSON.writeValueAsString(object(
@@ -348,6 +362,10 @@ class PackagedOutpatientLabAcceptanceIT {
                 assertThat(count(labDb, "SELECT count(*) FROM lab_outbox_event WHERE aggregate_id=? AND event_type='lab.result.created'",
                         labTestId)).isOne();
             });
+            recoverAfterCommittedEffect("clinical", clinicalPort, "lab.result.created");
+            assertThat(count(clinicalDb,
+                    "SELECT count(*) FROM attached_result WHERE record_id=? AND type='LAB' AND reference_id=?",
+                    recordId, labTestId)).isOne();
             JsonNode resultEvent = labOutboxPayload(labDb, labTestId);
             JsonNode resultPayload = resultEvent.path("payload");
             assertThat(resultPayload.path("labId").asText()).isEqualTo(labTestId.toString());
@@ -400,8 +418,7 @@ class PackagedOutpatientLabAcceptanceIT {
             for (ServerSocket reservation : reservedPorts.values()) reservation.close();
             reservedPorts.clear();
             List<Long> processesNotStopped = new ArrayList<>();
-            for (int i = processes.size() - 1; i >= 0; i--) {
-                Process process = processes.get(i);
+            for (Process process : processesByName.values()) {
                 if (!stop(process)) {
                     processesNotStopped.add(process.pid());
                 }
@@ -433,15 +450,7 @@ class PackagedOutpatientLabAcceptanceIT {
                 "currency", discovered.path("currency").asText(), "paymentMethod", "CASH"));
         JsonNode payment = data(gatewayRequest(gateway, "POST", paymentPath, cashierToken, body));
         JsonNode replay = data(gatewayRequest(gateway, "POST", paymentPath, cashierToken, body));
-        // PostgreSQL persists microseconds; all other replay fields must remain identical.
-        assertThat(Duration.between(Instant.parse(payment.path("completedAt").asText()),
-                Instant.parse(replay.path("completedAt").asText())).abs())
-                .isLessThan(Duration.ofNanos(1_000));
-        JsonNode replayFields = replay.deepCopy();
-        JsonNode paymentFields = payment.deepCopy();
-        ((ObjectNode) replayFields).remove("completedAt");
-        ((ObjectNode) paymentFields).remove("completedAt");
-        assertThat(replayFields).isEqualTo(paymentFields);
+        assertThat(replay).isEqualTo(payment);
         assertThat(payment.path("paymentRequestId")).isEqualTo(discovered.path("paymentRequestId"));
         JsonNode paid = data(get(gateway, path, cashierToken));
         assertThat(paid.path("status").asText()).isEqualTo("PAID");
@@ -721,7 +730,16 @@ class PackagedOutpatientLabAcceptanceIT {
         if (reservation != null) reservation.close();
         String java = Path.of(System.getProperty("java.home"), "bin",
                 System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java").toString();
-        List<String> command = new ArrayList<>(List.of(java, "-Xmx256m", "-jar", jar.toString(),
+        List<String> command = new ArrayList<>(List.of(java, "-Xmx256m"));
+        if ("clinical".equals(name) || "lab".equals(name)) {
+            Path fixtures = copyRecoveryLauncher(name, jar);
+            command.addAll(List.of("-Dloader.main=com.mediflow.acceptance.fixture.ConsumerRecoveryProcess",
+                    "-Dloader.path=" + fixtures, "-cp", jar.toString(),
+                    "org.springframework.boot.loader.launch.PropertiesLauncher"));
+        } else {
+            command.addAll(List.of("-jar", jar.toString()));
+        }
+        command.addAll(List.of(
                 "--management.endpoints.web.exposure.include=health,info",
                 "--server.port=" + port, "--spring.main.banner-mode=off"));
         if (!"eureka".equals(name)) {
@@ -730,11 +748,103 @@ class PackagedOutpatientLabAcceptanceIT {
         }
         command.addAll(List.of(arguments));
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true)
-                .redirectOutput(work.resolve(name + ".log").toFile());
+                .redirectOutput(processLog(name).toFile());
         builder.environment().putAll(environment);
+        if ("clinical".equals(name) || "lab".equals(name)) {
+            builder.environment().put("RECOVERY_BARRIER_ROUTE_FILE", work.resolve(name + ".route").toString());
+            builder.environment().put("RECOVERY_HOLD_ACK_FILE", work.resolve(name + ".hold").toString());
+            builder.environment().put("RECOVERY_DELIVERY_MARKER", work.resolve(name + ".body").toString());
+        }
+        launchers.put(name, builder);
         Process process = builder.start();
         processesByName.put(name, process);
         return process;
+    }
+
+    private Path copyRecoveryLauncher(String name, Path jar) throws IOException {
+        Path packagePath = Path.of("com", "mediflow", "acceptance", "fixture");
+        Path classes = jar.getParent().resolve("test-classes").resolve(packagePath);
+        Path destination = work.resolve(name + "-launcher");
+        Files.createDirectories(destination.resolve(packagePath));
+        try (var files = Files.list(classes)) {
+            for (Path file : files.filter(p -> p.getFileName().toString().startsWith("ConsumerRecoveryProcess")
+                    && p.toString().endsWith(".class")).toList()) {
+                Files.copy(file, destination.resolve(packagePath).resolve(file.getFileName()));
+            }
+        }
+        assertThat(destination.resolve(packagePath).resolve("ConsumerRecoveryProcess.class")).isRegularFile();
+        return destination;
+    }
+
+    private void armRecovery(String name, String route) throws IOException {
+        Files.deleteIfExists(work.resolve(name + ".body"));
+        Files.deleteIfExists(work.resolve(name + ".body.redelivered"));
+        Files.writeString(work.resolve(name + ".hold"), "hold after commit before ACK");
+        Files.writeString(work.resolve(name + ".route"), route);
+    }
+
+    private void recoverAfterCommittedEffect(String name, int port, String route) throws Exception {
+        Path marker = work.resolve(name + ".body");
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+            assertThat(marker).isRegularFile();
+            assertThat(work.resolve(name + ".body.redelivered")).isRegularFile();
+            assertThat(Files.readString(work.resolve(name + ".body.redelivered"))).isEqualTo("false");
+        });
+        byte[] original = Files.readAllBytes(marker);
+        UUID eventId = UUID.fromString(JSON.readTree(original).path("eventId").asText());
+        JdbcTemplate ownedDb = database("mediflow_" + name);
+        assertThat(ownedDb.queryForObject("SELECT raw_body FROM consumer_inbox_delivery WHERE event_id=?",
+                byte[].class, eventId)).isEqualTo(original);
+        var queues = RABBIT.execInContainer("rabbitmqctl", "list_queues", "name", "messages_unacknowledged", "--formatter=json");
+        assertThat(queues.getExitCode()).as(queues.getStderr()).isZero();
+        boolean unacked = false;
+        for (var queue : JSON.readTree(queues.getStdout())) {
+            String queueName = "clinical".equals(name) && "financial.clearance.granted".equals(route)
+                    ? "clinical.clearance.q" : name + ".q";
+            if (queueName.equals(queue.path("name").asText())) {
+                unacked = queue.path("messages_unacknowledged").asInt() > 0;
+            }
+        }
+        assertThat(unacked).as("Actual committed %s delivery is still unacknowledged", route).isTrue();
+        Process old = processesByName.get(name);
+        old.destroyForcibly();
+        assertThat(old.waitFor(15, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        Files.delete(work.resolve(name + ".hold"));
+        Files.delete(marker);
+        Files.delete(work.resolve(name + ".body.redelivered"));
+        Process restarted = launchers.get(name).start();
+        processesByName.put(name, restarted);
+        awaitHealthy(port, name);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+            assertThat(marker).isRegularFile();
+            assertThat(work.resolve(name + ".body.redelivered")).isRegularFile();
+            assertThat(Files.readAllBytes(marker)).isEqualTo(original);
+            assertThat(Files.readString(work.resolve(name + ".body.redelivered"))).isEqualTo("true");
+            assertThat(count(ownedDb, "SELECT count(*) FROM consumer_inbox_delivery WHERE event_id=?", eventId)).isOne();
+        });
+        String recoveredQueue = "clinical".equals(name) && "financial.clearance.granted".equals(route)
+                ? "clinical.clearance.q" : name + ".q";
+        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+            var settled = RABBIT.execInContainer("rabbitmqctl", "list_queues", "name", "messages_ready",
+                    "messages_unacknowledged", "--formatter=json");
+            assertThat(settled.getExitCode()).as(settled.getStderr()).isZero();
+            JsonNode found = null;
+            for (var queue : JSON.readTree(settled.getStdout())) {
+                if (recoveredQueue.equals(queue.path("name").asText())) found = queue;
+            }
+            assertThat(found).as(recoveredQueue).isNotNull();
+            assertThat(found.path("messages_ready").asInt()).isZero();
+            assertThat(found.path("messages_unacknowledged").asInt()).isZero();
+        });
+        Files.delete(work.resolve(name + ".route"));
+        Path evidence = Path.of("target", "integrated-recovery", name + "-" + route);
+        Files.createDirectories(evidence);
+        Files.write(evidence.resolve("original.json"), original);
+        Files.write(evidence.resolve("redelivered.json"), Files.readAllBytes(marker));
+        Files.writeString(evidence.resolve("result.json"), JSON.writeValueAsString(Map.of(
+                "eventId", eventId, "oldPid", old.pid(), "newPid", restarted.pid(),
+                "unacknowledgedBeforeKill", true, "redelivered", true, "inboxRows", 1,
+                "readyAfterRecovery", 0, "unacknowledgedAfterRecovery", 0)));
     }
 
     private void awaitHealthy(int port, String name) throws InterruptedException {
@@ -797,7 +907,7 @@ class PackagedOutpatientLabAcceptanceIT {
 
     private String readLog(String name) {
         try {
-            return Files.readString(work.resolve(name + ".log"));
+            return Files.readString(processLog(name));
         } catch (IOException ignored) {
             return "No startup log yet for " + name;
         }

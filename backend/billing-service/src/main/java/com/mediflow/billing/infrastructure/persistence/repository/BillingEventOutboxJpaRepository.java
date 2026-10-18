@@ -82,16 +82,18 @@ public interface BillingEventOutboxJpaRepository
                            @Param("availableAt") Instant availableAt,
                            @Param("maxAttempts") int maxAttempts);
 
+    /** Operator replay resets delivery progress only for events already approved for publication. */
     @Modifying
-    @Query("""
-            update BillingEventOutboxJpaEntity e
-               set e.publishedAt = null, e.availableAt = :availableAt,
-                   e.lockedAt = null, e.lockedBy = null, e.lastError = null,
-                   e.quarantinedAt = null, e.attempts = 0
-             where e.eventId = :eventId
-               and e.publishedAt is null
-               and e.quarantinedAt is not null
-            """)
+    @Query(value = """
+            UPDATE BILLING_EVENT_OUTBOX
+               SET available_at = :availableAt,
+                   locked_at = NULL, locked_by = NULL, last_error = NULL,
+                   quarantined_at = NULL, attempts = 0
+             WHERE event_id = :eventId
+               AND publication_enabled = TRUE
+               AND published_at IS NULL
+               AND quarantined_at IS NOT NULL
+            """, nativeQuery = true)
     int replay(@Param("eventId") UUID eventId, @Param("availableAt") Instant availableAt);
 
     @Modifying

@@ -1,0 +1,106 @@
+{
+  "clearance" : {
+    "eventId" : "e198a4cd-6026-4453-8b62-1792f08dad97",
+    "eventType" : "financial.clearance.granted",
+    "version" : 1,
+    "occurredAt" : "2026-10-18T06:13:35.103614700Z",
+    "correlationId" : "57d1d5e4-2849-4760-a7a4-2277becb6f97",
+    "producer" : "billing-service",
+    "payload" : {
+      "clearanceId" : "ab6775b1-2619-46bb-8de0-74e66a114262",
+      "invoiceId" : "d16f3767-5b73-48f5-a10a-05820b2e2ea2",
+      "accountId" : "7396efae-72c6-4235-aba7-c4fdae521c30",
+      "patientId" : "73dc3613-f93f-42de-b07c-bb9de1042a68",
+      "careEpisodeType" : "OUTPATIENT_VISIT",
+      "careEpisodeId" : "1a8846c8-ff86-4716-83fa-ce76b82da6a5",
+      "purpose" : "LAB_TEST",
+      "appointmentId" : null,
+      "recordId" : "2934977d-31d2-4ab9-88b2-7fdb167ee54c",
+      "labTestIds" : [ "81996679-0ef0-4da3-8616-a174a8dddc8b" ],
+      "prescriptionId" : null,
+      "admissionId" : null,
+      "surgeryCaseId" : null,
+      "amount" : 150000.0,
+      "currency" : "VND",
+      "paymentMethod" : "CASH",
+      "expiresAt" : null,
+      "emergencyOverride" : false
+    }
+  },
+  "recordId" : "2934977d-31d2-4ab9-88b2-7fdb167ee54c",
+  "completedRecord" : {
+    "recordId" : "2934977d-31d2-4ab9-88b2-7fdb167ee54c",
+    "patientId" : "73dc3613-f93f-42de-b07c-bb9de1042a68",
+    "doctorId" : "385664b8-16e2-4dc0-ba84-6de4e19112eb",
+    "departmentId" : "10421b5f-c00c-42af-b08a-fce94ffc5023",
+    "examinationDate" : "2026-10-18",
+    "symptoms" : null,
+    "appointmentId" : "1a8846c8-ff86-4716-83fa-ce76b82da6a5",
+    "diagnoses" : [ {
+      "diagnosisId" : "378a6305-d150-4399-9dea-e37b20997c6c",
+      "diagnosisName" : "Outpatient follow up",
+      "description" : "CBC reviewed",
+      "icdCode" : "Z09"
+    } ],
+    "createdAt" : "2026-10-18T06:13:31.100595Z",
+    "updatedAt" : "2026-10-18T06:14:59.597140100Z",
+    "status" : "COMPLETED",
+    "disposition" : "OUTPATIENT_FOLLOW_UP",
+    "dispositionNote" : "Follow up after reviewed CBC",
+    "completedAt" : "2026-10-18T06:14:59.597140100Z"
+  },
+  "labPayment" : {
+    "transactionId" : "dd3392ab-25a9-47eb-b295-26eae4d99611",
+    "accountId" : "7396efae-72c6-4235-aba7-c4fdae521c30",
+    "paymentRequestId" : "f771cf8e-fcea-4fcc-bd0f-0495db214775",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 150000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-18T06:13:35.103614Z"
+  },
+  "appointmentId" : "1a8846c8-ff86-4716-83fa-ce76b82da6a5",
+  "examPayment" : {
+    "transactionId" : "774874e3-3852-4a2f-9f9d-58fe3da6a592",
+    "accountId" : "7396efae-72c6-4235-aba7-c4fdae521c30",
+    "paymentRequestId" : "e80d654c-9d26-45d2-9ce4-8bd81439859b",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 100000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-18T06:12:40.549899Z"
+  },
+  "resultEvent" : {
+    "eventId" : "c7baa562-3d80-4f4f-836e-2a2b4a88df98",
+    "payload" : {
+      "labId" : "81996679-0ef0-4da3-8616-a174a8dddc8b",
+      "labType" : "CBC",
+      "results" : [ {
+        "unit" : "g/dL",
+        "value" : "13.2",
+        "resultId" : "d6718082-d08c-4d5b-9dc4-0957368fe243",
+        "indicator" : "Hemoglobin",
+        "referenceRange" : "12.0-16.0"
+      } ],
+      "recordId" : "2934977d-31d2-4ab9-88b2-7fdb167ee54c",
+      "patientId" : "73dc3613-f93f-42de-b07c-bb9de1042a68",
+      "conclusion" : "No abnormality observed",
+      "verifiedBy" : "dc294f2b-019c-492a-b7bc-361044c8395f",
+      "completedAt" : "2026-10-18T06:14:22.051200200Z",
+      "departmentId" : "10421b5f-c00c-42af-b08a-fce94ffc5023",
+      "careEpisodeId" : "1a8846c8-ff86-4716-83fa-ce76b82da6a5",
+      "performedDate" : "2026-10-18",
+      "resultVersion" : 1,
+      "careEpisodeType" : "OUTPATIENT_VISIT"
+    },
+    "version" : 1,
+    "producer" : "lab-service",
+    "eventType" : "lab.result.created",
+    "occurredAt" : "2026-10-18T06:14:22.051200200Z",
+    "correlationId" : "027559ee-e917-44ce-add0-4e3a3526ac0a"
+  },
+  "sourceOrderId" : "b83c9b3d-700b-4f49-9c16-c145e1c64184",
+  "labTestId" : "81996679-0ef0-4da3-8616-a174a8dddc8b"
+}

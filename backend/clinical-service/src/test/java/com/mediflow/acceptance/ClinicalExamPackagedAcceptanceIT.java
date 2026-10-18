@@ -49,6 +49,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 class ClinicalExamPackagedAcceptanceIT {
+    // Retain child logs outside JUnit's temporary directory: Windows can briefly lock
+    // redirected output after the child exits. Process termination is still asserted.
+    private Path processLog(String name) throws java.io.IOException {
+        Path logs = Path.of("target", "acceptance-logs", work.getFileName().toString());
+        Files.createDirectories(logs);
+        return logs.resolve(name + ".log");
+    }
+
     private static final String JWT_SECRET = "clinical-packaged-acceptance-shared-secret-0123456789";
     private static final String PASSWORD = "Acceptance-pass-2026";
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
@@ -357,15 +365,7 @@ class ClinicalExamPackagedAcceptanceIT {
         JsonNode payment = data(request(gateway, "POST", paymentPath, cashierToken, body));
         JsonNode replay = data(request(gateway, "POST", paymentPath, cashierToken, body));
         assertThat(payment.path("transactionId").asText()).isNotBlank();
-        // PostgreSQL persists microseconds; compare the business response exactly apart from that precision.
-        assertThat(Duration.between(Instant.parse(payment.path("completedAt").asText()),
-                Instant.parse(replay.path("completedAt").asText())).abs())
-                .isLessThan(Duration.ofNanos(1_000));
-        JsonNode replayFields = replay.deepCopy();
-        JsonNode paymentFields = payment.deepCopy();
-        ((com.fasterxml.jackson.databind.node.ObjectNode) replayFields).remove("completedAt");
-        ((com.fasterxml.jackson.databind.node.ObjectNode) paymentFields).remove("completedAt");
-        assertThat(replayFields).isEqualTo(paymentFields);
+        assertThat(replay).isEqualTo(payment);
         assertThat(payment.path("paymentRequestId")).isEqualTo(request.path("paymentRequestId"));
         JsonNode paid = data(get(gateway, discovery, cashierToken));
         assertThat(paid.path("status").asText()).isEqualTo("PAID");
@@ -524,7 +524,7 @@ class ClinicalExamPackagedAcceptanceIT {
                 "--spring.main.banner-mode=off", "--eureka.client.initial-instance-info-replication-interval-seconds=1"));
         command.addAll(List.of(arguments));
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true)
-                .redirectOutput(work.resolve(name + ".log").toFile());
+                .redirectOutput(processLog(name).toFile());
         builder.environment().putAll(environment);
         Process process = builder.start();
         processesByName.put(name, process);
@@ -571,7 +571,7 @@ class ClinicalExamPackagedAcceptanceIT {
 
     private String readLog(String name) {
         try {
-            return Files.readString(work.resolve(name + ".log"));
+            return Files.readString(processLog(name));
         } catch (IOException ignored) {
             return "No startup log yet for " + name;
         }

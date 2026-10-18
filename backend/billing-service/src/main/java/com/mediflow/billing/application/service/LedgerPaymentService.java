@@ -81,7 +81,10 @@ public class LedgerPaymentService implements ProcessLedgerPaymentUseCase {
                 PaymentTransactionType.PAYMENT, classification, PaymentTransactionStatus.PENDING,
                 command.amount(), command.currency(), command.paymentMethod().name(), command.providerReference(),
                 command.idempotencyKey(), null, null, now);
-        payment.complete(now);
+        // Persist and return the same receipt timestamp on the first request and its replay.
+        // Keep the original clock instant for expiry checks and clearance authority.
+        Instant completedAt = now.truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        payment.complete(completedAt);
         boolean paid = context.completedAmount().add(command.amount()).compareTo(request.getRequestedAmount()) == 0;
         if (paid) request.markPaid(now); else request.markPartiallyPaid();
         repository.save(payment, request, actorAccountId);
@@ -91,7 +94,7 @@ public class LedgerPaymentService implements ProcessLedgerPaymentUseCase {
                 1, now, correlationId, "billing-service", new PaymentCompletedPayload(payment.getTransactionId(),
                 request.getInvoiceId(), requestId, account.getAccountId(), account.getPatientId(), account.getDepartmentId(),
                 account.getCareEpisodeType().name(), account.getCareEpisodeId(), classification.name(), payment.getAmount(),
-                payment.getCurrency(), payment.getPaymentMethod(), now, target == null ? null : target.prescriptionId(),
+                payment.getCurrency(), payment.getPaymentMethod(), completedAt, target == null ? null : target.prescriptionId(),
                 target == null ? java.util.List.of() : target.labTestIds())));
         if (paid && request.getPurpose() != PaymentRequestPurpose.SETTLEMENT) {
             var clearance = FinancialClearance.grant(account.getAccountId(), requestId, request.getInvoiceId(),

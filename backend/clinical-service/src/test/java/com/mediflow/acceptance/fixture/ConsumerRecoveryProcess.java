@@ -27,6 +27,20 @@ public final class ConsumerRecoveryProcess {
             return new BeanPostProcessor() {
                 @Override
                 public Object postProcessAfterInitialization(Object bean, String name) {
+                    if ("clinicalClearanceListenerContainerFactory".equals(name)
+                            && System.getenv("RECOVERY_BARRIER_ROUTE_FILE") != null) {
+                        var factory = (org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory) bean;
+                        factory.setContainerCustomizer(container -> {
+                            var listener = (org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener)
+                                    container.getMessageListener();
+                            container.setMessageListener((org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener)
+                                    (message, channel) -> {
+                                        listener.onMessage(message, channel);
+                                        afterCommit(message);
+                                    });
+                        });
+                        return factory;
+                    }
                     if (!"clinicalListenerRetryInterceptor".equals(name)) return bean;
                     MethodInterceptor productionRetry = (MethodInterceptor) bean;
                     return (MethodInterceptor) invocation -> {
@@ -36,17 +50,28 @@ public final class ConsumerRecoveryProcess {
                             if (argument instanceof Message message) delivery = message;
                         }
                         if (delivery == null) throw new IllegalStateException("Expected single-message delivery");
-                        Path marker = Path.of(System.getenv("RECOVERY_DELIVERY_MARKER"));
-                        Files.write(marker, delivery.getBody());
-                        Files.writeString(Path.of(marker + ".redelivered"),
-                                String.valueOf(delivery.getMessageProperties().isRedelivered()));
-                        if (Boolean.parseBoolean(System.getenv("RECOVERY_HOLD_ACK"))) {
-                            new CountDownLatch(1).await();
-                        }
+                        afterCommit(delivery);
                         return result;
                     };
                 }
             };
+        }
+
+        private static void afterCommit(Message delivery) throws Exception {
+            String routeFile = System.getenv("RECOVERY_BARRIER_ROUTE_FILE");
+            if (routeFile != null && (!Files.exists(Path.of(routeFile))
+                    || !Files.readString(Path.of(routeFile)).equals(delivery.getMessageProperties().getReceivedRoutingKey()))) {
+                return;
+            }
+            Path marker = Path.of(System.getenv("RECOVERY_DELIVERY_MARKER"));
+            Files.write(marker, delivery.getBody());
+            Files.writeString(Path.of(marker + ".redelivered"),
+                    String.valueOf(delivery.getMessageProperties().isRedelivered()));
+            String holdFile = System.getenv("RECOVERY_HOLD_ACK_FILE");
+            if (holdFile != null ? Files.exists(Path.of(holdFile))
+                    : Boolean.parseBoolean(System.getenv("RECOVERY_HOLD_ACK"))) {
+                new CountDownLatch(1).await();
+            }
         }
     }
 }

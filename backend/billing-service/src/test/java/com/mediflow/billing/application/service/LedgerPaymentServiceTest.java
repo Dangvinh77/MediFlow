@@ -56,6 +56,29 @@ class LedgerPaymentServiceTest {
         });
     }
 
+    @Test void receiptPrecisionDoesNotTruncateClearanceAuthorityTime() {
+        Instant exact = now.plusNanos(999_999_900);
+        service = new LedgerPaymentService(repository, events, Mappers.getMapper(LedgerPaymentMapper.class),
+                Clock.fixed(exact, ZoneOffset.UTC));
+        var payment = service.complete(requestId, command("precision", "100"), actor, "trace");
+        assertThat(payment.completedAt()).isEqualTo(now.plusNanos(999_999_000));
+        var clearance = ArgumentCaptor.forClass(FinancialClearance.class);
+        verify(repository).saveClearance(clearance.capture());
+        assertThat(clearance.getValue().getGrantedAt()).isEqualTo(exact);
+    }
+
+    @Test void expiredRequestCannotBecomePayableByTruncatingTheClock() {
+        request = PaymentRequest.restore(requestId, request.getInvoiceId(), account.getAccountId(),
+                PaymentRequestPurpose.PRESCRIPTION, PaymentRequestStatus.PENDING, new BigDecimal("100"),
+                "VND", now.plusNanos(500), actor, now, null);
+        service = new LedgerPaymentService(repository, events, Mappers.getMapper(LedgerPaymentMapper.class),
+                Clock.fixed(now.plusNanos(900), ZoneOffset.UTC));
+        assertThatThrownBy(() -> service.complete(requestId, command("expired", "100"), actor, "trace"))
+                .hasMessage("BILLING_REQUEST_EXPIRED");
+        verify(repository, never()).save(any(), any(), any());
+        verifyNoInteractions(events);
+    }
+
     @Test void partialPaymentProducesReceiptButNoClearance() {
         var payment = service.complete(requestId, command("part", "30"), actor, "trace");
         assertThat(payment.amount()).isEqualByComparingTo("30");

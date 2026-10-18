@@ -1,22 +1,57 @@
 # Vinh Clinical/Lab outpatient MVP closeout
 
+## Nghiệm thu owned backend — 2026-10-18
+
+Vinh đã hoàn thiện phần Billing/Notification theo ủy quyền người dùng để đóng phụ thuộc của
+Clinical/Lab. Baseline `e44ddf487523f8e781e53196d28f17db32beed1e`, working branch
+`codex/vinh-loc-billing-closeout`; source diff/hash và dữ liệu test có trong
+[bundle nghiệm thu](../../backend/billing-service/acceptance-evidence/2026-10-18/README.md)
+và [manifest](../../backend/billing-service/acceptance-evidence/2026-10-18/manifest.json).
+Mục này thay các trạng thái LOC-04/05 và integrated Clinical/Lab recovery còn mở bên dưới.
+
+V-CLOSE-03 đã có actual paid EXAM/LAB_TEST qua Gateway, đúng source công khai, Billing thật,
+Rabbit thật, hoàn tất khám và ba điểm kill/restart sau commit trước ACK: Clinical EXAM
+clearance, Lab clearance, Clinical Lab-result attachment. Cùng JAR/stores nhận lại exact bytes,
+PID mới, unacked trước kill, một inbox/effect, queue ready/unacked 0 sau recovery.
+Không inject clearance hay SQL discovery. Paid Rx và Pharmacy restart giữ nghiệm thu Huy
+17/10 đã dẫn ở lịch sử; standalone Clinical Rx consumer recovery được chạy lại trong lượt này.
+
+Fresh exit 0, không failure/error/skip: Clinical 339, Lab 216, Billing 1060, Notification 279,
+Gateway 1449 Surefire tests. Failsafe tách riêng: Billing recovery 1; Clinical EXAM 1 và
+consumer recovery 2; Lab consumer recovery 1; integrated paid Lab/Clinical recovery 1.
+Không cộng targeted reruns vào full counts. First/retry payment data nay phải bằng nhau chính xác,
+không còn tolerance dưới 1µs; expiry và original authority grant giữ full precision.
+
+V-CLOSE-01/02/03 và Billing LOC-01–05 có đủ bằng chứng trong phạm vi được giao; LOC-06 dùng
+fresh Billing producer regression cộng actual Huy acceptance được dẫn rõ nguồn.
+Global rollout/activation toàn MVP vẫn là quyết định phối hợp riêng; không bật deployment
+flags, không nghiệm thu thay full Core/Pharmacy mới hoặc deferred Inpatient/Surgery.
+Các mục bên dưới giữ lịch sử từng lượt chạy, không ghi đè nghiệm thu mới này.
+
 **Cập nhật:** 2026-10-17, audit tại `d80d23b2`; giữ các gate consumer/release chưa nghiệm thu mở.
 **Trạng thái:** owned implementation đã có; actual paid EXAM/LAB_TEST slices đạt;
-**paid Rx / integrated recovery / release toàn MVP còn mở**.
+**paid Rx đã có evidence tích hợp Huy ngày 2026-10-17; integrated recovery / release toàn MVP còn mở**.
 Production scope của Vinh: Clinical/Lab. Inpatient/Surgery deferred.
 
-## Current owner queue
+## Owner queue trước nghiệm thu 2026-10-18
 
 | Gate | Source và kết luận | Việc còn lại / owner |
 |---|---|---|
 | V-CLOSE-01 reliability | Standalone Clinical/Lab PG/Rabbit/outbox/consumer JVM recovery đã có | Không làm lại; integrated paid recovery thuộc V-CLOSE-03 |
-| V-CLOSE-02 Rx V1 | Huy đã giao outpatient recordId/dispense relationship; Clinical consumer đã merge ở `c4cf810f` | Không giao lại producer/consumer implementation; actual paid Rx vẫn cần nghiệm thu |
+| V-CLOSE-02 Rx V1 | Huy đã giao outpatient recordId/dispense relationship; Clinical consumer đã merge ở `c4cf810f`; actual sáu-app paid Rx/Clinical attachment đạt ngày 2026-10-17 | Không giao lại implementation hoặc happy path; integrated paid recovery vẫn mở |
 | Public Lab-order | Hoàng Anh `0a8636cd` đã giao exact route và sửa Core migration test paths; Vinh đã chạy packaged public slice | Không giao lại route Lab-order hoặc migration-path fix; không suy full Core suite đã đạt |
 | L1 discovery | `9b89a355`: Billing đã có source-bound GET, DTO, authorization/validation và PG tests | Actual paid EXAM Gateway/Billing slice PASS 2026-10-17; không thay full Billing acceptance |
 | L2 selective publication | `1624cbd3`: cohort + eligible writer; V22/V23 fences giữ historical HELD | Đã có implementation/DB proof + partial broker/recovery PR #401; chưa đóng toàn L3 |
 | G1 Gateway discovery | Source đã có exact GET by-source cho ADMIN/CASHIER; #417 sửa Billing error correlation | Không giao lại implementation; full G1 owner evidence theo H-VINH-01 |
-| L3/L4 publication delivery | PR #401 thêm 6 Rabbit cases + packaged JVM recovery IT/profile; còn failure/ordering proof | Lộc: hoàn thiện L3 gaps + L4 artifacts tại H-VINH-03 |
-| V-CLOSE-03 | Actual paid EXAM/LAB_TEST + outpatient completion PASS 2026-10-17; paid Rx còn mở | Không inject grant hoặc SQL discovery; full integrated recovery vẫn mở |
+| L3/L4 publication delivery | LOC-03 continuation 2026-10-18: controlled NACK/timeout + PG fencing/replay đạt; full Billing 1056 + packaged recovery 1, 0 failure/error/skip | LOC-04 timestamp decision và L4 full artifacts còn mở; xem handoff Lộc |
+| V-CLOSE-03 | Actual paid EXAM/LAB_TEST + outpatient completion PASS 2026-10-17; paid Rx/Clinical attachment có evidence Huy cùng ngày | Không inject grant hoặc SQL discovery; full integrated recovery vẫn mở |
+
+Refresh ngày 2026-10-18: đối chiếu [Huy integrated closeout](HANDOFF-HUY-MVP.md#10-integrated-backend-closeout--2026-10-17)
+và [runbook mục 8](../plans/huy-mvp-cutover-runbook.md#8-integrated-backend-closeout--2026-10-17).
+Các dòng paid Rx chưa chạy trong lịch sử verification bên dưới chỉ áp dụng lượt Vinh trước đó.
+Không suy bài sáu-app đã nghiệm thu paid Lab/integrated Clinical-Lab JVM recovery hoặc global release.
+Người dùng giao Vinh tiếp tục Billing/Notification của Lộc trong tác vụ này; tiến độ producer LOC-03
+được ghi tại [handoff Lộc](HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md).
 
 ## Fresh Vinh source verification — 2026-10-17
 

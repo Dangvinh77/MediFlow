@@ -2,7 +2,7 @@
 
 ## Product scope — 2026-10-17
 
-Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Notification covers source-authorized in-app outpatient notifications; it remains a separate app pending target Support composition. Advanced email/SMS and deferred care projections are not mandatory MVP scope.
+Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Notification covers source-authorized in-app outpatient notifications. The default six-deployment topology co-hosts Notification and Report in Support with separate stores; the standalone launcher remains available for compatibility/rollback. See [Support acceptance](../support-service/README.md). Advanced email/SMS and deferred care projections are not mandatory MVP scope.
 
 Canonical [system design](../../docs/plans/01-system-design.md), [contracts](../../docs/plans/03-contracts.md) and [acceptance runbook](../../docs/plans/06-acceptance-runbook.md) define current scope. Existing APIs, feature flags and historical test counts below do not certify full workflow release acceptance.
 
@@ -16,6 +16,13 @@ Reference: [`service rules`](../../docs/ai/services/notification.md) and the can
 - **Architecture:** clean architecture per [blueprint](../../docs/ai/04-microservice-blueprint.md) — `infrastructure → application → domain`, dependencies inward only.
 
 ## Status
+
+Verification refresh, 2026-10-18: full `mvn -q -pl backend/notification-service -am test`
+completed with **279 tests, zero failures/errors/skips**, including actual PostgreSQL/RabbitMQ
+prescription notice, receipt and refund cases. Baseline `e44ddf487523f8e781e53196d28f17db32beed1e`;
+no Notification production behavior changed in this refresh. This supersedes the Docker-unavailable
+verification note below for source regression. The packaged Support/six-app acceptance remains
+documented by its owning harness, separately from this module suite.
 
 Compatibility consumers, authenticated history APIs and gated V1 Billing receipts are implemented.
 Surgery's ready/invalidation/cancel/completed intake is separately opt-in and stores exact-case

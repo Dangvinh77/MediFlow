@@ -121,7 +121,14 @@ class OutpatientPublicationRabbitIntegrationTest {
     }
     @org.junit.jupiter.api.AfterAll static void closeExternalConnection() { externalConnection.destroy(); }
 
-    @BeforeEach void reset() {
+    private java.nio.file.Path evidence;
+
+    @BeforeEach void reset(org.junit.jupiter.api.TestInfo test) throws Exception {
+        evidence = java.nio.file.Path.of("target", "outpatient-handoff", "raw", test.getTestMethod().orElseThrow().getName());
+        java.nio.file.Files.createDirectories(evidence);
+        try (var files = java.nio.file.Files.list(evidence)) {
+            for (var file : files.toList()) java.nio.file.Files.delete(file);
+        }
         listener().stop();
         admin.purgeQueue(INBOUND_QUEUE); admin.purgeQueue(INBOUND_DLQ);
         jdbc.execute("TRUNCATE BILLING_ACCOUNT, BILLING_EVENT_OUTBOX, exam_charge_delivery, "
@@ -133,7 +140,23 @@ class OutpatientPublicationRabbitIntegrationTest {
         buffered.clear();
         listener().start();
     }
-    @AfterEach void stop() { listener().stop(); }
+    @AfterEach void stop() throws Exception {
+        listener().stop();
+        if (evidence != null) {
+            saveEvidence("migrations", mapper.writeValueAsBytes(jdbc.queryForList(
+                    "SELECT version,description,checksum,success FROM flyway_schema_history WHERE version IS NOT NULL ORDER BY installed_rank")));
+            saveEvidence("outbox-progress", mapper.writeValueAsBytes(jdbc.queryForList(
+                    "SELECT event_id,routing_key,publication_enabled,published_at,attempts,quarantined_at FROM BILLING_EVENT_OUTBOX ORDER BY created_at,event_id")));
+        }
+    }
+
+    private void saveEvidence(String name, byte[] body) {
+        try {
+            java.nio.file.Files.write(evidence.resolve(name + "-" + UUID.randomUUID() + ".json"), body);
+        } catch (java.io.IOException failure) {
+            throw new java.io.UncheckedIOException("Cannot export publication evidence", failure);
+        }
+    }
 
     @Test void examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox() throws Exception {
         byte[] body = examFixture(); send("appointment.status.changed", body); drain(1);
@@ -194,6 +217,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         UUID eventId = UUID.fromString(payload.path("eventId").asText());
         byte[] stored = jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE event_id=?", String.class, eventId)
                 .getBytes(StandardCharsets.UTF_8);
+        saveEvidence("stored-" + eventId, stored);
         assertThat(sha256(message.getBody())).as("broker bytes match stored outbox bytes exactly").isEqualTo(sha256(stored));
         assertThat(jdbc.queryForObject("SELECT outpatient_payment_request_id FROM BILLING_EVENT_OUTBOX WHERE event_id=?", UUID.class, eventId))
                 .isEqualTo(paymentRequestId);
@@ -329,6 +353,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         UUID eventId = UUID.fromString(payload.path("eventId").asText());
         byte[] stored = jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE event_id=?", String.class, eventId)
                 .getBytes(StandardCharsets.UTF_8);
+        saveEvidence("stored-" + eventId, stored);
         assertThat(sha256(message.getBody())).as("broker bytes match stored outbox bytes exactly").isEqualTo(sha256(stored));
         assertThat(jdbc.queryForObject("SELECT outpatient_payment_request_id FROM BILLING_EVENT_OUTBOX WHERE event_id=?", UUID.class, eventId))
                 .isEqualTo(paymentRequestId);
@@ -343,6 +368,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         UUID eventId = UUID.fromString(payload.path("eventId").asText());
         byte[] stored = jdbc.queryForObject("SELECT payload FROM BILLING_EVENT_OUTBOX WHERE event_id=?", String.class, eventId)
                 .getBytes(StandardCharsets.UTF_8);
+        saveEvidence("stored-" + eventId, stored);
         assertThat(sha256(message.getBody())).isEqualTo(sha256(stored));
     }
 
@@ -361,6 +387,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         while (System.nanoTime() < deadline) {
             Message candidate = externalRabbit.receive(OUTBOUND_QUEUE, 300);
             if (candidate == null) continue;
+            saveEvidence("broker", candidate.getBody());
             try {
                 String type = mapper.readTree(candidate.getBody()).path("eventType").asText();
                 if (type.equals(eventType)) return candidate;
@@ -377,6 +404,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         var response = http.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class);
         assertThat(response.getStatusCode()).as("discovery response: %s", response.getBody()).isEqualTo(HttpStatus.OK);
         try {
+            saveEvidence("discovery", response.getBody().getBytes(StandardCharsets.UTF_8));
             return mapper.readTree(response.getBody()).path("data");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -390,6 +418,7 @@ class OutpatientPublicationRabbitIntegrationTest {
         var response = http.exchange("/api/v1/billing/payment-requests/" + requestId + "/payments", HttpMethod.POST,
                 new HttpEntity<>(body, headers), String.class);
         assertThat(response.getStatusCode()).as("payment response: %s", response.getBody()).isEqualTo(HttpStatus.OK);
+        saveEvidence("payment", response.getBody().getBytes(StandardCharsets.UTF_8));
     }
 
     // Memoized per test instance (JUnit5 creates a fresh instance per @Test method): a retried

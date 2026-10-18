@@ -36,11 +36,18 @@ public final class ConsumerRecoveryProcess {
                             if (argument instanceof Message message) delivery = message;
                         }
                         if (delivery == null) throw new IllegalStateException("Expected single-message delivery");
+                        String routeFile = System.getenv("RECOVERY_BARRIER_ROUTE_FILE");
+                        if (routeFile != null && (!Files.exists(Path.of(routeFile))
+                                || !Files.readString(Path.of(routeFile)).equals(delivery.getMessageProperties().getReceivedRoutingKey()))) {
+                            return result;
+                        }
                         Path marker = Path.of(System.getenv("RECOVERY_DELIVERY_MARKER"));
                         Files.write(marker, delivery.getBody());
                         Files.writeString(Path.of(marker + ".redelivered"),
                                 String.valueOf(delivery.getMessageProperties().isRedelivered()));
-                        if (Boolean.parseBoolean(System.getenv("RECOVERY_HOLD_ACK"))) {
+                        String holdFile = System.getenv("RECOVERY_HOLD_ACK_FILE");
+                        if (holdFile != null ? Files.exists(Path.of(holdFile))
+                                : Boolean.parseBoolean(System.getenv("RECOVERY_HOLD_ACK"))) {
                             new CountDownLatch(1).await();
                         }
                         return result;
