@@ -1,0 +1,285 @@
+{
+  "renderer": "@mermaid-js/mermaid-cli 11.12.0",
+  "results": [
+    {
+      "file": "01-en.mmd",
+      "status": "pass",
+      "bytes": 91565
+    },
+    {
+      "file": "01-vi.mmd",
+      "status": "pass",
+      "bytes": 91584
+    },
+    {
+      "file": "02-en.mmd",
+      "status": "pass",
+      "bytes": 113267
+    },
+    {
+      "file": "02-vi.mmd",
+      "status": "pass",
+      "bytes": 113267
+    },
+    {
+      "file": "03-en.mmd",
+      "status": "pass",
+      "bytes": 68669
+    },
+    {
+      "file": "03-vi.mmd",
+      "status": "pass",
+      "bytes": 68694
+    },
+    {
+      "file": "04-en.mmd",
+      "status": "pass",
+      "bytes": 325473
+    },
+    {
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "bytes": 327756
+    },
+    {
+      "file": "05-en.mmd",
+      "status": "pass",
+      "bytes": 326323
+    },
+    {
+      "file": "05-vi.mmd",
+      "status": "pass",
+      "bytes": 326136
+    },
+    {
+      "file": "06-en.mmd",
+      "status": "pass",
+      "bytes": 34842
+    },
+    {
+      "file": "06-vi.mmd",
+      "status": "pass",
+      "bytes": 34842
+    },
+    {
+      "file": "07-en.mmd",
+      "status": "pass",
+      "bytes": 40250
+    },
+    {
+      "file": "07-vi.mmd",
+      "status": "pass",
+      "bytes": 40250
+    },
+    {
+      "file": "08-en.mmd",
+      "status": "pass",
+      "bytes": 43087
+    },
+    {
+      "file": "08-vi.mmd",
+      "status": "pass",
+      "bytes": 43087
+    },
+    {
+      "file": "09-en.mmd",
+      "status": "pass",
+      "bytes": 37757
+    },
+    {
+      "file": "09-vi.mmd",
+      "status": "pass",
+      "bytes": 37757
+    },
+    {
+      "file": "10-en.mmd",
+      "status": "pass",
+      "bytes": 38526
+    },
+    {
+      "file": "10-vi.mmd",
+      "status": "pass",
+      "bytes": 38535
+    },
+    {
+      "file": "11-en.mmd",
+      "status": "pass",
+      "bytes": 55691
+    },
+    {
+      "file": "11-vi.mmd",
+      "status": "pass",
+      "bytes": 55693
+    },
+    {
+      "file": "12-en.mmd",
+      "status": "pass",
+      "bytes": 20108
+    },
+    {
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "bytes": 20165
+    },
+    {
+      "file": "13-en.mmd",
+      "status": "pass",
+      "bytes": 58187
+    },
+    {
+      "file": "13-vi.mmd",
+      "status": "pass",
+      "bytes": 58187
+    },
+    {
+      "file": "14-en.mmd",
+      "status": "pass",
+      "bytes": 27870
+    },
+    {
+      "file": "14-vi.mmd",
+      "status": "pass",
+      "bytes": 27870
+    },
+    {
+      "file": "15-en.mmd",
+      "status": "pass",
+      "bytes": 55389
+    },
+    {
+      "file": "15-vi.mmd",
+      "status": "pass",
+      "bytes": 55370
+    },
+    {
+      "file": "16-en.mmd",
+      "status": "pass",
+      "bytes": 13766
+    },
+    {
+      "file": "16-vi.mmd",
+      "status": "pass",
+      "bytes": 13768
+    },
+    {
+      "file": "17-en.mmd",
+      "status": "pass",
+      "bytes": 130837
+    },
+    {
+      "file": "17-vi.mmd",
+      "status": "pass",
+      "bytes": 130838
+    },
+    {
+      "file": "18-en.mmd",
+      "status": "pass",
+      "bytes": 80114
+    },
+    {
+      "file": "18-vi.mmd",
+      "status": "pass",
+      "bytes": 80096
+    },
+    {
+      "file": "19-en.mmd",
+      "status": "pass",
+      "bytes": 100796
+    },
+    {
+      "file": "19-vi.mmd",
+      "status": "pass",
+      "bytes": 100760
+    },
+    {
+      "file": "20-en.mmd",
+      "status": "pass",
+      "bytes": 164142
+    },
+    {
+      "file": "20-vi.mmd",
+      "status": "pass",
+      "bytes": 164181
+    },
+    {
+      "file": "21-en.mmd",
+      "status": "pass",
+      "bytes": 33440
+    },
+    {
+      "file": "21-vi.mmd",
+      "status": "pass",
+      "bytes": 33433
+    },
+    {
+      "file": "22-en.mmd",
+      "status": "pass",
+      "bytes": 73283
+    },
+    {
+      "file": "22-vi.mmd",
+      "status": "pass",
+      "bytes": 73301
+    },
+    {
+      "file": "23-en.mmd",
+      "status": "pass",
+      "bytes": 26554
+    },
+    {
+      "file": "23-vi.mmd",
+      "status": "pass",
+      "bytes": 26554
+    },
+    {
+      "file": "24-en.mmd",
+      "status": "pass",
+      "bytes": 29163
+    },
+    {
+      "file": "24-vi.mmd",
+      "status": "pass",
+      "bytes": 29163
+    },
+    {
+      "file": "25-en.mmd",
+      "status": "pass",
+      "bytes": 18415
+    },
+    {
+      "file": "25-vi.mmd",
+      "status": "pass",
+      "bytes": 18415
+    },
+    {
+      "file": "26-en.mmd",
+      "status": "pass",
+      "bytes": 202229
+    },
+    {
+      "file": "26-vi.mmd",
+      "status": "pass",
+      "bytes": 202180
+    },
+    {
+      "file": "27-en.mmd",
+      "status": "pass",
+      "bytes": 246494
+    },
+    {
+      "file": "27-vi.mmd",
+      "status": "pass",
+      "bytes": 246514
+    },
+    {
+      "file": "28-en.mmd",
+      "status": "pass",
+      "bytes": 71133
+    },
+    {
+      "file": "28-vi.mmd",
+      "status": "pass",
+      "bytes": 71117
+    }
+  ]
+}

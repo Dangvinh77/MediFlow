@@ -1,0 +1,21 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 45, "boxMargin": 6, "boxTextMargin": 4, "noteMargin": 7, "messageMargin": 20, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+flowchart LR
+ U["Authorized actors / clients"] -->|identity data| P1(("P1 Core"))
+ U -->|appointment / examination / order| P2(("P2 Clinical"))
+ U -->|test lifecycle / result data| P3(("P3 Lab"))
+ U -->|prescription / stock / dispensing| P4(("P4 Pharmacy"))
+ U -->|payment / adjustment commands| P5(("P5 Billing"))
+ U -->|report query / notification read| P6(("P6 Support"))
+ P1 <-->|account / organization data| D1[(D1 Organization)]
+ P1 <-->|patient identity| D2[(D2 Patient)]
+ P2 <-->|clinical state| D3[(D3 Clinical)]
+ P3 <-->|tests / results| D4[(D4 Lab)]
+ P4 <-->|stock / prescriptions| D5[(D5 Pharmacy)]
+ P5 <-->|charges / payments / clearance| D6[(D6 Billing)]
+ P6 <-->|report projections| D7[(D7 Report)]
+ P6 <-->|notification history| D8[(D8 Notification)]
+ P2 & P3 & P4 & P5 -->|committed facts| BUS["RabbitMQ — integration<br/>transport"]
+ BUS -->|targeted clearance / results / fill outcomes| P2 & P3 & P4 & P5
+ BUS -->|selected report / notification facts| P6
+ P1 -->|authoritative identity lookup response| P2 & P3 & P4
+ P2 & P3 & P4 & P5 & P6 -->|authorized result / status / receipt| U

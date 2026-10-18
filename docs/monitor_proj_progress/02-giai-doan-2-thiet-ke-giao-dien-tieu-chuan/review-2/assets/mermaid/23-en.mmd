@@ -1,0 +1,18 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+flowchart TB
+ PG["PostgreSQL 16 development instance"]
+ subgraph CORE["Core host — independent pools / Flyway / transactions"]
+ O[(mediflow_organization)]
+ P[(mediflow_patient)]
+ end
+ C[(mediflow_clinical)]
+ L[(mediflow_lab)]
+ PH[(mediflow_pharmacy)]
+ B[(mediflow_billing)]
+ subgraph SUPPORT["Support host — independent pools / Flyway / transactions"]
+ R[(mediflow_report)]
+ N[(mediflow_notification)]
+ end
+ PG --- O & P & C & L & PH & B & R & N
+ DEFER["Retained databases: mediflow_inpatient / mediflow_surgery<br/>DEFERRED — not active MVP authorities"]
+ PG -. initialized on fresh setup .-> DEFER

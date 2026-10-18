@@ -1,0 +1,17 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+flowchart TB
+ A([Payment command]) --> V[Validate amount / currency / actor / correlation / key]
+ V --> L[Lock idempotency key and account/request]
+ L --> EX{Receipt exists?}
+ EX -->|Yes| EQ{Same business intent?}
+ EQ -->|Yes| OLD([Return persisted receipt])
+ EQ -->|No| CON([BILLING_IDEMPOTENCY_CONFLICT])
+ EX -->|No| GUARD{Payable request / open account<br/>unexpired / same currency<br/>completed + amount no greater than requested?}
+ GUARD -->|No| NO([Reject])
+ GUARD -->|Yes| PAY[Save completed transaction and allocations]
+ PAY --> FULL{Fully paid and service purpose?}
+ FULL -->|Yes| CLEAR[Persist exact-purpose target clearance]
+ FULL -->|No| PART[Persist partial or settlement state]
+ CLEAR --> TX[Commit state + durable events atomically]
+ PART --> TX
+ TX --> OUT([Return receipt])

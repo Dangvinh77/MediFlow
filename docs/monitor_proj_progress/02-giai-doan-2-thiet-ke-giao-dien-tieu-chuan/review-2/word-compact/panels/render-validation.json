@@ -1,0 +1,597 @@
+{
+  "renderer": "Mermaid CLI 11.12.0",
+  "results": [
+    {
+      "orientation": "panels",
+      "file": "11-en-part-01.mmd",
+      "status": "pass",
+      "width": 889.7265625,
+      "height": 1129,
+      "estimatedTextPt": 6
+    },
+    {
+      "orientation": "panels",
+      "file": "11-en-part-02.mmd",
+      "status": "pass",
+      "width": 795.328125,
+      "height": 424.5,
+      "estimatedTextPt": 14.1
+    },
+    {
+      "orientation": "panels",
+      "file": "11-vi-part-01.mmd",
+      "status": "pass",
+      "width": 889.7265625,
+      "height": 1129,
+      "estimatedTextPt": 6
+    },
+    {
+      "orientation": "panels",
+      "file": "11-vi-part-02.mmd",
+      "status": "pass",
+      "width": 795.328125,
+      "height": 424.5,
+      "estimatedTextPt": 14.1
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-01.mmd",
+      "status": "pass",
+      "width": 990.171875,
+      "height": 257.046875,
+      "estimatedTextPt": 11.3
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-02.mmd",
+      "status": "pass",
+      "width": 835.2109375,
+      "height": 289.109375,
+      "estimatedTextPt": 13.4
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-03.mmd",
+      "status": "pass",
+      "width": 949.8046875,
+      "height": 286.5562438964844,
+      "estimatedTextPt": 11.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-04.mmd",
+      "status": "pass",
+      "width": 654.140625,
+      "height": 459.09375,
+      "estimatedTextPt": 14.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-05.mmd",
+      "status": "pass",
+      "width": 1096,
+      "height": 288.09375,
+      "estimatedTextPt": 10.2
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-06.mmd",
+      "status": "pass",
+      "width": 876,
+      "height": 413.09375,
+      "estimatedTextPt": 12.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-en-part-07.mmd",
+      "status": "pass",
+      "width": 254.109375,
+      "height": 239.0625,
+      "estimatedTextPt": 28.5
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-01.mmd",
+      "status": "pass",
+      "width": 990.171875,
+      "height": 257.046875,
+      "estimatedTextPt": 11.3
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-02.mmd",
+      "status": "pass",
+      "width": 835.2109375,
+      "height": 289.109375,
+      "estimatedTextPt": 13.4
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-04.mmd",
+      "status": "pass",
+      "width": 654.140625,
+      "height": 459.09375,
+      "estimatedTextPt": 14.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-03.mmd",
+      "status": "pass",
+      "width": 949.8046875,
+      "height": 286.5562438964844,
+      "estimatedTextPt": 11.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-05.mmd",
+      "status": "pass",
+      "width": 1096,
+      "height": 288.09375,
+      "estimatedTextPt": 10.2
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-06.mmd",
+      "status": "pass",
+      "width": 876,
+      "height": 413.09375,
+      "estimatedTextPt": 12.8
+    },
+    {
+      "orientation": "panels",
+      "file": "13-vi-part-07.mmd",
+      "status": "pass",
+      "width": 254.109375,
+      "height": 239.0625,
+      "estimatedTextPt": 28.5
+    },
+    {
+      "orientation": "panels",
+      "file": "14-en-part-01.mmd",
+      "status": "pass",
+      "width": 455.2109375,
+      "height": 810.03125,
+      "estimatedTextPt": 8.4
+    },
+    {
+      "orientation": "panels",
+      "file": "14-en-part-02.mmd",
+      "status": "pass",
+      "width": 418.08441162109375,
+      "height": 851.8779296875,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "panels",
+      "file": "14-en-part-03.mmd",
+      "status": "pass",
+      "width": 306.125,
+      "height": 399.02581787109375,
+      "estimatedTextPt": 17
+    },
+    {
+      "orientation": "panels",
+      "file": "14-vi-part-01.mmd",
+      "status": "pass",
+      "width": 455.2109375,
+      "height": 810.03125,
+      "estimatedTextPt": 8.4
+    },
+    {
+      "orientation": "panels",
+      "file": "14-vi-part-02.mmd",
+      "status": "pass",
+      "width": 418.08441162109375,
+      "height": 851.8779296875,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "panels",
+      "file": "14-vi-part-03.mmd",
+      "status": "pass",
+      "width": 306.125,
+      "height": 399.02581787109375,
+      "estimatedTextPt": 17
+    },
+    {
+      "orientation": "panels",
+      "file": "20-en-part-01.mmd",
+      "status": "pass",
+      "width": 609.296875,
+      "height": 908,
+      "estimatedTextPt": 7.5
+    },
+    {
+      "orientation": "panels",
+      "file": "20-en-part-02.mmd",
+      "status": "pass",
+      "width": 912.73046875,
+      "height": 738.5,
+      "estimatedTextPt": 9.2
+    },
+    {
+      "orientation": "panels",
+      "file": "20-en-part-03.mmd",
+      "status": "pass",
+      "width": 612.3125,
+      "height": 671.1499633789062,
+      "estimatedTextPt": 10.1
+    },
+    {
+      "orientation": "panels",
+      "file": "20-en-part-04.mmd",
+      "status": "pass",
+      "width": 583.328125,
+      "height": 778,
+      "estimatedTextPt": 8.7
+    },
+    {
+      "orientation": "panels",
+      "file": "20-vi-part-01.mmd",
+      "status": "pass",
+      "width": 609.296875,
+      "height": 908,
+      "estimatedTextPt": 7.5
+    },
+    {
+      "orientation": "panels",
+      "file": "20-vi-part-02.mmd",
+      "status": "pass",
+      "width": 912.73046875,
+      "height": 738.5,
+      "estimatedTextPt": 9.2
+    },
+    {
+      "orientation": "panels",
+      "file": "20-vi-part-03.mmd",
+      "status": "pass",
+      "width": 612.3125,
+      "height": 671.1499633789062,
+      "estimatedTextPt": 10.1
+    },
+    {
+      "orientation": "panels",
+      "file": "20-vi-part-04.mmd",
+      "status": "pass",
+      "width": 583.328125,
+      "height": 778,
+      "estimatedTextPt": 8.7
+    },
+    {
+      "orientation": "panels",
+      "file": "23-en-part-01.mmd",
+      "status": "pass",
+      "width": 922.234375,
+      "height": 292,
+      "estimatedTextPt": 12.1
+    },
+    {
+      "orientation": "panels",
+      "file": "23-vi-part-01.mmd",
+      "status": "pass",
+      "width": 922.234375,
+      "height": 292,
+      "estimatedTextPt": 12.1
+    },
+    {
+      "orientation": "panels",
+      "file": "24-en-part-01.mmd",
+      "status": "pass",
+      "width": 646.9375,
+      "height": 282,
+      "estimatedTextPt": 17.3
+    },
+    {
+      "orientation": "panels",
+      "file": "24-en-part-02.mmd",
+      "status": "pass",
+      "width": 1015.421875,
+      "height": 211,
+      "estimatedTextPt": 11
+    },
+    {
+      "orientation": "panels",
+      "file": "24-en-part-03.mmd",
+      "status": "pass",
+      "width": 522.9921875,
+      "height": 211,
+      "estimatedTextPt": 21.4
+    },
+    {
+      "orientation": "panels",
+      "file": "24-vi-part-01.mmd",
+      "status": "pass",
+      "width": 646.9375,
+      "height": 282,
+      "estimatedTextPt": 17.3
+    },
+    {
+      "orientation": "panels",
+      "file": "24-vi-part-02.mmd",
+      "status": "pass",
+      "width": 1015.421875,
+      "height": 211,
+      "estimatedTextPt": 11
+    },
+    {
+      "orientation": "panels",
+      "file": "24-vi-part-03.mmd",
+      "status": "pass",
+      "width": 522.9921875,
+      "height": 211,
+      "estimatedTextPt": 21.4
+    },
+    {
+      "orientation": "panels",
+      "file": "26-en-part-01.mmd",
+      "status": "pass",
+      "width": 444.4212951660156,
+      "height": 848.859375,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "panels",
+      "file": "26-en-part-02.mmd",
+      "status": "pass",
+      "width": 462.2728576660156,
+      "height": 945.5625,
+      "estimatedTextPt": 7.2
+    },
+    {
+      "orientation": "panels",
+      "file": "26-en-part-03.mmd",
+      "status": "pass",
+      "width": 406.171875,
+      "height": 291,
+      "estimatedTextPt": 23.4
+    },
+    {
+      "orientation": "panels",
+      "file": "26-vi-part-01.mmd",
+      "status": "pass",
+      "width": 444.4212951660156,
+      "height": 848.859375,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "panels",
+      "file": "26-vi-part-02.mmd",
+      "status": "pass",
+      "width": 462.2728576660156,
+      "height": 945.5625,
+      "estimatedTextPt": 7.2
+    },
+    {
+      "orientation": "panels",
+      "file": "26-vi-part-03.mmd",
+      "status": "pass",
+      "width": 406.171875,
+      "height": 291,
+      "estimatedTextPt": 23.4
+    },
+    {
+      "orientation": "panels",
+      "file": "27-en-part-01.mmd",
+      "status": "pass",
+      "width": 457.859375,
+      "height": 756.171875,
+      "estimatedTextPt": 9
+    },
+    {
+      "orientation": "panels",
+      "file": "27-en-part-02.mmd",
+      "status": "pass",
+      "width": 910.5322265625,
+      "height": 1202.03125,
+      "estimatedTextPt": 5.7
+    },
+    {
+      "orientation": "panels",
+      "file": "27-en-part-03.mmd",
+      "status": "pass",
+      "width": 666.265625,
+      "height": 545.15625,
+      "estimatedTextPt": 12.5
+    },
+    {
+      "orientation": "panels",
+      "file": "27-vi-part-01.mmd",
+      "status": "pass",
+      "width": 457.859375,
+      "height": 756.171875,
+      "estimatedTextPt": 9
+    },
+    {
+      "orientation": "panels",
+      "file": "27-vi-part-02.mmd",
+      "status": "pass",
+      "width": 910.5322265625,
+      "height": 1202.03125,
+      "estimatedTextPt": 5.7
+    },
+    {
+      "orientation": "panels",
+      "file": "27-vi-part-03.mmd",
+      "status": "pass",
+      "width": 666.265625,
+      "height": 545.15625,
+      "estimatedTextPt": 12.5
+    },
+    {
+      "orientation": "panels",
+      "file": "08-en-part-01.mmd",
+      "status": "pass",
+      "width": 1032,
+      "height": 812,
+      "estimatedTextPt": 8.4
+    },
+    {
+      "orientation": "panels",
+      "file": "08-en-part-02.mmd",
+      "status": "pass",
+      "width": 1032,
+      "height": 674,
+      "estimatedTextPt": 10.1
+    },
+    {
+      "orientation": "panels",
+      "file": "08-vi-part-01.mmd",
+      "status": "pass",
+      "width": 1032,
+      "height": 812,
+      "estimatedTextPt": 8.4
+    },
+    {
+      "orientation": "panels",
+      "file": "08-vi-part-02.mmd",
+      "status": "pass",
+      "width": 1032,
+      "height": 674,
+      "estimatedTextPt": 10.1
+    },
+    {
+      "orientation": "panels",
+      "file": "07-vi-part-01.mmd",
+      "status": "pass",
+      "width": 738,
+      "height": 818,
+      "estimatedTextPt": 8.3
+    },
+    {
+      "orientation": "panels",
+      "file": "07-en-part-02.mmd",
+      "status": "pass",
+      "width": 730,
+      "height": 752,
+      "estimatedTextPt": 9
+    },
+    {
+      "orientation": "panels",
+      "file": "07-en-part-01.mmd",
+      "status": "pass",
+      "width": 738,
+      "height": 818,
+      "estimatedTextPt": 8.3
+    },
+    {
+      "orientation": "panels",
+      "file": "07-vi-part-02.mmd",
+      "status": "pass",
+      "width": 730,
+      "height": 752,
+      "estimatedTextPt": 9
+    },
+    {
+      "orientation": "panels",
+      "file": "01-en-part-02.mmd",
+      "status": "pass",
+      "width": 1004.3125,
+      "height": 636.984375,
+      "estimatedTextPt": 10.7
+    },
+    {
+      "orientation": "panels",
+      "file": "01-vi-part-02.mmd",
+      "status": "pass",
+      "width": 1004.3125,
+      "height": 636.984375,
+      "estimatedTextPt": 10.7
+    },
+    {
+      "orientation": "panels",
+      "file": "03-en-part-03.mmd",
+      "status": "pass",
+      "width": 933.29296875,
+      "height": 1157.649169921875,
+      "estimatedTextPt": 5.9
+    },
+    {
+      "orientation": "panels",
+      "file": "03-en-part-04.mmd",
+      "status": "pass",
+      "width": 835.55078125,
+      "height": 722.649169921875,
+      "estimatedTextPt": 9.4
+    },
+    {
+      "orientation": "panels",
+      "file": "03-en-part-05.mmd",
+      "status": "pass",
+      "width": 800.05078125,
+      "height": 1091,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "panels",
+      "file": "03-vi-part-03.mmd",
+      "status": "pass",
+      "width": 933.29296875,
+      "height": 1157.649169921875,
+      "estimatedTextPt": 5.9
+    },
+    {
+      "orientation": "panels",
+      "file": "03-vi-part-04.mmd",
+      "status": "pass",
+      "width": 835.55078125,
+      "height": 722.649169921875,
+      "estimatedTextPt": 9.4
+    },
+    {
+      "orientation": "panels",
+      "file": "03-vi-part-05.mmd",
+      "status": "pass",
+      "width": 800.05078125,
+      "height": 1091,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "panels",
+      "file": "03-en-part-01.mmd",
+      "status": "pass",
+      "width": 445.03515625,
+      "height": 706.65625,
+      "estimatedTextPt": 9.6
+    },
+    {
+      "orientation": "panels",
+      "file": "01-vi-part-01.mmd",
+      "status": "pass",
+      "width": 592.90625,
+      "height": 650.96875,
+      "estimatedTextPt": 10.5
+    },
+    {
+      "orientation": "panels",
+      "file": "01-en-part-01.mmd",
+      "status": "pass",
+      "width": 592.90625,
+      "height": 650.96875,
+      "estimatedTextPt": 10.5
+    },
+    {
+      "orientation": "panels",
+      "file": "03-en-part-02.mmd",
+      "status": "pass",
+      "width": 475.32421875,
+      "height": 553.328125,
+      "estimatedTextPt": 12.3
+    },
+    {
+      "orientation": "panels",
+      "file": "03-vi-part-01.mmd",
+      "status": "pass",
+      "width": 445.03515625,
+      "height": 706.65625,
+      "estimatedTextPt": 9.6
+    },
+    {
+      "orientation": "panels",
+      "file": "03-vi-part-02.mmd",
+      "status": "pass",
+      "width": 475.32421875,
+      "height": 553.328125,
+      "estimatedTextPt": 12.3
+    }
+  ]
+}

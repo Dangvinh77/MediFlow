@@ -1,0 +1,25 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+sequenceDiagram
+ autonumber
+ actor Cashier
+ participant B as Billing
+ participant Q as RabbitMQ
+ participant P as Pharmacy
+ participant S as Support
+ Cashier->>B: Pay prescription invoice via Gateway
+ B->>B: Save payment state and outbox atomically
+ B-->>Q: payment.completed V0
+ Q->>P: Durable delivery / possible redelivery
+ P->>P: Claim receipt, lock prescription / reservations / drugs
+ alt All dispense rules pass
+ P->>P: Atomic stock decrement + fulfilled states + outbox
+ P-->>Q: prescription.filled
+ Q->>B: Complete saga once
+ else Terminal reservation / stock / lifecycle failure
+ P->>P: Persist terminal failure and durable fact
+ P-->>Q: prescription.dispense.failed
+ Q->>B: Apply V0 compensation once
+ end
+ Q->>S: Project selected facts independently
+ Note over B,P: Redelivery returns committed outcome, no second stock effect
+ Note over B,S: V0 reversal is not proof of completed bank refund

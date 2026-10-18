@@ -1,0 +1,28 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+erDiagram
+ daily_visit_report {
+  uuid report_id PK
+  date report_date
+  uuid department_id
+ }
+ monthly_revenue_report {
+  uuid report_id PK
+  uuid department_id
+ }
+ drug_statistic {
+  uuid statistic_id PK
+  uuid drug_id
+  date report_date
+  uuid department_id
+ }
+ payment_contribution {
+  uuid invoice_id PK
+  uuid completed_event_id
+  uuid failed_event_id
+  uuid department_id
+  decimal amount
+  varchar status
+ }
+ processed_event {
+  uuid event_id PK
+ }
