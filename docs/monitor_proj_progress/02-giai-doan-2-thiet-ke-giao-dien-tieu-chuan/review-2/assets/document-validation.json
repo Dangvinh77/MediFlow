@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-19",
+  "reports": [
+    {
+      "file": "01-review-2-standard-en.md",
+      "lines": 2003,
+      "diagrams": 28,
+      "sha256": "c315fe400d937de067d28df719f65fdf65b3b231af5e5a888fe8e6062dbbce7b"
+    },
+    {
+      "file": "02-review-2-standard-vi.md",
+      "lines": 2003,
+      "diagrams": 28,
+      "sha256": "c99fdc5ccaccdf12e724adada7f83ecab01bfe5922370ccc26f6367137617375"
+    }
+  ],
+  "svg_files": 56,
+  "rendered_pass": 56,
+  "errors": []
+}

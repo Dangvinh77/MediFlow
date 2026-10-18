@@ -1,0 +1,446 @@
+[
+  {
+    "id": "08-en-part-01",
+    "parent": "08-en",
+    "part": 1,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "08-en-part-02",
+    "parent": "08-en",
+    "part": 2,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "11-en-part-01",
+    "parent": "11-en",
+    "part": 1,
+    "kind": "class group"
+  },
+  {
+    "id": "11-en-part-02",
+    "parent": "11-en",
+    "part": 2,
+    "kind": "class group"
+  },
+  {
+    "id": "13-en-part-01",
+    "parent": "13-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-02",
+    "parent": "13-en",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-03",
+    "parent": "13-en",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-04",
+    "parent": "13-en",
+    "part": 4,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-05",
+    "parent": "13-en",
+    "part": 5,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-06",
+    "parent": "13-en",
+    "part": 6,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-en-part-07",
+    "parent": "13-en",
+    "part": 7,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-en-part-01",
+    "parent": "14-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-en-part-02",
+    "parent": "14-en",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-en-part-03",
+    "parent": "14-en",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "20-en-part-01",
+    "parent": "20-en",
+    "part": 1,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-en-part-02",
+    "parent": "20-en",
+    "part": 2,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-en-part-03",
+    "parent": "20-en",
+    "part": 3,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-en-part-04",
+    "parent": "20-en",
+    "part": 4,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "23-en-part-01",
+    "parent": "23-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-en-part-01",
+    "parent": "24-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-en-part-02",
+    "parent": "24-en",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-en-part-03",
+    "parent": "24-en",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-en-part-01",
+    "parent": "26-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-en-part-02",
+    "parent": "26-en",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-en-part-03",
+    "parent": "26-en",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-en-part-01",
+    "parent": "27-en",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-en-part-02",
+    "parent": "27-en",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-en-part-03",
+    "parent": "27-en",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "08-vi-part-01",
+    "parent": "08-vi",
+    "part": 1,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "08-vi-part-02",
+    "parent": "08-vi",
+    "part": 2,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "11-vi-part-01",
+    "parent": "11-vi",
+    "part": 1,
+    "kind": "class group"
+  },
+  {
+    "id": "11-vi-part-02",
+    "parent": "11-vi",
+    "part": 2,
+    "kind": "class group"
+  },
+  {
+    "id": "13-vi-part-01",
+    "parent": "13-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-02",
+    "parent": "13-vi",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-03",
+    "parent": "13-vi",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-04",
+    "parent": "13-vi",
+    "part": 4,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-05",
+    "parent": "13-vi",
+    "part": 5,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-06",
+    "parent": "13-vi",
+    "part": 6,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "13-vi-part-07",
+    "parent": "13-vi",
+    "part": 7,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-vi-part-01",
+    "parent": "14-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-vi-part-02",
+    "parent": "14-vi",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "14-vi-part-03",
+    "parent": "14-vi",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "20-vi-part-01",
+    "parent": "20-vi",
+    "part": 1,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-vi-part-02",
+    "parent": "20-vi",
+    "part": 2,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-vi-part-03",
+    "parent": "20-vi",
+    "part": 3,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "20-vi-part-04",
+    "parent": "20-vi",
+    "part": 4,
+    "kind": "ER relationship panel"
+  },
+  {
+    "id": "23-vi-part-01",
+    "parent": "23-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-vi-part-01",
+    "parent": "24-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-vi-part-02",
+    "parent": "24-vi",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "24-vi-part-03",
+    "parent": "24-vi",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-vi-part-01",
+    "parent": "26-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-vi-part-02",
+    "parent": "26-vi",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "26-vi-part-03",
+    "parent": "26-vi",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-vi-part-01",
+    "parent": "27-vi",
+    "part": 1,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-vi-part-02",
+    "parent": "27-vi",
+    "part": 2,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "27-vi-part-03",
+    "parent": "27-vi",
+    "part": 3,
+    "kind": "flow relationship panel"
+  },
+  {
+    "id": "07-en-part-01",
+    "parent": "07-en",
+    "part": 1,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "07-en-part-02",
+    "parent": "07-en",
+    "part": 2,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "07-vi-part-01",
+    "parent": "07-vi",
+    "part": 1,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "07-vi-part-02",
+    "parent": "07-vi",
+    "part": 2,
+    "kind": "sequence continuation"
+  },
+  {
+    "id": "01-en-part-01",
+    "parent": "01-en",
+    "part": 1,
+    "kind": "HTTP request and response boundaries"
+  },
+  {
+    "id": "01-en-part-02",
+    "parent": "01-en",
+    "part": 2,
+    "kind": "Deployment and owned data boundaries"
+  },
+  {
+    "id": "03-en-part-01",
+    "parent": "03-en",
+    "part": 1,
+    "kind": "Web runtime request and response"
+  },
+  {
+    "id": "03-en-part-02",
+    "parent": "03-en",
+    "part": 2,
+    "kind": "Flutter runtime request and response"
+  },
+  {
+    "id": "03-en-part-03",
+    "parent": "03-en",
+    "part": 3,
+    "kind": "Backend synchronous processing"
+  },
+  {
+    "id": "03-en-part-04",
+    "parent": "03-en",
+    "part": 4,
+    "kind": "Outbox and inbox asynchronous integration"
+  },
+  {
+    "id": "03-en-part-05",
+    "parent": "03-en",
+    "part": 5,
+    "kind": "Static source dependencies"
+  },
+  {
+    "id": "01-vi-part-01",
+    "parent": "01-vi",
+    "part": 1,
+    "kind": "HTTP request and response boundaries"
+  },
+  {
+    "id": "01-vi-part-02",
+    "parent": "01-vi",
+    "part": 2,
+    "kind": "Deployment and owned data boundaries"
+  },
+  {
+    "id": "03-vi-part-01",
+    "parent": "03-vi",
+    "part": 1,
+    "kind": "Web runtime request and response"
+  },
+  {
+    "id": "03-vi-part-02",
+    "parent": "03-vi",
+    "part": 2,
+    "kind": "Flutter runtime request and response"
+  },
+  {
+    "id": "03-vi-part-03",
+    "parent": "03-vi",
+    "part": 3,
+    "kind": "Backend synchronous processing"
+  },
+  {
+    "id": "03-vi-part-04",
+    "parent": "03-vi",
+    "part": 4,
+    "kind": "Outbox and inbox asynchronous integration"
+  },
+  {
+    "id": "03-vi-part-05",
+    "parent": "03-vi",
+    "part": 5,
+    "kind": "Static source dependencies"
+  }
+]

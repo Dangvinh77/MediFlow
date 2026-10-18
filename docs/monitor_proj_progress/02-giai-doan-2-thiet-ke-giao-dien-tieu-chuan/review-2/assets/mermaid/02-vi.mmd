@@ -1,0 +1,43 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+flowchart TB
+ subgraph WEB["Web build"]
+ direction LR
+ nextjs["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/><br/>Next.js"]
+ react["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='34' height='34'/><br/>React"]
+ typescript["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/typescript/typescript-original.svg' width='34' height='34'/><br/>TypeScript"]
+ tailwindcss["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/tailwindcss/tailwindcss-original.svg' width='34' height='34'/><br/>Tailwind CSS"]
+ nodejs["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nodejs/nodejs-original.svg' width='34' height='34'/><br/>Node.js"]
+ pnpm["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/pnpm/pnpm-original.svg' width='34' height='34'/><br/>pnpm"]
+ nextjs ~~~ react ~~~ typescript ~~~ tailwindcss ~~~ nodejs ~~~ pnpm
+ end
+ subgraph MOBILE["Mobile"]
+ direction LR
+ flutter["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='34' height='34'/><br/>Flutter"]
+ dart["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='34' height='34'/><br/>Dart"]
+ flutter ~~~ dart
+ end
+ subgraph BACK["Backend"]
+ direction LR
+ java["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/java/java-original.svg' width='34' height='34'/><br/>Java"]
+ spring["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Spring"]
+ maven["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/maven/maven-original.svg' width='34' height='34'/><br/>Maven"]
+ hibernate["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/hibernate/hibernate-original.svg' width='34' height='34'/><br/>Hibernate"]
+ swagger["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/swagger/swagger-original.svg' width='34' height='34'/><br/>OpenAPI / Swagger"]
+ java ~~~ spring ~~~ maven ~~~ hibernate ~~~ swagger
+ end
+ subgraph DATA["Data / messaging / runtime"]
+ direction LR
+ postgresql["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='34' height='34'/><br/>PostgreSQL"]
+ rabbitmq["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='34' height='34'/><br/>RabbitMQ"]
+ docker["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/docker/docker-original.svg' width='34' height='34'/><br/>Docker"]
+ postgresql ~~~ rabbitmq ~~~ docker
+ end
+ subgraph QUALITY["Source / verification"]
+ direction LR
+ git["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/git/git-original.svg' width='34' height='34'/><br/>Git"]
+ githubactions["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/githubactions/githubactions-original.svg' width='34' height='34'/><br/>GitHub Actions"]
+ junit["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/junit/junit-original.svg' width='34' height='34'/><br/>JUnit"]
+ vitest["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/vitest/vitest-original.svg' width='34' height='34'/><br/>Vitest"]
+ git ~~~ githubactions ~~~ junit ~~~ vitest
+ end
+ WEB ~~~ MOBILE ~~~ BACK ~~~ DATA ~~~ QUALITY

@@ -1,0 +1,54 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+erDiagram
+ appointment {
+  uuid appointment_id PK
+  uuid patient_id
+  uuid doctor_id
+  uuid department_id
+  varchar status
+  smallint care_contract_version
+  uuid exam_clearance_id
+  uuid emergency_override_id
+ }
+ medical_record {
+  uuid record_id PK
+  uuid patient_id
+  uuid doctor_id
+  uuid department_id
+  uuid appointment_id FK
+  varchar status
+ }
+ diagnosis {
+  uuid diagnosis_id PK
+  uuid record_id FK
+ }
+ clinical_lab_order {
+  uuid source_order_id PK
+  uuid record_id FK
+  uuid patient_id
+  uuid requesting_doctor_id
+  uuid requesting_department_id
+  varchar care_episode_type
+  uuid care_episode_id FK
+ }
+ exam_clearance {
+  uuid clearance_id PK
+  uuid event_id
+  uuid invoice_id
+  uuid account_id
+  uuid appointment_id
+  uuid record_id
+  uuid patient_id
+  varchar care_episode_type
+  uuid care_episode_id
+  numeric amount
+ }
+ attached_result {
+  uuid record_id PK, FK
+  uuid reference_id PK
+ }
+ appointment |o--o| medical_record : "appointment_id"
+ medical_record ||--o{ diagnosis : "record_id"
+ medical_record ||--o{ clinical_lab_order : "record_id"
+ appointment ||--o{ clinical_lab_order : "care_episode_id"
+ medical_record ||--o{ attached_result : "record_id"

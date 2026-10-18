@@ -1,0 +1,301 @@
+{
+  "checks": [
+    {
+      "lang": "vi",
+      "n": 1,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 2,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 3,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 4,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 5,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 6,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 7,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 8,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 9,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 10,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 11,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 12,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 13,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 14,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 15,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 16,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 17,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 18,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 19,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 20,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 21,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 22,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 23,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 24,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 25,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 26,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 27,
+      "pass": true
+    },
+    {
+      "lang": "vi",
+      "n": 28,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 1,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 2,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 3,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 4,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 5,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 6,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 7,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 8,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 9,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 10,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 11,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 12,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 13,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 14,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 15,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 16,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 17,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 18,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 19,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 20,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 21,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 22,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 23,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 24,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 25,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 26,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 27,
+      "pass": true
+    },
+    {
+      "lang": "en",
+      "n": 28,
+      "pass": true
+    },
+    {
+      "mode": "portrait",
+      "pass": true
+    },
+    {
+      "mode": "landscape",
+      "pass": true
+    },
+    {
+      "mode": "original",
+      "pass": true
+    },
+    {
+      "mode": "panels",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

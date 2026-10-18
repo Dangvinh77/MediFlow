@@ -1,0 +1,22 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 45, "boxMargin": 6, "boxTextMargin": 4, "noteMargin": 7, "messageMargin": 20, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+flowchart TB
+ subgraph BACKEND["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · each logical backend context"]
+ direction TB
+ G["Spring Cloud Gateway<br/>JWT authentication / route-role policy"]
+ WC["Web controller / request DTO<br/>Bean validation / PreAuthorize<br/>Context and actor checks"]
+ AS["Application service / input use case<br/>DTO mapping / local transaction<br/>Idempotency and business orchestration"]
+ DM["Domain models / business rules<br/>UUID / money / lifecycle invariants<br/>Framework-free"]
+ OP["Application output ports<br/>Repository / external context / event contracts"]
+ PA["Persistence adapter<br/>JPA repository / entity mapper / Flyway"]
+ RA["HTTP client adapter<br/>Resilient authorized context lookup"]
+ DB[(Context-owned PostgreSQL store)]
+ PEER["Other context REST API<br/>Own authorization / own store"]
+ end
+ G <-->|HTTP request / ApiResponse or error| WC
+ WC <-->|Command or query / result DTO| AS
+ AS -->|Evaluate rules| DM
+ AS <-->|Port operation / mapped result| OP
+ OP <-->|Repository operation / domain result| PA
+ OP <-->|Context lookup / authorized DTO| RA
+ PA <-->|SQL write or read / rows| DB
+ RA <-->|HTTP request / response| PEER

@@ -1,0 +1,32 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+erDiagram
+ lab_test {
+  uuid test_id PK
+  uuid record_id
+  uuid patient_id
+  uuid requesting_department_id
+  varchar status
+  smallint care_contract_version
+  varchar care_episode_type
+  uuid care_episode_id
+  uuid source_order_id
+  uuid clearance_id
+ }
+ lab_result {
+  uuid result_id PK
+  uuid test_id FK
+ }
+ lab_financial_clearance {
+  uuid clearance_target_id PK
+  uuid clearance_id
+  uuid event_id
+  uuid invoice_id
+  uuid account_id
+  uuid test_id FK
+  uuid patient_id
+  varchar care_episode_type
+  uuid care_episode_id
+  numeric amount
+ }
+ lab_test ||--o{ lab_result : "test_id"
+ lab_test ||--o{ lab_financial_clearance : "test_id"

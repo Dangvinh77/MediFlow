@@ -1,0 +1,10 @@
+{
+  "architectureSourcesChecked": 12,
+  "checks": [
+    "Client side / Server side",
+    "Request / response",
+    "No numeric deployment ports",
+    "Embedded side icons"
+  ],
+  "errors": []
+}

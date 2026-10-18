@@ -1,0 +1,901 @@
+{
+  "renderer": "Mermaid CLI 11.12.0",
+  "results": [
+    {
+      "orientation": "portrait",
+      "file": "02-en.mmd",
+      "status": "pass",
+      "width": 319.4375,
+      "height": 654.609375,
+      "estimatedTextPt": 15.9
+    },
+    {
+      "orientation": "portrait",
+      "file": "02-vi.mmd",
+      "status": "pass",
+      "width": 319.4375,
+      "height": 654.609375,
+      "estimatedTextPt": 15.9
+    },
+    {
+      "orientation": "portrait",
+      "file": "04-en.mmd",
+      "status": "pass",
+      "width": 409.8570251464844,
+      "height": 485.328125,
+      "estimatedTextPt": 4.7
+    },
+    {
+      "orientation": "portrait",
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "width": 451.7025146484375,
+      "height": 499.9140625,
+      "estimatedTextPt": 4.4
+    },
+    {
+      "orientation": "portrait",
+      "file": "05-en.mmd",
+      "status": "pass",
+      "width": 456.8882751464844,
+      "height": 558.0703125,
+      "estimatedTextPt": 4.5
+    },
+    {
+      "orientation": "portrait",
+      "file": "05-vi.mmd",
+      "status": "pass",
+      "width": 473.6243896484375,
+      "height": 578.3203125,
+      "estimatedTextPt": 4.3
+    },
+    {
+      "orientation": "portrait",
+      "file": "10-en.mmd",
+      "status": "pass",
+      "width": 930.939453125,
+      "height": 872.0,
+      "estimatedTextPt": 7.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "10-vi.mmd",
+      "status": "pass",
+      "width": 930.939453125,
+      "height": 872.0,
+      "estimatedTextPt": 7.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "11-en.mmd",
+      "status": "pass",
+      "width": 1424.837890625,
+      "height": 1129.0,
+      "estimatedTextPt": 5.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "11-vi.mmd",
+      "status": "pass",
+      "width": 1424.837890625,
+      "height": 1129.0,
+      "estimatedTextPt": 5.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "12-en.mmd",
+      "status": "pass",
+      "width": 985.109375,
+      "height": 318.2537841796875,
+      "estimatedTextPt": 6.9
+    },
+    {
+      "orientation": "portrait",
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "width": 981.25,
+      "height": 342.0086975097656,
+      "estimatedTextPt": 6.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "13-en.mmd",
+      "status": "pass",
+      "width": 2157.390625,
+      "height": 1260.5245361328125,
+      "estimatedTextPt": 2.4
+    },
+    {
+      "orientation": "portrait",
+      "file": "13-vi.mmd",
+      "status": "pass",
+      "width": 2157.390625,
+      "height": 1260.5245361328125,
+      "estimatedTextPt": 2.4
+    },
+    {
+      "orientation": "portrait",
+      "file": "14-en.mmd",
+      "status": "pass",
+      "width": 683.22265625,
+      "height": 1798.8099365234375,
+      "estimatedTextPt": 5.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "14-vi.mmd",
+      "status": "pass",
+      "width": 683.22265625,
+      "height": 1798.8099365234375,
+      "estimatedTextPt": 5.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "15-en.mmd",
+      "status": "pass",
+      "width": 480.1640625,
+      "height": 552.5,
+      "estimatedTextPt": 15.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "15-vi.mmd",
+      "status": "pass",
+      "width": 480.1640625,
+      "height": 552.5,
+      "estimatedTextPt": 15.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "16-en.mmd",
+      "status": "pass",
+      "width": 182.125,
+      "height": 95.0,
+      "estimatedTextPt": 39.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "16-vi.mmd",
+      "status": "pass",
+      "width": 182.125,
+      "height": 95.0,
+      "estimatedTextPt": 39.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "17-en.mmd",
+      "status": "pass",
+      "width": 831.46875,
+      "height": 1145.0,
+      "estimatedTextPt": 8.7
+    },
+    {
+      "orientation": "portrait",
+      "file": "17-vi.mmd",
+      "status": "pass",
+      "width": 831.46875,
+      "height": 1145.0,
+      "estimatedTextPt": 8.7
+    },
+    {
+      "orientation": "portrait",
+      "file": "18-en.mmd",
+      "status": "pass",
+      "width": 470.25,
+      "height": 936.0,
+      "estimatedTextPt": 11.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "18-vi.mmd",
+      "status": "pass",
+      "width": 470.25,
+      "height": 936.0,
+      "estimatedTextPt": 11.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "19-en.mmd",
+      "status": "pass",
+      "width": 661.3125,
+      "height": 730.0,
+      "estimatedTextPt": 8.9
+    },
+    {
+      "orientation": "portrait",
+      "file": "19-vi.mmd",
+      "status": "pass",
+      "width": 661.3125,
+      "height": 730.0,
+      "estimatedTextPt": 8.9
+    },
+    {
+      "orientation": "portrait",
+      "file": "20-en.mmd",
+      "status": "pass",
+      "width": 1174.36328125,
+      "height": 1484.1500244140625,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "20-vi.mmd",
+      "status": "pass",
+      "width": 1174.36328125,
+      "height": 1484.1500244140625,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "21-en.mmd",
+      "status": "pass",
+      "width": 262.140625,
+      "height": 393.5,
+      "estimatedTextPt": 16.4
+    },
+    {
+      "orientation": "portrait",
+      "file": "21-vi.mmd",
+      "status": "pass",
+      "width": 262.140625,
+      "height": 393.5,
+      "estimatedTextPt": 16.4
+    },
+    {
+      "orientation": "portrait",
+      "file": "22-vi.mmd",
+      "status": "pass",
+      "width": 293.171875,
+      "height": 933.5,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "22-en.mmd",
+      "status": "pass",
+      "width": 293.171875,
+      "height": 933.5,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "23-en.mmd",
+      "status": "pass",
+      "width": 807.671875,
+      "height": 976.4454345703125,
+      "estimatedTextPt": 4.3
+    },
+    {
+      "orientation": "portrait",
+      "file": "23-vi.mmd",
+      "status": "pass",
+      "width": 807.671875,
+      "height": 976.4454345703125,
+      "estimatedTextPt": 4.3
+    },
+    {
+      "orientation": "portrait",
+      "file": "24-en.mmd",
+      "status": "pass",
+      "width": 782.328125,
+      "height": 941.0,
+      "estimatedTextPt": 3.6
+    },
+    {
+      "orientation": "portrait",
+      "file": "24-vi.mmd",
+      "status": "pass",
+      "width": 782.328125,
+      "height": 941.0,
+      "estimatedTextPt": 3.6
+    },
+    {
+      "orientation": "portrait",
+      "file": "25-vi.mmd",
+      "status": "pass",
+      "width": 789.40625,
+      "height": 484.0,
+      "estimatedTextPt": 5.7
+    },
+    {
+      "orientation": "portrait",
+      "file": "25-en.mmd",
+      "status": "pass",
+      "width": 789.40625,
+      "height": 484.0,
+      "estimatedTextPt": 5.7
+    },
+    {
+      "orientation": "portrait",
+      "file": "26-en.mmd",
+      "status": "pass",
+      "width": 749.8369140625,
+      "height": 1667.3125,
+      "estimatedTextPt": 6.3
+    },
+    {
+      "orientation": "portrait",
+      "file": "26-vi.mmd",
+      "status": "pass",
+      "width": 749.8369140625,
+      "height": 1667.3125,
+      "estimatedTextPt": 6.3
+    },
+    {
+      "orientation": "portrait",
+      "file": "27-en.mmd",
+      "status": "pass",
+      "width": 1170.614013671875,
+      "height": 1578.984375,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "27-vi.mmd",
+      "status": "pass",
+      "width": 1170.614013671875,
+      "height": 1578.984375,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "28-en.mmd",
+      "status": "pass",
+      "width": 909.85546875,
+      "height": 978.140625,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "portrait",
+      "file": "28-vi.mmd",
+      "status": "pass",
+      "width": 909.85546875,
+      "height": 978.140625,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "landscape",
+      "file": "02-en.mmd",
+      "status": "pass",
+      "width": 578.5,
+      "height": 427.625,
+      "estimatedTextPt": 15.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "02-vi.mmd",
+      "status": "pass",
+      "width": 578.5,
+      "height": 427.625,
+      "estimatedTextPt": 15.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "04-en.mmd",
+      "status": "pass",
+      "width": 409.8570251464844,
+      "height": 485.328125,
+      "estimatedTextPt": 14
+    },
+    {
+      "orientation": "landscape",
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "width": 451.7025146484375,
+      "height": 499.9140625,
+      "estimatedTextPt": 13.6
+    },
+    {
+      "orientation": "landscape",
+      "file": "05-en.mmd",
+      "status": "pass",
+      "width": 456.8882751464844,
+      "height": 558.0703125,
+      "estimatedTextPt": 12.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "05-vi.mmd",
+      "status": "pass",
+      "width": 473.6243896484375,
+      "height": 578.3203125,
+      "estimatedTextPt": 11.8
+    },
+    {
+      "orientation": "landscape",
+      "file": "10-en.mmd",
+      "status": "pass",
+      "width": 1364.7734375,
+      "height": 608.0,
+      "estimatedTextPt": 8.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "10-vi.mmd",
+      "status": "pass",
+      "width": 1364.7734375,
+      "height": 608.0,
+      "estimatedTextPt": 8.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "11-en.mmd",
+      "status": "pass",
+      "width": 1845.9453125,
+      "height": 850.5,
+      "estimatedTextPt": 6.1
+    },
+    {
+      "orientation": "landscape",
+      "file": "11-vi.mmd",
+      "status": "pass",
+      "width": 1845.9453125,
+      "height": 850.5,
+      "estimatedTextPt": 6.1
+    },
+    {
+      "orientation": "landscape",
+      "file": "12-en.mmd",
+      "status": "pass",
+      "width": 985.109375,
+      "height": 318.2537841796875,
+      "estimatedTextPt": 11.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "12-vi.mmd",
+      "status": "pass",
+      "width": 981.25,
+      "height": 342.0086975097656,
+      "estimatedTextPt": 11.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "13-en.mmd",
+      "status": "pass",
+      "width": 2157.390625,
+      "height": 1260.5245361328125,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "13-vi.mmd",
+      "status": "pass",
+      "width": 2157.390625,
+      "height": 1260.5245361328125,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "14-en.mmd",
+      "status": "pass",
+      "width": 683.22265625,
+      "height": 1798.8099365234375,
+      "estimatedTextPt": 3.8
+    },
+    {
+      "orientation": "landscape",
+      "file": "14-vi.mmd",
+      "status": "pass",
+      "width": 683.22265625,
+      "height": 1798.8099365234375,
+      "estimatedTextPt": 3.8
+    },
+    {
+      "orientation": "landscape",
+      "file": "15-en.mmd",
+      "status": "pass",
+      "width": 906.765625,
+      "height": 314.5,
+      "estimatedTextPt": 12.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "15-vi.mmd",
+      "status": "pass",
+      "width": 906.765625,
+      "height": 314.5,
+      "estimatedTextPt": 12.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "16-en.mmd",
+      "status": "pass",
+      "width": 182.125,
+      "height": 95.0,
+      "estimatedTextPt": 61.5
+    },
+    {
+      "orientation": "landscape",
+      "file": "16-vi.mmd",
+      "status": "pass",
+      "width": 182.125,
+      "height": 95.0,
+      "estimatedTextPt": 61.5
+    },
+    {
+      "orientation": "landscape",
+      "file": "17-en.mmd",
+      "status": "pass",
+      "width": 1093.609375,
+      "height": 918.375,
+      "estimatedTextPt": 7.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "17-vi.mmd",
+      "status": "pass",
+      "width": 1093.609375,
+      "height": 918.375,
+      "estimatedTextPt": 7.4
+    },
+    {
+      "orientation": "landscape",
+      "file": "18-en.mmd",
+      "status": "pass",
+      "width": 687.59375,
+      "height": 599.75,
+      "estimatedTextPt": 11.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "18-vi.mmd",
+      "status": "pass",
+      "width": 687.59375,
+      "height": 599.75,
+      "estimatedTextPt": 11.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "19-en.mmd",
+      "status": "pass",
+      "width": 661.3125,
+      "height": 730.0,
+      "estimatedTextPt": 9.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "19-vi.mmd",
+      "status": "pass",
+      "width": 661.3125,
+      "height": 730.0,
+      "estimatedTextPt": 9.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "20-en.mmd",
+      "status": "pass",
+      "width": 1638.6187744140625,
+      "height": 1162.75,
+      "estimatedTextPt": 5.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "20-vi.mmd",
+      "status": "pass",
+      "width": 1638.6187744140625,
+      "height": 1162.75,
+      "estimatedTextPt": 5.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "21-en.mmd",
+      "status": "pass",
+      "width": 441.234375,
+      "height": 292.5,
+      "estimatedTextPt": 17.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "21-vi.mmd",
+      "status": "pass",
+      "width": 441.234375,
+      "height": 292.5,
+      "estimatedTextPt": 17.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "22-en.mmd",
+      "status": "pass",
+      "width": 1161.671875,
+      "height": 292.5,
+      "estimatedTextPt": 7.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "22-vi.mmd",
+      "status": "pass",
+      "width": 1161.671875,
+      "height": 292.5,
+      "estimatedTextPt": 7.3
+    },
+    {
+      "orientation": "landscape",
+      "file": "23-en.mmd",
+      "status": "pass",
+      "width": 807.671875,
+      "height": 976.4454345703125,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "landscape",
+      "file": "23-vi.mmd",
+      "status": "pass",
+      "width": 807.671875,
+      "height": 976.4454345703125,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "landscape",
+      "file": "24-en.mmd",
+      "status": "pass",
+      "width": 782.328125,
+      "height": 941.0,
+      "estimatedTextPt": 7.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "24-vi.mmd",
+      "status": "pass",
+      "width": 782.328125,
+      "height": 941.0,
+      "estimatedTextPt": 7.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "25-en.mmd",
+      "status": "pass",
+      "width": 789.40625,
+      "height": 484.0,
+      "estimatedTextPt": 14.1
+    },
+    {
+      "orientation": "landscape",
+      "file": "25-vi.mmd",
+      "status": "pass",
+      "width": 789.40625,
+      "height": 484.0,
+      "estimatedTextPt": 14.1
+    },
+    {
+      "orientation": "landscape",
+      "file": "26-en.mmd",
+      "status": "pass",
+      "width": 749.8369140625,
+      "height": 1667.3125,
+      "estimatedTextPt": 2.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "26-vi.mmd",
+      "status": "pass",
+      "width": 749.8369140625,
+      "height": 1667.3125,
+      "estimatedTextPt": 2.9
+    },
+    {
+      "orientation": "landscape",
+      "file": "27-en.mmd",
+      "status": "pass",
+      "width": 1170.614013671875,
+      "height": 1578.984375,
+      "estimatedTextPt": 3.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "27-vi.mmd",
+      "status": "pass",
+      "width": 1170.614013671875,
+      "height": 1578.984375,
+      "estimatedTextPt": 3.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "28-en.mmd",
+      "status": "pass",
+      "width": 909.85546875,
+      "height": 978.140625,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "28-vi.mmd",
+      "status": "pass",
+      "width": 909.85546875,
+      "height": 978.140625,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "06-en.mmd",
+      "status": "pass",
+      "width": 742.0,
+      "height": 904.0,
+      "estimatedTextPt": 9.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "06-vi.mmd",
+      "status": "pass",
+      "width": 742.0,
+      "height": 904.0,
+      "estimatedTextPt": 9.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "07-en.mmd",
+      "status": "pass",
+      "width": 739.0,
+      "height": 1489.0,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "portrait",
+      "file": "07-vi.mmd",
+      "status": "pass",
+      "width": 739.0,
+      "height": 1489.0,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "portrait",
+      "file": "08-en.mmd",
+      "status": "pass",
+      "width": 1041.0,
+      "height": 1405.0,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "portrait",
+      "file": "08-vi.mmd",
+      "status": "pass",
+      "width": 1041.0,
+      "height": 1405.0,
+      "estimatedTextPt": 7
+    },
+    {
+      "orientation": "portrait",
+      "file": "09-en.mmd",
+      "status": "pass",
+      "width": 751.0,
+      "height": 1301.0,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "portrait",
+      "file": "09-vi.mmd",
+      "status": "pass",
+      "width": 751.0,
+      "height": 1301.0,
+      "estimatedTextPt": 8
+    },
+    {
+      "orientation": "landscape",
+      "file": "06-en.mmd",
+      "status": "pass",
+      "width": 742.0,
+      "height": 904.0,
+      "estimatedTextPt": 7.5
+    },
+    {
+      "orientation": "landscape",
+      "file": "06-vi.mmd",
+      "status": "pass",
+      "width": 742.0,
+      "height": 904.0,
+      "estimatedTextPt": 7.5
+    },
+    {
+      "orientation": "landscape",
+      "file": "07-en.mmd",
+      "status": "pass",
+      "width": 739.0,
+      "height": 1489.0,
+      "estimatedTextPt": 4.6
+    },
+    {
+      "orientation": "landscape",
+      "file": "07-vi.mmd",
+      "status": "pass",
+      "width": 739.0,
+      "height": 1489.0,
+      "estimatedTextPt": 4.6
+    },
+    {
+      "orientation": "landscape",
+      "file": "08-vi.mmd",
+      "status": "pass",
+      "width": 1041.0,
+      "height": 1405.0,
+      "estimatedTextPt": 4.8
+    },
+    {
+      "orientation": "landscape",
+      "file": "08-en.mmd",
+      "status": "pass",
+      "width": 1041.0,
+      "height": 1405.0,
+      "estimatedTextPt": 4.8
+    },
+    {
+      "orientation": "landscape",
+      "file": "09-en.mmd",
+      "status": "pass",
+      "width": 751.0,
+      "height": 1301.0,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "09-vi.mmd",
+      "status": "pass",
+      "width": 751.0,
+      "height": 1301.0,
+      "estimatedTextPt": 5.2
+    },
+    {
+      "orientation": "portrait",
+      "file": "03-en.mmd",
+      "status": "pass",
+      "width": 3460.25390625,
+      "height": 2692.649169921875,
+      "estimatedTextPt": 2.1
+    },
+    {
+      "orientation": "portrait",
+      "file": "01-en.mmd",
+      "status": "pass",
+      "width": 1068.265625,
+      "height": 1089.96875,
+      "estimatedTextPt": 6.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "01-vi.mmd",
+      "status": "pass",
+      "width": 1068.265625,
+      "height": 1089.96875,
+      "estimatedTextPt": 6.8
+    },
+    {
+      "orientation": "portrait",
+      "file": "03-vi.mmd",
+      "status": "pass",
+      "width": 3460.25390625,
+      "height": 2692.649169921875,
+      "estimatedTextPt": 2.1
+    },
+    {
+      "orientation": "landscape",
+      "file": "01-en.mmd",
+      "status": "pass",
+      "width": 1068.265625,
+      "height": 1089.96875,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "01-vi.mmd",
+      "status": "pass",
+      "width": 1068.265625,
+      "height": 1089.96875,
+      "estimatedTextPt": 6.2
+    },
+    {
+      "orientation": "landscape",
+      "file": "03-en.mmd",
+      "status": "pass",
+      "width": 3460.25390625,
+      "height": 2692.649169921875,
+      "estimatedTextPt": 2.5
+    },
+    {
+      "orientation": "landscape",
+      "file": "03-vi.mmd",
+      "status": "pass",
+      "width": 3460.25390625,
+      "height": 2692.649169921875,
+      "estimatedTextPt": 2.5
+    }
+  ]
+}

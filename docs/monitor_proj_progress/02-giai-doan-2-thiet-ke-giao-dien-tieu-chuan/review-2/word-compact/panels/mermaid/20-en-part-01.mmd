@@ -1,0 +1,36 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 8, "diagramPadding": 8, "wrappingWidth": 420}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 45, "boxMargin": 6, "boxTextMargin": 4, "noteMargin": 7, "messageMargin": 20, "diagramMarginX": 8, "diagramMarginY": 8, "mirrorActors": false, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 8, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 8, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+erDiagram
+ direction TB
+ billing_account {
+  uuid account_id PK
+  uuid patient_id
+  uuid department_id
+  varchar care_episode_type
+  uuid care_episode_id
+  varchar status
+ }
+ charge {
+  uuid charge_id PK
+  uuid account_id FK
+  uuid patient_id
+  uuid department_id
+  uuid source_id
+  numeric quantity
+  varchar status
+  uuid reconciled_result_id
+ }
+ payment_request {
+  uuid payment_request_id PK
+  uuid invoice_id
+  uuid account_id FK
+  varchar status
+  decimal requested_amount
+ }
+ payment_request_charge {
+  uuid payment_request_id PK, FK
+  uuid charge_id PK, FK
+  decimal requested_amount
+ }
+ billing_account ||--o{ charge : "account_id"
+ billing_account ||--o{ payment_request : "account_id"
+ payment_request ||--o{ payment_request_charge : "payment_request_id"
