@@ -11,9 +11,9 @@ billing-service,GET,/api/v1/billing/patient/{patientId},ADMIN|CASHIER,true
 billing-service,POST,/api/v1/billing/invoices,ADMIN|CASHIER,true
 billing-service,PUT,/api/v1/billing/invoices/{id}/pay,ADMIN|CASHIER,true
 billing-service,POST,/api/v1/billing/payment-requests/{id}/payments,ADMIN|CASHIER,true
-billing-service,POST,/api/v1/billing/transactions/{id}/refunds,ADMIN|CASHIER,false
+billing-service,POST,/api/v1/billing/transactions/{id}/refunds,ADMIN|CASHIER,true
 billing-service,GET,/api/v1/billing/payment-requests/by-source,ADMIN|CASHIER,true
-billing-service,GET,/api/v1/billing/prescription-adjustments/{id}/refunds-due,ADMIN|CASHIER,false
+billing-service,GET,/api/v1/billing/prescription-adjustments/{id}/refunds-due,ADMIN|CASHIER,true
 billing-service,GET,/api/v1/billing/revenue,ADMIN|MANAGER,true
 billing-service,POST,/api/v1/billing/accounts/{id}/settlements,ADMIN|CASHIER,false
 billing-service,GET,/api/v1/billing/surgery-cancellations/{id}/refunds-due,ADMIN|CASHIER,false
