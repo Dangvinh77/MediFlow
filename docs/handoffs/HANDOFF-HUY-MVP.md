@@ -1,5 +1,9 @@
 # Handoff chung Huy — Pharmacy, Report và Support
 
+## Phân công hiện hành — 2026-10-18
+
+Giữ kết quả Huy 48/48 trong môi trường đã quan sát, không giao lại implementation đã hoàn tất. Theo chỉ đạo người dùng, **Vinh nhận toàn bộ kiểm thử backend**, gồm fresh full Pharmacy/Report/Support và sáu-app/recovery/cutover regression trên revision chung, tại [queue V-TEST-01–06](HANDOFF-VINH-BACKEND-VERIFICATION.md). Huy chỉ nhận task sửa production mới khi có lỗi/expected-actual cụ thể; không phải chạy lại toàn bộ test để bàn giao. Phân công này thay các yêu cầu owner acceptance còn mở trong phần lịch sử bên dưới.
+
 Rà soát mới nhất: **2026-10-17**, Support baseline `27b8832d` + working tree chưa commit/push,
 chi tiết ở mục 11. Baseline lịch sử `9ef3b151f895cef4c05916bf53331ff1d525f920`
 cộng thay đổi owned trong workspace; implementation trước đó đã merge PR #385 (`7610cb97`,

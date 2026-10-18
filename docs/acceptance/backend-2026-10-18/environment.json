@@ -1,0 +1,72 @@
+{
+  "head": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit": 0,
+    "output": "025ef39e358756a28043d9809fad165096528fbf"
+  },
+  "status": {
+    "command": [
+      "git",
+      "-c",
+      "core.longpaths=true",
+      "status",
+      "--short"
+    ],
+    "exit": 0,
+    "output": "M docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md\n M docs/handoffs/HANDOFF-HUY-MVP.md\n M docs/handoffs/HANDOFF-LOC-OUTPATIENT-DISCOVERY-PUBLICATION.md\n M docs/handoffs/HANDOFF-VINH-OUTPATIENT-MVP.md\n M docs/handoffs/README.md\n?? backend/gateway/src/test/java/com/mediflow/gateway/GatewayRefundRoutesAcceptanceIT.java\n?? docs/acceptance/\n?? docs/handoffs/HANDOFF-VINH-BACKEND-TEST-FAILURES.md\n?? docs/handoffs/HANDOFF-VINH-BACKEND-VERIFICATION.md"
+  },
+  "java": {
+    "command": [
+      "java",
+      "-version"
+    ],
+    "exit": 0,
+    "output": "openjdk version \"21.0.11\" 2026-04-21 LTS\nOpenJDK Runtime Environment Zulu21.50+19-CA (build 21.0.11+10-LTS)\nOpenJDK 64-Bit Server VM Zulu21.50+19-CA (build 21.0.11+10-LTS, mixed mode, sharing)"
+  },
+  "maven": {
+    "command": [
+      "mvn.cmd",
+      "-version"
+    ],
+    "exit": 0,
+    "output": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Program Files\\Apache Maven\\apache-maven-3.9.16\nJava version: 21.0.11, vendor: Azul Systems, Inc., runtime: C:\\Program Files\\Zulu\\zulu21.50.19-ca-jdk21.0.11-win_x64\nDefault locale: en_US, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+  },
+  "docker": {
+    "command": [
+      "docker",
+      "version",
+      "--format",
+      "{{.Server.Version}}"
+    ],
+    "exit": 0,
+    "output": "29.8.0"
+  },
+  "context": {
+    "command": [
+      "docker",
+      "context",
+      "show"
+    ],
+    "exit": 0,
+    "output": "desktop-linux"
+  },
+  "images": {
+    "command": [
+      "docker",
+      "image",
+      "inspect",
+      "postgres:16-alpine",
+      "rabbitmq:3.13-alpine",
+      "rabbitmq:3.13-management-alpine",
+      "--format",
+      "{{.RepoTags}} {{.Id}}"
+    ],
+    "exit": 0,
+    "output": "[postgres:16-alpine] sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea\n[rabbitmq:3.13-alpine] sha256:d7af1c87c5f1eda13fcfca06db452bf3aeab6619fc3358b68535c0c02c4e52bc\n[rabbitmq:3-management-alpine rabbitmq:3.13-management-alpine] sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281"
+  },
+  "testSourceSha256": "295c0a0069084fbc52dd37d8e49ddf4f87e26d267b2acd0892ce9d612f591982"
+}

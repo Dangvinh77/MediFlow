@@ -1,0 +1,9 @@
+{"version": "16.15", "database": "mediflow_notification", "readOnly": "on", "isolation": "repeatable read", "observedAt": "2026-10-18T11:18:15.026725+00:00"}
+{"rows": 0, "table": "care_notification_source", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 4, "table": "flyway_schema_history", "rowsMd5": "b227bec6140027ba480f209fdbc3e159"}
+{"rows": 0, "table": "notification", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "notification_event_outbox", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "processed_event", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "surgery_notice_case", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "surgery_notice_snapshot", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "surgery_notice_source", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}

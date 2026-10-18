@@ -1,0 +1,10 @@
+{
+  "mavenExit": 0,
+  "sourceVolumesUnchanged": true,
+  "sourcePgBefore": "b56745dcd144d5c299926248bd4c8969075c925812244d5f91283352a21bec3d",
+  "sourcePgAfter": "b56745dcd144d5c299926248bd4c8969075c925812244d5f91283352a21bec3d",
+  "sourceRabbitBefore": "44fc58ae038c50bc6021980d6a7cce4bd7527b619c35dffd9a23bd7c626d9627",
+  "sourceRabbitAfter": "44fc58ae038c50bc6021980d6a7cce4bd7527b619c35dffd9a23bd7c626d9627",
+  "pharmacyUnchanged": true,
+  "completedAt": "2026-10-18T18:21:09.8329309+07:00"
+}

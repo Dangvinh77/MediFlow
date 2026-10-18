@@ -1,0 +1,2458 @@
+[
+  {
+    "path": "pom.xml",
+    "sha256": "ed075b7fd6192303c8b4ff2eed62653d7c85b276126e019b142969fa0ebad4ec"
+  },
+  {
+    "path": "backend\\billing-service\\pom.xml",
+    "sha256": "775a76395ef12796dad58e31ad6a581fa2fe2b7cf21be262b90a75109ff8e746"
+  },
+  {
+    "path": "backend\\clinical-service\\pom.xml",
+    "sha256": "b4bac9298203adcf17d38984e9153359336532e1ff0adb6e9e3f20cc6d95346a"
+  },
+  {
+    "path": "backend\\common\\pom.xml",
+    "sha256": "03ad4d561fb5fafdfccc6d7572e999724b69bb8d1418df7c83141518959daf51"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\api\\ApiResponse.java",
+    "sha256": "9c021296123293e3c7a2cadffc60f4343ff72bcd76bdb1d482f7155acde6b887"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\api\\PageQuery.java",
+    "sha256": "ed6a92e254aa09fcd4947a736311bbb88815647411433896a5083f5d023b1a2e"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\api\\PageResult.java",
+    "sha256": "49ab92e167ea7fa4edcbcf1460af699aa39e217e14846058e764d7c55666f0b9"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\exception\\BusinessRuleException.java",
+    "sha256": "4e4edede1114fad3a48d42307e83a1cb529a0d713867cc8b04d203b3b1ee65d1"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\exception\\DuplicateResourceException.java",
+    "sha256": "1a26504bb8f47b3abe4d8b035f4dcef0fc1c3cf075be45a85a16da36b6dee0f9"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\exception\\ForbiddenOperationException.java",
+    "sha256": "c00895bb5fe5d131b1d5e45ebbcb9e16289105699c71e07412266917b0694097"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\exception\\ResourceNotFoundException.java",
+    "sha256": "d78e4144b5687ba7da3f87f908b5decc432c83fa4da3f5c2d60d9723fe04d7dc"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\security\\JwtClaims.java",
+    "sha256": "9ff0c8bc6b2bc24aab303f29d6594cb2977959040f8fe876888fb22961a65006"
+  },
+  {
+    "path": "backend\\common\\src\\main\\java\\com\\mediflow\\common\\security\\Roles.java",
+    "sha256": "132ffde4a1fc73357c90b3718f36f41fcca8e78a137c16c3c381fdd6fdf22fbc"
+  },
+  {
+    "path": "backend\\core-service\\pom.xml",
+    "sha256": "3656edcda17e8e66eb0b6431b8047bdd51155db80a78181e4b519cb25570d298"
+  },
+  {
+    "path": "backend\\eureka-server\\pom.xml",
+    "sha256": "1d387ec33a5839ab2eb39b3525ab59fd57fc561d5190d4d4ad6e3d58101070d2"
+  },
+  {
+    "path": "backend\\gateway\\pom.xml",
+    "sha256": "87f295e521642fb07f5f77a8dc8222b65990f5120c1b576b7fc9f7c894e6ec66"
+  },
+  {
+    "path": "backend\\inpatient-service\\pom.xml",
+    "sha256": "7abf2ab1db122d89ce315334d12ed7f3fa9eaea8554c96c694625a832a979535"
+  },
+  {
+    "path": "backend\\lab-service\\pom.xml",
+    "sha256": "5622cc698e960a81f7843be63ebc52a25090cdbc2e7b25483ae7cf9f441f46d0"
+  },
+  {
+    "path": "backend\\notification-service\\pom.xml",
+    "sha256": "7ead28a016e9c97a6cf7d892af973c8b7707de2f9b12adfa090e8bed0153349e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\NotificationServiceApplication.java",
+    "sha256": "886e128ceab1463df10f96c12ea944ab3cdf3424f87ce09ff25482f008eda745"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\AdmissionClosedCommand.java",
+    "sha256": "0ce4eb838fb07e22642320e0d5c38ddb4e5487aafe972203b3ccc301aaf8e199"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\AdmissionDepositRequestedCommand.java",
+    "sha256": "5feb82065fee440792af74719a7d2a54c502f71f2e11286534f2f7d138f0f2a7"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\AdmissionStartedCommand.java",
+    "sha256": "44778348d6f387e44bac81c81730652a0200307d83f430f072779bf7c69ca620"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\CallerIdentity.java",
+    "sha256": "dc846cea37e86a96c67cf471994fa41b38bd61b8c1c7bc5741b6de023470b249"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\CarePaymentReceiptCommand.java",
+    "sha256": "b560707f256f3ff6df87af46759c2cb23caa017180304706afd33740dd071a90"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\PrescriptionNoticeCommand.java",
+    "sha256": "d11de14cd8aae8c257d1a5fbd6b4ac3ca256e2d02d35c5a0dd986cfbf301e394"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\RefundNoticeCommand.java",
+    "sha256": "2f724a4c6d5bdc005b78dde7c77acd4ea718e42eb564f4f5fd9a5da12971ebb4"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\SettlementCompletedCommand.java",
+    "sha256": "2fb3db523b03601246c12e27c7f3e1ced9d5a22196f69cf92e5106f1f2172d9d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\SurgeryCancelledNoticeCommand.java",
+    "sha256": "e25d890c581a584b8f9f6c9b4810b535174ecdebf3846876942df6560b37dbaa"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\SurgeryNoticeCommand.java",
+    "sha256": "5db796328593db10df15441cfb56a77d735fa3f77b1ce0c642c7c33f6b25ce87"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\SurgeryPaymentNoticeCommand.java",
+    "sha256": "77a829fb6df06b38ee58ca6b4f3179c2da8ff31128b8f22162e7127b54748d17"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\command\\SurgeryReadyCommand.java",
+    "sha256": "08e36d7b322f19c3394847cd8d04d965c095dea45a505dd84671bf7413236c86"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\request\\SendNotificationRequest.java",
+    "sha256": "bf21b0a391c4eb21245d2d3199fb28867e3037fa71ab1f4692083707524b6724"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\dto\\response\\NotificationDTO.java",
+    "sha256": "02e0389ed435afaf7b65939b0b7a9819856eff974dc0b9cfb1e509074c64de66"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\event\\NotificationSentEvent.java",
+    "sha256": "686580f098c3bfb84f40df1ddee21576eb48904ea5c274eacb0e9caff25f9170"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\mapper\\NotificationDtoMapper.java",
+    "sha256": "80947cb2608bfd6dbad99854f52ac17fe96e6557aa90facd3fe76f0ec57dc440"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\NotificationTrigger.java",
+    "sha256": "b68900e1ba87dc7302b5b19c73044706c70b83a1ffdee47b056d683fc6490819"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToCarePaymentReceiptUseCase.java",
+    "sha256": "7e9576c7f32a991c21f133150a223e310f8405346221a7ecfd5c1773bd26bdda"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToCareProjectionUseCase.java",
+    "sha256": "32ba6d8f6e06789e81a4d90ab0adeca417fd313295ecaea23fc3aaccec0e8f98"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToPrescriptionNoticeUseCase.java",
+    "sha256": "0066aaeda2942f9fb72d1aaf5131cd455dbe0b85547dcbed92d466e47833a4a8"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToRefundNoticeUseCase.java",
+    "sha256": "1f2dbc25777b7f7a871f6495712fe892251f53600496a66f68ae63e2dd4fef1c"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToSurgeryNoticeUseCase.java",
+    "sha256": "b6de328bfdba85c986c7c306d61728c17941f3fcd5af161627e23d415845b908"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReactToSurgeryPaymentNoticeUseCase.java",
+    "sha256": "28cd1b9fa7684f247b0a8cd37b5cf686ab2d6e3a370158e1b1ca2d95e0586892"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\ReadNotificationUseCase.java",
+    "sha256": "5acd4be979d9c4d29531ff6c62a0b1c7c39c0bc3d33632cb4f196cd3db544a9e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\in\\SendNotificationUseCase.java",
+    "sha256": "209d596f2b536e171d1e352bdbdad95be8a5826afc18cf0adbb4f54aad47d88c"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\CareNotificationRepositoryPort.java",
+    "sha256": "2562add43bf6a382a8c482faa21a4766958c642b8f87aaba3778f9b25e31fd39"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\NotificationEventPublisherPort.java",
+    "sha256": "b812d49bb9c7be1208a20b9e46b521a81d5b66958e8406147842c586fdf5a474"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\NotificationRepositoryPort.java",
+    "sha256": "8283b30da07b06993c09910f06443eb733b49bbb65e0b3336521ac0281f8bfc6"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\NotificationSenderPort.java",
+    "sha256": "be7568c1ddd75b3ff8cb8593e3f48b842aa8fae0e603869d30b18f279d2bbbca"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\NotificationSourcePort.java",
+    "sha256": "d187b67d09fc7d964e365a1b81b8d9b233904ee344716da777ed1d88560f70e3"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\PrescriptionNoticeWirePort.java",
+    "sha256": "a0bb721c512d7ee4eb30aeeff6533a435bf161196b2149234e66ac9e6a22952e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\ProcessedEventPort.java",
+    "sha256": "e5c8c568271799a2f19a0adf58ab4bebbf7aaeb0a7959b97d526b3107109595e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\RefundNoticeWirePort.java",
+    "sha256": "ea771a34e63bdd4ca1f6c32375cb3fd045fff5925c5f29a964a88f14ba634849"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\SurgeryNoticeStatePort.java",
+    "sha256": "3ec9de2d00dec734c2dda2bb531396a73469c203e6e8ac5b5d5f714ebf3b7ac2"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\SurgeryNoticeWirePort.java",
+    "sha256": "4d7315bfd03cfc0f920053358c51c50e8d9d53d21f1a89695cf1b0e1ff4108e6"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\port\\out\\SurgeryPaymentNoticeWirePort.java",
+    "sha256": "cfb22f92cda58c3faa7b4754760c58234814521fe55778fe19442645abac21db"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\CarePaymentReceiptService.java",
+    "sha256": "4b5d95a33f6715e4cf860b9ee7f4da128ca8ecff1483ae72cefd080431042893"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\CareProjectionService.java",
+    "sha256": "8837fa936ecc9099d9aef2bda73523d81c089e1bd843d690650fa5e81a7df405"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\NotificationApplicationService.java",
+    "sha256": "a983d8554aae2cee76cde8eae7402054ef18e6fb8eaa9f3a209ff5e206619806"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\NotificationTemplates.java",
+    "sha256": "2f859761039cc5517e81f5e74861d11db89fce1638c2b8daf6556964dad64f40"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\PrescriptionNoticeService.java",
+    "sha256": "e85e9ba86f9749206438b0f9546f83acbbec7190afb403f823f849248758dd09"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\RefundNoticeService.java",
+    "sha256": "b91d737af512115171ae864f9620890f30f16bb3e6b52ce63d0c334cadfd01ce"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\SurgeryNoticeService.java",
+    "sha256": "0e2a96aeeab80019617a590390b5c8c9388c79ba79a8fb83fc647347fc2653e9"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\application\\service\\SurgeryPaymentNoticeService.java",
+    "sha256": "86c1821a2e13f2d483ca19f8ac6c2cf6cba30f6d50d774a6c00c1d27fa135af6"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\NotificationAccessDeniedException.java",
+    "sha256": "b43c550c8a2f8d14c03eb92d54090aa407beb502be45a9e2fd0fcd33cbef70de"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\NotificationAddressInvalidException.java",
+    "sha256": "1bd417f800e99bdb21c7f26e4524580b8dc9bc2313d1d711eb50a72ba1b6016d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\NotificationAlreadyFinalisedException.java",
+    "sha256": "f412a459609c28346fc059dcb48c9922f30c483e5fca8302a085c69df3bc0313"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\NotificationEventConflictException.java",
+    "sha256": "f4699bb8a67f76e11ab5e6ed9b6f7c942a8a8018c0df6d2632bfc27b42c7a8f4"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\exception\\NotificationNotFoundException.java",
+    "sha256": "6034b3e111ec958d827c4d4037dae0c404d553d5ddf387874850becafa4b9782"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\model\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\model\\CareNotificationIntent.java",
+    "sha256": "6f63fb268596dbcf61c86c5163b6b2bd84b888871307b11bd9701391c36ad21d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\model\\Notification.java",
+    "sha256": "8551fe0aef1403f9eb069576643fe1499dd9597a165b56a91983aa7614a37590"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\model\\NotificationChannel.java",
+    "sha256": "c41ed02d7e1b980efaaf65965af3db480a56e676b3d9f870bf5780fbab82e10a"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\domain\\model\\NotificationStatus.java",
+    "sha256": "53451ea39f24851638b06f2b7004d95d494defeac80ec0ba4d3efea7797e9668"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\channel\\InAppSender.java",
+    "sha256": "09e58f3f16427ff1f1f23b208875017d84660eab8d469c5304334ea63171e8a9"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\channel\\MockEmailSender.java",
+    "sha256": "d670a5dea8ec2038c75890a3c321e9a536ff91c6663eeb66f7e34ea7da698953"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\channel\\MockSmsSender.java",
+    "sha256": "1178dfa9f4c36bad93a0be5272fdd2ae1b34ecd4eb7b39a43347b9526290eca9"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\client\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\CareNotificationConfiguration.java",
+    "sha256": "0baaeb8e92e31612781c4723c260302dac756c4c02bd308ff78ed4464efb2869"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\NotificationModuleConfiguration.java",
+    "sha256": "174a3f086500f075580b6b2e1a515f6a7c5c817d7bad96e6ff11e802671a14e4"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\NotificationModulePersistenceConfiguration.java",
+    "sha256": "d5f50442986decb28056f816af7dab0072fec5a77de2a4b628ca7ad8c695b2c1"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\NotificationStandalonePersistenceConfiguration.java",
+    "sha256": "e4f9320d8b7addfe58c86a5dc5908e533624c89dbc42de765db09ba4eab5842d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\OpenApiConfig.java",
+    "sha256": "2b3f5505b05afcc42ec71d74653d3fbc3b48f875ea79d16354136ef856d7bb18"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\PrescriptionNoticeConfiguration.java",
+    "sha256": "8e73c38c1d173bdcbf952aba9477b3034cd0eb08107b3ff95cb6e2fadf8961a7"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\RabbitConfig.java",
+    "sha256": "bb43eed7ea5f9e4ecf66dda67fd84bc40379d44d65b8ebac0295e67b9a8b3d20"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\RefundNoticeConfiguration.java",
+    "sha256": "d969ec5782e788685b2ba5d50c76c3fc0245cfb00ea14ceb6100472679dc1c03"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\SecurityConfig.java",
+    "sha256": "49cd6dc4d6a744bb39c81338dda0d54f8be959fa1b3e393d8cfc72adc7463a50"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\SurgeryNoticeConfiguration.java",
+    "sha256": "0366b848f6336c17c1c65a014eef3f927b14d042e9cf197a48646a4d39da6f19"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\config\\SurgeryPaymentNoticeConfiguration.java",
+    "sha256": "cdbed5c27c50fc3972dfec978c425e24c5031bfa9694d3746e115f4f031ac8aa"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\NotificationEventPublisherAdapter.java",
+    "sha256": "01d853cbe471854b4568a90cb48c159d4ce9eeb2e1fbd73749ae0f1380145e3e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\PrescriptionNoticeDecoder.java",
+    "sha256": "53692e645ade89a5864e6d71559155daf51571346fe8a33f78c6e6d7526541fe"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\RefundNoticeDecoder.java",
+    "sha256": "ec7f40d8680fe54dca9efbd01d4fcf136509db23d3da4da35be442bb29632d06"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\SurgeryNoticeDecoder.java",
+    "sha256": "b9ba7cfe6eb08155dced748a85fa1c790e80d5c3ee56630d0830c07a64934fdc"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\SurgeryPaymentNoticeDecoder.java",
+    "sha256": "02af84c768a26b9277fae2e84ddd8394188e6d79fa5cb06902ec1da69d911dd0"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\payload\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\CareNotificationRepositoryAdapter.java",
+    "sha256": "3f855ac0f361535ee8724ce1313883322a52817966f1c57516e575312be1b07a"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\NotificationPersistenceAdapter.java",
+    "sha256": "928f17402c0d6708ae23b5d481366f6be6b07720fc993ca26a4e0ec96304f336"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\NotificationSourceAdapter.java",
+    "sha256": "11ed62b18770acc8a807c88e94ddbae2fe3e23a87b53b75da84b19dd0c30d24b"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\ProcessedEventPersistenceAdapter.java",
+    "sha256": "fb967d6e65e6ee2cfd4593d3610b2f2304595045a525e393482f48c291376b8e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\SurgeryNoticeStateAdapter.java",
+    "sha256": "9d26ee7fe8134d79d9153dfcb6188e10838398f1dadfd5abe7e199026404db63"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\jpaEntity\\NotificationJpaEntity.java",
+    "sha256": "478bac68fadcc15558ce14760af9231f3e2b0878c0a9949e5304f8fac9c8cdbd"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\jpaEntity\\ProcessedEventJpaEntity.java",
+    "sha256": "a848f30d2cb717ac963b2c36480f263e44035753447256e7bfa12536212c9bc0"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\repository\\NotificationJpaRepository.java",
+    "sha256": "9be2c6e1424009a3bda4065c0de207b36f003f82f4a93e41f7f97231ac0a0876"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\repository\\ProcessedEventJpaRepository.java",
+    "sha256": "13a1057ab0daa5f047174b7661f6e2c2ae7342b724e2f77a4167eb938567580f"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\security\\JwtAuthFilter.java",
+    "sha256": "09c78826302f11d16c797430bca9a15a6e57bec4eff8f0af701b8e2a71b7171d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\infrastructure\\security\\JwtProperties.java",
+    "sha256": "f321f3f03ea04e9e850e32c298d60fb50a083ad132afc46885deeb488eb26c8d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\CarePaymentReceiptWireHandler.java",
+    "sha256": "f30bbb1d6e7c66e08c105fc76c42c280ace7b6b6a19dbb9d8cad5d112e4bf012"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\CareProjectionWireHandler.java",
+    "sha256": "a5f06e66b76a22f066ae2d5d6a7d172dde95fb9901b1255f6d4f96d69ada8536"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\NotificationEventConsumer.java",
+    "sha256": "202e7dbf85320a223f849fc5870a4dabe6a6560e7dfb28eec3364bc500867e68"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\PrescriptionNoticeWireHandler.java",
+    "sha256": "fe9b665663497af30c8b82931449f700fa667b76f62a09454efa8257ab9a9841"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\PrescriptionPaymentNoticeWireHandler.java",
+    "sha256": "07a3f61c8c36f49857a50941bcd6ab1a992c786c6e9f8972e8983b10b409e9d6"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\RefundNoticeConsumer.java",
+    "sha256": "21421ef86f8b5f01f61d36256c623cda76ff48d873eec6703de1f2ac3f41e044"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\SurgeryNoticeConsumer.java",
+    "sha256": "9c2f2da88514a83a0f53830386a45d372153f98f75464efe986f9ec5fed9e601"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\SurgeryPaymentNoticeConsumer.java",
+    "sha256": "8eb649d70cfd3939e8672ac0b7903c2c03d5e9651c3017b16fe445176827a359"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\AppointmentCreatedPayload.java",
+    "sha256": "309536243c62a4f2489bfef9800f178cd4aa93c08e47babaad79b2fe3cc0cf1e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\InvoiceCreatedPayload.java",
+    "sha256": "1be3669aa6e1342ca0f48fe7a2cc4ca4c7e811850b4f288052fe88b49d7c5eb7"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\LabResultCreatedPayload.java",
+    "sha256": "e542ab669a97e856b4d06c91dd5612f729ca4a4f935388ea4b8b49bfb06bc57e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\PatientCreatedPayload.java",
+    "sha256": "31ba42d14d187666f88a48f973cf2801ab5e0e986b97f8e676fe1ab1dde88eaf"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\PaymentCompletedPayload.java",
+    "sha256": "1abb8e1110a5c548c4d6af7b90bb4f3348326961f04c2162bf62bd22651c272c"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\PaymentFailedPayload.java",
+    "sha256": "6d030567a585b23b3b480a86b73ac7495568614882d3ac72d794ba8366b276bb"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\messaging\\consumer\\payload\\PrescriptionFilledPayload.java",
+    "sha256": "2b388ebba685530f5e39c47638f462a36974059f22213d1babf25a0140eef165"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\web\\GlobalExceptionHandler.java",
+    "sha256": "99c19341b763c7dfc6713be7a648e60b7cb4072ea35183967b59097df690491f"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\java\\com\\mediflow\\notification\\web\\NotificationController.java",
+    "sha256": "c914b693c0ed53074b8922baf0fc6ccc305f904715862b7092e3dafb70e6464a"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\resources\\application.yml",
+    "sha256": "a455f62a00c9da7177c1c24a5a07ae0c7f3e0a75b25e1b1308b3bb70363fcf0d"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\resources\\db\\migration\\V1__init.sql",
+    "sha256": "7b0f1277ae49603debb75eb1c3fe2fbf22dd035b9d24e5aa47ef260af1ee7244"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\resources\\db\\migration\\V2__care_receipt_delivery.sql",
+    "sha256": "6328febf3b2d7a4490b05e15e7aba1d9b97c81b81821fce67b04f5bc503cc3a0"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\resources\\db\\migration\\V3__surgery_reminder_evidence.sql",
+    "sha256": "d91348e3e60d044ae87d5e36805f8502d5a5c43dbff61dabe1aff33a8c21d5db"
+  },
+  {
+    "path": "backend\\notification-service\\src\\main\\resources\\db\\migration\\V4__care_notification_source.sql",
+    "sha256": "0846771235258234868a0bc66899862a7b051304a57dd46858c4d3872e989cf6"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\CareProjectionPostgresIntegrationTest.java",
+    "sha256": "dc8dc62e36c3bb30a472dcdef56bfcab7ef05a6399cf5a20989abdd09c2c0128"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\CareReceiptIntegrationTest.java",
+    "sha256": "390153dad352a46c0cefae823635948fd81f056ad7a60e33e362e763bb56500f"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\PrescriptionNoticeConfigurationTest.java",
+    "sha256": "a84aaab770032e1792c9878b005cee5cb0e4ef67fa3fbed4aaefc36587ad10d1"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\PrescriptionNoticeContractTest.java",
+    "sha256": "7f274c19e4169f47de65e6d0fb4735654c3e8c1894d1d760bfc730af79a4b5ef"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\PrescriptionNoticeRabbitIntegrationTest.java",
+    "sha256": "6458b2c23b73b0a9621ea944f2667b326427ab53be306b738d36ef2334e29c85"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\RefundNoticeConfigurationTest.java",
+    "sha256": "6449c9d2908fbe4732c839fc6bcc579c671085ffa78f843478cd7b508db1655f"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\RefundNoticeContractTest.java",
+    "sha256": "35a0fc2cf9d304972f43ef016044f982a83a5ab5cede7c1c3d7df2ca347aada0"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\SurgeryNoticeConfigurationTest.java",
+    "sha256": "013b8bde725420777e10da3248acfd63dd47e3f961d6da093b798fb595e017eb"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\SurgeryNoticeContractTest.java",
+    "sha256": "53f126b80f223a456f168d222691010d6c8fe8c20a30f203e1f4f2c54cd4275b"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\SurgeryNoticeRabbitIntegrationTest.java",
+    "sha256": "e9db16f002c1b1a273933cac85a7f3a65ffa57eb491a3eb352044209f43f47dc"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\SurgeryPaymentNoticeConfigurationTest.java",
+    "sha256": "cb69ba70ef36d3eb9a1579d08b1276ceb8a928c21e227d3d562cb8ce9739e83e"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\SurgeryPaymentNoticeContractTest.java",
+    "sha256": "3f17faaa2c6fc22c3486824506517a00b71cf05edbaee3f42eab2fe1735530b5"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\application\\mapper\\NotificationDtoMapperTest.java",
+    "sha256": "c9680641f18f1fb23b1f022a643781f64fffb94e2694e649c9bd48e0f80030dd"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\application\\service\\CareProjectionServiceTest.java",
+    "sha256": "9d7d29742d347a571494456e27915af13f78258ea3121ee0bf07b00fbede1e68"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\application\\service\\NotificationApplicationServiceTest.java",
+    "sha256": "3dc0d7838f075768d0396c16cdf874621cd77f9e7aededadcf965079599ca269"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\domain\\model\\NotificationTest.java",
+    "sha256": "1d68999f25f27ba5055b6b476b13d28838815ff713cd34f69f8b36950bab7319"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\channel\\NotificationSendersTest.java",
+    "sha256": "12621b5a800a94849dac983ecb2ec81c91742002f87ace8087ef0a6b09dd8006"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\config\\NotificationListenerRetryTest.java",
+    "sha256": "db6d8b599c6d80e312aad92a5f022a8b6a6bc40c069147ad4eff2f730a5099b1"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\config\\NotificationModuleWiringTest.java",
+    "sha256": "7bca966f240fe4d966dce1e9c015fb0be827d624035270292cbf53bb425ea699"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\config\\SecurityConfigTest.java",
+    "sha256": "9c0da79489d2af4c5fcc354887498909cb089f95b38097a099a99eeee5d676c8"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\messaging\\NotificationEventPublisherAdapterTest.java",
+    "sha256": "45befaef32081afc2ba2ad4f1a3e5a4da379d18d4c19bb61db850fa37130a7d2"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\NotificationPersistenceAdapterTest.java",
+    "sha256": "5c37cf210839e25d80ded13c0ff8693fe4650081a1120c2b58ffd265820f5110"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\persistence\\adapter\\ProcessedEventPersistenceAdapterTest.java",
+    "sha256": "63ffc4949f0d791806bb670421f1d99c2a49c452690860f8fdf3b04a64ad59cc"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\infrastructure\\security\\JwtAuthFilterTest.java",
+    "sha256": "1211c4efdb42164539a7919ac284e467e17f0cd1d2c075c6232fea3802dec7bc"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\messaging\\consumer\\CarePaymentReceiptWireHandlerTest.java",
+    "sha256": "e39f433cb9e5596336ca8862886a3e0219e055433e813c2f12941fd1d47a9d95"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\messaging\\consumer\\CareProjectionWireHandlerTest.java",
+    "sha256": "695b202eb44cbb5781f084d1abf55e1018b845f481bab9be7460e5c471f06c60"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\messaging\\consumer\\NotificationEventConsumerCareProjectionRoutingTest.java",
+    "sha256": "2b2763e3545a418e076af6661309287e995fe2a89ec6ba9804ff1b78d7c5a75b"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\messaging\\consumer\\NotificationEventConsumerTest.java",
+    "sha256": "823db24c486abc57291eb5ede387225d2624fde7fc5a686a8982bc64cc92e081"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\web\\GlobalExceptionHandlerTest.java",
+    "sha256": "f09c691645f60bf116cad855bc4d119db0d2f5c6e1bf2ca0612c2fe200238f77"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\java\\com\\mediflow\\notification\\web\\NotificationControllerTest.java",
+    "sha256": "fca333c04aa186e7b57705c6b78b72eb3a29a367137baed22a3d7fa451020801"
+  },
+  {
+    "path": "backend\\notification-service\\src\\test\\resources\\docker-java.properties",
+    "sha256": "1dff4b00723d816b3e588c352c5eb79c7f9e35fc6609ca4417be370df37ddc58"
+  },
+  {
+    "path": "backend\\pharmacy-service\\pom.xml",
+    "sha256": "a6f7aa9e9d8688a4e20a44a490a837b6960d31c6c8cdbdc02133285ccc65570c"
+  },
+  {
+    "path": "backend\\report-service\\pom.xml",
+    "sha256": "0680956db66d90c951cbdd863289c0537b8513afc54dd660f12e0ef805df7fe4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\ReportServiceApplication.java",
+    "sha256": "929275b10a80117eef687bbd7e0fcff5c629038fe088acb636643211782ee468"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\DispensedItem.java",
+    "sha256": "c958e6231aa4341d4d42742ca526c14d96d70adf9e1d9a72056f6e9bf92c59f9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\ApplyOperationalContributionCommand.java",
+    "sha256": "287baa0852845391e4b93f204a8cf298f10674ac729005f749761b1274c457d2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\CareFinanceEventMetadata.java",
+    "sha256": "6abcdec3e84d5674ec94e5a1e8484e690f8920f563a36f05877a3cb442d8c525"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\CashReplayInput.java",
+    "sha256": "b2fd0e7b53f7832094d5c469f6d81f4910aa46b02b83efeb366719661af8f77f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\DecodedCareFinanceEvent.java",
+    "sha256": "56b346d1090ad46750d180257af795d30fd293a787b67348f6eae1534a3d3d20"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\OperationalProjectionCommand.java",
+    "sha256": "ecc59c639c99b611fa7383988861420526a83cc79116d11ff4d50fa1a890d499"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\PaymentCompletedCommand.java",
+    "sha256": "41a895d2e5d8979854ceeedbff4edaeeafff7684060ba4711860693bf40fa9ee"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\PaymentRefundedCommand.java",
+    "sha256": "72679c926b9ec9a8fb58ed1b33b94055befe170fdb1fdbea5d8506b96fe90cf5"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\RefundReplayInput.java",
+    "sha256": "0059547eca3a4295d036f08fd13a9f8c43d76c19b55ed237fd599ce86b581b84"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\command\\carefinance\\SettlementCompletedCommand.java",
+    "sha256": "6dff256338140dfb547a1ba0ea6fe6cb3e274fb9d3d9599b44533a2d85037ac6"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\AdvanceOperationalReplayRequest.java",
+    "sha256": "28c05df2e7d34cf728e3f5172e0485775fa90d2704d74f1f21577a73defbd50c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\PublishFinancialSnapshotRequest.java",
+    "sha256": "6a38eec2118fdbf3437cbee3a83f3f797f123540bc145749d7423799a1f3b25e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\PublishOperationalSnapshotRequest.java",
+    "sha256": "157079982180a25284da6996946683d9d1c36bd603567e8f0eac0ba5dbdf1b8e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\RollbackFinancialSnapshotRequest.java",
+    "sha256": "f233aa48fa7a90af9844ff18191c5f48fa03269d3c670acc870adb5374474f00"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\RollbackOperationalSnapshotRequest.java",
+    "sha256": "c6724737c3155cd73f990614275c1a4d6050a0246812aa184fa0e1a25581f215"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\request\\StartFinancialRebuildRequest.java",
+    "sha256": "a95bc736219db16efdc7134dcc3baab1e2e35e911b145079043e153e8f73c33f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\CashReplayProgress.java",
+    "sha256": "6a92c824827fd5298c73d78ea933a93692346f8aaa19c923b22eb10e57d64c39"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\DailyReportDTO.java",
+    "sha256": "ead8aebe78b851aecc7738e599249cb765d88a2a4e4aad19a2df8be4fbe3c5d3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\FinancialArchiveRestoreDTO.java",
+    "sha256": "8c82b7e85afe5d1adbcb13062912cfe2958b7b5ecbfcc662f8fa3f3aa5c77f1d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\FinancialPublicationDTO.java",
+    "sha256": "86dbdcdaf34a38d1b09291df8e2e7a759b55b90e6a8f2f0f28f21e06bc953334"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\FinancialRebuildProgress.java",
+    "sha256": "310b92da7d7b9216ab49aa9dc09d524915c5c65786bd332d2c0bde6c70380f06"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\FinancialSnapshotReportDTO.java",
+    "sha256": "e03c2dc22a9274ef27474d50853d89fc62369bc19af636d1bb58033f1d88284b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\MonthlyReportDTO.java",
+    "sha256": "685125d53f10b1ff4c7c63d74a7c35dd5ba209a388b2ee753c1ae2d6beaab724"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\OperationalPublicationCandidateDTO.java",
+    "sha256": "9d6ee124f6c3fc03cf1877533ebfa715ebabf437f149d0bfed63d0612e23ab11"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\OperationalPublicationDTO.java",
+    "sha256": "cb984496834845efba0c29ab734711f006d57f2a710344018c9ce9b553866548"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\OperationalReplayProgress.java",
+    "sha256": "4cf64915091545d889204cd834f0717a333a88f9a9155bab5528e74660cff5a9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\OperationalSnapshotReportDTO.java",
+    "sha256": "b38dedb9147c2a8a297d8c59af6fefe2661b7799fa70901930832d220a9ab809"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\OutpatientReportDTO.java",
+    "sha256": "34203d3e6f4384f4f01559b773ca43e7aae2f3d5ca67d88c53cb14cc06d6bfc7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\RefundReplayProgress.java",
+    "sha256": "3d6e1b7693681f2eb5feef414c90692a8f1db3a1cf1b90da0af702b649b8d47e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\ReportCapabilitiesDTO.java",
+    "sha256": "ba90d53d3fa43d06d945f523cdb99b093793ff64c1048d995929a6637d94a260"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\ReportCoverageDTO.java",
+    "sha256": "88717feac6d38d9c7791bf8e407fc595957b9dd08b8f039156389f687c02c7fb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\ReportTelemetrySnapshot.java",
+    "sha256": "cd322f7066796d54ad90aa1c5eae6a61a709fc2849e10f60800a6109377e4623"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\dto\\response\\TopMedicineDTO.java",
+    "sha256": "c7e0014dbff9dac26316e3d20c3fba1e262e030e5bc86c0f9d7825c315918429"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\exception\\ReportArchiveValidationException.java",
+    "sha256": "4b314535dc125483e6201c9fdd79f39a70ca770cf332223b00f37cb50b610af2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\exception\\ReportDateRangeException.java",
+    "sha256": "74cd3b367e79d4b47e76cf67f43aec891b5005c28c6c4f8232f64189e6c54658"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\exception\\ReportPeriodValidationException.java",
+    "sha256": "482dc4aba08beb10f33f65c8090062feb4e1e0c19ff83b12e584a52c88f51d54"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\exception\\ReportProjectionUnavailableException.java",
+    "sha256": "4e2f8df7749c223e718b044c765cdb4d7bfe6a420512d322d854dc3d5761aed0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\AdmissionReportFactMapper.java",
+    "sha256": "8e0414f16e70f6735ee9d58cae1f5e5bd5fe38263f0fe399c0e90459678bfa16"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\AdmissionStartedContributionMapper.java",
+    "sha256": "87d74369b64ef38faa1e774fc10f010dee737e2dd82a25946f98e2d4b449107e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\BillingCashReceiptMapper.java",
+    "sha256": "347d028413d0d5a8e6ff6bc5250e27283c8475d4d31d2aaf994ee984178b3bc6"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\BillingCashRefundMapper.java",
+    "sha256": "2a5b90a6809959d65dd742301e91a81419e070ccbb9b56f6993df437493e6ceb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\BillingFinalSettlementRecognitionMapper.java",
+    "sha256": "0cfdabe07cdb3abdc390fb1fbc3564b8973f6ff6884050684ae705cefbed558b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\BillingSettlementSnapshotMapper.java",
+    "sha256": "d9ae4a3c21e4bc1ab8945a26029e9c927111824e69c74bf267deb28c1084c616"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\CashProjectionPlanner.java",
+    "sha256": "c5110a6b62373d61374aec5ef52af0eaf633d1c57f0ba53cc4811036f71c5906"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\CashRefundProjectionPlanner.java",
+    "sha256": "5982565730a57adbf5561a658b33d8054836eec86ff661fccfa981b56c7e628d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\ClinicalOperationalContributionMapper.java",
+    "sha256": "65c51052d2def29bd32a9cda260e5150407b38413a9aaf673f80b62582e3007b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\LabOperationalContributionMapper.java",
+    "sha256": "9688bddd96cf9a1569ba7138ccdf96b770043065b7b76799f6da8087be3c533c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\MedicalDischargeMapper.java",
+    "sha256": "792cd28446192a15fc1604f591705c5d4a9edefb5146c3f44cfc267826821260"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\OperationalProjectionPlanner.java",
+    "sha256": "a5cd5f2f8538bd9cefc8ff863cb74d94f9a1e822d30f608d0c9d1d10bf79c99e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\OperationalSourceFields.java",
+    "sha256": "38b1de21635fd6500ecdc59b0d886fe5664375c3d70a73b1f3897438de8c0c20"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\PrescriptionOperationalContributionMapper.java",
+    "sha256": "a418f456c309667eb00c4d98d74393ae32f8dce01cd1f15ca1d8bf91cd243bde"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\ReportDtoMapper.java",
+    "sha256": "91ce0ffc91ee7f2fba0852640bafa56850d45b02b31a3d73e43cffec8718f53e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\mapper\\SurgeryOperationalContributionMapper.java",
+    "sha256": "cd51b7d6b5dfa7703bdf8cca68ea336fc53d1c139f152758ed656760825d4f75"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ApplyCashReceiptUseCase.java",
+    "sha256": "a4ffade7832b89fb398ef257c2c0cae1f3aa20cf6d599c33f69f6f2af8da4962"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ApplyCashRefundUseCase.java",
+    "sha256": "f07f3b7cc957da0916bf33d579d0430587f2dca5c99f3b42cc7bda1e7599a2d8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ApplyFinalSettlementRecognitionUseCase.java",
+    "sha256": "d505adc43af3d05d08c424ac28fd51ab3c7dd8a6e36d3a417b8471735df152d0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ApplyOperationalContributionUseCase.java",
+    "sha256": "1a2d2b9c5c7318c5b7681ea50105223bc583310b18454977c49eb972ea98c892"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ApplySettlementSnapshotUseCase.java",
+    "sha256": "680958677367adc8ae44cb34bf864ceb376e8c57a09f9cfd2910458e6b290bea"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\GetOperationalPublicationCandidateUseCase.java",
+    "sha256": "fb541d7d995658829f958e58aac1ae849a2c1e7e96a72b8eb3b4e126d53c3aeb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\InspectReportCapabilitiesUseCase.java",
+    "sha256": "54a8deeccaaba2ed54b10bdf1044dd952a4a8398efe1d07e1143cac6c777b7da"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ManageFinancialSourceArchivesUseCase.java",
+    "sha256": "cad7d3d033a228e06ef95163c3f26544452230dc31d330adde0e230210c9eda1"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ProjectAdmissionReportEvidenceUseCase.java",
+    "sha256": "0cbd6e3e0030031372f82934148f8c1c0bc6871eac996df4191a3c03b051e98e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ProjectCareFinanceEventUseCase.java",
+    "sha256": "b1ffe9fe2f8c92ddcb0cae13100558620ea2fcdc6e8866611b64a0cdc43ac3d0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ProjectMedicalDischargeUseCase.java",
+    "sha256": "50b7c653c579e8d55eb159bdc3078994d27e9be93b6411fae05f242778292895"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\PublishFinancialSnapshotsUseCase.java",
+    "sha256": "57d9cc99b2e51bba8c5bcd06ce9a4317fddd310586363fb8f9f2badb1ee7a1a7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\PublishOperationalSnapshotsUseCase.java",
+    "sha256": "1412ffa58e40e0f18412d1f3cf3d9c6a815d74a70c7aae57884bbf8f8c44dc51"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReadFinancialSnapshotUseCase.java",
+    "sha256": "26906abf5f3ef086180e0e46c010664bfcb45f747c5ce9f2ef16fa854cd75ae3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReadOperationalSnapshotUseCase.java",
+    "sha256": "7d2dd6391ebd041c67e2721742839dd5b92816d54b873a8e36fcac5f25059bfa"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReadOutpatientReportUseCase.java",
+    "sha256": "c4ca9f8bd0b997717d268a1b29a2110cd61d288b93911c03ec19dfd080bfb0c9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReadReportTelemetryUseCase.java",
+    "sha256": "380d4203940dcfb191360190b8a2d24dc8050411553a13c71160d8ca37ff7242"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReadReportUseCase.java",
+    "sha256": "a37ca145921bba48443b8f1d4649daa14a815d2ca9797cc9ae3f2990c0bee1d2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\RebuildFinancialSourcesUseCase.java",
+    "sha256": "f868a29dc00f1b4261062aa671b6a0ad50ac1fbb120a02daab485e13d98e8ed7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReceiveOperationalReportFactUseCase.java",
+    "sha256": "94d33eff6585697d75d7944929961e790c4de10e9da6d0533875eb19053aeabc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReceiveOutpatientReportFactUseCase.java",
+    "sha256": "fdf5c0056c0e4451af82be68ffe25efe2e0e6564bfff63d322153fc6e2661423"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReplayCashReceiptsUseCase.java",
+    "sha256": "b70ee937ab93fbe32489707dfb9fa856b856ad8a4c8fc1b97c122e0a4a90e447"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReplayCashRefundsUseCase.java",
+    "sha256": "38fa5930b7759d3e7934332994784a92f6c30635e3fededb1733bbe34d63961d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\ReplayOperationalProjectionUseCase.java",
+    "sha256": "72a073dbb53937c72f7b57f0f8fecaf4c0fc0c86c543826e0246b35d3dfae6b8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\in\\UpdateAggregateUseCase.java",
+    "sha256": "236dc64bc48ea9880ad8ea38f46e863af6c1328bbaf8b0b1e6845153e2681f9e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\AdmissionReportEvidencePort.java",
+    "sha256": "0f385d78ebfa3dfeb9f27b6ca89e3bd744830d6492916c48b664ea8d62232d25"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\CareFinanceWirePort.java",
+    "sha256": "3dc6198c21e2a73e57daf18919bbc45f80c4e960d1b649c4d41faf62d1434258"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\CashReceiptStorePort.java",
+    "sha256": "f7a057a17dc0d7758369299b45cb1224d854340562b5b7d78db44229cf4bb10b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\CashRefundStorePort.java",
+    "sha256": "5fa64867edcc39abc5078425ec422b6d9089a552506c6981320973c4edac4cd7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\CashReplayStorePort.java",
+    "sha256": "3328220ada860c88c770d56a8fc21c3a9a7a30de46853126cc0ba64932f5c987"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\DailyVisitReportRepositoryPort.java",
+    "sha256": "118a184016b44b54132a000fc42bb67f16e2cb510d6b24a25a8763e0b04e8946"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\DrugStatisticRepositoryPort.java",
+    "sha256": "66cadbbc460e0635e386da62140bfd7cc432159222c7b4381a26bf722bba889c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinalSettlementRecognitionStorePort.java",
+    "sha256": "8f8665435445469dc5c94d5c948f942c19f7d349b31120eaa65eb4b1a7c28b9f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinancialArchiveCodecPort.java",
+    "sha256": "90a29cd01083daf9622e68ced99b6d76d9537f25ad67767568061b0bfbe5d5ad"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinancialPublicationStorePort.java",
+    "sha256": "2ae7ce4d0390d6033d00c0ad519464e8990040988f6be7c722990e6d3b3f2763"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinancialRebuildStorePort.java",
+    "sha256": "8dc17e4a210563ee8532843b7ff8a425da299a906dd2539039f007e924990778"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinancialSnapshotReadPort.java",
+    "sha256": "e8727152a08f4d025f02ea3fa7639f1df285a94ea79a794827a72ac1599aa6f8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\FinancialSourceArchiveStorePort.java",
+    "sha256": "53e47c6b4ddbb8bd985fa68b140856b07cbb3c430a1a3c8b4e7745680853aec7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\MedicalDischargeStorePort.java",
+    "sha256": "9412d23150146cfad27abe8fca07ad3f18c565c6f43720bd4440419628827d5d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\MonthlyRevenueReportRepositoryPort.java",
+    "sha256": "981f11c643d61e085538183075495b679b3a98803931bbef9c8d9469f58ada45"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\OperationalContributionStorePort.java",
+    "sha256": "d380b2dc0bd9133f43f8908a61cba576c56c7f7b5ba618b32245f9bb41eeb061"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\OperationalPublicationStorePort.java",
+    "sha256": "e304780b4dbbad4eb8283f461d732bd1282802a5f1507a205481c0d7827af96e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\OperationalReplayStorePort.java",
+    "sha256": "db927851d5c098cb5c9815139b166dae3cd2738952a4042ff40782fca8794849"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\OperationalSnapshotReadPort.java",
+    "sha256": "269efc640a3485a91bde862f7c1749a0cd71d24c7a9f19802ec6a2b530517630"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\OutpatientReportReadPort.java",
+    "sha256": "283303588cd307203b36be7e7c70e9cebe11d902cc7b0aee2526b9cb13269ddc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\PaymentContributionRepositoryPort.java",
+    "sha256": "323766d2e3f41d39290d1af0e5f1b17b12bf794c46332f919c0f99d4b66c0047"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\PrescriptionFillReceiptPort.java",
+    "sha256": "ee139cff0767e3fdd62cf3355f0a1037417c9a2459f11ea21d7e97dbcea296f3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\ProcessedEventPort.java",
+    "sha256": "48703029bf43d6ac97175541818bcf5c112bbbf89b89a9a37ab865c4c1c77c56"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\RefundReplayStorePort.java",
+    "sha256": "35b4820d8a9293886e428a629a5121edcf84f5a84b684876f11a4f85d3bff2d9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\ReportTelemetryReadPort.java",
+    "sha256": "ddabef2872412340993729c907fb97741ae973e2d63ee10cf6017395a42b6f9d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\port\\out\\SettlementReceivableStorePort.java",
+    "sha256": "ce2fa047a4fbed29e21f1285fcdb7c275553d4f00fc96234423478bb1cd440cf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\AdmissionReportEvidenceApplicationService.java",
+    "sha256": "6eede365fc08b3286ad5b38a96827084df7c87a3e9b53ac43e13daf611c49a28"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\AggregateUpdaterService.java",
+    "sha256": "182f4df62802ba1e8f8aac7828ad644ca65584e27527655571b21305041559e1"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\CashReceiptApplicationService.java",
+    "sha256": "e0beedb058b3299193afa74fbb47d576bded308f4f05eb35c0747e16f30545e3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\CashRefundApplicationService.java",
+    "sha256": "e95b12feddc063d2fbb088b7aa18050c4f13d73863cc2f20d11d995726edc36b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\CashReplayApplicationService.java",
+    "sha256": "fffb040ba30fd2851f0a5e8c1236981feb125f9cd06d22e865e2c448cdca0b21"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\FinalSettlementRecognitionApplicationService.java",
+    "sha256": "9b02e8c604cbfcda49e6755e2dc170ec851db08f81aca751f0cc058c464f47eb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\FinancialPublicationApplicationService.java",
+    "sha256": "9d91e711f08626d79b542cd95a1923fb0e55c8838c7d2b93e07092000cb9fc89"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\FinancialRebuildApplicationService.java",
+    "sha256": "302ef2f47c08f06a72fd84b02f4734af4b1a63c2263f5f585835c5c84d932726"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\FinancialSnapshotReadService.java",
+    "sha256": "a56facd492ebeb663bc44336aac1f42d8d794a79498c215bbdc7288a9d8d133d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\FinancialSourceArchiveApplicationService.java",
+    "sha256": "8285df93fbc064999b069ac4ae7b0f56a5c7f8bb113b91a40c07f1e213e86e27"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\MedicalDischargeApplicationService.java",
+    "sha256": "9843e2736e9cedbc5e4c1c1acf5833a87f1daec76abef1acfc2923253c2c2f0d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OperationalContributionApplicationService.java",
+    "sha256": "81a3070801e85a88c134c99c6dd4d5d1ebd184245d90da7288279d562ac519cc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OperationalPublicationApplicationService.java",
+    "sha256": "b07da574b9dcfac9c0ebffa9e8cb2affe216ca9fec2390ace0c63ffcf0faec3a"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OperationalReplayApplicationService.java",
+    "sha256": "1c3e7a39030955c1c33518e571c8c95005e9b699a8cf31856150b0751b5f66b9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OperationalReportFactReceiver.java",
+    "sha256": "9b9b89b44c7fe9b10dab3d098d3bd6240f075115f802ca54aa22df8b27309da3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OperationalSnapshotReadService.java",
+    "sha256": "189f8823fcb5bea63770e8a943fc442a9b4344750f221229e293f4b51a3dc85b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OutpatientReportFactReceiver.java",
+    "sha256": "836f026e2c23e5bdcd4dfa627083e94e81dc710dec61e9a6332b83366c6640ea"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\OutpatientReportReadService.java",
+    "sha256": "1b2fe75fa3d552f2922f90c61350966121e38d9ab51c70c011f6d0151e42a207"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\RefundReplayApplicationService.java",
+    "sha256": "b7b594d1a57eb243772d21665c2b7fe5c8a601535bc04f6d17a410fa4970fd5d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\ReportApplicationService.java",
+    "sha256": "3e7a36084b434fa620c5a3e44553521320124871f86a14f6eeef5312b83d76fd"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\ReportCapabilityApplicationService.java",
+    "sha256": "f73281022e324e85bfaa58f289cb6c1353aff5113dea23eec7f845f0d7d1eccf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\ReportTelemetryApplicationService.java",
+    "sha256": "8a42187c0575c4a9c7894e94c6a55369c00ea9e5b0e8e984b9674f41283a5501"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\application\\service\\SettlementSnapshotApplicationService.java",
+    "sha256": "b1f2b1722a75c63dc5a99cbb54812f61befba692fd760daef9a93c8f77f08bac"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\exception\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\exception\\ReportRuleException.java",
+    "sha256": "f6f8ab9cb2e29665d9a01f69ccdf6800e447322fe06e8b6738997694125a04e3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\AdmissionReportFact.java",
+    "sha256": "945193f367cfdbb3e1a34e33260beae54ab2edac1185f5335531487c8ba459a4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\AdmissionReportHistory.java",
+    "sha256": "3e96fcbe0ad86784857a8325bf6c59f1134381b6e1fb1759f33ce7749deedbd4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\CashReceipt.java",
+    "sha256": "401f41756f9ed95b19270ac5b7907ac71beb17e877cb7f64100b596b48870ee5"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\CashRefund.java",
+    "sha256": "7266afb66ea0cc987190fe35118a3950f9f62d3b17a571e9707c6375d39d4f1f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\DailyVisitReport.java",
+    "sha256": "6e711fba59584dcd8f1e124695648aa3cd93f0502a7f6dffbb07ea24b0e5dbd4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\DrugStatistic.java",
+    "sha256": "7890276af0b51c5d5b6d235785ddd3fb9b34c83041646b5b091337309b783fa2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinalSettlementRecognition.java",
+    "sha256": "58612b17315857da13d6e8f2cd1c176ef860d88bc3ca8b01bc67c89f08505d0d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialAmounts.java",
+    "sha256": "c03e76575e832d30f5306249cfd5a80a79fa84b190eafe63c8de16098b8c8bd5"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialEvidenceArchive.java",
+    "sha256": "770d088a7a47dca805483b80166d751644d670c8ccdfa8cffeb1ac86681754ec"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialPublicationPolicy.java",
+    "sha256": "9ac726e479727b03c984fc567b2505b28d9eeab823a0d4195e89d0a29e981eea"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialReportPublication.java",
+    "sha256": "5ecb09d0fc03fd3fc179312537453bfd2dfd8b14fb6e91b1b7922de4763db4f6"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialSourceManifest.java",
+    "sha256": "a097b70a5065a23564f188da51393fcd8429843eb0d05e4e937cd624b289d9bf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\FinancialSourceProjection.java",
+    "sha256": "fdc99a164b0a91c59a6aa033b65fac2996e49371039f9b975000bf1dff4785e2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\MedicalDischargeFact.java",
+    "sha256": "4e068b6c20725db3a0a3080e6407b0634cfd9ccef92c980a8bedeaecb895992d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\MonthlyRevenueReport.java",
+    "sha256": "ed8bc4e98a73e6785cc3c96191afc531c1a5fd2bdd4496a3e01b820a0fb71030"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\OperationalContribution.java",
+    "sha256": "00123608c8114f2869d3d5583988694a4461708546f2caf9c9f263ea9fa810a0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\OperationalReportPublication.java",
+    "sha256": "4d4e4db8bbf39086f9ab9661c65ae37c742544636574d783e0e4eb5704684ba3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\OutpatientCoverage.java",
+    "sha256": "f4fc7b42302a56a6df7e61fe0aefefcd88172c76be0c4d1825eee1b8e0aea442"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\PaymentContribution.java",
+    "sha256": "a6c03c6d4856a3ed1d05f965675a7d7cb0638248510eafa2c12076b14f0b4f53"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\PaymentContributionStatus.java",
+    "sha256": "1e322523a795b966b7e228e56a599ad51eab08c72159b1a23738a3f86ee0b644"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\SettlementReceivableSnapshot.java",
+    "sha256": "e86587187258457971e11152d69cf86a70356193ebcc60e245e6771f8bee8f07"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\domain\\model\\TopMedicineSummary.java",
+    "sha256": "998e3372abf2299d2224ab0d4ced8b77914f8cc6fda64b9e92fbdb4e801833f5"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\CareFinanceFeatureProperties.java",
+    "sha256": "394c69cf447d32d951ba7e10b9df6eac0b709584a5d318ef2339ecb98065b8db"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\OpenApiConfig.java",
+    "sha256": "d00f99d1b789aeb30690474ba226aa11da500244c02800d3f00a62a2b37c47ea"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\RabbitConfig.java",
+    "sha256": "db823645c53ddaa00c7b3bdcca696ef088942fc7238794cfc999558860282883"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportCashReceiptConsumerConfiguration.java",
+    "sha256": "deffd292ca1485286d7a20c32d5126480b35736086e43d1993d1eb5ba7dd9021"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportCashRefundConsumerConfiguration.java",
+    "sha256": "b4114c188b5ed8a78c46097219dc7d2298b0a55f09570eb608034fc600dbf496"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportConfiguration.java",
+    "sha256": "49c430efbd690533799d8f231ff6164f586098808dcbcd9cdd98d9bbf5cd190d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinalRecognitionConsumerConfiguration.java",
+    "sha256": "f126eba522b188844f03a2631bbf24c60bc7f0823e9c24a4fdd4cfc6a18cd306"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinancialPublicationJsonConfiguration.java",
+    "sha256": "2694297d36051dddf3cc49afec8e79e2ebd84ed48912bb928517afc82081ca0a"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinancialReadConfiguration.java",
+    "sha256": "d77745d482f676181dbf73e66f5eec30403cfdc5c36c3f88f8c00b93304ef5cb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportModuleConfiguration.java",
+    "sha256": "f313219480b6c3209675db05c3051335de73a499a66fd2020478f583c028a297"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportModulePersistenceConfiguration.java",
+    "sha256": "59d66806d9974b837db9920e6176dc297501f59ed15a69b584688b3508466162"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOperationalConsumerConfiguration.java",
+    "sha256": "845bd73fea004e6a3342d754f148b2d99b5a7e86e919619ab7f35b65060b9644"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOperationalPublicationConfiguration.java",
+    "sha256": "fabc360a63397bc5ed3767624daa803ae2800db426e2d6d41d49e6e2bdcb0bda"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOperationalPublicationJsonConfiguration.java",
+    "sha256": "21b349d092961e81663c17810771afda97d971bf8359e0583726974bd6ebe3fb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOutpatientConsumerConfiguration.java",
+    "sha256": "d6af04bdf3653490669e2d73ff9a8f9e9930249de005a45f5852fac801804790"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOutpatientReadConfiguration.java",
+    "sha256": "bc71c88dbd472aa01e02e1c9a092923d492c5cd8ec9b96e3f241b24516378c9c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportSchedulingConfiguration.java",
+    "sha256": "6ee0b6e3143c501a4d4b90f79ab5a6427428f09fc96f7fa97754e45abd57913d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportSettlementConsumerConfiguration.java",
+    "sha256": "e904bb31a18adf436a094d467314e9f2cce7a4ef2ee3b215aedd3bab7b062de6"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportStandalonePersistenceConfiguration.java",
+    "sha256": "bbf1d71ac55665be4139484851b8a6033eb940d9c5d3f038ffb7d6b2a3a05c81"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportTelemetryConfiguration.java",
+    "sha256": "b4ec9df259ee871f59d28a15f7c1392053b20faf2d2528cd970419f070aed37d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportTelemetryProperties.java",
+    "sha256": "26bf5ed8bc7587a6b8e98297a09d231dcadbc0348a25c18f013f283959591698"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportWebConfiguration.java",
+    "sha256": "0ab8dc6bc031a123ab6c60dc485a557ba77c588411ceed68a3e2b7077ff9e123"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\config\\SecurityConfig.java",
+    "sha256": "c9e00184c5c257377766fe270aeb7b9a53ad0d068fcb4db4ea5fb2d3ed86d7cd"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\messaging\\ReportMessageRecoverer.java",
+    "sha256": "90c3c2446b6d4d89d44a9d22acc3ae43ed56333499cdd645b8c89efca6b22c73"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\messaging\\carefinance\\CareFinanceEnvelopeDecoder.java",
+    "sha256": "fdc1b114c89811ce885a709b6918cc378eb169eb268672b90a6f21edbcda7ebb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\messaging\\payload\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\DailyVisitReportJpaEntity.java",
+    "sha256": "d7f9c240b2704ce52926821ff5c3cab191d09cc6dad666fb65ec81cd411f9c95"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\DailyVisitReportPersistenceMapper.java",
+    "sha256": "4d50a1573eece3f241921084ffb88de35c4bfcde63d1138ff49ccdfc483d753b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\DrugStatisticJpaEntity.java",
+    "sha256": "8967247e80bfade2d8d90e1d24856f2fa589c2a3974042e7da4863e4ac6d1e68"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\DrugStatisticPersistenceMapper.java",
+    "sha256": "15f14dc6b1259e20dd24713b448c469b02f589b624703c0b99c0022545833c89"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\MonthlyRevenueReportJpaEntity.java",
+    "sha256": "7845754b7a0a620312bc6a8d434ffcc24157efc89720dd0cb9816496e2e92e83"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\MonthlyRevenueReportPersistenceMapper.java",
+    "sha256": "2c210502f339974cdaebbc353475fbc38d4f9cfd7c016345215e6c9b3b4c83c3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\PaymentContributionJpaEntity.java",
+    "sha256": "8564c0d8dcda6bab273fcca1cbb439ab11ba2708c0c9a56290736fd7956c30df"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\PaymentContributionPersistenceMapper.java",
+    "sha256": "fb6f7ce1760d56fdbadf408e1ebd873ee1e7dccc240ea3e318cd582c5ea94945"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ProcessedEventJpaEntity.java",
+    "sha256": "6a3e0cd9983828f69b712c6318b9dddb3556c6289807d322e345c89ee84712d8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\AdmissionReportEvidencePersistenceAdapter.java",
+    "sha256": "80f418118286fd8b2c08d931098f6cc1502be491066a5d729b7af064b7f56daf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\CashReceiptPersistenceAdapter.java",
+    "sha256": "47b7f9b05bf714d21b107c5b692b1d1f2afe2fcf43ff153a47da253f4c7dfb08"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\CashRefundPersistenceAdapter.java",
+    "sha256": "5dc33ba786f7498e04ee7420c1ed254849e1ca84af755c4ea0e2591011c800f8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\CashReplayPersistenceAdapter.java",
+    "sha256": "1d2a2ba01e532ead33f313fe7d3786252127109d50742825832ab6683539783e"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\CashSnapshotCodec.java",
+    "sha256": "f7cea3bc8f84028ff561f90eb184c6b18d242343a6c681c20daa0dbaed930d41"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\DailyVisitReportPersistenceAdapter.java",
+    "sha256": "dd273d225b4a782a83186c57dd73f652c5477281af9e46ef8002230fc7acfafb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\DrugStatisticPersistenceAdapter.java",
+    "sha256": "cc203d904fdf1c2e3ce9130125080ddc96772b93b45f5efd55e1780693cde4cc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinalSettlementRecognitionStoreAdapter.java",
+    "sha256": "3b3474a8acf5c59cbecb55ad27daf6b08ac10e520f8b21c80325bf0a116d7788"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialArchiveJsonCodec.java",
+    "sha256": "6c12782ee74a29e7d355bad6f3792baae1499d6f9803c5ed3b3b7e12ad3d301a"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialPublicationFence.java",
+    "sha256": "e39f8340e488d2cbf6755ca941dc9fbfceb6159a83082df9150b706ac9e4d206"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialPublicationPersistenceAdapter.java",
+    "sha256": "d0ea3414676ca0ece280ab754f5e8f819c83e696a30cbfeff90a35e136e43c16"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialRebuildPersistenceAdapter.java",
+    "sha256": "c742ef13874033ed35e7c5b3b3c78c21b494ae3df2eab8ab48675f6ff0cae943"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialSnapshotReadPersistenceAdapter.java",
+    "sha256": "3773260ca8c2478962f461f621862a5239234190370c8b518798957304673129"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\MedicalDischargeStoreAdapter.java",
+    "sha256": "f350341db81f931d4b07b87390a960bfb5e43dd6a8dc7c4f52607233b62d3271"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\MonthlyRevenueReportPersistenceAdapter.java",
+    "sha256": "650ba8d709a41d970d81289b2249e69abcb3faf555de31051e61098d26671a3f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalContributionPersistenceAdapter.java",
+    "sha256": "d1bd0ed338405be0f2cdebcabeea1b77fdcfc93650fe9e25254f97695319c0c2"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalPublicationFence.java",
+    "sha256": "64354b4821ee18c9ebe1e1b055f6273d0f397b690fce70f6d7849ae37727d2e9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalPublicationPersistenceAdapter.java",
+    "sha256": "65f7b50b91f860acda1e8522e376ff3a88cda1f10042fea6d9e427ebbaa05e2c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalReplayPersistenceAdapter.java",
+    "sha256": "49a03445d6cf08b6210814ee301e930f80ab18f5037d45f2ce219038dc7540c0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalSnapshotCodec.java",
+    "sha256": "dd4988c1faef0ea7abbed1f3f5562bc02c03c78cdc157bc2f9555d315bc7efeb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalSnapshotReadPersistenceAdapter.java",
+    "sha256": "e7657152050feee755e84972d0aa65e19e8a7ca2506f0684d58251227a0223c4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OutpatientReportReadPersistenceAdapter.java",
+    "sha256": "1c2983982d7eb5264248f9f31db9aff7eeb2e5fbc06d797f6d4e7ea98a254931"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\PaymentContributionPersistenceAdapter.java",
+    "sha256": "c7f7e2f80eeb9d3e377478e6865c3311a5801ebfaef1ed9c360536e1034940fc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\PrescriptionFillReceiptAdapter.java",
+    "sha256": "0dddc33a0dee838ef8f6d974c529b1088f42533420df2233ec0ac3aa29834f2c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\ProcessedEventPersistenceAdapter.java",
+    "sha256": "582aea51ccd9f68513e14d7ee1cf8961e30fdeafd462a9029220a2d84018cbe9"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\RefundReplayPersistenceAdapter.java",
+    "sha256": "e9a686e49fa755b846162c4582584b225e840a0796c0aac5a98406661e5e34ec"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\ReportTelemetryPersistenceAdapter.java",
+    "sha256": "ef30ccb4cc878e5663f527a33cb0e82b7c6e8d9f7668a226d23c3d7adc66ee75"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\SettlementReceivableStoreAdapter.java",
+    "sha256": "ffa1c404b0e7ff183b9f70a49901dd56100206ea43824d77bc8c99fcde29c438"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\repository\\DailyVisitReportJpaRepository.java",
+    "sha256": "ac155f3269204a09350c80cb7fa88054697edcaf744ac4012a0e7b23914b39e6"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\repository\\DrugStatisticJpaRepository.java",
+    "sha256": "a9a293454942b798b7faae3fe8858e865fcf373ba060501562e2a7b1af5d1bd7"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\repository\\MonthlyRevenueReportJpaRepository.java",
+    "sha256": "b17695a7f4322eec3fe101882cdc725cfcd392427b2db3caa31a9548d9f7d7a8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\repository\\PaymentContributionJpaRepository.java",
+    "sha256": "d1fc2c160fae5025e9c41eda746b869212191a23a3b8a94da8c3b2b328a1c263"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\persistence\\repository\\ProcessedEventJpaRepository.java",
+    "sha256": "8292f4b1dc1b6ac78e0dff1a305b53ebc86fbb2114d09d9d18ef0bb91a0f7ea0"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\security\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\security\\JwtAuthFilter.java",
+    "sha256": "c8f69d67d05e08e81e8fb2c6002dfbc4f194f41140518c8d9ca3ad7a867b043b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\security\\JwtProperties.java",
+    "sha256": "8ed21441570c4f43c94ae16bf34faa62106b937d08cd62bf9f5dc063558473bf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\infrastructure\\telemetry\\ReportTelemetryCollector.java",
+    "sha256": "258691e3ddb4f7d1116418632b41052fe22c25e5d709fc0966cd1a821d80f151"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\CashReceiptConsumer.java",
+    "sha256": "e7cf25c0a5e7cd591c2526a20c40183642ded7c350dc1a22d9bcb4018ab4711b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\CashRefundConsumer.java",
+    "sha256": "80d8fa5a226fc3b5c3adbd537571906fcbf22954beba08c6da41a3b770c1be1c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\FinalSettlementRecognitionConsumer.java",
+    "sha256": "232540a96ca31dff61b0f707fce8cdc05ee43af115e872c162b582c1ca9099ef"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\OperationalReportFactConsumer.java",
+    "sha256": "fbbb175e56e8855cc97b82f77b8437f0a07f63fd9235ee3577e3b663a84e2922"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\OutpatientReportFactConsumer.java",
+    "sha256": "c40165e6f4c3c7edaed23d2a5ebaecad2353b8735088edea5283ef351c492fac"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\ReportEventConsumer.java",
+    "sha256": "2714d666574f366117d6f2fb0e7c1e18eea6612de7760fc841a6eec6271f2515"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\ReportEventValidationException.java",
+    "sha256": "421e8fcef6abaa1adc9e3436a390f3baa716a27f35f9924c515db128ef4b9e98"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\SettlementSnapshotConsumer.java",
+    "sha256": "88214fb1716293d2864e840baaab49dfd9225f849eee647b3f88ead55349849c"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\payload\\LabResultCreatedPayload.java",
+    "sha256": "a7339c965afc4fd4e2d1501a1c06a6508c292ca03be643fc688f1527b0742284"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\payload\\MedicalRecordCreatedPayload.java",
+    "sha256": "f7ae523de09c308ac99be28e14e134f68a6daa5a4ea79e6dcaf056307ea7d12a"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\payload\\PaymentCompletedPayload.java",
+    "sha256": "aea682016574cda1f3b0c2c17590750cce5e0f15555bece7489d7130b0e1cc2b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\payload\\PaymentFailedPayload.java",
+    "sha256": "79216184a4e6e099cfd140714e8fe4780e404c0e1109efdb37b414ca8ea20b4b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\messaging\\consumer\\payload\\PrescriptionFilledPayload.java",
+    "sha256": "e3a2b49d528cb50de8a4ac74c5648e0f47c740ee6bb3a80f2eb96b3bd88a76fb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\FinancialPublicationController.java",
+    "sha256": "82b2c8f8095ae69d0ba896ad0b7aa528fd8930f9036ba9265b56859af261f5b1"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\FinancialRebuildController.java",
+    "sha256": "26317ac6ec9ced1103371800562401218c5f434f1faa024557f3e244e96670b3"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\FinancialSnapshotReportController.java",
+    "sha256": "5678fbe5c595b11939d4fff5f47fdea84e2f7189f0f307f944f3b293555a8210"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\FinancialSourceArchiveController.java",
+    "sha256": "1794a1a72ac70253369fc85e1b59d1a2395e1f20380a74b3a6d2950eadd7df7f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\GlobalExceptionHandler.java",
+    "sha256": "61db021d6b70daa367f6e82277f895a2168921c99475c21d82a302608d755280"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\OperationalPublicationController.java",
+    "sha256": "0af7f5936c32f13f7c367cdcd39b1907016b5640e7041e8486665594e17a3a60"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\OperationalRebuildController.java",
+    "sha256": "0cc8c1c41532a5b3dcd50ae378b3368899a336a20ec06fa61c5a9a661c027503"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\OperationalSnapshotReportController.java",
+    "sha256": "3d81c71ae77d234c76bead4b5f6ab1b187beea8cc94abca009b550d752eebc4b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\OutpatientReportController.java",
+    "sha256": "cdd05f50c0e1ce9795656f58d5699060b911164bd4c5e50553b02facc8b64e86"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\ReportCapabilityController.java",
+    "sha256": "e11d9eac2b8b083cbe11156bdc86ec07cbd76f1d1e2f52c3c218906f4b653caf"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\ReportController.java",
+    "sha256": "37321ba2ec5c15e86aa206b16f1a2b762c894a4b9236eecb66f1abe9583f80cb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\java\\com\\mediflow\\report\\web\\ReportRouteNotFoundResolver.java",
+    "sha256": "a3c2943966ef18ee01b4a25efad4ca1aab1853f076be7c262cdeb37bf15f34ac"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\application-mvp-outpatient.yml",
+    "sha256": "a97e8682a3a2fb378a7076326490339a922bc4747a0e712a474426560de2c95b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\application-outpatient-mvp.yml",
+    "sha256": "a099227df93cde955fd175e16658a83f95d788009bd04bd28ffb0bbc46115cc8"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\application.yml",
+    "sha256": "96cbc7414bf3839218130c6fd7eb1094e043f7c4714d59fd2f3114dd36446b2d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\.gitkeep",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V1__init.sql",
+    "sha256": "864de84652c1526d46348a7aa93c23b544f5eb593210e467c5d9a09f89dc9c77"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V10__operational_snapshot_publication.sql",
+    "sha256": "5e6043c5bcb4a7b6e220927c1a53ecb222545ca301903d90f88f75c5ef5b3a4d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V11__operational_source_fingerprints.sql",
+    "sha256": "84a7f6d986bda7636bfae515caafb67c991a1439715ffe9f9fa3d33717bd0c07"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V12__offline_gross_cash_receipts.sql",
+    "sha256": "58497024a28e9bd772a8482a4197264239d789844183aecc9869d8d9ddc95441"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V13__isolated_cash_receipt_replay.sql",
+    "sha256": "e2082cebf384b3830b2a8ac94c46258e5c8e2b79aa037e101d859a0c2f6a8fae"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V14__report_telemetry_indexes.sql",
+    "sha256": "057ef8e10168a26c2dead65a34d29251dd1bfc64282fb1fafd69f279e744566f"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V15__completed_cash_refund_evidence.sql",
+    "sha256": "2312fafa420f413f20a0a4177a330ec943d4687c2ac11b020cbee32e2dff62f5"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V16__prescription_fill_source_receipt.sql",
+    "sha256": "1702bbeede3bbee42c358a2f6c912c041b4e608ec34b4fad04c2e42c02864227"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V17__isolated_cash_refund_replay.sql",
+    "sha256": "9e988e3b21460b545a131cd59fa39d686188c1579292ca7ca63c3895b33240fc"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V18__operational_snapshot_read_index.sql",
+    "sha256": "b23ab12cf8bccde73ff2f98d2cfbc3e242abaab607d6c56c81d87fe61c63e943"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V19__settlement_receivable_stock.sql",
+    "sha256": "97f2ff777b87d5f14938735025dd4067ea40c485d8c08e1508cddb2434fd856d"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V2__enforce_pending_payment_scope.sql",
+    "sha256": "ec5206b7ee67d6714380cf6ebd9c085d6d1f4dd60dd3000a43e517fa56075549"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V20__financial_snapshot_read_boundary.sql",
+    "sha256": "60c4004992e47eaafb20b69487da8db77adb022bb8b63ebc4ceb58f6e15bc432"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V21__medical_discharge_report_projection.sql",
+    "sha256": "a5c3e2aabc220a0fb5fb47e64137639bd4ee316a6da750e4020659cb9a739c70"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V22__final_settlement_recognition.sql",
+    "sha256": "89a945a0256b54fe2df86218aa1c455f189737b1654200025507462aa8cb8c3b"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V23__finite_financial_source_rebuild.sql",
+    "sha256": "1d35db2c45ad49d38518f3194a26384bae0247438fae7d19297668f639d917dd"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V24__financial_archive_restore_provenance.sql",
+    "sha256": "cb7516a494e454e09ddf6c191f74105e0853db42a964f27fea4d972b610c53df"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V25__controlled_financial_publication.sql",
+    "sha256": "d34c24c180700ed6ee9378e31e2488584e04c9f4886f443f3f72f88777ff2747"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V26__controlled_operational_publication.sql",
+    "sha256": "7ba7bab4daef42285dc2bf256947d1db8239e4136e6e97db33fdc3befded44ef"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V27__outpatient_read_coverage.sql",
+    "sha256": "8f23f6facbc4b83e64b651ecf1b437852d28c6f7ed3bfaed5d5610f128dabfd4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V6__care_finance_projections.sql",
+    "sha256": "db5ec92b4261e4ee729e6d5bfaf70b1628f58dcadb5cd41ccbbcf3bfb0eb8b75"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V7__operational_journal.sql",
+    "sha256": "e157d8d676150a4746bf7b0a4a4e728647ea5ea5211cec1640cbc067e85fc9d4"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V8__isolated_operational_replay.sql",
+    "sha256": "0cf6fe971dc2556b47392da281e4d68b32106749e4bdb88ae963a172bf65f7eb"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\db\\migration\\V9__pending_admission_report_evidence.sql",
+    "sha256": "61c05f60c73b134dadeaddf6201f9d8b9dde78684c5fbc66198882a1864da2f1"
+  },
+  {
+    "path": "backend\\report-service\\src\\main\\resources\\operations\\mvp-cutover-inventory.sql",
+    "sha256": "435a720f6a1ec0702dcd801df0a522c0bd885ea6b51b6261d9775f32345b1359"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\packaging\\ReportDatabaseTestHost.java",
+    "sha256": "b39a9aeb126a12a56110faf07b5ab9d83d0eebb91444732f72a3aba8c261ba55"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\packaging\\ReportLibraryProbe.java",
+    "sha256": "f48a6ce28f031998322b4d8e2805291ea916db09b0dbb17b34f580efd18850fc"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\ArchitectureTest.java",
+    "sha256": "340ff14ef6aba46fdc326ab5c7dd155ac3cf2c54e396c7c43cac13260eb98a19"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\RefundCashConfigurationTest.java",
+    "sha256": "fb993cb9a3b551671d1575f5f22093a9913425a5886792b04689143707cf238b"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\ReportContextBindingTest.java",
+    "sha256": "33d9796e0ba13d36f48d2baa10b1dc4bc5d59f72c77d513493129aa7a6242480"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\ReportPackagedModuleAcceptanceIT.java",
+    "sha256": "2e6e7e4e7da6a0ea49bf8cbfb9f0addb6c320a5552633991f3592e2206deff60"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\ReportPackagingAcceptanceIT.java",
+    "sha256": "5a883467242cc637663f1b84fcc3bb531a0d590e6907356f7ba7919281732408"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\AdmissionStartedContributionMapperTest.java",
+    "sha256": "f4764747fd39bbb15fda4d4182d67d79a079b5f59afc497ab87ae275dd3c105e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\BillingCashReceiptMapperTest.java",
+    "sha256": "502ea3797638c4013e133316a88f471c0dc561ba404088c994527961fafb0904"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\BillingFinalSettlementRecognitionMapperTest.java",
+    "sha256": "0a57d9e1db14cd40ed4be7d6468eab0f3614fa27bfcf2fa8c4ad45577b8a1f10"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\BillingSettlementSnapshotMapperTest.java",
+    "sha256": "4d3f6e4861159ade05e94f90790e65dd03165cd78718255ce3efa33818f3f74b"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\CashProjectionPlannerTest.java",
+    "sha256": "9f4a912398b60bfb274ce278a1e3fbe76ed3d0c16dfffbd8d72f868f65c94fd8"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\HuyOperationalProducerContractTest.java",
+    "sha256": "7d5919f24a1eaca9b25d4407f762a3ee490c3a4edd61569358dc4f21a22ea844"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\LabOperationalContributionMapperTest.java",
+    "sha256": "692713d1ef1d90d5cede15e1e9cdc9211372b63c9f1b2d03805792f7db69c25b"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\MedicalDischargeMapperTest.java",
+    "sha256": "c98c746112003f0d1cfd708d3518d2685903de6400b61534e47baef81143101c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\ReportDtoMapperTest.java",
+    "sha256": "179b4d97b6af3ebcba0cca49f4df2efcd7d3f93d42ed93420b9ea67d37235d2f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\mapper\\ReportSupportedSourceContractTest.java",
+    "sha256": "7aef00aa932a997c1ae9644f6244ad900e63348da56f09201bd14e55ddcdda7f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\AdmissionReportEvidenceApplicationServiceTest.java",
+    "sha256": "460faa16ab7616dcbcef6ca2503a7d11ad7ca9cbfc74e90180b73d8b41c47e97"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\AggregateUpdaterServiceTest.java",
+    "sha256": "f884746b8c58a4e5f1b6b12a8be27222f2bab85ee99554dc9bcbbedefe421104"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\CashReceiptApplicationServiceTest.java",
+    "sha256": "c71247a7c5307b94ca5953b940a39f907fcf964aceb01567bd5de065b01db12e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\CashRefundApplicationServiceTest.java",
+    "sha256": "ff24edefcafbd362a4bd32d018d18c2c739ce4b3bb8de3dd00582c88fc5de6b1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\CashReplayApplicationServiceTest.java",
+    "sha256": "be3ab65fd1f43760607a3a26a785612534402d3121edb8ec0002c6d8eb893de2"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\FinancialPublicationApplicationServiceTest.java",
+    "sha256": "c21fb48ee81e738c7324013a10d1f447230f9dce6e2809b86f684a188d3a5fe1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\FinancialRebuildApplicationServiceTest.java",
+    "sha256": "cf236c503d84c09e4aa99053fb90598dffc659027ccd3f827070f881bcf44662"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\FinancialSnapshotReadServiceTest.java",
+    "sha256": "261fd959b4cd8d9907ab969ef5788ba7e35e91a7df95e25faa7cf7c70be09eaa"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\FinancialSourceArchiveApplicationServiceTest.java",
+    "sha256": "971e2947dbb869633895c257f6d564772d7a68f43a2451abc6951417de72ca92"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OperationalContributionApplicationServiceTest.java",
+    "sha256": "be463e230558802e2bc68e434baf0c45314e7b95786542d57a7db915ff2fb3e7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OperationalPublicationApplicationServiceTest.java",
+    "sha256": "88eb99365d5618a9f284ccb0b35c50e36bf55cc7f5c44ac9f1f1a919d036756e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OperationalReplayApplicationServiceTest.java",
+    "sha256": "1ae579a13c50a005d3e2fed4cb7357a5b24deaf528facca774c18b772f333d0f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OperationalReportFactReceiverTest.java",
+    "sha256": "31f26cc78b8d47733138689d01acbeb01190ff9c79533735a96f9081d13475e4"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OperationalSnapshotReadServiceTest.java",
+    "sha256": "da2b6bea7ee61c91c557be39fb1fc5b8b03008274e8feaadc6516efd69de8f9a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OutpatientReportFactReceiverTest.java",
+    "sha256": "a564fea57d7c3e28c0fced940edaf5cf529316a173275ccd02fca6dde76d4924"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\OutpatientReportReadServiceTest.java",
+    "sha256": "74c2e081f1adc164056d0939aaeb6e7e885f8ffe2e07bc307628e701b2008fd2"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\RefundReplayApplicationServiceTest.java",
+    "sha256": "a68a17aa5e2d611d1a0af0f89ee3e7e7141d853443a0fe1a997a2995111c8432"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\ReportApplicationServiceTest.java",
+    "sha256": "a792c1bd84b1fdb3b0f6a62bf6a68be1a506b53cdadac5391a61529e669eac46"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\ReportCapabilityApplicationServiceTest.java",
+    "sha256": "65955a2eb1e707273bb29d84741bac786a2a31a9ad8587ed35e26adf322964d5"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\application\\service\\ReportTelemetryApplicationServiceTest.java",
+    "sha256": "466dcad59da4c9163684d8cc3a65920332c0c295b72e491de0e7add33ab0672d"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\AdmissionReportHistoryTest.java",
+    "sha256": "9ae42ac1d19e34aceeaa440eeab14f9f62f03251de2403f574d2bd701a729492"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\CashRefundTest.java",
+    "sha256": "82765445904a59d72f2cfe638543a78bdeda9fae40f5da0d60c87ff369229eec"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\DailyVisitReportTest.java",
+    "sha256": "e40697e1a886daea73909c3ea2a3b93144a80c1b44058a7aa8d5f098d9cfd079"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\DrugStatisticTest.java",
+    "sha256": "5ca5f9ba2381aeb24aa4ac3c7d74f446ee49bb5c62637880b4e8e1d1d17c620e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\FinancialAmountsTest.java",
+    "sha256": "6ce20ba1fdeaf40de13da867d24952e08bfd6f6d25c6f9aaa95ef44c05d91019"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\FinancialReportPublicationTest.java",
+    "sha256": "c357d2a93ef60d89706dbc0de33f434f4f09c7b1aead3ebbb72ef71dc7d71a2e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\FinancialSourceProjectionTest.java",
+    "sha256": "d3938b0e37c8043f97482783fe4fbc82bd8a69e00f0d1f436ed917e304354617"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\MonthlyRevenueReportTest.java",
+    "sha256": "138af4ef119bcc0640fc660d50d94130023d535bf97f7e93dd7f84e7bf92b590"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\OperationalContributionTest.java",
+    "sha256": "9b7af6270cfb20b05ebfbccdd0658c475f693fb254f1740cebd62aba01429aec"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\PaymentContributionTest.java",
+    "sha256": "c88e878fd4b13991d5bbd2f041f0428fd14545aedae6891a695df4dfeae4369d"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\SettlementReceivableSnapshotTest.java",
+    "sha256": "add43cb4c5acd54d06efee47b34cfb363d882ca5ce89700416a19e4954d78496"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\domain\\model\\TopMedicineSummaryTest.java",
+    "sha256": "f5c3520799727e507343322056e5bae67a9c62544240ae2ab2b7b2a1ce201c24"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\CareFinanceFeaturePropertiesTest.java",
+    "sha256": "9f511a4a666341d280f8fbe038590c360a99e700be58c9a6b45fc432f23238c9"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\MvpCutoverInventoryResourceTest.java",
+    "sha256": "4b2799a4a3b7139b411bf1825e83d4556d9bdc2ae70e187e6587bdec9b142cf1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\OperationalSnapshotFeatureGateTest.java",
+    "sha256": "8f1422a49e3d3c046149598e73502aa57a60cef3ef41283cb952ad041287227e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\RabbitConfigTest.java",
+    "sha256": "76e3192df53619218da4328925a2b7f1c3ef20167d3cb596623e8ada00616fe5"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\RefundRecoveryWorkerTest.java",
+    "sha256": "01015b611f5427544d501772c3912556a6ed04b2d0a91b338aa3077f7d84becc"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportCashReceiptConsumerConfigurationTest.java",
+    "sha256": "68392afacd020954087606d0eafef31df013b6ed37029ac67b8b82b3273658b3"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinalRecognitionConsumerConfigurationTest.java",
+    "sha256": "081097d67ef7465979d7f042f3b801506946a6a32cb376c860a34cd0960846bb"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinancialArchiveConfigurationTest.java",
+    "sha256": "6c3a48d88a87ea02e4201cefbcbb3ea16213200da5780366d2a9b91117daa75f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinancialPublicationConfigurationTest.java",
+    "sha256": "32eddaba56886e9b1dab5a8d022f495d3056e84f5c24d445e5eceff3d1584bb5"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportFinancialReadConfigurationTest.java",
+    "sha256": "ba00dbd281179ac30510de3a1f0e3e2e2ece8eda7e70d6aa92421c1606e20b09"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportModuleWiringTest.java",
+    "sha256": "74b38508de00fde8812ea7309d1196e05663f2be7fdb685a146ae652ad95be5f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportMvpDeferredConfigurationTest.java",
+    "sha256": "71a2e7dde1939d9358b559215da5dbbb91293c50c2627d4dbd33db56e615caa9"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportMvpProfileAliasTest.java",
+    "sha256": "be4640db6022adc583d7548d6d691e038373e169b0ce5f9ccf20f3ba7a178926"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOperationalConsumerConfigurationTest.java",
+    "sha256": "bb3ecd8383e984641c046ad40d2162674d60ba1869a31854d330188c42fe445a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOutpatientConsumerConfigurationTest.java",
+    "sha256": "a145dd6900e42456f96372b2ffc3dee717d01a1531abfb9a7d9e4be1535fd36c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportOutpatientReadConfigurationTest.java",
+    "sha256": "863e9880f0859619c778905d0bbae65393996ce2b3f248277f9daa2239c38de6"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportSettlementConsumerConfigurationTest.java",
+    "sha256": "1b6592a26fccc611b4ef8405e4c5c311b64a9370b00a0d95282fe1a0c2a326ee"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\config\\ReportTelemetryConfigurationTest.java",
+    "sha256": "cd37f8890c69c3f252d45d2abc5eb720c96dfaf979ca47b2b52fd7b892bb8a01"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\messaging\\ReportMessageRecovererTest.java",
+    "sha256": "9c82a71d83197c7b4fefcc6ad37eef2cfe0281543fd4ac3bb322b4bc6d7e2c35"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\messaging\\carefinance\\CareFinanceEnvelopeDecoderTest.java",
+    "sha256": "3cc3d838fa484aa5adce4beedccdf17b86098608f5052ab4aa7520eaefd2d9d8"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\messaging\\carefinance\\CareFinanceStrictWireTest.java",
+    "sha256": "d313d998cf9482fb53a8d5b458ece64db0516dd10dc21bd3e63b640b7b2e244e"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\AdmissionContributionPostgresTest.java",
+    "sha256": "92c6587ad64aef01880adb60eb15475f895e8597fa62c9af1436aef910debf80"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\AdmissionReportEvidencePostgresTest.java",
+    "sha256": "0222bc43f34d74451316c957349aded4f31c8918c577aa89f2842b75eac20019"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\CashReceiptPostgresTest.java",
+    "sha256": "97dcc93c2ff9f75654576f192bbdf828c0be18e82fed25a24eb111012fd70f81"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\CashReplayPostgresTest.java",
+    "sha256": "80c412266d5da4bf79db74facdf84d44c111e0885a6c9205d5c48027c65fcb73"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\CashSnapshotCodecTest.java",
+    "sha256": "8bb1a37694f7e504c26af1e111d52d6bdd04eff2b53b4cc07beef75ee509b685"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\FinalSettlementRecognitionPostgresTest.java",
+    "sha256": "4c401746a7701ac1622e6cac7e0adabaebcc9d0f720813122f3e71fb5ca4527c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\FinancialPublicationPostgresTest.java",
+    "sha256": "b37bb17fc04d3aff553753c6e87d312ce9a1324c1e78fa208815c323d94280d7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\FinancialRebuildPostgresTest.java",
+    "sha256": "e603c8e73a2e5c0415968bba9f5f9970d3e93ee33c1738503968b9d1ee081857"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\MedicalDischargePostgresTest.java",
+    "sha256": "a48cdd9e73d41929250306b1b1ba9eb048581b65462a5fde46f3f7fd42143bce"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\MvpCutoverInventoryPostgresTest.java",
+    "sha256": "670f82289f49288f6b2cff615daa7770af0baa99a323f34c3958946112db04e7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\OperationalContributionPostgresTest.java",
+    "sha256": "aea3d4e748c2ebee469384226e36657ce214a28e8b94c25c9faa49b1ab76dcb1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\OperationalPublicationPostgresTest.java",
+    "sha256": "9c2236937a34bbb6ffd54bed0253fd8d12abce9129dccd8f78e98a070911ef17"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\OperationalReplayPostgresTest.java",
+    "sha256": "c706b4fe2f0ae94b4473b4083173ac7452d69b15d6beeadf4e7858efdf555f0c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\OutpatientReadPostgresTest.java",
+    "sha256": "b9fcfab3201c8a1b9dd77f0fdd2642eb18163a6afc58946e70a65ef529db2403"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\PersistenceMappingTest.java",
+    "sha256": "803eeab6b2328a7f683717eebcd6984fb4a2d26a16c4f4e8d5f6e0ce58237b5a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\PrescriptionFillReceiptPostgresTest.java",
+    "sha256": "d8a8869620a1ada582528ed65c090abeb8633fb58f1290187924f5e2a5b8671c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\RefundReplayPostgresTest.java",
+    "sha256": "331b62e77b87c63850c178426403fb94376c32dfcbf96bf217bec89d0f14e2ac"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ReportJpaValidationTest.java",
+    "sha256": "eb573fb48a7c7c9d7e62ddf259d12a804c2c9a52c777374809a0bfc368458979"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ReportMigrationSchemaTest.java",
+    "sha256": "9e3625186c91bbf7f331dd384dfb8246546d848322fd8e5643dd2b44ba539141"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ReportModulePostgresTest.java",
+    "sha256": "f1a03842be289a6f2fa9ae43e8bbc47cfc0541cf69c35dbcea72ac4f9f135551"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ReportPersistenceConcurrencyTest.java",
+    "sha256": "7b9793b98cb56cddd1cd5991e829683d4783ce3079462c195b169aa52764fedc"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\ReportTelemetryPostgresTest.java",
+    "sha256": "1c3a27f7657dcafb12358ee406caf7c996c12a9c51dbeedc973af09a7d6433cf"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\SettlementReceivablePostgresTest.java",
+    "sha256": "a716c19451271c531aa6fce5b8081ee61ed0a73c73dba4fbebca873b14443896"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialArchiveJsonCodecTest.java",
+    "sha256": "586b0016edbcea31bc039330c61c1571cfc56e3c3e9e113ed80fb5078ab12161"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\FinancialSnapshotReadPersistenceAdapterTest.java",
+    "sha256": "2394c3a43c8f18392c7b3e845b32a49ec7297d1b75f368d1553daab1d22c4186"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalSnapshotCodecTest.java",
+    "sha256": "ef870d99cdb2c0cfcc2491bf24918fe68a04c373e3402b1e172edec60a36bb46"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OperationalSnapshotReadPersistenceAdapterTest.java",
+    "sha256": "03b447f817333d432c70d51267bb4d0f5889c745b9cc8e9af3b257e2f8f9b4d4"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OutpatientEvidenceFingerprintTest.java",
+    "sha256": "3cb34791e0b3394c9d5d39d87d8f0331c4286434bdc730fa133253dc92ff05a1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\OutpatientRefundRecoveryScopeTest.java",
+    "sha256": "b8987cb9836b58179a5105f8c9b0b1a346ed1fa5a111027ab0e730066fa1e53d"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\adapter\\ProcessedEventPersistenceAdapterTest.java",
+    "sha256": "1d0a284e58cdd61b7c185e64d878c1c2b81e64c4b532a076d5f019510dea6aba"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\CashRefundMigrationPostgresTest.java",
+    "sha256": "c2ee5c619cd0068c3e1e351c5d2370d3719559e439073d52d9e1ae3d4ad62ffb"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\CashReplayMigrationPostgresTest.java",
+    "sha256": "36cf39b1d06dbb9cee92fe11cf633b81a97b7f32fbd64786aea4465747fa830a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\OperationalPublicationMigrationPostgresTest.java",
+    "sha256": "b7baf55ddd7c36f9a231ae694803cfdbaa441c84ec4e279cd684b62d26f34baa"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\OperationalSnapshotReadMigrationPostgresTest.java",
+    "sha256": "10d28341d6bb99cdfd47bd0c12a261239f8f4ad208eba9a25ec5e8d57d6c7afa"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\PrescriptionFillReceiptMigrationPostgresTest.java",
+    "sha256": "f4fbdf70a9a1396f1092e5bfa89bc89e6464746841b3f4af6038b88983ac3832"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\RefundReplayMigrationPostgresTest.java",
+    "sha256": "c00dba7cf6a210120d213ef6a41c3ffde13f3d2997f78dd52304a65eb1f61242"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\ReportMigrationPostgresTest.java",
+    "sha256": "77c14a985b71e257cce56f7d4d01d0aafab79144ecd0dd1442c4510b7b908e52"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\ReportModuleUpgradePostgresTest.java",
+    "sha256": "cc29e293bb6a857385771480a79f4ddc8cea941eaf17224d0cc3f8f3417fb9ce"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\persistence\\migration\\ReportTelemetryMigrationPostgresTest.java",
+    "sha256": "8e3105555e6c33dcf266049df7e1d3dab520ef7f8c0828d1feae7678ded0c092"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\security\\JwtAuthFilterTest.java",
+    "sha256": "a3321171e908fa264945e75cce2da469c60db904af0aa52b263fcf1323ef9592"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\security\\ReportTelemetrySecurityTest.java",
+    "sha256": "547618455c59646fbeb5b9b4cf82c30692dcdf706b33ef106b0b905b9c452db3"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\infrastructure\\telemetry\\ReportTelemetryCollectorTest.java",
+    "sha256": "2cb6b03082874b1f35d9c780070a5477d8c9d59558ebcee1e14cc392a9f8d510"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\CashReceiptRabbitIntegrationTest.java",
+    "sha256": "d6b370d99a2e47e4fa16e24be18d7982115395cf5e92cf2bb7f686bcd80ef9d7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\FinalSettlementRecognitionRabbitIntegrationTest.java",
+    "sha256": "0519fcf3883c2bd0ceff09ffe4790d41a3def943737a43878dfa064e6a92d23f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\FinancialSnapshotReadPostgresIntegrationTest.java",
+    "sha256": "b9d628b776783662705bb5f8c1f182044f1a8a4be9b32272ae229c76f0156e1f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\OperationalReportRabbitIntegrationTest.java",
+    "sha256": "4feb775dbb5df343c0125cd2069371e06b9c62c2952ef6e8860444172c2c12aa"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\OutpatientClinicalSourceAcceptanceIT.java",
+    "sha256": "d53b7ad4763a0f5d42e352612a473023236e28301f6740a9c7f9662af376ce3a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\OutpatientReportRabbitIntegrationTest.java",
+    "sha256": "cd3cba2d98c298c9acd72a29c2012c59341498138e2e5b8f5d88db1016c23db3"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\ReportCrossLayerIntegrationTest.java",
+    "sha256": "b602a0a3bf274a791d08b4f41e45e6f936bf0df018edc9eb97a4bd81c7a34609"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\ReportTelemetryRuntimeTest.java",
+    "sha256": "d1d5be09c8b40660d06d84811cc632452e361806e5f0a3516ad20715fc728591"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\integration\\SettlementSnapshotRabbitIntegrationTest.java",
+    "sha256": "c6cdba1b8af74d9e4d69cf0c52797893d723d79681675bcfd741a7add458a7a7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\messaging\\consumer\\CashReceiptConsumerTest.java",
+    "sha256": "f1e2b0f10943b422f5bf49afd29bf3734e0d8501d67752181afa7ce4821947e8"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\messaging\\consumer\\FinalSettlementRecognitionConsumerTest.java",
+    "sha256": "f808e0b5218dcf5d545b4afd591c744972e0263449a11e1450faa73def2f7a20"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\messaging\\consumer\\OperationalReportFactConsumerTest.java",
+    "sha256": "1e8e0535c032ea2d50c835d309a388eefd3bd8fdcad81bef0ab60cb54714f13f"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\messaging\\consumer\\OutpatientReportFactConsumerTest.java",
+    "sha256": "96bfc79213833901eb6e2984a756a05f6523316665a3ef387082b5ffe306c6b7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\messaging\\consumer\\ReportEventConsumerTest.java",
+    "sha256": "139e70ec1add28a3acb5a1f073d60034d986a1da788333c80564e71110d34c35"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\support\\AdmissionEvidenceTestFixtures.java",
+    "sha256": "35ada13106693566b29f5d6fd3758cad1e1eaad9579b0d50236be0959a6113b8"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\support\\ReportPersistenceTest.java",
+    "sha256": "1fe8bfce8dba092bfa0a08fe7993879f2824005372cdffcfad74314519f079d0"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\FinancialPublicationControllerTest.java",
+    "sha256": "8d8f61c2fb216e187957cfed97d6db345ed2e3b4dc9b7c25df4b5142501f5809"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\FinancialRebuildControllerTest.java",
+    "sha256": "6e0a3dd79e3a4e668d519a284bb0ef25e32484f6842dc6fe6550b4d82c17b4ff"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\FinancialSnapshotReportControllerTest.java",
+    "sha256": "f74b6b924978c0c859f7a9b9f0d80ff203bdec194c90ba904f6f2d8d32d64005"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\FinancialSourceArchiveControllerTest.java",
+    "sha256": "61285588445a506780bb7b827f6d5ef12d012972e527b6a6afab880406da8dd7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\OperationalPublicationControllerTest.java",
+    "sha256": "f9149fa75d026f1e38bae05dddbb7b55425e71eb0456e424343bc1a2b7d3d604"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\OperationalRebuildControllerTest.java",
+    "sha256": "e340d7acd8095238e9992618391d91e8ec2b164372d2d12780bb7de9be773477"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\OperationalSnapshotReportControllerTest.java",
+    "sha256": "90b46147dbc231c8e1a9f347122cfc1e5367a46045509dbf2cead9884712be50"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\OutpatientReportControllerTest.java",
+    "sha256": "fdc4f4cc502046eb378ff992bb14025c0812bf3ecdbc3ec40770a0fe8640361c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\ReportCapabilityControllerTest.java",
+    "sha256": "34d274e064e97b3919bacad63a019434735b3639e59568d2ac0a58bb242e22aa"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\ReportControllerTest.java",
+    "sha256": "d014a30c1b38d7c636c3a7ebfc15a24b436caa0c4ac36957f982fbecb200a6b2"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\ReportModuleSecurityTest.java",
+    "sha256": "45c6852d66e555aba8ce002b9d754b926ee48e32128824bb4a360790c66372cb"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\java\\com\\mediflow\\report\\web\\ReportRouteNotFoundResolverTest.java",
+    "sha256": "5a55663e62795be40b568bc3fae9fe5268ca46b7fe970f23b119fbdf2bc57a7c"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\docker-java.properties",
+    "sha256": "cc9a039ef593ecfdd50f6f6a9338f12b671ac27b2d7272cdc6f1b04ee760ddc7"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\contracts\\lab.result.created.json",
+    "sha256": "13c06d151e7d1353f6104787f35da6e9296224748781d166417551147a7b06e1"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\contracts\\medicalrecord.created.json",
+    "sha256": "31a77e73dfe194eca8952d5158afa0819bc7ed5bfc3febe0ed9d2c50b9106802"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\contracts\\payment.completed.json",
+    "sha256": "e42b298c00b2030cea5a4b4bf2b2504d3ef5e2e062fa937ccc54f2af601ce6fd"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\contracts\\payment.failed.json",
+    "sha256": "79d4bbdc9adcb461847ae5902a70e70e8cb54e232310d2e2116101ce9a501e0a"
+  },
+  {
+    "path": "backend\\report-service\\src\\test\\resources\\contracts\\prescription.filled.json",
+    "sha256": "b5ac5853ededb98ffcc26364bafd7330f25ee1c2fdf37c4cba0c3b719a3534ba"
+  },
+  {
+    "path": "backend\\support-service\\pom.xml",
+    "sha256": "64e774e9a52a2b84dd863824f4aaddbff618c30e3ba1131a219c8dc5f8e5cde4"
+  },
+  {
+    "path": "backend\\support-service\\src\\main\\java\\com\\mediflow\\support\\SupportServiceApplication.java",
+    "sha256": "659df5cc0d72fda353d904268b5731c0cfba7b6f52411f60c4013ade4d9b36a9"
+  },
+  {
+    "path": "backend\\support-service\\src\\main\\java\\com\\mediflow\\support\\infrastructure\\config\\SupportModeConfiguration.java",
+    "sha256": "af3457190d8f232c7fb4d352735eb3d2ad8e684cade302de99f1743ac7101436"
+  },
+  {
+    "path": "backend\\support-service\\src\\main\\java\\com\\mediflow\\support\\infrastructure\\config\\SupportSecurityConfiguration.java",
+    "sha256": "d74611195858af5aaba926b183897ded538a67c22f8b8029b746a57bd3fa2acc"
+  },
+  {
+    "path": "backend\\support-service\\src\\main\\resources\\application.yml",
+    "sha256": "8a64328eba516df48ee65c5d83ba13e8cb34d034933b5ae92ee801875bc79f9e"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\HistoricalSupportCutoverIT.java",
+    "sha256": "a6564ad501b9691204539f1467b098ba3cb66398f2d5911f03c0ab2cdd906fa7"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SixServiceOutpatientAcceptanceIT.java",
+    "sha256": "046b8548048a7782add5c8199a90a8f37557253392c4b0c68cb835af166c685f"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SupportCompositionTest.java",
+    "sha256": "9b91355ed5f545ba0054252fd9bbe56ed9045bf3740c7b22a68aa1975c39bb32"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SupportOutpatientCompositionTest.java",
+    "sha256": "101e180f101f721b136b346c57a447df1fa35b69f4bdbc9e42a216a5cd55563d"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SupportPackagedAcceptanceIT.java",
+    "sha256": "958da910a4ffb2c2716fe814d9fa204b5cb8a1ddae958e39571fc7e0e5863a93"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SupportSecurityTest.java",
+    "sha256": "94af9a136fa696d205bbacbccf423433953994e1298172698e0f04a81860ef1f"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\SupportStoreIsolationTest.java",
+    "sha256": "f4a3830b1e432ed10491bae45a27b2bbfcfd559122dce55d24292b446bd9bc28"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\java\\com\\mediflow\\support\\infrastructure\\config\\SupportModeConfigurationTest.java",
+    "sha256": "c668616c116f4d86894740d6fb93c5be48c89bd67715f519da88e44ce868413b"
+  },
+  {
+    "path": "backend\\support-service\\src\\test\\resources\\docker-java.properties",
+    "sha256": "dbf67ab39390f2ab40681f0eaca57032c3bc91b49cb5d3777a3774a8772c8a0e"
+  },
+  {
+    "path": "backend\\surgery-service\\pom.xml",
+    "sha256": "69c9b04e68a877777c9525c4e94a25752076914f6d393c34f6dfbb3e9ea31520"
+  }
+]

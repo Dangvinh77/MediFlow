@@ -1,0 +1,18 @@
+{"version": "16.15", "database": "mediflow_pharmacy", "readOnly": "on", "isolation": "repeatable read", "observedAt": "2026-10-18T11:18:14.550893+00:00"}
+{"rows": 0, "table": "admission_medication_context", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "admission_medication_event", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "care_prescription_creation", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "dispense_slip", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "drug", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 19, "table": "flyway_schema_history", "rowsMd5": "8d5ce828975c4386661c79f0210ba683"}
+{"rows": 0, "table": "payment_receipt", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "pharmacy_event_outbox", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 1, "table": "pharmacy_scheduler_lease", "rowsMd5": "828dd71d07179b1555a287890b6c3acd"}
+{"rows": 0, "table": "prescription", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "prescription_clearance", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "prescription_clearance_event", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "prescription_clearance_target", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "prescription_line", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "processed_event", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "stock_adjustment", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
+{"rows": 0, "table": "stock_reservation", "rowsMd5": "d41d8cd98f00b204e9800998ecf8427e"}
