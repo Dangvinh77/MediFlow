@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -13,9 +13,12 @@ import { appointmentApi } from "../api";
 import { appointmentStatusPresentation } from "../presentation";
 import type { AppointmentDTO, LegacyAppointmentStatus } from "../types";
 import { AppointmentMutationError } from "./AppointmentMutationError";
+import { OutpatientExamActions } from "./OutpatientExamActions";
 
 interface AppointmentDetailProps {
   appointmentId: string;
+  outpatientEnabled?: boolean;
+  renderRecordLink?: (appointment: AppointmentDTO) => ReactNode;
 }
 
 interface RequestError {
@@ -51,11 +54,11 @@ function Identifier({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function AppointmentDetail({ appointmentId }: AppointmentDetailProps) {
-  return <AppointmentDetailContent key={appointmentId} appointmentId={appointmentId} />;
+export function AppointmentDetail(props: AppointmentDetailProps) {
+  return <AppointmentDetailContent key={props.appointmentId} {...props} />;
 }
 
-function AppointmentDetailContent({ appointmentId }: AppointmentDetailProps) {
+function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, renderRecordLink }: AppointmentDetailProps) {
   const router = useRouter();
   const active = useRef(false);
   useEffect(() => {
@@ -226,9 +229,14 @@ function AppointmentDetailContent({ appointmentId }: AppointmentDetailProps) {
         </section>
       ) : null}
 
+      {outpatientEnabled ? <OutpatientExamActions key={requestKey} appointment={appointment} role={role}
+        onUpdated={(updated) => setRequestState({ key: requestKey, status: "success", appointment: updated })}
+        onRefresh={retry} /> : null}
+      {outpatientEnabled && (appointment.status === "IN_EXAM" || appointment.status === "COMPLETED") ? renderRecordLink?.(appointment) : null}
+
       {actionError ? <AppointmentMutationError {...actionError} /> : null}
 
-      {canAct ? (
+      {canAct && !outpatientEnabled ? (
         <section className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold">Thao tác lịch hẹn</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -238,9 +246,9 @@ function AppointmentDetailContent({ appointmentId }: AppointmentDetailProps) {
             <Link href={`/appointments/${appointment.appointmentId}/edit`} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
               Chỉnh sửa
             </Link>
-            <button type="button" disabled={changingStatus} onClick={() => setProposedStatus("ARRIVED")} className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+            {!outpatientEnabled ? <button type="button" disabled={changingStatus} onClick={() => setProposedStatus("ARRIVED")} className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
               Ghi nhận đã đến
-            </button>
+            </button> : null}
             <button type="button" disabled={changingStatus} onClick={() => setProposedStatus("CANCELLED")} className="min-h-11 rounded-lg border border-danger/40 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-50">
               Hủy lịch hẹn
             </button>

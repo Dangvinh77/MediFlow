@@ -11,10 +11,13 @@ import { formatInstant, formatLocalDate } from "@/lib/format";
 import { medicalRecordApi } from "../api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordDisposition } from "../types";
 import { AddDiagnosisForm } from "./AddDiagnosisForm";
+import { CompleteRecordForm } from "./CompleteRecordForm";
+import { Button } from "@/components/ui/Button";
 
 interface MedicalRecordDetailProps {
   recordId: string;
   notice?: "created" | "updated";
+  outpatientEnabled?: boolean;
 }
 
 interface RequestError {
@@ -57,11 +60,11 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
 
 const getServerRole = () => null;
 
-export function MedicalRecordDetail({ recordId, notice }: MedicalRecordDetailProps) {
-  return <MedicalRecordDetailContent key={recordId} recordId={recordId} notice={notice} />;
+export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
+  return <MedicalRecordDetailContent key={props.recordId} {...props} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice }: MedicalRecordDetailProps) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false }: MedicalRecordDetailProps) {
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
@@ -180,7 +183,13 @@ function MedicalRecordDetailContent({ recordId, notice }: MedicalRecordDetailPro
         <AddDiagnosisForm recordId={record.recordId} onCreated={addCreatedDiagnosis} />
       ) : null}
 
+      {outpatientEnabled && canMutate && record.status === "OPEN" && record.appointmentId ? <>
+        <Link href={`/records/${record.recordId}/lab-order`} className="inline-flex min-h-11 items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted">Chỉ định xét nghiệm</Link>
+        <CompleteRecordForm key={requestKey} record={record} onCompleted={(updated) => setState({ key: requestKey, status: "success", record: updated })} />
+      </> : null}
+
       <div className="flex flex-wrap gap-3">
+        <Button type="button" onClick={retry}>Cập nhật hồ sơ</Button>
         {canMutate && record.status === "OPEN" ? (
           <Link href={`/records/${record.recordId}/edit`} className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Sửa triệu chứng</Link>
         ) : null}

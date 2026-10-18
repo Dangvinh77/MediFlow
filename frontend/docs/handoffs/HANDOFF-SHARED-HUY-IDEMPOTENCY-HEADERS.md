@@ -1,6 +1,6 @@
 # HANDOFF: Shared FE → Surgery — Idempotency-Key qua API wrapper
 
-- **Status:** ACTIVE.
+- **Status:** ACTIVE — producer code implemented 2026-10-18; behavioral/consumer acceptance OPEN.
 - **Producer owner:** Vinh (`Dangvinh77` / `Harori`), shared frontend.
 - **Consumer owner:** Huy (`LQHuy0210`), Surgery frontend.
 - **Affected contexts:** shared HTTP boundary, planned Surgery command UI.
@@ -9,7 +9,17 @@
 - **Verified baseline:** `c110671b`, 2026-10-12.
 - **Resume owner:** Huy, task S-04 trong [plan FE](../huy-frontend-implementation-plan.md).
 
-## Phát hiện từ source
+## Producer checkpoint — 2026-10-18
+
+Vinh implemented `api.post/put/postRaw(path, data?, { idempotencyKey })` in the shared wrapper.
+Only Idempotency-Key is accepted; bearer/method/body stay controlled by the wrapper. Blank,
+more-than-160-character and CR/LF keys are rejected; bodyless requests remain bodyless.
+Existing two-argument consumers remain compatible. Verification in this session is build only
+at the user's request; header propagation/error regression tests and Huy's consumer acceptance
+have not run. Keep this handoff ACTIVE until the acceptance below is met. Surgery stays deferred;
+the same shared facility is available to the active outpatient Pharmacy V1 work.
+
+## Historical source finding
 
 Public `api.post(path, data?)` và `api.put(path, data?)` chưa nhận options/header.
 Hàm private `requestJson` có xử lý `RequestInit.headers`, nhưng feature không thể truyền header qua

@@ -11,7 +11,7 @@ import type {
 } from "./types";
 
 export const medicalRecordApi = {
-  // Contract preparation only; V1 controls require integrated runtime acceptance.
+  // Commands are exposed only by the server-controlled outpatient UI gate.
   complete: (recordId: string, body: CompleteRecordRequest) =>
     api.put<MedicalRecordDTO>(
       `/v1/records/${encodeURIComponent(recordId)}/complete`,

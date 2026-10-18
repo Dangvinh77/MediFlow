@@ -1,5 +1,40 @@
 # Frontend Workboard
 
+## Vinh — outpatient UI implementation, 2026-10-18
+
+Scope: appointment/medical-record/Lab and shared API, as authorized after the FE ownership audit.
+This checkpoint supersedes older statements that these command controls have no UI implementation.
+It does not close authenticated browser/Gateway acceptance.
+
+- `FE-VINH-MVP-02`: check-in (ADMIN/NURSE), normal examination start (ADMIN/DOCTOR), waiting for
+  server clearance, manual refresh, and server-created record lookup by exact appointmentId.
+  Legacy arrival is hidden in outpatient UI mode. No emergency override UI.
+- `FE-VINH-MVP-03`: `/records/[recordId]/lab-order` composes Clinical source-order creation and
+  Lab creation with the exact returned UUID/episode/price fields. No feature-to-feature import,
+  guessed order IDs, service-only browser calls, patient data in query strings or localStorage.
+  Clinical create with unknown outcome is not blindly repeated. Lab errors preserve the order
+  in the mounted workspace; navigation loses page memory and requires reconciliation.
+- Record completion offers outpatient follow-up, prescription and other; requires an OPEN,
+  appointment-backed record and diagnoses, explicit confirmation, backend error/field/correlation
+  feedback. Backend enforces actor and appointment authority.
+- Shared `api.post/postRaw/put` accept a third options argument `{ idempotencyKey }` only.
+  Caller signatures remain compatible, bodyless calls stay bodyless and bearer stays session-owned.
+  Huy's consumer implementation and producer/consumer behavioral acceptance remain open.
+- Lab actions share synchronous submission locks and ignore late responses after unmount,
+  handle 401 through login, and block blind repeats on unknown outcome. Manual read refresh
+  resets the action workspace. Version-1 start requires server READY plus clearanceId.
+- Server env `MEDIFLOW_OUTPATIENT_UI_ENABLED=true` exposes the new controls. Default false.
+  Configure only after accepting the matching backend runtime; the UI flag does not activate
+  backend modes/publication. Direct legacy record/Lab creation is replaced in enabled UI mode.
+- `FE-VINH-MVP-01/04`: runtime role/HTTP/browser smoke remains OPEN. Clinical's public record DTO
+  does not expose Rx/Lab attachment collections; no guessed read endpoint or Pharmacy import added.
+- Final `pnpm build`: PASS, exit 0; compile, integrated TypeScript and route generation passed.
+  Static peer review: GO for PR.
+- Session verification is restricted by the user to `pnpm build`. No unit/component suite,
+  standalone lint/typecheck, browser smoke or backend tests were run for this change.
+  See [implementation record](vinh-outpatient-implementation-2026-10-18.md).
+
+
 ## Vinh — Clinical/Lab lists and forms, 2026-10-17
 
 Source baseline `d80d23b2`; scope appointment/medical-record/Lab của Vinh.

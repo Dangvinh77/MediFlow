@@ -3,29 +3,23 @@
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { ApiRequestError } from "@/lib/api";
+import { useCommand } from "@/lib/use-command";
+import { CommandFeedback } from "@/components/ui/CommandFeedback";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { isUuid } from "@/lib/validation";
 import { labApi } from "../api";
 import type { LabResultInput, LabTestDTO } from "../types";
-import { LabMutationError } from "./LabMutationError";
+
 
 interface LabActionsProps { test: LabTestDTO; onUpdated: (test: LabTestDTO) => void }
-interface RequestError { status: number | null; message: string; correlationId: string | null }
 const getServerRole = () => null;
 const emptyResult = (): LabResultInput => ({ indicator: "", value: "", unit: null, referenceRange: null });
 
-function requestError(cause: unknown): RequestError {
-  return cause instanceof ApiRequestError
-    ? { status: cause.status, message: cause.message, correlationId: cause.correlationId }
-    : { status: null, message: cause instanceof Error ? cause.message : "Không thể cập nhật xét nghiệm.", correlationId: null };
-}
-
 export function LabActions({ test, onUpdated }: LabActionsProps) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
-  const [busy, setBusy] = useState(false);
+  const command = useCommand();
+  const busy = command.busy;
   const [mode, setMode] = useState<"results" | "cancel" | null>(null);
-  const [error, setError] = useState<RequestError | null>(null);
   const [results, setResults] = useState<LabResultInput[]>([emptyResult()]);
   const [conclusion, setConclusion] = useState("");
   const [performedDate, setPerformedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -35,20 +29,22 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
 
   const canWork = role === "ADMIN" || role === "LAB_TECH";
   const canCancel = role === "ADMIN" || role === "DOCTOR" || role === "LAB_TECH";
-  const canStart = canWork && (test.status === "PENDING" || test.status === "READY");
+  const canStart = canWork && (test.careContractVersion === 1
+    ? test.status === "READY" && Boolean(test.clearanceId)
+    : test.status === "PENDING" || test.status === "READY");
   const canEnterResults = canWork && test.status === "IN_PROGRESS";
   const canCancelCurrent = canCancel && !["COMPLETED", "CANCELLED"].includes(test.status);
   if (!canStart && !canEnterResults && !canCancelCurrent) return null;
 
   async function start() {
-    setBusy(true); setError(null); setValidationError(null);
-    try { onUpdated(await labApi.start(test.testId)); }
-    catch (cause: unknown) { setError(requestError(cause)); }
-    finally { setBusy(false); }
+    if (!canStart || busy || command.uncertain) return;
+    setValidationError(null);
+    void command.run(() => labApi.start(test.testId), onUpdated);
   }
 
   async function submitResults(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canEnterResults || busy || command.uncertain) return;
     const normalized = results.map((item) => ({
       indicator: item.indicator.trim(), value: item.value.trim(),
       unit: item.unit?.trim() || null, referenceRange: item.referenceRange?.trim() || null,
@@ -59,26 +55,19 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
     if (!performedDate || performedDate < test.requestedDate) {
       setValidationError("Ngày thực hiện phải từ ngày yêu cầu trở đi."); return;
     }
-    setBusy(true); setError(null); setValidationError(null);
-    try {
-      onUpdated(await labApi.addResults(test.testId, { results: normalized, conclusion: conclusion.trim() || null, performedDate }));
-      setMode(null);
-    } catch (cause: unknown) { setError(requestError(cause)); }
-    finally { setBusy(false); }
+    setValidationError(null);
+    void command.run(() => labApi.addResults(test.testId, { results: normalized, conclusion: conclusion.trim() || null, performedDate }), (updated) => { setMode(null); onUpdated(updated); });
   }
 
   async function submitCancel(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canCancelCurrent || busy || command.uncertain) return;
     const staffId = cancelledBy.trim();
     const reason = cancelReason.trim();
     if (!isUuid(staffId)) { setValidationError("Mã nhân viên hủy phải là UUID hợp lệ."); return; }
     if (!reason) { setValidationError("Lý do hủy là bắt buộc."); return; }
-    setBusy(true); setError(null); setValidationError(null);
-    try {
-      onUpdated(await labApi.cancel(test.testId, { cancelledBy: staffId, reason }));
-      setMode(null);
-    } catch (cause: unknown) { setError(requestError(cause)); }
-    finally { setBusy(false); }
+    setValidationError(null);
+    void command.run(() => labApi.cancel(test.testId, { cancelledBy: staffId, reason }), (updated) => { setMode(null); onUpdated(updated); });
   }
 
   function updateResult(index: number, field: keyof LabResultInput, value: string) {
@@ -89,13 +78,14 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
     <section className="rounded-xl border border-border bg-surface p-6">
       <h2 className="text-lg font-semibold">Thao tác xét nghiệm</h2>
       <p className="mt-1 text-sm text-muted-foreground">Backend kiểm tra lại quyền và chuyển trạng thái; phản hồi 403 vẫn là quyết định cuối cùng.</p>
+      <fieldset disabled={busy || command.uncertain} className="min-w-0 space-y-4">
       <div className="mt-4 flex flex-wrap gap-2">
         {canStart ? <Button type="button" variant="primary" loading={busy} onClick={() => void start()}>Bắt đầu xét nghiệm</Button> : null}
         {canEnterResults ? <Button type="button" variant="primary" disabled={busy} onClick={() => { setMode("results"); setValidationError(null); }}>Nhập kết quả</Button> : null}
         {canCancelCurrent ? <Button type="button" variant="danger" disabled={busy} onClick={() => { setMode("cancel"); setValidationError(null); }}>Hủy xét nghiệm</Button> : null}
       </div>
 
-      {error ? <LabMutationError {...error} /> : null}
+      <CommandFeedback error={command.error} uncertain={command.uncertain} />
       {validationError ? <p role="alert" className="mt-3 text-sm text-danger">{validationError}</p> : null}
 
       {mode === "results" ? (
@@ -125,6 +115,7 @@ export function LabActions({ test, onUpdated }: LabActionsProps) {
           <div className="flex gap-2 md:col-span-2"><Button type="submit" variant="danger" loading={busy}>Xác nhận hủy</Button><Button type="button" disabled={busy} onClick={() => setMode(null)}>Quay lại</Button></div>
         </form>
       ) : null}
+      </fieldset>
     </section>
   );
 }

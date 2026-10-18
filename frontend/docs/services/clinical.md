@@ -14,7 +14,21 @@
 The matching service owns appointments, medical records, and diagnoses. Patient, staff,
 department, Lab, Pharmacy, and Billing data remain external references.
 
-## Current UI baseline
+## Current implementation — 2026-10-18
+
+The default-off server UI gate `MEDIFLOW_OUTPATIENT_UI_ENABLED` now controls the outpatient
+command UI. The following older baseline descriptions are historical where they describe
+commands as not implemented or compatibility-only. See the latest [workboard](../frontend-workboard.md)
+and [implementation record](../vinh-outpatient-implementation-2026-10-18.md).
+
+Appointment detail implements confirmed check-in/start and an exact appointment-backed record
+lookup. Record detail implements confirmed outpatient completion; the Lab-order route composes
+Clinical authority and Lab creation. No emergency override, admission or transfer controls.
+Default-off keeps existing compatibility screens; enabled mode replaces legacy arrival and
+standalone record creation. Runtime smoke and new behavioral regression tests remain open;
+this session validates build only by explicit user instruction.
+
+## Historical UI baseline
 
 - `/appointments`: paged appointment list with department/date filters through
   `GET /v1/appointments`; UI roles `ADMIN`, `MANAGER`, `DOCTOR`, `NURSE`. ADMIN, DOCTOR, and NURSE

@@ -3,8 +3,10 @@ import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { MedicalRecordDetail } from "@/features/medical-record/components/MedicalRecordDetail";
 import { isUuid } from "@/lib/validation";
+import { outpatientUiEnabled } from "@/lib/outpatient-ui";
 
 export const metadata: Metadata = { title: "Chi tiết hồ sơ khám | MediFlow" };
+export const dynamic = "force-dynamic";
 
 interface RecordDetailPageProps {
   params: Promise<{ recordId: string }>;
@@ -27,6 +29,7 @@ export default async function RecordDetailPage({ params, searchParams }: RecordD
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
           <MedicalRecordDetail
             recordId={id}
+            outpatientEnabled={outpatientUiEnabled()}
             notice={notice === "created" || notice === "updated" ? notice : undefined}
           />
         </RoleGate>
