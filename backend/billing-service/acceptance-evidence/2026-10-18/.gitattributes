@@ -1,0 +1,2 @@
+# Preserve original evidence bytes and SHA-256 across Git checkouts.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

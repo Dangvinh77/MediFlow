@@ -1,0 +1,114 @@
+[
+  {
+    "case": "duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery",
+    "eventId": "63ab8b91-8fd1-44c1-8d22-ef76c3548e3f",
+    "eventType": "payment.completed",
+    "sha256": "8075978c81b886faeea8f09e557bb9a71bce4674668ef2397800d1d07dc2f033",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery",
+    "eventId": "4be53a91-8663-437c-b817-4e381ad1d5e9",
+    "eventType": "financial.clearance.granted",
+    "sha256": "79735b4a0a48b0f27afe468984e54c7582f0e2d91ce07d12920f7bdd61548d4e",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox",
+    "eventId": "ceb94b1e-b820-4e9b-b722-059810530ba6",
+    "eventType": "payment.completed",
+    "sha256": "113652a7692c5e7d3d03e7d8cec7b4b32d6aedc1e33ea2b9f28b7dc26aeb092c",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox",
+    "eventId": "16295fcf-5d70-4e59-a7e0-1af3d97a064e",
+    "eventType": "financial.clearance.granted",
+    "sha256": "8fcadcbc387bf67afa68c5b3bd493aa10c100d0fabe7fb276a7c4c9ddf46aa9b",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox",
+    "eventId": "88e5c45d-a071-48b6-9366-8e0383d4726f",
+    "eventType": "payment.completed",
+    "sha256": "63d3073bb7204010532cb6be7703365ab8dd18fa9e1c3b3ea34a195ba7ad804c",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox",
+    "eventId": "dcb712cc-e657-4cf0-8cae-3661eca9afdc",
+    "eventType": "financial.clearance.granted",
+    "sha256": "380847571b2a72704f4da3861d4623092062481001ed284a3d824a631dfb9799",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain",
+    "eventId": "1041e991-12f8-4e45-8e7f-e462dbfa544e",
+    "eventType": "financial.clearance.granted",
+    "sha256": "520a245c9e9d6e8a29aed0a02664478e3ba5426851d1f0b37e733bd6297c9534",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain",
+    "eventId": "0783119b-c849-42a9-b8da-f382e45c2ca9",
+    "eventType": "invoice.created",
+    "sha256": "33a4cd364ea405ba06178c10a574b85bc306e34796209bfdbdc03eaa68b87689",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain",
+    "eventId": "691e7b2f-0159-40f3-a24d-6d9bdfe08a40",
+    "eventType": "payment.completed",
+    "sha256": "6f5e957d7bad7a3198e6c6c6583264250b3be5ef758e63749e1909c1284dc814",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "partialPayment_receiptPublishedButNoGrantYet",
+    "eventId": "70a8584e-c08f-4d2a-94ed-b286d4d8d84e",
+    "eventType": "payment.completed",
+    "sha256": "a7572af4e0498436af85e05aede480d6919b77d916284c0d11f49b87fbdace9e",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments",
+    "eventId": "3d608062-d176-4bf3-bd5e-9db4d4e3ba91",
+    "eventType": "financial.clearance.granted",
+    "sha256": "7e2cd9b9176abeb9a0d86917d538483edf78e0432e9c3aded73b8e6897986021",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments",
+    "eventId": "d8754b3c-1d5c-4025-ae6a-1d845de33f8b",
+    "eventType": "payment.completed",
+    "sha256": "a35e42284252d64113907f43e257b4d7da2e99aff26a9c05e01d7e1db4e43a65",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments",
+    "eventId": "2824890d-abb1-4740-8e6f-4b007ae5a4ab",
+    "eventType": "invoice.created",
+    "sha256": "14148f0712b5fe24f92d30a842c29fa23cae90be333aae867cb78e41a331f2d9",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  },
+  {
+    "case": "prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments",
+    "eventId": "a7ae31e6-4806-4cdb-858b-efe033cbfebf",
+    "eventType": "payment.completed",
+    "sha256": "9603b83984fbbcb9759831a21477689460ee002329585150e8c99a80850810a9",
+    "exactBytes": true,
+    "source": "actual Rabbit observer and Billing outbox"
+  }
+]

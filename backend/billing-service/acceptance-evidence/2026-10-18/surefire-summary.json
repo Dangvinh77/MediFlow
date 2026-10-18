@@ -1,0 +1,2297 @@
+[
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionChargeCloseConfigurationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionChargeCloseDecoderTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionChargeClosePostgresTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionChargeCloseRabbitIntegrationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionDepositAllocationConfigurationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionDepositAllocationPostgresTest",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionDepositRequestConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionReconciliationConfigurationTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionReconciliationPostgresTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionSettlementConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionSettlementPreviewConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.AdmissionSettlementPreviewPostgresTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.AdmissionSettlementProducerFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.DischargeMedicallyApprovedEventFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.FinalRecognitionCashProducerFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.LedgerProducerFixtureTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.PrescriptionFinanceProducerFixtureTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.event.SurgeryEventFixtureTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.mapper.FeeDtoMapperTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.mapper.InvoiceDtoMapperTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.mapper.RevenueMapperTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionChargeCloseServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionDepositAllocationServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionDepositRequestServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionReconciliationServiceTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionSettlementPreviewServiceTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.AdmissionSettlementServiceTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.BillingApplicationServiceTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.ExamChargePlannedRequestServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.FeeAccrualServiceTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.FinalAdmissionSettlementServiceTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.FinancialClearanceLookupServiceTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.LabTestPlannedRequestServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.LedgerPaymentServiceTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.LedgerRefundServiceTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.PaymentRequestDiscoveryServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.PrescriptionChargeServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.PrescriptionTerminalServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.SagaCompensationServiceTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.application.service.SurgeryChargeServiceTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.ArchitectureTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.BillingMergedMigrationPostgresTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.AdmissionDepositAllocationTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.AdmissionFinalizationPlanTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.AdmissionLedgerSnapshotTest",
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.BillingAccountTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.ChargeTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.DepositRefundBudgetTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.FeeTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.FinancialClearanceTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.InsuranceAdjustmentTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.InvoiceTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.PaymentAllocationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.PaymentRequestTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.PaymentTransactionTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.domain.model.SettlementTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.ExamChargeConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.ExamChargeRabbitIntegrationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.FinalAdmissionSettlementConfigurationTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.FinalAdmissionSettlementPostgresTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.config.RabbitConfigTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.config.SecurityConfigTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.AdmissionDepositRequestDecoderTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.BillingEventPublisherAdapterTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDeliveryPostgresTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDispatcherTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxMaintenanceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.ExamChargeDecoderTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.messaging.LabTestChargeDecoderTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.persistence.adapter.FeePersistenceAdapterTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.persistence.adapter.InvoicePersistenceAdapterTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.persistence.adapter.LabTestTypeProjectionAdapterTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.pricing.CareFinancePriceCatalogAdapterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.pricing.PriceListAdapterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.infrastructure.security.JwtAuthFilterTest",
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.LabTestChargeConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.LabTestChargeRabbitIntegrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.LedgerPaymentIntegrationTest",
+    "tests": 62,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.LedgerRefundConfigurationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.LedgerRefundMigrationPostgresTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.BillingEventConsumerTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.BillingEventContractFixtureTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.BillingMergedDispatcherTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.ExamChargeConsumerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.SurgeryCancellationDispatchTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.messaging.consumer.SurgerySingleWriterDispatchTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.OutpatientPublicationDispatcherResilienceRabbitIntegrationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.OutpatientPublicationMigrationPostgresTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.OutpatientPublicationPostgresTest",
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.OutpatientPublicationRabbitIntegrationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PaymentRequestDiscoveryPostgresTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PrescriptionChargeConfigurationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PrescriptionChargeContractTest",
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PrescriptionChargeDispatcherTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PrescriptionChargeRabbitIntegrationTest",
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.PrescriptionTerminalContractTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCancellationConfigurationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCancellationContractTest",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCancellationMigrationPostgresTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCancellationRabbitIntegrationTest",
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryChargeConfigurationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryChargeContractTest",
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryChargeRabbitIntegrationTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCompletionConfigurationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCompletionDecoderTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCompletionPostgresTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCompletionProofServiceTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryCompletionRabbitIntegrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.SurgeryRequestedTimeMigrationPostgresTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.AdmissionDepositAllocationControllerTest",
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.AdmissionReconciliationControllerTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.AdmissionSettlementPreviewControllerTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.BillingOutboxAdminControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.FinalAdmissionSettlementControllerTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.FinancialClearanceLookupControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.GlobalExceptionHandlerTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.InvoiceControllerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.PaymentRequestDiscoveryControllerTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.PrescriptionAdjustmentControllerTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "billing-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.billing.web.RevenueControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.ClinicalContractTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ClinicalApplicationServiceTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ClinicalCareFinanceApplicationServiceTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ClinicalIntegrationServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ClinicalIntegrationTransactionTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ClinicalLabOrderApplicationServiceTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.application.service.ExternalResultApplicationServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.architecture.ClinicalArchitectureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.domain.model.AppointmentTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.domain.model.CareFinanceV2ContractDomainTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.domain.model.CareFinanceV2DomainTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.domain.model.MedicalRecordTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.client.AuthorizationForwardingInterceptorTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.client.PatientLookupAdapterTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.client.PatientLookupResponseContractTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.client.StaffExistsResponseContractTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.client.StaffLookupAdapterTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.ClinicalApplicationModeConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.ClinicalCareFinanceFeatureGateTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.ClinicalOutboxSchedulingConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.JwtSecretConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.OpenApiConfigTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.OpenFeignConfigurationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.OperationalMetadataConfigTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.config.SecurityConfigTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.correlation.CorrelationIdFilterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalAdmissionRequestedContractFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalAppointmentStatusChangedContractFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalDurableAppointmentPublisherTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalEventPublisherAdapterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalMedicalRecordCompletedContractFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalMedicalRecordCreatedContractFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalOutboxDispatcherTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalOutboxRabbitIntegrationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalCareFinancePersistenceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalOutboxJpaRepositoryQueryTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalOutboxPersistenceAdapterTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalPersistenceAdapterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.ConsumerInboxPostgresTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.PrescriptionAttachmentV1PostgresTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.persistence.PrescriptionContextPostgresTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.infrastructure.security.JwtAuthFilterTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.ClinicalFinancialClearanceQueueConsumerTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.ClinicalQueueConsumerTest",
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.FinancialClearanceConsumerContractTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactoryTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.LabResultCreatedConsumerTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.messaging.consumer.PrescriptionFilledConsumerTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.AppointmentControllerTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.ClinicalAdmissionReferralControllerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.ClinicalCareFinanceControllerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.ClinicalLabOrderContextContractFixtureTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.ClinicalLabOrderContextControllerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.ClinicalLabOrderControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.GlobalExceptionHandlerTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.MedicalRecordControllerTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.clinical.web.PrescriptionContextControllerTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.dto.LabDtoValidationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.event.LabCareFinanceV2ContractFixtureTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.event.LabEventJsonContractTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.mapper.LabTestDtoMapperTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.service.LabApplicationServiceTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.service.LabCareFinanceV2ApplicationServiceTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.service.LabIntegrationServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.application.service.LabRequestCreationApplicationServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.domain.model.LabCareFinanceV2DomainTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.domain.model.LabTestTest",
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.client.LabClinicalOrderContextAdapterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.JwtSecretConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.LabClinicalOrderContextConfigurationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.LabOutpatientMvpModeConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.OpenApiConfigTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.OperationalMetadataConfigTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.RabbitConfigTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.config.SecurityConfigTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.correlation.CorrelationIdFilterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.messaging.LabEventPublisherAdapterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.messaging.LabListenerRabbitIntegrationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxDispatcherTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxRabbitIntegrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.persistence.ConsumerInboxPostgresTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.security.AuthenticatedStaffContextAdapterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.infrastructure.security.JwtAuthFilterTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.messaging.consumer.FinancialClearanceConsumerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.messaging.consumer.inbox.InboxEvidenceFactoryTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.messaging.consumer.LabQueueConsumerTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.messaging.consumer.MedicalRecordCreatedConsumerTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.messaging.consumer.PaymentCompletedConsumerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.web.GlobalExceptionHandlerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.lab.web.LabControllerTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.application.mapper.NotificationDtoMapperTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.application.service.CareProjectionServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.application.service.NotificationApplicationServiceTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.CareProjectionPostgresIntegrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.CareReceiptIntegrationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.domain.model.NotificationTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.channel.NotificationSendersTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.config.NotificationListenerRetryTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.config.NotificationModuleWiringTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.config.SecurityConfigTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.messaging.NotificationEventPublisherAdapterTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.persistence.adapter.NotificationPersistenceAdapterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.infrastructure.security.JwtAuthFilterTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.messaging.consumer.CarePaymentReceiptWireHandlerTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.messaging.consumer.CareProjectionWireHandlerTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerCareProjectionRoutingTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.PrescriptionNoticeConfigurationTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.PrescriptionNoticeContractTest",
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.PrescriptionNoticeRabbitIntegrationTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.RefundNoticeConfigurationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.RefundNoticeContractTest",
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.SurgeryNoticeConfigurationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.SurgeryNoticeContractTest",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.SurgeryNoticeRabbitIntegrationTest",
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.SurgeryPaymentNoticeConfigurationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.SurgeryPaymentNoticeContractTest",
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.web.GlobalExceptionHandlerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "notification-service",
+    "kind": "Surefire",
+    "name": "com.mediflow.notification.web.NotificationControllerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.auth.AuthControllerTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.auth.AuthValidationWebTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.auth.OrganizationAuthClientTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.BillingDiscoveryGatewayWebTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.CareRouteAuthorizationTest",
+    "tests": 274,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.ClinicalLabOrderGatewayWebTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.GatewayDownstreamResponseWebTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.GatewayOutpatientMvpRouteTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.GatewayRouteDefinitionTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.GatewayWebTest",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.RouteRoleContractTest",
+    "tests": 1098,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.security.JwtTokenServiceTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "gateway",
+    "kind": "Surefire",
+    "name": "com.mediflow.gateway.SurgeryGatewayWebTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

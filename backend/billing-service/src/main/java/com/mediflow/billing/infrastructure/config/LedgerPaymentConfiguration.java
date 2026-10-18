@@ -17,8 +17,8 @@ import com.mediflow.billing.application.service.LedgerPaymentService;
 public class LedgerPaymentConfiguration {
     @Bean
     ProcessLedgerPaymentUseCase processLedgerPaymentUseCase(LedgerPaymentRepositoryPort repository,
-            LedgerEventPort events, LedgerPaymentMapper mapper, PlatformTransactionManager manager) {
-        var service = new LedgerPaymentService(repository, events, mapper, Clock.systemUTC());
+            LedgerEventPort events, LedgerPaymentMapper mapper, PlatformTransactionManager manager, Clock clock) {
+        var service = new LedgerPaymentService(repository, events, mapper, clock);
         var transactions = new TransactionTemplate(manager);
         return (request, command, actor, correlation) -> transactions.execute(status ->
                 service.complete(request, command, actor, correlation));

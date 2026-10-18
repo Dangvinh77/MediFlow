@@ -67,14 +67,48 @@ class LedgerPaymentIntegrationTest {
     @Autowired BillingEventOutboxJpaRepository outbox;
     @Autowired ObjectMapper mapper;
     @Autowired TestRestTemplate http;
+    @org.springframework.boot.test.mock.mockito.MockBean(name = "billingClock")
+    java.time.Clock clock;
     private UUID account, patient, department, request, invoice, episode, source, actor;
 
     @BeforeEach void setup() {
+        org.mockito.Mockito.when(clock.instant()).thenAnswer(ignored -> Instant.now());
+        org.mockito.Mockito.when(clock.getZone()).thenReturn(java.time.ZoneOffset.UTC);
         // These tables belong to the fresh Testcontainers database, never a configured developer DB.
         jdbc.execute("TRUNCATE BILLING_ACCOUNT, BILLING_EVENT_OUTBOX CASCADE");
         account = UUID.randomUUID(); patient = UUID.randomUUID(); department = UUID.randomUUID();
         request = UUID.randomUUID(); invoice = UUID.randomUUID(); episode = UUID.randomUUID();
         source = UUID.randomUUID(); actor = UUID.randomUUID();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "2026-10-18T08:00:00.123456100Z", "2026-10-18T08:00:00.999999900Z"})
+    void httpPaymentReplayPreservesExactCompletedAtAtDatabasePrecision(String timestamp) throws Exception {
+        seed("PRESCRIPTION", "OUTPATIENT_VISIT", "100");
+        org.mockito.Mockito.when(clock.instant()).thenReturn(Instant.parse(timestamp));
+        String path = "/api/v1/billing/payment-requests/" + request + "/payments";
+        var first = http.postForEntity(path, new HttpEntity<>(command("precision", "100"), headers("CASHIER")), String.class);
+        var retry = http.postForEntity(path, new HttpEntity<>(command("precision", "100"), headers("CASHIER")), String.class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var original = mapper.readTree(first.getBody()).path("data");
+        var replayed = mapper.readTree(retry.getBody()).path("data");
+        assertThat(Instant.parse(original.path("completedAt").asText()))
+                .isEqualTo(Instant.parse(timestamp).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+        for (String field : List.of("transactionId", "accountId", "paymentRequestId", "classification", "status",
+                "currency", "paymentMethod", "completedAt")) {
+            assertThat(replayed.path(field)).as(field).isEqualTo(original.path(field));
+        }
+        assertThat(replayed.path("amount").decimalValue()).isEqualByComparingTo(original.path("amount").decimalValue());
+        assertThat(Instant.parse(original.path("completedAt").asText()))
+                .isEqualTo(jdbc.queryForObject("SELECT completed_at FROM PAYMENT_TRANSACTION", java.sql.Timestamp.class).toInstant());
+        var receipt = mapper.readTree(jdbc.queryForObject(
+                "SELECT payload FROM BILLING_EVENT_OUTBOX WHERE routing_key='payment.completed'", String.class));
+        assertThat(receipt.path("payload").path("completedAt")).isEqualTo(original.path("completedAt"));
+        assertThat(count("PAYMENT_TRANSACTION")).isOne();
+        assertThat(count("FINANCIAL_CLEARANCE")).isOne();
+        assertThat(count("BILLING_EVENT_OUTBOX")).isEqualTo(2);
     }
 
     @Test void threeInstallmentsHaveThreeReceiptsOneClearanceAndNoDoubleEffect() throws Exception {

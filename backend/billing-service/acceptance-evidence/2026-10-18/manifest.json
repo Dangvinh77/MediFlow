@@ -1,0 +1,4948 @@
+{
+  "date": "2026-10-18",
+  "source": {
+    "head": "e44ddf487523f8e781e53196d28f17db32beed1e",
+    "branch": "codex/vinh-loc-billing-closeout",
+    "dirty": true,
+    "trackedSourcePatchSha256": "f01a3924b81dec67d2f1d5861c1cfcefcc98bc0d2cde4c16a34a6dc7a08b24fc",
+    "untrackedSource": [
+      {
+        "path": "backend/billing-service/src/test/java/com/mediflow/billing/infrastructure/messaging/BillingOutboxDeliveryPostgresTest.java",
+        "sha256": "d8fb5b28fb70619a3384656f6371c85d404b7067f40e1d0bd6399f1457629885"
+      }
+    ]
+  },
+  "tools": {
+    "java": "Zulu 21.0.11",
+    "maven": "3.9.16",
+    "docker": "29.8.0",
+    "images": {
+      "postgres:16-alpine": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+      "rabbitmq:3.13-alpine": "sha256:d7af1c87c5f1eda13fcfca06db452bf3aeab6619fc3358b68535c0c02c4e52bc"
+    }
+  },
+  "commands": [
+    {
+      "command": "mvn -q -pl backend/billing-service -am -Poutpatient-publication-acceptance verify",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -pl backend/clinical-service,backend/lab-service -am test",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -pl backend/notification-service -am test",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -pl backend/gateway -am test",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -pl backend/eureka-server,backend/core-service,backend/gateway,backend/billing-service,backend/clinical-service,backend/lab-service -am -DskipTests package",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -f backend/clinical-service/pom.xml \"-Ppackaged-acceptance,process-recovery\" \"-Dit.test=ClinicalExamPackagedAcceptanceIT,ConsumerProcessRecoveryIT\" test-compile failsafe:integration-test failsafe:verify",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -f backend/lab-service/pom.xml -Pprocess-recovery -Dit.test=ConsumerProcessRecoveryIT test-compile failsafe:integration-test failsafe:verify",
+      "exitCode": 0
+    },
+    {
+      "command": "mvn -q -f backend/lab-service/pom.xml -Ppackaged-slice -Dlab.acceptance.core.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\core-service\\target\\core-service-0.0.1-SNAPSHOT.jar -Dlab.acceptance.gateway.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\gateway\\target\\gateway-0.0.1-SNAPSHOT.jar -Dlab.acceptance.eureka.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\eureka-server\\target\\eureka-server-0.0.1-SNAPSHOT.jar -Dlab.acceptance.clinical.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\clinical-service\\target\\clinical-service-0.0.1-SNAPSHOT.jar -Dlab.acceptance.lab.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\lab-service\\target\\lab-service-0.0.1-SNAPSHOT.jar -Dlab.acceptance.billing.jar=C:\\Users\\VIP\\.codex\\worktrees\\vinh-loc-billing-closeout\\Source\\backend\\billing-service\\target\\billing-service-0.0.1-SNAPSHOT.jar failsafe:integration-test failsafe:verify",
+      "exitCode": 0
+    }
+  ],
+  "surefire": [
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionChargeCloseConfigurationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionChargeCloseDecoderTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionChargeClosePostgresTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionChargeCloseRabbitIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionDepositAllocationConfigurationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionDepositAllocationPostgresTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionDepositRequestConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionReconciliationConfigurationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionReconciliationPostgresTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionSettlementConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionSettlementPreviewConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.AdmissionSettlementPreviewPostgresTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.AdmissionSettlementProducerFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.DischargeMedicallyApprovedEventFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.FinalRecognitionCashProducerFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.LedgerProducerFixtureTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.PrescriptionFinanceProducerFixtureTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.event.SurgeryEventFixtureTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.mapper.FeeDtoMapperTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.mapper.InvoiceDtoMapperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.mapper.RevenueMapperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionChargeCloseServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionDepositAllocationServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionDepositRequestServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionReconciliationServiceTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionSettlementPreviewServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.AdmissionSettlementServiceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.BillingApplicationServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.ExamChargePlannedRequestServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.FeeAccrualServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.FinalAdmissionSettlementServiceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.FinancialClearanceLookupServiceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.LabTestPlannedRequestServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.LedgerPaymentServiceTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.LedgerRefundServiceTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.PaymentRequestDiscoveryServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.PrescriptionChargeServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.PrescriptionTerminalServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.SagaCompensationServiceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.application.service.SurgeryChargeServiceTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.ArchitectureTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.BillingMergedMigrationPostgresTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.AdmissionDepositAllocationTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.AdmissionFinalizationPlanTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.AdmissionLedgerSnapshotTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.BillingAccountTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.ChargeTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.DepositRefundBudgetTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.FeeTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.FinancialClearanceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.InsuranceAdjustmentTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.InvoiceTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.PaymentAllocationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.PaymentRequestTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.PaymentTransactionTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.domain.model.SettlementTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.ExamChargeConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.ExamChargeRabbitIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.FinalAdmissionSettlementConfigurationTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.FinalAdmissionSettlementPostgresTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.config.RabbitConfigTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.config.SecurityConfigTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.AdmissionDepositRequestDecoderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingEventPublisherAdapterTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDeliveryPostgresTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxDispatcherTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.BillingOutboxMaintenanceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.ExamChargeDecoderTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.messaging.LabTestChargeDecoderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.FeePersistenceAdapterTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.InvoicePersistenceAdapterTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.LabTestTypeProjectionAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.pricing.CareFinancePriceCatalogAdapterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.pricing.PriceListAdapterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.infrastructure.security.JwtAuthFilterTest",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.LabTestChargeConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.LabTestChargeRabbitIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.LedgerPaymentIntegrationTest",
+      "tests": 62,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.LedgerRefundConfigurationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.LedgerRefundMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.BillingEventConsumerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.BillingEventContractFixtureTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.BillingMergedDispatcherTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.ExamChargeConsumerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.SurgeryCancellationDispatchTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.messaging.consumer.SurgerySingleWriterDispatchTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.OutpatientPublicationDispatcherResilienceRabbitIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.OutpatientPublicationMigrationPostgresTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.OutpatientPublicationPostgresTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.OutpatientPublicationRabbitIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PaymentRequestDiscoveryPostgresTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PrescriptionChargeConfigurationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PrescriptionChargeContractTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PrescriptionChargeDispatcherTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PrescriptionChargeRabbitIntegrationTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.PrescriptionTerminalContractTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCancellationConfigurationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCancellationContractTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCancellationMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCancellationRabbitIntegrationTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryChargeConfigurationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryChargeContractTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryChargeRabbitIntegrationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCompletionConfigurationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCompletionDecoderTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCompletionPostgresTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCompletionProofServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryCompletionRabbitIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.SurgeryRequestedTimeMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.AdmissionDepositAllocationControllerTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.AdmissionReconciliationControllerTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.AdmissionSettlementPreviewControllerTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.BillingOutboxAdminControllerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.FinalAdmissionSettlementControllerTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.FinancialClearanceLookupControllerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.GlobalExceptionHandlerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.InvoiceControllerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.PaymentRequestDiscoveryControllerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.PrescriptionAdjustmentControllerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "billing-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.billing.web.RevenueControllerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.ClinicalContractTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ClinicalApplicationServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ClinicalCareFinanceApplicationServiceTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ClinicalIntegrationServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ClinicalIntegrationTransactionTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ClinicalLabOrderApplicationServiceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.application.service.ExternalResultApplicationServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.architecture.ClinicalArchitectureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.domain.model.AppointmentTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.domain.model.CareFinanceV2ContractDomainTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.domain.model.CareFinanceV2DomainTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.domain.model.MedicalRecordTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.client.AuthorizationForwardingInterceptorTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.client.PatientLookupAdapterTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.client.PatientLookupResponseContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.client.StaffExistsResponseContractTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.client.StaffLookupAdapterTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.ClinicalApplicationModeConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.ClinicalCareFinanceFeatureGateTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.ClinicalOutboxSchedulingConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.JwtSecretConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.OpenApiConfigTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.OpenFeignConfigurationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.OperationalMetadataConfigTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.config.SecurityConfigTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.correlation.CorrelationIdFilterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalAdmissionRequestedContractFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalAppointmentStatusChangedContractFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalDurableAppointmentPublisherTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalEventPublisherAdapterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalMedicalRecordCompletedContractFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalMedicalRecordCreatedContractFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalOutboxDispatcherTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ClinicalOutboxRabbitIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalCareFinancePersistenceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalOutboxJpaRepositoryQueryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalOutboxPersistenceAdapterTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.ClinicalPersistenceAdapterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.ConsumerInboxPostgresTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.PrescriptionAttachmentV1PostgresTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.persistence.PrescriptionContextPostgresTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.infrastructure.security.JwtAuthFilterTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.ClinicalFinancialClearanceQueueConsumerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.ClinicalQueueConsumerTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.FinancialClearanceConsumerContractTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.inbox.InboxEvidenceFactoryTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.LabResultCreatedConsumerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.messaging.consumer.PrescriptionFilledConsumerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.AppointmentControllerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.ClinicalAdmissionReferralControllerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.ClinicalCareFinanceControllerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.ClinicalLabOrderContextContractFixtureTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.ClinicalLabOrderContextControllerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.ClinicalLabOrderControllerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.GlobalExceptionHandlerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.MedicalRecordControllerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.clinical.web.PrescriptionContextControllerTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.dto.LabDtoValidationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.event.LabCareFinanceV2ContractFixtureTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.event.LabEventJsonContractTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.mapper.LabTestDtoMapperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.service.LabApplicationServiceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.service.LabCareFinanceV2ApplicationServiceTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.service.LabIntegrationServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.application.service.LabRequestCreationApplicationServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.domain.model.LabCareFinanceV2DomainTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.domain.model.LabTestTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.client.LabClinicalOrderContextAdapterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.JwtSecretConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.LabClinicalOrderContextConfigurationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.LabOutpatientMvpModeConfigurationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.OpenApiConfigTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.OperationalMetadataConfigTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.RabbitConfigTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.config.SecurityConfigTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.correlation.CorrelationIdFilterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.messaging.LabEventPublisherAdapterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.messaging.LabListenerRabbitIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxDispatcherTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.messaging.LabOutboxRabbitIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.persistence.ConsumerInboxPostgresTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.persistence.LabPersistenceAdapterTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.security.AuthenticatedStaffContextAdapterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.infrastructure.security.JwtAuthFilterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.messaging.consumer.FinancialClearanceConsumerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.messaging.consumer.inbox.InboxEvidenceFactoryTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.messaging.consumer.LabQueueConsumerTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.messaging.consumer.MedicalRecordCreatedConsumerTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.messaging.consumer.PaymentCompletedConsumerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.web.GlobalExceptionHandlerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.lab.web.LabControllerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.application.mapper.NotificationDtoMapperTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.application.service.CareProjectionServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.application.service.NotificationApplicationServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.CareProjectionPostgresIntegrationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.CareReceiptIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.domain.model.NotificationTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.channel.NotificationSendersTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.config.NotificationListenerRetryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.config.NotificationModuleWiringTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.config.SecurityConfigTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.messaging.NotificationEventPublisherAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.persistence.adapter.NotificationPersistenceAdapterTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.infrastructure.security.JwtAuthFilterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.messaging.consumer.CarePaymentReceiptWireHandlerTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.messaging.consumer.CareProjectionWireHandlerTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerCareProjectionRoutingTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.PrescriptionNoticeConfigurationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.PrescriptionNoticeContractTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.PrescriptionNoticeRabbitIntegrationTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.RefundNoticeConfigurationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.RefundNoticeContractTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.SurgeryNoticeConfigurationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.SurgeryNoticeContractTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.SurgeryNoticeRabbitIntegrationTest",
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.SurgeryPaymentNoticeConfigurationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.SurgeryPaymentNoticeContractTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.web.GlobalExceptionHandlerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notification-service",
+      "kind": "Surefire",
+      "name": "com.mediflow.notification.web.NotificationControllerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.auth.AuthControllerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.auth.AuthValidationWebTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.auth.OrganizationAuthClientTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.BillingDiscoveryGatewayWebTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.CareRouteAuthorizationTest",
+      "tests": 274,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.ClinicalLabOrderGatewayWebTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.GatewayDownstreamResponseWebTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.GatewayOutpatientMvpRouteTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.GatewayRouteDefinitionTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.GatewayWebTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.RouteRoleContractTest",
+      "tests": 1098,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.security.JwtTokenServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "gateway",
+      "kind": "Surefire",
+      "name": "com.mediflow.gateway.SurgeryGatewayWebTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "failsafe": [
+    {
+      "module": "billing-service",
+      "kind": "Failsafe",
+      "name": "com.mediflow.billing.OutpatientPublicationProcessRecoveryIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Failsafe",
+      "name": "com.mediflow.acceptance.ClinicalExamPackagedAcceptanceIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "clinical-service",
+      "kind": "Failsafe",
+      "name": "com.mediflow.clinical.infrastructure.messaging.ConsumerProcessRecoveryIT",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Failsafe",
+      "name": "com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "lab-service",
+      "kind": "Failsafe",
+      "name": "com.mediflow.lab.infrastructure.messaging.ConsumerProcessRecoveryIT",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "isolatedFlags": {
+    "billing-service": [
+      "mediflow.billing.exam-charge-consumer.enabled=true",
+      "mediflow.billing.lab-test-charge-consumer.enabled=true",
+      "mediflow.billing.ledger.enabled=true",
+      "mediflow.billing.outbox.enabled=false",
+      "mediflow.billing.outbox.enabled=true",
+      "mediflow.billing.outbox.maintenance-enabled=false",
+      "mediflow.billing.outbox.metrics-enabled=false",
+      "mediflow.billing.outpatient-publication.acceptance-reference=L3-ACCEPTANCE-RUN",
+      "mediflow.billing.outpatient-publication.enabled=false",
+      "mediflow.billing.outpatient-publication.enabled=true",
+      "mediflow.billing.outpatient-publication.purposes=EXAM,LAB_TEST,PRESCRIPTION",
+      "mediflow.billing.payment-request-discovery.enabled=true",
+      "mediflow.billing.prescription-charge-consumer.enabled=true",
+      "mediflow.billing.prescription-charges.allowed-price-codes=RX-DEFAULT",
+      "mediflow.features.outpatient-mvp.enabled=true"
+    ],
+    "lab-service": [
+      "mediflow.billing.exam-charge-consumer.enabled=true",
+      "mediflow.billing.lab-test-charge-consumer.enabled=true",
+      "mediflow.billing.ledger.enabled=true",
+      "mediflow.billing.outpatient-publication.acceptance-reference=V-CLOSE-03-isolated-EXAM-LAB",
+      "mediflow.billing.outpatient-publication.enabled=true",
+      "mediflow.billing.outpatient-publication.purposes=EXAM,LAB_TEST",
+      "mediflow.billing.payment-request-discovery.enabled=true",
+      "mediflow.features.care-finance-v2.enabled=true",
+      "mediflow.features.outpatient-mvp.enabled=true",
+      "mediflow.lab.clinical-context.enabled=true"
+    ]
+  },
+  "catalog": {
+    "currency": "VND",
+    "OUTPATIENT_EXAM": "100000.00",
+    "LAB-CBC": "150000.00",
+    "prescription": "RX-DEFAULT; original producer fixture amounts/quantities retained"
+  },
+  "producerFixtures": [
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/invoice.created.json",
+      "sha256": "053ddbda0ad350d91a662ee46697ddc8cc66c4160ae00d0e5eca397650c6b15e"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment.completed-multiple-lab-fees.json",
+      "sha256": "db8d51f707dd62d053b2d9d627241285889a3aee5b58732249b90536bc9f7141"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment.completed-no-lab-fees.json",
+      "sha256": "2f5619b53fa7693a22d263307a9b6a68a366c6c78bd9cec9ad3dc900e00148fa"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment.completed.json",
+      "sha256": "3132f56509c8568a347dc174b60791d9555a424e69977c6cb73800f90d2e1944"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/prescription.cancelled.json",
+      "sha256": "fabf563dc0d6ee16793f6db507fba26cca115715e5cff797b4ce8047f9b4d73b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/prescription.created.json",
+      "sha256": "909a687e8a8503e90d1f1f8239bf2cf5f311503652714a2fbaf0858883a5ee95"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/prescription.dispense.failed.json",
+      "sha256": "9ba9e5dff460e0961e54af5e48cca435be90d1246e4b05c59f7105a01608e081"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/prescription.expired.json",
+      "sha256": "97850d58d8c9b77d6489dcd6e4b3a13d1bf714fae5bee5eff85f236c1cdde7ed"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/prescription.filled.json",
+      "sha256": "c272792eea26de26bc2dffd651a907be376f28d398cb70a5868858a47f529e45"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/admission-deposit-v1/admission.deposit.requested.v1.json",
+      "sha256": "7a50d8cd030b184609f08d87ed688a5e625e149e0776afbbd22fd3cc45f7c434"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/appointment-status-changed-v1/appointment.status.changed.v1.json",
+      "sha256": "34be41cd12bd6fe38e18c89f0828097350405d077f05fa853e828f50578715e7"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/clearance-authority-v1/active.json",
+      "sha256": "d42f3b808825e35f6c29a08b2bc4270a72ab32fb593ceca9d09d970ff708f79e"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/clearance-authority-v1/inactive.json",
+      "sha256": "7962ac6d8434570ff04e845dbe24af5d0b5bf7e86c0c8be27ec17ab687993d69"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/clearance-authority-v1/missing.json",
+      "sha256": "267b8021922166277d84a5faa203e93f913e9bcce42f2c1f6f58ff0d4276d95b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/discharge-approval-v1/discharge.medically.approved.v1.json",
+      "sha256": "2e8f51ee1f548fe78dacbdb85fa850cc25894b4db40dbcaf16305639e588f935"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/lab-request-v1/lab.request.created.v1.json",
+      "sha256": "9fa2a3b83968b802e564e3bd9f8a87f797af62e36bdfa31b8d7afe7a5586a226"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-admission.json",
+      "sha256": "959b15699e55b617b4aa26ff2766427bd4a26872027266a916532d5335dbe805"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-exam.json",
+      "sha256": "fa42dea39da198b27fe6e8a9a90381be3feb8953d07b4101666a5356f864ab75"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-lab.json",
+      "sha256": "e7cef7a8e089950a4cb34e4ca5b244b4c332c147bea35cf8e82135af4730fd51"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-prescription-issued.json",
+      "sha256": "a7292ef5800c7b260bf8b99053a43083dacbb836889f95a59465def18391f168"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-prescription.json",
+      "sha256": "79f0906d27db0bdc3b6e552214f54957562f198910212bf835d5196750080fda"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/clearance-surgery.json",
+      "sha256": "3879a3fb43daab01cda383c9838b4035315e77e20a4d83146390342c1c28cf18"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/deposit-allocated.json",
+      "sha256": "04dda8628bfa45c963e59cfbe2e37a88f4c625633b25679630d3e1d66045c3c0"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-prescription.json",
+      "sha256": "e75ddb48019b05c6241415fbcdf9928ff870401339a085a5294a9e4d76b6ddec"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-admission.json",
+      "sha256": "0742083dda73360eea8034c69d0056bd4423f1d1e79eac3f0c9715dfc31dd414"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/invoice-surgery-outpatient.json",
+      "sha256": "42000e8a01aa4d4961749a7e89b7683fa14336f384a720df6a61f96316b0f4f0"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-deposit.json",
+      "sha256": "afb2b0e640db9c95fb82cf856bcc72802bd2a0cdf128c3735c9c6279c4e1e550"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-final-recognition-deposit.json",
+      "sha256": "25fa7d9a0f82cec58b7115d504d5d16bebe250ce445932827d8eb1ca0364bf2d"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-prescription-first.json",
+      "sha256": "765d60ae197f41cd5c87c5fb7e3c698e708e58826b7847e36f3287def41e0d69"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-prescription-last.json",
+      "sha256": "84e4fe7f77a620831e3f955c0c86208e6effa0d96f3d8a2450fc17ba5b45ba5b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-service.json",
+      "sha256": "000ed3cf78df31a63793e1fb2be542ff11995a97051febfcffaaa3db0bb65a7e"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-deposit.json",
+      "sha256": "eac2fdadbf31165530813523f899e8698f42d8ace698a878e4481f1ac7a54664"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-final-recognition-deposit.json",
+      "sha256": "2c15ab7f30dd5e6524b51267a5d286e20d463199cb409c61971377fef808f9f2"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-first.json",
+      "sha256": "4e193bcef7302f2855b914cb7a9f4cc4aaf974027a1f9082df9e2769cb4ca5c9"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-last.json",
+      "sha256": "53d838a49d4fbcfbd42888d98282e05526d6028bf1c95159f86adf73b5636184"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-prescription-remainder.json",
+      "sha256": "6ca36ee25f36d2e89510cec2b9386c11452d7f7262bcf911f2cba6d72133d4c4"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/refund-service.json",
+      "sha256": "3e7cb5c777b819b92d8ba2811be2f7cf3ade95b8935d17c6aa174a90aed4a683"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-completed.json",
+      "sha256": "1f9663b6c3eafc936268df6249e8452a46f0e01653f45fd1a661dfbf9a8f53f4"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-recognition-completed.json",
+      "sha256": "6a9cff3012df9a7a06ae855f268540d76721a2df618f51dbed68ec7dcc21972b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-1.json",
+      "sha256": "9789975460ec41253b5db1117e1f0025351df13ab44bc2c89018b940669cd366"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-2.json",
+      "sha256": "7d3730eb765bad3ac5e4bc5c55adaf3e6a1410eba8178ef20bf17dbfd263a1ad"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-3.json",
+      "sha256": "abfafdf2d31403282fd5fecd02aef1ed8771e8e26286fe180dc3b84665be46db"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/settlement-reconciled-4.json",
+      "sha256": "64becd4f16849f318168ac427b60a1a37550e921607711f4de76682f68bc517b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/exam.json",
+      "sha256": "33dd3877beec24c0f7d61a2c88aad1b69c7b36140a3ee24202fdfb36ea1014ed"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/lab.json",
+      "sha256": "f27377409de724270f14ca631e274e67286b439c3b5fc2154580d7a1f95c9e4a"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/not-found.json",
+      "sha256": "60dba095e89362fb1b7763e6f63d0cdd94821872f3ed0a89b71c487d9df8d306"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/payment-request-discovery-v1/prescription.json",
+      "sha256": "4837e7e8d6dd93e13b80bf0c7a7c2eac6c67c8f48733636fbecf1087abb7733e"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.cancelled.admission.v1.json",
+      "sha256": "b4dd05afda076117fa933d060b7b17aa3c77eff338b0c0a2a027584196ad6906"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.cancelled.outpatient.v1.json",
+      "sha256": "97b6317cd4e167457bbe19d3248fb66006f7e5046e41724d72f9220c558978fe"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.case.created.admission.v1.json",
+      "sha256": "bad89c1bbb3ec4d08f681dc0b2b798f2d37ee311a2c65603bdca3351df088b40"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.case.created.outpatient.v1.json",
+      "sha256": "ed4e6c795e42cd3fcb62a40b920fecea6432fc5abbfd3e92186268631afec66e"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.planned-difference.v1.json",
+      "sha256": "3216f9797a7d91657ec4a6f94814251cea15ff79fbbf424a35844df4b2032b30"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.unknown-price.v1.json",
+      "sha256": "1e3d00ce61374473a061e08a17203da66b23b4ce868ad70725e2cace57833260"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.admission.v1.json",
+      "sha256": "20dca767c48ffbf2e0695e71b592c5605c3ee2f60da382d2699a5d3664bfe92d"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.outpatient.planned-difference.v1.json",
+      "sha256": "d792f641e9ec099ddd75ac93ebe513104f186123e18be3219ebf8b695ec8bde1"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.outpatient.unknown-price.v1.json",
+      "sha256": "b283278aa9d271202b1424138e52ec87bc72681e8ffd33b92b9d91f02680a074"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.completed.outpatient.v1.json",
+      "sha256": "41b5e2b2d16600dfbc53d268bcfb4d0f6545d1b0ae7be4093a822b4b9ba34ff1"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.readiness.invalidated.admission.v1.json",
+      "sha256": "dcd650f26780bc9e7f2dfac1f75827d253b3963be278b963f7bb328a075c499b"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.readiness.invalidated.outpatient.v1.json",
+      "sha256": "896dfcc77d537f6769288dccc55a68d7fad29e2289cda39117e85c81d7e0e517"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.ready.admission.v1.json",
+      "sha256": "e21e1a21ca36873ec3042053ef9be4f4e84ae482f716a4e2f53258d1eebad81d"
+    },
+    {
+      "path": "backend/billing-service/src/test/resources/contracts/surgery-outcomes-v1/surgery.ready.outpatient.v1.json",
+      "sha256": "857e47d25b79d390b8d4b4821505530a31cd2e26500f0ccc523053be15ee42d0"
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.created.outpatient.v1.json",
+      "sha256": "3083b5d244d147dd50025fa608243ed11de52fa76f6b007170aa4cb0363898ed"
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/resources/contracts/care-finance-v1/prescription.filled.outpatient.v1.json",
+      "sha256": "b0db35a17d80b1cbdb30d0de7b7549592bc960c67365363634e1f2c1366981a6"
+    }
+  ],
+  "identitiesByFile": {
+    "billing/deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker/outbox-progress-89029def-5c90-4524-aff2-9d0cb6339d60.json": {
+      "event_id": [
+        "42580209-f8c4-44e2-85d6-4f73c34b2f42",
+        "c0d66b44-5059-4ea6-8f33-9c03f3b84c3a"
+      ]
+    },
+    "billing/deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker/payment-ddbd95b2-9e6e-460b-8cd8-b687667c754d.json": {
+      "transactionId": [
+        "b4aee49d-b68e-4ed6-a87a-7f2e913cc61a"
+      ],
+      "accountId": [
+        "3bddde9a-8da1-4f38-a826-47ec9273c0e8"
+      ],
+      "paymentRequestId": [
+        "dd4e6643-f2e4-4e29-9cf8-0be35550617d"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "9b0f06f5-e00f-455d-baa1-5192cdc34094"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/broker-29c19045-e1a4-458f-a6f0-6607c79e068a.json": {
+      "eventId": [
+        "63ab8b91-8fd1-44c1-8d22-ef76c3548e3f"
+      ],
+      "correlationId": [
+        "24b67c80-83d7-48e2-a771-52221578ea10"
+      ],
+      "transactionId": [
+        "b9df9eea-1e0f-462f-b887-dbac62e0c1cc"
+      ],
+      "invoiceId": [
+        "0b12c702-c414-4e3e-b729-5ae2387b525b"
+      ],
+      "paymentRequestId": [
+        "afec3719-f651-4f9e-a8b1-becfda583687"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/broker-e53f0d50-03ac-4968-96f0-fdab6b7d4228.json": {
+      "eventId": [
+        "4be53a91-8663-437c-b817-4e381ad1d5e9"
+      ],
+      "correlationId": [
+        "24b67c80-83d7-48e2-a771-52221578ea10"
+      ],
+      "clearanceId": [
+        "d770352a-a1a9-4805-a7c6-18d8abcb7a76"
+      ],
+      "invoiceId": [
+        "0b12c702-c414-4e3e-b729-5ae2387b525b"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/discovery-4d0babc0-c8ad-45b8-a1af-5a695ddba493.json": {
+      "paymentRequestId": [
+        "afec3719-f651-4f9e-a8b1-becfda583687"
+      ],
+      "invoiceId": [
+        "0b12c702-c414-4e3e-b729-5ae2387b525b"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "sourceId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "c0f0e336-06bd-46b7-8502-6f7e8e48c2b3"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/outbox-progress-fb4e0f12-9f90-4757-b47c-a6c461275ae1.json": {
+      "event_id": [
+        "4be53a91-8663-437c-b817-4e381ad1d5e9",
+        "63ab8b91-8fd1-44c1-8d22-ef76c3548e3f"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/payment-49c135f4-b32a-4ac4-9c81-563a8c93532e.json": {
+      "transactionId": [
+        "b9df9eea-1e0f-462f-b887-dbac62e0c1cc"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "paymentRequestId": [
+        "afec3719-f651-4f9e-a8b1-becfda583687"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "24b67c80-83d7-48e2-a771-52221578ea10"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/payment-89a52510-cd7d-4058-b4ca-5b68510c5e5d.json": {
+      "transactionId": [
+        "b9df9eea-1e0f-462f-b887-dbac62e0c1cc"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "paymentRequestId": [
+        "afec3719-f651-4f9e-a8b1-becfda583687"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "35694194-ccda-4f80-a876-4478c02e1dcb"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/stored-4be53a91-8663-437c-b817-4e381ad1d5e9-a346ef9d-26a2-4a45-b040-87b16505c6f9.json": {
+      "eventId": [
+        "4be53a91-8663-437c-b817-4e381ad1d5e9"
+      ],
+      "correlationId": [
+        "24b67c80-83d7-48e2-a771-52221578ea10"
+      ],
+      "clearanceId": [
+        "d770352a-a1a9-4805-a7c6-18d8abcb7a76"
+      ],
+      "invoiceId": [
+        "0b12c702-c414-4e3e-b729-5ae2387b525b"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/stored-63ab8b91-8fd1-44c1-8d22-ef76c3548e3f-7e89bf83-255e-4d88-b82e-78802f3dee96.json": {
+      "eventId": [
+        "63ab8b91-8fd1-44c1-8d22-ef76c3548e3f"
+      ],
+      "correlationId": [
+        "24b67c80-83d7-48e2-a771-52221578ea10"
+      ],
+      "transactionId": [
+        "b9df9eea-1e0f-462f-b887-dbac62e0c1cc"
+      ],
+      "invoiceId": [
+        "0b12c702-c414-4e3e-b729-5ae2387b525b"
+      ],
+      "paymentRequestId": [
+        "afec3719-f651-4f9e-a8b1-becfda583687"
+      ],
+      "accountId": [
+        "a0d6838d-60c8-4e24-97e7-f00f3ebb3797"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-490eb144-ba15-45f3-91f2-f919fee85fec.json": {
+      "eventId": [
+        "ceb94b1e-b820-4e9b-b722-059810530ba6"
+      ],
+      "correlationId": [
+        "d9fc8d16-a18c-437f-95f3-51c668c95c02"
+      ],
+      "transactionId": [
+        "943f552e-d5cb-4abc-9cc8-08b912347871"
+      ],
+      "invoiceId": [
+        "be6e16c8-e955-46c8-b33b-6a470f94d4bb"
+      ],
+      "paymentRequestId": [
+        "250f3b9d-ea70-4da1-9e7d-7a49597d28eb"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-f1896cff-6dfd-416c-972c-2244fb36b066.json": {
+      "eventId": [
+        "16295fcf-5d70-4e59-a7e0-1af3d97a064e"
+      ],
+      "correlationId": [
+        "d9fc8d16-a18c-437f-95f3-51c668c95c02"
+      ],
+      "clearanceId": [
+        "48edccf6-192c-4d96-b6d7-373ee4f72d10"
+      ],
+      "invoiceId": [
+        "be6e16c8-e955-46c8-b33b-6a470f94d4bb"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/discovery-d064c83f-c160-42c8-acee-cbfa30a77c8c.json": {
+      "paymentRequestId": [
+        "250f3b9d-ea70-4da1-9e7d-7a49597d28eb"
+      ],
+      "invoiceId": [
+        "be6e16c8-e955-46c8-b33b-6a470f94d4bb"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "sourceId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "4cf591c2-977d-405d-a4e7-7273d44469c2"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/outbox-progress-b8c45d12-0fc2-4f69-948c-8f2e6ee8947c.json": {
+      "event_id": [
+        "16295fcf-5d70-4e59-a7e0-1af3d97a064e",
+        "ceb94b1e-b820-4e9b-b722-059810530ba6"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/payment-ad997a3a-667c-4ddb-bd8a-2df25ee9130d.json": {
+      "transactionId": [
+        "943f552e-d5cb-4abc-9cc8-08b912347871"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "paymentRequestId": [
+        "250f3b9d-ea70-4da1-9e7d-7a49597d28eb"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "d9fc8d16-a18c-437f-95f3-51c668c95c02"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-16295fcf-5d70-4e59-a7e0-1af3d97a064e-58d5d385-ea3a-4284-a38a-59119d343bc4.json": {
+      "eventId": [
+        "16295fcf-5d70-4e59-a7e0-1af3d97a064e"
+      ],
+      "correlationId": [
+        "d9fc8d16-a18c-437f-95f3-51c668c95c02"
+      ],
+      "clearanceId": [
+        "48edccf6-192c-4d96-b6d7-373ee4f72d10"
+      ],
+      "invoiceId": [
+        "be6e16c8-e955-46c8-b33b-6a470f94d4bb"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "appointmentId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-ceb94b1e-b820-4e9b-b722-059810530ba6-80404edf-a922-4ca8-b600-d08eed955637.json": {
+      "eventId": [
+        "ceb94b1e-b820-4e9b-b722-059810530ba6"
+      ],
+      "correlationId": [
+        "d9fc8d16-a18c-437f-95f3-51c668c95c02"
+      ],
+      "transactionId": [
+        "943f552e-d5cb-4abc-9cc8-08b912347871"
+      ],
+      "invoiceId": [
+        "be6e16c8-e955-46c8-b33b-6a470f94d4bb"
+      ],
+      "paymentRequestId": [
+        "250f3b9d-ea70-4da1-9e7d-7a49597d28eb"
+      ],
+      "accountId": [
+        "4c6e63e1-d38f-4162-b8fb-3092d3d207d2"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-e33b216f-9bb1-4c59-8cdc-6ad0d7b943db.json": {
+      "eventId": [
+        "88e5c45d-a071-48b6-9366-8e0383d4726f"
+      ],
+      "correlationId": [
+        "4d3b4fec-0720-45a9-83d4-bdd4142749ce"
+      ],
+      "transactionId": [
+        "c1b5c1d8-014d-411a-b538-da4414c88c1e"
+      ],
+      "invoiceId": [
+        "fbe0273f-9510-4edd-a58b-522365230ccd"
+      ],
+      "paymentRequestId": [
+        "8f2617fa-bd2a-444d-be63-e37855b86bb6"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-fff28f87-2559-4fb9-9b3d-2847e5586273.json": {
+      "eventId": [
+        "dcb712cc-e657-4cf0-8cae-3661eca9afdc"
+      ],
+      "correlationId": [
+        "4d3b4fec-0720-45a9-83d4-bdd4142749ce"
+      ],
+      "clearanceId": [
+        "9f02d506-1c16-4026-8fbc-140cfe9b9034"
+      ],
+      "invoiceId": [
+        "fbe0273f-9510-4edd-a58b-522365230ccd"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "recordId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/discovery-13e2e25e-0501-4975-84ac-3b4b7278f25e.json": {
+      "paymentRequestId": [
+        "8f2617fa-bd2a-444d-be63-e37855b86bb6"
+      ],
+      "invoiceId": [
+        "fbe0273f-9510-4edd-a58b-522365230ccd"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "sourceId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "recordId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "2d15af1f-c58d-481d-94aa-165d976def5e"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/outbox-progress-f5e278a7-9168-428a-8c0a-c89203a409fb.json": {
+      "event_id": [
+        "88e5c45d-a071-48b6-9366-8e0383d4726f",
+        "dcb712cc-e657-4cf0-8cae-3661eca9afdc"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/payment-a52f478a-4fc6-4f31-a420-cd0f5d4debda.json": {
+      "transactionId": [
+        "c1b5c1d8-014d-411a-b538-da4414c88c1e"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "paymentRequestId": [
+        "8f2617fa-bd2a-444d-be63-e37855b86bb6"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "4d3b4fec-0720-45a9-83d4-bdd4142749ce"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-88e5c45d-a071-48b6-9366-8e0383d4726f-4c0a016a-4422-4c14-8d92-774a92932cb7.json": {
+      "eventId": [
+        "88e5c45d-a071-48b6-9366-8e0383d4726f"
+      ],
+      "correlationId": [
+        "4d3b4fec-0720-45a9-83d4-bdd4142749ce"
+      ],
+      "transactionId": [
+        "c1b5c1d8-014d-411a-b538-da4414c88c1e"
+      ],
+      "invoiceId": [
+        "fbe0273f-9510-4edd-a58b-522365230ccd"
+      ],
+      "paymentRequestId": [
+        "8f2617fa-bd2a-444d-be63-e37855b86bb6"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-dcb712cc-e657-4cf0-8cae-3661eca9afdc-e080a30e-b8c8-430e-9d95-3e7c4030782a.json": {
+      "eventId": [
+        "dcb712cc-e657-4cf0-8cae-3661eca9afdc"
+      ],
+      "correlationId": [
+        "4d3b4fec-0720-45a9-83d4-bdd4142749ce"
+      ],
+      "clearanceId": [
+        "9f02d506-1c16-4026-8fbc-140cfe9b9034"
+      ],
+      "invoiceId": [
+        "fbe0273f-9510-4edd-a58b-522365230ccd"
+      ],
+      "accountId": [
+        "121f43fc-d19a-44c2-9c9f-70ca1f9f5ab7"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "recordId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-29035bdd-eab4-4171-807a-b22ffef92bf4.json": {
+      "eventId": [
+        "1041e991-12f8-4e45-8e7f-e462dbfa544e"
+      ],
+      "correlationId": [
+        "8ee2e65f-2cd3-43c0-b796-84a002c26e8e"
+      ],
+      "clearanceId": [
+        "405a3d57-e01a-40f1-a162-08cf8c5e29bc"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-3b3f618c-aac5-46fb-83fa-4801cded3411.json": {
+      "eventId": [
+        "0783119b-c849-42a9-b8da-f382e45c2ca9"
+      ],
+      "correlationId": [
+        "pharmacy-v1-outpatient"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-b9f18054-1862-406b-81b3-3ebe8f587791.json": {
+      "eventId": [
+        "691e7b2f-0159-40f3-a24d-6d9bdfe08a40"
+      ],
+      "correlationId": [
+        "8ee2e65f-2cd3-43c0-b796-84a002c26e8e"
+      ],
+      "transactionId": [
+        "079d28af-1c09-45d6-b921-9e8d49bba7e8"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/discovery-424089ed-7348-4fda-a17d-11e141674cf3.json": {
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "sourceId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "6f2c747c-81c2-4e87-8c15-90bae7895f75"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/discovery-aade3538-1008-4d34-8287-df0ebbb06720.json": {
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "sourceId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "f1f1b038-a9b5-49cb-b330-f72f5bbef17f"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/outbox-progress-c35cef49-8e24-4f7c-b295-407dafd1f578.json": {
+      "event_id": [
+        "0783119b-c849-42a9-b8da-f382e45c2ca9",
+        "1041e991-12f8-4e45-8e7f-e462dbfa544e",
+        "691e7b2f-0159-40f3-a24d-6d9bdfe08a40"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/payment-ad236487-5bc4-4ace-9c21-30f22c0fd819.json": {
+      "transactionId": [
+        "079d28af-1c09-45d6-b921-9e8d49bba7e8"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "8ee2e65f-2cd3-43c0-b796-84a002c26e8e"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/payment-e9f5432a-e4be-4da4-98f2-3a06a1a5e594.json": {
+      "transactionId": [
+        "079d28af-1c09-45d6-b921-9e8d49bba7e8"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "549f3d71-55d5-4078-b3f1-d2fbc62a4b23"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-0783119b-c849-42a9-b8da-f382e45c2ca9-3ed301d2-996e-4dad-84df-a7d66b610ebd.json": {
+      "eventId": [
+        "0783119b-c849-42a9-b8da-f382e45c2ca9"
+      ],
+      "correlationId": [
+        "pharmacy-v1-outpatient"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-1041e991-12f8-4e45-8e7f-e462dbfa544e-28d9b1cb-3aa2-4130-acde-ce7f4ef6ff22.json": {
+      "eventId": [
+        "1041e991-12f8-4e45-8e7f-e462dbfa544e"
+      ],
+      "correlationId": [
+        "8ee2e65f-2cd3-43c0-b796-84a002c26e8e"
+      ],
+      "clearanceId": [
+        "405a3d57-e01a-40f1-a162-08cf8c5e29bc"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-691e7b2f-0159-40f3-a24d-6d9bdfe08a40-68e69b71-fac7-47be-a1e2-ededd8bdb4df.json": {
+      "eventId": [
+        "691e7b2f-0159-40f3-a24d-6d9bdfe08a40"
+      ],
+      "correlationId": [
+        "8ee2e65f-2cd3-43c0-b796-84a002c26e8e"
+      ],
+      "transactionId": [
+        "079d28af-1c09-45d6-b921-9e8d49bba7e8"
+      ],
+      "invoiceId": [
+        "a1510a9f-af3f-4897-ad54-05d0285b2d13"
+      ],
+      "paymentRequestId": [
+        "ef1e82f9-9fe9-4189-bc13-d51556896d89"
+      ],
+      "accountId": [
+        "dc6bc384-a251-4365-9800-f6f55b8b9532"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/discovery-a4560d25-20aa-4c1d-88ad-f142321ed3c8.json": {
+      "paymentRequestId": [
+        "a66953e1-84bb-4223-aea3-a3c6a9d49a4a"
+      ],
+      "invoiceId": [
+        "0251868e-26a2-4be5-89e4-6b1ef9388466"
+      ],
+      "accountId": [
+        "90c7ff10-b43e-40f4-948f-e7ad750f8859"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "sourceId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "535db12e-335e-47a8-9cd0-ed83eb10e5f4"
+      ]
+    },
+    "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/outbox-progress-3d47a49f-aa38-4ce3-b262-a326f6ce96f0.json": {
+      "event_id": [
+        "1989a3fd-2422-4f67-9c41-bd54b1fc3b38",
+        "d01309bc-f9ce-49b0-a24f-d80a98aa31de",
+        "f39f18e1-6d53-4ec0-b75f-e1cbf63c2b03"
+      ]
+    },
+    "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/payment-c285dada-267b-42d8-973e-2b7082f16946.json": {
+      "transactionId": [
+        "e23891c6-9df9-4570-844b-d8035aba164b"
+      ],
+      "accountId": [
+        "90c7ff10-b43e-40f4-948f-e7ad750f8859"
+      ],
+      "paymentRequestId": [
+        "a66953e1-84bb-4223-aea3-a3c6a9d49a4a"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "fc2faebf-f660-401a-b387-24ab23b2305c"
+      ]
+    },
+    "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/payment-c95a2309-691f-4e32-b39e-c6f4190aaeb9.json": {
+      "transactionId": [
+        "e23891c6-9df9-4570-844b-d8035aba164b"
+      ],
+      "accountId": [
+        "90c7ff10-b43e-40f4-948f-e7ad750f8859"
+      ],
+      "paymentRequestId": [
+        "a66953e1-84bb-4223-aea3-a3c6a9d49a4a"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "523d4e2d-3c16-4436-91e0-a77b081c883f"
+      ]
+    },
+    "billing/partialPayment_receiptPublishedButNoGrantYet/broker-9a960c51-4b27-48fe-9910-25c7dd526338.json": {
+      "eventId": [
+        "70a8584e-c08f-4d2a-94ed-b286d4d8d84e"
+      ],
+      "correlationId": [
+        "80984682-13c0-40dc-8bb8-3818c44285a6"
+      ],
+      "transactionId": [
+        "f024ec34-e0b8-4847-9f5d-70bfae2c09cf"
+      ],
+      "invoiceId": [
+        "18e0d374-c457-475d-a74f-4500c39956ee"
+      ],
+      "paymentRequestId": [
+        "37da8b33-c033-44c7-b2fb-5b2a61ac7b2c"
+      ],
+      "accountId": [
+        "51afe223-04a6-480f-b718-dd63412f5059"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/partialPayment_receiptPublishedButNoGrantYet/discovery-8fc357b6-36d0-4f88-9583-c540e6c22243.json": {
+      "paymentRequestId": [
+        "37da8b33-c033-44c7-b2fb-5b2a61ac7b2c"
+      ],
+      "invoiceId": [
+        "18e0d374-c457-475d-a74f-4500c39956ee"
+      ],
+      "accountId": [
+        "51afe223-04a6-480f-b718-dd63412f5059"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "sourceId": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "recordId": [
+        "00000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "861b3e75-9e5b-42d9-9754-b6f8ebc2ae21"
+      ]
+    },
+    "billing/partialPayment_receiptPublishedButNoGrantYet/outbox-progress-84e6e3ec-0b20-4405-8647-ecad3665e098.json": {
+      "event_id": [
+        "70a8584e-c08f-4d2a-94ed-b286d4d8d84e"
+      ]
+    },
+    "billing/partialPayment_receiptPublishedButNoGrantYet/payment-a34bf2f3-fdb2-4938-9b2a-8b2da3d57569.json": {
+      "transactionId": [
+        "f024ec34-e0b8-4847-9f5d-70bfae2c09cf"
+      ],
+      "accountId": [
+        "51afe223-04a6-480f-b718-dd63412f5059"
+      ],
+      "paymentRequestId": [
+        "37da8b33-c033-44c7-b2fb-5b2a61ac7b2c"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "80984682-13c0-40dc-8bb8-3818c44285a6"
+      ]
+    },
+    "billing/partialPayment_receiptPublishedButNoGrantYet/stored-70a8584e-c08f-4d2a-94ed-b286d4d8d84e-eb853d35-b265-46e6-bf21-09aa71f4f6e1.json": {
+      "eventId": [
+        "70a8584e-c08f-4d2a-94ed-b286d4d8d84e"
+      ],
+      "correlationId": [
+        "80984682-13c0-40dc-8bb8-3818c44285a6"
+      ],
+      "transactionId": [
+        "f024ec34-e0b8-4847-9f5d-70bfae2c09cf"
+      ],
+      "invoiceId": [
+        "18e0d374-c457-475d-a74f-4500c39956ee"
+      ],
+      "paymentRequestId": [
+        "37da8b33-c033-44c7-b2fb-5b2a61ac7b2c"
+      ],
+      "accountId": [
+        "51afe223-04a6-480f-b718-dd63412f5059"
+      ],
+      "patientId": [
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "departmentId": [
+        "00000000-0000-4000-8000-000000000005"
+      ],
+      "careEpisodeId": [
+        "00000000-0000-4000-8000-000000000006"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-4beffb09-54a5-4fb2-b0ae-90170bc88000.json": {
+      "eventId": [
+        "3d608062-d176-4bf3-bd5e-9db4d4e3ba91"
+      ],
+      "correlationId": [
+        "0079630b-c27b-4dfc-b234-8b211c809ae0"
+      ],
+      "clearanceId": [
+        "0fd5a18f-be3f-4bed-b236-17c7c8b10a45"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-a7e2bb8f-21df-4bb7-ac81-5aec0fd5c08e.json": {
+      "eventId": [
+        "d8754b3c-1d5c-4025-ae6a-1d845de33f8b"
+      ],
+      "correlationId": [
+        "0079630b-c27b-4dfc-b234-8b211c809ae0"
+      ],
+      "transactionId": [
+        "2292cee5-fb63-4f93-8c7a-2e7a1bebc8b0"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-ad7fb284-d558-432a-b6e3-fc4ae3d8ada3.json": {
+      "eventId": [
+        "2824890d-abb1-4740-8e6f-4b007ae5a4ab"
+      ],
+      "correlationId": [
+        "pharmacy-v1-outpatient"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-d6a0aff6-247c-4f4c-8d8b-d06639c46d3f.json": {
+      "eventId": [
+        "a7ae31e6-4806-4cdb-858b-efe033cbfebf"
+      ],
+      "correlationId": [
+        "54fb6cfd-34d7-4480-9d7b-1b0956f81090"
+      ],
+      "transactionId": [
+        "3473ae7c-4e35-4cae-8d3f-a6c67fe448ef"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/discovery-cb5887d7-d74e-484b-8256-0e122a792838.json": {
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "sourceId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "44b7ec5a-2b87-48f7-9382-be5468e2501b"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/outbox-progress-77ede57a-95f4-47f1-96cb-b2eb360ad47a.json": {
+      "event_id": [
+        "2824890d-abb1-4740-8e6f-4b007ae5a4ab",
+        "3d608062-d176-4bf3-bd5e-9db4d4e3ba91",
+        "a7ae31e6-4806-4cdb-858b-efe033cbfebf",
+        "d8754b3c-1d5c-4025-ae6a-1d845de33f8b"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/payment-76c3067c-ee07-4927-b6a9-8bff7f3d9d86.json": {
+      "transactionId": [
+        "3473ae7c-4e35-4cae-8d3f-a6c67fe448ef"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "54fb6cfd-34d7-4480-9d7b-1b0956f81090"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/payment-9e238c30-d091-435b-89d7-09205df3a7db.json": {
+      "transactionId": [
+        "2292cee5-fb63-4f93-8c7a-2e7a1bebc8b0"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "correlationId": [
+        "0079630b-c27b-4dfc-b234-8b211c809ae0"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-2824890d-abb1-4740-8e6f-4b007ae5a4ab-011a9cb8-87db-4f2f-bcfb-c1d9cf947d28.json": {
+      "eventId": [
+        "2824890d-abb1-4740-8e6f-4b007ae5a4ab"
+      ],
+      "correlationId": [
+        "pharmacy-v1-outpatient"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-3d608062-d176-4bf3-bd5e-9db4d4e3ba91-b6b5d0ee-36e1-4a85-9e5a-6ec7a69d2f73.json": {
+      "eventId": [
+        "3d608062-d176-4bf3-bd5e-9db4d4e3ba91"
+      ],
+      "correlationId": [
+        "0079630b-c27b-4dfc-b234-8b211c809ae0"
+      ],
+      "clearanceId": [
+        "0fd5a18f-be3f-4bed-b236-17c7c8b10a45"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-a7ae31e6-4806-4cdb-858b-efe033cbfebf-58a92997-c3b1-4ff4-ac4f-e51aa72c5082.json": {
+      "eventId": [
+        "a7ae31e6-4806-4cdb-858b-efe033cbfebf"
+      ],
+      "correlationId": [
+        "54fb6cfd-34d7-4480-9d7b-1b0956f81090"
+      ],
+      "transactionId": [
+        "3473ae7c-4e35-4cae-8d3f-a6c67fe448ef"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-d8754b3c-1d5c-4025-ae6a-1d845de33f8b-eaee2eee-2377-4c91-b669-9520a0b593f4.json": {
+      "eventId": [
+        "d8754b3c-1d5c-4025-ae6a-1d845de33f8b"
+      ],
+      "correlationId": [
+        "0079630b-c27b-4dfc-b234-8b211c809ae0"
+      ],
+      "transactionId": [
+        "2292cee5-fb63-4f93-8c7a-2e7a1bebc8b0"
+      ],
+      "invoiceId": [
+        "a478a231-a911-4669-a238-cf714c7b7461"
+      ],
+      "paymentRequestId": [
+        "cd873055-c615-4968-9c1b-08c5b4397c22"
+      ],
+      "accountId": [
+        "00d4921b-e407-4bba-a07c-f4982c829fe1"
+      ],
+      "patientId": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "departmentId": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "careEpisodeId": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "prescriptionId": [
+        "10000000-0000-4000-8000-000000000001"
+      ]
+    },
+    "broker-comparisons.json": {
+      "eventId": [
+        "0783119b-c849-42a9-b8da-f382e45c2ca9",
+        "1041e991-12f8-4e45-8e7f-e462dbfa544e",
+        "16295fcf-5d70-4e59-a7e0-1af3d97a064e",
+        "2824890d-abb1-4740-8e6f-4b007ae5a4ab",
+        "3d608062-d176-4bf3-bd5e-9db4d4e3ba91",
+        "4be53a91-8663-437c-b817-4e381ad1d5e9",
+        "63ab8b91-8fd1-44c1-8d22-ef76c3548e3f",
+        "691e7b2f-0159-40f3-a24d-6d9bdfe08a40",
+        "70a8584e-c08f-4d2a-94ed-b286d4d8d84e",
+        "88e5c45d-a071-48b6-9366-8e0383d4726f",
+        "a7ae31e6-4806-4cdb-858b-efe033cbfebf",
+        "ceb94b1e-b820-4e9b-b722-059810530ba6",
+        "d8754b3c-1d5c-4025-ae6a-1d845de33f8b",
+        "dcb712cc-e657-4cf0-8cae-3661eca9afdc"
+      ]
+    },
+    "integrated/paid-exam-evidence.json": {
+      "appointmentId": [
+        "d91d363f-53ba-4806-b80b-8829ed915efb"
+      ],
+      "transactionId": [
+        "a99e8696-6340-4a0b-8982-05d550696541"
+      ],
+      "accountId": [
+        "62135a64-54d0-4f30-88d7-4284baa6457b"
+      ],
+      "paymentRequestId": [
+        "7d311958-bf2c-422b-b707-d14c890b170c"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "eventId": [
+        "d4d83e32-959f-4cef-bb14-620b6fd0a269"
+      ],
+      "correlationId": [
+        "8f873a73-a71d-4d20-8daa-2bb681bb3f7e"
+      ],
+      "clearanceId": [
+        "1074b25f-5b53-46eb-b139-22b989e539ae"
+      ],
+      "invoiceId": [
+        "800d9a58-5e26-494f-9b3c-20a166d1f25c"
+      ],
+      "patientId": [
+        "c9100588-de53-4e14-9d9d-466d003d821a"
+      ],
+      "careEpisodeId": [
+        "d91d363f-53ba-4806-b80b-8829ed915efb"
+      ],
+      "recordId": [
+        "eadb2c47-24dc-43cc-be94-75c7b9737c51"
+      ]
+    },
+    "integrated/paid-lab-clearance.json": {
+      "eventId": [
+        "e198a4cd-6026-4453-8b62-1792f08dad97"
+      ],
+      "correlationId": [
+        "57d1d5e4-2849-4760-a7a4-2277becb6f97"
+      ],
+      "clearanceId": [
+        "ab6775b1-2619-46bb-8de0-74e66a114262"
+      ],
+      "invoiceId": [
+        "d16f3767-5b73-48f5-a10a-05820b2e2ea2"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/paid-lab-evidence.json": {
+      "eventId": [
+        "c7baa562-3d80-4f4f-836e-2a2b4a88df98",
+        "e198a4cd-6026-4453-8b62-1792f08dad97"
+      ],
+      "correlationId": [
+        "027559ee-e917-44ce-add0-4e3a3526ac0a",
+        "57d1d5e4-2849-4760-a7a4-2277becb6f97"
+      ],
+      "clearanceId": [
+        "ab6775b1-2619-46bb-8de0-74e66a114262"
+      ],
+      "invoiceId": [
+        "d16f3767-5b73-48f5-a10a-05820b2e2ea2"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "currency": [
+        "VND"
+      ],
+      "doctorId": [
+        "385664b8-16e2-4dc0-ba84-6de4e19112eb"
+      ],
+      "departmentId": [
+        "10421b5f-c00c-42af-b08a-fce94ffc5023"
+      ],
+      "appointmentId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "diagnosisId": [
+        "378a6305-d150-4399-9dea-e37b20997c6c"
+      ],
+      "transactionId": [
+        "774874e3-3852-4a2f-9f9d-58fe3da6a592",
+        "dd3392ab-25a9-47eb-b295-26eae4d99611"
+      ],
+      "paymentRequestId": [
+        "e80d654c-9d26-45d2-9ce4-8bd81439859b",
+        "f771cf8e-fcea-4fcc-bd0f-0495db214775"
+      ],
+      "labId": [
+        "81996679-0ef0-4da3-8616-a174a8dddc8b"
+      ],
+      "resultId": [
+        "d6718082-d08c-4d5b-9dc4-0957368fe243"
+      ],
+      "sourceOrderId": [
+        "b83c9b3d-700b-4f49-9c16-c145e1c64184"
+      ],
+      "labTestId": [
+        "81996679-0ef0-4da3-8616-a174a8dddc8b"
+      ]
+    },
+    "integrated/quarantined-payment-774874e3-3852-4a2f-9f9d-58fe3da6a592.json": {
+      "eventId": [
+        "19b36ae2-b8f5-49eb-bf7d-38451a9c0a85"
+      ],
+      "correlationId": [
+        "682db607-d94b-4405-a58f-af9480474661"
+      ],
+      "transactionId": [
+        "774874e3-3852-4a2f-9f9d-58fe3da6a592"
+      ],
+      "invoiceId": [
+        "4fa62c48-5f2f-4e15-9486-e973f2d1bba0"
+      ],
+      "paymentRequestId": [
+        "e80d654c-9d26-45d2-9ce4-8bd81439859b"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "departmentId": [
+        "10421b5f-c00c-42af-b08a-fce94ffc5023"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/quarantined-payment-dd3392ab-25a9-47eb-b295-26eae4d99611.json": {
+      "eventId": [
+        "633cdb41-1c48-4c09-98ee-c01d298be896"
+      ],
+      "correlationId": [
+        "57d1d5e4-2849-4760-a7a4-2277becb6f97"
+      ],
+      "transactionId": [
+        "dd3392ab-25a9-47eb-b295-26eae4d99611"
+      ],
+      "invoiceId": [
+        "d16f3767-5b73-48f5-a10a-05820b2e2ea2"
+      ],
+      "paymentRequestId": [
+        "f771cf8e-fcea-4fcc-bd0f-0495db214775"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "departmentId": [
+        "10421b5f-c00c-42af-b08a-fce94ffc5023"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/recovery/clinical-financial.clearance.granted/original.json": {
+      "eventId": [
+        "c47b37ff-6290-4590-8d08-48388299ba3a"
+      ],
+      "correlationId": [
+        "682db607-d94b-4405-a58f-af9480474661"
+      ],
+      "clearanceId": [
+        "ad099a90-2858-42b6-89e6-d9a5fe4e577c"
+      ],
+      "invoiceId": [
+        "4fa62c48-5f2f-4e15-9486-e973f2d1bba0"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "appointmentId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/recovery/clinical-financial.clearance.granted/redelivered.json": {
+      "eventId": [
+        "c47b37ff-6290-4590-8d08-48388299ba3a"
+      ],
+      "correlationId": [
+        "682db607-d94b-4405-a58f-af9480474661"
+      ],
+      "clearanceId": [
+        "ad099a90-2858-42b6-89e6-d9a5fe4e577c"
+      ],
+      "invoiceId": [
+        "4fa62c48-5f2f-4e15-9486-e973f2d1bba0"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "appointmentId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/recovery/clinical-financial.clearance.granted/result.json": {
+      "newPid": [
+        "9728"
+      ],
+      "eventId": [
+        "c47b37ff-6290-4590-8d08-48388299ba3a"
+      ],
+      "oldPid": [
+        "25192"
+      ]
+    },
+    "integrated/recovery/clinical-lab.result.created/original.json": {
+      "eventId": [
+        "c7baa562-3d80-4f4f-836e-2a2b4a88df98"
+      ],
+      "labId": [
+        "81996679-0ef0-4da3-8616-a174a8dddc8b"
+      ],
+      "resultId": [
+        "d6718082-d08c-4d5b-9dc4-0957368fe243"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "departmentId": [
+        "10421b5f-c00c-42af-b08a-fce94ffc5023"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "correlationId": [
+        "027559ee-e917-44ce-add0-4e3a3526ac0a"
+      ]
+    },
+    "integrated/recovery/clinical-lab.result.created/redelivered.json": {
+      "eventId": [
+        "c7baa562-3d80-4f4f-836e-2a2b4a88df98"
+      ],
+      "labId": [
+        "81996679-0ef0-4da3-8616-a174a8dddc8b"
+      ],
+      "resultId": [
+        "d6718082-d08c-4d5b-9dc4-0957368fe243"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "departmentId": [
+        "10421b5f-c00c-42af-b08a-fce94ffc5023"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "correlationId": [
+        "027559ee-e917-44ce-add0-4e3a3526ac0a"
+      ]
+    },
+    "integrated/recovery/clinical-lab.result.created/result.json": {
+      "newPid": [
+        "21912"
+      ],
+      "eventId": [
+        "c7baa562-3d80-4f4f-836e-2a2b4a88df98"
+      ],
+      "oldPid": [
+        "9728"
+      ]
+    },
+    "integrated/recovery/lab-financial.clearance.granted/original.json": {
+      "eventId": [
+        "e198a4cd-6026-4453-8b62-1792f08dad97"
+      ],
+      "correlationId": [
+        "57d1d5e4-2849-4760-a7a4-2277becb6f97"
+      ],
+      "clearanceId": [
+        "ab6775b1-2619-46bb-8de0-74e66a114262"
+      ],
+      "invoiceId": [
+        "d16f3767-5b73-48f5-a10a-05820b2e2ea2"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/recovery/lab-financial.clearance.granted/redelivered.json": {
+      "eventId": [
+        "e198a4cd-6026-4453-8b62-1792f08dad97"
+      ],
+      "correlationId": [
+        "57d1d5e4-2849-4760-a7a4-2277becb6f97"
+      ],
+      "clearanceId": [
+        "ab6775b1-2619-46bb-8de0-74e66a114262"
+      ],
+      "invoiceId": [
+        "d16f3767-5b73-48f5-a10a-05820b2e2ea2"
+      ],
+      "accountId": [
+        "7396efae-72c6-4235-aba7-c4fdae521c30"
+      ],
+      "patientId": [
+        "73dc3613-f93f-42de-b07c-bb9de1042a68"
+      ],
+      "careEpisodeId": [
+        "1a8846c8-ff86-4716-83fa-ce76b82da6a5"
+      ],
+      "recordId": [
+        "2934977d-31d2-4ab9-88b2-7fdb167ee54c"
+      ],
+      "currency": [
+        "VND"
+      ]
+    },
+    "integrated/recovery/lab-financial.clearance.granted/result.json": {
+      "newPid": [
+        "18068"
+      ],
+      "eventId": [
+        "e198a4cd-6026-4453-8b62-1792f08dad97"
+      ],
+      "oldPid": [
+        "12276"
+      ]
+    }
+  },
+  "checks": {
+    "brokerStoredBodyMatches": 14,
+    "integratedCrashCheckpoints": 3,
+    "exactPaymentReplay": true,
+    "heldReplayRefused": true,
+    "staleOwnerFenced": true,
+    "controlledConfirmFailure": "NACK/timeout injected; durable PostgreSQL attempts/backoff/quarantine verified; not actual broker NACK injection",
+    "review": "Independent source review GO after ACK-barrier race fix; final suites separately verified"
+  },
+  "locStatus": {
+    "LOC-01": "PASS fresh eight-case broker regression",
+    "LOC-02": "PASS fresh historical HELD with positive control",
+    "LOC-03": "PASS controlled confirms/PG plus real broker and packaged recovery",
+    "LOC-04": "PASS exact first/retry/persisted/receipt microseconds; full precision authority grant and expiry",
+    "LOC-05": "PASS durable synthetic bundle and full regression",
+    "LOC-06": "Billing producer fresh regression PASS; actual Pharmacy/Rx integrated acceptance remains referenced to Huy 2026-10-17 evidence, not rerun here"
+  },
+  "verificationHistory": {
+    "heldReplayRed": "2 HELD V0/V1 assertion failures before eligibility fix; selected green 9 tests",
+    "timestampRed": "2 deterministic HTTP/PG precision assertion failures before completedAt normalization",
+    "supersededHarnessRuns": "One earlier parallel same-module compilation invalidated test classes; rerun module suites cleanly. Packaged Clinical/integrated tests then passed business checks but failed Windows temp log deletion; logs moved to target/acceptance-logs and full affected ITs rerun. Only final successful suite counts recorded above."
+  },
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 141,
+      "sha256": "f63e3649e3812f9d2f808e0e838906e4f2953d86733b171b68934d13f3cf2baa"
+    },
+    {
+      "path": "billing/deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker/migrations-c4c80093-9a31-4b26-b874-2450bdd19b17.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker/outbox-progress-89029def-5c90-4524-aff2-9d0cb6339d60.json",
+      "bytes": 349,
+      "sha256": "ecccd4df43e1b06c81ba30f55855be6ed09903a759215618dedd2bd4eaa96935"
+    },
+    {
+      "path": "billing/deferredAdmissionDepositPurpose_isNeverPublishedToTheBroker/payment-ddbd95b2-9e6e-460b-8cd8-b687667c754d.json",
+      "bytes": 462,
+      "sha256": "ea602547ac64bcbe67c1676efc4d567097facc4501c4ec4e3b2910f750642d90"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/broker-29c19045-e1a4-458f-a6f0-6607c79e068a.json",
+      "bytes": 829,
+      "sha256": "8075978c81b886faeea8f09e557bb9a71bce4674668ef2397800d1d07dc2f033"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/broker-e53f0d50-03ac-4968-96f0-fdab6b7d4228.json",
+      "bytes": 812,
+      "sha256": "79735b4a0a48b0f27afe468984e54c7582f0e2d91ce07d12920f7bdd61548d4e"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/discovery-4d0babc0-c8ad-45b8-a1af-5a695ddba493.json",
+      "bytes": 881,
+      "sha256": "6039fb9d720d39f2bcfd2751ad412086e00cc1ea2ed6d34014997ecae80d93a3"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/migrations-c5a5ff34-9cbf-474a-b22d-9a051b656fee.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/outbox-progress-fb4e0f12-9f90-4757-b47c-a6c461275ae1.json",
+      "bytes": 401,
+      "sha256": "e87da249356ba50755b0124e3b39bbf79b961fb86de6803820e98fe0b9daa69d"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/payment-49c135f4-b32a-4ac4-9c81-563a8c93532e.json",
+      "bytes": 461,
+      "sha256": "e4ccd717d0ba5ba1fd9c59f9c40337fa09daa4438caa8b5594d67158da6c7425"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/payment-89a52510-cd7d-4058-b4ca-5b68510c5e5d.json",
+      "bytes": 461,
+      "sha256": "2d7f2155fc913fb98d967ffc19d374eced0c2cce2851d304cbae79cc2ea739a5"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/stored-4be53a91-8663-437c-b817-4e381ad1d5e9-a346ef9d-26a2-4a45-b040-87b16505c6f9.json",
+      "bytes": 812,
+      "sha256": "79735b4a0a48b0f27afe468984e54c7582f0e2d91ce07d12920f7bdd61548d4e"
+    },
+    {
+      "path": "billing/duplicatePaymentRetry_sameIdempotencyKey_noSecondBrokerDelivery/stored-63ab8b91-8fd1-44c1-8d22-ef76c3548e3f-7e89bf83-255e-4d88-b82e-78802f3dee96.json",
+      "bytes": 829,
+      "sha256": "8075978c81b886faeea8f09e557bb9a71bce4674668ef2397800d1d07dc2f033"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-490eb144-ba15-45f3-91f2-f919fee85fec.json",
+      "bytes": 829,
+      "sha256": "113652a7692c5e7d3d03e7d8cec7b4b32d6aedc1e33ea2b9f28b7dc26aeb092c"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-f1896cff-6dfd-416c-972c-2244fb36b066.json",
+      "bytes": 812,
+      "sha256": "8fcadcbc387bf67afa68c5b3bd493aa10c100d0fabe7fb276a7c4c9ddf46aa9b"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/discovery-d064c83f-c160-42c8-acee-cbfa30a77c8c.json",
+      "bytes": 881,
+      "sha256": "b89d6260b61d95a091090cdae3bf5464c90314ee3ab4df429f6d20861cac6c3c"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/migrations-d75030df-6d9a-4c52-b44c-116077fef750.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/outbox-progress-b8c45d12-0fc2-4f69-948c-8f2e6ee8947c.json",
+      "bytes": 401,
+      "sha256": "d659c30dab3428b821ded19c7011e5ffc8298536705fa168012ba04e99800017"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/payment-ad997a3a-667c-4ddb-bd8a-2df25ee9130d.json",
+      "bytes": 461,
+      "sha256": "5f63bad4b9d50771bc1151c3ce1dc486ed88f789a5358b5c13903bef7c5eda1d"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-16295fcf-5d70-4e59-a7e0-1af3d97a064e-58d5d385-ea3a-4284-a38a-59119d343bc4.json",
+      "bytes": 812,
+      "sha256": "8fcadcbc387bf67afa68c5b3bd493aa10c100d0fabe7fb276a7c4c9ddf46aa9b"
+    },
+    {
+      "path": "billing/examCheckIn_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-ceb94b1e-b820-4e9b-b722-059810530ba6-80404edf-a922-4ca8-b600-d08eed955637.json",
+      "bytes": 829,
+      "sha256": "113652a7692c5e7d3d03e7d8cec7b4b32d6aedc1e33ea2b9f28b7dc26aeb092c"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-e33b216f-9bb1-4c59-8cdc-6ad0d7b943db.json",
+      "bytes": 867,
+      "sha256": "63d3073bb7204010532cb6be7703365ab8dd18fa9e1c3b3ea34a195ba7ad804c"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/broker-fff28f87-2559-4fb9-9b3d-2847e5586273.json",
+      "bytes": 854,
+      "sha256": "380847571b2a72704f4da3861d4623092062481001ed284a3d824a631dfb9799"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/discovery-13e2e25e-0501-4975-84ac-3b4b7278f25e.json",
+      "bytes": 927,
+      "sha256": "cd7caaa3ff171ab0ded37452a8d35e0f52f41c3dca5c73c354c92bc1e3ed3d8c"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/migrations-79702b17-59e4-466e-ba10-9d7982e1c9df.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/outbox-progress-f5e278a7-9168-428a-8c0a-c89203a409fb.json",
+      "bytes": 401,
+      "sha256": "98280dee256b698503ff6206010209e23a6c5dc04e57a91ababdd644731cde27"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/payment-a52f478a-4fc6-4f31-a420-cd0f5d4debda.json",
+      "bytes": 461,
+      "sha256": "91b9ec4a2f8035c990e54590dd3ec4b18220414becc840399271f8dce7069f9c"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-88e5c45d-a071-48b6-9366-8e0383d4726f-4c0a016a-4422-4c14-8d92-774a92932cb7.json",
+      "bytes": 867,
+      "sha256": "63d3073bb7204010532cb6be7703365ab8dd18fa9e1c3b3ea34a195ba7ad804c"
+    },
+    {
+      "path": "billing/labRequest_thenRealHttpDiscoveryAndPayment_actualGrantBytesMatchStoredOutbox/stored-dcb712cc-e657-4cf0-8cae-3661eca9afdc-e080a30e-b8c8-430e-9d95-3e7c4030782a.json",
+      "bytes": 854,
+      "sha256": "380847571b2a72704f4da3861d4623092062481001ed284a3d824a631dfb9799"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-29035bdd-eab4-4171-807a-b22ffef92bf4.json",
+      "bytes": 818,
+      "sha256": "520a245c9e9d6e8a29aed0a02664478e3ba5426851d1f0b37e733bd6297c9534"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-3b3f618c-aac5-46fb-83fa-4801cded3411.json",
+      "bytes": 759,
+      "sha256": "33a4cd364ea405ba06178c10a574b85bc306e34796209bfdbdc03eaa68b87689"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/broker-b9f18054-1862-406b-81b3-3ebe8f587791.json",
+      "bytes": 861,
+      "sha256": "6f5e957d7bad7a3198e6c6c6583264250b3be5ef758e63749e1909c1284dc814"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/discovery-424089ed-7348-4fda-a17d-11e141674cf3.json",
+      "bytes": 893,
+      "sha256": "84d8c99e282dbe76075569c3af2bdd823b14aa33ae5cbdd960821a8023f08f78"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/discovery-aade3538-1008-4d34-8287-df0ebbb06720.json",
+      "bytes": 893,
+      "sha256": "ff6e630f9c9625bc7a88c14a09ffe393b6453bf64ba8191c2e395f2d1e7bd903"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/migrations-5fce31b0-a23e-4ffe-a8b6-11de6c4f27a3.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/outbox-progress-c35cef49-8e24-4f7c-b295-407dafd1f578.json",
+      "bytes": 594,
+      "sha256": "56c74a581bf28c5f5a9d0756e2017433cb2eb707d56321d4f48dc2021ee3c3e4"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/payment-ad236487-5bc4-4ace-9c21-30f22c0fd819.json",
+      "bytes": 456,
+      "sha256": "7828a8f106f310fa4f8e282cff57aefd639bee570be5efbe4f4790831be8fd50"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/payment-e9f5432a-e4be-4da4-98f2-3a06a1a5e594.json",
+      "bytes": 459,
+      "sha256": "d070fce3fefc117c868117d00329d9cbe1111863266946fe95c4cf7f8438de23"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-0783119b-c849-42a9-b8da-f382e45c2ca9-3ed301d2-996e-4dad-84df-a7d66b610ebd.json",
+      "bytes": 759,
+      "sha256": "33a4cd364ea405ba06178c10a574b85bc306e34796209bfdbdc03eaa68b87689"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-1041e991-12f8-4e45-8e7f-e462dbfa544e-28d9b1cb-3aa2-4130-acde-ce7f4ef6ff22.json",
+      "bytes": 818,
+      "sha256": "520a245c9e9d6e8a29aed0a02664478e3ba5426851d1f0b37e733bd6297c9534"
+    },
+    {
+      "path": "billing/newEventIdForSamePrescriptionOperationDoesNotIssueOrPublishAgain/stored-691e7b2f-0159-40f3-a24d-6d9bdfe08a40-68e69b71-fac7-47be-a1e2-ededd8bdb4df.json",
+      "bytes": 861,
+      "sha256": "6f5e957d7bad7a3198e6c6c6583264250b3be5ef758e63749e1909c1284dc814"
+    },
+    {
+      "path": "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/discovery-a4560d25-20aa-4c1d-88ad-f142321ed3c8.json",
+      "bytes": 893,
+      "sha256": "e43d6e274c8716b2f7c94ad429893860246fd4df1a750c0b7e9c7c95c560476d"
+    },
+    {
+      "path": "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/migrations-8bca41a6-71de-4c4d-8d3e-d9e45f85502a.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/outbox-progress-3d47a49f-aa38-4ce3-b262-a326f6ce96f0.json",
+      "bytes": 516,
+      "sha256": "0977d07d3fa93b7f36c42dd80a2c264a81b8976606a0984561840c7fe88a5d77"
+    },
+    {
+      "path": "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/payment-c285dada-267b-42d8-973e-2b7082f16946.json",
+      "bytes": 459,
+      "sha256": "e7dfbff965e8e1cd9940cc3e7e980fe4abaf7d50507f17e0e914e33dbcc3a059"
+    },
+    {
+      "path": "billing/outpatientIssuedWithPublicationOffStaysHeldAfterEnablingAndRetryingSourceAndPayment/payment-c95a2309-691f-4e32-b39e-c6f4190aaeb9.json",
+      "bytes": 459,
+      "sha256": "87e192b88a3b4f7b4bae54fbc74921696f8d513f0bad6259b44b2ec3941f8473"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/broker-9a960c51-4b27-48fe-9910-25c7dd526338.json",
+      "bytes": 866,
+      "sha256": "a7572af4e0498436af85e05aede480d6919b77d916284c0d11f49b87fbdace9e"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/discovery-8fc357b6-36d0-4f88-9583-c540e6c22243.json",
+      "bytes": 927,
+      "sha256": "63493e6d3b71f83f012969c11fefe0b7e6d74d02b23feb715fc1a68f8dc4986a"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/migrations-6136e27b-add8-4618-bc72-e483e7ce817b.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/outbox-progress-84e6e3ec-0b20-4405-8647-ecad3665e098.json",
+      "bytes": 196,
+      "sha256": "0f7ad561e85429714ddcac91698ab99313174e03ef565561dfdc462f356933ba"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/payment-a34bf2f3-fdb2-4938-9b2a-8b2da3d57569.json",
+      "bytes": 460,
+      "sha256": "18e324b105d9be304ec13527d37ae0c2f1411ef9ce28c9b227e920d3a214c7ae"
+    },
+    {
+      "path": "billing/partialPayment_receiptPublishedButNoGrantYet/stored-70a8584e-c08f-4d2a-94ed-b286d4d8d84e-eb853d35-b265-46e6-bf21-09aa71f4f6e1.json",
+      "bytes": 866,
+      "sha256": "a7572af4e0498436af85e05aede480d6919b77d916284c0d11f49b87fbdace9e"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-4beffb09-54a5-4fb2-b0ae-90170bc88000.json",
+      "bytes": 818,
+      "sha256": "7e2cd9b9176abeb9a0d86917d538483edf78e0432e9c3aded73b8e6897986021"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-a7e2bb8f-21df-4bb7-ac81-5aec0fd5c08e.json",
+      "bytes": 861,
+      "sha256": "a35e42284252d64113907f43e257b4d7da2e99aff26a9c05e01d7e1db4e43a65"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-ad7fb284-d558-432a-b6e3-fc4ae3d8ada3.json",
+      "bytes": 759,
+      "sha256": "14148f0712b5fe24f92d30a842c29fa23cae90be333aae867cb78e41a331f2d9"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/broker-d6a0aff6-247c-4f4c-8d8b-d06639c46d3f.json",
+      "bytes": 860,
+      "sha256": "9603b83984fbbcb9759831a21477689460ee002329585150e8c99a80850810a9"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/discovery-cb5887d7-d74e-484b-8256-0e122a792838.json",
+      "bytes": 893,
+      "sha256": "7013eba1ce079647f42a336a993811f675fb1fe3ad282fb02ff1e54f58d2663f"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/migrations-124f3252-e492-4a1d-b120-43270fe892dc.json",
+      "bytes": 2238,
+      "sha256": "0381f21ee5fe1a17fa6313d582f41c29deb37ad0e62d11bd5d16f7b159622134"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/outbox-progress-77ede57a-95f4-47f1-96cb-b2eb360ad47a.json",
+      "bytes": 789,
+      "sha256": "51f18eeb9bdae2d4fe441536b0218e2ede8e2ea105c3b4dc97a2fd745c033835"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/payment-76c3067c-ee07-4927-b6a9-8bff7f3d9d86.json",
+      "bytes": 458,
+      "sha256": "c5f0b20a9f87cc64df87e10c5ee5449d3002ff9f44161d0823ba0dc24a1d40c0"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/payment-9e238c30-d091-435b-89d7-09205df3a7db.json",
+      "bytes": 459,
+      "sha256": "6c08f6aacb501803c5cbfb4778a6125ec3ccea1df94e00f2e2ffeab2a19cf5a1"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-2824890d-abb1-4740-8e6f-4b007ae5a4ab-011a9cb8-87db-4f2f-bcfb-c1d9cf947d28.json",
+      "bytes": 759,
+      "sha256": "14148f0712b5fe24f92d30a842c29fa23cae90be333aae867cb78e41a331f2d9"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-3d608062-d176-4bf3-bd5e-9db4d4e3ba91-b6b5d0ee-36e1-4a85-9e5a-6ec7a69d2f73.json",
+      "bytes": 818,
+      "sha256": "7e2cd9b9176abeb9a0d86917d538483edf78e0432e9c3aded73b8e6897986021"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-a7ae31e6-4806-4cdb-858b-efe033cbfebf-58a92997-c3b1-4ff4-ac4f-e51aa72c5082.json",
+      "bytes": 860,
+      "sha256": "9603b83984fbbcb9759831a21477689460ee002329585150e8c99a80850810a9"
+    },
+    {
+      "path": "billing/prescriptionOutpatient_invoiceAtIssuance_thenRealHttpDiscoveryAndTwoInstallments/stored-d8754b3c-1d5c-4025-ae6a-1d845de33f8b-eaee2eee-2377-4c91-b669-9520a0b593f4.json",
+      "bytes": 861,
+      "sha256": "a35e42284252d64113907f43e257b4d7da2e99aff26a9c05e01d7e1db4e43a65"
+    },
+    {
+      "path": "broker-comparisons.json",
+      "bytes": 5099,
+      "sha256": "9bcbd169091fa0c17333f904aef32b439435b8cb14040eebda14d400501332c0"
+    },
+    {
+      "path": "failsafe-summary.json",
+      "bytes": 1114,
+      "sha256": "968b80af15196b30c3da7cc9ef14f4d3d43157c8e2ad899a985e55f955be7c2b"
+    },
+    {
+      "path": "integrated/paid-exam-evidence.json",
+      "bytes": 1696,
+      "sha256": "55e63d01eceb6de50624a4949f22bc6513f683a3face70b934995c5d2bc949b6"
+    },
+    {
+      "path": "integrated/paid-lab-clearance.json",
+      "bytes": 854,
+      "sha256": "ab6625b359181912a95a2e41a570ea64882da0a033ae8f3fc4294568436ffa27"
+    },
+    {
+      "path": "integrated/paid-lab-evidence.json",
+      "bytes": 4250,
+      "sha256": "5582ab705251698d95bb7d34e04db04c64e779cfdf9248324b5a6d96ce8cb503"
+    },
+    {
+      "path": "integrated/quarantined-payment-774874e3-3852-4a2f-9f9d-58fe3da6a592.json",
+      "bytes": 828,
+      "sha256": "9bcd860b8f7821691e817a8dc3a72ef701d09838617bdf685bb3809490140126"
+    },
+    {
+      "path": "integrated/quarantined-payment-dd3392ab-25a9-47eb-b295-26eae4d99611.json",
+      "bytes": 866,
+      "sha256": "ea095cf4f0966515020fa602c42874ca267a1f80083870deabb7c27ce0af9403"
+    },
+    {
+      "path": "integrated/recovery/clinical-financial.clearance.granted/original.json",
+      "bytes": 812,
+      "sha256": "2b54400e9f5261a9d88a0e39dca2a4e322df3a8c385e52b5dede1f723bff460e"
+    },
+    {
+      "path": "integrated/recovery/clinical-financial.clearance.granted/redelivered.json",
+      "bytes": 812,
+      "sha256": "2b54400e9f5261a9d88a0e39dca2a4e322df3a8c385e52b5dede1f723bff460e"
+    },
+    {
+      "path": "integrated/recovery/clinical-financial.clearance.granted/result.json",
+      "bytes": 199,
+      "sha256": "9b5cc644b8be1951565143affbfdb13cc40aec0e4940de53ace4cd18f15d8eca"
+    },
+    {
+      "path": "integrated/recovery/clinical-lab.result.created/original.json",
+      "bytes": 875,
+      "sha256": "a0bf105533a2f76481224133a97f580083552de005b9971309457fb86afad8ce"
+    },
+    {
+      "path": "integrated/recovery/clinical-lab.result.created/redelivered.json",
+      "bytes": 875,
+      "sha256": "a0bf105533a2f76481224133a97f580083552de005b9971309457fb86afad8ce"
+    },
+    {
+      "path": "integrated/recovery/clinical-lab.result.created/result.json",
+      "bytes": 199,
+      "sha256": "b871ba9cd9b2bca96a32ab886d7ac14748210ea52bbbaac7ae1d73195e86d792"
+    },
+    {
+      "path": "integrated/recovery/lab-financial.clearance.granted/original.json",
+      "bytes": 854,
+      "sha256": "ab6625b359181912a95a2e41a570ea64882da0a033ae8f3fc4294568436ffa27"
+    },
+    {
+      "path": "integrated/recovery/lab-financial.clearance.granted/redelivered.json",
+      "bytes": 854,
+      "sha256": "ab6625b359181912a95a2e41a570ea64882da0a033ae8f3fc4294568436ffa27"
+    },
+    {
+      "path": "integrated/recovery/lab-financial.clearance.granted/result.json",
+      "bytes": 200,
+      "sha256": "080b35411e820c8fe227e676b1bfd6d1a81d8d7dbe1cad43885a6dfdcdd602c3"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4528,
+      "sha256": "42f98c5ae7f47959e883d37943b9f8680c847a06ee66796f4f4d577add4791fa"
+    },
+    {
+      "path": "surefire-summary.json",
+      "bytes": 57326,
+      "sha256": "01de722ef6c5db396708f4b676047dcb85e74c27c0d2b5e5f6149efbd6d50540"
+    }
+  ],
+  "limits": [
+    "Acceptance settings only; no deployment activation",
+    "No fresh full Core or Pharmacy suite claimed",
+    "No deferred Inpatient/Surgery activation",
+    "Tracked/untracked working patch; no commit or push performed"
+  ]
+}

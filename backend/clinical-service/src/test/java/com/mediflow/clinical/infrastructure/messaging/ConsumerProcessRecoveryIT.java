@@ -123,6 +123,14 @@ class ConsumerProcessRecoveryIT {
         }
     }
 
+    // Retain child logs outside JUnit's temporary directory: Windows can briefly lock
+    // redirected output after the child exits. Process termination is still asserted.
+    private Path processLog(String name) throws java.io.IOException {
+        Path logs = Path.of("target", "acceptance-logs", work.getFileName().toString());
+        Files.createDirectories(logs);
+        return logs.resolve(name + ".log");
+    }
+
     private void assertCommitted(JdbcTemplate jdbc, UUID eventId, UUID recordId, UUID referenceId, String type, byte[] body) {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_delivery", Integer.class)).isOne();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM consumer_inbox_operation", Integer.class)).isOne();
@@ -178,7 +186,7 @@ class ConsumerProcessRecoveryIT {
                 "--spring.rabbitmq.host=" + MQ.getHost(), "--spring.rabbitmq.port=" + MQ.getAmqpPort(),
                 "--spring.rabbitmq.username=" + MQ.getAdminUsername(), "--eureka.client.enabled=false",
                 "--spring.cloud.discovery.enabled=false", "--spring.main.banner-mode=off"));
-        var builder = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(work.resolve(name + ".log").toFile());
+        var builder = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(processLog(name).toFile());
         builder.environment().put("SPRING_DATASOURCE_PASSWORD", PG.getPassword());
         builder.environment().put("SPRING_RABBITMQ_PASSWORD", MQ.getAdminPassword());
         builder.environment().put("MEDIFLOW_JWT_SECRET", "consumer-recovery-test-only-" + UUID.randomUUID());
@@ -190,7 +198,7 @@ class ConsumerProcessRecoveryIT {
 
     private void started(String name) {
         await().atMost(Duration.ofSeconds(90)).untilAsserted(() ->
-                assertThat(Files.readString(work.resolve(name + ".log")))
+                assertThat(Files.readString(processLog(name)))
                         .as("Child fully started; failure logs retained at %s", work)
                         .contains("Started ConsumerRecoveryProcess"));
     }

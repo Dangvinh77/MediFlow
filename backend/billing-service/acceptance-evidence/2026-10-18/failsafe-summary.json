@@ -1,0 +1,47 @@
+[
+  {
+    "module": "billing-service",
+    "kind": "Failsafe",
+    "name": "com.mediflow.billing.OutpatientPublicationProcessRecoveryIT",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Failsafe",
+    "name": "com.mediflow.acceptance.ClinicalExamPackagedAcceptanceIT",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "clinical-service",
+    "kind": "Failsafe",
+    "name": "com.mediflow.clinical.infrastructure.messaging.ConsumerProcessRecoveryIT",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Failsafe",
+    "name": "com.mediflow.lab.acceptance.PackagedOutpatientLabAcceptanceIT",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "module": "lab-service",
+    "kind": "Failsafe",
+    "name": "com.mediflow.lab.infrastructure.messaging.ConsumerProcessRecoveryIT",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

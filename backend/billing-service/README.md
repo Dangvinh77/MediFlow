@@ -1,5 +1,19 @@
 # billing-service
 
+## Payment replay and acceptance - 2026-10-18
+
+New ledger payments normalize `completedAt` once to microseconds before persistence, response
+and `payment.completed` receipt creation. First POST and idempotent retry return identical
+business fields. Expiry comparisons, event envelope time and clearance `grantedAt` retain the
+full clock precision; historical event bodies and migrations are unchanged.
+
+Operator replay requires an unpublished, quarantined **and publication-enabled** row. HELD
+V0/V1 rows cannot be replayed and retain their attempts, errors and original bytes.
+
+Fresh regression, original broker/HTTP JSON, migration inventory, hashes and packaged JVM
+recovery evidence are in the [acceptance bundle](acceptance-evidence/2026-10-18/README.md).
+This bundle uses isolated acceptance flags; deployment activation remains a separate decision.
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Billing owns examination, test and medication fees, payments and financial effects for the outpatient MVP. Preserved inpatient/surgery financial code does not expand MVP scope.

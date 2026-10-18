@@ -1,0 +1,1 @@
+[{"event_id":"42580209-f8c4-44e2-85d6-4f73c34b2f42","routing_key":"payment.completed","publication_enabled":false,"published_at":null,"attempts":0,"quarantined_at":null},{"event_id":"c0d66b44-5059-4ea6-8f33-9c03f3b84c3a","routing_key":"financial.clearance.granted","publication_enabled":false,"published_at":null,"attempts":0,"quarantined_at":null}]
