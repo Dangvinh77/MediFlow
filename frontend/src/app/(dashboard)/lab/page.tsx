@@ -1,9 +1,12 @@
+import { outpatientUiEnabled } from "@/lib/outpatient-ui";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
 import { LabTable } from "@/features/lab/components/LabTable";
 
 export const metadata: Metadata = { title: "Xét nghiệm | MediFlow" };
+
+export const dynamic = "force-dynamic";
 
 export default function LabPage() {
   return (
@@ -12,7 +15,7 @@ export default function LabPage() {
       description="Hàng đợi xét nghiệm theo khoa, trạng thái và đợt chăm sóc."
     >
       <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE", "LAB_TECH"]}>
-        <LabTable />
+        <LabTable outpatientEnabled={outpatientUiEnabled()} />
       </RoleGate>
     </PageShell>
   );

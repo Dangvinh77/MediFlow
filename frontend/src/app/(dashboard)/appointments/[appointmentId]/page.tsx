@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
-import { AppointmentDetail } from "@/features/appointment/components/AppointmentDetail";
+import { AppointmentWorkspace } from "./AppointmentWorkspace";
+import { outpatientUiEnabled } from "@/lib/outpatient-ui";
 import { isUuid } from "@/lib/validation";
 
 export const metadata: Metadata = { title: "Chi tiết lịch hẹn | MediFlow" };
+export const dynamic = "force-dynamic";
 
 interface AppointmentDetailPageProps {
   params: Promise<{ appointmentId: string }>;
@@ -28,7 +30,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "NURSE"]}>
-          <AppointmentDetail appointmentId={id} />
+          <AppointmentWorkspace appointmentId={id} outpatientEnabled={outpatientUiEnabled()} />
         </RoleGate>
       )}
     </PageShell>

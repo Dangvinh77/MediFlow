@@ -9,7 +9,20 @@
 - `frontend/src/features/lab/**`
 - `frontend/src/app/(dashboard)/lab/**`
 
-## Current UI baseline
+## Current implementation — 2026-10-18
+
+The default-off server UI gate `MEDIFLOW_OUTPATIENT_UI_ENABLED` now controls the outpatient
+command UI. The following older baseline descriptions are historical where they describe
+commands as not implemented or compatibility-only. See the latest [workboard](../frontend-workboard.md)
+and [implementation record](../vinh-outpatient-implementation-2026-10-18.md).
+
+The app-level Lab-order workspace submits the original Clinical sourceOrderId and all returned
+context fields. Enabled UI mode directs creation through the record; existing start/results/cancel
+remain, with synchronous locks, unmount guards, 401 handling and manual read refresh. V1 start
+requires READY/clearance from the response, never an inferred payment. Runtime smoke and new
+behavioral regression tests remain open; this session validates build only by user instruction.
+
+## Historical UI baseline
 
 `/lab` renders a paged queue from `GET /v1/lab` with department, status and exact episode filters.
 It displays all six live lifecycle states separately from payment state. UI roles mirror the

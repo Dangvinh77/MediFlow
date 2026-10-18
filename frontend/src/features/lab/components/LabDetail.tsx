@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { Button } from "@/components/ui/Button";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { formatInstant, formatLocalDate } from "@/lib/format";
@@ -161,9 +162,11 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
       </section>
 
       <LabActions
+        key={requestKey}
         test={test}
         onUpdated={(updated) => setState({ key: requestKey, status: "success", test: updated })}
       />
+      <Button type="button" onClick={retry}>Cập nhật trạng thái xét nghiệm</Button>
 
       {test.emergencyOverrideId ? <section className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"><p className="font-medium">Có phê duyệt ngoại lệ khẩn cấp</p><p className="mt-1 break-all font-mono text-xs">{test.emergencyOverrideId}</p></section> : null}
       <Link href="/lab" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">Quay lại danh sách</Link>

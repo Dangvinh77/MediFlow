@@ -156,17 +156,31 @@ async function request<T>(
   return body.data;
 }
 
+export interface MutationOptions {
+  /** Stable key for one user intent; callers retain it when retrying that intent. */
+  idempotencyKey?: string;
+}
+
 function mutationInit(
   method: "POST" | "PUT",
   data?: unknown,
+  options?: MutationOptions,
 ): RequestInit {
+  const init: RequestInit = { method };
+  if (options?.idempotencyKey !== undefined) {
+    const key = options.idempotencyKey;
+    if (!key.trim() || key.length > 160 || /[\r\n]/.test(key)) {
+      throw new Error("Idempotency-Key must contain 1–160 characters without line breaks.");
+    }
+    init.headers = { "Idempotency-Key": key };
+  }
   // Some state-transition endpoints use POST/PUT without a JSON request body.
   if (data === undefined) {
-    return { method };
+    return init;
   }
 
   return {
-    method,
+    ...init,
     body: JSON.stringify(data),
   };
 }
@@ -180,25 +194,28 @@ export const api = {
   post: <T>(
     path: string,
     data?: unknown,
+    options?: MutationOptions,
   ) => request<T>(
     path,
-    mutationInit("POST", data),
+    mutationInit("POST", data, options),
   ),
 
   postRaw: <T>(
     path: string,
     data?: unknown,
+    options?: MutationOptions,
   ) => requestJson<T>(
     path,
-    mutationInit("POST", data),
+    mutationInit("POST", data, options),
   ),
 
   put: <T>(
     path: string,
     data?: unknown,
+    options?: MutationOptions,
   ) => request<T>(
     path,
-    mutationInit("PUT", data),
+    mutationInit("PUT", data, options),
   ),
 
   del: <T>(path: string) =>

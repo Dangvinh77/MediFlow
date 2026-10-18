@@ -62,7 +62,7 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function LabTable() {
+export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: boolean }) {
   const router = useRouter();
   const requestSequence = useRef(0);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
@@ -167,7 +167,7 @@ export function LabTable() {
     <section className="mt-6">
       {role === "ADMIN" || role === "DOCTOR" ? (
         <div className="mb-5 flex justify-end">
-          <Link href="/lab/new" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <Link href={outpatientEnabled ? "/records" : "/lab/new"} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
             Tạo yêu cầu xét nghiệm
           </Link>
         </div>

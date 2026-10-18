@@ -16,7 +16,7 @@ export interface AppointmentSearchParams {
 }
 
 export const appointmentApi = {
-  // Contract preparation only; V1 controls require integrated runtime acceptance.
+  // Commands are exposed only by the server-controlled outpatient UI gate.
   checkIn: (appointmentId: string) =>
     api.put<AppointmentDTO>(
       `/v1/appointments/${encodeURIComponent(appointmentId)}/check-in`,
