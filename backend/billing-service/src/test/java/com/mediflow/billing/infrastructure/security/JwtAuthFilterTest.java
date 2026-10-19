@@ -32,19 +32,20 @@ class JwtAuthFilterTest {
 
     @Test
     void validToken_createsAuthenticationFromSharedClaims() throws Exception {
-        String token = createToken("cashier-01", "CASHIER", SIGNING_KEY, Instant.now().plusSeconds(300));
+        String accountId = "00000000-0000-0000-0000-000000000019";
+        String token = createToken(accountId, "CASHIER", SIGNING_KEY, Instant.now().plusSeconds(300));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         assertThat(authentication).isNotNull();
-        assertThat(authentication.getName()).isEqualTo("cashier-01");
+        assertThat(authentication.getName()).isEqualTo(accountId);
         assertThat(authentication.getAuthorities()).extracting("authority").containsExactly("ROLE_CASHIER");
     }
 
     @Test
     void expiredToken_leavesRequestUnauthenticated() throws Exception {
-        String token = createToken("cashier-01", "CASHIER", SIGNING_KEY, Instant.now().minusSeconds(60));
+        String token = createToken("00000000-0000-0000-0000-000000000019", "CASHIER", SIGNING_KEY, Instant.now().minusSeconds(60));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -55,7 +56,7 @@ class JwtAuthFilterTest {
     void invalidSignature_leavesRequestUnauthenticated() throws Exception {
         SecretKey otherKey = Keys.hmacShaKeyFor(
                 "different-test-secret-that-is-at-least-32-bytes".getBytes(StandardCharsets.UTF_8));
-        String token = createToken("cashier-01", "CASHIER", otherKey, Instant.now().plusSeconds(300));
+        String token = createToken("00000000-0000-0000-0000-000000000019", "CASHIER", otherKey, Instant.now().plusSeconds(300));
 
         filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
 
@@ -104,6 +105,7 @@ class JwtAuthFilterTest {
         return Jwts.builder()
                 .subject(subject)
                 .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
                 .expiration(Date.from(expiresAt))
                 .signWith(key)

@@ -85,14 +85,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.clearContext();
                     return;
                 }
-            }
-            if (request.getRequestURI().startsWith("/api/v1/billing/payment-requests/")
-                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-preview")
-                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/settlement-reconciliations")
-                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/deposit-allocations")
-                    || request.getRequestURI().matches("/api/v1/billing/accounts/[^/]+/final-settlements")
-                    || request.getRequestURI().startsWith("/api/v1/billing/surgery-cancellations/")
-                    || request.getRequestURI().startsWith("/api/v1/billing/transactions/")) {
+            } else {
+                // Every human endpoint uses the same credential boundary, including legacy
+                // invoices and newly added reads. A route list can silently omit the next API.
                 if (!StringUtils.hasText(subject)
                         || !JwtClaims.ACCESS_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class))
                         || claims.getExpiration() == null) {
