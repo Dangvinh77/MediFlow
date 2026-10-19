@@ -218,17 +218,56 @@ public final class LabTest {
      * A finished test cannot be amended.
      */
     public void recordResults(List<LabResult> results, String conclusion, LocalDate performedDate) {
+        rejectResultsIfFinal();
+        if (careContractVersion == 1) {
+            throw new LabRuleException("LAB_CLEARANCE_REQUIRED",
+                    "Cần kiểm tra quyền thực hiện tại thời điểm nhập kết quả");
+        }
+        recordValidatedResults(results, conclusion, performedDate, null);
+    }
+
+    /** Stores V2 results only under the exact, still-valid clearance or the audited start override. */
+    public void recordResults(List<LabResult> results, String conclusion, LocalDate performedDate,
+                              LabFinancialClearance clearance, Instant at) {
+        rejectResultsIfFinal();
+        if (careContractVersion == 1) {
+            if (status != LabTestStatus.IN_PROGRESS || (clearanceId == null && emergencyOverrideId == null)) {
+                throw new LabRuleException("LAB_CLEARANCE_REQUIRED",
+                        "Cần bắt đầu xét nghiệm bằng quyền hợp lệ hoặc phê duyệt cấp cứu trước khi nhập kết quả");
+            }
+            if (emergencyOverrideId == null) {
+                if (clearance == null) {
+                    throw new LabRuleException("LAB_CLEARANCE_REQUIRED",
+                            "Cần quyền LAB_TEST đang còn hiệu lực khi nhập kết quả");
+                }
+                requireMatchingClearance(clearance);
+                if (at == null) {
+                    throw new LabRuleException("LAB_CLEARANCE_REQUIRED",
+                            "Thời điểm kiểm tra quyền xét nghiệm là bắt buộc");
+                }
+                if (clearance.isExpiredAt(at)) {
+                    throw new LabRuleException("LAB_CLEARANCE_EXPIRED",
+                            "Quyền thực hiện xét nghiệm đã hết hạn");
+                }
+            }
+        } else {
+            recordResults(results, conclusion, performedDate);
+            return;
+        }
+        recordValidatedResults(results, conclusion, performedDate, at);
+    }
+
+    private void rejectResultsIfFinal() {
         if (isFinal()) {
             if (careContractVersion == 1) {
                 throw new LabResultFinalizedException();
             }
             throw new LabRuleException("LAB_ALREADY_FINISHED", "Xét nghiệm đã kết thúc");
         }
-        if (careContractVersion == 1 && (status != LabTestStatus.IN_PROGRESS
-                || (clearanceId == null && emergencyOverrideId == null))) {
-            throw new LabRuleException("LAB_CLEARANCE_REQUIRED",
-                    "Cần bắt đầu xét nghiệm bằng quyền hợp lệ hoặc phê duyệt cấp cứu trước khi nhập kết quả");
-        }
+    }
+
+    private void recordValidatedResults(List<LabResult> results, String conclusion, LocalDate performedDate,
+                                        Instant completedAt) {
         if (results == null || results.isEmpty() || results.stream().anyMatch(Objects::isNull)) {
             throw new LabRuleException("LAB_RESULT_EMPTY", "Kết quả xét nghiệm không được để trống");
         }
@@ -246,7 +285,7 @@ public final class LabTest {
         if (careContractVersion == 1) {
             this.resultVersion++;
         }
-        this.updatedAt = Instant.now();
+        this.updatedAt = completedAt == null ? Instant.now() : completedAt;
     }
 
     /** Changes lifecycle only along the allowed state machine. Completion requires results. */

@@ -129,6 +129,26 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void signedHumanAccessTokenWithoutExpiration_leavesRequestUnauthenticated() throws Exception {
+        String token = createTokenWithoutExpiration("11111111-1111-1111-1111-111111111111",
+                "ADMIN", JwtClaims.ACCESS_TOKEN_TYPE);
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void signedServiceTokenWithoutExpiration_leavesRequestUnauthenticated() throws Exception {
+        String token = createTokenWithoutExpiration("billing-service",
+                "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE);
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void expiredToken_leavesRequestUnauthenticated() throws Exception {
         String token = createToken("11111111-1111-1111-1111-111111111111", "ADMIN",
                 JwtClaims.ACCESS_TOKEN_TYPE, SIGNING_KEY, Instant.now().minusSeconds(60), builder -> builder);
@@ -172,5 +192,15 @@ class JwtAuthFilterTest {
                 .issuedAt(Date.from(Instant.now().minusSeconds(10)))
                 .expiration(Date.from(expiresAt));
         return customizer.apply(builder).signWith(key).compact();
+    }
+
+    private String createTokenWithoutExpiration(String subject, String role, String tokenType) {
+        return Jwts.builder()
+                .subject(subject)
+                .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, tokenType)
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .signWith(SIGNING_KEY)
+                .compact();
     }
 }

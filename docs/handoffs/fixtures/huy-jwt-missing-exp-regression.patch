@@ -1,0 +1,88 @@
+diff --git a/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/infrastructure/security/JwtAuthFilterTest.java b/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/infrastructure/security/JwtAuthFilterTest.java
+index 5b86a8c4..eaa4f1ee 100644
+--- a/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/infrastructure/security/JwtAuthFilterTest.java
++++ b/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/infrastructure/security/JwtAuthFilterTest.java
+@@ -63,6 +63,30 @@ class JwtAuthFilterTest {
+         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+     }
+ 
++    @Test
++    void accessTokenWithoutExpiration_adminLeavesRequestUnauthenticated() throws Exception {
++        String token = createTokenWithoutExpiration(UUID.randomUUID().toString(), "ADMIN");
++
++        filter.doFilter(
++                requestWithToken(token),
++                new MockHttpServletResponse(),
++                new MockFilterChain());
++
++        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
++    }
++
++    @Test
++    void accessTokenWithoutExpiration_pharmacistLeavesRequestUnauthenticated() throws Exception {
++        String token = createTokenWithoutExpiration(UUID.randomUUID().toString(), "PHARMACIST");
++
++        filter.doFilter(
++                requestWithToken(token),
++                new MockHttpServletResponse(),
++                new MockFilterChain());
++
++        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
++    }
++
+     @Test
+     void invalidSignature_leavesRequestUnauthenticated() throws Exception {
+         SecretKey otherKey = Keys.hmacShaKeyFor(
+@@ -165,4 +189,14 @@ class JwtAuthFilterTest {
+         }
+         return builder.signWith(SIGNING_KEY).compact();
+     }
++
++    private String createTokenWithoutExpiration(String subject, String role) {
++        return Jwts.builder()
++                .subject(subject)
++                .claim(JwtClaims.ROLE, role)
++                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
++                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
++                .signWith(SIGNING_KEY)
++                .compact();
++    }
+ }
+diff --git a/backend/report-service/src/test/java/com/mediflow/report/infrastructure/security/JwtAuthFilterTest.java b/backend/report-service/src/test/java/com/mediflow/report/infrastructure/security/JwtAuthFilterTest.java
+index 97542c98..d4a32dd7 100644
+--- a/backend/report-service/src/test/java/com/mediflow/report/infrastructure/security/JwtAuthFilterTest.java
++++ b/backend/report-service/src/test/java/com/mediflow/report/infrastructure/security/JwtAuthFilterTest.java
+@@ -72,6 +72,18 @@ class JwtAuthFilterTest {
+                 .isEqualTo("user-1");
+     }
+ 
++    @Test
++    void accessTokenWithoutExpiration_isRejectedOnOutpatientReportPath() throws Exception {
++        String accountId = UUID.randomUUID().toString();
++        MockHttpServletRequest request = requestWithToken(tokenWithoutExpiration(accountId));
++        request.setRequestURI("/api/v1/reports/outpatient/daily");
++
++        new JwtAuthFilter(new JwtProperties(SECRET)).doFilter(request,
++                new MockHttpServletResponse(), new MockFilterChain());
++
++        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
++    }
++
+     private MockHttpServletRequest requestWithToken(String token) {
+         MockHttpServletRequest request = new MockHttpServletRequest();
+         request.addHeader("Authorization", "Bearer " + token);
+@@ -100,4 +112,14 @@ class JwtAuthFilterTest {
+                 .signWith(KEY)
+                 .compact();
+     }
++
++    private String tokenWithoutExpiration(String accountId) {
++        return Jwts.builder()
++                .subject(accountId)
++                .claim(JwtClaims.ROLE, "ADMIN")
++                .claim(JwtClaims.TYPE, "access")
++                .issuedAt(new Date())
++                .signWith(KEY)
++                .compact();
++    }
+ }

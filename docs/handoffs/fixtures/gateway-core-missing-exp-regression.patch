@@ -1,0 +1,51 @@
+diff --git a/backend/core-service/src/test/java/com/mediflow/organization/infrastructure/security/JwtAuthFilterTest.java b/backend/core-service/src/test/java/com/mediflow/organization/infrastructure/security/JwtAuthFilterTest.java
+index 9e3418e7..20035aa5 100644
+--- a/backend/core-service/src/test/java/com/mediflow/organization/infrastructure/security/JwtAuthFilterTest.java
++++ b/backend/core-service/src/test/java/com/mediflow/organization/infrastructure/security/JwtAuthFilterTest.java
+@@ -81,6 +81,21 @@ class JwtAuthFilterTest {
+         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+     }
+ 
++    @Test
++    void humanAccessTokenWithoutExpiration_leavesRequestUnauthenticated() throws Exception {
++        String token = Jwts.builder()
++                .subject(UUID.randomUUID().toString())
++                .claim(JwtClaims.ROLE, "ADMIN")
++                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
++                .issuedAt(Date.from(Instant.now()))
++                .signWith(SIGNING_KEY)
++                .compact();
++
++        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
++
++        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
++    }
++
+     @Test
+     void humanRefreshToken_isNotAcceptedAsAuthentication() throws Exception {
+         String token = createToken(UUID.randomUUID().toString(), "ADMIN", JwtClaims.REFRESH_TOKEN_TYPE,
+diff --git a/backend/gateway/src/test/java/com/mediflow/gateway/GatewayWebTest.java b/backend/gateway/src/test/java/com/mediflow/gateway/GatewayWebTest.java
+index d50a4a98..a5cc0799 100644
+--- a/backend/gateway/src/test/java/com/mediflow/gateway/GatewayWebTest.java
++++ b/backend/gateway/src/test/java/com/mediflow/gateway/GatewayWebTest.java
+@@ -165,6 +165,20 @@ class GatewayWebTest {
+         assertUnauthorized(refresh);
+     }
+ 
++    @Test
++    void humanAccessTokenWithoutExpiration_returns401Envelope() {
++        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
++        String token = Jwts.builder()
++                .subject(UUID.randomUUID().toString())
++                .claim(JwtClaims.ROLE, Roles.ADMIN)
++                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
++                .issuedAt(Date.from(Instant.now()))
++                .signWith(key)
++                .compact();
++
++        assertUnauthorized(token);
++    }
++
+     @Test
+     void forgedIdentityHeaders_doNotUpgradePatientRole() {
+         String patientToken = jwt.issueAccessToken(

@@ -1,5 +1,24 @@
 # Registry bàn giao backend MVP
 
+## Audit API/nghiệp vụ bổ sung — 19/10/2026
+
+PR #439 đã merge; audit tiếp theo khóa base `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
+Các ghi nhận recheck bên dưới là lịch sử tại source lock của chúng. Không dùng tên tag hoặc
+suite mặc định xanh để kết luận những regression mới sau đây đã đóng.
+
+| Owner | Việc hiện hành | Evidence / handoff |
+|---|---|---|
+| Vinh | Đã sửa Billing credential boundary, Lab exact clearance khi ghi kết quả, Notification mandatory JWT exp | [Audit evidence](../acceptance/backend-api-audit-2026-10-19/README.md): 5.734 default tests xanh và 1 packaged runtime acceptance xanh; global closeout vẫn NO-GO |
+| Hoàng Anh | Đã tái hiện thiếu expiration và Pharmacy service gọi được credential verifier; department/staff race còn cần PG proof | [JWT/Core audit](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
+| Vinh | Notification V1 hash normalized JSON không phát hiện khác bytes; cần cutover bảo toàn historical replay | [Notification byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md) |
+| Huy | FE Pharmacy dùng boolean receipt legacy để chặn command xuất thuốc V1 | [Pharmacy V1 UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
+| Huy | Pharmacy và route Report outpatient đều đã tái hiện thiếu mandatory exp; cần đồng bộ boundary | [Pharmacy/Report JWT](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
+
+Backend chưa đạt trạng thái đóng sạch khi các mục xác nhận còn mở. Production fixes ngoài
+scope Vinh vẫn giao đúng owner; Vinh kiểm thử chung và review evidence trước đóng handoff.
+
+## Lịch sử recheck trước audit bổ sung
+
 Refresh **2026-10-19**, source remote master `4c19dd4a`, gồm Gateway fix PR #431
 (`2805b07c`). Bản sửa test và tài liệu trong lượt recheck vẫn là local diff cho đến khi
 được commit/merge; không nhầm với nguồn remote đã đóng mọi acceptance.

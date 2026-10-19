@@ -9,9 +9,9 @@ Các entry files/skill cũ có thể trỏ qua tài liệu ngắn trong thư m�
 
 ## Ownership và scope
 
-Vinh owns Clinical/Lab; Inpatient deferred. Huy owns Pharmacy/Report; Surgery deferred.
-Hoàng Anh owns Organization/Patient/Gateway. Lộc owns Billing/Notification.
-Core co-host không chuyển ownership; Support có Huy/Report và Lộc/Notification.
+Vinh owns Clinical/Lab/Billing/Notification; Inpatient deferred. Huy owns Pharmacy/Report; Surgery deferred.
+Hoàng Anh owns Organization/Patient/Gateway. Vinh took over Billing/Notification from Lộc on 2026-10-18.
+Core co-host không chuyển ownership; Support có Huy/Report và Vinh/Notification.
 Root build/common/CI/scripts/Compose là shared, chỉ sửa khi được giao rõ.
 Branch name/reviewer/coordinator không tự cấp quyền sửa module khác. Subagents cũng vậy.
 

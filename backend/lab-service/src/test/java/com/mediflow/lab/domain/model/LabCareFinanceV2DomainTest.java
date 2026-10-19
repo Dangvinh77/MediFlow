@@ -116,7 +116,7 @@ class LabCareFinanceV2DomainTest {
         LabEmergencyOverride override = overrideFor(test);
         test.start(null, override, NOW);
 
-        assertThatThrownBy(() -> test.recordResults(List.of(result()), "Normal", REQUESTED_DATE.minusDays(1)))
+        assertThatThrownBy(() -> test.recordResults(List.of(result()), "Normal", REQUESTED_DATE.minusDays(1), null, NOW))
                 .isInstanceOf(LabRuleException.class)
                 .extracting(LabRuleException.class::cast)
                 .extracting(LabRuleException::getCode)
@@ -125,11 +125,45 @@ class LabCareFinanceV2DomainTest {
     }
 
     @Test
+    void recordResults_v2ExpiredClearanceAtAction_rejectsWithoutCompleting() {
+        LabTest test = v2Test();
+        LabFinancialClearance clearance = clearanceFor(test, test.getCareEpisodeType(), test.getCareEpisodeId(), NOW);
+        test.grantClearance(clearance);
+        test.start(clearance, null, NOW.minusSeconds(1));
+
+        assertThatThrownBy(() -> test.recordResults(List.of(result()), "Normal", REQUESTED_DATE, clearance, NOW))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_CLEARANCE_EXPIRED");
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
+        assertThat(test.getResultVersion()).isZero();
+        assertThat(test.getResults()).isEmpty();
+    }
+
+    @Test
+    void recordResults_v2RequiresTheClearanceBoundToThisTest() {
+        LabTest test = v2Test();
+        LabFinancialClearance bound = clearanceFor(test, test.getCareEpisodeType(), test.getCareEpisodeId(), null);
+        LabFinancialClearance other = clearanceFor(test, test.getCareEpisodeType(), test.getCareEpisodeId(), null);
+        test.grantClearance(bound);
+        test.start(bound, null, NOW);
+
+        assertThatThrownBy(() -> test.recordResults(List.of(result()), "Normal", REQUESTED_DATE, other, NOW))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_CLEARANCE_TARGET_MISMATCH");
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
+        assertThat(test.getResultVersion()).isZero();
+    }
+
+    @Test
     void recordResults_v2CompletesOnceAndIncrementsImmutableSnapshotVersion() {
         LabTest test = v2Test();
         test.start(null, overrideFor(test), NOW);
 
-        test.recordResults(List.of(result()), "Normal", REQUESTED_DATE);
+        test.recordResults(List.of(result()), "Normal", REQUESTED_DATE, null, NOW);
 
         assertThat(test.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
         assertThat(test.getResultVersion()).isEqualTo(1);
@@ -140,7 +174,7 @@ class LabCareFinanceV2DomainTest {
     void recordResults_v2TerminalSnapshot_returnsConflictCode() {
         LabTest test = v2Test();
         test.start(null, overrideFor(test), NOW);
-        test.recordResults(List.of(result()), "Normal", REQUESTED_DATE);
+        test.recordResults(List.of(result()), "Normal", REQUESTED_DATE, null, NOW);
 
         assertThatThrownBy(() -> test.recordResults(List.of(result()), "Amended", REQUESTED_DATE))
                 .isInstanceOf(DuplicateResourceException.class)
@@ -169,7 +203,8 @@ class LabCareFinanceV2DomainTest {
             LabTest test, CareEpisodeType episodeType, UUID episodeId, Instant expiresAt) {
         return LabFinancialClearance.grant(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), UUID.randomUUID(), test.getTestId(), test.getPatientId(), episodeType,
-                episodeId, ClearancePurpose.LAB_TEST, new BigDecimal("250000.00"), "VND", expiresAt, false, NOW);
+                episodeId, ClearancePurpose.LAB_TEST, new BigDecimal("250000.00"), "VND", expiresAt, false,
+                NOW.minusSeconds(60));
     }
 
     private static LabEmergencyOverride overrideFor(LabTest test) {
