@@ -3,18 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
- A15(["View management reports"])
- A16(["Choose period and scope"])
- A17(["Send notification"])
- A18(["Choose recipient and channel"])
+ A9(["Transfer staff department"])
+ A11(["Update department"])
  end
- ACTOR --> A15
- ACTOR --> A17
- A15 -.->|"«include»"| A16
- A17 -.->|"«include»"| A18
+ ACTOR --> A9
+ ACTOR --> A11
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A15,A17 main;
- class A16,A18 sub;
+ class A9,A11 main;

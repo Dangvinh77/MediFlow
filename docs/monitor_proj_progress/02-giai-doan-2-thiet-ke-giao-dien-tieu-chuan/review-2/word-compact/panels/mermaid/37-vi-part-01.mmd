@@ -1,0 +1,23 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 1
+ actor Doctor as Bác sĩ
+ participant C as Clinical API
+ participant L as Lab API
+Note over Doctor,L: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+Note over Doctor,C: Tiền điều kiện: đã bắt đầu khám ở hình 07, lệnh API actor qua Gateway.
+opt Có chỉ định xét nghiệm
+Note over Doctor,L: Hình 08: có kết quả hoàn tất, hoặc dừng để chờ kết quả
+end
+Doctor->>C: Đọc hồ sơ hiện tại và bằng chứng khám sẵn có
+C-->>Doctor: Hồ sơ / chẩn đoán / kết quả đã gắn, hoặc lỗi truy cập
+alt Sai actor, hồ sơ không sẵn sàng hoặc thiếu bằng chứng cần thiết
+Doctor->>Doctor: Dừng kết luận, xử lý quyền hoặc chờ bằng chứng
+else Đủ bằng chứng để kết luận khám
+Doctor->>C: Ghi nội dung khám và chẩn đoán
+alt Dữ liệu sai hoặc hồ sơ không còn cho ghi
+C-->>Doctor: Từ chối, sửa hoặc tải lại, chưa xác nhận hoàn tất
+else Đã lưu chẩn đoán
+C-->>Doctor: Thông tin khám đã lưu
+end
+end

@@ -3,38 +3,22 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
  subgraph SYS["MediFlow — CASHIER"]
- C1(["Find invoice"])
- C2(["View patient invoices"])
- C3(["Create invoice"])
- C4(["Validate invoice items"])
- C5(["Record invoice payment"])
- C6(["Validate payment command"])
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  C7(["Find payment request [V1]"])
- C8(["Identify source and target"])
- C9(["Record ledger payment [V1]"])
- C10(["Check amount and replay key"])
- C11(["Return payment receipt"])
- C12(["Refund payment [V1]"])
- C13(["Check refundable balance"])
- C14(["Record amount and reason"])
+ C9(["Record payment [V1]"])
+ C11(["Issue payment receipt"])
+ C12(["Refund eligible payment [V1]"])
  end
- ACTOR --> C1
- ACTOR --> C3
- ACTOR --> C5
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> C7
  ACTOR --> C9
- C1 -.->|"«include»"| C2
- C3 -.->|"«include»"| C4
- C5 -.->|"«include»"| C6
- C7 -.->|"«include»"| C8
- C9 -.->|"«include»"| C10
+ ACTOR --> C12
  C9 -.->|"«include»"| C11
- C12 -.->|"«extend» [E1]"| C9
- C12 -.->|"«include»"| C13
- C12 -.->|"«include»"| C14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class C1,C3,C5,C7,C9 main;
- class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,C7,C9,C12 main;
+ class C11 sub;

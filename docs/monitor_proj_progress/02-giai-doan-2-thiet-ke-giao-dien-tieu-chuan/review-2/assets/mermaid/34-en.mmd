@@ -3,36 +3,28 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
  subgraph SYS["MediFlow — PHARMACIST"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  P1(["Find medicine"])
- P2(["Read medicine catalogue"])
- P3(["Filter by keyword"])
+ P3(["Filter medicine catalogue"])
  P4(["Create medicine"])
- P5(["Enter medicine information"])
  P6(["Adjust stock"])
- P7(["Record quantity and reason"])
  P8(["Review prescription"])
- P9(["Read prescription lines"])
  P10(["Dispense prescription [V1]"])
- P11(["Check exact clearance"])
- P12(["Validate stock / reservation"])
- P13(["Record dispense and stock change"])
+ P13(["Record stock issue"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> P1
  ACTOR --> P4
  ACTOR --> P6
  ACTOR --> P8
  ACTOR --> P10
- P1 -.->|"«include»"| P2
  P3 -.->|"«extend» [E1]"| P1
- P4 -.->|"«include»"| P5
- P6 -.->|"«include»"| P7
- P8 -.->|"«include»"| P9
- P10 -.->|"«include»"| P11
- P10 -.->|"«include»"| P12
  P10 -.->|"«include»"| P13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class P1,P4,P6,P8,P10 main;
- class P2,P3,P5,P7,P9,P11,P12,P13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,P1,P4,P6,P8,P10 main;
+ class P3,P13 sub;

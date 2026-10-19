@@ -1,0 +1,36 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Doctor
+ actor Patient as Patient
+ participant C as Clinical API
+ participant L as Lab API
+ Note over Doctor,C: Precondition: examination started in figure 07, actor API calls pass through Gateway.
+ opt A laboratory test was indicated
+  Note over Doctor,L: Figure 08: completed result available, or stop and await result
+ end
+ Doctor->>C: Read current record and available clinical evidence
+ C-->>Doctor: Record / diagnoses / attached results, or access error
+ alt Wrong actor, unavailable record or required evidence missing
+  Doctor->>Doctor: Stop conclusion, resolve access or await evidence
+ else Evidence sufficient for clinical conclusion
+  Doctor->>C: Record findings and diagnosis
+  alt Data invalid or record no longer writable
+   C-->>Doctor: Reject, correct or reload, do not confirm completion
+  else Diagnosis saved
+   C-->>Doctor: Saved clinical information
+   Doctor-->>Patient: Explain findings, diagnosis and treatment plan
+   Note over Doctor,Patient: Human consultation, no patient result portal or delivery receipt is invented.
+   opt Medication is indicated
+    Note over Doctor,C: Figure 38: separate prescription workflow
+   end
+   Doctor->>C: Complete visit with outpatient disposition
+   alt Required diagnosis/disposition or lifecycle guard fails
+    C-->>Doctor: Reject completion, resolve and retry
+   else Completion rules pass
+    C->>C: Commit completion and configured outbox
+    C-->>Doctor: Visit completion confirmed
+    Doctor-->>Patient: Confirm next steps / outpatient follow-up
+   end
+  end
+ end

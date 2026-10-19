@@ -1,0 +1,22 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 9
+ actor Patient as Bệnh nhân
+ actor Nurse as Điều dưỡng
+ participant UI as Web / Flutter
+ participant G as Gateway
+ participant C as Clinical
+Note over Patient,C: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Đạt chính sách route
+alt Dữ liệu sai, lịch quá khứ, bác sĩ không hợp lệ, trùng lịch PENDING hoặc lỗi tra cứu
+C-->>G: Lỗi dữ liệu / xung đột / phụ thuộc, không commit lịch
+G-->>UI: Response lỗi
+UI-->>Nurse: Hiện lý do, sửa lựa chọn hoặc chờ phục hồi rồi thử lại
+else Đủ điều kiện tạo lịch
+C->>C: Lưu lịch PENDING và phát sự kiện theo cấu hình
+C-->>G: Định danh lịch đã tạo
+G-->>UI: Response lịch hẹn
+UI-->>Nurse: Hiện thông tin lịch đã ghi nhận
+Nurse-->>Patient: Xác nhận giờ hẹn và hướng dẫn đến tiếp nhận
+end
+end

@@ -3,18 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
- N1(["Register patient"])
- N2(["Record patient details"])
- N3(["Update patient"])
- N4(["Find patient record"])
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  end
- ACTOR --> N1
- ACTOR --> N3
- N1 -.->|"«include»"| N2
- N3 -.->|"«include»"| N4
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N1,N3 main;
- class N2,N4 sub;
+ class AUTH_LOGIN,AUTH_REFRESH main;

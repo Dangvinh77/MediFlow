@@ -1,18 +1,20 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 16, "rankSpacing": 28, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 22, "width": 125, "height": 65, "boxMargin": 14, "boxTextMargin": 4, "noteMargin": 14, "messageMargin": 35, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 15, "wrapPadding": 6}, "er": {"useMaxWidth": true, "nodeSpacing": 22, "rankSpacing": 30, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 24, "nodeSpacing": 20, "rankSpacing": 30}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
- autonumber 1
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
+autonumber 1
+ actor Patient as Patient
+ actor Nurse as Nurse
+ participant C as Clinical API
  participant Q as RabbitMQ
- Staff->>UI: Check in exact appointment
- UI->>C: Check-in command
- C->>C: Save appointment + durable outbox
- C-->>Q: Appointment fact with exact visit identity
- Q->>B: Consume selected V1 fact
- B->>B: Claim source / issue EXAM charge and request
- Staff->>UI: Record payment
- UI->>B: Complete request with idempotency key
- B->>B: Atomic payment + allocation + clearance + outbox
- B-->>Q: financial.clearance.granted
+ participant B as Billing API
+Note over Patient,B: Continuation under the shown conditions. See full figure.
+Note over Nurse,C: Precondition: figure 05 saved an appointment, API calls pass through Gateway.
+Patient->>Nurse: Arrive for the saved appointment
+Nurse->>C: Check in the exact appointment
+alt Appointment missing, wrong lifecycle or unauthorized
+C-->>Nurse: Reject, correct appointment / permission, stop this attempt
+else Valid pending appointment
+C->>C: Commit AWAITING_PAYMENT appointment + outbox
+C-->>Nurse: Check-in accepted, examination not yet authorized
+C-)Q: Publish exact appointment fact after commit
+Q-)B: Deliver fact for EXAM charge issuance
+end

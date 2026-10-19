@@ -1,0 +1,645 @@
+[
+  {
+    "number": 29,
+    "role": "ADMIN",
+    "title": [
+      "Administrator tasks",
+      "Tác vụ quản trị viên"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "A1": [
+        "Create account",
+        "Tạo tài khoản"
+      ],
+      "A2": [
+        "Assign account role",
+        "Gán vai trò tài khoản"
+      ],
+      "A3": [
+        "Change account status",
+        "Đổi trạng thái tài khoản"
+      ],
+      "A5": [
+        "Create staff profile",
+        "Tạo hồ sơ nhân viên"
+      ],
+      "A7": [
+        "Update staff profile",
+        "Cập nhật hồ sơ nhân viên"
+      ],
+      "A9": [
+        "Transfer staff department",
+        "Chuyển khoa công tác"
+      ],
+      "A11": [
+        "Update department",
+        "Cập nhật khoa"
+      ],
+      "A13": [
+        "Create department",
+        "Tạo khoa"
+      ],
+      "A15": [
+        "View management reports",
+        "Xem báo cáo quản lý"
+      ],
+      "A17": [
+        "Send notification",
+        "Gửi thông báo"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "A1",
+      "A3",
+      "A5",
+      "A7",
+      "A9",
+      "A11",
+      "A13",
+      "A15",
+      "A17"
+    ],
+    "edges": [
+      [
+        "A1",
+        "A2",
+        "include",
+        null
+      ]
+    ],
+    "sources": [
+      "backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java",
+      "backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java",
+      "backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java",
+      "backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java",
+      "backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quyền cụ thể tại những nghiệp vụ khác theo ma trận nguồn; không bỏ qua business guards. Không thêm xóa tài khoản hay màn hình chỉnh quyền tùy ý. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 30,
+    "role": "MANAGER",
+    "title": [
+      "Manager tasks",
+      "Tác vụ quản lý"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "M1": [
+        "View outpatient report",
+        "Xem báo cáo ngoại trú"
+      ],
+      "M3": [
+        "Inspect report coverage",
+        "Xem độ phủ báo cáo"
+      ],
+      "M4": [
+        "View financial report",
+        "Xem báo cáo tài chính"
+      ],
+      "M6": [
+        "View medicine statistics",
+        "Xem thống kê thuốc"
+      ],
+      "M8": [
+        "View appointments",
+        "Xem lịch hẹn"
+      ],
+      "M10": [
+        "Filter appointments by department",
+        "Lọc lịch hẹn theo khoa"
+      ],
+      "M11": [
+        "View staff directory",
+        "Tra cứu nhân viên"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "M1",
+      "M4",
+      "M6",
+      "M8",
+      "M11"
+    ],
+    "edges": [
+      [
+        "M3",
+        "M1",
+        "extend",
+        [
+          "coverage inspection requested",
+          "cần xem độ phủ"
+        ]
+      ],
+      [
+        "M10",
+        "M8",
+        "extend",
+        [
+          "department filter selected",
+          "chọn bộ lọc khoa"
+        ]
+      ]
+    ],
+    "sources": [
+      "backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java",
+      "backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java",
+      "backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java",
+      "backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java",
+      "backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doanh thu khoa, danh sách lịch hẹn/xét nghiệm, nhân viên và khoa. MANAGER không tạo tài khoản, sửa nhân viên hay thực hiện lệnh khám/thu tiền. Báo cáo snapshot phụ thuộc availability và coverage tại runtime. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 31,
+    "role": "DOCTOR",
+    "title": [
+      "Doctor tasks",
+      "Tác vụ bác sĩ"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "D1": [
+        "Review clinical history",
+        "Tra cứu hồ sơ khám"
+      ],
+      "D3": [
+        "Start examination [V1]",
+        "Bắt đầu khám [V1]"
+      ],
+      "D5": [
+        "Record consultation",
+        "Ghi nhận khám bệnh"
+      ],
+      "D7": [
+        "Record diagnosis",
+        "Ghi chẩn đoán"
+      ],
+      "D8": [
+        "Order lab test",
+        "Chỉ định xét nghiệm"
+      ],
+      "D10": [
+        "Review lab results",
+        "Đọc kết quả xét nghiệm"
+      ],
+      "D11": [
+        "Issue prescription",
+        "Kê đơn thuốc"
+      ],
+      "D13": [
+        "Complete visit [V1]",
+        "Hoàn tất lượt khám [V1]"
+      ],
+      "D14": [
+        "Record visit disposition",
+        "Ghi hướng xử trí"
+      ],
+      "D15": [
+        "Cancel prescription",
+        "Hủy đơn thuốc"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "D1",
+      "D3",
+      "D5",
+      "D7",
+      "D10",
+      "D13",
+      "D15"
+    ],
+    "edges": [
+      [
+        "D8",
+        "D5",
+        "extend",
+        [
+          "test clinically indicated",
+          "có chỉ định xét nghiệm"
+        ]
+      ],
+      [
+        "D11",
+        "D5",
+        "extend",
+        [
+          "medication clinically indicated",
+          "có chỉ định dùng thuốc"
+        ]
+      ],
+      [
+        "D13",
+        "D7",
+        "include",
+        null
+      ],
+      [
+        "D13",
+        "D14",
+        "include",
+        null
+      ]
+    ],
+    "sources": [
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java",
+      "backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java",
+      "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật care-finance-v2; start-exam cần exact EXAM clearance hoặc audited override đã hỗ trợ. AppointmentController còn cấp quyền xem/sửa lịch/trạng thái; source cũng cho phép xem báo cáo vận hành và hủy xét nghiệm. Bác sĩ không check-in thay điều dưỡng, cấp thuốc thay dược sĩ hay thu tiền thay thu ngân. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 32,
+    "role": "NURSE",
+    "title": [
+      "Nurse tasks",
+      "Tác vụ điều dưỡng"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "N1": [
+        "Register patient",
+        "Tạo hồ sơ bệnh nhân"
+      ],
+      "N3": [
+        "Update patient profile",
+        "Cập nhật hồ sơ bệnh nhân"
+      ],
+      "N4": [
+        "Find patient",
+        "Tra cứu bệnh nhân"
+      ],
+      "N5": [
+        "Schedule appointment",
+        "Đặt lịch khám"
+      ],
+      "N7": [
+        "View appointments",
+        "Tra cứu lịch hẹn"
+      ],
+      "N9": [
+        "Reschedule appointment",
+        "Điều chỉnh lịch hẹn"
+      ],
+      "N11": [
+        "Check in patient [V1]",
+        "Tiếp nhận bệnh nhân [V1]"
+      ],
+      "N13": [
+        "Read clinical information",
+        "Tra cứu hồ sơ khám"
+      ],
+      "N14": [
+        "Read laboratory information",
+        "Tra cứu xét nghiệm"
+      ],
+      "N15": [
+        "View patient notifications",
+        "Xem thông báo bệnh nhân"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "N1",
+      "N3",
+      "N4",
+      "N5",
+      "N7",
+      "N9",
+      "N11",
+      "N13",
+      "N14",
+      "N15"
+    ],
+    "edges": [],
+    "sources": [
+      "backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java",
+      "backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java",
+      "backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java",
+      "backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "[V1] check-in cần bật care-finance-v2 và không đồng nghĩa bắt đầu khám. NURSE xem danh sách/chi tiết xét nghiệm và danh sách thông báo theo bệnh nhân; không ghi chẩn đoán, kết quả xét nghiệm, đơn thuốc hay thanh toán; không có quyền mở endpoint chi tiết thông báo. Không tạo role RECEPTIONIST. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 33,
+    "role": "LAB_TECH",
+    "title": [
+      "Laboratory technician tasks",
+      "Tác vụ kỹ thuật viên xét nghiệm"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "L1": [
+        "View test worklist",
+        "Xem danh sách xét nghiệm"
+      ],
+      "L3": [
+        "Filter tests by status",
+        "Lọc xét nghiệm theo trạng thái"
+      ],
+      "L4": [
+        "Start test [V1]",
+        "Bắt đầu xét nghiệm [V1]"
+      ],
+      "L7": [
+        "Record test results",
+        "Ghi kết quả xét nghiệm"
+      ],
+      "L10": [
+        "Cancel test",
+        "Hủy xét nghiệm"
+      ],
+      "L12": [
+        "Update allowed test status",
+        "Cập nhật trạng thái xét nghiệm"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "L1",
+      "L4",
+      "L7",
+      "L10",
+      "L12"
+    ],
+    "edges": [
+      [
+        "L3",
+        "L1",
+        "extend",
+        [
+          "status filter selected",
+          "chọn bộ lọc trạng thái"
+        ]
+      ]
+    ],
+    "sources": [
+      "backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clearance áp dụng cho protected action V1. LAB_TECH tra cứu xét nghiệm, ghi kết quả/trạng thái; không tạo chỉ định, kê đơn hay thu tiền. Lọc trạng thái là nhánh mở rộng tùy chọn của danh sách. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 34,
+    "role": "PHARMACIST",
+    "title": [
+      "Pharmacist tasks",
+      "Tác vụ dược sĩ"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "P1": [
+        "Find medicine",
+        "Tra cứu thuốc"
+      ],
+      "P3": [
+        "Filter medicine catalogue",
+        "Lọc danh mục thuốc"
+      ],
+      "P4": [
+        "Create medicine",
+        "Thêm thuốc"
+      ],
+      "P6": [
+        "Adjust stock",
+        "Điều chỉnh tồn kho"
+      ],
+      "P8": [
+        "Review prescription",
+        "Tra cứu đơn thuốc"
+      ],
+      "P10": [
+        "Dispense prescription [V1]",
+        "Cấp thuốc theo đơn [V1]"
+      ],
+      "P13": [
+        "Record stock issue",
+        "Ghi nhận xuất kho"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "P1",
+      "P4",
+      "P6",
+      "P8",
+      "P10"
+    ],
+    "edges": [
+      [
+        "P3",
+        "P1",
+        "extend",
+        [
+          "catalogue filter selected",
+          "chọn bộ lọc thuốc"
+        ]
+      ],
+      [
+        "P10",
+        "P13",
+        "include",
+        null
+      ]
+    ],
+    "sources": [
+      "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java",
+      "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm tra exact PRESCRIPTION clearance, tồn và reservation. Dược sĩ chủ động cấp thuốc, không tự cấp khi nhận sự kiện thanh toán. PHARMACIST không tạo/hủy đơn; hết hạn là xử lý lifecycle của hệ thống, không phải tác vụ người dùng. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  },
+  {
+    "number": 35,
+    "role": "CASHIER",
+    "title": [
+      "Cashier tasks",
+      "Tác vụ thu ngân"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "C7": [
+        "Find payment request [V1]",
+        "Tra cứu yêu cầu thu [V1]"
+      ],
+      "C9": [
+        "Record payment [V1]",
+        "Ghi nhận thanh toán [V1]"
+      ],
+      "C11": [
+        "Issue payment receipt",
+        "Cấp biên nhận thanh toán"
+      ],
+      "C12": [
+        "Refund eligible payment [V1]",
+        "Hoàn tiền giao dịch hợp lệ [V1]"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "C7",
+      "C9",
+      "C12"
+    ],
+    "edges": [
+      [
+        "C9",
+        "C11",
+        "include",
+        null
+      ]
+    ],
+    "sources": [
+      "backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java",
+      "backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java",
+      "backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java",
+      "backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java",
+      "backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java"
+    ],
+    "note": [
+      "This main diagram uses V1 ledger payment requests. Refund is an independent later operation on a refundable payment; it does not extend the act of paying. Legacy invoice commands remain source-supported compatibility operations outside the main V1 journey. Repeating a command preserves intent and must not collect money twice.",
+      "Hình chính dùng yêu cầu thu ledger V1. Hoàn tiền là thao tác độc lập sau đó trên giao dịch đủ điều kiện, không extend hành vi thanh toán. Các lệnh hóa đơn cũ vẫn có trong source ở nhánh compatibility, ngoài luồng V1 chính. Gửi lại lệnh phải giữ intent và không thu tiền hai lần."
+    ]
+  },
+  {
+    "number": 36,
+    "role": "PATIENT",
+    "title": [
+      "Patient tasks",
+      "Tác vụ bệnh nhân"
+    ],
+    "nodes": {
+      "AUTH_LOGIN": [
+        "Sign in",
+        "Đăng nhập"
+      ],
+      "AUTH_REFRESH": [
+        "Renew session",
+        "Gia hạn phiên"
+      ],
+      "T6": [
+        "View own notifications",
+        "Xem thông báo của mình"
+      ],
+      "T9": [
+        "Read notification detail",
+        "Đọc chi tiết thông báo"
+      ]
+    },
+    "main": [
+      "AUTH_LOGIN",
+      "AUTH_REFRESH",
+      "T6"
+    ],
+    "edges": [
+      [
+        "T9",
+        "T6",
+        "extend",
+        [
+          "an owned notification is selected",
+          "chọn thông báo của mình"
+        ]
+      ]
+    ],
+    "sources": [
+      "backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java",
+      "backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java",
+      "backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java"
+    ],
+    "note": [
+      "This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.",
+      "Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực tiếp tạo/xem lịch hẹn, lấy hồ sơ bệnh nhân, kết quả xét nghiệm, đơn thuốc hay hóa đơn qua ma trận Gateway/controller hiện tại. Chưa có tự đăng ký hoặc sửa hồ sơ. Đây là khoảng trống tương lai, không vẽ thành chức năng đã có. Mở chi tiết thông báo vẫn kiểm tra ownership độc lập. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình."
+    ]
+  }
+]

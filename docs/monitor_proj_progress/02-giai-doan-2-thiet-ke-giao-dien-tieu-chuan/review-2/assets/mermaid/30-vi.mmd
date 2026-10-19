@@ -3,34 +3,28 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
  subgraph SYS["MediFlow — MANAGER"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  M1(["Xem báo cáo ngoại trú"])
- M2(["Chọn kỳ báo cáo"])
- M3(["Xem độ phủ nguồn dữ liệu"])
+ M3(["Xem độ phủ báo cáo"])
  M4(["Xem báo cáo tài chính"])
- M5(["Chọn ngày hoặc tháng"])
  M6(["Xem thống kê thuốc"])
- M7(["Chọn kỳ và số lượng"])
- M8(["Xem danh sách lịch hẹn"])
- M9(["Đọc trang lịch hẹn"])
- M10(["Lọc theo khoa"])
- M11(["Xem danh sách nhân viên"])
- M12(["Đọc trang nhân viên"])
+ M8(["Xem lịch hẹn"])
+ M10(["Lọc lịch hẹn theo khoa"])
+ M11(["Tra cứu nhân viên"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> M1
  ACTOR --> M4
  ACTOR --> M6
  ACTOR --> M8
  ACTOR --> M11
- M1 -.->|"«include»"| M2
- M1 -.->|"«include»"| M3
- M4 -.->|"«include»"| M5
- M6 -.->|"«include»"| M7
- M8 -.->|"«include»"| M9
- M10 -.->|"«extend» [E1]"| M8
- M11 -.->|"«include»"| M12
+ M3 -.->|"«extend» [E1]"| M1
+ M10 -.->|"«extend» [E2]"| M8
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class M1,M4,M6,M8,M11 main;
- class M2,M3,M5,M7,M9,M10,M12 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,M1,M4,M6,M8,M11 main;
+ class M3,M10 sub;

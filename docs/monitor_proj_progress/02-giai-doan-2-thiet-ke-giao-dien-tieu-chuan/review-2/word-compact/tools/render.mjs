@@ -10,13 +10,33 @@ const puppeteer=(await import(pathToFileURL(require.resolve('puppeteer')).href))
 const {renderMermaid}=await import(pathToFileURL(path.join(process.env.MERMAID_RUNTIME || toolDir,'node_modules/@mermaid-js/mermaid-cli/src/index.js')).href);
 const out=path.resolve(toolDir,'..');const root=path.resolve(out,'..');
 const original=process.argv.includes('--original');
-const selected=process.argv.slice(2).filter(x=>x!=='--original');const jobs=[];
+const selected=process.argv.slice(2).filter(x=>!['--original','--resume'].includes(x));const jobs=[];
 const baseFor=orientation=>orientation==='original'?path.join(root,'assets'):path.join(out,orientation);
 for(const orientation of (original?['original']:['portrait','landscape','panels']))for(const file of (await fs.readdir(path.join(baseFor(orientation),'mermaid'))).filter(x=>x.endsWith('.mmd')))if(!selected.length||selected.includes(file))jobs.push({orientation,file});
 const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH || undefined,headless:true,args:['--allow-file-access-from-files','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
 const config=JSON.parse(await fs.readFile(path.join(root,'assets/mermaid-config.json'),'utf8'));
 const results=[];let next=0;
+let writeId=0;
+async function writeArtifact(file,data){
+ const temp=file+'.render-'+process.pid+'-'+(++writeId)+'.tmp';
+ try{for(let attempt=0;;attempt++)try{await fs.writeFile(temp,data);await fs.rename(temp,file);return;}catch(e){if(attempt>=4||!['UNKNOWN','EPERM','EACCES','EBUSY'].includes(e.code))throw e;await new Promise(r=>setTimeout(r,200*(attempt+1)));}}
+ finally{await fs.rm(temp,{force:true}).catch(()=>{});}
+}
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+// Reuse only successful, unchanged source/SVG/PNG triples after an interrupted
+// batch or transient Windows file lock. Final verification still checks all files.
+if(process.argv.includes('--resume')){
+ const priorPath=path.join(out,original?'render-original-validation.json':selected.length?'render-selected-validation.json':'render-validation.json');
+ let prior=[];try{prior=JSON.parse(await fs.readFile(priorPath,'utf8')).results;}catch{}
+ for(let i=jobs.length-1;i>=0;i--){const job=jobs[i],old=prior.find(r=>r.orientation===job.orientation&&r.file===job.file&&r.status==='pass');if(!old)continue;
+  try{const base=baseFor(job.orientation),stem=job.file.slice(0,-4);
+   const source=hash((await fs.readFile(path.join(base,'mermaid',job.file),'utf8')).replace(/\r\n/g,'\n'));
+   if(source!==old.sourceSha256||hash(await fs.readFile(path.join(base,'svg',stem+'.svg')))!==old.svgSha256||hash(await fs.readFile(path.join(base,'png',stem+'.png')))!==old.pngSha256)continue;
+   results.push(old);jobs.splice(i,1);
+  }catch{}
+ }
+ console.log('Reused',results.length,'verified unchanged triples; rendering',jobs.length,'remaining jobs');
+}
 async function ready(page){await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.querySelectorAll('img')].map(async i=>{await i.decode();if(!i.complete||!i.naturalWidth)throw Error('Missing embedded image')}));await new Promise(r=>setTimeout(r,80));});}
 async function normalize(page){return page.$eval('svg',svg=>{
  const inv=svg.getScreenCTM().inverse();let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
@@ -31,7 +51,10 @@ async function normalize(page){return page.$eval('svg',svg=>{
  const originalViewBox=svg.getAttribute('viewBox');svg.setAttribute('viewBox',`${x} ${y} ${w} ${h}`);svg.setAttribute('width',String(w));svg.setAttribute('height',String(h));svg.style.maxWidth='none';svg.style.width=w+'px';svg.style.height=h+'px';svg.style.backgroundColor='white';svg.setAttribute('preserveAspectRatio','xMidYMid meet');
  return {width:w,height:h,originalViewBox,viewBox:[x,y,w,h],paintedBounds:[left,top,right,bottom],padding:pad,leafCount:leaves.length,images:svg.querySelectorAll('img').length};
  });}
-async function screenshot(svgPath,pngPath,width){const p=await browser.newPage();try{await p.setViewport({width:2000,height:1200,deviceScaleFactor:1});await p.goto(pathToFileURL(svgPath).href,{waitUntil:'load'});await ready(p);const dims=await p.$eval('svg',e=>({w:e.viewBox.baseVal.width,h:e.viewBox.baseVal.height}));const factor=Math.min(width/dims.w,14000/Math.max(dims.w,dims.h));const w=Math.ceil(dims.w*factor),h=Math.ceil(dims.h*factor);await p.setViewport({width:w,height:h,deviceScaleFactor:1});await p.$eval('svg',(e,{w,h})=>{e.setAttribute('width',w);e.setAttribute('height',h);e.style.width=w+'px';e.style.height=h+'px';e.style.maxWidth='none'},{w,h});await p.bringToFront();await ready(p);const el=await p.$('svg');const data=await el.screenshot({path:pngPath,omitBackground:false});return {data,w,h};}finally{await p.close();}}
+async function screenshot(svgPath,pngPath,width){const p=await browser.newPage();try{await p.setViewport({width:2000,height:1200,deviceScaleFactor:1});await p.goto(pathToFileURL(svgPath).href,{waitUntil:'load'});await ready(p);const dims=await p.$eval('svg',e=>({w:e.viewBox.baseVal.width,h:e.viewBox.baseVal.height}));const factor=Math.min(width/dims.w,14000/Math.max(dims.w,dims.h));const w=Math.ceil(dims.w*factor),h=Math.ceil(dims.h*factor);await p.setViewport({width:w,height:h,deviceScaleFactor:1});await p.$eval('svg',(e,{w,h})=>{e.setAttribute('width',w);e.setAttribute('height',h);e.style.width=w+'px';e.style.height=h+'px';e.style.maxWidth='none'},{w,h});await p.bringToFront();await ready(p);const el=await p.$('svg');const data=await el.screenshot({omitBackground:false});if(pngPath)await writeArtifact(pngPath,data);return {data,w,h};}finally{await p.close();}}
+const diagnostic=original?'render-original-validation.json':selected.length?'render-selected-validation.json':'render-validation.json';
+let checkpoint=Promise.resolve();
+function saveProgress(){const payload=JSON.stringify({renderer:'Mermaid CLI 11.12.0 + isolated Chromium SVG replay',results},null,2);checkpoint=checkpoint.then(()=>writeArtifact(path.join(out,diagnostic),payload));return checkpoint;}
 async function worker(){while(next<jobs.length){const j=jobs[next++];let page;try{
  const base=baseFor(j.orientation);await fs.mkdir(path.join(base,'png'),{recursive:true});
  const srcPath=path.join(base,'mermaid',j.file);let def=await fs.readFile(srcPath,'utf8');
@@ -66,7 +89,35 @@ async function worker(){while(next<jobs.length){const j=jobs[next++];let page;tr
    ellipse.setAttribute('cx',b.x+b.width/2);ellipse.setAttribute('cy',b.y+b.height/2);ellipse.setAttribute('rx',b.width/2);ellipse.setAttribute('ry',b.height/2);boundary.replaceChildren(ellipse);
   }
  });
- const geometry=await normalize(page);await ready(page);const finalSvg=await page.$eval('svg',e=>new XMLSerializer().serializeToString(e));const stem=j.file.slice(0,-4);const svgPath=path.join(base,'svg',stem+'.svg');await fs.writeFile(svgPath,finalSvg);await page.close();page=null;
+ // Architecture group headings sit in their reserved header band. Centered
+ // headings can collide with request/response labels crossing a group boundary.
+ if(/^(01|03)-/.test(j.file))await page.$$eval('g.cluster',groups=>{
+  const obstacles=[...document.querySelectorAll('g.edgeLabel,g.node')].map(e=>e.getBoundingClientRect());
+  const overlap=(a,b)=>Math.max(0,Math.min(a.right+4,b.right)-Math.max(a.left-4,b.left))*Math.max(0,Math.min(a.bottom+4,b.bottom)-Math.max(a.top-4,b.top));
+  for(const group of groups){const rect=group.querySelector(':scope > rect'),label=group.querySelector(':scope > g.cluster-label');
+   if(!rect||!label)continue;
+   const x=Number(rect.getAttribute('x')),y=Number(rect.getAttribute('y')),w=Number(rect.getAttribute('width')),lw=label.getBBox().width;
+   let best=null;
+   for(const dy of [12,42,72,102])for(const dx of [16,Math.max(16,w-lw-16),Math.max(16,(w-lw)/2)]){
+    label.setAttribute('transform',`translate(${x+dx},${y+dy})`);
+    const box=label.getBoundingClientRect(),score=obstacles.reduce((s,b)=>s+overlap(box,b),0);
+    if(!best||score<best.score)best={dx,dy,score};
+   }
+   label.setAttribute('transform',`translate(${x+best.dx},${y+best.dy})`);
+   if(best.score>0)throw Error('Architecture heading overlaps content: '+group.id);
+   obstacles.push(label.getBoundingClientRect());
+  }
+  // Nested cluster rectangles are painted after their parent's label. Keep all
+  // headings above those rectangles while preserving their SVG coordinates.
+  const svg=document.querySelector('svg');
+  const headings=groups.map(group=>group.querySelector(':scope > g.cluster-label')).filter(Boolean);
+  for(const label of headings){
+   const matrix=svg.getScreenCTM().inverse().multiply(label.getScreenCTM());
+   label.setAttribute('transform',`matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e} ${matrix.f})`);
+   svg.appendChild(label);
+  }
+ });
+ const geometry=await normalize(page);await ready(page);const finalSvg=await page.$eval('svg',e=>new XMLSerializer().serializeToString(e));const stem=j.file.slice(0,-4);const svgPath=path.join(base,'svg',stem+'.svg');await writeArtifact(svgPath,finalSvg);await page.close();page=null;
  const fit=o=>16*Math.min((o==='portrait'?160:247)/geometry.width,(o==='portrait'?230:150)/geometry.height)*72/25.4;
  const preferred=['panels','original'].includes(j.orientation)?(fit('portrait')>=fit('landscape')?'portrait':'landscape'):j.orientation;
  const raster=await screenshot(svgPath,path.join(base,'png',stem+'.png'),preferred==='portrait'?2400:3600);
@@ -82,10 +133,12 @@ async function worker(){while(next<jobs.length){const j=jobs[next++];let page;tr
   if(pixelComparison.maxChannelDelta>10||pixelComparison.changedFraction>0.001)throw Error('Saved-SVG replay pixel mismatch: '+JSON.stringify(pixelComparison));
  }
  results.push({...j,status:'pass',...geometry,pngWidth:raster.w,pngHeight:raster.h,estimatedTextPt:+fit(preferred).toFixed(1),preferred,sourceSha256:hash((await fs.readFile(srcPath,'utf8')).replace(/\r\n/g,'\n')),svgSha256:hash(finalSvg),pngSha256:hash(raster.data),pngMatchesSavedSvg:true,pixelComparison});console.log('PASS',j.orientation,j.file,geometry.width,geometry.height);
- }catch(e){results.push({...j,status:'fail',error:String(e)});console.log('FAIL',j.orientation,j.file,String(e));if(page)await page.close();}}}
+ }catch(e){results.push({...j,status:'fail',error:String(e)});console.log('FAIL',j.orientation,j.file,String(e));if(page)await page.close();}await saveProgress();}}
 await Promise.all(Array.from({length:Number(process.env.RENDER_WORKERS||3)},()=>worker()));await browser.close();
-const target=original?'render-original-validation.json':selected.length?'render-selected-validation.json':'render-validation.json';await fs.writeFile(path.join(out,target),JSON.stringify({renderer:'Mermaid CLI 11.12.0 + isolated Chromium SVG replay',results},null,2));
+const target=original?'render-original-validation.json':selected.length?'render-selected-validation.json':'render-validation.json';await writeArtifact(path.join(out,target),JSON.stringify({renderer:'Mermaid CLI 11.12.0 + isolated Chromium SVG replay',results},null,2));
 if(!original&&selected.length&&results.every(r=>r.status==='pass')){
- const ledger=JSON.parse(await fs.readFile(path.join(out,'render-validation.json'),'utf8'));const keys=new Set(results.map(r=>r.orientation+'/'+r.file));ledger.results=[...ledger.results.filter(r=>!keys.has(r.orientation+'/'+r.file)),...results];await fs.writeFile(path.join(out,'render-validation.json'),JSON.stringify(ledger,null,2));
+ const ledger=JSON.parse(await fs.readFile(path.join(out,'render-validation.json'),'utf8'));const keys=new Set(results.map(r=>r.orientation+'/'+r.file));
+ const live=new Set();for(const orientation of ['portrait','landscape','panels'])for(const file of await fs.readdir(path.join(out,orientation,'mermaid')))if(file.endsWith('.mmd'))live.add(orientation+'/'+file);
+ ledger.results=[...ledger.results.filter(r=>live.has(r.orientation+'/'+r.file)&&!keys.has(r.orientation+'/'+r.file)),...results];await writeArtifact(path.join(out,'render-validation.json'),JSON.stringify(ledger,null,2));
 }
 if(results.some(r=>r.status!=='pass'))process.exitCode=1;

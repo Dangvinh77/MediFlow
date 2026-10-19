@@ -3,42 +3,35 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
  subgraph SYS["MediFlow — DOCTOR"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  D1(["Review clinical history"])
- D2(["View patient records"])
  D3(["Start examination [V1]"])
- D4(["Check exam clearance"])
  D5(["Record consultation"])
- D6(["Record clinical findings"])
- D7(["Add diagnosis"])
+ D7(["Record diagnosis"])
  D8(["Order lab test"])
- D9(["Specify test and patient"])
  D10(["Review lab results"])
  D11(["Issue prescription"])
- D12(["Select medicines and dose"])
  D13(["Complete visit [V1]"])
- D14(["Confirm diagnosis / disposition"])
+ D14(["Record visit disposition"])
  D15(["Cancel prescription"])
- D16(["Check cancellation eligibility"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> D1
  ACTOR --> D3
  ACTOR --> D5
+ ACTOR --> D7
  ACTOR --> D10
- ACTOR --> D11
  ACTOR --> D13
- D1 -.->|"«include»"| D2
- D3 -.->|"«include»"| D4
- D5 -.->|"«include»"| D6
- D7 -.->|"«extend» [E1]"| D5
- D8 -.->|"«extend» [E2]"| D5
- D8 -.->|"«include»"| D9
- D11 -.->|"«include»"| D12
+ ACTOR --> D15
+ D8 -.->|"«extend» [E1]"| D5
+ D11 -.->|"«extend» [E2]"| D5
+ D13 -.->|"«include»"| D7
  D13 -.->|"«include»"| D14
- D15 -.->|"«extend» [E3]"| D11
- D15 -.->|"«include»"| D16
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class D1,D3,D5,D10,D11,D13 main;
- class D2,D4,D6,D7,D8,D9,D12,D14,D15,D16 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,D1,D3,D5,D7,D10,D13,D15 main;
+ class D8,D11,D14 sub;

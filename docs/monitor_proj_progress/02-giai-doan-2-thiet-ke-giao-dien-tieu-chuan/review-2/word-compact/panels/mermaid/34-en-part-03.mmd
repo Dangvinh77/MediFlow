@@ -3,18 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
  subgraph SYS["MediFlow — PHARMACIST"]
- P10(["Dispense prescription [V1]"])
- P11(["Check exact clearance"])
- P12(["Validate stock / reservation"])
- P13(["Record dispense and stock change"])
+ P6(["Adjust stock"])
+ P8(["Review prescription"])
  end
- ACTOR --> P10
- P10 -.->|"«include»"| P11
- P10 -.->|"«include»"| P12
- P10 -.->|"«include»"| P13
+ ACTOR --> P6
+ ACTOR --> P8
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class P10 main;
- class P11,P12,P13 sub;
+ class P6,P8 main;

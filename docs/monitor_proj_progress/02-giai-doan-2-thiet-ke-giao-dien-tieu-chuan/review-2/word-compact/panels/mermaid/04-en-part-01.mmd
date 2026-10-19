@@ -1,0 +1,20 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 1
+ actor User as User
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+Note over User,G: Continuation under the shown conditions. See full figure.
+User->>UI: Continue authenticated work
+Note over UI,G: Client invokes renewal explicitly where implemented, no universal automatic retry is claimed.
+UI->>G: POST /auth/refresh + refreshToken
+alt Missing or malformed request
+G-->>UI: Validation rejection
+UI-->>User: Show session error / request sign-in
+else Refresh request can be parsed
+G->>G: Verify signature, expiry, token type and human identity
+opt Invalid or expired refresh token
+G-->>UI: 401 AUTH_INVALID_REFRESH_TOKEN
+UI-->>User: Request sign-in again, stop protected action
+end
+end

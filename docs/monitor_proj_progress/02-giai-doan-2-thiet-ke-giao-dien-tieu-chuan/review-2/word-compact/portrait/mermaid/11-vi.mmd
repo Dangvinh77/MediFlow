@@ -1,61 +1,71 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 24, "rankSpacing": 42, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 30, "width": 140, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 34, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 30, "rankSpacing": 42, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
  direction TB
- class Drug {
- -UUID drugId
- -BigDecimal price
- -int stockQuantity
- -LocalDate expiryDate
+ namespace Pharmacy {
+  class Drug {
+   UUID drugId
+   BigDecimal price
+   int stockQuantity
+   LocalDate expiryDate
+  }
+  class Prescription {
+   UUID prescriptionId
+   BigDecimal totalAmount
+   PrescriptionStatus status
+  }
+  class PrescriptionLine {
+   UUID drugId
+   int quantity
+   BigDecimal unitPrice
+  }
+  class StockReservation {
+   UUID prescriptionId
+   UUID drugId
+   int quantity
+   Instant expiresAt
+  }
+  class DispenseSlip {
+   UUID dispenseId
+   UUID prescriptionId
+  }
  }
- class Prescription {
- -UUID prescriptionId
- -BigDecimal totalAmount
- -PrescriptionStatus status
- +computeTotal()
- +cancel(actorId, reason, now)
- +markFulfilled(now)
- }
- class PrescriptionLine {
- -UUID drugId
- -int quantity
- -BigDecimal unitPrice
- -BigDecimal lineTotal
- }
- class StockReservation {
- -UUID prescriptionId
- -UUID drugId
- -int quantity
- -Instant expiresAt
- }
- class DispenseSlip {
- -UUID dispenseId
- -UUID prescriptionId
- }
- class Invoice {
- -UUID invoiceId
- -BigDecimal totalAmount
- -SagaStatus sagaStatus
- +pay(method, timestamp)
- +transitionSaga(next)
- +refund()
- }
- class LedgerPaymentService {
- +complete(requestId, command, actorAccountId, correlationId)
- }
- class LedgerPaymentRepositoryPort {
- <<interface>>
- +lockIdempotencyKey(key)
- +lockRequest(requestId)
- +allocate(payment)
- }
- class LedgerEventPort {
- <<interface>>
- +appendForOutpatientRequest()
+ namespace Billing {
+  class BillingAccount {
+   UUID accountId
+  }
+  class Charge {
+   UUID chargeId
+   UUID accountId
+   BigDecimal grossAmount
+  }
+  class PaymentRequest {
+   UUID paymentRequestId
+   UUID accountId
+  }
+  class PaymentTransaction {
+   UUID transactionId
+   UUID accountId
+   BigDecimal amount
+  }
+  class PaymentAllocation {
+   UUID transactionId
+   UUID chargeId
+   BigDecimal amount
+  }
+  class FinancialClearance {
+   UUID clearanceId
+   UUID prescriptionId
+   Instant expiresAt
+  }
  }
  Prescription "1" *-- "1..*" PrescriptionLine
- PrescriptionLine "*" --> "1" Drug
- Prescription "1" --> "*" StockReservation
- Prescription "1" --> "1" DispenseSlip
- Invoice ..> Prescription : prescriptionId UUID only
- LedgerPaymentService --> LedgerPaymentRepositoryPort
- LedgerPaymentService --> LedgerEventPort
+ PrescriptionLine "*" --> "1" Drug : drugId
+ Prescription "1" --> "1..*" StockReservation : prescriptionId
+ Prescription "1" --> "1" DispenseSlip : prescriptionId
+ Charge ..> BillingAccount : accountId
+ PaymentRequest ..> BillingAccount : accountId
+ PaymentTransaction ..> BillingAccount : accountId
+ PaymentAllocation ..> PaymentTransaction : transactionId
+ PaymentAllocation ..> Charge : chargeId
+ Charge ..> Prescription : source identity via prescription.created
+ FinancialClearance ..> Prescription : prescriptionId via clearance fact

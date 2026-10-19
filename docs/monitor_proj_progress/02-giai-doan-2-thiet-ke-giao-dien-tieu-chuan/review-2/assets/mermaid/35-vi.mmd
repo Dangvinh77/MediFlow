@@ -3,38 +3,22 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
  subgraph SYS["MediFlow — CASHIER"]
- C1(["Tra cứu hóa đơn"])
- C2(["Xem hóa đơn bệnh nhân"])
- C3(["Tạo hóa đơn"])
- C4(["Kiểm tra các khoản thu"])
- C5(["Ghi thanh toán hóa đơn"])
- C6(["Kiểm tra lệnh thanh toán"])
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  C7(["Tra cứu yêu cầu thu [V1]"])
- C8(["Xác định nguồn và đối tượng"])
- C9(["Ghi thanh toán ledger [V1]"])
- C10(["Kiểm tra số tiền và khóa lặp"])
- C11(["Trả biên nhận thanh toán"])
- C12(["Hoàn tiền giao dịch [V1]"])
- C13(["Kiểm tra số dư được hoàn"])
- C14(["Ghi số tiền và lý do"])
+ C9(["Ghi nhận thanh toán [V1]"])
+ C11(["Cấp biên nhận thanh toán"])
+ C12(["Hoàn tiền giao dịch hợp lệ [V1]"])
  end
- ACTOR --> C1
- ACTOR --> C3
- ACTOR --> C5
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> C7
  ACTOR --> C9
- C1 -.->|"«include»"| C2
- C3 -.->|"«include»"| C4
- C5 -.->|"«include»"| C6
- C7 -.->|"«include»"| C8
- C9 -.->|"«include»"| C10
+ ACTOR --> C12
  C9 -.->|"«include»"| C11
- C12 -.->|"«extend» [E1]"| C9
- C12 -.->|"«include»"| C13
- C12 -.->|"«include»"| C14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class C1,C3,C5,C7,C9 main;
- class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,C7,C9,C12 main;
+ class C11 sub;

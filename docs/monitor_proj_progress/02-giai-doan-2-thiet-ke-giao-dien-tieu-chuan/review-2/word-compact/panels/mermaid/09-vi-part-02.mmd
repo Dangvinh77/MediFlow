@@ -1,0 +1,23 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 6
+ actor Patient as Bệnh nhân
+ actor Cashier as Thu ngân
+ actor Pharmacist as Dược sĩ
+ participant P as Pharmacy API
+Note over Patient,P: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Đã commit tiền đúng đơn
+Patient->>Pharmacist: Đưa đơn và đề nghị nhận thuốc
+Pharmacist->>P: Tra cứu đơn và gửi lệnh cấp thuốc
+P->>P: Xác định actor đã ký, khóa đơn, phiếu, giữ chỗ và thuốc
+alt Lặp đúng lệnh đã commit
+P-->>Pharmacist: Trả kết quả cấp thuốc đã commit, không xuất kho lần hai
+else Thiếu/hết hạn/lệch clearance hoặc actor sai quyền
+P-->>Pharmacist: Từ chối, xử lý quyền rồi thử lại, chưa đổi tồn
+else Giữ chỗ hết hạn, sai vòng đời hoặc lỗi tồn
+P-->>Pharmacist: Từ chối cấp, chuyển lỗi sang luồng điều chỉnh đã hỗ trợ
+Note over Cashier,Pharmacist: Không xuất kho một phần, hoàn tiền là thao tác Billing riêng có quyền, không mặc định đã trả tiền tự động.
+else Quyền hiện tại và mọi điều kiện tồn đều đạt
+P->>P: Atomic trừ tồn + hoàn tất đơn/phiếu + outbox
+end
+end

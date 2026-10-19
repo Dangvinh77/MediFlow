@@ -3,46 +3,34 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  A1(["Create account"])
- A2(["Set role and identity"])
+ A2(["Assign account role"])
  A3(["Change account status"])
- A4(["Check target account"])
- A5(["Create staff member"])
- A6(["Record staff details"])
- A7(["Maintain staff profile"])
- A8(["View staff profile"])
- A9(["Transfer department"])
- A10(["Validate target department"])
- A11(["Maintain departments"])
- A12(["View department"])
+ A5(["Create staff profile"])
+ A7(["Update staff profile"])
+ A9(["Transfer staff department"])
+ A11(["Update department"])
  A13(["Create department"])
- A14(["Enter code and name"])
  A15(["View management reports"])
- A16(["Choose period and scope"])
  A17(["Send notification"])
- A18(["Choose recipient and channel"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> A1
  ACTOR --> A3
  ACTOR --> A5
  ACTOR --> A7
+ ACTOR --> A9
  ACTOR --> A11
  ACTOR --> A13
  ACTOR --> A15
  ACTOR --> A17
  A1 -.->|"«include»"| A2
- A3 -.->|"«include»"| A4
- A5 -.->|"«include»"| A6
- A7 -.->|"«include»"| A8
- A9 -.->|"«extend» [E1]"| A7
- A9 -.->|"«include»"| A10
- A11 -.->|"«include»"| A12
- A13 -.->|"«include»"| A14
- A15 -.->|"«include»"| A16
- A17 -.->|"«include»"| A18
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A1,A3,A5,A7,A11,A13,A15,A17 main;
- class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,A1,A3,A5,A7,A9,A11,A13,A15,A17 main;
+ class A2 sub;

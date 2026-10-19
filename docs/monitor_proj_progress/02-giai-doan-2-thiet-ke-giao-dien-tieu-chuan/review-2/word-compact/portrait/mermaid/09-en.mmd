@@ -1,25 +1,37 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 24, "rankSpacing": 42, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 30, "width": 140, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 34, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 30, "rankSpacing": 42, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Cashier
- participant B as Billing
+ actor Patient as Patient
+ actor Cashier as Cashier
+ actor Pharmacist as Pharmacist
+ participant B as Billing API
  participant Q as RabbitMQ
- participant P as Pharmacy
- participant S as Support
- Cashier->>B: Pay prescription invoice via Gateway
- B->>B: Save payment state and outbox atomically
- B-->>Q: payment.completed V0
- Q->>P: Durable delivery / possible redelivery
- P->>P: Claim receipt, lock prescription / reservations / drugs
- alt All dispense rules pass
- P->>P: Atomic stock decrement + fulfilled states + outbox
- P-->>Q: prescription.filled
- Q->>B: Complete saga once
- else Terminal reservation / stock / lifecycle failure
- P->>P: Persist terminal failure and durable fact
- P-->>Q: prescription.dispense.failed
- Q->>B: Apply V0 compensation once
+ participant P as Pharmacy API
+ Note over Cashier,P: Precondition: figure 38 saved a V1 outpatient prescription, actor API calls use Gateway.
+ Note over Cashier,B: Find exact ready PRESCRIPTION request and record payment, or stop/retry as figure 07
+ Cashier->>B: Lookup the exact request, then submit its payment as in figure 07
+ B-->>Cashier: Committed receipt or request/payment error
+ alt Payment failed, request pending or outcome unresolved
+  B-->>Cashier: Resolve payment / retry exact request, no dispensing
+ else Exact prescription payment committed
+ B-)Q: financial.clearance.granted
+ Q-)P: Store clearance for exact prescription
+ Note over Q,P: Clearance delivery never automatically dispenses in V1.
+ Patient->>Pharmacist: Present prescription and request medicines
+ Pharmacist->>P: Read prescription and issue dispense command
+ P->>P: Resolve signed actor, lock prescription, slip, reservations and drug rows
+ alt Exact committed command replay
+  P-->>Pharmacist: Return committed dispense outcome, no second stock issue
+ else Missing/expired/mismatched clearance or unauthorized actor
+  P-->>Pharmacist: Reject, resolve authority then retry, no stock change
+ else Reservation expired, invalid lifecycle or stock failure
+  P-->>Pharmacist: Reject dispense, report failure for supported adjustment workflow
+  Note over Cashier,Pharmacist: No partial stock issue, refund is a separate authorized Billing operation, not assumed automatic cash return.
+ else Current authorization and every stock rule pass
+  P->>P: Atomic stock decrement + fulfilled prescription/slip + outbox
+  P-->>Pharmacist: Dispense confirmation
+  P-)Q: prescription.filled
+  Q-)B: Apply subscribed financial lifecycle effect idempotently
+  Pharmacist-->>Patient: Hand over medicines and usage instructions
  end
- Q->>S: Project selected facts independently
- Note over B,P: Redelivery returns committed outcome, no second stock effect
- Note over B,S: V0 reversal is not proof of completed bank refund
+ end

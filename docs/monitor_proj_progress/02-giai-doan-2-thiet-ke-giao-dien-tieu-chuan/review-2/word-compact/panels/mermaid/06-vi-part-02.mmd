@@ -1,0 +1,21 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 9
+ actor User as Người dùng
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ participant C as Core Organization
+Note over User,C: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Request đúng cấu trúc
+alt Dịch vụ định danh lỗi hoặc quá thời gian
+C-->>G: Lỗi / timeout
+G-->>UI: 503 AUTH_UPSTREAM_UNAVAILABLE / 504 AUTH_UPSTREAM_TIMEOUT
+UI-->>User: Hiện lỗi tạm thời, thử lại sau
+else Tài khoản hoạt động và thông tin đúng
+C-->>G: Tài khoản / role / định danh đã xác minh
+G->>G: Cấp access token và refresh token
+G-->>UI: LoginResponse
+UI-->>User: Mở khu vực theo quyền
+end
+end
+Note over User,UI: Sau lỗi, gửi lại bắt đầu từ đầu sequence, không chạy tác vụ được bảo vệ.

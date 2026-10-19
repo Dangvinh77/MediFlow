@@ -1,0 +1,28 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 15
+ actor Patient as Bệnh nhân
+ actor Cashier as Thu ngân
+ actor Doctor as Bác sĩ
+ participant C as Clinical API
+ participant Q as RabbitMQ
+ participant B as Billing API
+Note over Patient,B: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Lịch chờ hợp lệ
+opt Yêu cầu thu đúng đã sẵn sàng
+opt Nhận thanh toán hoặc phát lại kết quả đã commit
+Cashier-->>Patient: Xác nhận đã thu phí khám
+B-)Q: financial.clearance.granted
+Q-)C: Lưu EXAM clearance đúng lịch và chống trùng
+Doctor->>C: Bắt đầu khám đúng lịch hẹn
+alt Quyền chưa tới, hết hạn, lệch đối tượng hoặc sai actor/trạng thái
+C-->>Doctor: Từ chối bắt đầu, chưa vào trạng thái khám
+Note over Doctor,C: Thử lại khi có bằng chứng hợp lệ, không thu phí lần hai vì chậm sự kiện.
+else Đúng bác sĩ và quyền đúng lượt còn hạn
+C->>C: Atomic bắt đầu khám và tạo/dùng lại hồ sơ đúng lịch
+C-->>Doctor: Mở hồ sơ khám
+Doctor-->>Patient: Bắt đầu thăm khám
+end
+end
+end
+end
