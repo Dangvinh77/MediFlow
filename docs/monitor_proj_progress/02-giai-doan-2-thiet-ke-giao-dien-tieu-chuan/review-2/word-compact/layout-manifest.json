@@ -17,66 +17,86 @@
   "diagrams": [
     {
       "id": "01-en",
-      "title": "System architecture and data boundaries",
-      "recommended": "portrait",
+      "title": "System architecture — one backend boundary, six business services",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1141,
-          "height": 1238,
-          "estimatedTextPt": 6.4
+          "width": 3422,
+          "height": 1552,
+          "estimatedTextPt": 2.1
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 2543,
-          "height": 605,
-          "estimatedTextPt": 4.4
+          "width": 3208,
+          "height": 1549,
+          "estimatedTextPt": 3.5
         }
       },
       "panels": [
         {
           "id": "01-en-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 11.0
+          "orientation": "landscape",
+          "estimatedTextPt": 7.0
         },
         {
           "id": "01-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.8
+          "estimatedTextPt": 5.7
+        },
+        {
+          "id": "01-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 6.5
+        },
+        {
+          "id": "01-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.0
         }
       ],
       "singleEntity": false
     },
     {
       "id": "01-vi",
-      "title": "Kiến trúc hệ thống và ranh giới dữ liệu",
-      "recommended": "portrait",
+      "title": "Kiến trúc hệ thống — một vùng backend, sáu service nghiệp vụ",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1141,
-          "height": 1238,
-          "estimatedTextPt": 6.4
+          "width": 3498,
+          "height": 1552,
+          "estimatedTextPt": 2.1
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 2543,
-          "height": 605,
-          "estimatedTextPt": 4.4
+          "width": 3199,
+          "height": 1556,
+          "estimatedTextPt": 3.5
         }
       },
       "panels": [
         {
           "id": "01-vi-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 11.0
+          "orientation": "landscape",
+          "estimatedTextPt": 6.9
         },
         {
           "id": "01-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.8
+          "estimatedTextPt": 5.8
+        },
+        {
+          "id": "01-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 6.3
+        },
+        {
+          "id": "01-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.9
         }
       ],
       "singleEntity": false
@@ -127,514 +147,644 @@
     },
     {
       "id": "03-en",
-      "title": "Application architecture and dependency direction",
-      "recommended": "portrait",
+      "title": "Application architecture — request path and inward dependencies",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 3642,
-          "height": 3169,
-          "estimatedTextPt": 2.0
+          "width": 3005,
+          "height": 1354,
+          "estimatedTextPt": 2.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 8453,
-          "height": 1416,
-          "estimatedTextPt": 1.3
+          "width": 2797,
+          "height": 1627,
+          "estimatedTextPt": 4.0
         }
       },
       "panels": [
         {
           "id": "03-en-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 13.3
+          "orientation": "landscape",
+          "estimatedTextPt": 7.0
         },
         {
           "id": "03-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 13.9
-        },
-        {
-          "id": "03-en-part-03",
-          "orientation": "portrait",
-          "estimatedTextPt": 7.2
-        },
-        {
-          "id": "03-en-part-04",
-          "orientation": "landscape",
-          "estimatedTextPt": 8.6
-        },
-        {
-          "id": "03-en-part-05",
-          "orientation": "portrait",
-          "estimatedTextPt": 8.3
+          "estimatedTextPt": 7.4
         }
       ],
       "singleEntity": false
     },
     {
       "id": "03-vi",
-      "title": "Kiến trúc ứng dụng và chiều phụ thuộc",
-      "recommended": "portrait",
+      "title": "Kiến trúc ứng dụng — đường request và phụ thuộc hướng vào trong",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 3642,
-          "height": 3169,
-          "estimatedTextPt": 2.0
+          "width": 2973,
+          "height": 1330,
+          "estimatedTextPt": 2.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 8453,
-          "height": 1416,
-          "estimatedTextPt": 1.3
+          "width": 2860,
+          "height": 1625,
+          "estimatedTextPt": 3.9
         }
       },
       "panels": [
         {
           "id": "03-vi-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 13.3
+          "orientation": "landscape",
+          "estimatedTextPt": 6.9
         },
         {
           "id": "03-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 13.9
-        },
-        {
-          "id": "03-vi-part-03",
-          "orientation": "portrait",
-          "estimatedTextPt": 7.2
-        },
-        {
-          "id": "03-vi-part-04",
-          "orientation": "landscape",
-          "estimatedTextPt": 8.6
-        },
-        {
-          "id": "03-vi-part-05",
-          "orientation": "portrait",
-          "estimatedTextPt": 8.3
+          "estimatedTextPt": 7.4
         }
       ],
       "singleEntity": false
     },
     {
       "id": "04-en",
-      "title": "Reception, clinical and laboratory use cases",
+      "title": "Renew session — a separate authentication use case",
       "recommended": "portrait",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 492,
-          "height": 642,
-          "estimatedTextPt": 14.7
+          "width": 460,
+          "height": 1261,
+          "estimatedTextPt": 8.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1202,
-          "height": 517,
-          "estimatedTextPt": 9.3
+          "width": 647,
+          "height": 1043,
+          "estimatedTextPt": 6.5
         }
       },
-      "panels": [],
+      "panels": [
+        {
+          "id": "04-en-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.6
+        },
+        {
+          "id": "04-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.0
+        }
+      ],
       "singleEntity": false
     },
     {
       "id": "04-vi",
-      "title": "Use case tiếp nhận, khám và xét nghiệm",
+      "title": "Gia hạn phiên — use case xác thực độc lập",
       "recommended": "portrait",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 526,
-          "height": 656,
-          "estimatedTextPt": 13.8
+          "width": 483,
+          "height": 1279,
+          "estimatedTextPt": 8.2
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1287,
-          "height": 544,
-          "estimatedTextPt": 8.7
+          "width": 670,
+          "height": 1042,
+          "estimatedTextPt": 6.5
         }
       },
-      "panels": [],
+      "panels": [
+        {
+          "id": "04-vi-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.4
+        },
+        {
+          "id": "04-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.5
+        }
+      ],
       "singleEntity": false
     },
     {
       "id": "05-en",
-      "title": "Pharmacy, billing and support use cases",
-      "recommended": "portrait",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 549,
-          "height": 727,
-          "estimatedTextPt": 13.2
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1204,
-          "height": 544,
-          "estimatedTextPt": 9.3
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "05-vi",
-      "title": "Use case thuốc, viện phí và hỗ trợ",
-      "recommended": "portrait",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 555,
-          "height": 747,
-          "estimatedTextPt": 13.1
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1203,
-          "height": 544,
-          "estimatedTextPt": 9.3
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "06-en",
-      "title": "Login and authorized access — SOURCE",
-      "recommended": "portrait",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 834,
-          "height": 1075,
-          "estimatedTextPt": 8.7
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1286,
-          "height": 990,
-          "estimatedTextPt": 6.9
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "06-vi",
-      "title": "Đăng nhập và truy cập có kiểm quyền — SOURCE",
-      "recommended": "portrait",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 834,
-          "height": 1075,
-          "estimatedTextPt": 8.7
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1286,
-          "height": 990,
-          "estimatedTextPt": 6.9
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "07-en",
-      "title": "Check-in → EXAM payment → examination — V1 GATED",
+      "title": "Schedule appointment before arrival",
       "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 826,
+          "width": 864,
+          "height": 1570,
+          "estimatedTextPt": 6.6
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1311,
+          "height": 1304,
+          "estimatedTextPt": 5.2
+        }
+      },
+      "panels": [
+        {
+          "id": "05-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.3
+        },
+        {
+          "id": "05-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 7.3
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "05-vi",
+      "title": "Đặt lịch khám trước khi đến tiếp nhận",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 880,
           "height": 1505,
           "estimatedTextPt": 6.9
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1272,
-          "height": 1420,
-          "estimatedTextPt": 4.8
+          "width": 1329,
+          "height": 1254,
+          "estimatedTextPt": 5.4
+        }
+      },
+      "panels": [
+        {
+          "id": "05-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.2
+        },
+        {
+          "id": "05-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 7.9
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "06-en",
+      "title": "Sign in — validation, rejected credentials and recovery",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 584,
+          "height": 1578,
+          "estimatedTextPt": 6.6
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 867,
+          "height": 1278,
+          "estimatedTextPt": 5.3
+        }
+      },
+      "panels": [
+        {
+          "id": "06-en-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.1
+        },
+        {
+          "id": "06-en-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.1
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "06-vi",
+      "title": "Đăng nhập — kiểm tra dữ liệu, từ chối và thử lại",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 606,
+          "height": 1633,
+          "estimatedTextPt": 6.4
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 883,
+          "height": 1316,
+          "estimatedTextPt": 5.2
+        }
+      },
+      "panels": [
+        {
+          "id": "06-vi-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.0
+        },
+        {
+          "id": "06-vi-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 8.9
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "07-en",
+      "title": "Arrival → exam payment → start consultation (V1)",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1065,
+          "height": 2254,
+          "estimatedTextPt": 4.6
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1599,
+          "height": 2036,
+          "estimatedTextPt": 3.3
         }
       },
       "panels": [
         {
           "id": "07-en-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 10.0
+          "orientation": "landscape",
+          "estimatedTextPt": 7.9
         },
         {
           "id": "07-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 10.1
+          "estimatedTextPt": 11.1
+        },
+        {
+          "id": "07-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 6.7
         }
       ],
       "singleEntity": false
     },
     {
       "id": "07-vi",
-      "title": "Check-in → thanh toán EXAM → khám — V1 GATED",
+      "title": "Đến tiếp nhận → thu phí khám → bắt đầu khám (V1)",
       "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 826,
-          "height": 1505,
-          "estimatedTextPt": 6.9
+          "width": 1061,
+          "height": 2187,
+          "estimatedTextPt": 4.8
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1272,
-          "height": 1420,
-          "estimatedTextPt": 4.8
+          "width": 1603,
+          "height": 1969,
+          "estimatedTextPt": 3.5
         }
       },
       "panels": [
         {
           "id": "07-vi-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 10.0
+          "orientation": "landscape",
+          "estimatedTextPt": 8.6
         },
         {
           "id": "07-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 10.1
+          "estimatedTextPt": 11.4
+        },
+        {
+          "id": "07-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 6.9
         }
       ],
       "singleEntity": false
     },
     {
       "id": "08-en",
-      "title": "Laboratory order and result attachment — V1 GATED",
+      "title": "Lab order → payment → test → doctor reads results (V1)",
       "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1183,
-          "height": 1497,
-          "estimatedTextPt": 6.1
+          "width": 1042,
+          "height": 2478,
+          "estimatedTextPt": 4.2
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1828,
-          "height": 1395,
-          "estimatedTextPt": 4.9
+          "width": 1578,
+          "height": 2311,
+          "estimatedTextPt": 2.9
         }
       },
       "panels": [
         {
           "id": "08-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 7.1
+          "estimatedTextPt": 12.7
         },
         {
           "id": "08-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 8.2
+          "estimatedTextPt": 8.5
+        },
+        {
+          "id": "08-en-part-03",
+          "orientation": "portrait",
+          "estimatedTextPt": 8.3
+        },
+        {
+          "id": "08-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 7.5
         }
       ],
       "singleEntity": false
     },
     {
       "id": "08-vi",
-      "title": "Chỉ định và trả kết quả xét nghiệm — V1 GATED",
+      "title": "Chỉ định → thanh toán → xét nghiệm → bác sĩ đọc kết quả (V1)",
       "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1183,
-          "height": 1497,
-          "estimatedTextPt": 6.1
+          "width": 1041,
+          "height": 2535,
+          "estimatedTextPt": 4.1
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1828,
-          "height": 1395,
-          "estimatedTextPt": 4.9
+          "width": 1579,
+          "height": 2333,
+          "estimatedTextPt": 2.9
         }
       },
       "panels": [
         {
           "id": "08-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 7.1
+          "estimatedTextPt": 12.7
         },
         {
           "id": "08-vi-part-02",
           "orientation": "landscape",
           "estimatedTextPt": 8.2
+        },
+        {
+          "id": "08-vi-part-03",
+          "orientation": "portrait",
+          "estimatedTextPt": 8.3
+        },
+        {
+          "id": "08-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 7.4
         }
       ],
       "singleEntity": false
     },
     {
       "id": "09-en",
-      "title": "Payment and dispensing — V0 compatibility saga",
+      "title": "Prescription payment and explicit pharmacist dispensing (V1)",
       "recommended": "portrait",
-      "usePanels": false,
+      "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 845,
-          "height": 1426,
-          "estimatedTextPt": 7.3
+          "width": 902,
+          "height": 1844,
+          "estimatedTextPt": 5.7
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1285,
-          "height": 1259,
-          "estimatedTextPt": 5.4
+          "width": 1345,
+          "height": 1547,
+          "estimatedTextPt": 4.4
         }
       },
-      "panels": [],
+      "panels": [
+        {
+          "id": "09-en-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.2
+        },
+        {
+          "id": "09-en-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.0
+        },
+        {
+          "id": "09-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 11.3
+        }
+      ],
       "singleEntity": false
     },
     {
       "id": "09-vi",
-      "title": "Thanh toán và cấp thuốc — V0 compatibility saga",
+      "title": "Thanh toán đơn và dược sĩ chủ động cấp thuốc (V1)",
       "recommended": "portrait",
-      "usePanels": false,
+      "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 845,
-          "height": 1426,
-          "estimatedTextPt": 7.3
+          "width": 917,
+          "height": 1775,
+          "estimatedTextPt": 5.9
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1285,
-          "height": 1259,
-          "estimatedTextPt": 5.4
+          "width": 1359,
+          "height": 1534,
+          "estimatedTextPt": 4.4
         }
       },
-      "panels": [],
+      "panels": [
+        {
+          "id": "09-vi-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.1
+        },
+        {
+          "id": "09-vi-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 8.9
+        },
+        {
+          "id": "09-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 11.2
+        }
+      ],
       "singleEntity": false
     },
     {
       "id": "10-en",
-      "title": "Clinical and Lab class diagram",
-      "recommended": "landscape",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 964,
-          "height": 905,
-          "estimatedTextPt": 7.5
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1397,
-          "height": 640,
-          "estimatedTextPt": 8.0
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "10-vi",
-      "title": "Class diagram Clinical và Lab",
-      "recommended": "landscape",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 964,
-          "height": 905,
-          "estimatedTextPt": 7.5
-        },
-        "landscape": {
-          "candidate": "landscape",
-          "width": 1397,
-          "height": 640,
-          "estimatedTextPt": 8.0
-        }
-      },
-      "panels": [],
-      "singleEntity": false
-    },
-    {
-      "id": "11-en",
-      "title": "Pharmacy and Billing class diagram",
+      "title": "Clinical service — domain classes",
       "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1458,
-          "height": 1162,
-          "estimatedTextPt": 5.0
+          "width": 1630,
+          "height": 688,
+          "estimatedTextPt": 4.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1878,
-          "height": 883,
-          "estimatedTextPt": 6.0
+          "width": 759,
+          "height": 1270,
+          "estimatedTextPt": 5.4
+        }
+      },
+      "panels": [
+        {
+          "id": "10-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.1
+        },
+        {
+          "id": "10-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 8.4
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "10-vi",
+      "title": "Clinical service — các lớp nghiệp vụ",
+      "recommended": "landscape",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1630,
+          "height": 688,
+          "estimatedTextPt": 4.5
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 759,
+          "height": 1270,
+          "estimatedTextPt": 5.4
+        }
+      },
+      "panels": [
+        {
+          "id": "10-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.1
+        },
+        {
+          "id": "10-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 8.4
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "11-en",
+      "title": "Pharmacy and Billing — separate services, explicit contracts",
+      "recommended": "landscape",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 2116,
+          "height": 1414,
+          "estimatedTextPt": 3.4
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1961,
+          "height": 1680,
+          "estimatedTextPt": 4.0
         }
       },
       "panels": [
         {
           "id": "11-en-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 7.9
+          "orientation": "landscape",
+          "estimatedTextPt": 8.6
         },
         {
           "id": "11-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.5
+          "estimatedTextPt": 9.0
+        },
+        {
+          "id": "11-en-part-03",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.4
         }
       ],
       "singleEntity": false
     },
     {
       "id": "11-vi",
-      "title": "Class diagram Pharmacy và Billing",
+      "title": "Pharmacy và Billing — hai service riêng, hợp đồng rõ ràng",
       "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1458,
-          "height": 1162,
-          "estimatedTextPt": 5.0
+          "width": 2116,
+          "height": 1414,
+          "estimatedTextPt": 3.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1878,
-          "height": 883,
-          "estimatedTextPt": 6.0
+          "width": 1961,
+          "height": 1680,
+          "estimatedTextPt": 4.0
         }
       },
       "panels": [
         {
           "id": "11-vi-part-01",
-          "orientation": "portrait",
-          "estimatedTextPt": 7.9
+          "orientation": "landscape",
+          "estimatedTextPt": 8.6
         },
         {
           "id": "11-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.5
+          "estimatedTextPt": 9.0
+        },
+        {
+          "id": "11-vi-part-03",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.4
         }
       ],
       "singleEntity": false
@@ -647,13 +797,13 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 998,
-          "height": 820,
+          "width": 997,
+          "height": 847,
           "estimatedTextPt": 7.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1289,
+          "width": 1290,
           "height": 493,
           "estimatedTextPt": 8.7
         }
@@ -675,9 +825,9 @@
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1316,
+          "width": 1291,
           "height": 520,
-          "estimatedTextPt": 8.5
+          "estimatedTextPt": 8.7
         }
       },
       "panels": [],
@@ -1645,41 +1795,51 @@
       "id": "29-en",
       "title": "ADMIN — Administrator tasks",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1162,
-          "height": 883,
-          "estimatedTextPt": 6.2
+          "width": 801,
+          "height": 995,
+          "estimatedTextPt": 9.1
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 2130,
-          "height": 634,
-          "estimatedTextPt": 5.3
+          "width": 2353,
+          "height": 463,
+          "estimatedTextPt": 4.8
         }
       },
       "panels": [
         {
           "id": "29-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.7
+          "estimatedTextPt": 24.9
         },
         {
           "id": "29-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.8
+          "estimatedTextPt": 14.0
         },
         {
           "id": "29-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.7
+          "estimatedTextPt": 23.4
         },
         {
           "id": "29-en-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 13.7
+          "estimatedTextPt": 22.4
+        },
+        {
+          "id": "29-en-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.4
+        },
+        {
+          "id": "29-en-part-06",
+          "orientation": "landscape",
+          "estimatedTextPt": 24.4
         }
       ],
       "singleEntity": false
@@ -1688,41 +1848,51 @@
       "id": "29-vi",
       "title": "ADMIN — Tác vụ quản trị viên",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1162,
-          "height": 957,
-          "estimatedTextPt": 6.2
+          "width": 817,
+          "height": 1021,
+          "estimatedTextPt": 8.9
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 2184,
-          "height": 635,
-          "estimatedTextPt": 5.1
+          "width": 2271,
+          "height": 491,
+          "estimatedTextPt": 4.9
         }
       },
       "panels": [
         {
           "id": "29-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.7
+          "estimatedTextPt": 25.5
         },
         {
           "id": "29-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.6
+          "estimatedTextPt": 13.7
         },
         {
           "id": "29-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 14.7
+          "estimatedTextPt": 22.4
         },
         {
           "id": "29-vi-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 13.7
+          "estimatedTextPt": 22.4
+        },
+        {
+          "id": "29-vi-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.4
+        },
+        {
+          "id": "29-vi-part-06",
+          "orientation": "landscape",
+          "estimatedTextPt": 25.3
         }
       ],
       "singleEntity": false
@@ -1735,22 +1905,22 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 878,
-          "height": 730,
+          "width": 877,
+          "height": 675,
           "estimatedTextPt": 8.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1688,
+          "width": 1522,
           "height": 491,
-          "estimatedTextPt": 6.6
+          "estimatedTextPt": 7.4
         }
       },
       "panels": [
         {
           "id": "30-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.2
+          "estimatedTextPt": 23.2
         },
         {
           "id": "30-en-part-02",
@@ -1760,7 +1930,12 @@
         {
           "id": "30-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 14.3
+          "estimatedTextPt": 12.8
+        },
+        {
+          "id": "30-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 21.8
         }
       ],
       "singleEntity": false
@@ -1773,22 +1948,22 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 878,
-          "height": 736,
+          "width": 877,
+          "height": 675,
           "estimatedTextPt": 8.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1642,
+          "width": 1490,
           "height": 491,
-          "estimatedTextPt": 6.8
+          "estimatedTextPt": 7.5
         }
       },
       "panels": [
         {
           "id": "30-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.2
+          "estimatedTextPt": 23.4
         },
         {
           "id": "30-vi-part-02",
@@ -1798,7 +1973,12 @@
         {
           "id": "30-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.4
+          "estimatedTextPt": 12.9
+        },
+        {
+          "id": "30-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.1
         }
       ],
       "singleEntity": false
@@ -1807,36 +1987,46 @@
       "id": "31-en",
       "title": "DOCTOR — Doctor tasks",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1181,
-          "height": 829,
-          "estimatedTextPt": 6.1
+          "width": 865,
+          "height": 818,
+          "estimatedTextPt": 8.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1837,
-          "height": 635,
-          "estimatedTextPt": 6.1
+          "width": 1891,
+          "height": 491,
+          "estimatedTextPt": 5.9
         }
       },
       "panels": [
         {
           "id": "31-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.4
+          "estimatedTextPt": 23.8
         },
         {
           "id": "31-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.6
+          "estimatedTextPt": 21.6
         },
         {
           "id": "31-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 9.7
+          "estimatedTextPt": 13.7
+        },
+        {
+          "id": "31-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        },
+        {
+          "id": "31-en-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.4
         }
       ],
       "singleEntity": false
@@ -1845,36 +2035,46 @@
       "id": "31-vi",
       "title": "DOCTOR — Tác vụ bác sĩ",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1180,
-          "height": 803,
-          "estimatedTextPt": 6.1
+          "width": 851,
+          "height": 839,
+          "estimatedTextPt": 8.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1857,
-          "height": 635,
-          "estimatedTextPt": 6.0
+          "width": 1892,
+          "height": 463,
+          "estimatedTextPt": 5.9
         }
       },
       "panels": [
         {
           "id": "31-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.6
+          "estimatedTextPt": 24.4
         },
         {
           "id": "31-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 22.0
         },
         {
           "id": "31-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 13.1
+        },
+        {
+          "id": "31-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.0
+        },
+        {
+          "id": "31-vi-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 24.1
         }
       ],
       "singleEntity": false
@@ -1883,41 +2083,51 @@
       "id": "32-en",
       "title": "NURSE — Nurse tasks",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1167,
-          "height": 885,
-          "estimatedTextPt": 6.2
+          "width": 504,
+          "height": 1177,
+          "estimatedTextPt": 8.9
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1956,
-          "height": 635,
-          "estimatedTextPt": 5.7
+          "width": 2621,
+          "height": 347,
+          "estimatedTextPt": 4.3
         }
       },
       "panels": [
         {
           "id": "32-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 14.5
+          "estimatedTextPt": 24.7
         },
         {
           "id": "32-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.6
+          "estimatedTextPt": 22.2
         },
         {
           "id": "32-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.6
+          "estimatedTextPt": 22.2
         },
         {
           "id": "32-en-part-04",
           "orientation": "landscape",
           "estimatedTextPt": 22.2
+        },
+        {
+          "id": "32-en-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 21.9
+        },
+        {
+          "id": "32-en-part-06",
+          "orientation": "landscape",
+          "estimatedTextPt": 21.9
         }
       ],
       "singleEntity": false
@@ -1926,39 +2136,49 @@
       "id": "32-vi",
       "title": "NURSE — Tác vụ điều dưỡng",
       "recommended": "portrait",
-      "usePanels": true,
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1129,
-          "height": 829,
-          "estimatedTextPt": 6.4
+          "width": 505,
+          "height": 1096,
+          "estimatedTextPt": 9.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1893,
-          "height": 608,
-          "estimatedTextPt": 5.9
+          "width": 2617,
+          "height": 346,
+          "estimatedTextPt": 4.3
         }
       },
       "panels": [
         {
           "id": "32-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.6
+          "estimatedTextPt": 25.2
         },
         {
           "id": "32-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 10.6
+          "estimatedTextPt": 21.9
         },
         {
           "id": "32-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.6
+          "estimatedTextPt": 23.1
         },
         {
           "id": "32-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 23.1
+        },
+        {
+          "id": "32-vi-part-05",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.2
+        },
+        {
+          "id": "32-vi-part-06",
           "orientation": "landscape",
           "estimatedTextPt": 22.2
         }
@@ -1973,32 +2193,37 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 879,
-          "height": 803,
-          "estimatedTextPt": 8.3
+          "width": 868,
+          "height": 648,
+          "estimatedTextPt": 8.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1851,
-          "height": 491,
-          "estimatedTextPt": 6.1
+          "width": 1371,
+          "height": 463,
+          "estimatedTextPt": 8.2
         }
       },
       "panels": [
         {
           "id": "33-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 12.9
+          "estimatedTextPt": 23.1
         },
         {
           "id": "33-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.5
+          "estimatedTextPt": 13.4
         },
         {
           "id": "33-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.1
+          "estimatedTextPt": 21.8
+        },
+        {
+          "id": "33-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 20.9
         }
       ],
       "singleEntity": false
@@ -2011,32 +2236,37 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 886,
-          "height": 884,
-          "estimatedTextPt": 8.2
+          "width": 879,
+          "height": 730,
+          "estimatedTextPt": 8.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1917,
-          "height": 518,
-          "estimatedTextPt": 5.8
+          "width": 1548,
+          "height": 490,
+          "estimatedTextPt": 7.2
         }
       },
       "panels": [
         {
           "id": "33-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 12.6
+          "estimatedTextPt": 23.3
         },
         {
           "id": "33-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.2
+          "estimatedTextPt": 12.7
         },
         {
           "id": "33-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 13.1
+          "estimatedTextPt": 21.0
+        },
+        {
+          "id": "33-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 20.9
         }
       ],
       "singleEntity": false
@@ -2044,27 +2274,27 @@
     {
       "id": "34-en",
       "title": "PHARMACIST — Pharmacist tasks",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 905,
-          "height": 885,
+          "width": 904,
+          "height": 648,
           "estimatedTextPt": 8.0
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1940,
+          "width": 1383,
           "height": 491,
-          "estimatedTextPt": 5.8
+          "estimatedTextPt": 8.1
         }
       },
       "panels": [
         {
           "id": "34-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.0
+          "estimatedTextPt": 21.4
         },
         {
           "id": "34-en-part-02",
@@ -2074,7 +2304,12 @@
         {
           "id": "34-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 12.8
+          "estimatedTextPt": 20.6
+        },
+        {
+          "id": "34-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.1
         }
       ],
       "singleEntity": false
@@ -2087,32 +2322,37 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 904,
-          "height": 857,
-          "estimatedTextPt": 8.0
+          "width": 894,
+          "height": 648,
+          "estimatedTextPt": 8.1
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1933,
-          "height": 491,
-          "estimatedTextPt": 5.8
+          "width": 1411,
+          "height": 463,
+          "estimatedTextPt": 7.9
         }
       },
       "panels": [
         {
           "id": "34-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.3
+          "estimatedTextPt": 21.6
         },
         {
           "id": "34-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.1
+          "estimatedTextPt": 13.4
         },
         {
           "id": "34-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 12.8
+          "estimatedTextPt": 20.8
+        },
+        {
+          "id": "34-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.2
         }
       ],
       "singleEntity": false
@@ -2120,27 +2360,27 @@
     {
       "id": "35-en",
       "title": "CASHIER — Cashier tasks",
-      "recommended": "portrait",
-      "usePanels": true,
+      "recommended": "landscape",
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1183,
-          "height": 861,
-          "estimatedTextPt": 6.1
+          "width": 838,
+          "height": 557,
+          "estimatedTextPt": 8.7
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1857,
-          "height": 635,
-          "estimatedTextPt": 6.0
+          "width": 1094,
+          "height": 490,
+          "estimatedTextPt": 10.2
         }
       },
       "panels": [
         {
           "id": "35-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 14.3
+          "estimatedTextPt": 23.8
         },
         {
           "id": "35-en-part-02",
@@ -2150,7 +2390,7 @@
         {
           "id": "35-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 21.5
         }
       ],
       "singleEntity": false
@@ -2158,27 +2398,27 @@
     {
       "id": "35-vi",
       "title": "CASHIER — Tác vụ thu ngân",
-      "recommended": "portrait",
-      "usePanels": true,
+      "recommended": "landscape",
+      "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1184,
-          "height": 847,
-          "estimatedTextPt": 6.1
+          "width": 838,
+          "height": 557,
+          "estimatedTextPt": 8.7
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1849,
-          "height": 635,
-          "estimatedTextPt": 6.1
+          "width": 1117,
+          "height": 490,
+          "estimatedTextPt": 10.0
         }
       },
       "panels": [
         {
           "id": "35-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 14.0
+          "estimatedTextPt": 24.2
         },
         {
           "id": "35-vi-part-02",
@@ -2188,7 +2428,7 @@
         {
           "id": "35-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 21.5
         }
       ],
       "singleEntity": false
@@ -2201,27 +2441,27 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1177,
-          "height": 698,
-          "estimatedTextPt": 6.2
+          "width": 860,
+          "height": 357,
+          "estimatedTextPt": 8.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1448,
-          "height": 635,
-          "estimatedTextPt": 7.7
+          "width": 619,
+          "height": 491,
+          "estimatedTextPt": 13.9
         }
       },
       "panels": [
         {
           "id": "36-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 14.3
+          "estimatedTextPt": 24.0
         },
         {
           "id": "36-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 13.0
         }
       ],
       "singleEntity": false
@@ -2234,29 +2474,293 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1177,
-          "height": 704,
-          "estimatedTextPt": 6.2
+          "width": 860,
+          "height": 357,
+          "estimatedTextPt": 8.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1452,
-          "height": 635,
-          "estimatedTextPt": 7.7
+          "width": 642,
+          "height": 491,
+          "estimatedTextPt": 13.9
         }
       },
       "panels": [
         {
           "id": "36-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 13.5
+          "estimatedTextPt": 24.6
         },
         {
           "id": "36-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.5
+          "estimatedTextPt": 13.0
         }
       ],
+      "singleEntity": false
+    },
+    {
+      "id": "37-en",
+      "title": "Doctor explains consultation outcome to patient",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 617,
+          "height": 1649,
+          "estimatedTextPt": 6.3
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 922,
+          "height": 1437,
+          "estimatedTextPt": 4.7
+        }
+      },
+      "panels": [
+        {
+          "id": "37-en-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 10.4
+        },
+        {
+          "id": "37-en-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.2
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "37-vi",
+      "title": "Bác sĩ kết luận và trả kết quả khám cho bệnh nhân",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 617,
+          "height": 1675,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 923,
+          "height": 1471,
+          "estimatedTextPt": 4.6
+        }
+      },
+      "panels": [
+        {
+          "id": "37-vi-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 10.0
+        },
+        {
+          "id": "37-vi-part-02",
+          "orientation": "portrait",
+          "estimatedTextPt": 11.1
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "38-en",
+      "title": "Create prescription — an optional separate workflow",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 720,
+          "height": 1450,
+          "estimatedTextPt": 7.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1085,
+          "height": 1147,
+          "estimatedTextPt": 5.9
+        }
+      },
+      "panels": [
+        {
+          "id": "38-en-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 8.8
+        },
+        {
+          "id": "38-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.1
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "38-vi",
+      "title": "Kê đơn — quy trình riêng khi có chỉ định",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 718,
+          "height": 1382,
+          "estimatedTextPt": 7.5
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1090,
+          "height": 1188,
+          "estimatedTextPt": 5.7
+        }
+      },
+      "panels": [
+        {
+          "id": "38-vi-part-01",
+          "orientation": "portrait",
+          "estimatedTextPt": 9.0
+        },
+        {
+          "id": "38-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.9
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "39-en",
+      "title": "Core service — Organization and Patient modules",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 793,
+          "height": 858,
+          "estimatedTextPt": 9.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1163,
+          "height": 624,
+          "estimatedTextPt": 9.6
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "39-vi",
+      "title": "Core service — module Organization và Patient",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 793,
+          "height": 858,
+          "estimatedTextPt": 9.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1163,
+          "height": 624,
+          "estimatedTextPt": 9.6
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "40-en",
+      "title": "Lab service — tests, results and financial authority",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1047,
+          "height": 628,
+          "estimatedTextPt": 6.9
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 680,
+          "height": 760,
+          "estimatedTextPt": 9.0
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "40-vi",
+      "title": "Lab service — xét nghiệm, kết quả và quyền dịch vụ",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1047,
+          "height": 628,
+          "estimatedTextPt": 6.9
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 680,
+          "height": 760,
+          "estimatedTextPt": 9.0
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "41-en",
+      "title": "Support service — separate reporting and notification models",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 688,
+          "height": 756,
+          "estimatedTextPt": 10.5
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 853,
+          "height": 699,
+          "estimatedTextPt": 9.7
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "41-vi",
+      "title": "Support service — mô hình báo cáo và thông báo riêng",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 688,
+          "height": 756,
+          "estimatedTextPt": 10.5
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 853,
+          "height": 699,
+          "estimatedTextPt": 9.7
+        }
+      },
+      "panels": [],
       "singleEntity": false
     }
   ]

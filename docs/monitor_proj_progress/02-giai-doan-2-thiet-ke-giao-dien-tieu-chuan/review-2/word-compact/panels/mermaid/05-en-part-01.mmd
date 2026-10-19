@@ -1,0 +1,21 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 1
+ actor Patient as Patient
+ actor Nurse as Nurse
+ participant UI as Web / Flutter
+ participant G as Gateway
+ participant C as Clinical
+ participant Core as Core
+Note over Patient,Core: Continuation under the shown conditions. See full figure.
+Patient->>Nurse: Request a consultation appointment
+Nurse->>UI: Find patient and select doctor, department, date and time
+UI->>G: Authenticated appointment creation request
+alt Missing identity or role denied
+G-->>UI: 401 / 403
+UI-->>Nurse: Sign in / access denied, no appointment created
+else Route policy accepted
+G->>C: Create appointment command
+C->>Core: Authorized patient and doctor context lookup
+Core-->>C: Context or lookup failure
+end

@@ -3,46 +3,34 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  A1(["Tạo tài khoản"])
- A2(["Gán vai trò và định danh"])
+ A2(["Gán vai trò tài khoản"])
  A3(["Đổi trạng thái tài khoản"])
- A4(["Kiểm tra tài khoản đích"])
  A5(["Tạo hồ sơ nhân viên"])
- A6(["Ghi thông tin nhân viên"])
  A7(["Cập nhật hồ sơ nhân viên"])
- A8(["Xem hồ sơ nhân viên"])
  A9(["Chuyển khoa công tác"])
- A10(["Kiểm tra khoa tiếp nhận"])
  A11(["Cập nhật khoa"])
- A12(["Xem thông tin khoa"])
  A13(["Tạo khoa"])
- A14(["Nhập mã và tên khoa"])
  A15(["Xem báo cáo quản lý"])
- A16(["Chọn kỳ và phạm vi"])
  A17(["Gửi thông báo"])
- A18(["Chọn người nhận và kênh"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> A1
  ACTOR --> A3
  ACTOR --> A5
  ACTOR --> A7
+ ACTOR --> A9
  ACTOR --> A11
  ACTOR --> A13
  ACTOR --> A15
  ACTOR --> A17
  A1 -.->|"«include»"| A2
- A3 -.->|"«include»"| A4
- A5 -.->|"«include»"| A6
- A7 -.->|"«include»"| A8
- A9 -.->|"«extend» [E1]"| A7
- A9 -.->|"«include»"| A10
- A11 -.->|"«include»"| A12
- A13 -.->|"«include»"| A14
- A15 -.->|"«include»"| A16
- A17 -.->|"«include»"| A18
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A1,A3,A5,A7,A11,A13,A15,A17 main;
- class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,A1,A3,A5,A7,A9,A11,A13,A15,A17 main;
+ class A2 sub;

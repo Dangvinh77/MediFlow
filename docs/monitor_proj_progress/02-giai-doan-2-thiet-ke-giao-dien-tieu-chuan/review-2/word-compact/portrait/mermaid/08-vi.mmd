@@ -1,29 +1,59 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 24, "rankSpacing": 42, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 30, "width": 140, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 34, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 30, "rankSpacing": 42, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img { display:inline-block!important; width:28px!important; height:28px!important; vertical-align:middle!important; } .nodeLabel p { margin:0; }", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Doctor
- actor Tech as LAB_TECH
- participant C as Clinical
- participant L as Lab
- participant B as Billing
+ actor Doctor as Bác sĩ
+ actor Cashier as Thu ngân
+ actor Tech as Kỹ thuật viên xét nghiệm
+ participant C as Clinical API
+ participant L as Lab API
+ participant B as Billing API
  participant Q as RabbitMQ
- participant S as Support
- Doctor->>C: Explicit order in authorized record
- C->>C: Persist explicit clinical_lab_order
- C-->>Doctor: Source order identity
- Doctor->>L: Create test via Gateway with exact source_order_id
- L->>C: REST lookup /lab-orders/id/context with authenticated actor
- C-->>L: Exact persisted order and authority context
- L->>L: Validate context and dedupe source order / persist test + outbox
- L-->>Q: lab.request.created
- Q->>B: Issue LAB_TEST charge and request
- Note over B,L: Cashier pays exact request, clearance targets exact testId
- B-->>Q: financial.clearance.granted
- Q->>L: Persist target clearance
- Tech->>L: Start protected test through Gateway
- L->>L: Verify scope / target / expiry
- Tech->>L: Submit nonempty results and valid performed date
- L->>L: Complete once + resultVersion + outbox
- L-->>Q: lab.result.created
- Q->>C: Atomic inbox and attached result
- Q->>S: Independent report / notification projections
+ Note over Doctor,C: Tiền điều kiện: hồ sơ khám đang mở và đúng quyền, mọi lệnh actor qua Gateway.
+ Doctor->>C: Lưu chỉ định xét nghiệm cụ thể
+ alt Chỉ định sai hoặc không có quyền
+  C-->>Doctor: Từ chối, sửa chỉ định, chưa tạo xét nghiệm
+ else Chỉ định đã lưu
+  C-->>Doctor: source_order_id
+  Doctor->>L: Tạo xét nghiệm với source_order_id đúng
+  L->>C: Tra cứu chỉ định đã lưu và context actor
+  C-->>L: Context chỉ định hoặc lỗi tra cứu
+  alt Lệch context, trùng khác intent hoặc lỗi phụ thuộc
+   L-->>Doctor: Từ chối tạo, không có xét nghiệm mới hoặc fact tính phí
+  else Context hợp lệ / nhận diện retry cùng ý định
+   L->>L: Lưu hoặc dùng lại xét nghiệm đúng, chỉ tạo outbox khi mới
+   L-->>Doctor: testId
+   L-)Q: lab.request.created
+   Q-)B: Lập khoản thu / yêu cầu thu LAB_TEST đúng xét nghiệm
+   Note over Cashier,B: Tra yêu cầu đã sẵn sàng và ghi tiền, hoặc dừng/thử lại như hình 07
+   Cashier->>B: Tra đúng yêu cầu, rồi gửi thanh toán như hình 07
+   B-->>Cashier: Biên nhận đã commit hoặc lỗi yêu cầu/thanh toán
+   alt Chưa commit thanh toán hoặc yêu cầu thu chưa sẵn sàng
+    Note over Cashier,Tech: Dừng, xử lý thanh toán/yêu cầu thu trước khi xét nghiệm.
+   else Đã commit thanh toán đúng xét nghiệm
+   B-)Q: financial.clearance.granted
+   Q-)L: Lưu quyền LAB_TEST đúng testId
+   Tech->>L: Bắt đầu đúng xét nghiệm
+   alt Thiếu/hết hạn quyền thanh toán hoặc sai trạng thái
+    L-->>Tech: Từ chối, chưa thực hiện xét nghiệm được bảo vệ
+   else Được phép bắt đầu
+    L-->>Tech: IN_PROGRESS
+    Tech->>Tech: Thực hiện xét nghiệm
+    loop Sửa và gửi kết quả đến khi được nhận hoặc dừng thao tác
+     Tech->>L: Gửi chỉ số, kết luận và ngày thực hiện
+     alt Kết quả rỗng, ngày sai, quyền hết hạn hoặc xét nghiệm đã chốt
+      L-->>Tech: Từ chối có lý do, không tạo kết quả hoàn tất mới
+     else Kết quả và quyền hiện tại hợp lệ
+      L->>L: Commit COMPLETED, resultVersion và outbox một lần
+      L-->>Tech: Đã ghi nhận kết quả
+     end
+    end
+    opt Đã commit kết quả hoàn tất
+     L-)Q: lab.result.created
+     Q-)C: Gắn kết quả chống trùng qua inbox
+     Doctor->>L: Đọc kết quả hoàn tất đúng quyền
+     L-->>Doctor: Chỉ số / kết luận / phiên bản kết quả
+    end
+   end
+   end
+  end
+ end

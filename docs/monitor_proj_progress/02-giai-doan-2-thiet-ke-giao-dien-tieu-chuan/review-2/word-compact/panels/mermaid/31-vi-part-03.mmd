@@ -3,22 +3,18 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
  subgraph SYS["MediFlow — DOCTOR"]
+ D5(["Ghi nhận khám bệnh"])
+ D7(["Ghi chẩn đoán"])
+ D8(["Chỉ định xét nghiệm"])
  D11(["Kê đơn thuốc"])
- D12(["Chọn thuốc và liều dùng"])
- D13(["Hoàn tất lượt khám [V1]"])
- D14(["Xác nhận chẩn đoán / hướng xử trí"])
- D15(["Hủy đơn thuốc"])
- D16(["Kiểm tra điều kiện hủy"])
  end
- ACTOR --> D11
- ACTOR --> D13
- D11 -.->|"«include»"| D12
- D13 -.->|"«include»"| D14
- D15 -.->|"«extend» [E3]"| D11
- D15 -.->|"«include»"| D16
+ ACTOR --> D5
+ ACTOR --> D7
+ D8 -.->|"«extend» [E1]"| D5
+ D11 -.->|"«extend» [E2]"| D5
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class D11,D13 main;
- class D12,D14,D15,D16 sub;
+ class D5,D7 main;
+ class D8,D11 sub;

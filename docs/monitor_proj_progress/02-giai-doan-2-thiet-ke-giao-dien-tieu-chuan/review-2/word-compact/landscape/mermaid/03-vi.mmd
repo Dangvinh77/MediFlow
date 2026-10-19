@@ -1,70 +1,38 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 36, "rankSpacing": 48, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 flowchart LR
- subgraph CLIENT["Client side — thiết bị người dùng"]
- subgraph WEBAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Web / Next.js"]
- WR["App Router pages / layouts<br/>Role-aware navigation + shared UI"]
- WF["features/context<br/>components · api.ts · wire types"]
- WA["lib/api.ts<br/>Bearer JWT · envelope unwrap<br/>ApiRequestError / 401 session clear"]
- WR <-->|UI action / render state| WF
- WF <-->|API call / data or error| WA
+ subgraph CLIENT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side"]
+  WP["Web: App Router / feature UI"]
+  API["Web: lib/api.ts<br/>JWT / ánh xạ kết quả và lỗi"]
+  MP["Flutter: presentation → domain ← data<br/>Dio ApiClient"]
+  WP <-->|Thao tác / trạng thái UI| API
  end
- subgraph MOBILEAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Flutter"]
- MP["Presentation<br/>Riverpod providers / pages / widgets"]
- MU["Domain use cases / repository contracts<br/>Data repository implementation + DTO mapping"]
- MD["core/network/ApiClient · Dio<br/>Gateway-only paths · JWT<br/>envelope / failure mapping"]
- MP <-->|User intent / state| MU
- MU <-->|Data request / DTO result| MD
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>Xác thực / chính sách route"]
+  subgraph CONTEXT["Bên trong mỗi service/context nghiệp vụ"]
+   WEB["Controller / input adapter<br/>Kiểm tra DTO / role / phạm vi actor"]
+   APP["Application service / use case<br/>Điều phối / transaction cục bộ"]
+   DOMAIN["Domain model<br/>Vòng đời / ràng buộc nghiệp vụ"]
+   PORT["Application output ports<br/>Hợp đồng lưu trữ / tra cứu / sự kiện"]
+   PERSIST["Persistence adapter / JPA / Flyway"]
+   REST["REST adapter<br/>Tra cứu có kiểm quyền và phục hồi lỗi"]
+   OUTBOX["Outbox publisher / inbox consumer<br/>Hiệu ứng cục bộ atomic / chống trùng"]
+   WEB <-->|Lệnh hoặc truy vấn / kết quả| APP
+   APP -->|Áp dụng quy tắc| DOMAIN
+   APP -->|Dùng hợp đồng| PORT
+   PERSIST -.->|Hiện thực| PORT
+   REST -.->|Hiện thực| PORT
+   OUTBOX -.->|Hiện thực| PORT
+  end
+  DB[(<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Database thuộc context)]
+  PEER["API service khác"]
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ"]
+  GW -->|Request đã kiểm quyền| WEB
+  WEB -->|Response / trạng thái lỗi| GW
+  PERSIST <-->|SQL / rows| DB
+  OUTBOX <-->|Transaction outbox / inbox cục bộ| DB
+  REST <-->|HTTP request / response| PEER
+  OUTBOX <-->|Phát / nhận sự kiện| MQ
+  DEP["Import tĩnh: infrastructure → application → domain.<br/>Adapter hiện thực port của application.<br/>Domain không phụ thuộc framework hoặc database service khác."]
  end
- end
- subgraph EDGE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · API boundary"]
- NX["Next.js server rewrite<br/>same-origin /api to Gateway"]
- G["Spring Cloud Gateway<br/>JWT authentication / route-role policy"]
- end
- WA -->|HTTP request /api + JWT| NX
- NX -->|JSON response / status / error| WA
- NX <-->|Request / response| G
- MD -->|HTTP request to Gateway| G
- G -->|JSON response / status / error| MD
- subgraph BACKEND["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · each logical backend context"]
- WC["Web controller / request DTO<br/>Bean validation / PreAuthorize<br/>Context and actor checks"]
- AS["Application service / input use case<br/>DTO mapping / local transaction<br/>Idempotency and business orchestration"]
- DM["Domain models / business rules<br/>UUID / money / lifecycle invariants<br/>Framework-free"]
- OP["Application output ports<br/>Repository / external context / event contracts"]
- PA["Persistence adapter<br/>JPA repository / entity mapper / Flyway"]
- RA["HTTP client adapter<br/>Resilient authorized context lookup"]
- OA["Outbox persistence / publisher adapter<br/>Only configured state-changing paths"]
- IA["Messaging consumer / inbox adapter<br/>Deduplication + local effect transaction"]
- WC <-->|Command or query / result DTO| AS
- AS -->|Evaluate rules| DM
- AS <-->|Port operation / mapped result| OP
- OP <-->|Repository operation / domain result| PA
- OP <-->|Context lookup / authorized DTO| RA
- AS -->|State change + durable event| OA
- IA -->|Input command / integration fact| AS
- end
- subgraph IO["Server side · owned data and integration"]
- DB[(Context-owned PostgreSQL store)]
- Q["RabbitMQ<br/>Durable queues / retry / DLQ"]
- PEER["Other context REST API<br/>Own authorization / own store"]
- end
- PA <-->|SQL write or read / rows| DB
- OA -->|Local outbox commit| DB
- OA -. publish after commit .-> Q
- Q -. asynchronous delivery .-> IA
- RA <-->|HTTP request / response| PEER
- G -->|Authorized HTTP request| WC
- WC -->|ApiResponse data or error / HTTP status| G
- subgraph DEP["Chiều phụ thuộc tĩnh — mũi tên là import hoặc hiện thực, không phải request mạng"]
- subgraph DC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · source dependencies"]
- DW["Web app routes"] -. imports .-> DF["Feature modules"]
- DF -. imports .-> DL["Shared lib/api and wire types"]
- DP["Flutter presentation"] -. imports .-> DD["Flutter domain<br/>Entities / use cases / repository contracts"]
- DT["Flutter data"] -. implements / imports .-> DD
- end
- subgraph DS["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · inward dependencies"]
- DA["Web / messaging driving adapters"] -. imports .-> DAPP["Application<br/>Services / ports / DTOs / events"]
- DI["Persistence / REST / messaging adapters"] -. implements ports .-> DAPP
- DAPP -. imports .-> DDOMAIN["Domain<br/>Models / rules / exceptions"]
- DI -. maps domain objects .-> DDOMAIN
- end
- end
+ API & MP -->|HTTP request / JWT| GW
+ GW -->|JSON response / error| API & MP

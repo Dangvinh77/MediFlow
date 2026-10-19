@@ -3,22 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
  subgraph SYS["MediFlow — DOCTOR"]
- D5(["Record consultation"])
- D6(["Record clinical findings"])
- D7(["Add diagnosis"])
- D8(["Order lab test"])
- D9(["Specify test and patient"])
- D10(["Review lab results"])
+ D1(["Review clinical history"])
+ D3(["Start examination [V1]"])
  end
- ACTOR --> D5
- ACTOR --> D10
- D5 -.->|"«include»"| D6
- D7 -.->|"«extend» [E1]"| D5
- D8 -.->|"«extend» [E2]"| D5
- D8 -.->|"«include»"| D9
+ ACTOR --> D1
+ ACTOR --> D3
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class D5,D10 main;
- class D6,D7,D8,D9 sub;
+ class D1,D3 main;

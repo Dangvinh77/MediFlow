@@ -3,40 +3,33 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  N1(["Register patient"])
- N2(["Record patient details"])
- N3(["Update patient"])
- N4(["Find patient record"])
+ N3(["Update patient profile"])
+ N4(["Find patient"])
  N5(["Schedule appointment"])
- N6(["Choose patient / doctor / date"])
- N7(["Review appointment"])
- N8(["Read appointment details"])
+ N7(["View appointments"])
  N9(["Reschedule appointment"])
- N10(["Validate new schedule"])
- N11(["Check in [V1]"])
- N12(["Check appointment state"])
- N13(["Read care information"])
- N14(["View medical record / lab"])
+ N11(["Check in patient [V1]"])
+ N13(["Read clinical information"])
+ N14(["Read laboratory information"])
  N15(["View patient notifications"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> N1
  ACTOR --> N3
+ ACTOR --> N4
  ACTOR --> N5
  ACTOR --> N7
+ ACTOR --> N9
  ACTOR --> N11
  ACTOR --> N13
+ ACTOR --> N14
  ACTOR --> N15
- N1 -.->|"«include»"| N2
- N3 -.->|"«include»"| N4
- N5 -.->|"«include»"| N6
- N7 -.->|"«include»"| N8
- N9 -.->|"«extend» [E1]"| N7
- N9 -.->|"«include»"| N10
- N11 -.->|"«include»"| N12
- N13 -.->|"«include»"| N14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N1,N3,N5,N7,N11,N13,N15 main;
- class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,N1,N3,N4,N5,N7,N9,N11,N13,N14,N15 main;

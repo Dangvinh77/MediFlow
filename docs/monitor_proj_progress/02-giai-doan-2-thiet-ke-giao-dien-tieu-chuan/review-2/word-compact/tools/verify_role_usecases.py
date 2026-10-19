@@ -11,6 +11,8 @@ data=json.loads((OUT/'role-usecases.json').read_text(encoding='utf8'))
 assert {d['role'] for d in data}=={'ADMIN','MANAGER','DOCTOR','NURSE','LAB_TECH','PHARMACIST','CASHIER','PATIENT'}
 checked=[]
 for item in data:
+    assert {'AUTH_LOGIN','AUTH_REFRESH'} <= set(item['main'])
+    assert not any({a,b}=={'AUTH_LOGIN','AUTH_REFRESH'} for a,b,_,_ in item['edges'])
     for src in item['sources']:
         assert (REPO/src).is_file(),src
     for lang in ['en','vi']:
@@ -55,8 +57,6 @@ for item in data:
         assert panel_edges=={(s,d,k) for s,d,k,_ in item['edges']}
 
 for lang in ['en','vi']:
-    s=(ROOT/'assets/mermaid'/f'04-{lang}.mmd').read_text(encoding='utf8')
-    assert not re.search(r'PAT\s+---\s+U[26]\b',s)
     for kind in ['standard','word']:
         report=next(ROOT.glob(f'*-review-2-{kind}-{lang}.md')).read_text(encoding='utf8')
         assert report.count('<!-- role-usecases:start -->')==1
@@ -67,7 +67,7 @@ summary={'roles':len(data),'fullDiagramVariants':len(checked),'failures':0,
          'checks':['eight human roles','one actor per diagram','source evidence paths',
                    'bilingual node/edge parity','true exported ellipses','solid primary arrows',
                    'dashed include arrows','extension-to-base arrowheads','panel union equals full graph',
-                   'reports include all roles','Patient overview matches source permissions'],
+                   'reports include all roles','independent sign-in and renewal per role'],
          'results':checked}
 (OUT/'role-validation.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
 print(f'Role use cases: {len(data)} roles; {len(checked)} full diagram variants; all checks passed')

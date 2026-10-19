@@ -3,36 +3,26 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — LAB_TECH"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  L1(["Xem danh sách xét nghiệm"])
- L2(["Đọc trang xét nghiệm"])
- L3(["Lọc xét nghiệm chờ"])
- L4(["Bắt đầu xét nghiệm [V1 gate]"])
- L5(["Kiểm tra trạng thái xét nghiệm"])
- L6(["Kiểm tra LAB_TEST clearance [V1]"])
+ L3(["Lọc xét nghiệm theo trạng thái"])
+ L4(["Bắt đầu xét nghiệm [V1]"])
  L7(["Ghi kết quả xét nghiệm"])
- L8(["Nhập các giá trị kết quả"])
- L9(["Kiểm tra thời gian hoàn tất"])
  L10(["Hủy xét nghiệm"])
- L11(["Ghi lý do hủy"])
- L12(["Cập nhật trạng thái hợp lệ"])
- L13(["Kiểm tra chuyển trạng thái"])
+ L12(["Cập nhật trạng thái xét nghiệm"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> L1
  ACTOR --> L4
  ACTOR --> L7
  ACTOR --> L10
  ACTOR --> L12
- L1 -.->|"«include»"| L2
  L3 -.->|"«extend» [E1]"| L1
- L4 -.->|"«include»"| L5
- L4 -.->|"«include»"| L6
- L7 -.->|"«include»"| L8
- L7 -.->|"«include»"| L9
- L10 -.->|"«include»"| L11
- L12 -.->|"«include»"| L13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class L1,L4,L7,L10,L12 main;
- class L2,L3,L5,L6,L8,L9,L11,L13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,L1,L4,L7,L10,L12 main;
+ class L3 sub;

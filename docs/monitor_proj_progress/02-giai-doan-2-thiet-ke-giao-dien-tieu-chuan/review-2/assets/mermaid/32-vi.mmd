@@ -3,40 +3,33 @@
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  N1(["Tạo hồ sơ bệnh nhân"])
- N2(["Nhập thông tin bệnh nhân"])
- N3(["Cập nhật bệnh nhân"])
+ N3(["Cập nhật hồ sơ bệnh nhân"])
  N4(["Tra cứu bệnh nhân"])
- N5(["Tạo lịch hẹn"])
- N6(["Chọn bệnh nhân / bác sĩ / ngày"])
- N7(["Xem lịch hẹn"])
- N8(["Đọc chi tiết lịch"])
+ N5(["Đặt lịch khám"])
+ N7(["Tra cứu lịch hẹn"])
  N9(["Điều chỉnh lịch hẹn"])
- N10(["Kiểm tra lịch mới"])
- N11(["Tiếp nhận check-in [V1]"])
- N12(["Kiểm tra trạng thái lịch"])
- N13(["Tra cứu thông tin chăm sóc"])
- N14(["Xem hồ sơ khám / xét nghiệm"])
+ N11(["Tiếp nhận bệnh nhân [V1]"])
+ N13(["Tra cứu hồ sơ khám"])
+ N14(["Tra cứu xét nghiệm"])
  N15(["Xem thông báo bệnh nhân"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> N1
  ACTOR --> N3
+ ACTOR --> N4
  ACTOR --> N5
  ACTOR --> N7
+ ACTOR --> N9
  ACTOR --> N11
  ACTOR --> N13
+ ACTOR --> N14
  ACTOR --> N15
- N1 -.->|"«include»"| N2
- N3 -.->|"«include»"| N4
- N5 -.->|"«include»"| N6
- N7 -.->|"«include»"| N8
- N9 -.->|"«extend» [E1]"| N7
- N9 -.->|"«include»"| N10
- N11 -.->|"«include»"| N12
- N13 -.->|"«include»"| N14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N1,N3,N5,N7,N11,N13,N15 main;
- class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,N1,N3,N4,N5,N7,N9,N11,N13,N14,N15 main;

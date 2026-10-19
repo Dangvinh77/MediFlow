@@ -3,20 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
  subgraph SYS["MediFlow — MANAGER"]
- M1(["Xem báo cáo ngoại trú"])
- M2(["Chọn kỳ báo cáo"])
- M3(["Xem độ phủ nguồn dữ liệu"])
- M4(["Xem báo cáo tài chính"])
- M5(["Chọn ngày hoặc tháng"])
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  end
- ACTOR --> M1
- ACTOR --> M4
- M1 -.->|"«include»"| M2
- M1 -.->|"«include»"| M3
- M4 -.->|"«include»"| M5
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class M1,M4 main;
- class M2,M3,M5 sub;
+ class AUTH_LOGIN,AUTH_REFRESH main;

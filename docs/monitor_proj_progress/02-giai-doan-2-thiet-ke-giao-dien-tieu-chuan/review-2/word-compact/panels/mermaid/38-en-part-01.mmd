@@ -1,0 +1,21 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 1
+ actor Doctor as Doctor
+ participant P as Pharmacy API
+ participant C as Clinical API
+Note over Doctor,C: Continuation under the shown conditions. See full figure.
+Note over Doctor,P: Precondition: authorized outpatient context while record is writable, API calls use Gateway.
+Doctor->>P: Submit medicines, quantities and dosage with exact clinical identity
+P->>C: Validate persisted clinical context and doctor authority
+C-->>P: Context or lookup rejection
+alt Context invalid, unauthorized or unavailable
+P-->>Doctor: Reject, no prescription or reservation
+else Clinical context accepted
+P->>P: Lock drug rows, read catalogue prices, check quantity, expiry and available stock
+alt Invalid medicine, quantity, expiry or insufficient available stock
+P-->>Doctor: Reject, correct prescription, no partial reservation
+else All lines valid
+P->>P: Atomic prescription + lines + pending slip + reservations + outbox
+end
+end

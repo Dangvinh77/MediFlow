@@ -3,18 +3,16 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
  subgraph SYS["MediFlow — PHARMACIST"]
- P6(["Điều chỉnh tồn kho"])
- P7(["Ghi số lượng và lý do"])
- P8(["Tra cứu đơn thuốc"])
- P9(["Xem các dòng thuốc"])
+ P1(["Tra cứu thuốc"])
+ P3(["Lọc danh mục thuốc"])
+ P4(["Thêm thuốc"])
  end
- ACTOR --> P6
- ACTOR --> P8
- P6 -.->|"«include»"| P7
- P8 -.->|"«include»"| P9
+ ACTOR --> P1
+ ACTOR --> P4
+ P3 -.->|"«extend» [E1]"| P1
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class P6,P8 main;
- class P7,P9 sub;
+ class P1,P4 main;
+ class P3 sub;

@@ -4,20 +4,13 @@ flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PATIENT"]
  subgraph SYS["MediFlow — PATIENT"]
  T6(["Xem thông báo của mình"])
- T7(["Kiểm tra đúng bệnh nhân"])
- T8(["Xem danh sách thông báo"])
- T9(["Mở chi tiết thông báo"])
- T10(["Đọc nội dung thông báo"])
+ T9(["Đọc chi tiết thông báo"])
  end
  ACTOR --> T6
- T6 -.->|"«include»"| T7
- T6 -.->|"«include»"| T8
  T9 -.->|"«extend» [E1]"| T6
- T9 -.->|"«include»"| T7
- T9 -.->|"«include»"| T10
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
  class T6 main;
- class T7,T8,T9,T10 sub;
+ class T9 sub;

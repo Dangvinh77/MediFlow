@@ -1,22 +1,42 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 36, "rankSpacing": 48, "padding": 12, "diagramPadding": 24, "wrappingWidth": 420, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 flowchart LR
- subgraph CLIENT["Client side — user devices"]
- WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Web</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='34' height='34'/><br/>Next.js UI / React<br/>TypeScript / Tailwind CSS"]
- MOB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Mobile</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='34' height='34'/><br/>Flutter / Riverpod<br/>Dio / GoRouter / SecureStorage"]
+ subgraph CLIENT["Client side"]
+  WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='28' height='28'/> Next.js / React / TypeScript / Tailwind"]
+  MOBILE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='28' height='28'/> Flutter / Dart"]
  end
- PX["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nodejs/nodejs-original.svg' width='34' height='34'/><br/>Next.js server / Node.js<br/>same-origin /api rewrite"]
- GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Spring Cloud Gateway<br/>JWT / route authorization"]
- EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Eureka<br/>Service registry"]
- MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='34' height='34'/><br/>RabbitMQ · retry / DLQ<br/>Publish: Clinical / Lab / Pharmacy / Billing<br/>Consume: Support and configured contexts"]
- DOCK["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/docker/docker-original.svg' width='34' height='34'/><br/>Docker Compose<br/>Development orchestration"]
- APPS["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/><b>Server side · 6 deployments</b><br/>Core: Organization + Patient<br/>Clinical · Lab · Pharmacy · Billing<br/>Support: Report + Notification<br/>Java 21 / Spring Boot 3.3.5"]
- DB["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='34' height='34'/><br/>PostgreSQL 16 · 8 context stores<br/>Core → organization / patient<br/>Clinical → clinical · Lab → lab<br/>Pharmacy → pharmacy · Billing → billing<br/>Support → report / notification"]
- WEB <-->|HTTP request /api<br/>JSON response / status| PX
- MOB <-->|HTTP request + JWT<br/>JSON response / status| GW
- PX <-->|Forward request / return response| GW
- GW <-->|Request / response| APPS
- APPS <-->|Own store read / write| DB
- APPS -. register / discover .-> EU
- APPS -. committed outbox events .-> MQ
- MQ -. configured inbox consumers .-> APPS
- DOCK -. hosts .-> APPS
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>JWT / route authorization"]
+  subgraph SERVICES["Independently deployed business applications"]
+   CORE["Core<br/>Organization + Patient"]
+   CL["Clinical<br/>Appointments / consultation"]
+   LAB["Lab<br/>Tests / results"]
+   PH["Pharmacy<br/>Prescriptions / stock / dispensing"]
+   BI["Billing<br/>Charges / payment / clearance"]
+   SU["Support<br/>Report + Notification"]
+  end
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ<br/>Domain events / retry / DLQ"]
+  EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> Eureka<br/>Service registry"]
+  subgraph STORES["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Context-owned data — no cross-service SQL"]
+   DCORE[(Organization DB + Patient DB)]
+   DCL[(Clinical DB)]
+   DLAB[(Lab DB)]
+   DPH[(Pharmacy DB)]
+   DBI[(Billing DB)]
+   DSU[(Report DB + Notification DB)]
+  end
+ end
+ WEB <-->|HTTP request /api / JSON response| GW
+ MOBILE <-->|HTTP request / JSON response| GW
+ GW <-->|HTTP request / response| CORE & CL & LAB & PH & BI & SU
+ CL <-->|Authorized identity lookup| CORE
+ LAB <-->|Clinical order context via REST| CL
+ PH <-->|Clinical prescription context via REST| CL
+ CORE --- DCORE
+ CL --- DCL
+ LAB --- DLAB
+ PH --- DPH
+ BI --- DBI
+ SU --- DSU
+ CORE & CL & LAB & PH & BI -.->|Publish committed facts| MQ
+ MQ -.->|Deliver to subscribed consumers| CL & LAB & PH & BI & SU
+ SERVICES -.->|Register / discover| EU

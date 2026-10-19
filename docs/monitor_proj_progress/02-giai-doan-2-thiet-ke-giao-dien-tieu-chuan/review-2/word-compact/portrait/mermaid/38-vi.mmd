@@ -1,0 +1,26 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 20, "width": 125, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Bác sĩ
+ participant P as Pharmacy API
+ participant C as Clinical API
+ participant Q as RabbitMQ
+ participant B as Billing
+ Note over Doctor,P: Tiền điều kiện: context ngoại trú đúng quyền, hồ sơ còn cho ghi, lệnh API qua Gateway.
+ Doctor->>P: Gửi thuốc, số lượng, liều dùng và định danh khám chính xác
+ P->>C: Xác minh context khám đã lưu và quyền bác sĩ
+ C-->>P: Context hoặc từ chối tra cứu
+ alt Context sai, không có quyền hoặc không khả dụng
+  P-->>Doctor: Từ chối, chưa có đơn hoặc giữ chỗ
+ else Context khám hợp lệ
+  P->>P: Khóa dòng thuốc, lấy giá danh mục, kiểm số lượng, hạn và tồn khả dụng
+  alt Thuốc, số lượng, hạn sai hoặc thiếu tồn khả dụng
+   P-->>Doctor: Từ chối, sửa đơn, không giữ chỗ một phần
+  else Mọi dòng thuốc hợp lệ
+   P->>P: Atomic đơn + dòng thuốc + phiếu chờ + giữ chỗ + outbox
+   P-->>Doctor: Định danh đơn và tổng tiền do server tính
+   P-)Q: prescription.created
+   Q-)B: Lập khoản thu / yêu cầu thu đúng đơn một lần
+  end
+ end
+ Note over P,B: Giữ chỗ chưa phải xuất kho, hình 09 mô tả thu tiền và chủ động cấp thuốc.

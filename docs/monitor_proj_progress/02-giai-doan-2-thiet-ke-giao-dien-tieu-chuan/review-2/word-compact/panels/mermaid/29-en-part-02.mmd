@@ -3,22 +3,16 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
- A5(["Create staff member"])
- A6(["Record staff details"])
- A7(["Maintain staff profile"])
- A8(["View staff profile"])
- A9(["Transfer department"])
- A10(["Validate target department"])
+ A1(["Create account"])
+ A2(["Assign account role"])
+ A3(["Change account status"])
  end
- ACTOR --> A5
- ACTOR --> A7
- A5 -.->|"«include»"| A6
- A7 -.->|"«include»"| A8
- A9 -.->|"«extend» [E1]"| A7
- A9 -.->|"«include»"| A10
+ ACTOR --> A1
+ ACTOR --> A3
+ A1 -.->|"«include»"| A2
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A5,A7 main;
- class A6,A8,A9,A10 sub;
+ class A1,A3 main;
+ class A2 sub;

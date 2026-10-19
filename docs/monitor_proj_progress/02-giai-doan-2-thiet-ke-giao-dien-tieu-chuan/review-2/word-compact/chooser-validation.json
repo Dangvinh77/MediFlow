@@ -1,5 +1,5 @@
 {
-  "checks": 216,
+  "checks": 246,
   "failures": 0,
   "consoleErrors": [],
   "results": [
@@ -22,7 +22,7 @@
       "id": "01",
       "mode": "panels",
       "status": "pass",
-      "count": 2
+      "count": 4
     },
     {
       "lang": "vi",
@@ -64,7 +64,7 @@
       "id": "03",
       "mode": "panels",
       "status": "pass",
-      "count": 5
+      "count": 2
     },
     {
       "lang": "vi",
@@ -85,7 +85,7 @@
       "id": "04",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "vi",
@@ -106,7 +106,7 @@
       "id": "05",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "vi",
@@ -127,7 +127,7 @@
       "id": "06",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "vi",
@@ -148,7 +148,7 @@
       "id": "07",
       "mode": "panels",
       "status": "pass",
-      "count": 2
+      "count": 3
     },
     {
       "lang": "vi",
@@ -169,52 +169,52 @@
       "id": "08",
       "mode": "panels",
       "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "vi",
+      "id": "09",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "09",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "09",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "10",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "10",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "10",
+      "mode": "panels",
+      "status": "pass",
       "count": 2
     },
     {
       "lang": "vi",
-      "id": "09",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "09",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "09",
-      "mode": "panels",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "10",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "10",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "10",
-      "mode": "panels",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
       "id": "11",
       "mode": "portrait",
       "status": "pass",
@@ -232,7 +232,7 @@
       "id": "11",
       "mode": "panels",
       "status": "pass",
-      "count": 2
+      "count": 3
     },
     {
       "lang": "vi",
@@ -610,7 +610,7 @@
       "id": "29",
       "mode": "panels",
       "status": "pass",
-      "count": 4
+      "count": 6
     },
     {
       "lang": "vi",
@@ -629,200 +629,305 @@
     {
       "lang": "vi",
       "id": "30",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "vi",
-      "id": "31",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "31",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "31",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "vi",
-      "id": "32",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "32",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "32",
       "mode": "panels",
       "status": "pass",
       "count": 4
     },
     {
       "lang": "vi",
-      "id": "33",
+      "id": "31",
       "mode": "portrait",
       "status": "pass",
       "count": 1
     },
     {
       "lang": "vi",
-      "id": "33",
+      "id": "31",
       "mode": "landscape",
       "status": "pass",
       "count": 1
     },
     {
       "lang": "vi",
-      "id": "33",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "vi",
-      "id": "34",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "34",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "34",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "vi",
-      "id": "35",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "35",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "35",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "vi",
-      "id": "36",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "36",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "vi",
-      "id": "36",
-      "mode": "panels",
-      "status": "pass",
-      "count": 2
-    },
-    {
-      "lang": "en",
-      "id": "01",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "01",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "01",
-      "mode": "panels",
-      "status": "pass",
-      "count": 2
-    },
-    {
-      "lang": "en",
-      "id": "02",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "02",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "02",
-      "mode": "panels",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "03",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "03",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "03",
+      "id": "31",
       "mode": "panels",
       "status": "pass",
       "count": 5
     },
     {
+      "lang": "vi",
+      "id": "32",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "32",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "32",
+      "mode": "panels",
+      "status": "pass",
+      "count": 6
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
+      "lang": "vi",
+      "id": "37",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "37",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "37",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
+      "lang": "vi",
+      "id": "38",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "38",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "38",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
+      "lang": "vi",
+      "id": "39",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "39",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "39",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "40",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "40",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "40",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "41",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "41",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "41",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "01",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "01",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "01",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "en",
+      "id": "02",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "02",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "02",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "03",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "03",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "03",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
       "lang": "en",
       "id": "04",
       "mode": "portrait",
@@ -841,7 +946,7 @@
       "id": "04",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "en",
@@ -862,7 +967,7 @@
       "id": "05",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "en",
@@ -883,7 +988,7 @@
       "id": "06",
       "mode": "panels",
       "status": "pass",
-      "count": 1
+      "count": 2
     },
     {
       "lang": "en",
@@ -904,7 +1009,7 @@
       "id": "07",
       "mode": "panels",
       "status": "pass",
-      "count": 2
+      "count": 3
     },
     {
       "lang": "en",
@@ -925,52 +1030,52 @@
       "id": "08",
       "mode": "panels",
       "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "en",
+      "id": "09",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "09",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "09",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "10",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "10",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "10",
+      "mode": "panels",
+      "status": "pass",
       "count": 2
     },
     {
       "lang": "en",
-      "id": "09",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "09",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "09",
-      "mode": "panels",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "10",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "10",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "10",
-      "mode": "panels",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
       "id": "11",
       "mode": "portrait",
       "status": "pass",
@@ -988,7 +1093,7 @@
       "id": "11",
       "mode": "panels",
       "status": "pass",
-      "count": 2
+      "count": 3
     },
     {
       "lang": "en",
@@ -1366,7 +1471,7 @@
       "id": "29",
       "mode": "panels",
       "status": "pass",
-      "count": 4
+      "count": 6
     },
     {
       "lang": "en",
@@ -1385,54 +1490,54 @@
     {
       "lang": "en",
       "id": "30",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "en",
-      "id": "31",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "31",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "31",
-      "mode": "panels",
-      "status": "pass",
-      "count": 3
-    },
-    {
-      "lang": "en",
-      "id": "32",
-      "mode": "portrait",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "32",
-      "mode": "landscape",
-      "status": "pass",
-      "count": 1
-    },
-    {
-      "lang": "en",
-      "id": "32",
       "mode": "panels",
       "status": "pass",
       "count": 4
     },
     {
       "lang": "en",
+      "id": "31",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "31",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "31",
+      "mode": "panels",
+      "status": "pass",
+      "count": 5
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "panels",
+      "status": "pass",
+      "count": 6
+    },
+    {
+      "lang": "en",
       "id": "33",
       "mode": "portrait",
       "status": "pass",
@@ -1450,7 +1555,7 @@
       "id": "33",
       "mode": "panels",
       "status": "pass",
-      "count": 3
+      "count": 4
     },
     {
       "lang": "en",
@@ -1471,7 +1576,7 @@
       "id": "34",
       "mode": "panels",
       "status": "pass",
-      "count": 3
+      "count": 4
     },
     {
       "lang": "en",
@@ -1514,6 +1619,111 @@
       "mode": "panels",
       "status": "pass",
       "count": 2
+    },
+    {
+      "lang": "en",
+      "id": "37",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "37",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "37",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
+      "lang": "en",
+      "id": "38",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "38",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "38",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
+      "lang": "en",
+      "id": "39",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "39",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "39",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "40",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "40",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "40",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "41",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "41",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "41",
+      "mode": "panels",
+      "status": "pass",
+      "count": 1
     }
   ]
 }

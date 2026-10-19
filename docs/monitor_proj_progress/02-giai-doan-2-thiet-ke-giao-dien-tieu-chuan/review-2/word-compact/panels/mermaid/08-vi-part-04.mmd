@@ -1,0 +1,29 @@
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 24, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 60, "width": 150, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+autonumber 22
+ actor Doctor as Bác sĩ
+ actor Tech as Kỹ thuật viên xét nghiệm
+ participant C as Clinical API
+ participant L as Lab API
+ participant Q as RabbitMQ
+Note over Doctor,Q: Tiếp nối theo điều kiện đã ghi. Xem hình đầy đủ.
+opt Chỉ định đã lưu
+opt Context hợp lệ / nhận diện retry cùng ý định
+opt Đã commit thanh toán đúng xét nghiệm
+opt Được phép bắt đầu
+loop Sửa và gửi kết quả đến khi được nhận hoặc dừng thao tác
+opt Kết quả và quyền hiện tại hợp lệ
+L->>L: Commit COMPLETED, resultVersion và outbox một lần
+L-->>Tech: Đã ghi nhận kết quả
+end
+end
+opt Đã commit kết quả hoàn tất
+L-)Q: lab.result.created
+Q-)C: Gắn kết quả chống trùng qua inbox
+Doctor->>L: Đọc kết quả hoàn tất đúng quyền
+L-->>Doctor: Chỉ số / kết luận / phiên bản kết quả
+end
+end
+end
+end
+end

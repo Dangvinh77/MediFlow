@@ -3,20 +3,16 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — LAB_TECH"]
- L7(["Ghi kết quả xét nghiệm"])
- L8(["Nhập các giá trị kết quả"])
- L9(["Kiểm tra thời gian hoàn tất"])
- L10(["Hủy xét nghiệm"])
- L11(["Ghi lý do hủy"])
+ L1(["Xem danh sách xét nghiệm"])
+ L3(["Lọc xét nghiệm theo trạng thái"])
+ L4(["Bắt đầu xét nghiệm [V1]"])
  end
- ACTOR --> L7
- ACTOR --> L10
- L7 -.->|"«include»"| L8
- L7 -.->|"«include»"| L9
- L10 -.->|"«include»"| L11
+ ACTOR --> L1
+ ACTOR --> L4
+ L3 -.->|"«extend» [E1]"| L1
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class L7,L10 main;
- class L8,L9,L11 sub;
+ class L1,L4 main;
+ class L3 sub;

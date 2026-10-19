@@ -3,18 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
- A11(["Cập nhật khoa"])
- A12(["Xem thông tin khoa"])
- A13(["Tạo khoa"])
- A14(["Nhập mã và tên khoa"])
+ A5(["Tạo hồ sơ nhân viên"])
+ A7(["Cập nhật hồ sơ nhân viên"])
  end
- ACTOR --> A11
- ACTOR --> A13
- A11 -.->|"«include»"| A12
- A13 -.->|"«include»"| A14
+ ACTOR --> A5
+ ACTOR --> A7
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A11,A13 main;
- class A12,A14 sub;
+ class A5,A7 main;

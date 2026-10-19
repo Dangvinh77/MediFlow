@@ -6,7 +6,7 @@
 |---|---|
 | Project | MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management |
 | Review | Review 2 |
-| Baseline | 2026-10-19 · HEAD `434c609be5ad` + working tree hiện có |
+| Baseline | 2026-10-19 · source commit `26232b54813d` + bản sửa tài liệu này |
 | Scope | MVP ngoại trú; giữ source nội trú/phẫu thuật ở trạng thái hoãn |
 | Status | Tài liệu thiết kế đối chiếu source; không phải chứng nhận nghiệm thu runtime |
 
@@ -24,67 +24,61 @@ Tất cả sơ đồ dùng theme **MediFlow Sky/Teal**: nền trắng, chữ sla
 
 ### 1.1. System / Application Architecture
 
-Web gọi same-origin `/api/*`, qua proxy tới Gateway; Flutter gọi Gateway qua cấu hình `GATEWAY_URL`. Gateway xác minh JWT/route policy; downstream tiếp tục kiểm role, ownership và quyền nghiệp vụ. PostgreSQL 16 là một container phát triển, chứa các database context riêng. RabbitMQ giữ queue riêng cho consumer; không có truy vấn SQL xuyên context.
+### Kiến trúc hệ thống — một vùng backend, sáu service nghiệp vụ
 
-### Kiến trúc hệ thống và ranh giới dữ liệu
-
-**Cách đọc kiến trúc:** Client side và Server side là các ranh giới riêng. Mũi tên request và response thể hiện giao tiếp HTTP đồng bộ; cạnh hai đầu gom một request và đường trả kết quả. Cạnh sự kiện nét đứt là message bất đồng bộ, không phải HTTP response. Proxy Next.js nằm ở Server side dù UI chạy trên client. Các port triển khai đã được lược bỏ.
-
-![Kiến trúc hệ thống và ranh giới dữ liệu](assets/svg/01-vi.svg)
+![Kiến trúc hệ thống — một vùng backend, sáu service nghiệp vụ](assets/svg/01-vi.svg)
 
 <details>
 <summary>Mermaid · 01-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}"}}%%
-flowchart TB
- subgraph CLIENT["Client side — thiết bị người dùng"]
- WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Web</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='34' height='34'/><br/>Next.js UI / React<br/>TypeScript / Tailwind CSS"]
- MOB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Mobile</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='34' height='34'/><br/>Flutter / Riverpod<br/>Dio / GoRouter / SecureStorage"]
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+flowchart LR
+ subgraph CLIENT["Client side"]
+  WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='28' height='28'/> Next.js / React / TypeScript / Tailwind"]
+  MOBILE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='28' height='28'/> Flutter / Dart"]
  end
- subgraph SERVER["Server side — ứng dụng và hạ tầng"]
- PX["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nodejs/nodejs-original.svg' width='34' height='34'/><br/>Next.js server / Node.js<br/>same-origin /api rewrite"]
- GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Spring Cloud Gateway<br/>JWT / route authorization"]
- EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Eureka<br/>Service registry"]
- MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='34' height='34'/><br/>RabbitMQ · retry / DLQ<br/>Publish: Clinical / Lab / Pharmacy / Billing<br/>Consume: Support and configured contexts"]
- DOCK["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/docker/docker-original.svg' width='34' height='34'/><br/>Docker Compose<br/>Development orchestration"]
- subgraph APPS["Sáu deployment nghiệp vụ — Java / Spring Boot"]
- CORE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Core<br/>Organization + Patient"]
- CL["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Clinical"]
- LAB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Lab"]
- PH["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Pharmacy"]
- BI["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Billing"]
- SU["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Support<br/>Report + Notification"]
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>JWT / kiểm quyền route"]
+  subgraph SERVICES["Các ứng dụng nghiệp vụ triển khai độc lập"]
+   CORE["Core<br/>Organization + Patient"]
+   CL["Clinical<br/>Lịch hẹn / khám bệnh"]
+   LAB["Lab<br/>Xét nghiệm / kết quả"]
+   PH["Pharmacy<br/>Đơn thuốc / tồn kho / cấp thuốc"]
+   BI["Billing<br/>Khoản thu / thanh toán / quyền dịch vụ"]
+   SU["Support<br/>Report + Notification"]
+  end
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ<br/>Sự kiện nghiệp vụ / retry / DLQ"]
+  EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> Eureka<br/>Đăng ký / khám phá service"]
+  subgraph STORES["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Dữ liệu thuộc context — không truy cập SQL xuyên service"]
+   DCORE[(Organization DB + Patient DB)]
+   DCL[(Clinical DB)]
+   DLAB[(Lab DB)]
+   DPH[(Pharmacy DB)]
+   DBI[(Billing DB)]
+   DSU[(Report DB + Notification DB)]
+  end
  end
- subgraph STORES["PostgreSQL 16 — tám store riêng theo context"]
- PG["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='34' height='34'/><br/>No cross-context SQL or foreign keys"]
- CDB[(organization / patient)]
- CLDB[(clinical)]
- LDB[(lab)]
- PDB[(pharmacy)]
- BDB[(billing)]
- SDB[(report / notification)]
- end
- end
- WEB -->|HTTP request /api| PX
- PX -->|JSON response / status| WEB
- MOB -->|HTTP request + JWT| GW
- GW -->|JSON response / status| MOB
- PX <-->|Forward request / return response| GW
- GW <-->|Request / response| CORE & CL & LAB & PH & BI & SU
- CORE <-->|Own store read / write| CDB
- CL <-->|Own store read / write| CLDB
- LAB <-->|Own store read / write| LDB
- PH <-->|Own store read / write| PDB
- BI <-->|Own store read / write| BDB
- SU <-->|Separate store read / write| SDB
- APPS -. register / discover .-> EU
- CL & LAB & PH & BI -. durable outbox events .-> MQ
- MQ -. inbox / projections / configured handlers .-> SU
- DOCK -. hosts .-> APPS
+ WEB <-->|HTTP request /api / JSON response| GW
+ MOBILE <-->|HTTP request / JSON response| GW
+ GW <-->|HTTP request / response| CORE & CL & LAB & PH & BI & SU
+ CL <-->|Tra cứu định danh có kiểm quyền| CORE
+ LAB <-->|Context chỉ định qua REST| CL
+ PH <-->|Context kê đơn qua REST| CL
+ CORE --- DCORE
+ CL --- DCL
+ LAB --- DLAB
+ PH --- DPH
+ BI --- DBI
+ SU --- DSU
+ CORE & CL & LAB & PH & BI -.->|Phát sự kiện đã commit| MQ
+ MQ -.->|Gửi đến consumer đã đăng ký| CL & LAB & PH & BI & SU
+ SERVICES -.->|Đăng ký / tra cứu| EU
 ```
 
 </details>
+
+Một vùng Server side chứa sáu ứng dụng nghiệp vụ, không có nghĩa backend chỉ có một tiến trình. Core và Support mỗi ứng dụng ghép hai context nhưng giữ quyền sở hữu dữ liệu riêng. Cạnh broker mô tả khả năng producer/consumer đã cấu hình, không phải phát mọi sự kiện cho mọi service. Host web Next.js và rewrite /api cùng origin là chi tiết triển khai: frontend/next.config.ts vẫn cấu hình rewrite và standalone production. Đây không phải backend nghiệp vụ thứ hai. Docker Compose điều phối hạ tầng local; hình không ghi port hoặc bật Inpatient/Surgery.
 
 ### Kiến trúc công nghệ và công cụ
 
@@ -152,184 +146,68 @@ Các thư viện không có logo riêng trong bộ logo đi kèm được ghi b�
 
 Phiên bản có `^` là constraint của manifest, không phải kết quả đọc runtime đã cài. Logo và tên công nghệ không chứng minh đã triển khai production.
 
-### Kiến trúc ứng dụng và chiều phụ thuộc
+### Kiến trúc ứng dụng — đường request và phụ thuộc hướng vào trong
 
-**Chi tiết ứng dụng:** Các phần runtime mô tả request/response lúc chạy qua các module client, Gateway, controller, application service, output port, adapter và store riêng. Phần phụ thuộc thể hiện import source riêng: Web routes → features → shared API; Flutter presentation → domain ← data; backend driving adapters → application → domain, infrastructure hiện thực application port. Lỗi chặn tại Gateway và lỗi nghiệp vụ downstream trả theo đường đồng bộ tương ứng. Ngoại lệ API raw/legacy vẫn theo wire contract thực tế. Các khối backend mô tả mẫu theo context, không khẳng định mọi service đã kích hoạt toàn bộ tính năng.
-
-![Kiến trúc ứng dụng và chiều phụ thuộc](assets/svg/03-vi.svg)
+![Kiến trúc ứng dụng — đường request và phụ thuộc hướng vào trong](assets/svg/03-vi.svg)
 
 <details>
 <summary>Mermaid · 03-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}"}}%%
-flowchart TB
- subgraph CLIENT["Client side — thiết bị người dùng"]
- subgraph WEBAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Web / Next.js"]
- WR["App Router pages / layouts<br/>Role-aware navigation + shared UI"]
- WF["features/context<br/>components · api.ts · wire types"]
- WA["lib/api.ts<br/>Bearer JWT · envelope unwrap<br/>ApiRequestError / 401 session clear"]
- WR <-->|UI action / render state| WF
- WF <-->|API call / data or error| WA
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+flowchart LR
+ subgraph CLIENT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side"]
+  WP["Web: App Router / feature UI"]
+  API["Web: lib/api.ts<br/>JWT / ánh xạ kết quả và lỗi"]
+  MP["Flutter: presentation → domain ← data<br/>Dio ApiClient"]
+  WP <-->|Thao tác / trạng thái UI| API
  end
- subgraph MOBILEAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Flutter"]
- MP["Presentation<br/>Riverpod providers / pages / widgets"]
- MU["Domain use cases / repository contracts<br/>Data repository implementation + DTO mapping"]
- MD["core/network/ApiClient · Dio<br/>Gateway-only paths · JWT<br/>envelope / failure mapping"]
- MP <-->|User intent / state| MU
- MU <-->|Data request / DTO result| MD
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>Xác thực / chính sách route"]
+  subgraph CONTEXT["Bên trong mỗi service/context nghiệp vụ"]
+   WEB["Controller / input adapter<br/>Kiểm tra DTO / role / phạm vi actor"]
+   APP["Application service / use case<br/>Điều phối / transaction cục bộ"]
+   DOMAIN["Domain model<br/>Vòng đời / ràng buộc nghiệp vụ"]
+   PORT["Application output ports<br/>Hợp đồng lưu trữ / tra cứu / sự kiện"]
+   PERSIST["Persistence adapter / JPA / Flyway"]
+   REST["REST adapter<br/>Tra cứu có kiểm quyền và phục hồi lỗi"]
+   OUTBOX["Outbox publisher / inbox consumer<br/>Hiệu ứng cục bộ atomic / chống trùng"]
+   WEB <-->|Lệnh hoặc truy vấn / kết quả| APP
+   APP -->|Áp dụng quy tắc| DOMAIN
+   APP -->|Dùng hợp đồng| PORT
+   PERSIST -.->|Hiện thực| PORT
+   REST -.->|Hiện thực| PORT
+   OUTBOX -.->|Hiện thực| PORT
+  end
+  DB[(<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Database thuộc context)]
+  PEER["API service khác"]
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ"]
+  GW -->|Request đã kiểm quyền| WEB
+  WEB -->|Response / trạng thái lỗi| GW
+  PERSIST <-->|SQL / rows| DB
+  OUTBOX <-->|Transaction outbox / inbox cục bộ| DB
+  REST <-->|HTTP request / response| PEER
+  OUTBOX <-->|Phát / nhận sự kiện| MQ
+  DEP["Import tĩnh: infrastructure → application → domain.<br/>Adapter hiện thực port của application.<br/>Domain không phụ thuộc framework hoặc database service khác."]
  end
- end
- subgraph EDGE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · API boundary"]
- NX["Next.js server rewrite<br/>same-origin /api to Gateway"]
- G["Spring Cloud Gateway<br/>JWT authentication / route-role policy"]
- end
- WA -->|HTTP request /api + JWT| NX
- NX -->|JSON response / status / error| WA
- NX <-->|Request / response| G
- MD -->|HTTP request to Gateway| G
- G -->|JSON response / status / error| MD
- subgraph BACKEND["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · each logical backend context"]
- WC["Web controller / request DTO<br/>Bean validation / PreAuthorize<br/>Context and actor checks"]
- AS["Application service / input use case<br/>DTO mapping / local transaction<br/>Idempotency and business orchestration"]
- DM["Domain models / business rules<br/>UUID / money / lifecycle invariants<br/>Framework-free"]
- OP["Application output ports<br/>Repository / external context / event contracts"]
- PA["Persistence adapter<br/>JPA repository / entity mapper / Flyway"]
- RA["HTTP client adapter<br/>Resilient authorized context lookup"]
- OA["Outbox persistence / publisher adapter<br/>Only configured state-changing paths"]
- IA["Messaging consumer / inbox adapter<br/>Deduplication + local effect transaction"]
- WC <-->|Command or query / result DTO| AS
- AS -->|Evaluate rules| DM
- AS <-->|Port operation / mapped result| OP
- OP <-->|Repository operation / domain result| PA
- OP <-->|Context lookup / authorized DTO| RA
- AS -->|State change + durable event| OA
- IA -->|Input command / integration fact| AS
- end
- subgraph IO["Server side · owned data and integration"]
- DB[(Context-owned PostgreSQL store)]
- Q["RabbitMQ<br/>Durable queues / retry / DLQ"]
- PEER["Other context REST API<br/>Own authorization / own store"]
- end
- PA <-->|SQL write or read / rows| DB
- OA -->|Local outbox commit| DB
- OA -. publish after commit .-> Q
- Q -. asynchronous delivery .-> IA
- RA <-->|HTTP request / response| PEER
- G -->|Authorized HTTP request| WC
- WC -->|ApiResponse data or error / HTTP status| G
- subgraph DEP["Chiều phụ thuộc tĩnh — mũi tên là import hoặc hiện thực, không phải request mạng"]
- subgraph DC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · source dependencies"]
- DW["Web app routes"] -. imports .-> DF["Feature modules"]
- DF -. imports .-> DL["Shared lib/api and wire types"]
- DP["Flutter presentation"] -. imports .-> DD["Flutter domain<br/>Entities / use cases / repository contracts"]
- DT["Flutter data"] -. implements / imports .-> DD
- end
- subgraph DS["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · inward dependencies"]
- DA["Web / messaging driving adapters"] -. imports .-> DAPP["Application<br/>Services / ports / DTOs / events"]
- DI["Persistence / REST / messaging adapters"] -. implements ports .-> DAPP
- DAPP -. imports .-> DDOMAIN["Domain<br/>Models / rules / exceptions"]
- DI -. maps domain objects .-> DDOMAIN
- end
- end
+ API & MP -->|HTTP request / JWT| GW
+ GW -->|JSON response / error| API & MP
 ```
 
 </details>
-Domain Java không phụ thuộc Spring/JPA; ports nằm ở application, adapters implement ports ở infrastructure. Web giữ feature-based structure, không áp cây backend vào TypeScript. Core/Support chỉ composition, vẫn tách datasource/Flyway/entity manager/transaction manager cho từng context.
+
+Cạnh liền ghi rõ request/kết quả lúc chạy hoặc đánh giá quy tắc; cạnh chấm implements là hiện thực interface tĩnh, không phải HTTP. Chiều import được ghi rõ ở chú thích cuối. Mẫu này áp dụng trong từng context; đóng gói Core/Support không gộp database các context. Commit cục bộ không phải transaction phân tán. Hình lược chi tiết host web nhưng giữ tuyến Gateway qua /api cùng origin.
 
 ### 1.2. Use Cases Diagrams
 
-Đây là sơ đồ vai trò/use case trong phạm vi MVP. Association chỉ thể hiện nhóm người dùng, không thay ma trận `@PreAuthorize` hay cấp quyền cho tất cả bản ghi. `NURSE` tham gia tiếp nhận theo endpoint policy; không thêm role RECEPTIONIST. `SYSTEM` là actor máy trong sequence, không phải tài khoản người dùng.
-
-### Use case tiếp nhận, khám và xét nghiệm
-
-![Use case tiếp nhận, khám và xét nghiệm](assets/svg/04-vi.svg)
-
-<details>
-<summary>Mermaid · 04-vi</summary>
-
-```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
-flowchart LR
- PAT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
- NUR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>NURSE"]
- DOC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>DOCTOR"]
- LT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>LAB_TECH"]
- subgraph SYS["MediFlow — Outpatient MVP"]
- U1(["Đăng nhập / gia hạn phiên"])
- U2(["Quản lý lịch hẹn / check-in"])
- U3(["Khám / diagnosis / hoàn tất ngoại trú"])
- U4(["Chỉ định xét nghiệm"])
- U5(["Bắt đầu xét nghiệm / ghi kết quả"])
- U6(["Xem kết quả theo quyền"])
- U7(["Kê đơn thuốc"])
- end
- PAT --- U1
- NUR --- U2
- DOC --- U2
- DOC --- U3
- DOC --- U4
- DOC --- U6
- DOC --- U7
- LT --- U5
- classDef actor fill:transparent,stroke:transparent,color:#0f172a;
- class PAT,NUR,DOC,LT actor;
-```
-
-</details>
-
-### Use case thuốc, viện phí và hỗ trợ
-
-![Use case thuốc, viện phí và hỗ trợ](assets/svg/05-vi.svg)
-
-<details>
-<summary>Mermaid · 05-vi</summary>
-
-```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
-flowchart LR
- PH["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PHARMACIST"]
- CA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>CASHIER"]
- MA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>MANAGER"]
- AD["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>ADMIN"]
- PA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
- subgraph SYS["MediFlow — Outpatient MVP"]
- U8(["Danh mục thuốc / điều chỉnh tồn"])
- U9(["Tra cứu đơn / cấp thuốc"])
- U10(["Xem khoản thu / ghi nhận thanh toán"])
- U11(["Điều chỉnh / refund theo policy"])
- U12(["Xem báo cáo có source coverage"])
- U13(["Đọc thông báo của mình"])
- U14(["Quản lý account / khoa / staff"])
- end
- PH --- U8
- PH --- U9
- CA --- U10
- CA --- U11
- MA --- U12
- AD --- U14
- PA --- U13
- classDef actor fill:transparent,stroke:transparent,color:#0f172a;
- class PH,CA,MA,AD,PA actor;
-```
-
-</details>
-
-| ID | Điều kiện / kết quả nghiệp vụ |
-|---|---|
-| U2 | Patient/staff hợp lệ; lịch không quá khứ; unique PENDING theo patient/ngày; check-in không đồng nghĩa được khám. |
-| U3 | V1 cần exact EXAM clearance hoặc audited override đã hỗ trợ; completion có diagnosis/disposition ngoại trú. |
-| U4–U5 | Chỉ định rõ ràng; V1 LAB_TEST clearance đúng testId trước protected action; kết quả không rỗng, thời gian hợp lệ. |
-| U7–U9 | Giá snapshot từ server; reserve không trừ stock; dispense nguyên tử, chống trùng; V1 cần actor và clearance. |
-| U10–U11 | Billing owns tiền; partial payment có guard; replay cùng key trả receipt cũ, khác intent báo conflict. |
-| U12–U13 | Report eventually consistent, unavailable khác zero; Notification không quyết định authority. |
+Mỗi role người dùng có một sơ đồ. Đăng nhập và gia hạn độc lập; tác vụ nghiệp vụ cần phiên hợp lệ. Use case mô tả mục tiêu, không mô tả thứ tự một lượt khám.
 
 <!-- role-usecases:start -->
 ### Use case chi tiết — một sơ đồ cho mỗi vai trò
 
-Hình 29–36 theo mẫu của giảng viên: mỗi hình có một actor người dùng, mũi tên liền đến tác vụ chính, mũi tên đứt `«include»` cho hành vi con bắt buộc và mũi tên đứt `«extend»` từ nhánh mở rộng có điều kiện về tác vụ gốc. Nhánh mở rộng có thể có luồng con `include` riêng. Mũi tên thể hiện quan hệ, không phải thứ tự thực hiện. Nhân viên đã đăng nhập là tiền điều kiện, không lặp lại ở mọi tác vụ. Oval xanh dương là tác vụ chính; xanh teal là tác vụ con/mở rộng. Hình mô tả khả năng trong source, không khẳng định mọi UI đã hoàn thiện hoặc mọi feature đã bật.
+Hình 29–36 theo mẫu của giảng viên: mỗi hình có một actor người dùng, mũi tên liền đến tác vụ chính, mũi tên đứt `«include»` cho hành vi con bắt buộc và mũi tên đứt `«extend»` từ nhánh mở rộng có điều kiện về tác vụ gốc. Nhánh mở rộng có thể có luồng con `include` riêng. Mũi tên thể hiện quan hệ, không phải thứ tự thực hiện. Đăng nhập và gia hạn là hai use case độc lập của mỗi role; phiên hợp lệ là tiền điều kiện của các tác vụ nghiệp vụ. Oval xanh dương là tác vụ chính; xanh teal là tác vụ con/mở rộng. Hình mô tả khả năng trong source, không khẳng định mọi UI đã hoàn thiện hoặc mọi feature đã bật.
 
-**Hiệu chỉnh phạm vi:** PATIENT hiện có đăng nhập/refresh và truy cập thông báo của mình. Hình tổng quan 04 đã bỏ quyền tự thao tác lịch hẹn/xét nghiệm cho PATIENT. SYSTEM là định danh máy, không tạo sơ đồ role người dùng. Quyền từng role lấy giao của ma trận Gateway và guards downstream.
+**Hiệu chỉnh phạm vi:** PATIENT hiện có đăng nhập/refresh và truy cập thông báo của mình. Không gán quyền tự thao tác lịch hẹn/xét nghiệm cho PATIENT. SYSTEM là định danh máy, không tạo sơ đồ role người dùng. Quyền từng role lấy giao của ma trận Gateway và guards downstream.
 
 #### ADMIN — Tác vụ quản trị viên
 
@@ -344,58 +222,46 @@ Hình 29–36 theo mẫu của giảng viên: mỗi hình có một actor ngư�
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  A1(["Tạo tài khoản"])
- A2(["Gán vai trò và định danh"])
+ A2(["Gán vai trò tài khoản"])
  A3(["Đổi trạng thái tài khoản"])
- A4(["Kiểm tra tài khoản đích"])
  A5(["Tạo hồ sơ nhân viên"])
- A6(["Ghi thông tin nhân viên"])
  A7(["Cập nhật hồ sơ nhân viên"])
- A8(["Xem hồ sơ nhân viên"])
  A9(["Chuyển khoa công tác"])
- A10(["Kiểm tra khoa tiếp nhận"])
  A11(["Cập nhật khoa"])
- A12(["Xem thông tin khoa"])
  A13(["Tạo khoa"])
- A14(["Nhập mã và tên khoa"])
  A15(["Xem báo cáo quản lý"])
- A16(["Chọn kỳ và phạm vi"])
  A17(["Gửi thông báo"])
- A18(["Chọn người nhận và kênh"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> A1
  ACTOR --> A3
  ACTOR --> A5
  ACTOR --> A7
+ ACTOR --> A9
  ACTOR --> A11
  ACTOR --> A13
  ACTOR --> A15
  ACTOR --> A17
  A1 -.->|"«include»"| A2
- A3 -.->|"«include»"| A4
- A5 -.->|"«include»"| A6
- A7 -.->|"«include»"| A8
- A9 -.->|"«extend» [E1]"| A7
- A9 -.->|"«include»"| A10
- A11 -.->|"«include»"| A12
- A13 -.->|"«include»"| A14
- A15 -.->|"«include»"| A16
- A17 -.->|"«include»"| A18
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A1,A3,A5,A7,A11,A13,A15,A17 main;
- class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,A1,A3,A5,A7,A9,A11,A13,A15,A17 main;
+ class A2 sub;
 ```
 
 </details>
 
-Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quyền cụ thể tại những nghiệp vụ khác theo ma trận nguồn; không bỏ qua business guards. Không thêm xóa tài khoản hay màn hình chỉnh quyền tùy ý.
+Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quyền cụ thể tại những nghiệp vụ khác theo ma trận nguồn; không bỏ qua business guards. Không thêm xóa tài khoản hay màn hình chỉnh quyền tùy ý. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Chuyển khoa công tác — cần chuyển khoa
+Điều kiện mở rộng: Không có.
 
-Đối chiếu source: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+Đối chiếu source: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### MANAGER — Tác vụ quản lý
 
@@ -410,46 +276,40 @@ Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quy
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
  subgraph SYS["MediFlow — MANAGER"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  M1(["Xem báo cáo ngoại trú"])
- M2(["Chọn kỳ báo cáo"])
- M3(["Xem độ phủ nguồn dữ liệu"])
+ M3(["Xem độ phủ báo cáo"])
  M4(["Xem báo cáo tài chính"])
- M5(["Chọn ngày hoặc tháng"])
  M6(["Xem thống kê thuốc"])
- M7(["Chọn kỳ và số lượng"])
- M8(["Xem danh sách lịch hẹn"])
- M9(["Đọc trang lịch hẹn"])
- M10(["Lọc theo khoa"])
- M11(["Xem danh sách nhân viên"])
- M12(["Đọc trang nhân viên"])
+ M8(["Xem lịch hẹn"])
+ M10(["Lọc lịch hẹn theo khoa"])
+ M11(["Tra cứu nhân viên"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> M1
  ACTOR --> M4
  ACTOR --> M6
  ACTOR --> M8
  ACTOR --> M11
- M1 -.->|"«include»"| M2
- M1 -.->|"«include»"| M3
- M4 -.->|"«include»"| M5
- M6 -.->|"«include»"| M7
- M8 -.->|"«include»"| M9
- M10 -.->|"«extend» [E1]"| M8
- M11 -.->|"«include»"| M12
+ M3 -.->|"«extend» [E1]"| M1
+ M10 -.->|"«extend» [E2]"| M8
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class M1,M4,M6,M8,M11 main;
- class M2,M3,M5,M7,M9,M10,M12 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,M1,M4,M6,M8,M11 main;
+ class M3,M10 sub;
 ```
 
 </details>
 
-Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doanh thu khoa, danh sách lịch hẹn/xét nghiệm, nhân viên và khoa. MANAGER không tạo tài khoản, sửa nhân viên hay thực hiện lệnh khám/thu tiền. Báo cáo snapshot phụ thuộc availability và coverage tại runtime.
+Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doanh thu khoa, danh sách lịch hẹn/xét nghiệm, nhân viên và khoa. MANAGER không tạo tài khoản, sửa nhân viên hay thực hiện lệnh khám/thu tiền. Báo cáo snapshot phụ thuộc availability và coverage tại runtime. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Lọc theo khoa — đã chọn khoa
+Điều kiện mở rộng: E1: Xem độ phủ báo cáo — cần xem độ phủ; E2: Lọc lịch hẹn theo khoa — chọn bộ lọc khoa
 
-Đối chiếu source: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+Đối chiếu source: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### DOCTOR — Tác vụ bác sĩ
 
@@ -464,54 +324,47 @@ Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doan
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
  subgraph SYS["MediFlow — DOCTOR"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  D1(["Tra cứu hồ sơ khám"])
- D2(["Xem các lần khám"])
  D3(["Bắt đầu khám [V1]"])
- D4(["Kiểm tra quyền khám"])
  D5(["Ghi nhận khám bệnh"])
- D6(["Ghi nội dung thăm khám"])
- D7(["Thêm chẩn đoán"])
+ D7(["Ghi chẩn đoán"])
  D8(["Chỉ định xét nghiệm"])
- D9(["Chọn xét nghiệm và bệnh nhân"])
- D10(["Xem kết quả xét nghiệm"])
+ D10(["Đọc kết quả xét nghiệm"])
  D11(["Kê đơn thuốc"])
- D12(["Chọn thuốc và liều dùng"])
  D13(["Hoàn tất lượt khám [V1]"])
- D14(["Xác nhận chẩn đoán / hướng xử trí"])
+ D14(["Ghi hướng xử trí"])
  D15(["Hủy đơn thuốc"])
- D16(["Kiểm tra điều kiện hủy"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> D1
  ACTOR --> D3
  ACTOR --> D5
+ ACTOR --> D7
  ACTOR --> D10
- ACTOR --> D11
  ACTOR --> D13
- D1 -.->|"«include»"| D2
- D3 -.->|"«include»"| D4
- D5 -.->|"«include»"| D6
- D7 -.->|"«extend» [E1]"| D5
- D8 -.->|"«extend» [E2]"| D5
- D8 -.->|"«include»"| D9
- D11 -.->|"«include»"| D12
+ ACTOR --> D15
+ D8 -.->|"«extend» [E1]"| D5
+ D11 -.->|"«extend» [E2]"| D5
+ D13 -.->|"«include»"| D7
  D13 -.->|"«include»"| D14
- D15 -.->|"«extend» [E3]"| D11
- D15 -.->|"«include»"| D16
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class D1,D3,D5,D10,D11,D13 main;
- class D2,D4,D6,D7,D8,D9,D12,D14,D15,D16 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,D1,D3,D5,D7,D10,D13,D15 main;
+ class D8,D11,D14 sub;
 ```
 
 </details>
 
-Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật care-finance-v2; start-exam cần exact EXAM clearance hoặc audited override đã hỗ trợ. AppointmentController còn cấp quyền xem/sửa lịch/trạng thái; source cũng cho phép xem báo cáo vận hành và hủy xét nghiệm. Bác sĩ không check-in thay điều dưỡng, cấp thuốc thay dược sĩ hay thu tiền thay thu ngân.
+Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật care-finance-v2; start-exam cần exact EXAM clearance hoặc audited override đã hỗ trợ. AppointmentController còn cấp quyền xem/sửa lịch/trạng thái; source cũng cho phép xem báo cáo vận hành và hủy xét nghiệm. Bác sĩ không check-in thay điều dưỡng, cấp thuốc thay dược sĩ hay thu tiền thay thu ngân. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Thêm chẩn đoán — bổ sung chẩn đoán; E2: Chỉ định xét nghiệm — cần xét nghiệm; E3: Hủy đơn thuốc — yêu cầu hủy đơn
+Điều kiện mở rộng: E1: Chỉ định xét nghiệm — có chỉ định xét nghiệm; E2: Kê đơn thuốc — có chỉ định dùng thuốc
 
-Đối chiếu source: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+Đối chiếu source: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### NURSE — Tác vụ điều dưỡng
 
@@ -526,52 +379,45 @@ Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật 
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  N1(["Tạo hồ sơ bệnh nhân"])
- N2(["Nhập thông tin bệnh nhân"])
- N3(["Cập nhật bệnh nhân"])
+ N3(["Cập nhật hồ sơ bệnh nhân"])
  N4(["Tra cứu bệnh nhân"])
- N5(["Tạo lịch hẹn"])
- N6(["Chọn bệnh nhân / bác sĩ / ngày"])
- N7(["Xem lịch hẹn"])
- N8(["Đọc chi tiết lịch"])
+ N5(["Đặt lịch khám"])
+ N7(["Tra cứu lịch hẹn"])
  N9(["Điều chỉnh lịch hẹn"])
- N10(["Kiểm tra lịch mới"])
- N11(["Tiếp nhận check-in [V1]"])
- N12(["Kiểm tra trạng thái lịch"])
- N13(["Tra cứu thông tin chăm sóc"])
- N14(["Xem hồ sơ khám / xét nghiệm"])
+ N11(["Tiếp nhận bệnh nhân [V1]"])
+ N13(["Tra cứu hồ sơ khám"])
+ N14(["Tra cứu xét nghiệm"])
  N15(["Xem thông báo bệnh nhân"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> N1
  ACTOR --> N3
+ ACTOR --> N4
  ACTOR --> N5
  ACTOR --> N7
+ ACTOR --> N9
  ACTOR --> N11
  ACTOR --> N13
+ ACTOR --> N14
  ACTOR --> N15
- N1 -.->|"«include»"| N2
- N3 -.->|"«include»"| N4
- N5 -.->|"«include»"| N6
- N7 -.->|"«include»"| N8
- N9 -.->|"«extend» [E1]"| N7
- N9 -.->|"«include»"| N10
- N11 -.->|"«include»"| N12
- N13 -.->|"«include»"| N14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N1,N3,N5,N7,N11,N13,N15 main;
- class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,N1,N3,N4,N5,N7,N9,N11,N13,N14,N15 main;
 ```
 
 </details>
 
-[V1] check-in cần bật care-finance-v2 và không đồng nghĩa bắt đầu khám. NURSE xem danh sách/chi tiết xét nghiệm và danh sách thông báo theo bệnh nhân; không ghi chẩn đoán, kết quả xét nghiệm, đơn thuốc hay thanh toán; không có quyền mở endpoint chi tiết thông báo. Không tạo role RECEPTIONIST.
+[V1] check-in cần bật care-finance-v2 và không đồng nghĩa bắt đầu khám. NURSE xem danh sách/chi tiết xét nghiệm và danh sách thông báo theo bệnh nhân; không ghi chẩn đoán, kết quả xét nghiệm, đơn thuốc hay thanh toán; không có quyền mở endpoint chi tiết thông báo. Không tạo role RECEPTIONIST. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Điều chỉnh lịch hẹn — cần đổi lịch
+Điều kiện mở rộng: Không có.
 
-Đối chiếu source: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+Đối chiếu source: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm
 
@@ -586,48 +432,38 @@ flowchart TB
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — LAB_TECH"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  L1(["Xem danh sách xét nghiệm"])
- L2(["Đọc trang xét nghiệm"])
- L3(["Lọc xét nghiệm chờ"])
- L4(["Bắt đầu xét nghiệm [V1 gate]"])
- L5(["Kiểm tra trạng thái xét nghiệm"])
- L6(["Kiểm tra LAB_TEST clearance [V1]"])
+ L3(["Lọc xét nghiệm theo trạng thái"])
+ L4(["Bắt đầu xét nghiệm [V1]"])
  L7(["Ghi kết quả xét nghiệm"])
- L8(["Nhập các giá trị kết quả"])
- L9(["Kiểm tra thời gian hoàn tất"])
  L10(["Hủy xét nghiệm"])
- L11(["Ghi lý do hủy"])
- L12(["Cập nhật trạng thái hợp lệ"])
- L13(["Kiểm tra chuyển trạng thái"])
+ L12(["Cập nhật trạng thái xét nghiệm"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> L1
  ACTOR --> L4
  ACTOR --> L7
  ACTOR --> L10
  ACTOR --> L12
- L1 -.->|"«include»"| L2
  L3 -.->|"«extend» [E1]"| L1
- L4 -.->|"«include»"| L5
- L4 -.->|"«include»"| L6
- L7 -.->|"«include»"| L8
- L7 -.->|"«include»"| L9
- L10 -.->|"«include»"| L11
- L12 -.->|"«include»"| L13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class L1,L4,L7,L10,L12 main;
- class L2,L3,L5,L6,L8,L9,L11,L13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,L1,L4,L7,L10,L12 main;
+ class L3 sub;
 ```
 
 </details>
 
-Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clearance áp dụng cho protected action V1. LAB_TECH tra cứu xét nghiệm, ghi kết quả/trạng thái; không tạo chỉ định, kê đơn hay thu tiền. Lọc trạng thái là nhánh mở rộng tùy chọn của danh sách.
+Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clearance áp dụng cho protected action V1. LAB_TECH tra cứu xét nghiệm, ghi kết quả/trạng thái; không tạo chỉ định, kê đơn hay thu tiền. Lọc trạng thái là nhánh mở rộng tùy chọn của danh sách. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Lọc xét nghiệm chờ — đã chọn bộ lọc
+Điều kiện mở rộng: E1: Lọc xét nghiệm theo trạng thái — chọn bộ lọc trạng thái
 
-Đối chiếu source: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+Đối chiếu source: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### PHARMACIST — Tác vụ dược sĩ
 
@@ -642,48 +478,40 @@ Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clear
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
  subgraph SYS["MediFlow — PHARMACIST"]
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  P1(["Tra cứu thuốc"])
- P2(["Đọc danh mục thuốc"])
- P3(["Lọc theo từ khóa"])
+ P3(["Lọc danh mục thuốc"])
  P4(["Thêm thuốc"])
- P5(["Nhập thông tin thuốc"])
  P6(["Điều chỉnh tồn kho"])
- P7(["Ghi số lượng và lý do"])
  P8(["Tra cứu đơn thuốc"])
- P9(["Xem các dòng thuốc"])
  P10(["Cấp thuốc theo đơn [V1]"])
- P11(["Kiểm tra clearance đúng đơn"])
- P12(["Kiểm tra tồn / giữ chỗ"])
- P13(["Ghi cấp thuốc và biến động tồn"])
+ P13(["Ghi nhận xuất kho"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> P1
  ACTOR --> P4
  ACTOR --> P6
  ACTOR --> P8
  ACTOR --> P10
- P1 -.->|"«include»"| P2
  P3 -.->|"«extend» [E1]"| P1
- P4 -.->|"«include»"| P5
- P6 -.->|"«include»"| P7
- P8 -.->|"«include»"| P9
- P10 -.->|"«include»"| P11
- P10 -.->|"«include»"| P12
  P10 -.->|"«include»"| P13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class P1,P4,P6,P8,P10 main;
- class P2,P3,P5,P7,P9,P11,P12,P13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,P1,P4,P6,P8,P10 main;
+ class P3,P13 sub;
 ```
 
 </details>
 
-Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm tra exact PRESCRIPTION clearance, tồn và reservation. Dược sĩ chủ động cấp thuốc, không tự cấp khi nhận sự kiện thanh toán. PHARMACIST không tạo/hủy đơn; hết hạn là xử lý lifecycle của hệ thống, không phải tác vụ người dùng.
+Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm tra exact PRESCRIPTION clearance, tồn và reservation. Dược sĩ chủ động cấp thuốc, không tự cấp khi nhận sự kiện thanh toán. PHARMACIST không tạo/hủy đơn; hết hạn là xử lý lifecycle của hệ thống, không phải tác vụ người dùng. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Lọc theo từ khóa — có từ khóa
+Điều kiện mở rộng: E1: Lọc danh mục thuốc — chọn bộ lọc thuốc
 
-Đối chiếu source: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+Đối chiếu source: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### CASHIER — Tác vụ thu ngân
 
@@ -698,50 +526,34 @@ Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm 
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
  subgraph SYS["MediFlow — CASHIER"]
- C1(["Tra cứu hóa đơn"])
- C2(["Xem hóa đơn bệnh nhân"])
- C3(["Tạo hóa đơn"])
- C4(["Kiểm tra các khoản thu"])
- C5(["Ghi thanh toán hóa đơn"])
- C6(["Kiểm tra lệnh thanh toán"])
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  C7(["Tra cứu yêu cầu thu [V1]"])
- C8(["Xác định nguồn và đối tượng"])
- C9(["Ghi thanh toán ledger [V1]"])
- C10(["Kiểm tra số tiền và khóa lặp"])
- C11(["Trả biên nhận thanh toán"])
- C12(["Hoàn tiền giao dịch [V1]"])
- C13(["Kiểm tra số dư được hoàn"])
- C14(["Ghi số tiền và lý do"])
+ C9(["Ghi nhận thanh toán [V1]"])
+ C11(["Cấp biên nhận thanh toán"])
+ C12(["Hoàn tiền giao dịch hợp lệ [V1]"])
  end
- ACTOR --> C1
- ACTOR --> C3
- ACTOR --> C5
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> C7
  ACTOR --> C9
- C1 -.->|"«include»"| C2
- C3 -.->|"«include»"| C4
- C5 -.->|"«include»"| C6
- C7 -.->|"«include»"| C8
- C9 -.->|"«include»"| C10
+ ACTOR --> C12
  C9 -.->|"«include»"| C11
- C12 -.->|"«extend» [E1]"| C9
- C12 -.->|"«include»"| C13
- C12 -.->|"«include»"| C14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class C1,C3,C5,C7,C9 main;
- class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,C7,C9,C12 main;
+ class C11 sub;
 ```
 
 </details>
 
-Hóa đơn compatibility và ledger V1 là hai đường xử lý riêng, không phải các bước bắt buộc nối tiếp. [V1] phụ thuộc feature availability. Hoàn tiền là tác vụ mở rộng sau thanh toán gốc đủ điều kiện; có luồng con kiểm tra số dư, số tiền/lý do. Retry cùng khóa phải giữ intent. Không kích hoạt quyết toán nội trú/phẫu thuật.
+Hình chính dùng yêu cầu thu ledger V1. Hoàn tiền là thao tác độc lập sau đó trên giao dịch đủ điều kiện, không extend hành vi thanh toán. Các lệnh hóa đơn cũ vẫn có trong source ở nhánh compatibility, ngoài luồng V1 chính. Gửi lại lệnh phải giữ intent và không thu tiền hai lần.
 
-Điều kiện mở rộng: E1: Hoàn tiền giao dịch [V1] — yêu cầu hoàn hợp lệ
+Điều kiện mở rộng: Không có.
 
-Đối chiếu source: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+Đối chiếu source: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### PATIENT — Tác vụ bệnh nhân
 
@@ -756,41 +568,28 @@ Hóa đơn compatibility và ledger V1 là hai đường xử lý riêng, không
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PATIENT"]
  subgraph SYS["MediFlow — PATIENT"]
- T1(["Đăng nhập"])
- T2(["Nhập tên đăng nhập / mật khẩu"])
- T3(["Nhận access / refresh token"])
- T4(["Gia hạn phiên truy cập"])
- T5(["Kiểm tra định danh refresh"])
+ AUTH_LOGIN(["Đăng nhập"])
+ AUTH_REFRESH(["Gia hạn phiên"])
  T6(["Xem thông báo của mình"])
- T7(["Kiểm tra đúng bệnh nhân"])
- T8(["Xem danh sách thông báo"])
- T9(["Mở chi tiết thông báo"])
- T10(["Đọc nội dung thông báo"])
+ T9(["Đọc chi tiết thông báo"])
  end
- ACTOR --> T1
- ACTOR --> T4
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> T6
- T1 -.->|"«include»"| T2
- T1 -.->|"«include»"| T3
- T4 -.->|"«include»"| T5
- T6 -.->|"«include»"| T7
- T6 -.->|"«include»"| T8
  T9 -.->|"«extend» [E1]"| T6
- T9 -.->|"«include»"| T7
- T9 -.->|"«include»"| T10
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class T1,T4,T6 main;
- class T2,T3,T5,T7,T8,T9,T10 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,T6 main;
+ class T9 sub;
 ```
 
 </details>
 
-Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực tiếp tạo/xem lịch hẹn, lấy hồ sơ bệnh nhân, kết quả xét nghiệm, đơn thuốc hay hóa đơn qua ma trận Gateway/controller hiện tại. Chưa có tự đăng ký hoặc sửa hồ sơ. Đây là khoảng trống tương lai, không vẽ thành chức năng đã có. Mở chi tiết thông báo vẫn kiểm tra ownership độc lập.
+Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực tiếp tạo/xem lịch hẹn, lấy hồ sơ bệnh nhân, kết quả xét nghiệm, đơn thuốc hay hóa đơn qua ma trận Gateway/controller hiện tại. Chưa có tự đăng ký hoặc sửa hồ sơ. Đây là khoảng trống tương lai, không vẽ thành chức năng đã có. Mở chi tiết thông báo vẫn kiểm tra ownership độc lập. Đăng nhập và gia hạn là hai mục tiêu độc lập, không nối include/extend với nhau. Lệnh nghiệp vụ nhân viên cần phiên xác thực hợp lệ. Tiền điều kiện và kiểm tra trường dữ liệu nằm trong sequence/đặc tả, không tách thành oval thao tác màn hình.
 
-Điều kiện mở rộng: E1: Mở chi tiết thông báo — đã chọn thông báo
+Điều kiện mở rộng: E1: Đọc chi tiết thông báo — chọn thông báo của mình
 
 Đối chiếu source: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
 
@@ -798,288 +597,682 @@ Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực ti�
 
 ### 1.3. Sequences Diagrams
 
-### Đăng nhập và truy cập có kiểm quyền — SOURCE
+<!-- word-sequence-excerpts:start -->
+Các phần Word giữ nguyên điều kiện bao quanh từng thông điệp. Nếu chỉ trích một nhánh alternative, phần đó dùng `opt` với điều kiện của chính nhánh để biểu diễn trích đoạn có điều kiện; xem hình đầy đủ để đọc toàn bộ `alt` và các kết quả khác.
+<!-- word-sequence-excerpts:end -->
 
-![Đăng nhập và truy cập có kiểm quyền — SOURCE](assets/svg/06-vi.svg)
+Luồng chính dùng nhất quán hợp đồng ngoại trú V1. Đọc theo thứ tự: đặt lịch → đến/check-in → thu phí khám → khám → xét nghiệm/thanh toán/kết quả nếu có chỉ định → bác sĩ kết luận → kê đơn khi cần → thanh toán/chủ động cấp thuốc. Hình 06 và 04 là hai tình huống xác thực độc lập. Mỗi actor dùng phiên đúng quyền; lifeline API service viết gọn vẫn đi qua Gateway. Vẫn áp dụng feature/acceptance gate V1. Báo cáo và thông báo cập nhật riêng, không chặn chăm sóc.
+
+### Đăng nhập — kiểm tra dữ liệu, từ chối và thử lại
+
+![Đăng nhập — kiểm tra dữ liệu, từ chối và thử lại](assets/svg/06-vi.svg)
 
 <details>
 <summary>Mermaid · 06-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor User
- participant Client as Web / Flutter
- participant Gateway
- participant Core as Core Organization
- participant Service as Business context
- User->>Client: Credentials
- Client->>Gateway: Login request
- Gateway->>Core: Verify credentials
- Core->>Core: Account active / BCrypt / signed JWT
- Core-->>Client: Token response via Gateway
- Client->>Gateway: Authorized API request + bearer JWT
- Gateway->>Gateway: Verify token type / role / route
- alt Policy accepted
- Gateway->>Service: Forward authenticated request
- Service->>Service: Verify JWT / PreAuthorize / ownership / authority
- Service-->>Client: ApiResponse via Gateway
- else Unauthorized or forbidden
- Gateway-->>Client: 401 / 403
+ actor User as Người dùng
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ participant C as Core Organization
+ User->>UI: Gửi thông tin đăng nhập
+ UI->>G: POST /auth/login
+ alt Thiếu trường hoặc dữ liệu sai định dạng
+  G-->>UI: Từ chối request không hợp lệ
+  UI-->>User: Hiện lỗi dữ liệu, cho sửa lại
+ else Request đúng cấu trúc
+  G->>C: Kiểm tra tên đăng nhập và mật khẩu
+  alt Sai thông tin hoặc tài khoản bị khóa
+   C-->>G: Từ chối xác thực
+   G-->>UI: 401 AUTH_INVALID_CREDENTIALS
+   UI-->>User: Hiện lỗi, không tạo phiên
+  else Dịch vụ định danh lỗi hoặc quá thời gian
+   C-->>G: Lỗi / timeout
+   G-->>UI: 503 AUTH_UPSTREAM_UNAVAILABLE / 504 AUTH_UPSTREAM_TIMEOUT
+   UI-->>User: Hiện lỗi tạm thời, thử lại sau
+  else Tài khoản hoạt động và thông tin đúng
+   C-->>G: Tài khoản / role / định danh đã xác minh
+   G->>G: Cấp access token và refresh token
+   G-->>UI: LoginResponse
+   UI-->>User: Mở khu vực theo quyền
+  end
+ end
+ Note over User,UI: Sau lỗi, gửi lại bắt đầu từ đầu sequence, không chạy tác vụ được bảo vệ.
+```
+
+</details>
+
+Gateway cấp token sau khi Core xác minh tài khoản; Core không trả token trực tiếp cho client. Gia hạn là hình 04, một use case độc lập. Lỗi cấu trúc request theo xử lý validation; đăng nhập thành công dùng LoginResponse, không giả định mọi endpoint cùng một envelope.
+
+### Gia hạn phiên — use case xác thực độc lập
+
+![Gia hạn phiên — use case xác thực độc lập](assets/svg/04-vi.svg)
+
+<details>
+<summary>Mermaid · 04-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor User as Người dùng
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ User->>UI: Tiếp tục làm việc trong phiên
+ Note over UI,G: Client gọi gia hạn ở nơi đã hỗ trợ, không khẳng định mọi client tự động retry.
+ UI->>G: POST /auth/refresh + refreshToken
+ alt Request thiếu hoặc sai cấu trúc
+  G-->>UI: Từ chối dữ liệu
+  UI-->>User: Hiện lỗi phiên / yêu cầu đăng nhập
+ else Request gia hạn đọc được
+  G->>G: Kiểm chữ ký, hạn, loại token và định danh người dùng
+  alt Refresh token sai hoặc hết hạn
+   G-->>UI: 401 AUTH_INVALID_REFRESH_TOKEN
+   UI-->>User: Yêu cầu đăng nhập lại, dừng tác vụ được bảo vệ
+  else Định danh refresh hợp lệ
+   G->>G: Cấp access token mới
+   G-->>UI: RefreshResponse(accessToken)
+   UI-->>User: Tiếp tục với access token hợp lệ
+  end
  end
 ```
 
 </details>
 
-### Check-in → thanh toán EXAM → khám — V1 GATED
+Gateway kiểm claims đã ký tại chỗ khi refresh; implementation hiện tại không gọi lại Core hoặc cấp refresh token mới. Hình mô tả hợp đồng endpoint, không chứng nhận client tự gia hạn.
 
-![Check-in → thanh toán EXAM → khám — V1 GATED](assets/svg/07-vi.svg)
+### Đặt lịch khám trước khi đến tiếp nhận
+
+![Đặt lịch khám trước khi đến tiếp nhận](assets/svg/05-vi.svg)
+
+<details>
+<summary>Mermaid · 05-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Patient as Bệnh nhân
+ actor Nurse as Điều dưỡng
+ participant UI as Web / Flutter
+ participant G as Gateway
+ participant C as Clinical
+ participant Core as Core
+ Patient->>Nurse: Đề nghị đặt lịch khám
+ Nurse->>UI: Tra cứu bệnh nhân, chọn bác sĩ, khoa, ngày và giờ
+ UI->>G: Request tạo lịch đã xác thực
+ alt Thiếu xác thực hoặc sai quyền
+  G-->>UI: 401 / 403
+  UI-->>Nurse: Đăng nhập / không có quyền, chưa tạo lịch
+ else Đạt chính sách route
+  G->>C: Lệnh tạo lịch hẹn
+  C->>Core: Tra cứu context bệnh nhân và bác sĩ có kiểm quyền
+  Core-->>C: Context hoặc lỗi tra cứu
+  alt Dữ liệu sai, lịch quá khứ, bác sĩ không hợp lệ, trùng lịch PENDING hoặc lỗi tra cứu
+   C-->>G: Lỗi dữ liệu / xung đột / phụ thuộc, không commit lịch
+   G-->>UI: Response lỗi
+   UI-->>Nurse: Hiện lý do, sửa lựa chọn hoặc chờ phục hồi rồi thử lại
+  else Đủ điều kiện tạo lịch
+   C->>C: Lưu lịch PENDING và phát sự kiện theo cấu hình
+   C-->>G: Định danh lịch đã tạo
+   G-->>UI: Response lịch hẹn
+   UI-->>Nurse: Hiện thông tin lịch đã ghi nhận
+   Nurse-->>Patient: Xác nhận giờ hẹn và hướng dẫn đến tiếp nhận
+  end
+ end
+```
+
+</details>
+
+PATIENT nhờ điều dưỡng đặt lịch; không thêm API tự đặt lịch cho bệnh nhân. Nếu chưa có hồ sơ bệnh nhân thì tạo tại Core trước, ngoài sequence này. Chỉ lịch lưu thành công mới là đầu vào check-in ở hình 07. Đặt lịch không chứng minh đã thanh toán hoặc được bắt đầu khám.
+
+### Đến tiếp nhận → thu phí khám → bắt đầu khám (V1)
+
+![Đến tiếp nhận → thu phí khám → bắt đầu khám (V1)](assets/svg/07-vi.svg)
 
 <details>
 <summary>Mermaid · 07-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
+ actor Patient as Bệnh nhân
+ actor Nurse as Điều dưỡng
+ actor Cashier as Thu ngân
+ actor Doctor as Bác sĩ
+ participant C as Clinical API
  participant Q as RabbitMQ
- Staff->>UI: Check in exact appointment
- UI->>C: Check-in command
- C->>C: Save appointment + durable outbox
- C-->>Q: Appointment fact with exact visit identity
- Q->>B: Consume selected V1 fact
- B->>B: Claim source / issue EXAM charge and request
- Staff->>UI: Record payment
- UI->>B: Complete request with idempotency key
- B->>B: Atomic payment + allocation + clearance + outbox
- B-->>Q: financial.clearance.granted
- Q->>C: Store exact EXAM clearance idempotently
- Staff->>UI: Start examination
- UI->>C: Start exact appointment
- C->>C: Recheck authority / target / expiry
- alt Clearance missing or provider unavailable
- C-->>UI: Reject protected action
- else Valid authority
- C->>C: Create or reuse appointment-backed record atomically
- C-->>UI: Open medical record
+ participant B as Billing API
+ Note over Nurse,C: Tiền điều kiện: hình 05 đã lưu lịch, các lệnh API đi qua Gateway.
+ Patient->>Nurse: Đến theo lịch đã đặt
+ Nurse->>C: Check-in đúng lịch hẹn
+ alt Không có lịch, sai trạng thái hoặc không có quyền
+  C-->>Nurse: Từ chối, xử lý lịch / quyền, dừng lượt thao tác
+ else Lịch chờ hợp lệ
+  C->>C: Commit lịch AWAITING_PAYMENT + outbox
+  C-->>Nurse: Tiếp nhận thành công, chưa được bắt đầu khám
+  C-)Q: Phát fact đúng lịch sau commit
+  Q-)B: Gửi fact để lập khoản thu EXAM
+  B->>B: Tạo khoản thu / yêu cầu thu chống trùng
+  Cashier->>B: Tra cứu yêu cầu thu EXAM đúng lượt khám
+  alt Yêu cầu thu chưa sẵn sàng hoặc lập phí lỗi
+   B-->>Cashier: Chưa sẵn sàng / lỗi, không thu tiền vào yêu cầu tùy ý
+   Note over Cashier,Doctor: Chờ phục hồi nguồn rồi tra cứu lại, nhánh này chưa khám.
+  else Yêu cầu thu đúng đã sẵn sàng
+   Cashier->>B: Ghi tiền đã thu với khóa idempotency
+   alt Thanh toán không hợp lệ hoặc retry khác intent
+    B-->>Cashier: Từ chối, không tạo tiền / phân bổ / quyền mới
+   else Nhận thanh toán hoặc phát lại kết quả đã commit
+    B->>B: Atomic payment + allocation + clearance + outbox
+    B-->>Cashier: Biên nhận thanh toán
+    Cashier-->>Patient: Xác nhận đã thu phí khám
+    B-)Q: financial.clearance.granted
+    Q-)C: Lưu EXAM clearance đúng lịch và chống trùng
+    Doctor->>C: Bắt đầu khám đúng lịch hẹn
+    alt Quyền chưa tới, hết hạn, lệch đối tượng hoặc sai actor/trạng thái
+     C-->>Doctor: Từ chối bắt đầu, chưa vào trạng thái khám
+     Note over Doctor,C: Thử lại khi có bằng chứng hợp lệ, không thu phí lần hai vì chậm sự kiện.
+    else Đúng bác sĩ và quyền đúng lượt còn hạn
+     C->>C: Atomic bắt đầu khám và tạo/dùng lại hồ sơ đúng lịch
+     C-->>Doctor: Mở hồ sơ khám
+     Doctor-->>Patient: Bắt đầu thăm khám
+    end
+   end
+  end
  end
 ```
 
 </details>
 
-### Chỉ định và trả kết quả xét nghiệm — V1 GATED
+Luồng ngoại trú V1 thông thường. Check-in trước thu phí; có quyền từ phí khám trước khi bắt đầu khám. Audited emergency override là khả năng riêng có kiểm quyền trong source, không phải đường vòng cho lượt khám chưa trả phí bình thường. Mỗi actor dùng phiên riêng; lifeline API chỉ lược đường truyền Gateway. Mũi tên sự kiện là bất đồng bộ; phát lại không tạo khoản thu thứ hai.
 
-![Chỉ định và trả kết quả xét nghiệm — V1 GATED](assets/svg/08-vi.svg)
+### Chỉ định → thanh toán → xét nghiệm → bác sĩ đọc kết quả (V1)
+
+![Chỉ định → thanh toán → xét nghiệm → bác sĩ đọc kết quả (V1)](assets/svg/08-vi.svg)
 
 <details>
 <summary>Mermaid · 08-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Doctor
- actor Tech as LAB_TECH
- participant C as Clinical
- participant L as Lab
- participant B as Billing
+ actor Doctor as Bác sĩ
+ actor Cashier as Thu ngân
+ actor Tech as Kỹ thuật viên xét nghiệm
+ participant C as Clinical API
+ participant L as Lab API
+ participant B as Billing API
  participant Q as RabbitMQ
- participant S as Support
- Doctor->>C: Explicit order in authorized record
- C->>C: Persist explicit clinical_lab_order
- C-->>Doctor: Source order identity
- Doctor->>L: Create test via Gateway with exact source_order_id
- L->>C: REST lookup /lab-orders/id/context with authenticated actor
- C-->>L: Exact persisted order and authority context
- L->>L: Validate context and dedupe source order / persist test + outbox
- L-->>Q: lab.request.created
- Q->>B: Issue LAB_TEST charge and request
- Note over B,L: Cashier pays exact request, clearance targets exact testId
- B-->>Q: financial.clearance.granted
- Q->>L: Persist target clearance
- Tech->>L: Start protected test through Gateway
- L->>L: Verify scope / target / expiry
- Tech->>L: Submit nonempty results and valid performed date
- L->>L: Complete once + resultVersion + outbox
- L-->>Q: lab.result.created
- Q->>C: Atomic inbox and attached result
- Q->>S: Independent report / notification projections
+ Note over Doctor,C: Tiền điều kiện: hồ sơ khám đang mở và đúng quyền, mọi lệnh actor qua Gateway.
+ Doctor->>C: Lưu chỉ định xét nghiệm cụ thể
+ alt Chỉ định sai hoặc không có quyền
+  C-->>Doctor: Từ chối, sửa chỉ định, chưa tạo xét nghiệm
+ else Chỉ định đã lưu
+  C-->>Doctor: source_order_id
+  Doctor->>L: Tạo xét nghiệm với source_order_id đúng
+  L->>C: Tra cứu chỉ định đã lưu và context actor
+  C-->>L: Context chỉ định hoặc lỗi tra cứu
+  alt Lệch context, trùng khác intent hoặc lỗi phụ thuộc
+   L-->>Doctor: Từ chối tạo, không có xét nghiệm mới hoặc fact tính phí
+  else Context hợp lệ / nhận diện retry cùng ý định
+   L->>L: Lưu hoặc dùng lại xét nghiệm đúng, chỉ tạo outbox khi mới
+   L-->>Doctor: testId
+   L-)Q: lab.request.created
+   Q-)B: Lập khoản thu / yêu cầu thu LAB_TEST đúng xét nghiệm
+   Note over Cashier,B: Tra yêu cầu đã sẵn sàng và ghi tiền, hoặc dừng/thử lại như hình 07
+   Cashier->>B: Tra đúng yêu cầu, rồi gửi thanh toán như hình 07
+   B-->>Cashier: Biên nhận đã commit hoặc lỗi yêu cầu/thanh toán
+   alt Chưa commit thanh toán hoặc yêu cầu thu chưa sẵn sàng
+    Note over Cashier,Tech: Dừng, xử lý thanh toán/yêu cầu thu trước khi xét nghiệm.
+   else Đã commit thanh toán đúng xét nghiệm
+   B-)Q: financial.clearance.granted
+   Q-)L: Lưu quyền LAB_TEST đúng testId
+   Tech->>L: Bắt đầu đúng xét nghiệm
+   alt Thiếu/hết hạn quyền thanh toán hoặc sai trạng thái
+    L-->>Tech: Từ chối, chưa thực hiện xét nghiệm được bảo vệ
+   else Được phép bắt đầu
+    L-->>Tech: IN_PROGRESS
+    Tech->>Tech: Thực hiện xét nghiệm
+    loop Sửa và gửi kết quả đến khi được nhận hoặc dừng thao tác
+     Tech->>L: Gửi chỉ số, kết luận và ngày thực hiện
+     alt Kết quả rỗng, ngày sai, quyền hết hạn hoặc xét nghiệm đã chốt
+      L-->>Tech: Từ chối có lý do, không tạo kết quả hoàn tất mới
+     else Kết quả và quyền hiện tại hợp lệ
+      L->>L: Commit COMPLETED, resultVersion và outbox một lần
+      L-->>Tech: Đã ghi nhận kết quả
+     end
+    end
+    opt Đã commit kết quả hoàn tất
+     L-)Q: lab.result.created
+     Q-)C: Gắn kết quả chống trùng qua inbox
+     Doctor->>L: Đọc kết quả hoàn tất đúng quyền
+     L-->>Doctor: Chỉ số / kết luận / phiên bản kết quả
+    end
+   end
+   end
+  end
+ end
 ```
 
 </details>
 
-### Thanh toán và cấp thuốc — V0 compatibility saga
+Chú thích tham chiếu thanh toán bao gồm cả nhánh thành công/thất bại, không mặc định đã thu tiền. Khi bắt đầu và khi ghi kết quả đều kiểm quyền hiện tại. Kỹ thuật viên ghi kết quả; bác sĩ diễn giải ở hình 37. Projection Support không chặn luồng này nên được lược. Ghi kết quả lỗi không được phát sự kiện hoàn tất.
 
-![Thanh toán và cấp thuốc — V0 compatibility saga](assets/svg/09-vi.svg)
+### Bác sĩ kết luận và trả kết quả khám cho bệnh nhân
+
+![Bác sĩ kết luận và trả kết quả khám cho bệnh nhân](assets/svg/37-vi.svg)
+
+<details>
+<summary>Mermaid · 37-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Bác sĩ
+ actor Patient as Bệnh nhân
+ participant C as Clinical API
+ participant L as Lab API
+ Note over Doctor,C: Tiền điều kiện: đã bắt đầu khám ở hình 07, lệnh API actor qua Gateway.
+ opt Có chỉ định xét nghiệm
+  Note over Doctor,L: Hình 08: có kết quả hoàn tất, hoặc dừng để chờ kết quả
+ end
+ Doctor->>C: Đọc hồ sơ hiện tại và bằng chứng khám sẵn có
+ C-->>Doctor: Hồ sơ / chẩn đoán / kết quả đã gắn, hoặc lỗi truy cập
+ alt Sai actor, hồ sơ không sẵn sàng hoặc thiếu bằng chứng cần thiết
+  Doctor->>Doctor: Dừng kết luận, xử lý quyền hoặc chờ bằng chứng
+ else Đủ bằng chứng để kết luận khám
+  Doctor->>C: Ghi nội dung khám và chẩn đoán
+  alt Dữ liệu sai hoặc hồ sơ không còn cho ghi
+   C-->>Doctor: Từ chối, sửa hoặc tải lại, chưa xác nhận hoàn tất
+  else Đã lưu chẩn đoán
+   C-->>Doctor: Thông tin khám đã lưu
+   Doctor-->>Patient: Giải thích kết quả, chẩn đoán và hướng điều trị
+   Note over Doctor,Patient: Trao đổi trực tiếp, không giả định cổng xem kết quả hoặc biên nhận điện tử cho Patient.
+   opt Có chỉ định dùng thuốc
+    Note over Doctor,C: Hình 38: quy trình kê đơn riêng
+   end
+   Doctor->>C: Hoàn tất lượt khám với hướng xử trí ngoại trú
+   alt Thiếu chẩn đoán/hướng xử trí hoặc sai trạng thái
+    C-->>Doctor: Từ chối hoàn tất, xử lý rồi gửi lại
+   else Đủ điều kiện hoàn tất
+    C->>C: Commit hoàn tất và outbox theo cấu hình
+    C-->>Doctor: Xác nhận lượt khám hoàn tất
+    Doctor-->>Patient: Xác nhận bước tiếp theo / hướng dẫn ngoại trú
+   end
+  end
+ end
+```
+
+</details>
+
+Bác sĩ đọc kết quả Lab qua API có quyền; kết quả gắn bất đồng bộ vào Clinical có thể đến sau. Hình mô tả việc giải thích chuyên môn cho bệnh nhân, không tạo endpoint trả kết quả mới. Cấp thuốc thuộc quy trình Pharmacy/Billing riêng, không phải bằng chứng đã trả kết quả khám. Lệnh hoàn tất Clinical theo lifecycle trong source; không thêm điều kiện giả rằng phải cấp thuốc mới được kết thúc khám.
+
+### Kê đơn — quy trình riêng khi có chỉ định
+
+![Kê đơn — quy trình riêng khi có chỉ định](assets/svg/38-vi.svg)
+
+<details>
+<summary>Mermaid · 38-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Bác sĩ
+ participant P as Pharmacy API
+ participant C as Clinical API
+ participant Q as RabbitMQ
+ participant B as Billing
+ Note over Doctor,P: Tiền điều kiện: context ngoại trú đúng quyền, hồ sơ còn cho ghi, lệnh API qua Gateway.
+ Doctor->>P: Gửi thuốc, số lượng, liều dùng và định danh khám chính xác
+ P->>C: Xác minh context khám đã lưu và quyền bác sĩ
+ C-->>P: Context hoặc từ chối tra cứu
+ alt Context sai, không có quyền hoặc không khả dụng
+  P-->>Doctor: Từ chối, chưa có đơn hoặc giữ chỗ
+ else Context khám hợp lệ
+  P->>P: Khóa dòng thuốc, lấy giá danh mục, kiểm số lượng, hạn và tồn khả dụng
+  alt Thuốc, số lượng, hạn sai hoặc thiếu tồn khả dụng
+   P-->>Doctor: Từ chối, sửa đơn, không giữ chỗ một phần
+  else Mọi dòng thuốc hợp lệ
+   P->>P: Atomic đơn + dòng thuốc + phiếu chờ + giữ chỗ + outbox
+   P-->>Doctor: Định danh đơn và tổng tiền do server tính
+   P-)Q: prescription.created
+   Q-)B: Lập khoản thu / yêu cầu thu đúng đơn một lần
+  end
+ end
+ Note over P,B: Giữ chỗ chưa phải xuất kho, hình 09 mô tả thu tiền và chủ động cấp thuốc.
+```
+
+</details>
+
+Giá lấy từ snapshot danh mục server, không nhận giá do client tự gửi. Context nguồn được xác minh, không suy ra từ chuỗi chẩn đoán hoặc UUID tùy ý. Retry theo hợp đồng endpoint thật; hình không thêm khóa idempotency kê đơn áp dụng chung khi source chưa có.
+
+### Thanh toán đơn và dược sĩ chủ động cấp thuốc (V1)
+
+![Thanh toán đơn và dược sĩ chủ động cấp thuốc (V1)](assets/svg/09-vi.svg)
 
 <details>
 <summary>Mermaid · 09-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Cashier
- participant B as Billing
+ actor Patient as Bệnh nhân
+ actor Cashier as Thu ngân
+ actor Pharmacist as Dược sĩ
+ participant B as Billing API
  participant Q as RabbitMQ
- participant P as Pharmacy
- participant S as Support
- Cashier->>B: Pay prescription invoice via Gateway
- B->>B: Save payment state and outbox atomically
- B-->>Q: payment.completed V0
- Q->>P: Durable delivery / possible redelivery
- P->>P: Claim receipt, lock prescription / reservations / drugs
- alt All dispense rules pass
- P->>P: Atomic stock decrement + fulfilled states + outbox
- P-->>Q: prescription.filled
- Q->>B: Complete saga once
- else Terminal reservation / stock / lifecycle failure
- P->>P: Persist terminal failure and durable fact
- P-->>Q: prescription.dispense.failed
- Q->>B: Apply V0 compensation once
+ participant P as Pharmacy API
+ Note over Cashier,P: Tiền điều kiện: hình 38 đã lưu đơn ngoại trú V1, lệnh API actor qua Gateway.
+ Note over Cashier,B: Tra yêu cầu PRESCRIPTION đúng đơn đã sẵn sàng và ghi tiền, hoặc dừng/thử lại như hình 07
+ Cashier->>B: Tra đúng yêu cầu, rồi gửi thanh toán như hình 07
+ B-->>Cashier: Biên nhận đã commit hoặc lỗi yêu cầu/thanh toán
+ alt Thanh toán lỗi, yêu cầu thu đang chờ hoặc chưa rõ kết quả
+  B-->>Cashier: Xử lý thanh toán / thử lại đúng yêu cầu, chưa cấp thuốc
+ else Đã commit tiền đúng đơn
+ B-)Q: financial.clearance.granted
+ Q-)P: Lưu quyền đúng đơn thuốc
+ Note over Q,P: Nhận clearance không tự cấp thuốc trong V1.
+ Patient->>Pharmacist: Đưa đơn và đề nghị nhận thuốc
+ Pharmacist->>P: Tra cứu đơn và gửi lệnh cấp thuốc
+ P->>P: Xác định actor đã ký, khóa đơn, phiếu, giữ chỗ và thuốc
+ alt Lặp đúng lệnh đã commit
+  P-->>Pharmacist: Trả kết quả cấp thuốc đã commit, không xuất kho lần hai
+ else Thiếu/hết hạn/lệch clearance hoặc actor sai quyền
+  P-->>Pharmacist: Từ chối, xử lý quyền rồi thử lại, chưa đổi tồn
+ else Giữ chỗ hết hạn, sai vòng đời hoặc lỗi tồn
+  P-->>Pharmacist: Từ chối cấp, chuyển lỗi sang luồng điều chỉnh đã hỗ trợ
+  Note over Cashier,Pharmacist: Không xuất kho một phần, hoàn tiền là thao tác Billing riêng có quyền, không mặc định đã trả tiền tự động.
+ else Quyền hiện tại và mọi điều kiện tồn đều đạt
+  P->>P: Atomic trừ tồn + hoàn tất đơn/phiếu + outbox
+  P-->>Pharmacist: Xác nhận cấp thuốc
+  P-)Q: prescription.filled
+  Q-)B: Áp dụng hiệu ứng tài chính đã đăng ký và chống trùng
+  Pharmacist-->>Patient: Giao thuốc và hướng dẫn sử dụng
  end
- Q->>S: Project selected facts independently
- Note over B,P: Redelivery returns committed outcome, no second stock effect
- Note over B,S: V0 reversal is not proof of completed bank refund
+ end
 ```
 
 </details>
-V1 dispense là luồng khác: payment tạo receipt/clearance; PHARMACIST gọi protected action với exact PRESCRIPTION clearance và actor xác thực. Không vẽ V1 như auto-dispense từ payment event. Các sequence V1 là hành vi source có gate, không xác nhận toàn luồng đã active.
+
+Saga V0 tự động từ payment.completed là cơ chế compatibility cũ, không phải luồng V1 chính. Phải có lệnh dược sĩ, clearance đúng đích còn hạn, lifecycle và tồn đã khóa hợp lệ. Giao thuốc thực tế là hành động người dùng sau xác nhận lưu; source không chứng minh bệnh nhân đã nhận.
 
 ### 1.4. Class Diagrams
 
-Các sơ đồ rút gọn từ class thật; thuộc tính/method chọn lọc, không liệt kê getter/constructor. Quan hệ xuyên context không phải Java entity association.
+Các lớp domain nhóm theo service triển khai. Core/Support giữ ranh giới context bên trong; Pharmacy/Billing cùng một hình nhưng là hai service độc lập. Thuộc tính chọn lọc phải khớp source; phụ thuộc tích hợp nét đứt không phải quan hệ database.
 
-### Class diagram Clinical và Lab
+### Core service — module Organization và Patient
 
-![Class diagram Clinical và Lab](assets/svg/10-vi.svg)
+![Core service — module Organization và Patient](assets/svg/39-vi.svg)
+
+<details>
+<summary>Mermaid · 39-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Core_Organization {
+  class Account {
+   UUID accountId
+   String username
+   Role role
+  }
+  class Staff {
+   UUID staffId
+   UUID departmentId
+  }
+  class Department {
+   UUID departmentId
+   String departmentName
+  }
+ }
+ namespace Core_Patient {
+  class Patient {
+   UUID patientId
+   String fullName
+   LocalDate dateOfBirth
+  }
+ }
+ Staff ..> Department : departmentId
+ Account ..> Staff : optional staffId
+ Account ..> Patient : optional patientId identity mapping
+```
+
+</details>
+
+Hai module chạy trong Core nhưng giữ store Organization/Patient riêng. Tham chiếu định danh là tùy chọn theo role tài khoản; hình không tạo khóa ngoại xuyên database. Hình domain tổng quan không trộn các lớp infrastructure.
+
+### Clinical service — các lớp nghiệp vụ
+
+![Clinical service — các lớp nghiệp vụ](assets/svg/10-vi.svg)
 
 <details>
 <summary>Mermaid · 10-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
- class Appointment {
- -UUID appointmentId
- -UUID patientId
- -AppointmentStatus status
- -short careContractVersion
- +checkIn(priceCode, at)
- +startExam(clearanceId, overrideId, at)
- +complete(at)
- }
- class MedicalRecord {
- -UUID recordId
- -UUID appointmentId
- -MedicalRecordStatus status
- -RecordDisposition disposition
- +openForAppointment()
- }
- class Diagnosis {
- -UUID diagnosisId
- -String diagnosisName
- -String icdCode
- }
- class LabTest {
- -UUID testId
- -UUID recordId
- -int resultVersion
- +start(clearance, override, at)
- +recordResults(results, conclusion, performedDate)
- }
- class LabResult {
- -UUID resultId
- -String indicator
- -String value
- -String unit
+ direction LR
+ namespace Clinical {
+  class Appointment {
+   UUID appointmentId
+   UUID patientId
+   UUID doctorId
+   UUID departmentId
+   AppointmentStatus status
+   checkIn(priceCode, at)
+   startExam(clearanceId, overrideId, at)
+   complete(at)
+  }
+  class MedicalRecord {
+   UUID recordId
+   UUID appointmentId
+   MedicalRecordStatus status
+   RecordDisposition disposition
+  }
+  class Diagnosis {
+   UUID diagnosisId
+   String diagnosisName
+   String icdCode
+  }
+  class ClinicalLabOrder {
+   UUID sourceOrderId
+   UUID recordId
+   UUID patientId
+  }
+  class ExamClearance {
+   UUID clearanceId
+   UUID appointmentId
+   Instant expiresAt
+  }
  }
  Appointment "0..1" --> "0..1" MedicalRecord : appointmentId
  MedicalRecord "1" *-- "0..*" Diagnosis
- LabTest "1" *-- "0..*" LabResult
- LabTest ..> MedicalRecord : recordId UUID only across contexts
+ ClinicalLabOrder ..> MedicalRecord : recordId
+ ExamClearance ..> Appointment : appointmentId
 ```
 
 </details>
 
-### Class diagram Pharmacy và Billing
+Tất cả lớp trong hình thuộc Clinical. LabTest/LabResult chuyển sang hình 40. Tham chiếu UUID nét đứt không hàm ý điều hướng JPA. Hồ sơ theo lịch hẹn khác với hồ sơ legacy còn giữ không có lịch. Thuộc tính/method chọn lọc từ source; không liệt kê getter sinh tự động.
 
-![Class diagram Pharmacy và Billing](assets/svg/11-vi.svg)
+### Lab service — xét nghiệm, kết quả và quyền dịch vụ
+
+![Lab service — xét nghiệm, kết quả và quyền dịch vụ](assets/svg/40-vi.svg)
+
+<details>
+<summary>Mermaid · 40-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Lab {
+  class LabTest {
+   UUID testId
+   UUID recordId
+   UUID sourceOrderId
+   LabTestStatus status
+   int resultVersion
+   start(clearance, override, at)
+   recordResults(results, conclusion, performedDate)
+  }
+  class LabResult {
+   UUID resultId
+   String indicator
+   String value
+   String unit
+  }
+  class LabFinancialClearance {
+   UUID clearanceId
+   UUID testId
+   Instant expiresAt
+  }
+ }
+ LabTest "1" *-- "0..*" LabResult
+ LabTest ..> LabFinancialClearance : validate exact LAB_TEST authority
+```
+
+</details>
+
+Hồ sơ/chỉ định Clinical chỉ được tham chiếu bằng UUID bên ngoài, không đưa object Clinical vào Lab. Lab lưu bằng chứng clearance nhận được; Billing vẫn có quyền sở hữu hiệu ứng tiền. Trước hoàn tất có thể chưa có kết quả; khi hoàn tất phải có kết quả không rỗng.
+
+### Pharmacy và Billing — hai service riêng, hợp đồng rõ ràng
+
+![Pharmacy và Billing — hai service riêng, hợp đồng rõ ràng](assets/svg/11-vi.svg)
 
 <details>
 <summary>Mermaid · 11-vi</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
- class Drug {
- -UUID drugId
- -BigDecimal price
- -int stockQuantity
- -LocalDate expiryDate
+ direction LR
+ namespace Pharmacy {
+  class Drug {
+   UUID drugId
+   BigDecimal price
+   int stockQuantity
+   LocalDate expiryDate
+  }
+  class Prescription {
+   UUID prescriptionId
+   BigDecimal totalAmount
+   PrescriptionStatus status
+  }
+  class PrescriptionLine {
+   UUID drugId
+   int quantity
+   BigDecimal unitPrice
+  }
+  class StockReservation {
+   UUID prescriptionId
+   UUID drugId
+   int quantity
+   Instant expiresAt
+  }
+  class DispenseSlip {
+   UUID dispenseId
+   UUID prescriptionId
+  }
  }
- class Prescription {
- -UUID prescriptionId
- -BigDecimal totalAmount
- -PrescriptionStatus status
- +computeTotal()
- +cancel(actorId, reason, now)
- +markFulfilled(now)
- }
- class PrescriptionLine {
- -UUID drugId
- -int quantity
- -BigDecimal unitPrice
- -BigDecimal lineTotal
- }
- class StockReservation {
- -UUID prescriptionId
- -UUID drugId
- -int quantity
- -Instant expiresAt
- }
- class DispenseSlip {
- -UUID dispenseId
- -UUID prescriptionId
- }
- class Invoice {
- -UUID invoiceId
- -BigDecimal totalAmount
- -SagaStatus sagaStatus
- +pay(method, timestamp)
- +transitionSaga(next)
- +refund()
- }
- class LedgerPaymentService {
- +complete(requestId, command, actorAccountId, correlationId)
- }
- class LedgerPaymentRepositoryPort {
- <<interface>>
- +lockIdempotencyKey(key)
- +lockRequest(requestId)
- +allocate(payment)
- }
- class LedgerEventPort {
- <<interface>>
- +appendForOutpatientRequest()
+ namespace Billing {
+  class BillingAccount {
+   UUID accountId
+  }
+  class Charge {
+   UUID chargeId
+   UUID accountId
+   BigDecimal grossAmount
+  }
+  class PaymentRequest {
+   UUID paymentRequestId
+   UUID accountId
+  }
+  class PaymentTransaction {
+   UUID transactionId
+   UUID accountId
+   BigDecimal amount
+  }
+  class PaymentAllocation {
+   UUID transactionId
+   UUID chargeId
+   BigDecimal amount
+  }
+  class FinancialClearance {
+   UUID clearanceId
+   UUID prescriptionId
+   Instant expiresAt
+  }
  }
  Prescription "1" *-- "1..*" PrescriptionLine
- PrescriptionLine "*" --> "1" Drug
- Prescription "1" --> "*" StockReservation
- Prescription "1" --> "1" DispenseSlip
- Invoice ..> Prescription : prescriptionId UUID only
- LedgerPaymentService --> LedgerPaymentRepositoryPort
- LedgerPaymentService --> LedgerEventPort
+ PrescriptionLine "*" --> "1" Drug : drugId
+ Prescription "1" --> "1..*" StockReservation : prescriptionId
+ Prescription "1" --> "1" DispenseSlip : prescriptionId
+ Charge ..> BillingAccount : accountId
+ PaymentRequest ..> BillingAccount : accountId
+ PaymentTransaction ..> BillingAccount : accountId
+ PaymentAllocation ..> PaymentTransaction : transactionId
+ PaymentAllocation ..> Charge : chargeId
+ Charge ..> Prescription : source identity via prescription.created
+ FinancialClearance ..> Prescription : prescriptionId via clearance fact
 ```
 
 </details>
 
+Namespace là ranh giới hai service độc lập, mỗi service có database riêng. Phụ thuộc xuyên vùng chỉ hợp đồng sự kiện/UUID, không phải quan hệ entity hoặc transaction chung. Hình V1 dùng mô hình ledger; Invoice legacy vẫn được mô tả trong từ điển database và source compatibility. StockReservation/DispenseSlip được tạo cùng đơn trong luồng tạo thành công đang mô tả.
+
+### Support service — mô hình báo cáo và thông báo riêng
+
+![Support service — mô hình báo cáo và thông báo riêng](assets/svg/41-vi.svg)
+
+<details>
+<summary>Mermaid · 41-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Support_Report {
+  class DailyVisitReport {
+   UUID reportId
+   LocalDate reportDate
+   UUID departmentId
+  }
+  class MonthlyRevenueReport {
+   UUID reportId
+   int month
+   int year
+  }
+  class DrugStatistic {
+   UUID statisticId
+   UUID drugId
+  }
+ }
+ namespace Support_Notification {
+  class Notification {
+   UUID notificationId
+   UUID patientId
+   String content
+  }
+ }
+```
+
+</details>
+
+Report và Notification ghép trong Support nhưng có database và transaction manager riêng. Không tạo quan hệ domain giả giữa các projection độc lập. Sự kiện nghiệp vụ cập nhật các mô hình bất đồng bộ; chúng không bắt buộc tham gia đường request khám/trả kết quả/cấp thuốc.
+
 ## 2. Data Flow Diagram
+
+Quy tắc đồng bộ: EXAM, LAB_TEST và PRESCRIPTION là ba đích thanh toán riêng. Lưu thanh toán không bảo đảm sự kiện đã được nhận ngay. Giải thích kết quả khám và giao thuốc thực tế là tương tác con người, không tạo endpoint Patient tự phục vụ mới. Các bảng/thuật toán invoice/saga V0 cũ còn là tham chiếu compatibility, ngoài bộ sequence V1 chính.
 
 DFD biểu diễn dữ liệu nghiệp vụ, không dùng nó để suy ra endpoint hoặc transaction xuyên service. P0 ở mức context được phân rã thành P1–P6 ở Level 1; tất cả giao tiếp actor đều đi qua client/Gateway về mặt triển khai.
 
@@ -1093,8 +1286,8 @@ DFD biểu diễn dữ liệu nghiệp vụ, không dùng nó để suy ra endpo
 ```mermaid
 %%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
 flowchart LR
- PA["PATIENT"] -->|định danh / lịch hẹn| P0(("P0 MediFlow"))
- P0 -->|lịch / kết quả / thông báo| PA
+ PA["PATIENT"] -->|đăng nhập / gia hạn / tra thông báo cá nhân| P0(("P0 MediFlow"))
+ P0 -->|phiên / thông báo cá nhân| PA
  ST["DOCTOR / NURSE / LAB_TECH"] -->|hồ sơ / chỉ định / kết quả| P0
  P0 -->|trạng thái khám / clearance| ST
  PC["PHARMACIST / CASHIER"] -->|thu tiền / cấp thuốc| P0
@@ -2413,7 +2606,6 @@ flowchart TB
 
 ### 6.3. Phát sự kiện, chống trùng và phục hồi
 
-
 ### Thuật toán outbox / inbox
 
 ![Thuật toán outbox / inbox](assets/svg/28-vi.svg)
@@ -2468,6 +2660,21 @@ Nhận fact có source hợp lệ → kiểm receipt/fingerprint → cập nhậ
 | Mobile routes | [mobile/lib/app/router.dart](../../../../mobile/lib/app/router.dart) |
 | Review 1 baseline | [docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md](../../01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md) |
 
-Review này đọc source/config/migrations và đối chiếu graph index; SQL có khoảng parse_partial được đọc trực tiếp từ file. Không dùng số lượng node/edge của graph làm bằng chứng tích hợp runtime. Acceptance log có ngày/profile riêng; default flag không được bật chỉ để tạo báo cáo. File source đang sửa trong working tree được giữ nguyên và không commit/push trong tác vụ này.
+Review này đọc source/config/migrations và đối chiếu graph index; SQL có khoảng parse_partial được đọc trực tiếp từ file. Không dùng số lượng node/edge của graph làm bằng chứng tích hợp runtime. Acceptance log có ngày/profile riêng; default flag không được bật chỉ để tạo báo cáo. Bản sửa này chỉ cập nhật tài liệu và assets; không đổi hành vi production hoặc cờ kích hoạt.
 
 Tài sản: [nguồn Mermaid](assets/mermaid/), [SVG](assets/svg/), [logo](assets/logos/), [cấu hình theme](assets/mermaid-config.json). Logo là nhận diện của các dự án tương ứng, nguồn [Devicon](https://github.com/devicons/devicon/tree/v2.17.0); actor hình người là SVG nội bộ của bộ tài liệu.
+
+<!-- supervisor-evidence:start -->
+### Nguồn đối chiếu bổ sung
+
+Bản sửa theo góp ý: hình 04/05 thay tổng quan cũ bằng sequence gia hạn/đặt lịch riêng. Tổng quan use case được thay bằng tám hình theo role 29–36. Hình 37–41 bổ sung trả kết quả, kê đơn và class nhóm theo service. Các phần cho Word là trích đoạn theo thứ tự của hình đầy đủ: giữ điều kiện và tiếp tục đánh số thông điệp giữa các phần sequence.
+
+| Nội dung | Source |
+|---|---|
+| Đăng nhập / gia hạn | [AuthController.java](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) |
+| Check-in / quyền từ phí khám / bắt đầu khám | [ClinicalCareFinanceApplicationService.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalCareFinanceApplicationService.java) |
+| Chỉ định xét nghiệm đã lưu | [ClinicalLabOrder.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/ClinicalLabOrder.java) |
+| Kiểm quyền và lệnh ghi kết quả Lab | [LabController.java](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) |
+| Transaction chủ động cấp thuốc V1 | [CareDispenseTransactionService.java](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/application/service/CareDispenseTransactionService.java) |
+| Host web / rewrite đến Gateway | [next.config.ts](../../../../frontend/next.config.ts) |
+<!-- supervisor-evidence:end -->

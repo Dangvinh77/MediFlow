@@ -55,6 +55,7 @@ for group in ['portrait','landscape','panels']:
             sheet.paste(im,(x,y));draw.text(((i%3)*600+12,(i//3)*450+8),p.stem,fill='#0f172a')
         sheet.save(qa/(group+'-'+str(start//12+1).zfill(2)+'.jpg'),quality=90)
 summary={'checked':len(verified),'issues':issues,'orientationsIndependentlyLaidOut':sum(not d.get('singleEntity') for d in manifest['diagrams']),'singleEntityException':['16-en','16-vi'],'checks':['source/SVG/PNG SHA-256','SVG XML and offline assets','PNG dimensions','white borders on four sides','saved SVG pixel replay','distinct orientation geometry','all PNG contact sheets'],'results':verified}
+(qa/'README.md').write_text('# Visual QA\n\nThe '+str(len(list(qa.glob('*.jpg'))))+' contact sheets cover all '+str(len(expected))+' PNG figures. They are visual review indexes; insert the original PNG or SVG from portrait, landscape or panels into Word.\n\n`chooser-compare.png` shows the side-by-side orientation comparison.\n',encoding='utf8')
 (out/'validation.json').write_text(json.dumps(summary,indent=2),encoding='utf8')
 print(json.dumps({k:v for k,v in summary.items() if k!='results'},indent=2))
 assert not issues

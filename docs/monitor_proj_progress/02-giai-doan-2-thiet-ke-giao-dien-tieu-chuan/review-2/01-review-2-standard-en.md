@@ -6,7 +6,7 @@
 |---|---|
 | Project | MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management |
 | Review | Review 2 |
-| Baseline | 2026-10-19 · HEAD `434c609be5ad` + observed working tree |
+| Baseline | 2026-10-19 · source commit `26232b54813d` + this documentation revision |
 | Scope | Outpatient MVP; retained inpatient/surgery source remains deferred |
 | Status | Source-backed design review; not a runtime acceptance certificate |
 
@@ -24,67 +24,61 @@ SVG previews are provided for direct reading; expand each Mermaid block to edit 
 
 ### 1.1. System / Application Architecture
 
-Web calls same-origin `/api/*`, proxied to Gateway; Flutter calls Gateway through `GATEWAY_URL`. Gateway verifies JWT/route policy; downstream services enforce roles, ownership and business authority again. PostgreSQL 16 is one development container hosting separate context databases. RabbitMQ supplies per-consumer queues; cross-context SQL is prohibited.
+### System architecture — one backend boundary, six business services
 
-### System architecture and data boundaries
-
-**Reading the architecture:** Client side and Server side are explicit boundaries. Labelled request and response arrows show synchronous HTTP traffic; double-headed edges summarize a request and its return path. Dashed event edges are asynchronous messages, not HTTP responses. The Next.js server proxy runs on Server side even though its UI executes on the client. Deployment ports are intentionally omitted.
-
-![System architecture and data boundaries](assets/svg/01-en.svg)
+![System architecture — one backend boundary, six business services](assets/svg/01-en.svg)
 
 <details>
 <summary>Mermaid · 01-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}"}}%%
-flowchart TB
- subgraph CLIENT["Client side — user devices"]
- WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Web</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='34' height='34'/><br/>Next.js UI / React<br/>TypeScript / Tailwind CSS"]
- MOB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><b>Client side · Mobile</b><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='34' height='34'/><br/>Flutter / Riverpod<br/>Dio / GoRouter / SecureStorage"]
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+flowchart LR
+ subgraph CLIENT["Client side"]
+  WEB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/react/react-original.svg' width='28' height='28'/> Next.js / React / TypeScript / Tailwind"]
+  MOBILE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/><br/><img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/flutter/flutter-original.svg' width='28' height='28'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/dart/dart-original.svg' width='28' height='28'/> Flutter / Dart"]
  end
- subgraph SERVER["Server side — application and infrastructure"]
- PX["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nextjs/nextjs-original.svg' width='34' height='34'/> <img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/nodejs/nodejs-original.svg' width='34' height='34'/><br/>Next.js server / Node.js<br/>same-origin /api rewrite"]
- GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Spring Cloud Gateway<br/>JWT / route authorization"]
- EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='34' height='34'/><br/>Eureka<br/>Service registry"]
- MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='34' height='34'/><br/>RabbitMQ · retry / DLQ<br/>Publish: Clinical / Lab / Pharmacy / Billing<br/>Consume: Support and configured contexts"]
- DOCK["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/docker/docker-original.svg' width='34' height='34'/><br/>Docker Compose<br/>Development orchestration"]
- subgraph APPS["Six business deployments — Java / Spring Boot"]
- CORE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Core<br/>Organization + Patient"]
- CL["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Clinical"]
- LAB["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Lab"]
- PH["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Pharmacy"]
- BI["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Billing"]
- SU["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/><br/>Support<br/>Report + Notification"]
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>JWT / route authorization"]
+  subgraph SERVICES["Independently deployed business applications"]
+   CORE["Core<br/>Organization + Patient"]
+   CL["Clinical<br/>Appointments / consultation"]
+   LAB["Lab<br/>Tests / results"]
+   PH["Pharmacy<br/>Prescriptions / stock / dispensing"]
+   BI["Billing<br/>Charges / payment / clearance"]
+   SU["Support<br/>Report + Notification"]
+  end
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ<br/>Domain events / retry / DLQ"]
+  EU["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> Eureka<br/>Service registry"]
+  subgraph STORES["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Context-owned data — no cross-service SQL"]
+   DCORE[(Organization DB + Patient DB)]
+   DCL[(Clinical DB)]
+   DLAB[(Lab DB)]
+   DPH[(Pharmacy DB)]
+   DBI[(Billing DB)]
+   DSU[(Report DB + Notification DB)]
+  end
  end
- subgraph STORES["PostgreSQL 16 — eight separately owned stores"]
- PG["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='34' height='34'/><br/>No cross-context SQL or foreign keys"]
- CDB[(organization / patient)]
- CLDB[(clinical)]
- LDB[(lab)]
- PDB[(pharmacy)]
- BDB[(billing)]
- SDB[(report / notification)]
- end
- end
- WEB -->|HTTP request /api| PX
- PX -->|JSON response / status| WEB
- MOB -->|HTTP request + JWT| GW
- GW -->|JSON response / status| MOB
- PX <-->|Forward request / return response| GW
- GW <-->|Request / response| CORE & CL & LAB & PH & BI & SU
- CORE <-->|Own store read / write| CDB
- CL <-->|Own store read / write| CLDB
- LAB <-->|Own store read / write| LDB
- PH <-->|Own store read / write| PDB
- BI <-->|Own store read / write| BDB
- SU <-->|Separate store read / write| SDB
- APPS -. register / discover .-> EU
- CL & LAB & PH & BI -. durable outbox events .-> MQ
- MQ -. inbox / projections / configured handlers .-> SU
- DOCK -. hosts .-> APPS
+ WEB <-->|HTTP request /api / JSON response| GW
+ MOBILE <-->|HTTP request / JSON response| GW
+ GW <-->|HTTP request / response| CORE & CL & LAB & PH & BI & SU
+ CL <-->|Authorized identity lookup| CORE
+ LAB <-->|Clinical order context via REST| CL
+ PH <-->|Clinical prescription context via REST| CL
+ CORE --- DCORE
+ CL --- DCL
+ LAB --- DLAB
+ PH --- DPH
+ BI --- DBI
+ SU --- DSU
+ CORE & CL & LAB & PH & BI -.->|Publish committed facts| MQ
+ MQ -.->|Deliver to subscribed consumers| CL & LAB & PH & BI & SU
+ SERVICES -.->|Register / discover| EU
 ```
 
 </details>
+
+One Server side boundary groups six business applications; it does not mean one backend process. Core and Support each compose two contexts with separate persistence authorities. Broker edges show configured producer/consumer capabilities, not all-to-all delivery. Next.js web hosting and same-origin /api rewrite are deployment details: frontend/next.config.ts still configures the rewrite and production standalone output. They are not a second business backend. Docker Compose orchestrates local infrastructure; no service ports or deferred Inpatient/Surgery are shown.
 
 ### Technology and tooling architecture
 
@@ -152,184 +146,68 @@ Libraries without an individual logo in the bundled set are named below; they ar
 
 Versions with `^` are manifest constraints, not installed runtime measurements. Technology names/logos do not certify production deployment.
 
-### Application architecture and dependency direction
+### Application architecture — request path and inward dependencies
 
-**Application detail:** The runtime panels describe request/response through client modules, Gateway, controllers, application services, output ports, adapters, and owned stores. The dependency panel describes source-code imports separately: Web routes → features → shared API; Flutter presentation → domain ← data; backend driving adapters → application → domain, with infrastructure implementing application ports. Gateway denial responses and downstream business errors return along the same synchronous path. Raw/legacy API exceptions remain governed by their exact wire contracts. Generic backend boxes describe the context pattern, not identical activation of every feature in every service.
-
-![Application architecture and dependency direction](assets/svg/03-en.svg)
+![Application architecture — request path and inward dependencies](assets/svg/03-en.svg)
 
 <details>
 <summary>Mermaid · 03-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50, "subGraphTitleMargin": {"top": 8, "bottom": 28}}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}, "themeCSS": ".nodeLabel img {display:inline-block!important;width:28px!important;height:28px!important;vertical-align:middle!important;} .nodeLabel p {margin:0;}"}}%%
-flowchart TB
- subgraph CLIENT["Client side — user devices"]
- subgraph WEBAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Web / Next.js"]
- WR["App Router pages / layouts<br/>Role-aware navigation + shared UI"]
- WF["features/context<br/>components · api.ts · wire types"]
- WA["lib/api.ts<br/>Bearer JWT · envelope unwrap<br/>ApiRequestError / 401 session clear"]
- WR <-->|UI action / render state| WF
- WF <-->|API call / data or error| WA
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+flowchart LR
+ subgraph CLIENT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side"]
+  WP["Web: App Router / feature UI"]
+  API["Web: lib/api.ts<br/>JWT / result and error mapping"]
+  MP["Flutter: presentation → domain ← data<br/>Dio ApiClient"]
+  WP <-->|UI intent / state| API
  end
- subgraph MOBILEAPP["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMTYiIHk9IjMiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1OCIgcng9IjYiLz48cGF0aCBkPSJNMjYgMTBoMTJNMjkgNTRoNiIvPjxjaXJjbGUgY3g9IjMyIiBjeT0iMjYiIHI9IjUiLz48cGF0aCBkPSJNMjIgNDBjMC0xMCAyMC0xMCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · Flutter"]
- MP["Presentation<br/>Riverpod providers / pages / widgets"]
- MU["Domain use cases / repository contracts<br/>Data repository implementation + DTO mapping"]
- MD["core/network/ApiClient · Dio<br/>Gateway-only paths · JWT<br/>envelope / failure mapping"]
- MP <-->|User intent / state| MU
- MU <-->|Data request / DTO result| MD
+ subgraph SERVER["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side — MediFlow backend"]
+  GW["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/spring/spring-original.svg' width='28' height='28'/> API Gateway<br/>Authentication / route policy"]
+  subgraph CONTEXT["Inside each business service/context"]
+   WEB["Controller / input adapter<br/>DTO validation / role and actor scope"]
+   APP["Application service / use case<br/>Orchestration / local transaction"]
+   DOMAIN["Domain model<br/>Lifecycle / business invariants"]
+   PORT["Application output ports<br/>Repository / peer lookup / event contracts"]
+   PERSIST["Persistence adapter / JPA / Flyway"]
+   REST["REST adapter<br/>Resilient authorized lookup"]
+   OUTBOX["Outbox publisher / inbox consumer<br/>Atomic local effects / deduplication"]
+   WEB <-->|Command or query / result| APP
+   APP -->|Apply rules| DOMAIN
+   APP -->|Use contract| PORT
+   PERSIST -.->|Implements| PORT
+   REST -.->|Implements| PORT
+   OUTBOX -.->|Implements| PORT
+  end
+  DB[(<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/postgresql/postgresql-original.svg' width='28' height='28'/> Owned context database)]
+  PEER["Other service API"]
+  MQ["<img src='https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/rabbitmq/rabbitmq-original.svg' width='28' height='28'/> RabbitMQ"]
+  GW -->|Authorized request| WEB
+  WEB -->|Response / error status| GW
+  PERSIST <-->|SQL / rows| DB
+  OUTBOX <-->|Local outbox / inbox transaction| DB
+  REST <-->|HTTP request / response| PEER
+  OUTBOX <-->|Publish / consume events| MQ
+  DEP["Static imports: infrastructure → application → domain.<br/>Adapters implement application ports.<br/>Domain has no framework or service database dependency."]
  end
- end
- subgraph EDGE["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · API boundary"]
- NX["Next.js server rewrite<br/>same-origin /api to Gateway"]
- G["Spring Cloud Gateway<br/>JWT authentication / route-role policy"]
- end
- WA -->|HTTP request /api + JWT| NX
- NX -->|JSON response / status / error| WA
- NX <-->|Request / response| G
- MD -->|HTTP request to Gateway| G
- G -->|JSON response / status / error| MD
- subgraph BACKEND["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · each logical backend context"]
- WC["Web controller / request DTO<br/>Bean validation / PreAuthorize<br/>Context and actor checks"]
- AS["Application service / input use case<br/>DTO mapping / local transaction<br/>Idempotency and business orchestration"]
- DM["Domain models / business rules<br/>UUID / money / lifecycle invariants<br/>Framework-free"]
- OP["Application output ports<br/>Repository / external context / event contracts"]
- PA["Persistence adapter<br/>JPA repository / entity mapper / Flyway"]
- RA["HTTP client adapter<br/>Resilient authorized context lookup"]
- OA["Outbox persistence / publisher adapter<br/>Only configured state-changing paths"]
- IA["Messaging consumer / inbox adapter<br/>Deduplication + local effect transaction"]
- WC <-->|Command or query / result DTO| AS
- AS -->|Evaluate rules| DM
- AS <-->|Port operation / mapped result| OP
- OP <-->|Repository operation / domain result| PA
- OP <-->|Context lookup / authorized DTO| RA
- AS -->|State change + durable event| OA
- IA -->|Input command / integration fact| AS
- end
- subgraph IO["Server side · owned data and integration"]
- DB[(Context-owned PostgreSQL store)]
- Q["RabbitMQ<br/>Durable queues / retry / DLQ"]
- PEER["Other context REST API<br/>Own authorization / own store"]
- end
- PA <-->|SQL write or read / rows| DB
- OA -->|Local outbox commit| DB
- OA -. publish after commit .-> Q
- Q -. asynchronous delivery .-> IA
- RA <-->|HTTP request / response| PEER
- G -->|Authorized HTTP request| WC
- WC -->|ApiResponse data or error / HTTP status| G
- subgraph DEP["Static dependency direction — arrows mean imports or implementation, not network traffic"]
- subgraph DC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjM2IiByeD0iNCIvPjxwYXRoIGQ9Ik0yNCA1NWgxNk0zMiA0M3YxMk02IDM0aDUyIi8+PGNpcmNsZSBjeD0iMzIiIGN5PSIyMCIgcj0iNSIvPjxwYXRoIGQ9Ik0yMiAzMWMwLTggMjAtOCAyMCAwIi8+PC9nPjwvc3ZnPg==' width='32' height='32'/> Client side · source dependencies"]
- DW["Web app routes"] -. imports .-> DF["Feature modules"]
- DF -. imports .-> DL["Shared lib/api and wire types"]
- DP["Flutter presentation"] -. imports .-> DD["Flutter domain<br/>Entities / use cases / repository contracts"]
- DT["Flutter data"] -. implements / imports .-> DD
- end
- subgraph DS["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI2UwZjJmZSIgc3Ryb2tlPSIjMDM2OWExIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjE1IiByeD0iMyIvPjxyZWN0IHg9IjgiIHk9IjI1IiB3aWR0aD0iNDgiIGhlaWdodD0iMTUiIHJ4PSIzIi8+PHJlY3QgeD0iOCIgeT0iNDUiIHdpZHRoPSI0OCIgaGVpZ2h0PSIxNSIgcng9IjMiLz48cGF0aCBkPSJNMTcgMTJoMTdNMTcgMzJoMTdNMTcgNTJoMTciLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjEyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjMyIiByPSIxLjUiLz48Y2lyY2xlIGN4PSI0NiIgY3k9IjUyIiByPSIxLjUiLz48L2c+PC9zdmc+' width='32' height='32'/> Server side · inward dependencies"]
- DA["Web / messaging driving adapters"] -. imports .-> DAPP["Application<br/>Services / ports / DTOs / events"]
- DI["Persistence / REST / messaging adapters"] -. implements ports .-> DAPP
- DAPP -. imports .-> DDOMAIN["Domain<br/>Models / rules / exceptions"]
- DI -. maps domain objects .-> DDOMAIN
- end
- end
+ API & MP -->|HTTP request / JWT| GW
+ GW -->|JSON response / error| API & MP
 ```
 
 </details>
-Java domain code is independent of Spring/JPA; ports live in application and infrastructure adapters implement them. Web remains feature-based rather than copying backend layers. Core/Support provide composition while retaining per-context datasource/Flyway/entity manager/transaction manager boundaries.
+
+Solid edges name runtime requests/results or rule evaluation; dotted implements edges name static interface realization, not HTTP. The import rule is explicit in the bottom note. The same pattern applies within each context; Core/Support composition does not merge the context databases. A local commit is not a distributed transaction. The diagram abstracts web hosting while retaining the configured same-origin gateway route.
 
 ### 1.2. Use Cases Diagrams
 
-These diagrams map MVP actors to use cases. Associations identify user groups and do not replace `@PreAuthorize` or grant access to every record. `NURSE` participates in reception where endpoint policy permits; no RECEPTIONIST role is invented. `SYSTEM` is a machine actor in sequences, not a human account.
-
-### Reception, clinical and laboratory use cases
-
-![Reception, clinical and laboratory use cases](assets/svg/04-en.svg)
-
-<details>
-<summary>Mermaid · 04-en</summary>
-
-```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
-flowchart LR
- PAT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
- NUR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>NURSE"]
- DOC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>DOCTOR"]
- LT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>LAB_TECH"]
- subgraph SYS["MediFlow — Outpatient MVP"]
- U1(["Sign in / refresh session"])
- U2(["Manage appointments / check-in"])
- U3(["Examine / diagnose / complete visit"])
- U4(["Order laboratory tests"])
- U5(["Start test / record results"])
- U6(["View authorized results"])
- U7(["Prescribe medication"])
- end
- PAT --- U1
- NUR --- U2
- DOC --- U2
- DOC --- U3
- DOC --- U4
- DOC --- U6
- DOC --- U7
- LT --- U5
- classDef actor fill:transparent,stroke:transparent,color:#0f172a;
- class PAT,NUR,DOC,LT actor;
-```
-
-</details>
-
-### Pharmacy, billing and support use cases
-
-![Pharmacy, billing and support use cases](assets/svg/05-en.svg)
-
-<details>
-<summary>Mermaid · 05-en</summary>
-
-```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
-flowchart LR
- PH["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PHARMACIST"]
- CA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>CASHIER"]
- MA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>MANAGER"]
- AD["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>ADMIN"]
- PA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
- subgraph SYS["MediFlow — Outpatient MVP"]
- U8(["Drug catalogue / stock adjustment"])
- U9(["Read prescription / dispense"])
- U10(["Read charges / record payment"])
- U11(["Adjust / refund under policy"])
- U12(["Read reports with source coverage"])
- U13(["Read own notifications"])
- U14(["Manage accounts / departments / staff"])
- end
- PH --- U8
- PH --- U9
- CA --- U10
- CA --- U11
- MA --- U12
- AD --- U14
- PA --- U13
- classDef actor fill:transparent,stroke:transparent,color:#0f172a;
- class PH,CA,MA,AD,PA actor;
-```
-
-</details>
-
-| ID | Business precondition / outcome |
-|---|---|
-| U2 | Valid patient/staff; no past appointment; unique PENDING patient/day; check-in does not authorize examination. |
-| U3 | V1 requires exact EXAM clearance or an existing audited override; completion needs diagnosis/outpatient disposition. |
-| U4–U5 | Explicit order; V1 LAB_TEST clearance matches testId before protected actions; nonempty results and valid dates. |
-| U7–U9 | Server price snapshots; reservations do not decrement stock; atomic deduplicated dispensing; V1 requires actor and clearance. |
-| U10–U11 | Billing owns money; partial payment guards apply; same-key replay returns the receipt, changed intent conflicts. |
-| U12–U13 | Reports are eventually consistent; unavailable differs from zero; notifications do not determine authority. |
+One diagram per human role. Common authentication goals are separate; business tasks require a valid session. Use cases describe goals, not the order of a visit.
 
 <!-- role-usecases:start -->
 ### Detailed use cases — one diagram per role
 
-Figures 29–36 follow the supervisor’s presentation: one human actor per diagram, solid arrows to primary tasks, dashed `«include»` arrows for required supporting behavior, and dashed `«extend»` arrows from a conditional extension to its base task. An extension may have its own included subflow. Arrow direction is relational, not chronological. Staff authentication is a precondition; it is not repeated beside every task. Blue ovals are primary tasks; teal ovals are supporting/extension tasks. These are source capabilities, not proof of UI completeness or production enablement.
+Figures 29–36 follow the supervisor’s presentation: one human actor per diagram, solid arrows to primary tasks, dashed `«include»` arrows for required supporting behavior, and dashed `«extend»` arrows from a conditional extension to its base task. An extension may have its own included subflow. Arrow direction is relational, not chronological. Sign-in and token renewal are independent goals. A valid session is a precondition of protected business tasks. Blue ovals are primary tasks; teal ovals are supporting/extension tasks. These are source capabilities, not proof of UI completeness or production enablement.
 
-**Scope correction:** PATIENT currently has authentication/refresh and own-notification access. Overview 04 no longer grants appointment or lab self-service. SYSTEM is a machine identity and has no human-role diagram. All role permissions below are intersected with the Gateway route matrix and downstream guards.
+**Scope correction:** PATIENT currently has authentication/refresh and own-notification access. No appointment or laboratory self-service is claimed. SYSTEM is a machine identity and has no human-role diagram. All role permissions below are intersected with the Gateway route matrix and downstream guards.
 
 #### ADMIN — Administrator tasks
 
@@ -344,58 +222,46 @@ Figures 29–36 follow the supervisor’s presentation: one human actor per diag
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
  subgraph SYS["MediFlow — ADMIN"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  A1(["Create account"])
- A2(["Set role and identity"])
+ A2(["Assign account role"])
  A3(["Change account status"])
- A4(["Check target account"])
- A5(["Create staff member"])
- A6(["Record staff details"])
- A7(["Maintain staff profile"])
- A8(["View staff profile"])
- A9(["Transfer department"])
- A10(["Validate target department"])
- A11(["Maintain departments"])
- A12(["View department"])
+ A5(["Create staff profile"])
+ A7(["Update staff profile"])
+ A9(["Transfer staff department"])
+ A11(["Update department"])
  A13(["Create department"])
- A14(["Enter code and name"])
  A15(["View management reports"])
- A16(["Choose period and scope"])
  A17(["Send notification"])
- A18(["Choose recipient and channel"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> A1
  ACTOR --> A3
  ACTOR --> A5
  ACTOR --> A7
+ ACTOR --> A9
  ACTOR --> A11
  ACTOR --> A13
  ACTOR --> A15
  ACTOR --> A17
  A1 -.->|"«include»"| A2
- A3 -.->|"«include»"| A4
- A5 -.->|"«include»"| A6
- A7 -.->|"«include»"| A8
- A9 -.->|"«extend» [E1]"| A7
- A9 -.->|"«include»"| A10
- A11 -.->|"«include»"| A12
- A13 -.->|"«include»"| A14
- A15 -.->|"«include»"| A16
- A17 -.->|"«include»"| A18
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class A1,A3,A5,A7,A11,A13,A15,A17 main;
- class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,A1,A3,A5,A7,A9,A11,A13,A15,A17 main;
+ class A2 sub;
 ```
 
 </details>
 
-This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented.
+This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Transfer department — transfer requested
+Extension conditions: None.
 
-Source evidence: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+Source evidence: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### MANAGER — Manager tasks
 
@@ -410,46 +276,40 @@ Source evidence: [AccountController](../../../../backend/core-service/src/main/j
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
  subgraph SYS["MediFlow — MANAGER"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  M1(["View outpatient report"])
- M2(["Select reporting period"])
- M3(["Inspect source coverage"])
+ M3(["Inspect report coverage"])
  M4(["View financial report"])
- M5(["Select day or month"])
  M6(["View medicine statistics"])
- M7(["Select period and limit"])
  M8(["View appointments"])
- M9(["Read appointment page"])
- M10(["Filter by department"])
+ M10(["Filter appointments by department"])
  M11(["View staff directory"])
- M12(["Read staff page"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> M1
  ACTOR --> M4
  ACTOR --> M6
  ACTOR --> M8
  ACTOR --> M11
- M1 -.->|"«include»"| M2
- M1 -.->|"«include»"| M3
- M4 -.->|"«include»"| M5
- M6 -.->|"«include»"| M7
- M8 -.->|"«include»"| M9
- M10 -.->|"«extend» [E1]"| M8
- M11 -.->|"«include»"| M12
+ M3 -.->|"«extend» [E1]"| M1
+ M10 -.->|"«extend» [E2]"| M8
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class M1,M4,M6,M8,M11 main;
- class M2,M3,M5,M7,M9,M10,M12 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,M1,M4,M6,M8,M11 main;
+ class M3,M10 sub;
 ```
 
 </details>
 
-Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage.
+Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Filter by department — department selected
+Extension conditions: E1: Inspect report coverage — coverage inspection requested; E2: Filter appointments by department — department filter selected
 
-Source evidence: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+Source evidence: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### DOCTOR — Doctor tasks
 
@@ -464,54 +324,47 @@ Source evidence: [OutpatientReportController](../../../../backend/report-service
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
  subgraph SYS["MediFlow — DOCTOR"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  D1(["Review clinical history"])
- D2(["View patient records"])
  D3(["Start examination [V1]"])
- D4(["Check exam clearance"])
  D5(["Record consultation"])
- D6(["Record clinical findings"])
- D7(["Add diagnosis"])
+ D7(["Record diagnosis"])
  D8(["Order lab test"])
- D9(["Specify test and patient"])
  D10(["Review lab results"])
  D11(["Issue prescription"])
- D12(["Select medicines and dose"])
  D13(["Complete visit [V1]"])
- D14(["Confirm diagnosis / disposition"])
+ D14(["Record visit disposition"])
  D15(["Cancel prescription"])
- D16(["Check cancellation eligibility"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> D1
  ACTOR --> D3
  ACTOR --> D5
+ ACTOR --> D7
  ACTOR --> D10
- ACTOR --> D11
  ACTOR --> D13
- D1 -.->|"«include»"| D2
- D3 -.->|"«include»"| D4
- D5 -.->|"«include»"| D6
- D7 -.->|"«extend» [E1]"| D5
- D8 -.->|"«extend» [E2]"| D5
- D8 -.->|"«include»"| D9
- D11 -.->|"«include»"| D12
+ ACTOR --> D15
+ D8 -.->|"«extend» [E1]"| D5
+ D11 -.->|"«extend» [E2]"| D5
+ D13 -.->|"«include»"| D7
  D13 -.->|"«include»"| D14
- D15 -.->|"«extend» [E3]"| D11
- D15 -.->|"«include»"| D16
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class D1,D3,D5,D10,D11,D13 main;
- class D2,D4,D6,D7,D8,D9,D12,D14,D15,D16 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,D1,D3,D5,D7,D10,D13,D15 main;
+ class D8,D11,D14 sub;
 ```
 
 </details>
 
-Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment.
+Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Add diagnosis — diagnosis added; E2: Order lab test — test indicated; E3: Cancel prescription — cancellation requested
+Extension conditions: E1: Order lab test — test clinically indicated; E2: Issue prescription — medication clinically indicated
 
-Source evidence: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+Source evidence: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### NURSE — Nurse tasks
 
@@ -526,52 +379,45 @@ Source evidence: [AppointmentController](../../../../backend/clinical-service/sr
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  N1(["Register patient"])
- N2(["Record patient details"])
- N3(["Update patient"])
- N4(["Find patient record"])
+ N3(["Update patient profile"])
+ N4(["Find patient"])
  N5(["Schedule appointment"])
- N6(["Choose patient / doctor / date"])
- N7(["Review appointment"])
- N8(["Read appointment details"])
+ N7(["View appointments"])
  N9(["Reschedule appointment"])
- N10(["Validate new schedule"])
- N11(["Check in [V1]"])
- N12(["Check appointment state"])
- N13(["Read care information"])
- N14(["View medical record / lab"])
+ N11(["Check in patient [V1]"])
+ N13(["Read clinical information"])
+ N14(["Read laboratory information"])
  N15(["View patient notifications"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> N1
  ACTOR --> N3
+ ACTOR --> N4
  ACTOR --> N5
  ACTOR --> N7
+ ACTOR --> N9
  ACTOR --> N11
  ACTOR --> N13
+ ACTOR --> N14
  ACTOR --> N15
- N1 -.->|"«include»"| N2
- N3 -.->|"«include»"| N4
- N5 -.->|"«include»"| N6
- N7 -.->|"«include»"| N8
- N9 -.->|"«extend» [E1]"| N7
- N9 -.->|"«include»"| N10
- N11 -.->|"«include»"| N12
- N13 -.->|"«include»"| N14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N1,N3,N5,N7,N11,N13,N15 main;
- class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,N1,N3,N4,N5,N7,N9,N11,N13,N14,N15 main;
 ```
 
 </details>
 
-[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role.
+[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Reschedule appointment — schedule change requested
+Extension conditions: None.
 
-Source evidence: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+Source evidence: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### LAB_TECH — Laboratory technician tasks
 
@@ -586,48 +432,38 @@ Source evidence: [PatientController](../../../../backend/core-service/src/main/j
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — LAB_TECH"]
- L1(["Review test worklist"])
- L2(["Read test page"])
- L3(["Filter pending tests"])
- L4(["Start test [V1 gate]"])
- L5(["Check test state"])
- L6(["Check LAB_TEST clearance [V1]"])
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
+ L1(["View test worklist"])
+ L3(["Filter tests by status"])
+ L4(["Start test [V1]"])
  L7(["Record test results"])
- L8(["Enter result values"])
- L9(["Validate completion time"])
  L10(["Cancel test"])
- L11(["Record cancellation reason"])
- L12(["Update allowed status"])
- L13(["Validate state transition"])
+ L12(["Update allowed test status"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> L1
  ACTOR --> L4
  ACTOR --> L7
  ACTOR --> L10
  ACTOR --> L12
- L1 -.->|"«include»"| L2
  L3 -.->|"«extend» [E1]"| L1
- L4 -.->|"«include»"| L5
- L4 -.->|"«include»"| L6
- L7 -.->|"«include»"| L8
- L7 -.->|"«include»"| L9
- L10 -.->|"«include»"| L11
- L12 -.->|"«include»"| L13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class L1,L4,L7,L10,L12 main;
- class L2,L3,L5,L6,L8,L9,L11,L13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,L1,L4,L7,L10,L12 main;
+ class L3 sub;
 ```
 
 </details>
 
-Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist.
+Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Filter pending tests — status filter selected
+Extension conditions: E1: Filter tests by status — status filter selected
 
-Source evidence: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+Source evidence: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### PHARMACIST — Pharmacist tasks
 
@@ -642,48 +478,40 @@ Source evidence: [LabController](../../../../backend/lab-service/src/main/java/c
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
  subgraph SYS["MediFlow — PHARMACIST"]
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  P1(["Find medicine"])
- P2(["Read medicine catalogue"])
- P3(["Filter by keyword"])
+ P3(["Filter medicine catalogue"])
  P4(["Create medicine"])
- P5(["Enter medicine information"])
  P6(["Adjust stock"])
- P7(["Record quantity and reason"])
  P8(["Review prescription"])
- P9(["Read prescription lines"])
  P10(["Dispense prescription [V1]"])
- P11(["Check exact clearance"])
- P12(["Validate stock / reservation"])
- P13(["Record dispense and stock change"])
+ P13(["Record stock issue"])
  end
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> P1
  ACTOR --> P4
  ACTOR --> P6
  ACTOR --> P8
  ACTOR --> P10
- P1 -.->|"«include»"| P2
  P3 -.->|"«extend» [E1]"| P1
- P4 -.->|"«include»"| P5
- P6 -.->|"«include»"| P7
- P8 -.->|"«include»"| P9
- P10 -.->|"«include»"| P11
- P10 -.->|"«include»"| P12
  P10 -.->|"«include»"| P13
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class P1,P4,P6,P8,P10 main;
- class P2,P3,P5,P7,P9,P11,P12,P13 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,P1,P4,P6,P8,P10 main;
+ class P3,P13 sub;
 ```
 
 </details>
 
-The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task.
+The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Filter by keyword — keyword supplied
+Extension conditions: E1: Filter medicine catalogue — catalogue filter selected
 
-Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### CASHIER — Cashier tasks
 
@@ -698,50 +526,34 @@ Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
  subgraph SYS["MediFlow — CASHIER"]
- C1(["Find invoice"])
- C2(["View patient invoices"])
- C3(["Create invoice"])
- C4(["Validate invoice items"])
- C5(["Record invoice payment"])
- C6(["Validate payment command"])
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
  C7(["Find payment request [V1]"])
- C8(["Identify source and target"])
- C9(["Record ledger payment [V1]"])
- C10(["Check amount and replay key"])
- C11(["Return payment receipt"])
- C12(["Refund payment [V1]"])
- C13(["Check refundable balance"])
- C14(["Record amount and reason"])
+ C9(["Record payment [V1]"])
+ C11(["Issue payment receipt"])
+ C12(["Refund eligible payment [V1]"])
  end
- ACTOR --> C1
- ACTOR --> C3
- ACTOR --> C5
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> C7
  ACTOR --> C9
- C1 -.->|"«include»"| C2
- C3 -.->|"«include»"| C4
- C5 -.->|"«include»"| C6
- C7 -.->|"«include»"| C8
- C9 -.->|"«include»"| C10
+ ACTOR --> C12
  C9 -.->|"«include»"| C11
- C12 -.->|"«extend» [E1]"| C9
- C12 -.->|"«include»"| C13
- C12 -.->|"«include»"| C14
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class C1,C3,C5,C7,C9 main;
- class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,C7,C9,C12 main;
+ class C11 sub;
 ```
 
 </details>
 
-Invoice compatibility and V1 ledger are separate paths, not mandatory consecutive steps. [V1] depends on feature availability. Refund is a subsequent conditional operation on an eligible original payment; its own workflow includes balance checks and amount/reason. Same-key retries must preserve intent. No inpatient/surgery settlement task is activated.
+This main diagram uses V1 ledger payment requests. Refund is an independent later operation on a refundable payment; it does not extend the act of paying. Legacy invoice commands remain source-supported compatibility operations outside the main V1 journey. Repeating a command preserves intent and must not collect money twice.
 
-Extension conditions: E1: Refund payment [V1] — eligible refund requested
+Extension conditions: None.
 
-Source evidence: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+Source evidence: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java) · [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java)
 
 #### PATIENT — Patient tasks
 
@@ -756,41 +568,28 @@ Source evidence: [InvoiceController](../../../../backend/billing-service/src/mai
 flowchart TB
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PATIENT"]
  subgraph SYS["MediFlow — PATIENT"]
- T1(["Sign in"])
- T2(["Submit username / password"])
- T3(["Receive access / refresh tokens"])
- T4(["Renew session"])
- T5(["Validate refresh identity"])
- T6(["Read own notifications"])
- T7(["Check patient ownership"])
- T8(["Read notification page"])
- T9(["Open notification"])
- T10(["Read notification content"])
+ AUTH_LOGIN(["Sign in"])
+ AUTH_REFRESH(["Renew session"])
+ T6(["View own notifications"])
+ T9(["Read notification detail"])
  end
- ACTOR --> T1
- ACTOR --> T4
+ ACTOR --> AUTH_LOGIN
+ ACTOR --> AUTH_REFRESH
  ACTOR --> T6
- T1 -.->|"«include»"| T2
- T1 -.->|"«include»"| T3
- T4 -.->|"«include»"| T5
- T6 -.->|"«include»"| T7
- T6 -.->|"«include»"| T8
  T9 -.->|"«extend» [E1]"| T6
- T9 -.->|"«include»"| T7
- T9 -.->|"«include»"| T10
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class T1,T4,T6 main;
- class T2,T3,T5,T7,T8,T9,T10 sub;
+ class AUTH_LOGIN,AUTH_REFRESH,T6 main;
+ class T9 sub;
 ```
 
 </details>
 
-This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently.
+This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently. Sign-in and renewal are independent goals, not an include/extend pair. Staff business commands require a valid authenticated session. Preconditions and field validation are described in the sequence/specification, not expanded as screen-step use cases.
 
-Extension conditions: E1: Open notification — notification selected
+Extension conditions: E1: Read notification detail — an owned notification is selected
 
 Source evidence: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
 
@@ -798,288 +597,682 @@ Source evidence: [AuthController](../../../../backend/gateway/src/main/java/com/
 
 ### 1.3. Sequences Diagrams
 
-### Login and authorized access — SOURCE
+<!-- word-sequence-excerpts:start -->
+Word panels preserve the exact conditions enclosing each message. If a panel shows only one alternative branch, it uses `opt` with that branch condition to mark a guarded excerpt; read the complete figure for the full `alt` and other outcomes.
+<!-- word-sequence-excerpts:end -->
 
-![Login and authorized access — SOURCE](assets/svg/06-en.svg)
+The main journey uses the V1 outpatient contract consistently. Read in this order: schedule → arrive/check in → pay exam fee → consultation → indicated Lab/payment/results → doctor conclusion → optional prescription → payment/explicit dispense. Figures 06 and 04 are independent authentication scenarios. Each actor uses its own authorized session; abbreviated service API lifelines route through Gateway. V1 feature/acceptance gates still apply. Reports and notifications update independently and do not block care.
+
+### Sign in — validation, rejected credentials and recovery
+
+![Sign in — validation, rejected credentials and recovery](assets/svg/06-en.svg)
 
 <details>
 <summary>Mermaid · 06-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor User
- participant Client as Web / Flutter
- participant Gateway
- participant Core as Core Organization
- participant Service as Business context
- User->>Client: Credentials
- Client->>Gateway: Login request
- Gateway->>Core: Verify credentials
- Core->>Core: Account active / BCrypt / signed JWT
- Core-->>Client: Token response via Gateway
- Client->>Gateway: Authorized API request + bearer JWT
- Gateway->>Gateway: Verify token type / role / route
- alt Policy accepted
- Gateway->>Service: Forward authenticated request
- Service->>Service: Verify JWT / PreAuthorize / ownership / authority
- Service-->>Client: ApiResponse via Gateway
- else Unauthorized or forbidden
- Gateway-->>Client: 401 / 403
+ actor User as User
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ participant C as Core Organization
+ User->>UI: Submit credentials
+ UI->>G: POST /auth/login
+ alt Malformed or missing fields
+  G-->>UI: Reject invalid request
+  UI-->>User: Show validation errors, allow correction
+ else Valid request structure
+  G->>C: Verify username and password
+  alt Invalid credentials or locked account
+   C-->>G: Authentication rejected
+   G-->>UI: 401 AUTH_INVALID_CREDENTIALS
+   UI-->>User: Show failure, no session created
+  else Identity provider unavailable or timed out
+   C-->>G: Failure / timeout
+   G-->>UI: 503 AUTH_UPSTREAM_UNAVAILABLE / 504 AUTH_UPSTREAM_TIMEOUT
+   UI-->>User: Show temporary failure, retry later
+  else Active account and valid credentials
+   C-->>G: Verified account / role / identity
+   G->>G: Issue access token and refresh token
+   G-->>UI: LoginResponse
+   UI-->>User: Open authorized workspace
+  end
+ end
+ Note over User,UI: After an error, a new submission restarts this sequence, no protected action runs.
+```
+
+</details>
+
+Gateway issues tokens after Core verifies the account; Core does not send a token directly to the client. Renewal is figure 04, an independent use case. Invalid request error shape follows validation handling; login success uses LoginResponse rather than an invented universal envelope.
+
+### Renew session — a separate authentication use case
+
+![Renew session — a separate authentication use case](assets/svg/04-en.svg)
+
+<details>
+<summary>Mermaid · 04-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor User as User
+ participant UI as Web / Flutter
+ participant G as Gateway Auth
+ User->>UI: Continue authenticated work
+ Note over UI,G: Client invokes renewal explicitly where implemented, no universal automatic retry is claimed.
+ UI->>G: POST /auth/refresh + refreshToken
+ alt Missing or malformed request
+  G-->>UI: Validation rejection
+  UI-->>User: Show session error / request sign-in
+ else Refresh request can be parsed
+  G->>G: Verify signature, expiry, token type and human identity
+  alt Invalid or expired refresh token
+   G-->>UI: 401 AUTH_INVALID_REFRESH_TOKEN
+   UI-->>User: Request sign-in again, stop protected action
+  else Valid refresh identity
+   G->>G: Issue new access token
+   G-->>UI: RefreshResponse(accessToken)
+   UI-->>User: Continue with the valid access token
+  end
  end
 ```
 
 </details>
 
-### Check-in → EXAM payment → examination — V1 GATED
+Refresh validates the signed claims locally in Gateway; it does not call Core again or rotate a refresh token in the current implementation. This diagram describes the endpoint contract, not proof of automatic client refresh.
 
-![Check-in → EXAM payment → examination — V1 GATED](assets/svg/07-en.svg)
+### Schedule appointment before arrival
+
+![Schedule appointment before arrival](assets/svg/05-en.svg)
+
+<details>
+<summary>Mermaid · 05-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Patient as Patient
+ actor Nurse as Nurse
+ participant UI as Web / Flutter
+ participant G as Gateway
+ participant C as Clinical
+ participant Core as Core
+ Patient->>Nurse: Request a consultation appointment
+ Nurse->>UI: Find patient and select doctor, department, date and time
+ UI->>G: Authenticated appointment creation request
+ alt Missing identity or role denied
+  G-->>UI: 401 / 403
+  UI-->>Nurse: Sign in / access denied, no appointment created
+ else Route policy accepted
+  G->>C: Create appointment command
+  C->>Core: Authorized patient and doctor context lookup
+  Core-->>C: Context or lookup failure
+  alt Invalid data, past schedule, ineligible doctor, duplicate pending visit or failed lookup
+   C-->>G: Validation / conflict / dependency error, no appointment commit
+   G-->>UI: Error response
+   UI-->>Nurse: Show reason, correct selection or retry after recovery
+  else All creation rules pass
+   C->>C: Persist PENDING appointment and configured event publication
+   C-->>G: Created appointment identity
+   G-->>UI: Appointment response
+   UI-->>Nurse: Show confirmed appointment details
+   Nurse-->>Patient: Confirm appointment time and arrival instructions
+  end
+ end
+```
+
+</details>
+
+PATIENT requests scheduling through the nurse; no patient self-service API is invented. New patients are registered in Core first, outside this sequence. Only a successful saved appointment is a valid input to check-in (figure 07). Scheduling itself is not proof of payment or permission to start consultation.
+
+### Arrival → exam payment → start consultation (V1)
+
+![Arrival → exam payment → start consultation (V1)](assets/svg/07-en.svg)
 
 <details>
 <summary>Mermaid · 07-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
+ actor Patient as Patient
+ actor Nurse as Nurse
+ actor Cashier as Cashier
+ actor Doctor as Doctor
+ participant C as Clinical API
  participant Q as RabbitMQ
- Staff->>UI: Check in exact appointment
- UI->>C: Check-in command
- C->>C: Save appointment + durable outbox
- C-->>Q: Appointment fact with exact visit identity
- Q->>B: Consume selected V1 fact
- B->>B: Claim source / issue EXAM charge and request
- Staff->>UI: Record payment
- UI->>B: Complete request with idempotency key
- B->>B: Atomic payment + allocation + clearance + outbox
- B-->>Q: financial.clearance.granted
- Q->>C: Store exact EXAM clearance idempotently
- Staff->>UI: Start examination
- UI->>C: Start exact appointment
- C->>C: Recheck authority / target / expiry
- alt Clearance missing or provider unavailable
- C-->>UI: Reject protected action
- else Valid authority
- C->>C: Create or reuse appointment-backed record atomically
- C-->>UI: Open medical record
+ participant B as Billing API
+ Note over Nurse,C: Precondition: figure 05 saved an appointment, API calls pass through Gateway.
+ Patient->>Nurse: Arrive for the saved appointment
+ Nurse->>C: Check in the exact appointment
+ alt Appointment missing, wrong lifecycle or unauthorized
+  C-->>Nurse: Reject, correct appointment / permission, stop this attempt
+ else Valid pending appointment
+  C->>C: Commit AWAITING_PAYMENT appointment + outbox
+  C-->>Nurse: Check-in accepted, examination not yet authorized
+  C-)Q: Publish exact appointment fact after commit
+  Q-)B: Deliver fact for EXAM charge issuance
+  B->>B: Idempotently create charge / payment request
+  Cashier->>B: Find exact EXAM payment request
+  alt Request not ready or issuing failed
+   B-->>Cashier: Not ready / error, do not record an arbitrary payment
+   Note over Cashier,Doctor: Wait for source recovery, then retry request lookup, no examination in this branch.
+  else Exact request available
+   Cashier->>B: Record collected payment with idempotency key
+   alt Invalid payment or conflicting retry
+    B-->>Cashier: Reject, no new payment / allocation / clearance
+   else Payment accepted or exact committed replay
+    B->>B: Atomic payment + allocation + clearance + outbox
+    B-->>Cashier: Payment receipt
+    Cashier-->>Patient: Confirm paid consultation fee
+    B-)Q: financial.clearance.granted
+    Q-)C: Store exact EXAM clearance idempotently
+    Doctor->>C: Start consultation for the exact appointment
+    alt Clearance pending, expired, mismatched or actor/state invalid
+     C-->>Doctor: Reject start, remain outside consultation
+     Note over Doctor,C: Retry after valid evidence arrives, no second fee collection for delayed delivery.
+    else Assigned doctor and valid exact clearance
+     C->>C: Atomically start examination and create/reuse its record
+     C-->>Doctor: Open consultation record
+     Doctor-->>Patient: Begin consultation
+    end
+   end
+  end
  end
 ```
 
 </details>
 
-### Laboratory order and result attachment — V1 GATED
+Normal V1 outpatient path. Check-in precedes fee collection, and fee authorization precedes examination. Audited emergency override remains a separately authorized source capability, not a fallback for ordinary unpaid visits. Actors use their own sessions; API lifelines abbreviate Gateway transport only. Event arrows are asynchronous and duplicate delivery does not create a second fee.
 
-![Laboratory order and result attachment — V1 GATED](assets/svg/08-en.svg)
+### Lab order → payment → test → doctor reads results (V1)
+
+![Lab order → payment → test → doctor reads results (V1)](assets/svg/08-en.svg)
 
 <details>
 <summary>Mermaid · 08-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Doctor
- actor Tech as LAB_TECH
- participant C as Clinical
- participant L as Lab
- participant B as Billing
+ actor Doctor as Doctor
+ actor Cashier as Cashier
+ actor Tech as Lab technician
+ participant C as Clinical API
+ participant L as Lab API
+ participant B as Billing API
  participant Q as RabbitMQ
- participant S as Support
- Doctor->>C: Explicit order in authorized record
- C->>C: Persist explicit clinical_lab_order
- C-->>Doctor: Source order identity
- Doctor->>L: Create test via Gateway with exact source_order_id
- L->>C: REST lookup /lab-orders/id/context with authenticated actor
- C-->>L: Exact persisted order and authority context
- L->>L: Validate context and dedupe source order / persist test + outbox
- L-->>Q: lab.request.created
- Q->>B: Issue LAB_TEST charge and request
- Note over B,L: Cashier pays exact request, clearance targets exact testId
- B-->>Q: financial.clearance.granted
- Q->>L: Persist target clearance
- Tech->>L: Start protected test through Gateway
- L->>L: Verify scope / target / expiry
- Tech->>L: Submit nonempty results and valid performed date
- L->>L: Complete once + resultVersion + outbox
- L-->>Q: lab.result.created
- Q->>C: Atomic inbox and attached result
- Q->>S: Independent report / notification projections
+ Note over Doctor,C: Precondition: authorized open consultation record, all actor API calls use Gateway.
+ Doctor->>C: Save explicit lab indication
+ alt Invalid or unauthorized indication
+  C-->>Doctor: Reject, correct indication, no test created
+ else Indication saved
+  C-->>Doctor: source_order_id
+  Doctor->>L: Create test with exact source_order_id
+  L->>C: Lookup persisted order and actor context
+  C-->>L: Order context or lookup failure
+  alt Context mismatch, duplicate intent conflict or dependency failure
+   L-->>Doctor: Reject creation, no new test or charge fact
+  else Context accepted / exact replay resolved
+   L->>L: Save or reuse exact test, outbox only for new creation
+   L-->>Doctor: testId
+   L-)Q: lab.request.created
+   Q-)B: Issue exact LAB_TEST charge / request
+   Note over Cashier,B: Find ready request and record payment, or stop/retry as figure 07
+   Cashier->>B: Lookup the exact request, then submit its payment as in figure 07
+   B-->>Cashier: Committed receipt or request/payment error
+   alt Payment not committed or request still unavailable
+    Note over Cashier,Tech: Stop, resolve payment/request before requesting the test.
+   else Exact payment committed
+   B-)Q: financial.clearance.granted
+   Q-)L: Store exact LAB_TEST clearance
+   Tech->>L: Start exact test
+   alt Payment authority missing/expired or invalid lifecycle
+    L-->>Tech: Reject, do not perform protected test
+   else Start permitted
+    L-->>Tech: IN_PROGRESS
+    Tech->>Tech: Perform the laboratory test
+    loop Submit corrected results until accepted or work is stopped
+     Tech->>L: Submit values, conclusion and performed date
+     alt Empty results, invalid date, expired authority or finalized test
+      L-->>Tech: Reject with reason, no new completed result
+     else Result and current authority valid
+      L->>L: Commit COMPLETED, resultVersion and outbox once
+      L-->>Tech: Result accepted
+     end
+    end
+    opt A completed result was committed
+     L-)Q: lab.result.created
+     Q-)C: Attach result idempotently through inbox
+     Doctor->>L: Read authorized completed result
+     L-->>Doctor: Test values / conclusion / result version
+    end
+   end
+   end
+  end
+ end
 ```
 
 </details>
 
-### Payment and dispensing — V0 compatibility saga
+The payment reference imports the complete success/failure payment subflow, not an unconditional successful payment. Starting and entering results both enforce current authority. The technician records results; the doctor interprets them in figure 37. Support projections do not block this path and are omitted. A failed result cannot produce the completion event.
 
-![Payment and dispensing — V0 compatibility saga](assets/svg/09-en.svg)
+### Doctor explains consultation outcome to patient
+
+![Doctor explains consultation outcome to patient](assets/svg/37-en.svg)
+
+<details>
+<summary>Mermaid · 37-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Doctor
+ actor Patient as Patient
+ participant C as Clinical API
+ participant L as Lab API
+ Note over Doctor,C: Precondition: examination started in figure 07, actor API calls pass through Gateway.
+ opt A laboratory test was indicated
+  Note over Doctor,L: Figure 08: completed result available, or stop and await result
+ end
+ Doctor->>C: Read current record and available clinical evidence
+ C-->>Doctor: Record / diagnoses / attached results, or access error
+ alt Wrong actor, unavailable record or required evidence missing
+  Doctor->>Doctor: Stop conclusion, resolve access or await evidence
+ else Evidence sufficient for clinical conclusion
+  Doctor->>C: Record findings and diagnosis
+  alt Data invalid or record no longer writable
+   C-->>Doctor: Reject, correct or reload, do not confirm completion
+  else Diagnosis saved
+   C-->>Doctor: Saved clinical information
+   Doctor-->>Patient: Explain findings, diagnosis and treatment plan
+   Note over Doctor,Patient: Human consultation, no patient result portal or delivery receipt is invented.
+   opt Medication is indicated
+    Note over Doctor,C: Figure 38: separate prescription workflow
+   end
+   Doctor->>C: Complete visit with outpatient disposition
+   alt Required diagnosis/disposition or lifecycle guard fails
+    C-->>Doctor: Reject completion, resolve and retry
+   else Completion rules pass
+    C->>C: Commit completion and configured outbox
+    C-->>Doctor: Visit completion confirmed
+    Doctor-->>Patient: Confirm next steps / outpatient follow-up
+   end
+  end
+ end
+```
+
+</details>
+
+The actor reads Lab results through its authorized API; asynchronous Clinical attachment may arrive later. This figure models professional explanation to the patient, not a new software result-delivery endpoint. Medication fulfilment is a separate Pharmacy/Billing process and is not proof of consultation-result delivery. The clinical completion command uses source lifecycle rules; it is not made dependent on a fabricated dispense condition.
+
+### Create prescription — an optional separate workflow
+
+![Create prescription — an optional separate workflow](assets/svg/38-en.svg)
+
+<details>
+<summary>Mermaid · 38-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+sequenceDiagram
+ autonumber
+ actor Doctor as Doctor
+ participant P as Pharmacy API
+ participant C as Clinical API
+ participant Q as RabbitMQ
+ participant B as Billing
+ Note over Doctor,P: Precondition: authorized outpatient context while record is writable, API calls use Gateway.
+ Doctor->>P: Submit medicines, quantities and dosage with exact clinical identity
+ P->>C: Validate persisted clinical context and doctor authority
+ C-->>P: Context or lookup rejection
+ alt Context invalid, unauthorized or unavailable
+  P-->>Doctor: Reject, no prescription or reservation
+ else Clinical context accepted
+  P->>P: Lock drug rows, read catalogue prices, check quantity, expiry and available stock
+  alt Invalid medicine, quantity, expiry or insufficient available stock
+   P-->>Doctor: Reject, correct prescription, no partial reservation
+  else All lines valid
+   P->>P: Atomic prescription + lines + pending slip + reservations + outbox
+   P-->>Doctor: Prescription identity and server-calculated total
+   P-)Q: prescription.created
+   Q-)B: Issue exact prescription charge / request once
+  end
+ end
+ Note over P,B: Reservation is not stock issue, figure 09 covers payment and explicit dispensing.
+```
+
+</details>
+
+Prices come from server catalogue snapshots, not client-supplied amounts. Source context is validated rather than inferred from a diagnosis string or arbitrary UUID. Retry semantics follow the actual endpoint; this diagram does not invent a universal prescription idempotency key.
+
+### Prescription payment and explicit pharmacist dispensing (V1)
+
+![Prescription payment and explicit pharmacist dispensing (V1)](assets/svg/09-en.svg)
 
 <details>
 <summary>Mermaid · 09-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Cashier
- participant B as Billing
+ actor Patient as Patient
+ actor Cashier as Cashier
+ actor Pharmacist as Pharmacist
+ participant B as Billing API
  participant Q as RabbitMQ
- participant P as Pharmacy
- participant S as Support
- Cashier->>B: Pay prescription invoice via Gateway
- B->>B: Save payment state and outbox atomically
- B-->>Q: payment.completed V0
- Q->>P: Durable delivery / possible redelivery
- P->>P: Claim receipt, lock prescription / reservations / drugs
- alt All dispense rules pass
- P->>P: Atomic stock decrement + fulfilled states + outbox
- P-->>Q: prescription.filled
- Q->>B: Complete saga once
- else Terminal reservation / stock / lifecycle failure
- P->>P: Persist terminal failure and durable fact
- P-->>Q: prescription.dispense.failed
- Q->>B: Apply V0 compensation once
+ participant P as Pharmacy API
+ Note over Cashier,P: Precondition: figure 38 saved a V1 outpatient prescription, actor API calls use Gateway.
+ Note over Cashier,B: Find exact ready PRESCRIPTION request and record payment, or stop/retry as figure 07
+ Cashier->>B: Lookup the exact request, then submit its payment as in figure 07
+ B-->>Cashier: Committed receipt or request/payment error
+ alt Payment failed, request pending or outcome unresolved
+  B-->>Cashier: Resolve payment / retry exact request, no dispensing
+ else Exact prescription payment committed
+ B-)Q: financial.clearance.granted
+ Q-)P: Store clearance for exact prescription
+ Note over Q,P: Clearance delivery never automatically dispenses in V1.
+ Patient->>Pharmacist: Present prescription and request medicines
+ Pharmacist->>P: Read prescription and issue dispense command
+ P->>P: Resolve signed actor, lock prescription, slip, reservations and drug rows
+ alt Exact committed command replay
+  P-->>Pharmacist: Return committed dispense outcome, no second stock issue
+ else Missing/expired/mismatched clearance or unauthorized actor
+  P-->>Pharmacist: Reject, resolve authority then retry, no stock change
+ else Reservation expired, invalid lifecycle or stock failure
+  P-->>Pharmacist: Reject dispense, report failure for supported adjustment workflow
+  Note over Cashier,Pharmacist: No partial stock issue, refund is a separate authorized Billing operation, not assumed automatic cash return.
+ else Current authorization and every stock rule pass
+  P->>P: Atomic stock decrement + fulfilled prescription/slip + outbox
+  P-->>Pharmacist: Dispense confirmation
+  P-)Q: prescription.filled
+  Q-)B: Apply subscribed financial lifecycle effect idempotently
+  Pharmacist-->>Patient: Hand over medicines and usage instructions
  end
- Q->>S: Project selected facts independently
- Note over B,P: Redelivery returns committed outcome, no second stock effect
- Note over B,S: V0 reversal is not proof of completed bank refund
+ end
 ```
 
 </details>
-V1 dispensing is a different path: payment creates a receipt/clearance; PHARMACIST invokes the protected action with exact PRESCRIPTION clearance and authenticated actor. V1 is not drawn as automatic dispensing from a payment event. V1 sequences describe gated source behavior, not universally active workflows.
+
+The V0 automatic payment.completed saga is a legacy compatibility mechanism, not the main V1 journey. Pharmacist command, current target clearance, lifecycle and locked stock evidence are mandatory. Physical handover is shown as a human action after persisted confirmation; the source does not prove receipt by the patient.
 
 ### 1.4. Class Diagrams
 
-These diagrams summarize real classes with selected fields/methods, omitting getters/constructors. Cross-context references are not Java entity associations.
+Domain classes are grouped by deployed service. Core/Support preserve their internal context boundaries; Pharmacy/Billing share a figure but remain two independent services. Attributes are selective and must match source; dotted integration dependencies are not database relationships.
 
-### Clinical and Lab class diagram
+### Core service — Organization and Patient modules
 
-![Clinical and Lab class diagram](assets/svg/10-en.svg)
+![Core service — Organization and Patient modules](assets/svg/39-en.svg)
+
+<details>
+<summary>Mermaid · 39-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Core_Organization {
+  class Account {
+   UUID accountId
+   String username
+   Role role
+  }
+  class Staff {
+   UUID staffId
+   UUID departmentId
+  }
+  class Department {
+   UUID departmentId
+   String departmentName
+  }
+ }
+ namespace Core_Patient {
+  class Patient {
+   UUID patientId
+   String fullName
+   LocalDate dateOfBirth
+  }
+ }
+ Staff ..> Department : departmentId
+ Account ..> Staff : optional staffId
+ Account ..> Patient : optional patientId identity mapping
+```
+
+</details>
+
+Both modules run in Core but retain separate Organization/Patient stores. Identity references are optional and depend on account role; the drawing does not create a cross-database foreign key. Infrastructure classes are excluded from this domain overview.
+
+### Clinical service — domain classes
+
+![Clinical service — domain classes](assets/svg/10-en.svg)
 
 <details>
 <summary>Mermaid · 10-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
- class Appointment {
- -UUID appointmentId
- -UUID patientId
- -AppointmentStatus status
- -short careContractVersion
- +checkIn(priceCode, at)
- +startExam(clearanceId, overrideId, at)
- +complete(at)
- }
- class MedicalRecord {
- -UUID recordId
- -UUID appointmentId
- -MedicalRecordStatus status
- -RecordDisposition disposition
- +openForAppointment()
- }
- class Diagnosis {
- -UUID diagnosisId
- -String diagnosisName
- -String icdCode
- }
- class LabTest {
- -UUID testId
- -UUID recordId
- -int resultVersion
- +start(clearance, override, at)
- +recordResults(results, conclusion, performedDate)
- }
- class LabResult {
- -UUID resultId
- -String indicator
- -String value
- -String unit
+ direction LR
+ namespace Clinical {
+  class Appointment {
+   UUID appointmentId
+   UUID patientId
+   UUID doctorId
+   UUID departmentId
+   AppointmentStatus status
+   checkIn(priceCode, at)
+   startExam(clearanceId, overrideId, at)
+   complete(at)
+  }
+  class MedicalRecord {
+   UUID recordId
+   UUID appointmentId
+   MedicalRecordStatus status
+   RecordDisposition disposition
+  }
+  class Diagnosis {
+   UUID diagnosisId
+   String diagnosisName
+   String icdCode
+  }
+  class ClinicalLabOrder {
+   UUID sourceOrderId
+   UUID recordId
+   UUID patientId
+  }
+  class ExamClearance {
+   UUID clearanceId
+   UUID appointmentId
+   Instant expiresAt
+  }
  }
  Appointment "0..1" --> "0..1" MedicalRecord : appointmentId
  MedicalRecord "1" *-- "0..*" Diagnosis
- LabTest "1" *-- "0..*" LabResult
- LabTest ..> MedicalRecord : recordId UUID only across contexts
+ ClinicalLabOrder ..> MedicalRecord : recordId
+ ExamClearance ..> Appointment : appointmentId
 ```
 
 </details>
 
-### Pharmacy and Billing class diagram
+All classes in this figure belong to Clinical. LabTest/LabResult move to figure 40. Dashed UUID references do not imply JPA navigation. Appointment-backed records are distinct from preserved legacy records without an appointment. Selected attributes/methods are copied from source; no generated getters are listed.
 
-![Pharmacy and Billing class diagram](assets/svg/11-en.svg)
+### Lab service — tests, results and financial authority
+
+![Lab service — tests, results and financial authority](assets/svg/40-en.svg)
+
+<details>
+<summary>Mermaid · 40-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Lab {
+  class LabTest {
+   UUID testId
+   UUID recordId
+   UUID sourceOrderId
+   LabTestStatus status
+   int resultVersion
+   start(clearance, override, at)
+   recordResults(results, conclusion, performedDate)
+  }
+  class LabResult {
+   UUID resultId
+   String indicator
+   String value
+   String unit
+  }
+  class LabFinancialClearance {
+   UUID clearanceId
+   UUID testId
+   Instant expiresAt
+  }
+ }
+ LabTest "1" *-- "0..*" LabResult
+ LabTest ..> LabFinancialClearance : validate exact LAB_TEST authority
+```
+
+</details>
+
+Clinical record and indication are external UUID references, not Clinical objects inside Lab. Lab stores its own received clearance evidence; Billing remains the authority for financial effects. Results are empty before completion and must be nonempty when completed.
+
+### Pharmacy and Billing — separate services, explicit contracts
+
+![Pharmacy and Billing — separate services, explicit contracts](assets/svg/11-en.svg)
 
 <details>
 <summary>Mermaid · 11-en</summary>
 
 ```mermaid
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 classDiagram
- class Drug {
- -UUID drugId
- -BigDecimal price
- -int stockQuantity
- -LocalDate expiryDate
+ direction LR
+ namespace Pharmacy {
+  class Drug {
+   UUID drugId
+   BigDecimal price
+   int stockQuantity
+   LocalDate expiryDate
+  }
+  class Prescription {
+   UUID prescriptionId
+   BigDecimal totalAmount
+   PrescriptionStatus status
+  }
+  class PrescriptionLine {
+   UUID drugId
+   int quantity
+   BigDecimal unitPrice
+  }
+  class StockReservation {
+   UUID prescriptionId
+   UUID drugId
+   int quantity
+   Instant expiresAt
+  }
+  class DispenseSlip {
+   UUID dispenseId
+   UUID prescriptionId
+  }
  }
- class Prescription {
- -UUID prescriptionId
- -BigDecimal totalAmount
- -PrescriptionStatus status
- +computeTotal()
- +cancel(actorId, reason, now)
- +markFulfilled(now)
- }
- class PrescriptionLine {
- -UUID drugId
- -int quantity
- -BigDecimal unitPrice
- -BigDecimal lineTotal
- }
- class StockReservation {
- -UUID prescriptionId
- -UUID drugId
- -int quantity
- -Instant expiresAt
- }
- class DispenseSlip {
- -UUID dispenseId
- -UUID prescriptionId
- }
- class Invoice {
- -UUID invoiceId
- -BigDecimal totalAmount
- -SagaStatus sagaStatus
- +pay(method, timestamp)
- +transitionSaga(next)
- +refund()
- }
- class LedgerPaymentService {
- +complete(requestId, command, actorAccountId, correlationId)
- }
- class LedgerPaymentRepositoryPort {
- <<interface>>
- +lockIdempotencyKey(key)
- +lockRequest(requestId)
- +allocate(payment)
- }
- class LedgerEventPort {
- <<interface>>
- +appendForOutpatientRequest()
+ namespace Billing {
+  class BillingAccount {
+   UUID accountId
+  }
+  class Charge {
+   UUID chargeId
+   UUID accountId
+   BigDecimal grossAmount
+  }
+  class PaymentRequest {
+   UUID paymentRequestId
+   UUID accountId
+  }
+  class PaymentTransaction {
+   UUID transactionId
+   UUID accountId
+   BigDecimal amount
+  }
+  class PaymentAllocation {
+   UUID transactionId
+   UUID chargeId
+   BigDecimal amount
+  }
+  class FinancialClearance {
+   UUID clearanceId
+   UUID prescriptionId
+   Instant expiresAt
+  }
  }
  Prescription "1" *-- "1..*" PrescriptionLine
- PrescriptionLine "*" --> "1" Drug
- Prescription "1" --> "*" StockReservation
- Prescription "1" --> "1" DispenseSlip
- Invoice ..> Prescription : prescriptionId UUID only
- LedgerPaymentService --> LedgerPaymentRepositoryPort
- LedgerPaymentService --> LedgerEventPort
+ PrescriptionLine "*" --> "1" Drug : drugId
+ Prescription "1" --> "1..*" StockReservation : prescriptionId
+ Prescription "1" --> "1" DispenseSlip : prescriptionId
+ Charge ..> BillingAccount : accountId
+ PaymentRequest ..> BillingAccount : accountId
+ PaymentTransaction ..> BillingAccount : accountId
+ PaymentAllocation ..> PaymentTransaction : transactionId
+ PaymentAllocation ..> Charge : chargeId
+ Charge ..> Prescription : source identity via prescription.created
+ FinancialClearance ..> Prescription : prescriptionId via clearance fact
 ```
 
 </details>
 
+Namespaces are two independent service boundaries, each with its own database. Cross-boundary dependencies denote event/UUID contracts, never an entity relationship or shared transaction. The V1 class view intentionally uses ledger models; legacy Invoice remains in the database dictionary and compatibility source. StockReservation/DispenseSlip are created with a prescription in the represented successful creation workflow.
+
+### Support service — separate reporting and notification models
+
+![Support service — separate reporting and notification models](assets/svg/41-en.svg)
+
+<details>
+<summary>Mermaid · 41-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
+classDiagram
+ direction LR
+ namespace Support_Report {
+  class DailyVisitReport {
+   UUID reportId
+   LocalDate reportDate
+   UUID departmentId
+  }
+  class MonthlyRevenueReport {
+   UUID reportId
+   int month
+   int year
+  }
+  class DrugStatistic {
+   UUID statisticId
+   UUID drugId
+  }
+ }
+ namespace Support_Notification {
+  class Notification {
+   UUID notificationId
+   UUID patientId
+   String content
+  }
+ }
+```
+
+</details>
+
+Report and Notification are composed in Support but have separate databases and transaction managers. There is no invented domain association between independent projections. Domain events update these models asynchronously; they are not required participants in the consultation/result/dispense request path.
+
 ## 2. Data Flow Diagram
+
+Consistency rule: EXAM, LAB_TEST and PRESCRIPTION are distinct payment targets. A stored payment is not an immediate guarantee of event delivery. Clinical outcome explanation and physical medicine handover are human interactions; neither implies a new patient self-service endpoint. The older V0 invoice/saga tables and algorithms remain compatibility references, outside the main V1 sequences.
 
 The DFD represents business data, not endpoint contracts or cross-service transactions. Context process P0 decomposes into P1–P6 at Level 1; implementation routes all actor requests through clients/Gateway.
 
@@ -1093,8 +1286,8 @@ The DFD represents business data, not endpoint contracts or cross-service transa
 ```mermaid
 %%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
 flowchart LR
- PA["PATIENT"] -->|identity / appointments| P0(("P0 MediFlow"))
- P0 -->|schedule / results / notifications| PA
+ PA["PATIENT"] -->|sign-in / renewal / own notification query| P0(("P0 MediFlow"))
+ P0 -->|session / own notifications| PA
  ST["DOCTOR / NURSE / LAB_TECH"] -->|records / orders / results| P0
  P0 -->|clinical status / clearance| ST
  PC["PHARMACIST / CASHIER"] -->|payment / dispensing| P0
@@ -2413,7 +2606,6 @@ flowchart TB
 
 ### 6.3. Event delivery, deduplication and recovery
 
-
 ### Outbox / inbox recovery algorithm
 
 ![Outbox / inbox recovery algorithm](assets/svg/28-en.svg)
@@ -2468,6 +2660,21 @@ Accept a fact with valid source → verify receipt/fingerprint → update projec
 | Mobile routes | [mobile/lib/app/router.dart](../../../../mobile/lib/app/router.dart) |
 | Review 1 baseline | [docs/monitor_proj_progress/01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md](../../01-giai-doan-1-khoi-dong-dac-ta/review-1/01-review-1-standard-en.md) |
 
-This review reads source/config/migrations and cross-checks the graph index; SQL marked parse_partial is read directly from files. Graph node/edge counts do not prove runtime integration. Acceptance logs have their own dates/profiles; default flags are not enabled for this report. Existing working-tree changes are preserved and this task does not commit/push them.
+This review reads source/config/migrations and cross-checks the graph index; SQL marked parse_partial is read directly from files. Graph node/edge counts do not prove runtime integration. Acceptance logs have their own dates/profiles; default flags are not enabled for this report. This revision changes documentation and assets only; production behavior and activation flags are unchanged.
 
 Assets: [Mermaid source](assets/mermaid/), [SVG](assets/svg/), [logos](assets/logos/), [theme configuration](assets/mermaid-config.json). Logos identify their respective projects, sourced from [Devicon](https://github.com/devicons/devicon/tree/v2.17.0); the stick-figure actor is an SVG authored for this report.
+
+<!-- supervisor-evidence:start -->
+### Additional source evidence
+
+Supervisor revision: figures 04/05 replace the former overviews with independent refresh/booking sequences. Use-case overviews are replaced by the eight role diagrams 29–36. Figures 37–41 add outcome, prescribing and service-grouped class models. Readability panels are ordered extracts of a complete figure: they retain guards, and message numbering continues across sequence panels.
+
+| Concern | Source |
+|---|---|
+| Sign-in / refresh | [AuthController.java](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) |
+| Check-in / fee authority / exam start | [ClinicalCareFinanceApplicationService.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/application/service/ClinicalCareFinanceApplicationService.java) |
+| Persisted laboratory indication | [ClinicalLabOrder.java](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/domain/model/ClinicalLabOrder.java) |
+| Lab authorization / result commands | [LabController.java](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) |
+| Explicit V1 dispense transaction | [CareDispenseTransactionService.java](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/application/service/CareDispenseTransactionService.java) |
+| Web hosting / gateway rewrite | [next.config.ts](../../../../frontend/next.config.ts) |
+<!-- supervisor-evidence:end -->

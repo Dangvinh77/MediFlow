@@ -3,20 +3,16 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
  subgraph SYS["MediFlow — MANAGER"]
- M6(["View medicine statistics"])
- M7(["Select period and limit"])
- M8(["View appointments"])
- M9(["Read appointment page"])
- M10(["Filter by department"])
+ M1(["View outpatient report"])
+ M3(["Inspect report coverage"])
+ M4(["View financial report"])
  end
- ACTOR --> M6
- ACTOR --> M8
- M6 -.->|"«include»"| M7
- M8 -.->|"«include»"| M9
- M10 -.->|"«extend» [E1]"| M8
+ ACTOR --> M1
+ ACTOR --> M4
+ M3 -.->|"«extend» [E1]"| M1
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class M6,M8 main;
- class M7,M9,M10 sub;
+ class M1,M4 main;
+ class M3 sub;

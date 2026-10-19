@@ -3,22 +3,13 @@
 flowchart LR
  ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
  subgraph SYS["MediFlow — NURSE"]
- N5(["Tạo lịch hẹn"])
- N6(["Chọn bệnh nhân / bác sĩ / ngày"])
- N7(["Xem lịch hẹn"])
- N8(["Đọc chi tiết lịch"])
- N9(["Điều chỉnh lịch hẹn"])
- N10(["Kiểm tra lịch mới"])
+ N1(["Tạo hồ sơ bệnh nhân"])
+ N3(["Cập nhật hồ sơ bệnh nhân"])
  end
- ACTOR --> N5
- ACTOR --> N7
- N5 -.->|"«include»"| N6
- N7 -.->|"«include»"| N8
- N9 -.->|"«extend» [E1]"| N7
- N9 -.->|"«include»"| N10
+ ACTOR --> N1
+ ACTOR --> N3
  classDef actor fill:transparent,stroke:transparent,color:#0f172a;
  classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
  classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
  class ACTOR actor;
- class N5,N7 main;
- class N6,N8,N9,N10 sub;
+ class N1,N3 main;

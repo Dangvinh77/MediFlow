@@ -1,28 +1,47 @@
-%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 30, "rankSpacing": 50}, "sequence": {"useMaxWidth": true, "wrap": true}, "er": {"useMaxWidth": true}}}%%
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 40, "rankSpacing": 46, "subGraphTitleMargin": {"top": 12, "bottom": 45}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 55, "width": 175, "messageMargin": 30, "mirrorActors": false}, "er": {"useMaxWidth": true}, "maxTextSize": 2000000, "class": {"nodeSpacing": 30, "rankSpacing": 55}}}%%
 sequenceDiagram
  autonumber
- actor Staff
- participant UI as Client via Gateway
- participant C as Clinical
- participant B as Billing
+ actor Patient as Patient
+ actor Nurse as Nurse
+ actor Cashier as Cashier
+ actor Doctor as Doctor
+ participant C as Clinical API
  participant Q as RabbitMQ
- Staff->>UI: Check in exact appointment
- UI->>C: Check-in command
- C->>C: Save appointment + durable outbox
- C-->>Q: Appointment fact with exact visit identity
- Q->>B: Consume selected V1 fact
- B->>B: Claim source / issue EXAM charge and request
- Staff->>UI: Record payment
- UI->>B: Complete request with idempotency key
- B->>B: Atomic payment + allocation + clearance + outbox
- B-->>Q: financial.clearance.granted
- Q->>C: Store exact EXAM clearance idempotently
- Staff->>UI: Start examination
- UI->>C: Start exact appointment
- C->>C: Recheck authority / target / expiry
- alt Clearance missing or provider unavailable
- C-->>UI: Reject protected action
- else Valid authority
- C->>C: Create or reuse appointment-backed record atomically
- C-->>UI: Open medical record
+ participant B as Billing API
+ Note over Nurse,C: Precondition: figure 05 saved an appointment, API calls pass through Gateway.
+ Patient->>Nurse: Arrive for the saved appointment
+ Nurse->>C: Check in the exact appointment
+ alt Appointment missing, wrong lifecycle or unauthorized
+  C-->>Nurse: Reject, correct appointment / permission, stop this attempt
+ else Valid pending appointment
+  C->>C: Commit AWAITING_PAYMENT appointment + outbox
+  C-->>Nurse: Check-in accepted, examination not yet authorized
+  C-)Q: Publish exact appointment fact after commit
+  Q-)B: Deliver fact for EXAM charge issuance
+  B->>B: Idempotently create charge / payment request
+  Cashier->>B: Find exact EXAM payment request
+  alt Request not ready or issuing failed
+   B-->>Cashier: Not ready / error, do not record an arbitrary payment
+   Note over Cashier,Doctor: Wait for source recovery, then retry request lookup, no examination in this branch.
+  else Exact request available
+   Cashier->>B: Record collected payment with idempotency key
+   alt Invalid payment or conflicting retry
+    B-->>Cashier: Reject, no new payment / allocation / clearance
+   else Payment accepted or exact committed replay
+    B->>B: Atomic payment + allocation + clearance + outbox
+    B-->>Cashier: Payment receipt
+    Cashier-->>Patient: Confirm paid consultation fee
+    B-)Q: financial.clearance.granted
+    Q-)C: Store exact EXAM clearance idempotently
+    Doctor->>C: Start consultation for the exact appointment
+    alt Clearance pending, expired, mismatched or actor/state invalid
+     C-->>Doctor: Reject start, remain outside consultation
+     Note over Doctor,C: Retry after valid evidence arrives, no second fee collection for delayed delivery.
+    else Assigned doctor and valid exact clearance
+     C->>C: Atomically start examination and create/reuse its record
+     C-->>Doctor: Open consultation record
+     Doctor-->>Patient: Begin consultation
+    end
+   end
+  end
  end
