@@ -510,3 +510,28 @@ Denial reset theo session hoặc resource content remount; transient read errors
 Red run tái hiện đúng **10 failing cases / 7 files**, 98 cases cũ vẫn đạt. Sau sửa focused
 **108/108 / 7 files** đạt. Kết quả final và browser follow-up được ghi tiếp tại evidence README;
 không cộng các đầu việc B10/B20 vào mẫu số 14 HF6 hoặc tick thêm runtime criteria chỉ vì test giả lập.
+
+## 11. Sửa dispense V1 theo runtime contract — 2026-10-19
+
+Base `5ccecf83` đã có PR #439 (clock/publisher) và #443 (Notification byte identity).
+Backend security và FE được tách thành hai PR. Phần FE chỉ sửa Pharmacy feature và route tương ứng;
+không sửa backend `paymentConfirmed`, API DTO, shared auth/transport, hoặc bật rollout gates.
+
+- Detail route dynamic truyền `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE` qua resolver hiện hành:
+  unset/`outpatient` dùng V1, `legacy` dùng V0, giá trị khác đóng xuất thuốc.
+- V1 ACTIVE/PENDING cho ADMIN/PHARMACIST mở confirmation bất kể boolean V0, nhãn trung tính;
+  backend command kiểm quyền/clearance. Giữ cancel/dispensed guards và compatibility V0.
+- Timeout 408 đọc lại trạng thái trước lần xác nhận mới; không tự retry mutation. Session/mode
+  remount bỏ dialog và callback cũ. Không đánh dấu paid/dispensed khi server trả lỗi.
+- Source audit và dependency episode/priceCode cho Vinh ở [handoff chung, mục 6](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+
+**Code verification:** Pharmacy và routes **233/233 tests, 21 files**; typecheck/lint/build PASS.
+Full FE lần đầu **529/532**: một lỗi Lab fixture và hai timeout Inpatient. Chạy lại riêng hai file:
+**19/20** đạt, hai ca Inpatient đã đạt; ca Lab `Bắt đầu xét nghiệm` vẫn không tìm thấy control
+với fixture hiện hành. Không sửa feature/test ngoài scope để làm xanh. Đây là kết quả unit/component,
+không phải browser acceptance và không tự đóng HF6.
+
+**Trạng thái nghiệm thu:** baseline master vẫn **6/14 task, 39/56 subtask**. Không lấy kết quả
+browser cũ có sửa boolean backend làm bằng chứng cho candidate này. Report chưa có accepted
+outpatient coverage nên UI gate giữ OFF; Notification cần issuer PATIENT và cross-patient proof
+do Vinh phối hợp backend. Security handoff và dispense handoff chỉ đóng sau review/acceptance.

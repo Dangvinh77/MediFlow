@@ -34,3 +34,17 @@ Backend suite hoặc test DTO riêng không được tính thành UI acceptance.
 
 Không tự bổ sung trường authority mới vào DTO hoặc gọi service port trực tiếp. Nếu cần read
 contract mới, owner phải khóa fixture/controller/serializer và bàn giao producer/consumer trước.
+
+## Implementation — 2026-10-19, base `5ccecf83`
+
+Huy đã sửa detail route để truyền server runtime mode qua cùng resolver với form tạo đơn.
+`outpatient` cho phép ADMIN/PHARMACIST mở confirmation khi đơn ACTIVE/PENDING dù boolean
+legacy false; backend command vẫn kiểm clearance hiện hành. UI dùng nhãn trung tính
+“Thanh toán được kiểm tra khi xuất thuốc”, không tự kết luận đã thanh toán. `legacy` giữ
+điều kiện boolean cũ; mode không hợp lệ đóng thao tác xuất. Không đoán version từ response.
+HTTP 408 được reconcile bằng GET mới như network/5xx; không tự gửi lại mutation chưa rõ kết quả.
+
+Regression Pharmacy và route: **233/233 tests, 21 files**; typecheck/lint/build đạt. Các ca
+unpaid/expired/revoked trong component tests cùng dùng wire error 422; chúng kiểm UX nhận lỗi,
+không chứng minh trạng thái clearance thật. Handoff tiếp tục OPEN cho producer/consumer
+acceptance và Vinh review. Evidence candidate cuối được ghi trong plan FE, mục 11.

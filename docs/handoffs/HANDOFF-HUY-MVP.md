@@ -210,6 +210,20 @@ evidence/checklist lịch sử, không tự đóng mới hoặc mở flags theo 
 
 **Các việc còn thực sự cần nghiệm thu FE:**
 
+**Source audit 2026-10-19, base `5ccecf83` — dependency cho Vinh:**
+
+| Input public Rx V1 | Nguồn public đã xác nhận | Phần còn thiếu / điều kiện sử dụng |
+|---|---|---|
+| `recordId`, `patientId`, `doctorId`, `departmentId` | Clinical `GET /api/v1/records/{id}` hoặc `/patient/{patientId}` trả `MedicalRecordDTO` | Lấy cùng một record đúng bệnh nhân/actor; không lấy account UUID làm staff/doctor UUID |
+| Staff/department identity | Core `GET /api/v1/org/staff/{id}`, `/api/v1/org/departments/{id}` và list public theo role | Dùng identity trả từ source, không gọi các lookup chỉ dành cho service; Pharmacy vẫn revalidate signed prescriber |
+| `careEpisodeId` | `ClinicalLabOrderDTO` trả khi public `POST /api/v1/records/{id}/lab-orders` tạo chỉ định Lab có thật | MedicalRecord DTO chưa có explicit episode. Không lấy `appointmentId`/`recordId` thay episode, không tạo chỉ định xét nghiệm chỉ để có ID kê đơn. Vinh cần phối hợp public Clinical entrypoint cho workflow chỉ kê thuốc |
+| `priceCode` | Billing config `mediflow.billing.prescription-charges.allowed-price-codes` xác định allowlist; harness cô lập dùng `DRUG` | Chưa tìm thấy public danh mục giá/selection contract cho production. Không coi `DRUG` trong test là giá trị production mặc định; Vinh phối hợp Billing cung cấp mã hợp lệ theo môi trường |
+
+`ClinicalLabOrderContextDTO` và prescription context lookup là contract service-to-service,
+không phải nguồn browser được phép gọi. Form tiếp tục yêu cầu đầu vào riêng, không sinh authority
+IDs và không tự tính tiền/clearance. Audit này chỉ chốt nguồn có thật; **HF6-01.2 vẫn OPEN** cho
+hai dependency episode/priceCode ở workflow public tổng quát. Không tạo handoff trùng lặp.
+
 - HF6-01.2: confirmed record/patient/staff/department/episode IDs và priceCode của đúng môi trường.
   Form nhận riêng từng giá trị; public MedicalRecord DTO không có trường episode rõ ràng nên không
   tự lấy appointmentId/recordId thay careEpisodeId hoặc gọi internal lookup từ browser.

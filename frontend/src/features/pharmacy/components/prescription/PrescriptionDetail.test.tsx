@@ -14,7 +14,7 @@ const prescription: PrescriptionDTO = { prescriptionId: "00000000-0000-4000-8000
 describe("PrescriptionDetail status evidence", () => {
   beforeEach(() => { mocks.role = "PHARMACIST"; mocks.getPrescription.mockReset(); });
   it("shows payment proof independently of pending dispense and supports absent medical record", async () => {
-    mocks.getPrescription.mockResolvedValue(prescription); render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    mocks.getPrescription.mockResolvedValue(prescription); render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByText("Chờ xuất thuốc")).toBeVisible();
     expect(screen.getByText("Đã xác nhận thanh toán")).toBeVisible();
     expect(screen.queryByText("Chờ thanh toán")).not.toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("PrescriptionDetail status evidence", () => {
   });
   it("does not offer dispense when the same pending prescription lacks payment proof", async () => {
     mocks.getPrescription.mockResolvedValue({ ...prescription, paymentConfirmed: false });
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByText("Chờ xuất thuốc")).toBeVisible();
     expect(screen.getByText("Chờ thanh toán", { exact: true })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
@@ -31,7 +31,7 @@ describe("PrescriptionDetail status evidence", () => {
   it("refreshes pending payment with a fresh GET and uses only server amounts before offering dispense", async () => {
     mocks.getPrescription.mockResolvedValueOnce({ ...prescription, paymentConfirmed: false })
       .mockResolvedValueOnce({ ...prescription, totalAmount: 98765 });
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     await screen.findByText("Chờ thanh toán", { exact: true });
     fireEvent.click(screen.getByRole("button", { name: "Tải lại trạng thái" }));
     expect(await screen.findByText("Đã xác nhận thanh toán")).toBeVisible();
@@ -44,7 +44,7 @@ describe("PrescriptionDetail status evidence", () => {
     mocks.getPrescription.mockResolvedValueOnce(prescription)
       .mockRejectedValueOnce(new ApiRequestError("Refresh unavailable", 503, "UNAVAILABLE", [], "refresh-trace"))
       .mockResolvedValueOnce({ ...prescription, paymentConfirmed: false });
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     await screen.findByRole("button", { name: "Xuất thuốc" });
     fireEvent.click(screen.getByRole("button", { name: "Tải lại trạng thái" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("refresh-trace");
@@ -55,26 +55,26 @@ describe("PrescriptionDetail status evidence", () => {
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
   });
   it.each(["FULFILLED", "CANCELLED", "EXPIRED", "DISPENSE_FAILED"] as const)("keeps %s prescriptions read-only even with payment confirmed", async status => {
-    mocks.getPrescription.mockResolvedValue({ ...prescription, status }); render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    mocks.getPrescription.mockResolvedValue({ ...prescription, status }); render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     await screen.findByRole("heading", { name: "Chi tiết đơn thuốc" });
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Hủy đơn" })).not.toBeInTheDocument();
   });
   it("distinguishes missing dispense from a missing prescription", async () => {
     mocks.getPrescription.mockRejectedValue(new ApiRequestError("Missing dispense", 404, "DISPENSE_NOT_FOUND"));
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByRole("heading", { name: "Chưa có phiếu xuất thuốc" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Không tìm thấy đơn thuốc" })).not.toBeInTheDocument();
   });
   it("reports a missing prescription without guessing a sibling context ID", async () => {
     mocks.getPrescription.mockRejectedValue(new ApiRequestError("Missing", 404, "PRESCRIPTION_NOT_FOUND"));
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByRole("heading", { name: "Không tìm thấy đơn thuốc" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();
   });
   it("keeps correlation and denies paid actions on a forbidden read", async () => {
     mocks.getPrescription.mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "read-trace"));
-    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     expect(await screen.findByRole("alert")).toHaveTextContent("không có quyền");
     expect(screen.getByRole("alert")).toHaveTextContent("read-trace");
     expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
@@ -84,9 +84,9 @@ describe("PrescriptionDetail status evidence", () => {
     let resolveOld!: (value: PrescriptionDTO) => void;
     const old = new Promise<PrescriptionDTO>(resolve => { resolveOld = resolve; });
     mocks.getPrescription.mockReturnValueOnce(old).mockResolvedValueOnce({ ...prescription, prescriptionId: "00000000-0000-4000-8000-000000000005", status: "CANCELLED" });
-    const view = render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} />);
+    const view = render(<PrescriptionDetail prescriptionId={prescription.prescriptionId} mode="legacy" />);
     await waitFor(() => expect(mocks.getPrescription).toHaveBeenCalledTimes(1));
-    view.rerender(<PrescriptionDetail prescriptionId="00000000-0000-4000-8000-000000000005" />);
+    view.rerender(<PrescriptionDetail prescriptionId="00000000-0000-4000-8000-000000000005" mode="legacy" />);
     await screen.findByText("Đã hủy", { exact: true });
     await act(async () => resolveOld(prescription));
     expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument();

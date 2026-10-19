@@ -50,7 +50,7 @@ describe("Pharmacy session lifecycle", () => {
 
   it("drops a paid prescription and its open cancellation when the account changes", async () => {
     mocks.rx.mockResolvedValueOnce(rx).mockReturnValueOnce(new Promise(() => {}));
-    render(<PrescriptionDetail prescriptionId={id} />); await screen.findByText("Đã xác nhận thanh toán");
+    render(<PrescriptionDetail prescriptionId={id} mode="legacy" />); await screen.findByText("Đã xác nhận thanh toán");
     fireEvent.click(screen.getByRole("button", { name: "Hủy đơn" })); change("Lý do hủy", "private reason");
     act(() => session("session-b"));
     expect(screen.queryByText("Đã xác nhận thanh toán")).not.toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("Pharmacy session lifecycle", () => {
 
   it("ignores prescription cancellation success belonging to the old session", async () => {
     const pending = deferred<unknown>(); mocks.rx.mockResolvedValueOnce(rx).mockReturnValueOnce(new Promise(() => {})); mocks.cancel.mockReturnValue(pending.promise);
-    render(<PrescriptionDetail prescriptionId={id} />); fireEvent.click(await screen.findByRole("button", { name: "Hủy đơn" }));
+    render(<PrescriptionDetail prescriptionId={id} mode="legacy" />); fireEvent.click(await screen.findByRole("button", { name: "Hủy đơn" }));
     change("Lý do hủy", "Test"); fireEvent.click(screen.getByRole("button", { name: "Xác nhận hủy đơn" }));
     act(() => session("session-b")); await act(async () => pending.resolve({ prescriptionId: id, status: "CANCELLED", releasedReservations: 1 }));
     expect(screen.queryByText(/Đã hủy đơn thuốc/)).not.toBeInTheDocument();
