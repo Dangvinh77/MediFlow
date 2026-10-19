@@ -18,6 +18,8 @@ import {
   type CreateDrugFormValues,
 } from "./drugFormValidation";
 import { getLocalTodayIso, mapFieldErrors } from "../../utils";
+import Link from "next/link";
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 function getServerRole(): Role | null {
   return null;
@@ -38,6 +40,11 @@ function errorMessage(cause: unknown): string {
 }
 
 export function CreateDrugForm() {
+  return <PharmacySessionBoundary><CreateDrugFormContent /></PharmacySessionBoundary>;
+}
+
+function CreateDrugFormContent() {
+  const isCurrent = usePharmacyRequestScope("canCreateDrug");
   const router = useRouter();
   const role = useSyncExternalStore(
     subscribeToAuthChanges,
@@ -49,6 +56,9 @@ export function CreateDrugForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const completed = useRef(false);
+  const [uncertain, setUncertain] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
   const focusField = useRef<CreateDrugField | undefined>(undefined);
   const active = useRef(true);
   const capabilities = getPharmacyCapabilities(role);
@@ -71,6 +81,7 @@ export function CreateDrugForm() {
   }
 
   function updateField(field: CreateDrugField, value: string) {
+    if (submitting || uncertain || forbidden || completed.current) return;
     setValues((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
     setFormError(null);
@@ -78,7 +89,7 @@ export function CreateDrugForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || !getPharmacyCapabilities(getRole()).canCreateDrug) return;
+    if (submittingRef.current || completed.current || uncertain || forbidden || !isCurrent()) return;
 
     setFormError(null);
     const errors = validateCreateDrugForm(values, today);
@@ -92,10 +103,11 @@ export function CreateDrugForm() {
     setSubmitting(true);
     try {
       const created = await pharmacyApi.createDrug(toCreateDrugRequest(values));
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
+      completed.current = true;
       router.replace(`/pharmacy/drugs/${created.drugId}`);
     } catch (cause: unknown) {
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -110,10 +122,13 @@ export function CreateDrugForm() {
         setFieldErrors(mapped);
         focusFirstError(mapped);
       }
-      setFormError(errorMessage(cause));
+      const unknownOutcome = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400;
+      if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
+      setUncertain(unknownOutcome);
+      setFormError(unknownOutcome ? `${errorMessage(cause)} Chưa xác định kết quả; hãy kiểm tra danh mục trước khi lập yêu cầu mới.` : errorMessage(cause));
     } finally {
       submittingRef.current = false;
-      if (active.current) setSubmitting(false);
+      if (active.current && isCurrent() && !completed.current) setSubmitting(false);
     }
   }
 
@@ -130,7 +145,7 @@ export function CreateDrugForm() {
   }
 
   const field = (name: CreateDrugField, hasHint = false) => ({
-    disabled: submitting,
+    disabled: submitting || uncertain || forbidden,
     "aria-required": ["drugName", "unit", "price", "stockQuantity", "expiryDate"].includes(name) || undefined,
     "aria-invalid": fieldErrors[name] ? true : undefined,
     "aria-describedby": fieldErrors[name] ? `${name}-error` : hasHint ? `${name}-hint` : undefined,
@@ -143,6 +158,7 @@ export function CreateDrugForm() {
           {formError}
         </div>
       )}
+      {uncertain && <Link href="/pharmacy/drugs" className="inline-flex min-h-11 items-center text-sm text-primary underline">Kiểm tra danh mục thuốc</Link>}
 
       <div className="grid gap-5 md:grid-cols-2">
         <Field label="Tên thuốc" htmlFor="drugName" error={fieldErrors.drugName} required>
@@ -241,6 +257,7 @@ export function CreateDrugForm() {
         <Button
           type="submit"
           loading={submitting}
+          disabled={uncertain || forbidden}
           variant="primary"
         >
           Tạo thuốc

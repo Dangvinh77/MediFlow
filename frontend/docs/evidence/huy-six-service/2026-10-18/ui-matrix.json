@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-18",
+  "source": "025ef39e + uncommitted working diff",
+  "environment": "isolated UI HTTP fixtures at localhost:3180; not signed Gateway acceptance",
+  "cases": [
+    {
+      "route": "/pharmacy/prescriptions/new",
+      "width": 320,
+      "height": 800,
+      "label": "Sáng",
+      "heading": "Kê đơn",
+      "page": 305,
+      "viewport": 320
+    },
+    {
+      "route": "/pharmacy/prescriptions/new",
+      "width": 768,
+      "height": 1024,
+      "label": "Theo hệ thống",
+      "heading": "Kê đơn",
+      "page": 753,
+      "viewport": 768
+    },
+    {
+      "route": "/pharmacy/prescriptions/new",
+      "width": 1280,
+      "height": 900,
+      "label": "Tối",
+      "heading": "Kê đơn",
+      "page": 1265,
+      "viewport": 1280
+    },
+    {
+      "route": "/reports/outpatient",
+      "width": 320,
+      "height": 800,
+      "label": "Tối",
+      "bodyBackground": "rgb(15, 23, 42)",
+      "heading": "Báo cáo ngoại trú",
+      "page": 305,
+      "selected": "dark",
+      "viewport": 320
+    },
+    {
+      "route": "/reports/outpatient",
+      "width": 768,
+      "height": 1024,
+      "label": "Sáng",
+      "bodyBackground": "rgb(15, 23, 42)",
+      "heading": "Báo cáo ngoại trú",
+      "page": 753,
+      "selected": "light",
+      "viewport": 768
+    },
+    {
+      "route": "/reports/outpatient",
+      "width": 1280,
+      "height": 900,
+      "label": "Theo hệ thống",
+      "bodyBackground": "rgb(180, 183, 190)",
+      "heading": "Báo cáo ngoại trú",
+      "page": 1265,
+      "selected": "system",
+      "viewport": 1280
+    },
+    {
+      "route": "/notifications/[id]",
+      "width": 320,
+      "height": 800,
+      "label": "Theo hệ thống",
+      "heading": "Chi tiết thông báo",
+      "page": 305,
+      "selected": "system",
+      "viewport": 320
+    },
+    {
+      "route": "/notifications/[id]",
+      "width": 768,
+      "height": 1024,
+      "label": "Tối",
+      "heading": "Chi tiết thông báo",
+      "page": 768,
+      "selected": "dark",
+      "viewport": 768
+    },
+    {
+      "route": "/notifications/[id]",
+      "width": 1280,
+      "height": 900,
+      "label": "Sáng",
+      "heading": "Chi tiết thông báo",
+      "page": 1280,
+      "selected": "light",
+      "viewport": 1280
+    }
+  ]
+}

@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { formatLocalDate } from "@/lib/format";
 import { reportApi } from "../api";
 import { useReportRequest } from "../useReportRequest";
-import { localReportDate, validateTopMedicinesQuery, type TopMedicinesQuery } from "../validation";
+import { isReportDate, localReportDate, validateTopMedicinesQuery, type TopMedicinesQuery } from "../validation";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
+import { ReportSessionBoundary } from "./ReportSessionBoundary";
 
 interface TopMedicinesViewProps {
   initialQuery?: TopMedicinesQuery;
@@ -17,6 +18,10 @@ interface TopMedicinesViewProps {
 }
 
 export function TopMedicinesView({ initialQuery, autoLoad = false, onQuerySubmit }: TopMedicinesViewProps) {
+  return <ReportSessionBoundary><TopMedicinesContent initialQuery={initialQuery} autoLoad={autoLoad} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
+}
+
+function TopMedicinesContent({ initialQuery, autoLoad = false, onQuerySubmit }: TopMedicinesViewProps) {
   const [defaults] = useState<TopMedicinesQuery>(() => ({ fromDate: localReportDate(), toDate: localReportDate(), limit: 10 }));
   const initial = initialQuery ?? defaults;
   const { fromDate: initialFrom, toDate: initialTo, limit: initialLimit, departmentId: initialDepartment } = initial;
@@ -26,11 +31,12 @@ export function TopMedicinesView({ initialQuery, autoLoad = false, onQuerySubmit
   const [limit, setLimit] = useState(Number.isFinite(initialLimit) ? String(initialLimit) : "");
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
+  const form = useRef<HTMLFormElement>(null);
   const initialRequest = useCallback(async () => ({
     items: await reportApi.topMedicines(initialFrom, initialTo, initialLimit, initialDepartment),
     query: { fromDate: initialFrom, toDate: initialTo, limit: initialLimit, departmentId: initialDepartment },
   }), [initialFrom, initialTo, initialLimit, initialDepartment]);
-  const { state, load, retry } = useReportRequest(initialRequest, autoLoad && validateTopMedicinesQuery(initial) === null);
+  const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && validateTopMedicinesQuery(initial) === null);
   const loading = state.status === "loading";
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -38,13 +44,21 @@ export function TopMedicinesView({ initialQuery, autoLoad = false, onQuerySubmit
     const query = { fromDate, toDate, limit: Number(limit), departmentId: departmentId.trim() || undefined };
     const error = validateTopMedicinesQuery(query);
     setValidationError(error);
-    if (error || onQuerySubmit?.(query)) return;
+    if (error) {
+      clear();
+      const selector = !isReportDate(query.fromDate) ? "#medicine-from"
+        : !isReportDate(query.toDate) || query.fromDate > query.toDate ? "#medicine-to"
+          : !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 50 ? "#medicine-limit" : "#medicine-department";
+      form.current?.querySelector<HTMLInputElement>(selector)?.focus();
+      return;
+    }
+    if (onQuerySubmit?.(query)) return;
     load(async () => ({ items: await reportApi.topMedicines(query.fromDate, query.toDate, query.limit, query.departmentId), query }));
   }
 
   return (
     <section className="mt-6" aria-label="Thuốc xuất nhiều" aria-busy={loading}>
-      <form onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.6fr)_auto] xl:items-end">
+      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.6fr)_auto] xl:items-end">
         <Field label="Từ ngày" htmlFor="medicine-from">
           <input id="medicine-from" type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>

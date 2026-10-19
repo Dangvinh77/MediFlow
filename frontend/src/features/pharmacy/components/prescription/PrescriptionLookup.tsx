@@ -8,12 +8,17 @@ import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { getPharmacyCapabilities } from "../../permissions";
 import { isUuid } from "../../utils";
+import { PharmacySessionBoundary } from "../PharmacySessionBoundary";
 
 function getServerRole(): Role | null {
   return null;
 }
 
 export function PrescriptionLookup({ variant = "standalone" }: { variant?: "standalone" | "compact" }) {
+  return <PharmacySessionBoundary><PrescriptionLookupContent variant={variant} /></PharmacySessionBoundary>;
+}
+
+function PrescriptionLookupContent({ variant }: { variant: "standalone" | "compact" }) {
   const router = useRouter();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +33,7 @@ export function PrescriptionLookup({ variant = "standalone" }: { variant?: "stan
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!getPharmacyCapabilities(getRole()).canReadPrescription) return;
     const id = prescriptionId.trim();
     if (!isUuid(id)) {
       setError("Mã đơn thuốc phải là UUID hợp lệ.");

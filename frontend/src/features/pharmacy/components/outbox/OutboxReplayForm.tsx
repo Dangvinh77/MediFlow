@@ -13,6 +13,7 @@ import { getPharmacyCapabilities } from "../../permissions";
 import { pharmacyApi } from "../../api";
 import type { OutboxReplayResult } from "../../types";
 import { isUuid } from "../../utils";
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 type ReplayState =
   | { kind: "idle" }
@@ -53,6 +54,11 @@ function correlationIdOf(cause: unknown): string | null {
 
 /** Replays one known Pharmacy outbox event; it intentionally never lists events. */
 export function OutboxReplayForm() {
+  return <PharmacySessionBoundary><OutboxReplayFormContent /></PharmacySessionBoundary>;
+}
+
+function OutboxReplayFormContent() {
+  const isCurrent = usePharmacyRequestScope("canReplayOutbox");
   const router = useRouter();
   const role = useSyncExternalStore(
     subscribeToAuthChanges,
@@ -66,6 +72,7 @@ export function OutboxReplayForm() {
   const [eventId, setEventId] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [state, setState] = useState<ReplayState>({ kind: "idle" });
+  const [forbidden, setForbidden] = useState(false);
   const retryRef = useRef<HTMLButtonElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const previousKind = useRef<ReplayState["kind"]>("idle");
@@ -121,7 +128,7 @@ export function OutboxReplayForm() {
 
   function prepareConfirmation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || role !== "ADMIN") return;
+    if (submittingRef.current || forbidden || !isCurrent()) return;
 
     const normalizedId = eventId.trim();
     if (!isUuid(normalizedId)) {
@@ -142,7 +149,7 @@ export function OutboxReplayForm() {
   }
 
   async function confirmReplay() {
-    if (state.kind !== "confirming" || submittingRef.current || role !== "ADMIN") return;
+    if (state.kind !== "confirming" || submittingRef.current || forbidden || !isCurrent()) return;
 
     const normalizedId = state.eventId;
     submittingRef.current = true;
@@ -150,13 +157,16 @@ export function OutboxReplayForm() {
 
     try {
       const result = await pharmacyApi.replayOutbox(normalizedId);
+      if (!isCurrent()) return;
       setState({ kind: "success", result });
     } catch (cause: unknown) {
+      if (!isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
 
+      if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
       setState({
         kind: "error",
         eventId: normalizedId,
@@ -275,7 +285,7 @@ export function OutboxReplayForm() {
             ref={inputRef}
             id="outbox-event-id"
             value={eventId}
-            disabled={submitting || confirming}
+            disabled={submitting || confirming || forbidden}
             onChange={(event) => {
               setEventId(event.target.value);
               clearFeedback();

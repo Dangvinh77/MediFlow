@@ -76,7 +76,21 @@ describe("AdjustStockForm", () => {
     mocks.adjust.mockRejectedValue(new ApiRequestError("Forbidden", 403, "FORBIDDEN", [], "corr-denied"));
     render(<AdjustStockForm drug={drug} onSuccess={onSuccess} onConflict={onConflict} />); prepare(); confirm();
     expect(await screen.findByRole("alert")).toHaveTextContent("corr-denied");
+    expect(screen.getByRole("button", { name: "Xem xác nhận" })).toBeDisabled();
+    fireEvent.submit(screen.getByLabelText("Lý do").closest("form")!);
+    expect(screen.queryByRole("button", { name: "Xác nhận điều chỉnh" })).not.toBeInTheDocument();
+    expect(mocks.adjust).toHaveBeenCalledTimes(1);
     expect(onSuccess).not.toHaveBeenCalled(); expect(onConflict).not.toHaveBeenCalled();
+  });
+  it.each([500, 503])("refreshes and clears the old stock delta after an uncertain HTTP %s outcome", async status => {
+    mocks.adjust.mockRejectedValue(new ApiRequestError("Unavailable", status, "UNAVAILABLE", [], "uncertain-stock"));
+    render(<AdjustStockForm drug={drug} onSuccess={onSuccess} onConflict={onConflict} />); prepare(); confirm();
+    expect(await screen.findByRole("alert")).toHaveTextContent("uncertain-stock");
+    expect(onConflict).toHaveBeenCalledOnce(); expect(onSuccess).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Số lượng điều chỉnh", { exact: false })).toHaveValue(null);
+    fireEvent.click(screen.getByRole("button", { name: "Xem xác nhận" }));
+    expect(mocks.adjust).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Xác nhận điều chỉnh" })).not.toBeInTheDocument();
   });
   it("redirects HTTP 401 to login", async () => {
     mocks.adjust.mockRejectedValue(new ApiRequestError("Hết phiên", 401));

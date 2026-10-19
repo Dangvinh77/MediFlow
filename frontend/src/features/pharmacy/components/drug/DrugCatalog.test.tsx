@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
+import { storeSession } from "@/lib/session";
+beforeEach(() => storeSession({ accessToken: "catalog-test", refreshToken: "test", role: "PHARMACIST" }));
 import type { DrugDTO } from "../../types";
 import type { PageResult } from "@/lib/types";
 
@@ -14,6 +16,15 @@ function page(name = "Thuốc A"): PageResult<DrugDTO> { return { content: [{ ..
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 
 describe("DrugCatalog", () => {
+  it("does not offer a read retry or resubmit a server-denied catalog search", async () => {
+    mocks.search.mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "catalog-denied"));
+    render(<DrugCatalog />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("catalog-denied");
+    expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tìm kiếm" })).toBeDisabled();
+    fireEvent.submit(screen.getByLabelText("Tìm theo tên thuốc").closest("form")!);
+    expect(mocks.router.replace).not.toHaveBeenCalled(); expect(mocks.search).toHaveBeenCalledTimes(1);
+  });
   beforeEach(() => { mocks.query = ""; mocks.search.mockReset(); mocks.router.replace.mockReset(); });
   it("uses URL filters and resets pagination when submitting a new name", async () => {
     mocks.query = "keyword=Thu%E1%BB%91c&page=2&size=50";

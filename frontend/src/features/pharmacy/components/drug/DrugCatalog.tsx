@@ -16,6 +16,7 @@ import {
   type DrugCatalogQuery,
 } from "../../utils";
 import { DrugTable } from "./DrugTable";
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 function errorMessage(cause: unknown): string {
   if (cause instanceof ApiRequestError) {
@@ -47,6 +48,11 @@ export { CatalogFallback };
 
 /** Owns URL-driven query state and the single catalogue read request. */
 export function DrugCatalog() {
+  return <PharmacySessionBoundary capability="canReadDrugs"><DrugCatalogContent /></PharmacySessionBoundary>;
+}
+
+function DrugCatalogContent() {
+  const isCurrent = usePharmacyRequestScope("canReadDrugs");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,6 +67,7 @@ export function DrugCatalog() {
   const [requestError, setRequestError] = useState<{
     key: string;
     message: string;
+    forbidden: boolean;
   } | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const requestSequence = useRef(0);
@@ -91,13 +98,14 @@ export function DrugCatalog() {
   );
 
   useEffect(() => {
+    if (!isCurrent()) return;
     let active = true;
     const requestId = ++requestSequence.current;
 
     pharmacyApi
       .searchDrugs({ keyword, page, size })
       .then((nextResult) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
 
         // If records were removed after a bookmarked URL was created, move to
         // the last available page instead of rendering a misleading empty page.
@@ -112,7 +120,7 @@ export function DrugCatalog() {
         setResult({ key: requestKey, data: nextResult });
       })
       .catch((cause: unknown) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
 
         if (cause instanceof ApiRequestError && cause.status === 401) {
           setResult(null);
@@ -120,10 +128,10 @@ export function DrugCatalog() {
           return;
         }
 
-        setRequestError({ key: requestKey, message: errorMessage(cause) });
+        setRequestError({ key: requestKey, message: errorMessage(cause), forbidden: cause instanceof ApiRequestError && cause.status === 403 });
       })
       .finally(() => {
-        if (active && requestId === requestSequence.current) {
+        if (active && isCurrent() && requestId === requestSequence.current) {
           setSettledRequestKey(requestKey);
         }
       });
@@ -131,10 +139,11 @@ export function DrugCatalog() {
     return () => {
       active = false;
     };
-  }, [keyword, page, requestKey, router, size, updateQuery]);
+  }, [isCurrent, keyword, page, requestKey, router, size, updateQuery]);
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (requestError?.key === requestKey && requestError.forbidden) return;
     const formData = new FormData(event.currentTarget);
     const nextKeyword = String(formData.get("keyword") ?? "");
     updateQuery({ keyword: nextKeyword, page: 0 });
@@ -166,7 +175,7 @@ export function DrugCatalog() {
             <label htmlFor="drug-keyword" className="sr-only">Tìm theo tên thuốc</label>
             <input key={keyword} id="drug-keyword" name="keyword" type="search" defaultValue={keyword} placeholder="Tìm theo tên thuốc" className={controlClassName} />
           </div>
-          <Button type="submit" variant="primary" disabled={loading}>Tìm kiếm</Button>
+          <Button type="submit" variant="primary" disabled={loading || (requestError?.key === requestKey && requestError.forbidden)}>Tìm kiếm</Button>
         </form>
       </div>
 
@@ -174,7 +183,7 @@ export function DrugCatalog() {
       {error && (
         <div role="alert" className="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
           <p>{error}</p>
-          <Button type="button" className="mt-3" onClick={() => setRetryToken((value) => value + 1)}>Thử lại</Button>
+          {!requestError?.forbidden && <Button type="button" className="mt-3" onClick={() => setRetryToken((value) => value + 1)}>Thử lại</Button>}
         </div>
       )}
       {!loading && !error && result && result.content.length === 0 && (

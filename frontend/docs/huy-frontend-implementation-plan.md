@@ -1,5 +1,9 @@
 # Plan triển khai frontend của Huy — Pharmacy, Report, Surgery
 
+> **Plan thực thi hiện hành từ 2026-10-18:** [FE Huy — MVP 6 service](huy-six-service-frontend-plan.md).
+> File này giữ checklist/evidence lịch sử; Surgery/full V2 tiếp tục deferred.
+> Không dùng mẫu số 30/123 hoặc các gate lịch sử bên dưới làm trạng thái hiện tại.
+
 **Ngày:** 2026-10-12. **Owner:** Huy (`LQHuy0210`).
 **Baseline đã đọc:** `c110671bd2eaa7f1e948879162506df106cbf27d`.
 **Trạng thái:** IN PROGRESS — Pharmacy/Report tiếp tục theo mẫu đã duyệt và frame 6 service.

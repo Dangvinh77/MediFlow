@@ -9,6 +9,7 @@ import { formatVnd } from "../../utils";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { DispenseDTO } from "../../types";
+import { usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 interface DispensePrescriptionDialogProps {
   prescriptionId: string;
@@ -41,6 +42,7 @@ function errorMessage(cause: ApiRequestError): string {
 
 /** Bodyless PUT; the server supplies actor identity, payment authority and stock effects. */
 export function DispensePrescriptionDialog({ prescriptionId, totalAmount, lineCount, onClose, onSuccess, onConflict, onFailure }: DispensePrescriptionDialogProps) {
+  const isCurrent = usePharmacyRequestScope("canDispensePrescription");
   const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const submittingRef = useRef(false);
@@ -61,15 +63,15 @@ export function DispensePrescriptionDialog({ prescriptionId, totalAmount, lineCo
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || forbidden || !getPharmacyCapabilities(getRole()).canDispensePrescription) return;
+    if (submittingRef.current || forbidden || !isCurrent() || !getPharmacyCapabilities(getRole()).canDispensePrescription) return;
     submittingRef.current = true;
     setFormError(null);
     setSubmitting(true);
     try {
       const result = await pharmacyApi.dispensePrescription(prescriptionId);
-      if (active.current) onSuccess(result);
+      if (active.current && isCurrent()) onSuccess(result);
     } catch (cause: unknown) {
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -92,7 +94,7 @@ export function DispensePrescriptionDialog({ prescriptionId, totalAmount, lineCo
       setFormError(errorMessage(cause));
     } finally {
       submittingRef.current = false;
-      if (active.current) setSubmitting(false);
+      if (active.current && isCurrent()) setSubmitting(false);
     }
   }
 

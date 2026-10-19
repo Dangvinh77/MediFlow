@@ -10,6 +10,7 @@ import { getPharmacyCapabilities } from "../../permissions";
 import { pharmacyApi } from "../../api";
 import type { DrugDTO } from "../../types";
 import { mapFieldErrors } from "../../utils";
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 interface AdjustStockFormProps {
   drug: DrugDTO;
@@ -51,11 +52,18 @@ function errorMessage(cause: unknown): string {
 
 /** Handles the non-optimistic stock adjustment flow and confirmation preview. */
 export function AdjustStockForm({
+  ...props
+}: AdjustStockFormProps) {
+  return <PharmacySessionBoundary><AdjustStockFormContent key={props.drug.drugId} {...props} /></PharmacySessionBoundary>;
+}
+
+function AdjustStockFormContent({
   drug,
   onSuccess,
   onConflict,
   disabled = false,
 }: AdjustStockFormProps) {
+  const isCurrent = usePharmacyRequestScope("canAdjustStock");
   const router = useRouter();
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
@@ -64,6 +72,7 @@ export function AdjustStockForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
   const submittingRef = useRef(false);
   const quantityRef = useRef<HTMLInputElement>(null);
   const reasonRef = useRef<HTMLTextAreaElement>(null);
@@ -100,7 +109,7 @@ export function AdjustStockForm({
 
   function prepareConfirmation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || disabled || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
+    if (submittingRef.current || disabled || forbidden || !isCurrent() || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
 
     clearFeedback();
     const errors: FieldErrors = {};
@@ -123,7 +132,7 @@ export function AdjustStockForm({
   }
 
   async function confirmAdjustment() {
-    if (submittingRef.current || disabled || !confirming || parsedQuantity === null || parsedQuantity === 0 || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
+    if (submittingRef.current || disabled || forbidden || !isCurrent() || !confirming || parsedQuantity === null || parsedQuantity === 0 || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
 
     if (reason.trim().length > 255) {
       setFieldErrors({ reason: "Lý do không được dài quá 255 ký tự." });
@@ -145,18 +154,19 @@ export function AdjustStockForm({
         quantity: parsedQuantity,
         reason: reason.trim() || undefined,
       });
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
       onSuccess(updatedDrug);
       setQuantity("");
       setReason("");
       setConfirming(false);
       setSuccessMessage(`Đã cập nhật tồn kho: ${updatedDrug.stockQuantity.toLocaleString("vi-VN")} ${updatedDrug.unit}.`);
     } catch (cause: unknown) {
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
+      if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
 
       if (
         cause instanceof ApiRequestError &&
@@ -179,10 +189,15 @@ export function AdjustStockForm({
       setFormError(errorMessage(cause));
       setConfirming(false);
       // A network failure does not prove that a stock mutation was rolled back.
-      if (!(cause instanceof ApiRequestError)) onConflict();
+      if (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400) {
+        // Reset the old delta before fresh stock arrives: it must never be blindly submitted twice.
+        setQuantity("");
+        setReason("");
+        onConflict();
+      }
     } finally {
       submittingRef.current = false;
-      if (active.current) setSubmitting(false);
+      if (active.current && isCurrent()) setSubmitting(false);
     }
   }
 
@@ -215,7 +230,7 @@ export function AdjustStockForm({
             <input
               id="stock-quantity"
               ref={quantityRef}
-              disabled={submitting || disabled}
+              disabled={submitting || disabled || forbidden}
               aria-required="true"
               type="number"
               inputMode="numeric"
@@ -232,7 +247,7 @@ export function AdjustStockForm({
             <textarea
               id="stock-reason"
               ref={reasonRef}
-              disabled={submitting || disabled}
+              disabled={submitting || disabled || forbidden}
               value={reason}
               maxLength={255}
               onChange={(event) => { setReason(event.target.value); wasConfirming.current = false; setConfirming(false); clearFeedback(); }}
@@ -247,7 +262,7 @@ export function AdjustStockForm({
         {!confirming && (
           <Button
             type="submit"
-            disabled={submitting || disabled}
+            disabled={submitting || disabled || forbidden}
           >
             Xem xác nhận
           </Button>
@@ -280,7 +295,7 @@ export function AdjustStockForm({
               ref={confirmRef}
               type="button"
               onClick={() => void confirmAdjustment()}
-              disabled={submitting || disabled}
+              disabled={submitting || disabled || forbidden}
               className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Đang cập nhật…" : "Xác nhận điều chỉnh"}

@@ -1,5 +1,7 @@
 "use client";
 
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
+
 import Link from "next/link";
 import {
   useCallback,
@@ -42,7 +44,7 @@ type DetailRequestState =
   | { key: string; status: "success"; prescription: PrescriptionDTO }
   | { key: string; status: "not-found" }
   | { key: string; status: "dispense-not-found" }
-  | { key: string; status: "error"; message: string };
+  | { key: string; status: "error"; message: string; forbidden?: boolean };
 
 type ActiveAction = "cancel" | "dispense" | null;
 
@@ -76,13 +78,13 @@ function DetailLoading() {
   );
 }
 
-function DetailError({ message, onRetry }: { message: string; onRetry: () => void }) {
+function DetailError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p>{message}</p>
-      <button type="button" onClick={onRetry} className="mt-3 rounded-lg border border-danger/40 px-3 py-2 font-medium hover:bg-danger/10">
+      {onRetry && <button type="button" onClick={onRetry} className="mt-3 rounded-lg border border-danger/40 px-3 py-2 font-medium hover:bg-danger/10">
         Thử lại
-      </button>
+      </button>}
     </div>
   );
 }
@@ -115,10 +117,11 @@ function CopyValue({ label, value }: { label: string; value: string | null }) {
 }
 
 export function PrescriptionDetail({ prescriptionId }: PrescriptionDetailProps) {
-  return <PrescriptionDetailContent key={prescriptionId} prescriptionId={prescriptionId} />;
+  return <PharmacySessionBoundary><PrescriptionDetailContent key={prescriptionId} prescriptionId={prescriptionId} /></PharmacySessionBoundary>;
 }
 
 function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) {
+  const isCurrent = usePharmacyRequestScope("canReadPrescription");
   const router = useRouter();
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const capabilities = getPharmacyCapabilities(role);
@@ -193,7 +196,7 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
   }, []);
 
   useEffect(() => {
-    if (!canRead || !isUuid(prescriptionId)) return undefined;
+    if (!canRead || !isCurrent() || !isUuid(prescriptionId)) return undefined;
 
     let active = true;
     const requestId = ++requestSequence.current;
@@ -201,11 +204,11 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
     pharmacyApi
       .getPrescription(prescriptionId)
       .then((nextPrescription) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
         setRequestState({ key: requestKey, status: "success", prescription: nextPrescription });
       })
       .catch((cause: unknown) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
 
         if (cause instanceof ApiRequestError && cause.status === 401) {
           setRequestState({ key: requestKey, status: "error", message: "Phiên đăng nhập đã hết hạn. Đang chuyển đến trang đăng nhập." });
@@ -223,13 +226,13 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
           return;
         }
 
-        setRequestState({ key: requestKey, status: "error", message: errorMessage(cause) });
+        setRequestState({ key: requestKey, status: "error", message: errorMessage(cause), forbidden: cause instanceof ApiRequestError && cause.status === 403 });
       });
 
     return () => {
       active = false;
     };
-  }, [canRead, prescriptionId, requestKey, router]);
+  }, [canRead, isCurrent, prescriptionId, requestKey, router]);
 
   useEffect(() => {
     if (actionFeedback) feedbackRef.current?.focus();
@@ -280,7 +283,7 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
     );
   }
 
-  if (error) return <div className="mt-6 space-y-4">{feedback}<DetailError message={actionFeedback ? `Chưa tải được chi tiết mới. ${error}` : error} onRetry={refresh} /></div>;
+  if (error) return <div className="mt-6 space-y-4">{feedback}<DetailError message={actionFeedback ? `Chưa tải được chi tiết mới. ${error}` : error} onRetry={requestState.status === "error" && requestState.forbidden ? undefined : refresh} /></div>;
   if (!prescription) return null;
 
   const status = prescriptionStatusPresentation[prescription.status];
@@ -290,11 +293,11 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
   const canDispenseNow = showDispenseSlot && prescription.paymentConfirmed;
 
   return (
-    <section className="mt-6 space-y-6">
+    <section className="mt-6 min-w-0 space-y-6 [overflow-wrap:anywhere]">
       {loading && <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">Đang tải trạng thái đơn thuốc mới nhất…</p>}
 
       <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="break-all font-mono text-xs text-muted-foreground">{prescription.prescriptionId}</p>
           <h2 className="mt-1 text-xl font-semibold">Chi tiết đơn thuốc</h2>
           <p className="mt-1 text-sm text-muted-foreground">Ngày kê: {formatDate(prescription.prescribedDate)}</p>
@@ -306,6 +309,11 @@ function PrescriptionDetailContent({ prescriptionId }: PrescriptionDetailProps) 
             {prescription.paymentConfirmed ? "Đã xác nhận thanh toán" : "Chờ thanh toán"}
           </StatusBadge>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" disabled={loading || activeAction !== null} onClick={refresh}>Tải lại trạng thái</Button>
+        <p className="text-sm text-muted-foreground">Thanh toán và kết quả xuất thuốc được cập nhật từ hệ thống.</p>
       </div>
 
       {feedback}

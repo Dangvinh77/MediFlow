@@ -1,0 +1,117 @@
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "@/lib/api";
+import type { Role } from "@/lib/roles";
+import type { OutpatientPrescriptionIntent } from "../../outpatientPrescriptionIntent";
+
+const mocks = vi.hoisted(() => ({
+  role: "DOCTOR" as Role | null, token: "actor-a", search: vi.fn(), create: vi.fn(), legacy: vi.fn(),
+  router: { replace: vi.fn() }, listeners: new Set<() => void>(),
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
+vi.mock("@/lib/auth", () => ({
+  getRole: () => mocks.role, getToken: () => mocks.token,
+  subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => mocks.listeners.delete(listener); },
+}));
+vi.mock("../../api", () => ({ pharmacyApi: {
+  searchDrugs: mocks.search, createPrescription: mocks.legacy, createOutpatientPrescription: mocks.create,
+} }));
+import { CreatePrescriptionForm } from "./CreatePrescriptionForm";
+
+const id = "00000000-0000-4000-8000-000000000001";
+const episode = "00000000-0000-4000-8000-000000000002";
+function fill(label: string, value: string) { fireEvent.change(screen.getByLabelText(label, { exact: false }), { target: { value } }); }
+function submit() { fireEvent.submit(screen.getByLabelText("Mã hồ sơ", { exact: false }).closest("form")!); }
+async function validForm() {
+  await screen.findByRole("option", { name: /Paracetamol/ });
+  for (const label of ["Mã hồ sơ", "Mã bệnh nhân", "Mã bác sĩ", "Mã khoa"]) fill(label, id);
+  fill("Ngày kê đơn", "2024-02-29"); fill("Mã lượt khám", episode); fill("Mã giá thuốc", "CATALOG-DRUG");
+  fireEvent.change(screen.getByRole("combobox", { name: /^Thuốc/ }), { target: { value: id } });
+}
+function changeActor() { act(() => { mocks.token = "actor-b"; mocks.listeners.forEach(listener => listener()); }); }
+
+describe("outpatient prescription form", () => {
+  beforeEach(() => {
+    mocks.role = "DOCTOR"; mocks.token = "actor-a"; mocks.listeners.clear();
+    mocks.create.mockReset(); mocks.legacy.mockReset(); mocks.router.replace.mockReset();
+    mocks.search.mockReset().mockResolvedValue({ content: [{ drugId: id, drugName: "Paracetamol", unit: "Viên", price: 2500,
+      stockQuantity: 20, activeIngredient: null, manufacturer: null, expiryDate: "2099-01-01", lowStockThreshold: 10 }] });
+  });
+  it("requires explicit episode and price code without inventing defaults", async () => {
+    render(<CreatePrescriptionForm />); await validForm(); fill("Mã lượt khám", ""); fill("Mã giá thuốc", ""); submit();
+    await waitFor(() => expect(screen.getByLabelText("Mã lượt khám", { exact: false })).toHaveFocus());
+    expect(screen.getByLabelText("Mã giá thuốc", { exact: false })).toHaveAttribute("aria-invalid", "true");
+    expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.legacy).not.toHaveBeenCalled();
+  });
+  it("locks duplicate submit, uses V1 and navigates with the server ID", async () => {
+    let resolve!: (value: { prescriptionId: string }) => void;
+    mocks.create.mockReturnValue(new Promise(done => { resolve = done; }));
+    render(<CreatePrescriptionForm />); await validForm(); act(() => { submit(); submit(); });
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    const intent: OutpatientPrescriptionIntent = mocks.create.mock.calls[0][0];
+    expect(intent.commandId).toMatch(/^[\da-f-]{36}$/i);
+    expect(intent.request).toMatchObject({ careContractVersion: 1, careContext: "OUTPATIENT",
+      careEpisodeType: "OUTPATIENT_VISIT", careEpisodeId: episode, admissionId: null, priceCode: "CATALOG-DRUG", recordId: id });
+    expect(screen.getByLabelText("Mã lượt khám", { exact: false })).toBeDisabled();
+    await act(async () => resolve({ prescriptionId: "server-rx" }));
+    expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/prescriptions/server-rx");
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1); expect(mocks.legacy).not.toHaveBeenCalled();
+  });
+  it.each([new TypeError("Network lost"), new ApiRequestError("Busy", 409), new ApiRequestError("Unavailable", 503), new ApiRequestError("Empty", 200)])("keeps a frozen snapshot for explicit retry after %s", async cause => {
+    mocks.create.mockRejectedValueOnce(cause).mockResolvedValueOnce({ prescriptionId: "retried-rx" });
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("nguyên nội dung và mã yêu cầu");
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Mã giá thuốc", { exact: false })).toBeDisabled();
+    const original = mocks.create.mock.calls[0][0];
+    fireEvent.click(screen.getByRole("button", { name: "Thử gửi lại đơn" }));
+    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/prescriptions/retried-rx"));
+    expect(mocks.create.mock.calls[1][0]).toBe(original);
+    expect(mocks.legacy).not.toHaveBeenCalled();
+  });
+  it("requires explicit new intent to edit an uncertain request and issues a new key", async () => {
+    mocks.create.mockRejectedValueOnce(new TypeError("Unknown")).mockResolvedValueOnce({ prescriptionId: "new-rx" });
+    render(<CreatePrescriptionForm />); await validForm(); submit(); await screen.findByRole("alert");
+    const oldKey = mocks.create.mock.calls[0][0].commandId;
+    fireEvent.click(screen.getByRole("button", { name: "Đã kiểm tra đơn cũ, bắt đầu đơn mới" }));
+    expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toHaveValue("");
+    await validForm(); fill("Mã giá thuốc", "ANOTHER-CATALOG"); submit();
+    await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
+    expect(mocks.create.mock.calls[1][0].commandId).not.toBe(oldKey);
+  });
+  it("focuses a rejected V1 source field and does not downgrade to legacy", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Source invalid", 400, "PHARMACY_CARE_CONTEXT_INVALID", [{ field: "careEpisodeId", message: "Lượt khám không khớp" }], "rx-source"));
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    await waitFor(() => expect(screen.getByLabelText("Mã lượt khám", { exact: false })).toHaveFocus());
+    expect(screen.getByText(/Mã tra cứu: rx-source/)).toBeVisible(); expect(mocks.legacy).not.toHaveBeenCalled();
+  });
+  it("drops draft and ignores an old actor's pending completion", async () => {
+    let resolve!: (value: { prescriptionId: string }) => void;
+    mocks.create.mockReturnValue(new Promise(done => { resolve = done; }));
+    render(<CreatePrescriptionForm />); await validForm(); submit(); changeActor();
+    expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toHaveValue("");
+    await act(async () => resolve({ prescriptionId: "old-actor-rx" }));
+    expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+  it("redirects a current 401 and reports a signed prescriber denial without fallback", async () => {
+    mocks.create.mockRejectedValueOnce(new ApiRequestError("Expired", 401))
+      .mockRejectedValueOnce(new ApiRequestError("Denied", 403, "PRESCRIPTION_CREATION_FORBIDDEN", [], "actor-trace"));
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
+    submit(); expect(await screen.findByRole("alert")).toHaveTextContent("bác sĩ kê đơn");
+    expect(screen.getByRole("alert")).toHaveTextContent("actor-trace"); expect(mocks.legacy).not.toHaveBeenCalled();
+  });
+  it("ignores late 401 after unmount and never resubmits on mount", async () => {
+    let reject!: (cause: unknown) => void;
+    mocks.create.mockReturnValue(new Promise((_, no) => { reject = no; }));
+    const view = render(<CreatePrescriptionForm />); await validForm(); submit(); view.unmount();
+    await act(async () => reject(new ApiRequestError("Late", 401)));
+    expect(mocks.router.replace).not.toHaveBeenCalled();
+    render(<CreatePrescriptionForm />); expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it.each(["PHARMACIST", "PATIENT", null] as const)("does not read or submit for %s", role => {
+    mocks.role = role; render(<CreatePrescriptionForm />);
+    expect(mocks.search).not.toHaveBeenCalled(); expect(mocks.create).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Mã lượt khám", { exact: false })).not.toBeInTheDocument();
+  });
+});

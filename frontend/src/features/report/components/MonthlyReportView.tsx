@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
@@ -11,6 +11,7 @@ import { validateMonthlyReportQuery, type MonthlyReportQuery } from "../validati
 import { DailyDetailsTable } from "./DailyDetailsTable";
 import { MonthlyRevenueChart } from "./MonthlyRevenueChart";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
+import { ReportSessionBoundary } from "./ReportSessionBoundary";
 
 interface MonthlyReportViewProps {
   initialQuery?: MonthlyReportQuery;
@@ -20,6 +21,10 @@ interface MonthlyReportViewProps {
 }
 
 export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmit }: MonthlyReportViewProps) {
+  return <ReportSessionBoundary><MonthlyReportContent initialQuery={initialQuery} autoLoad={autoLoad} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
+}
+
+function MonthlyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: MonthlyReportViewProps) {
   const [defaults] = useState<MonthlyReportQuery>(() => ({ month: new Date().getMonth() + 1, year: new Date().getFullYear() }));
   const initial = initialQuery ?? defaults;
   const initialDepartment = initial.departmentId;
@@ -28,8 +33,9 @@ export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmi
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
+  const form = useRef<HTMLFormElement>(null);
   const initialRequest = useCallback(() => reportApi.monthly(initial.month, initial.year, initialDepartment), [initial.month, initial.year, initialDepartment]);
-  const { state, load, retry } = useReportRequest(initialRequest, autoLoad && validateMonthlyReportQuery(initial) === null);
+  const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && validateMonthlyReportQuery(initial) === null);
   const loading = state.status === "loading";
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -37,14 +43,20 @@ export function MonthlyReportView({ initialQuery, autoLoad = false, onQuerySubmi
     const query = { month: Number(month), year: Number(year), departmentId: departmentId.trim() || undefined };
     const error = validateMonthlyReportQuery(query);
     setValidationError(error);
-    if (error) return;
+    if (error) {
+      clear();
+      const selector = validateMonthlyReportQuery({ month: query.month, year: 2026 }) ? "#report-month"
+        : validateMonthlyReportQuery({ month: 1, year: query.year }) ? "#report-year" : "#monthly-department";
+      form.current?.querySelector<HTMLInputElement>(selector)?.focus();
+      return;
+    }
     if (onQuerySubmit?.(query)) return;
     load(() => reportApi.monthly(query.month, query.year, query.departmentId));
   }
 
   return (
     <section className="mt-6" aria-label="Báo cáo tháng" aria-busy={loading}>
-      <form onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_auto] xl:items-end">
+      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,1.5fr)_auto] xl:items-end">
         <Field label="Tháng" htmlFor="report-month">
           <input id="report-month" type="number" min={1} max={12} step={1} value={month} onChange={(event) => { setMonth(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>

@@ -6,23 +6,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { DrugDTO } from "../../types";
 import { getLocalTodayIso } from "../../utils";
 import {
-  createEmptyPrescriptionForm,
   createPrescriptionLine,
   hasCreatePrescriptionErrors,
   toCreatePrescriptionRequest,
   validateCreatePrescriptionForm,
-  type CreatePrescriptionFieldErrors,
   type CreatePrescriptionFormValues,
   type CreatePrescriptionValidationErrors,
-  type PrescriptionFormField,
 } from "./prescriptionFormValidation";
+import { createEmptyOutpatientPrescriptionForm, toOutpatientPrescriptionRequest, validateOutpatientPrescriptionForm,
+  type OutpatientPrescriptionFormValues, type OutpatientPrescriptionValidationErrors } from "./outpatientPrescriptionForm";
+import { prepareOutpatientPrescriptionIntent, type OutpatientPrescriptionIntent } from "../../outpatientPrescriptionIntent";
 import { PrescriptionLinesEditor } from "./PrescriptionLinesEditor";
 
 function getServerRole(): Role | null {
@@ -51,8 +51,8 @@ function fieldInputClass(invalid: boolean): string {
 function mapPrescriptionValidationDetails(
   details: { field: string; message: string }[],
   lines: CreatePrescriptionFormValues["lines"],
-): CreatePrescriptionValidationErrors {
-  const fields: CreatePrescriptionFieldErrors = {};
+): OutpatientPrescriptionValidationErrors {
+  const fields: OutpatientPrescriptionValidationErrors["fields"] = {};
   const lineErrors: Record<string, CreatePrescriptionValidationErrors["lines"][string]> = {};
   const lineFieldPattern = /^lines(?:\[(\d+)\]|\.(\d+))\.(drugId|quantity|dosage)$/;
 
@@ -71,15 +71,21 @@ function mapPrescriptionValidationDetails(
       continue;
     }
 
-    if (["recordId", "patientId", "doctorId", "departmentId", "prescribedDate"].includes(detail.field)) {
-      fields[detail.field as PrescriptionFormField] = detail.message;
+    if (["recordId", "patientId", "doctorId", "departmentId", "prescribedDate", "careEpisodeId", "priceCode"].includes(detail.field)) {
+      fields[detail.field as keyof typeof fields] = detail.message;
     }
   }
 
   return { fields, lines: lineErrors };
 }
 
-export function CreatePrescriptionForm() {
+export function CreatePrescriptionForm({ mode = "outpatient" }: { mode?: "outpatient" | "legacy" }) {
+  const actorToken = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  // A different session or deployment mode starts a fresh draft and command.
+  return <PrescriptionForm key={`${mode}:${actorToken}`} mode={mode} actorToken={actorToken} />;
+}
+
+function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy"; actorToken: string | null }) {
   const router = useRouter();
   const role = useSyncExternalStore(
     subscribeToAuthChanges,
@@ -87,8 +93,12 @@ export function CreatePrescriptionForm() {
     getServerRole,
   );
   const capabilities = getPharmacyCapabilities(role);
-  const [values, setValues] = useState<CreatePrescriptionFormValues>(createEmptyPrescriptionForm);
-  const [validationErrors, setValidationErrors] = useState<CreatePrescriptionValidationErrors>({ fields: {}, lines: {} });
+  const [values, setValues] = useState<OutpatientPrescriptionFormValues>(createEmptyOutpatientPrescriptionForm);
+  const [validationErrors, setValidationErrors] = useState<OutpatientPrescriptionValidationErrors>({ fields: {}, lines: {} });
+  const intent = useRef<OutpatientPrescriptionIntent | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const completed = useRef(false);
+  const [created, setCreated] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -104,10 +114,11 @@ export function CreatePrescriptionForm() {
   const drugSearchKey = `${activeDrugKeyword}\u0000${drugRetryToken}`;
   const drugLoading = capabilities.canCreatePrescription && settledDrugSearchKey !== drugSearchKey;
   const today = getLocalTodayIso();
+  const locked = submitting || uncertain || created;
 
   useEffect(() => {
     active.current = true;
-    return () => { active.current = false; };
+    return () => { active.current = false; intent.current = null; };
   }, []);
 
   useEffect(() => {
@@ -148,7 +159,8 @@ export function CreatePrescriptionForm() {
     };
   }, [activeDrugKeyword, capabilities.canCreatePrescription, drugSearchKey, router]);
 
-  function updateField(field: keyof Omit<CreatePrescriptionFormValues, "lines">, value: string) {
+  function updateField(field: keyof Omit<OutpatientPrescriptionFormValues, "lines">, value: string) {
+    if (locked) return;
     setValues((current) => ({ ...current, [field]: value }));
     setValidationErrors((current) => ({
       ...current,
@@ -158,6 +170,7 @@ export function CreatePrescriptionForm() {
   }
 
   function updateLine(rowKey: string, patch: Partial<CreatePrescriptionFormValues["lines"][number]>) {
+    if (locked) return;
     setValues((current) => ({
       ...current,
       lines: current.lines.map((line) => (line.rowKey === rowKey ? { ...line, ...patch } : line)),
@@ -170,8 +183,8 @@ export function CreatePrescriptionForm() {
     setFormError(null);
   }
 
-  function focusFirstError(errors: CreatePrescriptionValidationErrors) {
-    const field = Object.keys(errors.fields)[0] as PrescriptionFormField | undefined;
+  function focusFirstError(errors: OutpatientPrescriptionValidationErrors) {
+    const field = Object.keys(errors.fields)[0];
     const lineEntry = Object.entries(errors.lines)[0];
     const lineKey = lineEntry?.[0];
     const lineField = lineEntry?.[1]
@@ -192,10 +205,10 @@ export function CreatePrescriptionForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || !getPharmacyCapabilities(getRole()).canCreatePrescription) return;
+    if (submittingRef.current || completed.current || getToken() !== actorToken || !getPharmacyCapabilities(getRole()).canCreatePrescription) return;
 
     setFormError(null);
-    const errors = validateCreatePrescriptionForm(values, today);
+    const errors = mode === "outpatient" ? validateOutpatientPrescriptionForm(values, today) : validateCreatePrescriptionForm(values, today);
     setValidationErrors(errors);
     if (hasCreatePrescriptionErrors(errors)) {
       focusFirstError(errors);
@@ -204,12 +217,23 @@ export function CreatePrescriptionForm() {
 
     submittingRef.current = true;
     setSubmitting(true);
+    setUncertain(false);
     try {
-      const created = await pharmacyApi.createPrescription(toCreatePrescriptionRequest(values));
-      if (!active.current) return;
+      let created;
+      if (mode === "outpatient") {
+        intent.current = prepareOutpatientPrescriptionIntent(toOutpatientPrescriptionRequest(values, today), intent.current);
+        created = await pharmacyApi.createOutpatientPrescription(intent.current);
+      } else {
+        created = await pharmacyApi.createPrescription(toCreatePrescriptionRequest(values));
+      }
+      if (!active.current || getToken() !== actorToken) return;
+      intent.current = null;
+      setUncertain(false);
+      completed.current = true;
+      setCreated(true);
       router.replace(`/pharmacy/prescriptions/${created.prescriptionId}`);
     } catch (cause: unknown) {
-      if (!active.current) return;
+      if (!active.current || getToken() !== actorToken) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -229,9 +253,11 @@ export function CreatePrescriptionForm() {
       } else if (cause instanceof ApiRequestError && cause.code === "INSUFFICIENT_AVAILABLE_STOCK") {
         setFormError(`Một hoặc nhiều thuốc không đủ tồn khả dụng. Hãy kiểm tra lại tồn kho rồi thử lại.${correlationSuffix(cause)}`);
       } else {
-        const uncertain = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400;
-        setFormError(uncertain
+        const unknownOutcome = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400 || cause.status === 409;
+        setUncertain(mode === "outpatient" && unknownOutcome);
+        setFormError(unknownOutcome
           ? "Chưa xác định được kết quả tạo đơn. Hãy kiểm tra đơn đã tạo trước khi gửi lại để tránh tạo trùng."
+            + (mode === "outpatient" ? " Thử gửi lại sẽ dùng nguyên nội dung và mã yêu cầu trước đó." : "")
             + (cause instanceof ApiRequestError ? correlationSuffix(cause) : "")
           : apiErrorMessage(cause, "Không thể tạo đơn thuốc."));
       }
@@ -253,8 +279,8 @@ export function CreatePrescriptionForm() {
     );
   }
 
-  const field = (name: PrescriptionFormField) => ({
-    disabled: submitting,
+  const field = (name: keyof OutpatientPrescriptionValidationErrors["fields"]) => ({
+    disabled: locked,
     "aria-required": true,
     "aria-invalid": validationErrors.fields[name] ? true : undefined,
     "aria-describedby": validationErrors.fields[name] ? `${name}-error` : undefined,
@@ -271,7 +297,7 @@ export function CreatePrescriptionForm() {
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="prescription-context-title">
         <h2 id="prescription-context-title" className="text-base font-semibold">Thông tin kê đơn</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách.
+          {mode === "outpatient" ? "Nhập các mã đã được xác nhận từ lượt khám và danh mục giá. Không dùng mã tài khoản thay cho mã bác sĩ." : "Nhập mã từ hồ sơ khám của bệnh nhân và thông tin bác sĩ phụ trách."}
         </p>
         <div className="mt-5 grid gap-5 md:grid-cols-2">
           <Field label="Mã hồ sơ bệnh án" htmlFor="recordId" error={validationErrors.fields.recordId} required>
@@ -289,12 +315,20 @@ export function CreatePrescriptionForm() {
           <Field label="Ngày kê đơn" htmlFor="prescribedDate" error={validationErrors.fields.prescribedDate} required>
             <input id="prescribedDate" type="date" max={today} {...field("prescribedDate")} value={values.prescribedDate} onChange={(event) => updateField("prescribedDate", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.prescribedDate))} />
           </Field>
+          {mode === "outpatient" && <>
+            <Field label="Mã lượt khám ngoại trú" htmlFor="careEpisodeId" error={validationErrors.fields.careEpisodeId} required>
+              <input id="careEpisodeId" {...field("careEpisodeId")} value={values.careEpisodeId} onChange={event => updateField("careEpisodeId", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.careEpisodeId))} placeholder="UUID lượt khám đã xác nhận" />
+            </Field>
+            <Field label="Mã giá thuốc" htmlFor="priceCode" error={validationErrors.fields.priceCode} required hint="Dùng đúng mã trong danh mục giá được cấp cho lượt khám.">
+              <input id="priceCode" {...field("priceCode")} maxLength={64} value={values.priceCode} onChange={event => updateField("priceCode", event.target.value)} className={fieldInputClass(Boolean(validationErrors.fields.priceCode))} />
+            </Field>
+          </>}
         </div>
       </section>
 
       <PrescriptionLinesEditor
         lines={values.lines}
-        disabled={submitting}
+        disabled={locked}
         listError={validationErrors.lineList}
         errors={validationErrors.lines}
         drugOptions={drugLoading || drugSearchError ? [] : drugOptions}
@@ -312,10 +346,15 @@ export function CreatePrescriptionForm() {
         <Button
           type="submit"
           loading={submitting}
+          disabled={created}
           variant="primary"
         >
-          Tạo đơn thuốc
+          {created ? "Đã tạo đơn thuốc" : uncertain ? "Thử gửi lại đơn" : "Tạo đơn thuốc"}
         </Button>
+        {uncertain && <Button type="button" disabled={submitting} onClick={() => {
+          intent.current = null; setUncertain(false); setValues(createEmptyOutpatientPrescriptionForm());
+          setValidationErrors({ fields: {}, lines: {} }); setFormError(null);
+        }}>Đã kiểm tra đơn cũ, bắt đầu đơn mới</Button>}
         <Link href="/pharmacy/prescriptions" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary">Tra cứu đơn thuốc</Link>
         <p className="text-sm text-muted-foreground">Giá chính thức được xác định khi tạo đơn.</p>
       </div>

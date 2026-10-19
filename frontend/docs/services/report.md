@@ -4,8 +4,21 @@
 **Backend:** `backend/report-service/**`  
 **Contract context:** [`docs/ai/services/report.md`](../../../docs/ai/services/report.md)
 
-**Current execution plan (2026-10-16):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
-The current plan separates existing legacy reports, request-state hardening and gated V2 surfaces.
+**Current execution plan (2026-10-18):** [Huy FE — six-service MVP closeout](../huy-six-service-frontend-plan.md).
+It reuses existing reports and tracks real Support/coverage acceptance; full V2 stays deferred.
+The [previous themed-UI plan](../huy-frontend-implementation-plan.md) retains historical evidence.
+
+2026-10-18 follow-up: all four report views remount per role/token and check the live session
+before dispatch/commit. Invalid submissions clear pending results and focus the first invalid field;
+queued auto-loads cannot dispatch after unmount. These are feature guards; the shared global late-401
+session race remains in the single handoff. Six-service API runtime rerun passes, including Support
+two-store routing/rollback, but does not supply accepted outpatient coverage or signed FE acceptance.
+Browser fixtures verify layout/themes only; latest evidence and counts are in plan sections 9/10.
+
+2026-10-18 revalidation: live Report/OutpatientReport controller DTO/query/role/coverage contracts
+still match the existing frontend. Report production code and its default-closed outpatient gate
+are preserved. The Pharmacy + all-Support batch passes the final full FE suite (474/474, 53 files),
+typecheck/lint/build. These local checks do not close real Support/coverage/Gateway browser acceptance.
 
 Latest MVP checkpoint: `R-MVP-01` adds `/reports/outpatient` with a daily inclusive range and
 monthly periods for a whole year, mirroring the current OutpatientReportController/DTO.

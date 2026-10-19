@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
+import { storeSession } from "@/lib/session";
+beforeEach(() => storeSession({ accessToken: "report-test", refreshToken: "test", role: "ADMIN" }));
 import type { MonthlyReportDTO } from "../types";
 
 const mocks = vi.hoisted(() => ({ monthly: vi.fn(), router: { replace: vi.fn() } }));
