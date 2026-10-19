@@ -167,7 +167,7 @@ These diagrams map MVP actors to use cases. Associations identify user groups an
 
 ### Laboratory order and result attachment — V1 GATED
 
-**Part 1/2 · A4 landscape**
+**Part 1/2 · A4 portrait**
 
 ![Laboratory order and result attachment — V1 GATED — Part 1/2](word-compact/panels/png/08-en-part-01.png)
 
@@ -340,21 +340,21 @@ The following ERDs are physical slices of each database derived from migrations.
 
 ### ERD — Lab
 
-**A4 landscape**
+**A4 portrait**
 
-![ERD — Lab](word-compact/landscape/png/18-en.png)
+![ERD — Lab](word-compact/portrait/png/18-en.png)
 
-[Mermaid](word-compact/landscape/mermaid/18-en.mmd) · [SVG](word-compact/landscape/svg/18-en.svg)
+[Mermaid](word-compact/portrait/mermaid/18-en.mmd) · [SVG](word-compact/portrait/svg/18-en.svg)
 
 [Original SVG](assets/svg/18-en.svg) · [Portrait PNG](word-compact/portrait/png/18-en.png) · [Landscape PNG](word-compact/landscape/png/18-en.png)
 
 ### ERD — Pharmacy
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Pharmacy](word-compact/portrait/png/19-en.png)
+![ERD — Pharmacy](word-compact/landscape/png/19-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/19-en.mmd) · [SVG](word-compact/portrait/svg/19-en.svg)
+[Mermaid](word-compact/landscape/mermaid/19-en.mmd) · [SVG](word-compact/landscape/svg/19-en.svg)
 
 [Original SVG](assets/svg/19-en.svg) · [Portrait PNG](word-compact/portrait/png/19-en.png) · [Landscape PNG](word-compact/landscape/png/19-en.png)
 
@@ -372,7 +372,7 @@ The following ERDs are physical slices of each database derived from migrations.
 
 [Mermaid](word-compact/panels/mermaid/20-en-part-02.mmd) · [SVG](word-compact/panels/svg/20-en-part-02.svg)
 
-**Part 3/4 · A4 portrait**
+**Part 3/4 · A4 landscape**
 
 ![ERD — Billing — Part 3/4](word-compact/panels/png/20-en-part-03.png)
 
@@ -398,11 +398,11 @@ The following ERDs are physical slices of each database derived from migrations.
 
 ### ERD — Report
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Report](word-compact/portrait/png/22-en.png)
+![ERD — Report](word-compact/landscape/png/22-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/22-en.mmd) · [SVG](word-compact/portrait/svg/22-en.svg)
+[Mermaid](word-compact/landscape/mermaid/22-en.mmd) · [SVG](word-compact/landscape/svg/22-en.svg)
 
 [Original SVG](assets/svg/22-en.svg) · [Portrait PNG](word-compact/portrait/png/22-en.png) · [Landscape PNG](word-compact/landscape/png/22-en.png)
 Additional unique-index cardinality: an appointment has at most one medical_record (`uq_medical_record_appointment`); a prescription has at most one dispense_slip; a financial_clearance belongs to one payment_request. Report is a read model with source UUIDs and no FK to Billing/Pharmacy. PAYMENT_REQUEST.invoice_id must not be inferred as an FK to the V0 INVOICE table.
@@ -1085,11 +1085,11 @@ The following tables represent the outpatient journey. Column definitions are ex
 
 ### Database deployment: one development server, eight authorities
 
-**A4 portrait**
+**A4 landscape**
 
-![Database deployment: one development server, eight authorities](word-compact/portrait/png/23-en.png)
+![Database deployment: one development server, eight authorities](word-compact/landscape/png/23-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/23-en.mmd) · [SVG](word-compact/portrait/svg/23-en.svg)
+[Mermaid](word-compact/landscape/mermaid/23-en.mmd) · [SVG](word-compact/landscape/svg/23-en.svg)
 
 [Original SVG](assets/svg/23-en.svg) · [Portrait PNG](word-compact/portrait/png/23-en.png) · [Landscape PNG](word-compact/landscape/png/23-en.png)
 
@@ -1099,11 +1099,11 @@ The sitemap is derived from `frontend/src/app/**/page.tsx` and `mobile/lib/app/r
 
 ### Web sitemap by route group
 
-**A4 portrait**
+**A4 landscape**
 
-![Web sitemap by route group](word-compact/portrait/png/24-en.png)
+![Web sitemap by route group](word-compact/landscape/png/24-en.png)
 
-[Mermaid](word-compact/portrait/mermaid/24-en.mmd) · [SVG](word-compact/portrait/svg/24-en.svg)
+[Mermaid](word-compact/landscape/mermaid/24-en.mmd) · [SVG](word-compact/landscape/svg/24-en.svg)
 
 [Original SVG](assets/svg/24-en.svg) · [Portrait PNG](word-compact/portrait/png/24-en.png) · [Landscape PNG](word-compact/landscape/png/24-en.png)
 
@@ -1162,11 +1162,11 @@ The sitemap is derived from `frontend/src/app/**/page.tsx` and `mobile/lib/app/r
 
 ### Mobile sitemap and implementation level
 
-**A4 landscape**
+**A4 portrait**
 
-![Mobile sitemap and implementation level](word-compact/landscape/png/25-en.png)
+![Mobile sitemap and implementation level](word-compact/portrait/png/25-en.png)
 
-[Mermaid](word-compact/landscape/mermaid/25-en.mmd) · [SVG](word-compact/landscape/svg/25-en.svg)
+[Mermaid](word-compact/portrait/mermaid/25-en.mmd) · [SVG](word-compact/portrait/svg/25-en.svg)
 
 [Original SVG](assets/svg/25-en.svg) · [Portrait PNG](word-compact/portrait/png/25-en.png) · [Landscape PNG](word-compact/landscape/png/25-en.png)
 Loading/error/empty/retry states must be explicit; 401 requires sign-in and does not automatically resend a mutation with unknown outcome. UI role gating serves UX only. Flutter has real login and read-only Appointment/Lab; remaining workspaces are not presented as completed native functionality.
