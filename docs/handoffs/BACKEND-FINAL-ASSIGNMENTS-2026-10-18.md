@@ -1,5 +1,13 @@
 # Bảng giao việc backend cuối — 18/10/2026
 
+**Checkpoint 19/10:** bảng dưới là phân công lịch sử trước Gateway fix. Hoàng Anh đã
+triển khai HA-CODE-01/02 tại `2805b07c`; Vinh retest policy 11/11 và Gateway 1.449/1.449.
+Không giao lại việc sửa hai route. Hai test fixes vẫn thiếu trên remote master `4c19dd4a`;
+trạng thái local recheck và giới hạn nghiệm thu xem [registry hiện hành](README.md) và
+[bundle 19/10](../acceptance/backend-recheck-2026-10-19/README.md).
+
+## Phân công và kết quả lịch sử 18/10
+
 Baseline `025ef39e`, sau thực chạy regression và selected packaged/recovery profiles.
 **Chưa đóng backend:** Gateway refund path đang lỗi; full regression có một failure test Report; Pharmacy V1 opt-in có một error do harness thiếu publisher config.
 Toàn bộ kiểm thử do Vinh phụ trách theo phân công người dùng.

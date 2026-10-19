@@ -1,0 +1,4 @@
+# Keep evidence bytes stable across checkouts for SHA-256 verification.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Unified diff blank context lines intentionally contain one space.
+*.patch -whitespace
