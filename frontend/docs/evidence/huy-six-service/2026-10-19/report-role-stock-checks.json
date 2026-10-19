@@ -1,0 +1,387 @@
+[
+  {
+    "httpStatus": 200,
+    "role": "ADMIN",
+    "correlationId": "52fd4bfb-c5c3-4de8-a686-c00d71f586b6",
+    "method": "GET",
+    "path": "/api/v1/reports/daily?date=2026-10-19",
+    "response": {
+      "success": true,
+      "data": {
+        "reportDate": "2026-10-19",
+        "departmentId": null,
+        "visitCount": 0,
+        "labCount": 0,
+        "prescriptionCount": 0,
+        "revenue": 0.0
+      },
+      "error": null,
+      "timestamp": "2026-10-19T07:46:18.278599200Z",
+      "correlationId": "52fd4bfb-c5c3-4de8-a686-c00d71f586b6"
+    }
+  },
+  {
+    "httpStatus": 200,
+    "role": "ADMIN",
+    "correlationId": "67b1e021-b895-417d-af40-305cd4234691",
+    "method": "GET",
+    "path": "/api/v1/reports/monthly?month=10&year=2026",
+    "response": {
+      "success": true,
+      "data": {
+        "month": 10,
+        "year": 2026,
+        "departmentId": null,
+        "totalRevenue": 0.0,
+        "invoiceCount": 0,
+        "dailyDetails": [
+          {
+            "reportDate": "2026-10-01",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-02",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-03",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-04",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-05",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-06",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-07",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-08",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-09",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-10",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-11",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-12",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-13",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-14",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-15",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-16",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-17",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-18",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-19",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-20",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-21",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-22",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-23",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-24",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-25",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-26",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-27",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-28",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-29",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-30",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          },
+          {
+            "reportDate": "2026-10-31",
+            "departmentId": null,
+            "visitCount": 0,
+            "labCount": 0,
+            "prescriptionCount": 0,
+            "revenue": 0.0
+          }
+        ]
+      },
+      "error": null,
+      "timestamp": "2026-10-19T07:46:18.334324900Z",
+      "correlationId": "67b1e021-b895-417d-af40-305cd4234691"
+    }
+  },
+  {
+    "httpStatus": 200,
+    "role": "ADMIN",
+    "correlationId": "1700a902-9684-4507-8ada-591b07eb4400",
+    "method": "GET",
+    "path": "/api/v1/reports/top-medicines?fromDate=2026-10-19&toDate=2026-10-19&limit=10",
+    "response": {
+      "success": true,
+      "data": [],
+      "error": null,
+      "timestamp": "2026-10-19T07:46:18.359921200Z",
+      "correlationId": "1700a902-9684-4507-8ada-591b07eb4400"
+    }
+  },
+  {
+    "httpStatus": 200,
+    "role": "ADMIN",
+    "correlationId": "7a2ea9c2-201f-4513-8c70-deacac37d546",
+    "method": "GET",
+    "path": "/api/v1/pharmacy/drugs/662107e4-7994-4dfc-95e8-becc4a380c2c",
+    "response": {
+      "success": true,
+      "data": {
+        "drugId": "662107e4-7994-4dfc-95e8-becc4a380c2c",
+        "drugName": "FE stock 63684242eda5",
+        "activeIngredient": null,
+        "unit": "tablet",
+        "price": 2500.0,
+        "stockQuantity": 12,
+        "expiryDate": "2027-11-19",
+        "manufacturer": null,
+        "lowStockThreshold": 2,
+        "createdAt": "2026-10-19T07:42:45.207072Z",
+        "updatedAt": "2026-10-19T07:43:03.049662Z"
+      },
+      "error": null,
+      "timestamp": "2026-10-19T07:46:18.383981600Z",
+      "correlationId": "7a2ea9c2-201f-4513-8c70-deacac37d546"
+    }
+  },
+  {
+    "httpStatus": 403,
+    "role": "DOCTOR",
+    "correlationId": "d41e08cb-e81e-4f50-9f79-40c49e19415a",
+    "method": "GET",
+    "path": "/api/v1/reports/daily?date=2026-10-19",
+    "response": {
+      "success": false,
+      "data": null,
+      "error": {
+        "code": "AUTH_FORBIDDEN",
+        "message": "Role is not allowed to access this route",
+        "details": []
+      },
+      "timestamp": "2026-10-19T07:46:18.530842800Z",
+      "correlationId": "d41e08cb-e81e-4f50-9f79-40c49e19415a"
+    }
+  },
+  {
+    "httpStatus": 403,
+    "role": "DOCTOR",
+    "correlationId": "bc422f92-25b2-4c3a-85b6-fac0372670fc",
+    "method": "GET",
+    "path": "/api/v1/reports/monthly?month=10&year=2026",
+    "response": {
+      "success": false,
+      "data": null,
+      "error": {
+        "code": "AUTH_FORBIDDEN",
+        "message": "Role is not allowed to access this route",
+        "details": []
+      },
+      "timestamp": "2026-10-19T07:46:18.540845700Z",
+      "correlationId": "bc422f92-25b2-4c3a-85b6-fac0372670fc"
+    }
+  },
+  {
+    "httpStatus": 403,
+    "role": "DOCTOR",
+    "correlationId": "c317773a-5c89-4c0d-983c-af4e2359ac94",
+    "method": "GET",
+    "path": "/api/v1/reports/top-medicines?fromDate=2026-10-19&toDate=2026-10-19&limit=10",
+    "response": {
+      "success": false,
+      "data": null,
+      "error": {
+        "code": "AUTH_FORBIDDEN",
+        "message": "Role is not allowed to access this route",
+        "details": []
+      },
+      "timestamp": "2026-10-19T07:46:18.545839Z",
+      "correlationId": "c317773a-5c89-4c0d-983c-af4e2359ac94"
+    }
+  }
+]

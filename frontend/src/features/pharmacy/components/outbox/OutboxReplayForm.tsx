@@ -11,6 +11,7 @@ import {
 import type { Role } from "@/lib/roles";
 import { getPharmacyCapabilities } from "../../permissions";
 import { pharmacyApi } from "../../api";
+import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import type { OutboxReplayResult } from "../../types";
 import { isUuid } from "../../utils";
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
@@ -41,7 +42,9 @@ function errorMessage(cause: unknown): string {
       return "Không tìm thấy outbox event với mã đã nhập.";
     }
 
-    return cause.message;
+    return hasUncertainMutationStatus(cause)
+      ? `${cause.message} Chưa xác định kết quả replay; hãy kiểm tra trạng thái event trước khi thử lại.`
+      : cause.message;
   }
 
   const message = cause instanceof Error ? cause.message : "Không thể replay outbox event.";
@@ -175,7 +178,7 @@ function OutboxReplayFormContent() {
         focus:
           cause instanceof ApiRequestError && cause.status === 404
             ? "input"
-            : cause instanceof ApiRequestError && cause.status === 403
+            : !(cause instanceof ApiRequestError) || cause.status === 403 || hasUncertainMutationStatus(cause)
               ? "alert"
               : "submit",
         retryable: !(cause instanceof ApiRequestError && cause.status === 403),

@@ -29,13 +29,14 @@ function SendForm() {
   const [forbidden, setForbidden] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const focusTarget = useRef<string | null>(null);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
   const locked = saving || uncertain || sent || forbidden;
   useEffect(() => {
-    if (!saving && focusTarget.current) {
-      document.getElementById(`notification-${focusTarget.current}`)?.focus();
-      focusTarget.current = null;
-    }
-  }, [errors, saving]);
+    if (saving) return;
+    if (focusTarget.current && !locked) document.getElementById(`notification-${focusTarget.current}`)?.focus();
+    else if (error) feedbackRef.current?.focus();
+    focusTarget.current = null;
+  }, [errors, saving, error, locked]);
 
   function update(name: keyof SendNotificationValues, value: string) {
     if (locked) return;
@@ -44,7 +45,8 @@ function SendForm() {
     setError(null);
   }
   function focusError(next: SendNotificationErrors) {
-    focusTarget.current = Object.entries(next).find(([, message]) => Boolean(message))?.[0] ?? null;
+    focusTarget.current = (["patientId", "title", "content", "channel", "recipientAddress"] as const)
+      .find(name => next[name] && (name !== "recipientAddress" || values.channel !== "IN_APP")) ?? null;
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,7 +66,7 @@ function SendForm() {
       if (cause instanceof ApiRequestError && cause.status === 401) { router.replace("/login"); return; }
       const suffix = cause instanceof ApiRequestError && cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
       if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
-      const unknown = !(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400 || cause.status === 409;
+      const unknown = !(cause instanceof ApiRequestError) || cause.status === 408 || cause.status >= 500 || cause.status < 400 || cause.status === 409;
       setUncertain(unknown);
       if (unknown) {
         // This endpoint has no idempotency contract. Never offer a blind resend.
@@ -90,7 +92,7 @@ function SendForm() {
   });
   return (
     <form onSubmit={submit} noValidate aria-busy={saving || undefined} className="mt-6 max-w-3xl space-y-5 rounded-xl border border-border bg-surface p-6">
-      {error && <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p>}
+      {error && <p ref={feedbackRef} role="alert" tabIndex={-1} className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">{error}</p>}
       <Field label="Mã bệnh nhân" htmlFor="notification-patientId" error={errors.patientId} required><input {...field("patientId")} value={values.patientId} onChange={event => update("patientId", event.target.value)} placeholder="UUID bệnh nhân" /></Field>
       <Field label="Tiêu đề" htmlFor="notification-title" error={errors.title} required><input {...field("title")} maxLength={255} value={values.title} onChange={event => update("title", event.target.value)} /></Field>
       <Field label="Nội dung" htmlFor="notification-content" error={errors.content} required><textarea {...field("content")} rows={6} value={values.content} onChange={event => update("content", event.target.value)} /></Field>

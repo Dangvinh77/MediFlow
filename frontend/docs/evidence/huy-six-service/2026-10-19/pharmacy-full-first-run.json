@@ -1,0 +1,11 @@
+{
+  "run": "full-pharmacy-before-environment-rerun",
+  "files": 108,
+  "tests": 846,
+  "failures": 0,
+  "errors": 8,
+  "skipped": 0,
+  "affected": [
+    "com.mediflow.pharmacy.infrastructure.messaging.PrescriptionCareEventWriterPostgresTest"
+  ]
+}

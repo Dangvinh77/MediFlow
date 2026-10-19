@@ -93,6 +93,14 @@ public class PrescriptionClearancePersistenceAdapter implements PrescriptionClea
     }
 
     @Override
+    public List<PrescriptionClearance> findVerifiedByTarget(UUID prescriptionId) {
+        return jdbc.query("""
+                SELECT * FROM prescription_clearance
+                WHERE prescription_id = ? AND target_status = 'VERIFIED' ORDER BY clearance_id
+                """, this::read, prescriptionId);
+    }
+
+    @Override
     public void markVerified(UUID clearanceId) {
         int updated = jdbc.update("UPDATE prescription_clearance SET target_status = 'VERIFIED' WHERE clearance_id = ?",
                 clearanceId);

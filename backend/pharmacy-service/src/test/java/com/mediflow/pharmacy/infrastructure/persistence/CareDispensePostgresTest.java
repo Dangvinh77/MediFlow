@@ -114,6 +114,17 @@ class CareDispensePostgresTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE care_contract_version = 1 AND NOT delivery_enabled", Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM PHARMACY_EVENT_OUTBOX WHERE routing_key = 'stock.low'", Integer.class)).isOne();
     }
+    @Test void readVerifiedClearance_doesNotPromotePendingOrWriteInReadOnlyTransaction() {
+        var seed = seed(true);
+        var read = new TransactionTemplate(transactions);
+        read.setReadOnly(true);
+        read.executeWithoutResult(ignored -> assertThat(clearances.findVerifiedByTarget(seed.prescriptionId())).isEmpty());
+        assertThat(jdbc.queryForObject("SELECT target_status FROM prescription_clearance WHERE clearance_id = ?",
+                String.class, seed.clearanceId())).isEqualTo("PENDING");
+        tx(() -> clearances.markVerified(seed.clearanceId()));
+        read.executeWithoutResult(ignored -> assertThat(clearances.findVerifiedByTarget(seed.prescriptionId()))
+                .singleElement().satisfies(grant -> assertThat(grant.clearanceId()).isEqualTo(seed.clearanceId())));
+    }
     @Test void missingHeldCreation_rollsBackStockAndAuthorizationThenCreationAllowsRetry() {
         var seed = seed(false);
         assertThatThrownBy(() -> service.execute(seed.prescriptionId(), DispenseActor.staff(UUID.randomUUID()), "first"))

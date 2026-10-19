@@ -1,5 +1,18 @@
 # Frontend Service: Report
 
+2026-10-19 actual Support/browser acceptance: legacy daily/monthly/top-medicines returned 200
+for signed ADMIN and 403 for signed DOCTOR. Browser checks cover validation, zero/empty results,
+Back/Forward filters, keyboard retry after disposable Support outage/restart, and responsive themes.
+Outpatient UI stayed OFF throughout: accepted coverage, MANAGER and ON/OFF acceptance remain open.
+See [current evidence](../evidence/huy-six-service/2026-10-19/README.md) and plan section 14;
+older local-only browser statements below are historical.
+
+2026-10-19 keyboard follow-up: all four views expose a named, described error group for focus and
+keyboard retry. A pending failure does not interrupt filter editing or another workspace. Correlation,
+error codes and forbidden/no-retry behavior remain intact. Local evidence is in
+[plan section 11](../huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19);
+this does not close accepted coverage or signed browser/Gateway checks.
+
 **Owner:** Huy (`LQHuy0210`)  
 **Backend:** `backend/report-service/**`  
 **Contract context:** [`docs/ai/services/report.md`](../../../docs/ai/services/report.md)

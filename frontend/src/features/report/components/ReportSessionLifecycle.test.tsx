@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import { clearSession, storeSession } from "@/lib/session";
@@ -26,6 +27,51 @@ function deferred<T>() { let resolve!: (value: T) => void; let reject!: (cause: 
 describe("Report private session lifecycle", () => {
   beforeEach(() => { vi.resetAllMocks(); session(); });
   afterEach(() => clearSession());
+
+  it.each(cases)("focuses $name denied feedback once and leaves filters available to keyboard users", async item => {
+    item.api.mockRejectedValue(new ApiRequestError("Không được phép đọc", 403, "FORBIDDEN", [], "report-focus"));
+    render(item.element);
+    const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
+    await waitFor(() => expect(feedback).toHaveFocus());
+    expect(feedback).toHaveAccessibleDescription(/report-focus/);
+    expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+    const input = screen.getByLabelText(item.draft);
+    input.focus(); fireEvent.change(input, { target: { value: "invalid" } });
+    expect(input).toHaveFocus();
+    expect(item.api).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(cases)("does not interrupt filter editing when a pending $name read fails", async item => {
+    const pending = deferred<unknown>(); item.api.mockReturnValue(pending.promise);
+    render(item.element); await waitFor(() => expect(item.api).toHaveBeenCalledTimes(1));
+    const input = screen.getByLabelText(item.draft);
+    input.focus(); fireEvent.change(input, { target: { value: "new-scope" } });
+    await act(async () => pending.reject(new ApiRequestError("Unavailable", 503)));
+    expect(input).toHaveFocus(); expect(screen.getByRole("alert")).toHaveTextContent("Unavailable");
+  });
+
+  it("allows keyboard retry of an outpatient read without starting a second read automatically", async () => {
+    const user = userEvent.setup();
+    mocks.outpatientDaily.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, "UNAVAILABLE", [], "retry-focus"))
+      .mockResolvedValueOnce(cases[3].response);
+    render(cases[3].element);
+    const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
+    expect(feedback).toHaveFocus(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
+    await user.tab(); expect(screen.getByRole("button", { name: "Thử lại" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(await screen.findByText("Đã đối soát")).toBeVisible();
+    expect(mocks.outpatientDaily).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not steal focus while editing filters after unavailable coverage", async () => {
+    mocks.outpatientDaily.mockRejectedValue(new ApiRequestError("Missing coverage", 404, "REPORT_NOT_FOUND"));
+    render(cases[3].element);
+    const feedback = await screen.findByRole("group", { name: "Lỗi tải báo cáo" });
+    expect(feedback).toHaveFocus();
+    const input = screen.getByLabelText(cases[3].draft);
+    input.focus(); fireEvent.change(input, { target: { value: "another-scope" } });
+    expect(input).toHaveFocus(); expect(mocks.outpatientDaily).toHaveBeenCalledTimes(1);
+  });
 
   it.each(cases)("drops $name results and drafts on same-role account change", async item => {
     const pending = deferred<unknown>(); item.api.mockResolvedValueOnce(item.response).mockReturnValueOnce(pending.promise);

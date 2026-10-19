@@ -1,0 +1,26 @@
+[
+  {
+    "suite": "com.mediflow.pharmacy.application.service.PrescriptionApplicationServiceTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": "3.761"
+  },
+  {
+    "suite": "com.mediflow.pharmacy.infrastructure.messaging.PrescriptionCareEventWriterPostgresTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": "22.904"
+  },
+  {
+    "suite": "com.mediflow.pharmacy.infrastructure.persistence.CareDispensePostgresTest",
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": "13.62"
+  }
+]

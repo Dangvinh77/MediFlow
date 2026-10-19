@@ -1,5 +1,96 @@
 # Frontend Workboard
 
+## Huy — signed Gateway/browser acceptance, 2026-10-19
+
+Candidate `51eedfcd` + working diff: **10/14 task, 45/56 subtask**. Đóng thêm
+**HF6-01, HF6-06, HF6-07, HF6-10**; chi tiết ở [plan mục 14](huy-six-service-frontend-plan.md#14-nghiệm-thu-signed-gateway-và-browser--2026-10-19)
+và [evidence](evidence/huy-six-service/2026-10-19/README.md). Các mục bên dưới là lịch sử.
+
+- Sáu packaged business apps + Gateway/Eureka, PostgreSQL/RabbitMQ dùng dữ liệu test độc lập;
+  actual issuer login DOCTOR/PHARMACIST/ADMIN, CASHIER payment bằng public API.
+  Browser tạo Rx V1 → refresh đã thanh toán → xác nhận xuất; stock 40→37, duplicate không thêm effect.
+  Allowed cancel và foreign-doctor/pharmacist denial có HTTP/correlation evidence.
+- Catalog/search/page-size, tạo thuốc và chỉnh stock 5→12, replay known event được kiểm trên browser;
+  Clinical attachment/Report journal/Notification intake/dispense slip vẫn một effect sau replay.
+- Report legacy ngày/tháng/top-medicines qua Support thật: ADMIN 200, DOCTOR 403;
+  Support unavailable → focus lỗi → restart → keyboard retry thành công. Kiểm theme/320px/768px/desktop.
+  Outpatient UI giữ OFF, chưa có accepted coverage hoặc MANAGER acceptance.
+- Phát hiện và sửa Pharmacy V1 read chỉ kiểm V0 receipt nên không hiện thanh toán đã xác nhận.
+  Nay đọc verified clearance đúng target/patient/episode và còn hạn; dispense vẫn kiểm Billing authority.
+  Focused backend rerun **48/48 PASS** trên snapshot source-identical, tránh IDE ghi đè class output.
+  Full Pharmacy lần đầu có 846 tests, tám lỗi class-file; không ghi là full PASS.
+- Opt-in signed browser acceptance **1/1 PASS, 770.5s, exit 0**, zero failures/errors/skips.
+  FE production không đổi trong lượt runtime: checkpoint gần nhất **551/552 / 55 files**,
+  còn lỗi Lab fixture `LabDetail.test.tsx:194`; typecheck/lint/build PASS.
+- Còn **HF6-09/11/12/14**: Report coverage và ON/OFF, workflow Report/Notification privacy,
+  nghiệm thu Notification bằng signed users và release cuối. Dùng một handoff Huy hiện có.
+  Môi trường test đã dọn; Docker Desktop vẫn chạy. Chưa commit/push.
+
+## Huy — hoàn tất 5 đầu việc timeout, 2026-10-19
+
+Candidate `51eedfcd` + working diff; [plan mục 13](huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19)
+ghi chi tiết B5-01…05. Năm work items local này không cộng thành năm HF6 runtime tasks.
+
+1. **B5-01 DONE:** Rx V1 HTTP 408 giữ snapshot/key, khóa input; explicit retry giữ payload và không gọi V0.
+2. **B5-02 DONE:** tạo thuốc HTTP 408 khóa gửi, giữ input/correlation và focus feedback; tra cứu danh mục
+   trước yêu cầu mới. Unknown reply details không tạo lỗi field giả.
+3. **B5-03 DONE:** Notification timeout khóa gửi để tra lịch sử, giữ correlation/focus và không resend.
+4. **B5-04 DONE:** hủy/xuất Rx timeout chuyển sang fresh GET; GET lỗi vẫn giữ evidence; retry chỉ đọc.
+5. **B5-05 DONE:** outbox ambiguous response focus cảnh báo, giữ UUID; Enter không replay, cần xác nhận lại
+   chủ động. Kết quả chỉ nói requeue, không xác nhận consumer effect.
+
+Thêm **13 ca hồi quy trong 5 file**. Red run **12 fail / 112 pass**, 27.82s; case Notification 504
+đã đạt trước sửa. Green focused **124/124**, 20.55s. `pnpm typecheck`, `pnpm lint`, `pnpm build`
+**PASS, exit 0**; typecheck chạy trước build để không tranh chấp generated routes. Logs ignored trong
+`frontend/`: `.fe-five-{red,green,full,typecheck,lint,build}.log`.
+
+Full suite candidate cuối **551/552 trong 55 file**, 143.16s, exit 1. Chỉ lỗi đã có từ master
+`LabDetail.test.tsx:194` (READY V1 thiếu clearance nhưng fixture mong nút bắt đầu); không có diff Lab.
+Cả 13 ca mới và hồi quy Pharmacy/Support/stock đều đạt; Inpatient đạt trong lượt này.
+
+Pharmacy dùng helper feature-local cho 408/5xx/unreadable success, stock giữ flow đối chiếu đã có.
+Không đổi wire/API/shared auth/backend/feature foreign, không đổi theme/frame hoặc runtime flags.
+Chưa có browser/signed Gateway/coverage acceptance mới: **6/14 task, 39/56 subtask** giữ nguyên.
+Các dependency tiếp tục ở một handoff Huy; chưa commit/push.
+
+## Huy — điều chỉnh kho chưa rõ kết quả, 2026-10-19
+
+Candidate `51eedfcd` + working diff; xem [plan mục 12](huy-six-service-frontend-plan.md#12-giữ-kết-quả-điều-chỉnh-kho-chưa-rõ-qua-lỗi-tải-lại--2026-10-19).
+
+- Pharmacy giữ message/correlation và delta/unit của lệnh chưa rõ kết quả qua lỗi refresh,
+  retry read, 403/404. HTTP 408/5xx, unreadable success và network error bỏ draft cũ, không tự gửi lại.
+- Fresh GET không tự xác nhận kết quả mutation. Form chỉ mở draft trống sau khi người dùng xác nhận
+  đã đối chiếu; trong lúc refresh hoặc đọc thất bại không được bỏ trạng thái này. Focus về field số lượng
+  sau đối chiếu; đổi drug/session và response cũ không làm lẫn kết quả giữa tài khoản.
+- **11 ca hồi quy mới đạt**; focused **46/46 trong 3 file**. Red run tái hiện 8 case mới trước sửa.
+- Full suite cuối **538/539 trong 55 file**, 136.68s, exit 1: chỉ lỗi có sẵn
+  `LabDetail.test.tsx:194` (V1 READY fixture thiếu clearance nhưng mong nút bắt đầu), không có diff Lab.
+  Cả 11 ca mới và các hồi quy Pharmacy/Support trước đó đạt; Inpatient đạt trong lượt này.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**. Typecheck cuối chạy sau build;
+  lần chạy đồng thời trước đó gặp generated `.next/types/routes.js` đang được tái tạo, không phải lỗi TS source.
+  Logs ignored trong `frontend/`: `.fe-stock-{red,green,final,full,typecheck,lint,build}.log`.
+- Chỉ thêm code/tests Pharmacy và cập nhật docs/handoff chung, không commit/push. Không có browser,
+  screen-reader hoặc signed Gateway acceptance mới; giữ **6/14 task, 39/56 subtask**, HF6-10.3 OPEN.
+
+## Huy — keyboard/focus Pharmacy và Support, 2026-10-19
+
+Candidate `51eedfcd` + working diff; xem [plan mục 11](huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19).
+
+- Kê đơn giữ focus khi thêm/xóa dòng, chọn lỗi đầu tiên theo thứ tự hiển thị, focus phản hồi khi
+  kết quả chưa rõ và đưa về mã hồ sơ khi người dùng chủ động bắt đầu ý định mới.
+- Gửi Notification focus đúng field hoặc vùng lỗi sau khi pending kết thúc; không resend tự động.
+- Cả bốn Report views có vùng lỗi truy cập được và keyboard retry. Không giành focus khi người dùng
+  đang nhập phạm vi khác hoặc làm việc bên ngoài Report; không phát thêm request khi chỉ sửa draft.
+- **22 ca hồi quy mới đạt** (Pharmacy 8, Notification 4, Report 10). Focused trước guard cuối:
+  392/392 trong 31 file; Report lifecycle cuối 24/24. Full suite cuối:
+  **527/528 PASS, 55 files**, chỉ còn `LabDetail.test.tsx:194` từ master như checkpoint dưới.
+  Hai lỗi Inpatient ở lượt đồng bộ không tái hiện trong lượt full này.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: **PASS, exit 0**. Commands/logs local:
+  `.fe-accessibility-{full,typecheck,lint,build}.log`, `.fe-report-focus-final.log` trong `frontend/`
+  (ignored). Không sửa source Lab/Inpatient/shared auth/backend.
+- Chưa browser/screen-reader/Gateway acceptance mới; HF6-10.3 vẫn OPEN, giữ **6/14 task; 39/56 subtask**.
+  Plan/guides và handoff chung được cập nhật; không thêm handoff mới hoặc mở UI/backend gates.
+
 ## Đồng bộ master vào Huy — 2026-10-19
 
 - Fast-forward từ `025ef39e` tới `3cc3439b` (12 commit); local `Huy` và `master` cùng

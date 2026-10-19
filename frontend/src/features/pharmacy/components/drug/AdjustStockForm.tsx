@@ -8,14 +8,22 @@ import { ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { getPharmacyCapabilities } from "../../permissions";
 import { pharmacyApi } from "../../api";
+import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import type { DrugDTO } from "../../types";
 import { mapFieldErrors } from "../../utils";
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
+
+export interface StockAdjustmentUncertainty {
+  message: string;
+  quantity: number;
+  unit: string;
+}
 
 interface AdjustStockFormProps {
   drug: DrugDTO;
   onSuccess: (updatedDrug: DrugDTO) => void;
   onConflict: () => void;
+  onUncertain?: (outcome: StockAdjustmentUncertainty) => void;
   disabled?: boolean;
 }
 
@@ -61,6 +69,7 @@ function AdjustStockFormContent({
   drug,
   onSuccess,
   onConflict,
+  onUncertain,
   disabled = false,
 }: AdjustStockFormProps) {
   const isCurrent = usePharmacyRequestScope("canAdjustStock");
@@ -168,6 +177,22 @@ function AdjustStockFormContent({
       }
       if (cause instanceof ApiRequestError && cause.status === 403) setForbidden(true);
 
+      // A timeout, server failure or unreadable success cannot prove rollback.
+      const uncertain = !(cause instanceof ApiRequestError) || hasUncertainMutationStatus(cause);
+      if (uncertain) {
+        const message = cause instanceof ApiRequestError
+          ? `${errorMessage(cause)} Chưa xác định được kết quả điều chỉnh. Hãy kiểm tra tồn kho trước khi xác nhận lại.`
+          : errorMessage(cause);
+        setFormError(onUncertain ? null : message);
+        setConfirming(false);
+        setQuantity("");
+        setReason("");
+        // The detail owns this notice so failed refreshes cannot discard it with the form.
+        onUncertain?.({ message, quantity: parsedQuantity, unit: drug.unit });
+        onConflict();
+        return;
+      }
+
       if (
         cause instanceof ApiRequestError &&
         (cause.status === 409 || cause.code === "DRUG_OUT_OF_STOCK" || cause.code === "STOCK_BELOW_RESERVED")
@@ -188,13 +213,6 @@ function AdjustStockFormContent({
       }
       setFormError(errorMessage(cause));
       setConfirming(false);
-      // A network failure does not prove that a stock mutation was rolled back.
-      if (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400) {
-        // Reset the old delta before fresh stock arrives: it must never be blindly submitted twice.
-        setQuantity("");
-        setReason("");
-        onConflict();
-      }
     } finally {
       submittingRef.current = false;
       if (active.current && isCurrent()) setSubmitting(false);

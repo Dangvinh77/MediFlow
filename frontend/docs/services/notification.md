@@ -1,5 +1,21 @@
 # Frontend Service: Notification
 
+2026-10-19 actual Support intake check: replaying the known PrescriptionFilled event preserved one
+observed Notification notice, alongside one Report journal and Clinical attachment. This is backend
+intake/deduplication evidence, not signed Notification browser privacy, manual delivery or provider
+acceptance. HF6-14 remains open; see [current evidence](../evidence/huy-six-service/2026-10-19/README.md).
+
+2026-10-19 timeout follow-up: HTTP 408 joins network/5xx/unreadable-success outcomes. Manual send
+locks for history reconciliation, retains correlation and focuses feedback; timeout details never
+become editable field errors. No blind resend or idempotency header is introduced. See
+[plan section 13](../huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19).
+
+2026-10-19 keyboard follow-up: send validation focuses the earliest visible field rather than server
+detail order. General errors, denied commands and unknown outcome focus the error feedback after
+saving settles; locked controls are not targeted. No automatic resend is added. See
+[plan section 11](../huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19)
+for local tests; signed Notification acceptance remains open.
+
 **Owner:** Lộc (`locgit-89`)  
 **Backend:** `backend/notification-service/**`  
 **Contract context:** [`docs/ai/services/notification.md`](../../../docs/ai/services/notification.md)
