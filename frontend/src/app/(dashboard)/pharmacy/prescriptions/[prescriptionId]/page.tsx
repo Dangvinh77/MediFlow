@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PharmacyPageShell } from "@/features/pharmacy/components/PharmacyPageShell";
 import { PrescriptionDetail } from "@/features/pharmacy/components/prescription/PrescriptionDetail";
+import { resolvePrescriptionMode } from "@/features/pharmacy/prescriptionMode";
 import { isUuid } from "@/features/pharmacy/utils";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Chi tiết đơn thuốc | MediFlow",
@@ -17,6 +20,7 @@ export default async function PrescriptionDetailPage({
 }: PrescriptionDetailPageProps) {
   const { prescriptionId } = await params;
   const id = prescriptionId.trim();
+  const mode = resolvePrescriptionMode(process.env.MEDIFLOW_PHARMACY_PRESCRIPTION_MODE);
 
   return (
     <PharmacyPageShell
@@ -30,7 +34,7 @@ export default async function PrescriptionDetailPage({
         </section>
       ) : (
         <RoleGate allowed={["ADMIN", "DOCTOR", "PHARMACIST"]}>
-          <PrescriptionDetail prescriptionId={id} />
+          <PrescriptionDetail prescriptionId={id} mode={mode} />
         </RoleGate>
       )}
     </PharmacyPageShell>

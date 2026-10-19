@@ -157,10 +157,10 @@ V0 chỉ giữ compatibility nơi mode legacy được xác nhận, không xuấ
 
 Owner Huy; sau HF6-03. Tái sử dụng lookup/detail đang có; phối hợp Billing read-only.
 
-- [x] HF6-05.1 Lookup/deep link bằng prescriptionId thật; render lifecycle, dispense và paymentConfirmed độc lập, không tự đặt metadata V1.
-- [x] HF6-05.2 Chưa xác nhận thanh toán thì không cho submit xuất thuốc; có thao tác tải lại chủ động, không polling vô hạn hoặc tự xác nhận tiền từ UI Billing.
+- [x] HF6-05.1 Lookup/deep link bằng prescriptionId thật; lifecycle/dispense giữ độc lập. Chỉ mode legacy diễn giải paymentConfirmed; V1 dùng nhãn trung tính, không tự đặt metadata V1.
+- [x] HF6-05.2 V0 chặn xuất theo boolean legacy. V1 ACTIVE/PENDING cho role hợp lệ xác nhận command để backend kiểm clearance; có tải lại chủ động, không polling vô hạn hoặc tự xác nhận tiền từ UI Billing.
 - [x] HF6-05.3 Giá, tên thuốc, lineTotal/totalAmount lấy Pharmacy response; không gọi sibling feature hoặc suy ra invoice/charge/grant IDs.
-- [x] HF6-05.4 Kiểm thử pending→paid bằng fresh GET, stale response, 404/403, expired/terminal và lỗi refresh; chốt link Billing chỉ khi public route/query được owner xác nhận.
+- [x] HF6-05.4 Kiểm V0 pending→paid bằng fresh GET; V1 GET false vẫn cho command theo runtime mode, không coi GET là proof clearance. Giữ stale response, 404/403, expired/terminal và lỗi refresh; link Billing chỉ khi contract public được xác nhận.
 
 Đóng khi read workspace phản ánh đúng dữ liệu mới và không tự tạo financial proof; không bắt buộc
 thêm Billing entrypoint nếu chưa có contract, có thể chuyển qua workflow Billing hiện có.
@@ -655,3 +655,51 @@ ADMIN/NURSE/PATIENT/manual IN_APP/lifecycle, rồi release cuối. Shared late-4
 [handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md); không mở shared auth scope trong lượt này.
 Đã STOP hold, dọn disposable processes/containers, dừng FE test và trả theme System/logout;
 Docker Desktop vẫn chạy. Chưa commit/push hoặc rollout production.
+
+## 15. Checkpoint PR #446: sửa dispense V1 theo runtime contract — 2026-10-19
+
+Base `5ccecf83` đã có PR #439 (clock/publisher) và #443 (Notification byte identity).
+Backend security và FE được tách thành hai PR. Phần FE chỉ sửa Pharmacy feature và route tương ứng;
+không sửa backend `paymentConfirmed`, API DTO, shared auth/transport, hoặc bật rollout gates.
+
+- Detail route dynamic truyền `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE` qua resolver hiện hành:
+  unset/`outpatient` dùng V1, `legacy` dùng V0, giá trị khác đóng xuất thuốc.
+- V1 ACTIVE/PENDING cho ADMIN/PHARMACIST mở confirmation bất kể boolean V0, nhãn trung tính;
+  backend command kiểm quyền/clearance. Giữ cancel/dispensed guards và compatibility V0.
+- Timeout 408 đọc lại trạng thái trước lần xác nhận mới; không tự retry mutation. Session/mode
+  remount bỏ dialog và callback cũ. Không đánh dấu paid/dispensed khi server trả lỗi.
+- Source audit và dependency episode/priceCode cho Vinh ở [handoff chung, mục 6](../../docs/handoffs/HANDOFF-HUY-MVP.md#6-frontend-mvp--gate-tích-hợp-còn-lại-2026-10-16).
+
+**Code verification:** Pharmacy và routes **233/233 tests, 21 files**; typecheck/lint/build PASS.
+Full FE lần đầu **529/532**: một lỗi Lab fixture và hai timeout Inpatient. Chạy lại riêng hai file:
+**19/20** đạt, hai ca Inpatient đã đạt; ca Lab `Bắt đầu xét nghiệm` vẫn không tìm thấy control
+với fixture hiện hành. Không sửa feature/test ngoài scope để làm xanh. Đây là kết quả unit/component,
+không phải browser acceptance và không tự đóng HF6.
+
+**Trạng thái nghiệm thu tại checkpoint PR #446 (lịch sử, được mục 14 cập nhật):** baseline master **6/14 task, 39/56 subtask**; proof mới bên dưới đóng
+HF6-06.2/.3 thành **6/14 task, 41/56 subtask**. Không lấy kết quả
+browser cũ có sửa boolean backend làm bằng chứng cho candidate này. Report chưa có accepted
+outpatient coverage nên UI gate giữ OFF; Notification cần issuer PATIENT và cross-patient proof
+do Vinh phối hợp backend. Security handoff và dispense handoff chỉ đóng sau review/acceptance.
+
+**Browser/API thật trên code FE `9a00d7f`, backend JWT `5334aa8c`:** tạo Rx V1 bằng issuer DOCTOR,
+DOCTOR không thấy nút xuất và public command trả 403; PHARMACIST thử unpaid nhận 422/correlation.
+Issuer CASHIER trả tiền qua public API harness, duplicate payment cùng transaction; GET paid vẫn
+`paymentConfirmed=false`, PENDING, stock 40. Browser refresh rồi PHARMACIST xác nhận xuất thành công;
+retry API trả phiếu đã có, stock 37, một dispense slip/outbox và một Clinical attachment.
+Signed API checks cũng kiểm foreign-doctor create/cancel deny, PHARMACIST cancel deny và assigned
+doctor cancel/releasedReservations=1; browser ADMIN thấy đơn canceled không có terminal actions.
+
+Enter mở confirmation, focus Đóng, Escape trả trigger, Tab tới xác nhận và success nhận focus đã kiểm.
+Sáng/Tối/Hệ thống, desktop và 320px trên detail/confirmation; document width 305 ≤ viewport 320.
+NURSE browser đọc thông báo đơn/thu tiền/đã cấp thuốc đúng patient qua Gateway→Support; đây chưa là
+issuer PATIENT/cross-patient acceptance. NURSE bị chặn trang Report; ADMIN outpatient giữ unavailable
+khi UI gate OFF, không hiển thị số 0. Chưa chạy browser accepted Report coverage ADMIN/MANAGER,
+expired/revoked/Billing-down matrix, V0 signed runtime hoặc toàn bộ keyboard matrix; không đóng
+HF6-06.4/09/10.3/11/14 từ riêng các proof một phần này. Kết quả nghiệm thu tiếp theo
+và tiến độ hiện hành 10/14 task, 45/56 subtask được giữ ở mục 14.
+
+[Evidence candidate và giới hạn nghiệm thu](evidence/huy-six-service/2026-10-19-jwt-v1/README.md)
+chứa ảnh/AX, public response/correlation, source IDs, JAR hashes và local test overlay. Payment
+được thao tác bằng API harness; không gọi đây là toàn bộ luồng Billing qua trình duyệt. Các profile
+test vốn có chỉ chạy trên stores disposable; không sửa Compose/env/gate rollout hoặc mở scope deferred.
