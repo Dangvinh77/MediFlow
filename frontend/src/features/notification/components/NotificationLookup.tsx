@@ -1,43 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { getRole, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { notificationApi } from "../api";
-import type {
-  NotificationChannel,
-  NotificationDTO,
-  NotificationStatus,
-} from "../types";
+import type { NotificationDTO } from "../types";
+import { channelLabels, statusPresentation } from "../presentation";
+import { NotificationAccess, NotificationDenied, useNotificationRequestScope } from "./NotificationAccess";
 
 const NOTIFICATION_PAGE_SIZE = 20;
 const getServerRole = () => null;
 
-const channelLabels: Record<NotificationChannel, string> = {
-  EMAIL: "Email",
-  SMS: "SMS",
-  IN_APP: "Trong ứng dụng",
-};
-
-const statusPresentation: Record<
-  NotificationStatus,
-  { label: string; tone: StatusTone }
-> = {
-  PENDING: { label: "Chờ gửi", tone: "warning" },
-  SENT: { label: "Đã gửi", tone: "success" },
-  FAILED: { label: "Gửi thất bại", tone: "danger" },
-};
-
 interface RequestError {
   message: string;
   correlationId: string | null;
+  forbidden?: boolean;
 }
 
 interface NotificationRequest {
@@ -61,7 +45,15 @@ function getRequestError(cause: unknown): RequestError {
 }
 
 export function NotificationLookup() {
+  return <NotificationAccess permission="lookup"><LookupWorkspace /></NotificationAccess>;
+}
+
+function LookupWorkspace() {
   const router = useRouter();
+  const isCurrent = useNotificationRequestScope("lookup");
+  const sequence = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const deniedPatient = useRef<{ id: string; error: RequestError } | null>(null);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patientId, setPatientId] = useState("");
   const [activePatientId, setActivePatientId] = useState("");
@@ -80,6 +72,13 @@ export function NotificationLookup() {
 
   const loadNotifications = useCallback(
     async (id: string, page: number) => {
+      if (!isCurrent()) return;
+      const requestId = ++sequence.current;
+      if (deniedPatient.current?.id === id) {
+        setError(deniedPatient.current.error);
+        setNotifications([]); setLoading(false);
+        return;
+      }
       setLastRequest({ patientId: id, page });
       setLoading(true);
       setError(null);
@@ -91,22 +90,28 @@ export function NotificationLookup() {
           page,
           NOTIFICATION_PAGE_SIZE,
         );
+        if (!isCurrent() || requestId !== sequence.current) return;
         setNotifications(result.content);
         setPageNumber(result.number);
         setTotalPages(result.totalPages);
         setTotalElements(result.totalElements);
       } catch (cause: unknown) {
+        if (!isCurrent() || requestId !== sequence.current) return;
         if (cause instanceof ApiRequestError && cause.status === 401) {
           router.replace("/login");
           return;
         }
 
-        setError(getRequestError(cause));
+        const nextError = cause instanceof ApiRequestError && cause.status === 403
+          ? { message: "Bạn không có quyền xem thông báo của bệnh nhân này.", correlationId: cause.correlationId, forbidden: true }
+          : getRequestError(cause);
+        if (nextError.forbidden) deniedPatient.current = { id, error: nextError };
+        setError(nextError);
       } finally {
-        setLoading(false);
+        if (isCurrent() && requestId === sequence.current) setLoading(false);
       }
     },
-    [router],
+    [router, isCurrent],
   );
 
   function onSearch(event: FormEvent<HTMLFormElement>) {
@@ -114,7 +119,11 @@ export function NotificationLookup() {
     const normalizedPatientId = patientId.trim();
 
     if (!isUuid(normalizedPatientId)) {
+      ++sequence.current;
+      setLoading(false); setNotifications([]); setSearched(false); setError(null);
+      setPageNumber(0); setTotalPages(0); setTotalElements(0);
       setValidationError("Mã bệnh nhân phải là UUID hợp lệ.");
+      inputRef.current?.focus();
       return;
     }
 
@@ -127,7 +136,7 @@ export function NotificationLookup() {
   const showTable = !loading && !error && notifications.length > 0;
 
   return (
-    <section className="mt-6">
+    <section className="mt-6 rounded-xl border border-border bg-surface p-5 sm:p-6" aria-label="Lịch sử thông báo">
       {role === "ADMIN" ? <div className="mb-4 flex justify-end"><Link href="/notifications/send" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Gửi thông báo</Link></div> : null}
       <form
         onSubmit={onSearch}
@@ -142,6 +151,7 @@ export function NotificationLookup() {
             Mã bệnh nhân
           </label>
           <input
+            ref={inputRef}
             id="notification-patient-id"
             value={patientId}
             onChange={(event) => {
@@ -149,6 +159,7 @@ export function NotificationLookup() {
               setValidationError(null);
             }}
             placeholder="Nhập UUID bệnh nhân"
+            aria-required="true"
             aria-invalid={validationError ? true : undefined}
             aria-describedby={
               validationError ? "notification-patient-id-error" : undefined
@@ -158,7 +169,7 @@ export function NotificationLookup() {
         </div>
         <button
           type="submit"
-          disabled={loading || !patientId.trim()}
+          disabled={!patientId.trim()}
           className="min-h-12 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-10"
         >
           Tra cứu thông báo
@@ -182,7 +193,7 @@ export function NotificationLookup() {
       {loading ? <AsyncState kind="loading" message="Đang tải thông báo…" /> : null}
 
       {!loading && error ? (
-        <AsyncState
+        error.forbidden ? <NotificationDenied message={error.message} correlationId={error.correlationId} /> : <AsyncState
           kind="error"
           message={error.message}
           correlationId={error.correlationId}

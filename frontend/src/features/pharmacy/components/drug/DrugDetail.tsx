@@ -18,6 +18,7 @@ import {
   isUuid,
 } from "../../utils";
 import { AdjustStockForm } from "./AdjustStockForm";
+import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 interface DrugDetailProps {
   drugId: string;
@@ -27,7 +28,7 @@ type DetailRequestState =
   | { key: string; status: "idle" }
   | { key: string; status: "success"; drug: DrugDTO }
   | { key: string; status: "not-found"; correlationId?: string }
-  | { key: string; status: "error"; message: string };
+  | { key: string; status: "error"; message: string; forbidden?: boolean };
 
 function getServerRole(): Role | null {
   return null;
@@ -72,24 +73,29 @@ function DetailError({
   onRetry,
 }: {
   message: string;
-  onRetry: () => void;
+  onRetry?: () => void;
 }) {
   return (
     <div role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
       <p>{message}</p>
-      <button
+      {onRetry && <button
         type="button"
         onClick={onRetry}
         className="mt-3 rounded-lg border border-danger/40 px-3 py-2 font-medium hover:bg-danger/10"
       >
         Thử lại
-      </button>
+      </button>}
     </div>
   );
 }
 
 /** Fetches one drug and composes permission-gated catalogue actions. */
 export function DrugDetail({ drugId }: DrugDetailProps) {
+  return <PharmacySessionBoundary capability="canReadDrugs"><DrugDetailContent key={drugId} drugId={drugId} /></PharmacySessionBoundary>;
+}
+
+function DrugDetailContent({ drugId }: DrugDetailProps) {
+  const isCurrent = usePharmacyRequestScope("canReadDrugs");
   const router = useRouter();
   const role = useSyncExternalStore(
     subscribeToAuthChanges,
@@ -118,16 +124,16 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
   useEffect(() => {
     let active = true;
     const requestId = ++requestSequence.current;
-    if (!isUuid(drugId)) return;
+    if (!isUuid(drugId) || !isCurrent()) return;
 
     pharmacyApi
       .getDrug(drugId)
       .then((nextDrug) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
         setRequestState({ key: requestKey, status: "success", drug: nextDrug });
       })
       .catch((cause: unknown) => {
-        if (!active || requestId !== requestSequence.current) return;
+        if (!active || !isCurrent() || requestId !== requestSequence.current) return;
 
         if (cause instanceof ApiRequestError && cause.status === 401) {
           setRequestState({
@@ -151,13 +157,14 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
           key: requestKey,
           status: "error",
           message: detailErrorMessage(cause),
+          forbidden: cause instanceof ApiRequestError && cause.status === 403,
         });
       });
 
     return () => {
       active = false;
     };
-  }, [drugId, requestKey, router]);
+  }, [drugId, isCurrent, requestKey, router]);
 
   if (!isUuid(drugId)) {
     return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Mã thuốc không hợp lệ. Vui lòng dùng mã UUID đầy đủ.</p>;
@@ -187,7 +194,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
     return (
       <DetailError
         message={error}
-        onRetry={() => setRetryToken((value) => value + 1)}
+        onRetry={requestState.status === "error" && requestState.forbidden ? undefined : () => setRetryToken((value) => value + 1)}
       />
     );
   }
@@ -199,7 +206,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
   const lowStock = drug.stockQuantity <= drug.lowStockThreshold;
 
   return (
-    <section className="mt-6 space-y-6">
+    <section className="mt-6 min-w-0 space-y-6 [overflow-wrap:anywhere]">
       {loading && (
         <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">
           Đang tải tồn kho mới nhất…
@@ -225,10 +232,10 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
         </div>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-surface p-6">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <section className="min-w-0 rounded-xl border border-border bg-surface p-6">
           <h3 className="text-base font-semibold">Thông tin thuốc</h3>
-          <dl className="mt-4 grid gap-4 break-words sm:grid-cols-2">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div><dt className="text-xs text-muted-foreground">Hoạt chất</dt><dd className="mt-1">{drug.activeIngredient ?? "—"}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Đơn vị</dt><dd className="mt-1">{drug.unit || "—"}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Nhà sản xuất</dt><dd className="mt-1">{drug.manufacturer ?? "—"}</dd></div>
@@ -236,7 +243,7 @@ export function DrugDetail({ drugId }: DrugDetailProps) {
           </dl>
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6">
+        <section className="min-w-0 rounded-xl border border-border bg-surface p-6">
           <h3 className="text-base font-semibold">Giá và tồn kho</h3>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <div><dt className="text-xs text-muted-foreground">Đơn giá</dt><dd className="mt-1 font-semibold">{formatVnd(drug.price)}</dd></div>

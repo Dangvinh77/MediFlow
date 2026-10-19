@@ -62,6 +62,18 @@ export interface CreatePrescriptionRequest {
   lines: PrescriptionLineRequest[];
 }
 
+/** Public outpatient V1 command. Read responses do not expose this metadata. */
+export interface CreateOutpatientPrescriptionRequest
+  extends Omit<CreatePrescriptionRequest, "recordId"> {
+  recordId: string | null;
+  careContractVersion: 1;
+  careContext: "OUTPATIENT";
+  careEpisodeType: "OUTPATIENT_VISIT";
+  careEpisodeId: string;
+  admissionId: null;
+  priceCode: string;
+}
+
 // Price fields are intentionally absent from prescription requests: the backend
 // snapshots the official drug price and calculates every monetary total.
 

@@ -8,6 +8,7 @@ import { validateOutpatientQuery, type OutpatientQueryErrors, type OutpatientRep
 import { useReportRequest } from "../useReportRequest";
 import { OutpatientReportResult } from "./OutpatientReportResult";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
+import { ReportSessionBoundary } from "./ReportSessionBoundary";
 
 interface Props {
   initialQuery: OutpatientReportQuery;
@@ -16,6 +17,10 @@ interface Props {
 }
 
 export function OutpatientReportView({ initialQuery, autoLoad, onQuerySubmit }: Props) {
+  return <ReportSessionBoundary><OutpatientReportContent initialQuery={initialQuery} autoLoad={autoLoad} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
+}
+
+function OutpatientReportContent({ initialQuery, autoLoad, onQuerySubmit }: Props) {
   const { mode, fromDate: initialFrom, toDate: initialTo, year: initialYear, departmentId: initialDepartment } = initialQuery;
   const [fromDate, setFromDate] = useState(initialFrom);
   const [toDate, setToDate] = useState(initialTo);
@@ -27,7 +32,7 @@ export function OutpatientReportView({ initialQuery, autoLoad, onQuerySubmit }: 
   const initialRequest = useCallback(() => mode === "daily"
     ? reportApi.outpatientDaily(initialFrom, initialTo, initialDepartment)
     : reportApi.outpatientMonthly(initialYear, initialDepartment), [mode, initialFrom, initialTo, initialYear, initialDepartment]);
-  const { state, load, retry } = useReportRequest(initialRequest, autoLoad && Object.keys(validateOutpatientQuery(initialQuery)).length === 0);
+  const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && Object.keys(validateOutpatientQuery(initialQuery)).length === 0);
   const feedback = state.status === "error" && state.code === "REPORT_NOT_FOUND"
     ? { ...state, message: "Chưa có báo cáo đã đối soát cho phạm vi này. Vui lòng thử lại sau hoặc liên hệ quản trị viên." }
     : state;
@@ -38,7 +43,7 @@ export function OutpatientReportView({ initialQuery, autoLoad, onQuerySubmit }: 
     const nextErrors = validateOutpatientQuery(query);
     setErrors(nextErrors);
     const first = Object.keys(nextErrors)[0];
-    if (first) { form.current?.querySelector<HTMLInputElement>(`[name="${first}"]`)?.focus(); return; }
+    if (first) { clear(); form.current?.querySelector<HTMLInputElement>(`[name="${first}"]`)?.focus(); return; }
     if (onQuerySubmit(query)) return;
     load(() => mode === "daily" ? reportApi.outpatientDaily(query.fromDate, query.toDate, query.departmentId) : reportApi.outpatientMonthly(query.year, query.departmentId));
   }

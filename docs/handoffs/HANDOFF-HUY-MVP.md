@@ -4,8 +4,10 @@
 
 Giữ kết quả Huy 48/48 trong môi trường đã quan sát, không giao lại implementation đã hoàn tất. Theo chỉ đạo người dùng, **Vinh nhận toàn bộ kiểm thử backend**, gồm fresh full Pharmacy/Report/Support và sáu-app/recovery/cutover regression trên revision chung, tại [queue V-TEST-01–06](HANDOFF-VINH-BACKEND-VERIFICATION.md). Huy chỉ nhận task sửa production mới khi có lỗi/expected-actual cụ thể; không phải chạy lại toàn bộ test để bàn giao. Phân công này thay các yêu cầu owner acceptance còn mở trong phần lịch sử bên dưới.
 
-Rà soát mới nhất: **2026-10-17**, Support baseline `27b8832d` + working tree chưa commit/push,
-chi tiết ở mục 11. Baseline lịch sử `9ef3b151f895cef4c05916bf53331ff1d525f920`
+Rà soát FE mới nhất: **2026-10-18**, baseline `025ef39e` + working diff chưa commit/push,
+Pharmacy và toàn bộ Support tại mục 6. Rerun six-service API acceptance **2026-10-18** PASS (mục 6);
+persisted-volume acceptance gần nhất **2026-10-17**, Support baseline
+`27b8832d` cùng evidence mục 11. Baseline lịch sử `9ef3b151f895cef4c05916bf53331ff1d525f920`
 cộng thay đổi owned trong workspace; implementation trước đó đã merge PR #385 (`7610cb97`,
 merge `f15430dc`). User giao: hoàn tất phần độc lập trong phạm vi Huy, gom phần còn lại vào
 **một file handoff**. Đây là đầu mối duy nhất thay các handoff activation, Support, Pharmacy
@@ -191,6 +193,57 @@ contracts/service docs; chỉ gỡ file handoff khi mọi active gate được c
 
 ## 6. Frontend MVP — gate tích hợp còn lại (2026-10-16)
 
+**Refresh 2026-10-18:** plan thực thi FE hiện hành ở
+[FE Huy — 6 service](../../frontend/docs/huy-six-service-frontend-plan.md).
+Gateway exact Pharmacy cancel/dispense policy và Support/backend EXAM/Rx acceptance đã có ở
+source hiện tại; các mô tả generic PUT/chưa có Support trong bảng lịch sử bên dưới không còn là
+gap implementation. Còn nghiệm thu browser FE bằng signed users và cấu hình/coverage của môi trường.
+User giao Huy **Pharmacy và toàn bộ Support FE**, gồm Notification, đồng thời trả lời câu hỏi giao
+`frontend/src/lib/api.ts`/`api.test.ts` cho optional POST `Idempotency-Key`. Shared header đã nối;
+form V1, retry cùng snapshot/key, runtime mode và manual payment refresh đã triển khai. Notification
+lookup/detail/send đã có contract/validation/role/privacy/session/race guards và tests. Không còn
+chờ Lộc/Vinh code các phần này; ownership lâu dài không đổi. Read Rx DTO vẫn không có metadata V1.
+Public outpatient creation yêu cầu exact record ở `PublicOutpatientPrescriptionCreationService`,
+dù DTO V1 tổng quát cho phép null; không dùng nullability DTO để nới public form.
+Report đã refresh local contracts/regression (HF6-08), runtime HF6-09 vẫn OPEN. Các dòng dưới giữ
+evidence/checklist lịch sử, không tự đóng mới hoặc mở flags theo số task backend.
+
+**Các việc còn thực sự cần nghiệm thu FE:**
+
+- HF6-01.2: confirmed record/patient/staff/department/episode IDs và priceCode của đúng môi trường.
+  Form nhận riêng từng giá trị; public MedicalRecord DTO không có trường episode rõ ràng nên không
+  tự lấy appointmentId/recordId thay careEpisodeId hoặc gọi internal lookup từ browser.
+- HF6-06/09/11: signed-role tạo/hủy/xuất Rx đã thanh toán; Gateway→Support reader với accepted
+  coverage, đúng profiles/flags; phân biệt backend acceptance đã hoàn tất với browser FE chưa chạy.
+- HF6-10/14: browser fixture đã kiểm theme/mobile và một phần focus/Escape (evidence trong plan mục 9),
+  còn full keyboard matrix và Notification bằng signed ADMIN/NURSE/PATIENT thật,
+  owner/cross-patient denial, manual IN_APP và lifecycle notice. EMAIL/SMS cần test provider/recipient
+  được cấp; không gửi người thật để lấy evidence. Retry/read-state API không tồn tại, không thêm nút giả.
+- Server FE: `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE` unset/`outpatient`→V1, `legacy`→V0 explicit,
+  giá trị khác đóng form; route dynamic. `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED` vẫn OFF mặc định,
+  chỉ ON sau reader/coverage acceptance. Hai env không bật profile/flags backend.
+- Runtime API rerun 2026-10-18: `SixServiceOutpatientAcceptanceIT` 1/1, zero failure/error/skip,
+  211.5s, actual staff logins, PG16/Rabbit disposable, six apps + Gateway/Eureka; Gateway→Support
+  hai stores và rollback standalone trên test stores đạt. Rx paid 30.000 VND không auto dispense,
+  manual dispense stock 20→17, duplicate commands không thêm effect. Không đổi original volumes.
+  Bootstrap ADMIN/PATIENT/MANAGER privacy tokens là harness-signed, không phải issuer PATIENT login.
+  Đây là API harness, chưa signed FE browser hoặc accepted outpatient Report coverage. Fresh outputs:
+  `backend/support-service/target/six-service-acceptance/` và Failsafe reports, summary ở plan mục 9.
+
+Candidate B10 đạt **501/501 FE tests, 55 files**, zero failures/skips; typecheck/lint/build PASS.
+B20 denial/focus tiếp theo focused 108/108, full **506/506 / 55 files**; final checks ở plan mục 10/evidence.
+Plan mở rộng **6/14 task; 39/56 subtask** (Pharmacy/Report gốc 5/12; 35/48, Notification thêm 4/8).
+Tiến độ/checks candidate hiện hành ghi ở plan mục 9/10 và workboard; chỉ dùng một handoff này.
+
+**Shared dependency — old 401 clears new session (OPEN, Vinh/shared frontend):**
+`frontend/src/lib/api.ts` captures token khi dispatch nhưng line 81 clearSession vô điều kiện khi response 401.
+Request của A có thể trả 401 sau khi B đã login và xóa session B. Feature-local guards/remount hiện tại
+bỏ callback cũ nhưng không ngăn side effect global của wrapper. Lifecycle tests mock feature facades,
+không phải bằng chứng transport đã an toàn cho race này. Scope shared của lượt hiện tại chỉ optional
+POST Idempotency-Key, không tự đổi semantics auth để đóng task. Acceptance khi được giao shared fix:
+wrapper test A pending → store session B → A 401 phải giữ B; current-session 401 vẫn clear/redirect
+đúng; kiểm anonymous/login/refresh callers không regress. Không log tokens/credentials hoặc lưu intents mới.
+
 Theo yêu cầu chỉ dùng một handoff, phần phụ thuộc frontend tiếp tục ghi tại đây. Không tạo
 handoff FE mới hoặc coi browser fixture là bằng chứng backend chạy thật. FE local checklist nằm ở
 [plan Huy, mục 14](../../frontend/docs/huy-frontend-implementation-plan.md#14-checkpoint-kê-đơn-và-terminal-actions--2026-10-16).
@@ -201,10 +254,10 @@ có Surgery/full V2 deferred, không phải tỷ lệ MVP backend.
 | Phụ thuộc | Owner / bằng chứng cần nhận | Điều kiện nghiệm thu FE |
 |---|---|---|
 | Signed identity và Gateway runtime | Hoàng Anh + runtime operator; actual roles ADMIN/PHARMACIST/DOCTOR/MANAGER, accountId/staffId đúng source | Login → catalog/detail/create/adjust/replay/reports qua same-origin Gateway; allowed/denied paths, expired session và correlation đúng. Token fixture không thay signed staff proof |
-| GW-01 — exact Pharmacy cancel/dispense roles | Hoàng Anh; `RouteAuthorizationFilter` hiện generic PUT `/api/v1/pharmacy/prescriptions/**` chỉ ADMIN/PHARMACIST, controller cancel ADMIN/DOCTOR | DOCTOR kê đơn đúng signed actor được cancel đơn của mình; foreign doctor/PHARMACIST bị deny cancel; ADMIN/PHARMACIST dispense chỉ khi lifecycle/payment đủ. Ghi actual allowed/denied HTTP và correlation; không đổi DOCTOR thành PHARMACIST để qua Gateway |
+| GW-01 — exact Pharmacy cancel/dispense roles | Policy source đã đúng: Gateway/controller cancel ADMIN/DOCTOR, dispense ADMIN/PHARMACIST; còn nghiệm thu signed actors thật | DOCTOR kê đơn đúng signed actor được cancel đơn của mình; foreign doctor/PHARMACIST bị deny cancel; ADMIN/PHARMACIST dispense chỉ khi lifecycle/payment đủ. Ghi actual allowed/denied HTTP và correlation; không đổi DOCTOR thành PHARMACIST để qua Gateway |
 | Outpatient Rx source/paid flow | Vinh Clinical + Lộc Billing, theo H6-06.2/.4 và H6-12.1 ở trên | Chỉ dùng IDs trả về từ source, current charge/grant và signed actor; nối UI public outpatient sau activation acceptance, không tự fallback legacy V0 để báo V1 thành công |
-| P-08 — hỗ trợ header cho public Rx V1 | Vinh, owner shared frontend `frontend/src/lib/api.ts`; Huy nối Pharmacy sau khi shared contract sẵn sàng | API wrapper hỗ trợ truyền `Idempotency-Key` cho POST mà vẫn giữ envelope, bearer và xử lý lỗi hiện có. FE dùng canonical UUID cho một creation command, giữ cùng key/payload khi retry cùng command; command mới dùng key mới. Kiểm chứng header qua Gateway, không đặt key vào JSON và không gọi raw fetch trong feature |
-| Support host và endpoint routing | Lộc Notification + shared build/runtime owner + Hoàng Anh Gateway, theo H6-11 | Report/Notification logical routes tiếp tục đúng qua một Support host đã nghiệm thu; không đổi feature folder theo deployment hoặc coi sáu nhóm sidebar là proof sáu process |
+| P-08 — hỗ trợ header cho public Rx V1 | DONE local 2026-10-18: user giao Huy `api.ts`/`api.test.ts`, Pharmacy đã dùng public wrapper | Optional POST key, bearer/envelope/errors/correlation và bodyless callers đã kiểm thử. Intent giữ key/payload khi retry; command mới dùng key mới. Còn kiểm header qua Gateway thật trong workflow HF6-11 |
+| Support host và endpoint routing | Backend host/routing đã tích hợp và nghiệm thu local ở mục 11; Huy trực tiếp làm Notification FE theo override mới | Còn browser Report/Notification qua Gateway→Support thật trên candidate FE; không đổi feature folder theo deployment hoặc coi sáu nhóm sidebar là proof sáu process |
 | Report currency, department và coverage | Huy Report + Lộc Billing + Hoàng Anh Organization và source owners | Legacy DTO giữ numeric format/department UUID khi chưa có display contract. Current accepted period/zone/currency/coverage có owner evidence trước UI snapshot mới; unavailable không biến thành zero |
 
 Đã có local test/browser evidence cho Reports, drug management và outbox; build/check results
@@ -231,7 +284,7 @@ Không cần thêm capability endpoint hoặc mở Financial/Operational/Surgery
 direct URL và entry, không fallback sang legacy nếu `REPORT_NOT_FOUND`; unavailable không thành zero.
 Không đóng thêm H6-11/H6-12 hoặc sửa topology/foreign paths trong batch FE này.
 
-Rà soát tiếp theo ngày **2026-10-17**, source baseline `ebef4508`: public
+Ghi chú lịch sử, đã được thay bởi refresh 2026-10-18 ở đầu mục 6: ngày **2026-10-17**, source baseline `ebef4508`, public
 `api.post(path, data)` chưa nhận headers, dù transport nội bộ đã dùng `Headers`.
 `PrescriptionController` yêu cầu canonical UUID `Idempotency-Key` khi
 `careContractVersion=1`; thiếu/sai key bị từ chối. Cần shared owner cung cấp khả năng này

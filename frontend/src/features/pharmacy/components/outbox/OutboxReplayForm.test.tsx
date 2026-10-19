@@ -77,6 +77,9 @@ describe("OutboxReplayForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("corr-denied");
     await waitFor(() => expect(screen.getByRole("alert")).toHaveFocus());
     expect(screen.getByRole("button", { name: "Xem xác nhận" })).toBeDisabled();
+    fireEvent.submit(screen.getByLabelText("Event ID").closest("form")!);
+    expect(screen.queryByRole("button", { name: "Xác nhận replay" })).not.toBeInTheDocument();
+    expect(mocks.replay).toHaveBeenCalledTimes(1);
   });
   it("keeps a network failure uncertain and requires a fresh confirmation before retry", async () => {
     mocks.replay.mockRejectedValueOnce(new Error("Mất kết nối; chưa xác định kết quả")).mockResolvedValueOnce({ eventId, replayed: true });

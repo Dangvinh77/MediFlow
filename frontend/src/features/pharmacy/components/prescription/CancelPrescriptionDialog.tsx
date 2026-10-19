@@ -9,6 +9,7 @@ import { getRole } from "@/lib/auth";
 import { pharmacyApi } from "../../api";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { CancelPrescriptionResult } from "../../types";
+import { usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 interface CancelPrescriptionDialogProps {
   prescriptionId: string;
@@ -34,6 +35,7 @@ function errorMessage(cause: ApiRequestError): string {
 
 /** Inline confirmation; it leaves the rest of the page available to keyboard users. */
 export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, onConflict }: CancelPrescriptionDialogProps) {
+  const isCurrent = usePharmacyRequestScope("canCancelPrescription");
   const router = useRouter();
   const reasonRef = useRef<HTMLTextAreaElement>(null);
   const submittingRef = useRef(false);
@@ -64,7 +66,7 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || forbidden || !getPharmacyCapabilities(getRole()).canCancelPrescription) return;
+    if (submittingRef.current || forbidden || !isCurrent() || !getPharmacyCapabilities(getRole()).canCancelPrescription) return;
     const normalized = reason.trim();
     if (!normalized || normalized.length > 500) {
       setFieldError(!normalized ? "Lý do hủy đơn thuốc là bắt buộc." : "Lý do hủy không được vượt quá 500 ký tự.");
@@ -78,9 +80,9 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
     setSubmitting(true);
     try {
       const result = await pharmacyApi.cancelPrescription(prescriptionId, { reason: normalized });
-      if (active.current) onSuccess(result);
+      if (active.current && isCurrent()) onSuccess(result);
     } catch (cause: unknown) {
-      if (!active.current) return;
+      if (!active.current || !isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -103,7 +105,7 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
       setFormError(errorMessage(cause));
     } finally {
       submittingRef.current = false;
-      if (active.current) setSubmitting(false);
+      if (active.current && isCurrent()) setSubmitting(false);
     }
   }
 

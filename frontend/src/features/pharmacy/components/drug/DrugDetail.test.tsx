@@ -47,12 +47,12 @@ describe("DrugDetail", () => {
     expect(screen.getByText(/corr-missing/)).toBeVisible();
     expect(screen.queryByLabelText("Lý do")).not.toBeInTheDocument();
   });
-  it("keeps 403 evidence and retries a failed read", async () => {
-    mocks.get.mockRejectedValueOnce(new ApiRequestError("Forbidden", 403, "FORBIDDEN", [], "corr-read")).mockResolvedValueOnce(drug);
+  it("keeps 403 evidence without offering an unauthorized read retry", async () => {
+    mocks.get.mockRejectedValueOnce(new ApiRequestError("Forbidden", 403, "FORBIDDEN", [], "corr-read"));
     render(<DrugDetail drugId={drug.drugId} />);
     expect(await screen.findByRole("alert")).toHaveTextContent("corr-read");
-    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
-    expect(await screen.findByRole("heading", { name: drug.drugName })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledTimes(1);
   });
   it("redirects authentication errors and ignores requests after unmount", async () => {
     let reject!: (error: unknown) => void;

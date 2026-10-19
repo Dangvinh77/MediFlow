@@ -1,5 +1,19 @@
 # Frontend Workboard
 
+## Đồng bộ master vào Huy — 2026-10-19
+
+- Fast-forward từ `025ef39e` tới `3cc3439b` (12 commit); local `Huy` và `master` cùng
+  `origin/master`. Giữ working diff Pharmacy/Support, không commit/push phần đang làm.
+- Ghép workboard/handoff của cả hai phía. Shared API dùng nguyên `MutationOptions` của master
+  cho POST/POST raw/PUT; consumer Pharmacy và regression header của Huy được giữ lại.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: PASS, exit 0 sau đồng bộ.
+- Full suite: **503/506 PASS, 55 files**, ba lỗi ở Inpatient/Lab. Chạy riêng hai file đó:
+  **19/20 PASS**; toàn bộ năm test Inpatient đạt khi chạy lại. Lab còn lỗi tái hiện được tại
+  `LabDetail.test.tsx:194`: fixture V1 READY có `clearanceId: null` nhưng mong nút bắt đầu;
+  implementation mới chỉ mở nút khi có clearance. Hai context này không có local diff.
+- Chưa có browser/Gateway acceptance mới. Giữ nguyên số tiêu chí HF6 và phân công backend
+  testing cho Vinh; các checkpoint dưới đây là lịch sử trên candidate được ghi tại từng mục.
+
 ## Vinh — outpatient UI implementation, 2026-10-18
 
 Scope: appointment/medical-record/Lab and shared API, as authorized after the FE ownership audit.
@@ -34,6 +48,51 @@ It does not close authenticated browser/Gateway acceptance.
   standalone lint/typecheck, browser smoke or backend tests were run for this change.
   See [implementation record](vinh-outpatient-implementation-2026-10-18.md).
 
+## Huy — plan chốt FE trên 6 service, 2026-10-18
+
+Plan thực thi hiện hành: [huy-six-service-frontend-plan.md](huy-six-service-frontend-plan.md).
+User mở rộng thành Pharmacy + **toàn bộ Support FE (Report/Notification)**. Plan hiện có
+**14 task / 56 subtask**, đạt **6/14 task; 39/56 subtask** theo checkpoint mục 9/10. Trong 48 tiêu chí
+Pharmacy/Report gốc: **5/12 task; 35/48 subtask**. Tám tiêu chí Notification thêm riêng theo scope mới;
+không dùng 48/48 backend làm tiến độ FE hoặc reset lịch sử.
+
+- User giao Huy `frontend/src/lib/api.ts`/`api.test.ts` cho optional POST `Idempotency-Key` và
+  Notification feature/routes trong task. Canonical shared owner Vinh, Notification owner Lộc giữ nguyên;
+  không còn chờ handoff hai phần code đã được giao này.
+- `HF6-02/03/04/05` DONE local: shared transport, request/API/validation V1, frozen command snapshot,
+  explicit same-key retry, new-intent/session/unmount/duplicate-submit guards và payment fresh GET.
+  Server route default OUTPATIENT; explicit `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE=legacy` mới dùng V0.
+  Invalid setting đóng creation; không tự fallback khi V1 lỗi. IDs/catalog thật còn HF6-01.2.
+- `HF6-08` DONE local: giữ legacy/outpatient reports, server metrics/coverage/currency/zone;
+  outpatient UI gate vẫn OFF mặc định. Không mở full V2 để đóng Support.
+- `HF6-13` DONE local: Notification lookup/detail/send có roles/privacy, pagination theo submitted
+  patient, channel/address validation, stale/session/unmount guards, 401/403/correlation/field focus;
+  unknown send outcome không blind retry vì backend không có idempotency contract.
+- `HF6-06/09/11/12` chốt signed-role hủy/xuất thuốc, Report qua Support có coverage, browser
+  workflow thật và release. Exact Pharmacy Gateway roles/Support backend đã có; ghi chú chờ
+  implementation ở các checkpoint cũ không còn là trạng thái hiện tại.
+- Audit 2026-10-18, baseline `025ef39e`: Pharmacy/Report **235/235 tests, 22 files**,
+  typecheck/lint PASS. Không chạy build/browser trong lượt audit; chưa có FE production diff mới.
+- Surgery/Inpatient/full V2 deferred; logical feature folders giữ riêng. Dependency dùng
+  [một handoff Huy](../../docs/handoffs/HANDOFF-HUY-MVP.md), không tạo file bàn giao mới.
+- Foundation checkpoint trước mở rộng scope: 268/268 Pharmacy/Report, 24 files; full 396/396,
+  47 files và typecheck/lint/build PASS. **Final candidate: 474/474 tests, 53 files**, zero failures/skips;
+  typecheck/lint/build PASS, exit 0. Chỉ có jsdom navigation warning hiện có. Chi tiết ở plan mục 8.
+- Hai đợt liên tiếp B10/B20: 10 đầu việc lifecycle/uncertainty/layout/runtime và 10 đầu việc denial/focus,
+  ghi riêng trong plan mục 9/10, không cộng thành 20 HF6 task cấp cao. Đợt B10 full **501/501 / 55 files**,
+  typecheck/lint/build PASS; đợt B20 focused **108/108**, final full **506/506 / 55 files**.
+- Rerun backend thật `SixServiceOutpatientAcceptanceIT` **1/1, zero failure/error/skip**, PG/Rabbit
+  disposable, six apps + Gateway/Eureka, actual staff logins, Rx payment/dispense và Support rollback.
+  Đóng HF6-09.1/11.1; chưa accepted Report coverage hoặc signed FE workflow. Harness-signed PATIENT
+  privacy probe không thay issuer PATIENT login. Không sửa BE source hoặc persisted Compose volumes.
+- Browser HTTP fixtures kiểm ba theme và 320/768/1280px; đã sửa long-name drug detail overflow,
+  lưu matrix/ảnh ở [evidence](evidence/huy-six-service/2026-10-18/README.md), đóng HF6-10.2/.4.
+  HF6-10.3/14 vẫn còn keyboard matrix/signed Notification acceptance, không coi fixture là runtime proof.
+- Shared transport còn old-request 401 có thể clear session mới; feature guards không xử lý được
+  side effect global này. Ghi acceptance/scope cần sửa trong **một handoff Huy**, không đổi auth/transport
+  ngoài optional Idempotency-Key đã giao. Không giao lại implementation Notification cho Lộc.
+
+Các mục cũ bên dưới là checkpoint lịch sử, không thay thế plan này.
 
 ## Vinh — Clinical/Lab lists and forms, 2026-10-17
 

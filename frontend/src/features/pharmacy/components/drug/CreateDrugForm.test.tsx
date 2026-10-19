@@ -16,6 +16,13 @@ function validForm() {
 function submit() { fireEvent.submit(screen.getByLabelText("Tên thuốc", { exact: false }).closest("form")!); }
 
 describe("CreateDrugForm", () => {
+  it("locks a server-denied form even when submitted directly again", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "create-denied"));
+    render(<CreateDrugForm />); validForm(); submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("create-denied");
+    expect(screen.getByRole("button", { name: "Tạo thuốc" })).toBeDisabled();
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
   beforeEach(() => { mocks.role = "PHARMACIST"; mocks.create.mockReset(); mocks.router.replace.mockReset(); });
   it.each(["DOCTOR", "NURSE", null] as const)("does not render a mutation for %s", role => {
     mocks.role = role; render(<CreateDrugForm />);
@@ -63,5 +70,21 @@ describe("CreateDrugForm", () => {
     render(<CreateDrugForm />); validForm(); submit();
     expect(await screen.findByRole("alert")).toHaveTextContent("kiểm tra danh mục trước khi gửi lại");
     expect(mocks.create).toHaveBeenCalledTimes(1);
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Tạo thuốc" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Kiểm tra danh mục thuốc" })).toHaveAttribute("href", "/pharmacy/drugs");
+  });
+  it("locks an uncertain server outcome while preserving correlation for reconciliation", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Unavailable", 503, "UNAVAILABLE", [], "uncertain-create"));
+    render(<CreateDrugForm />); validForm(); submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("uncertain-create");
+    expect(screen.getByLabelText("Tên thuốc", { exact: false })).toBeDisabled();
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it("keeps a successful command locked until navigation unmounts the form", async () => {
+    mocks.create.mockResolvedValue({ drugId: "created" }); render(<CreateDrugForm />); validForm(); submit();
+    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/drugs/created"));
+    submit(); expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Tên thuốc", { exact: false })).toBeDisabled();
   });
 });

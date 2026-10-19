@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { PageResult } from "@/lib/types";
+import type { OutpatientPrescriptionIntent } from "./outpatientPrescriptionIntent";
 
 import type {
   AdjustStockRequest,
@@ -54,6 +55,12 @@ export const pharmacyApi = {
 
   createPrescription(body: CreatePrescriptionRequest) {
     return api.post<PrescriptionDTO>(`${BASE}/prescriptions`, body);
+  },
+
+  createOutpatientPrescription(intent: OutpatientPrescriptionIntent) {
+    return api.post<PrescriptionDTO>(`${BASE}/prescriptions`, intent.request, {
+      idempotencyKey: intent.commandId,
+    });
   },
 
   getPrescription(prescriptionId: string) {

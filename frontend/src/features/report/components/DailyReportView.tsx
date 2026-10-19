@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState, type FormEvent } from "react";
+import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -9,6 +9,7 @@ import { reportApi } from "../api";
 import { useReportRequest } from "../useReportRequest";
 import { validateDailyReportQuery, type DailyReportQuery } from "../validation";
 import { ReportRequestFeedback } from "./ReportRequestFeedback";
+import { ReportSessionBoundary } from "./ReportSessionBoundary";
 
 interface DailyReportViewProps {
   initialQuery?: DailyReportQuery;
@@ -17,14 +18,19 @@ interface DailyReportViewProps {
 }
 
 export function DailyReportView({ initialQuery, autoLoad = false, onQuerySubmit }: DailyReportViewProps) {
+  return <ReportSessionBoundary><DailyReportContent initialQuery={initialQuery} autoLoad={autoLoad} onQuerySubmit={onQuerySubmit} /></ReportSessionBoundary>;
+}
+
+function DailyReportContent({ initialQuery, autoLoad = false, onQuerySubmit }: DailyReportViewProps) {
   const initialDate = initialQuery?.date ?? "";
   const initialDepartment = initialQuery?.departmentId;
   const [date, setDate] = useState(initialDate);
   const [departmentId, setDepartmentId] = useState(initialDepartment ?? "");
   const [validationError, setValidationError] = useState<string | null>(null);
   const errorId = useId();
+  const form = useRef<HTMLFormElement>(null);
   const initialRequest = useCallback(() => reportApi.daily(initialDate, initialDepartment), [initialDate, initialDepartment]);
-  const { state, load, retry } = useReportRequest(initialRequest, autoLoad && validateDailyReportQuery({ date: initialDate, departmentId: initialDepartment }) === null);
+  const { state, load, retry, clear } = useReportRequest(initialRequest, autoLoad && validateDailyReportQuery({ date: initialDate, departmentId: initialDepartment }) === null);
   const loading = state.status === "loading";
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -32,13 +38,18 @@ export function DailyReportView({ initialQuery, autoLoad = false, onQuerySubmit 
     const query = { date: date.trim(), departmentId: departmentId.trim() || undefined };
     const error = validateDailyReportQuery(query);
     setValidationError(error);
-    if (error || onQuerySubmit?.(query)) return;
+    if (error) {
+      clear();
+      form.current?.querySelector<HTMLInputElement>(validateDailyReportQuery({ date: query.date }) ? "#report-date" : "#report-department-id")?.focus();
+      return;
+    }
+    if (onQuerySubmit?.(query)) return;
     load(() => reportApi.daily(query.date, query.departmentId));
   }
 
   return (
     <section className="mt-6" aria-label="Báo cáo ngày" aria-busy={loading}>
-      <form onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-end">
+      <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-end">
         <Field label="Ngày báo cáo" htmlFor="report-date">
           <input id="report-date" type="date" value={date} required onChange={(event) => { setDate(event.target.value); setValidationError(null); }} aria-describedby={validationError ? errorId : undefined} className={controlClassName} />
         </Field>

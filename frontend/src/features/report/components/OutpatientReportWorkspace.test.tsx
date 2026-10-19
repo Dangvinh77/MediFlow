@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
+import { storeSession } from "@/lib/session";
+beforeEach(() => storeSession({ accessToken: "report-test", refreshToken: "test", role: "ADMIN" }));
 import type { OutpatientReportDTO } from "../types";
 const mocks = vi.hoisted(() => ({ query: "", router: { replace: vi.fn() }, daily: vi.fn(), monthly: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router, usePathname: () => "/reports/outpatient", useSearchParams: () => new URLSearchParams(mocks.query) }));

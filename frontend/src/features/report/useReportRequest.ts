@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
+import { getRole } from "@/lib/auth";
+import { getToken } from "@/lib/session";
+import { canReadReports } from "./components/ReportSessionBoundary";
 
 export type ReportRequestState<T> =
   | { status: "idle" | "loading" }
@@ -16,13 +19,16 @@ export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: 
   const sequence = useRef(0);
   const mounted = useRef(false);
   const lastRequest = useRef(initialRequest);
+  const session = useRef({ token: getToken(), role: getRole() });
+  const isCurrent = useCallback(() => mounted.current && canReadReports()
+    && getToken() === session.current.token && getRole() === session.current.role, []);
 
   const execute = useCallback((request: () => Promise<T>, requestId: number) => {
     // Also captures synchronous facade errors without allowing an obsolete request to commit.
-    void Promise.resolve().then(request).then((data) => {
-      if (mounted.current && sequence.current === requestId) setState({ status: "success", data });
+    void Promise.resolve().then(() => isCurrent() && sequence.current === requestId ? request() : undefined).then((data) => {
+      if (isCurrent() && sequence.current === requestId && data !== undefined) setState({ status: "success", data });
     }).catch((cause: unknown) => {
-      if (!mounted.current || sequence.current !== requestId) return;
+      if (!isCurrent() || sequence.current !== requestId) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
@@ -35,7 +41,7 @@ export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: 
         forbidden: cause instanceof ApiRequestError && cause.status === 403,
       });
     });
-  }, [router]);
+  }, [isCurrent, router]);
 
   const invalidate = useCallback(() => {
     mounted.current = false;
@@ -50,11 +56,16 @@ export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: 
   }, [autoLoad, execute, initialRequest, invalidate]);
 
   const load = useCallback((request: () => Promise<T>) => {
+    if (!isCurrent()) return;
     lastRequest.current = request;
     setState({ status: "loading" });
     execute(request, ++sequence.current);
-  }, [execute]);
+  }, [execute, isCurrent]);
 
   const retry = useCallback(() => load(lastRequest.current), [load]);
-  return { state, load, retry };
+  const clear = useCallback(() => {
+    sequence.current++;
+    setState({ status: "idle" });
+  }, []);
+  return { state, load, retry, clear };
 }

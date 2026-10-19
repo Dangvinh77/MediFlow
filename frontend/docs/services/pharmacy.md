@@ -5,8 +5,38 @@
 **Contract context:** [`docs/ai/services/pharmacy.md`](../../../docs/ai/services/pharmacy.md)  
 **Detailed task plan:** [`../pharmacy-frontend-implementation-plan.md`](../pharmacy-frontend-implementation-plan.md)
 
-**Current execution plan (2026-10-16):** [Huy FE + approved themed UI](../huy-frontend-implementation-plan.md).
-The earlier plan retains PH-FE history; the current plan records live harness/identity evidence and remaining gates.
+**Current execution plan (2026-10-18):** [Huy FE — six-service MVP closeout](../huy-six-service-frontend-plan.md).
+It tracks remaining OUTPATIENT V1 work and real Gateway acceptance. The
+[previous themed-UI plan](../huy-frontend-implementation-plan.md) and PH-FE plan retain history.
+
+2026-10-18 B10/B20: feature-local session boundaries reset drafts/results for account changes,
+including two accounts with the same role. Old reads/mutation callbacks cannot update the new
+workspace. Create-drug unknown outcomes lock until catalog reconciliation; stock unknown outcomes
+refresh and discard the old delta. Server 403 closes local retry/mutation controls, including Enter
+on outbox confirmation; transient read failures keep explicit retry. These UX guards do not replace
+backend authorization. The shared transport's global late-401 race remains in the single handoff.
+See plan sections 9/10 and [browser evidence](../evidence/huy-six-service/2026-10-18/README.md).
+
+2026-10-18: `/pharmacy/prescriptions/new` now defaults to OUTPATIENT V1. Its dynamic server route
+reads `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE` on each request: unset/`outpatient` renders V1;
+`legacy` explicitly renders the standalone V0 compatibility form; any other value closes creation.
+Set this in the frontend server environment and restart the server when changing it. This setting
+does not enable backend flags or change an MVP backend into a legacy backend. A rejected V1 call
+never falls back to V0. Report has a separate, still-default-closed gate documented in its guide.
+
+The form requires confirmed record/patient/staff/department/episode IDs and an exact price catalog
+code. It does not infer an episode from record/appointment/account IDs or default the price code.
+Until a public Clinical entrypoint supplies those values explicitly, operators must obtain verified
+values from the source workflow; missing identifiers remain a runtime dependency, not guessed input.
+The public outpatient use case requires a record even though the broad V1 DTO permits null.
+
+V1 dispatch uses the shared POST `idempotencyKey` option. Each intent holds a frozen request and
+canonical UUID in memory. An uncertain response locks editing; explicit retry retains the same
+snapshot/key. Starting a new draft requires the user to check the old result first. Success, session
+change, mode change and unmount discard the old intent; no new intent/PII storage is introduced.
+Prescription detail now offers an explicit fresh GET for payment state before dispensing. All
+amounts and payment/terminal decisions continue to come from the server. These are local FE changes;
+signed-role, paid-source and Gateway/Support browser acceptance remain open in the single handoff.
 
 2026-10-12 implementation checkpoint: themed catalog/local navigation and compact prescription lookup
 are implemented; pending dispense/payment proof labels are independent and nullable `recordId` is supported.
