@@ -1,5 +1,13 @@
 # Backend verification — 2026-10-18
 
+## Trạng thái sau audit bổ sung 19/10
+
+Hai sửa test Report/Pharmacy đã được phát hành qua PR #439 và merge trước base audit
+`05c7690c`; mô tả “chưa commit” bên dưới là trạng thái tại remote `4c19dd4a` khi recheck.
+[Audit API/nghiệp vụ mới](../backend-api-audit-2026-10-19/README.md) phát hiện thêm lỗi
+credential boundary, hiệu lực Lab result và Notification byte identity. Không dùng bundle
+lịch sử hoặc tag feature-complete để bỏ qua các handoff mới trong registry.
+
 ## Đính chính sau phản hồi của Lộc — 19/10/2026
 
 Các bảng bên dưới là **kết quả lịch sử trước Gateway fix**, không phải trạng thái của

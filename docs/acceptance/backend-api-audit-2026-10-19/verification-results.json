@@ -1,0 +1,142 @@
+{
+  "base": "05c7690c3a37b602e336fac4902ced7f3a1f7d89",
+  "defaultRegression": {
+    "tests": 5734,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "counting": "Unique default-class inventory after broad reactor plus final module/class reruns; explicit IT and deliberate red reproductions excluded",
+    "inventory": "default-test-inventory.json",
+    "stages": [
+      {
+        "command": "mvn -q -pl backend/gateway,backend/core-service,backend/clinical-service,backend/lab-service,backend/pharmacy-service,backend/billing-service,backend/support-service -am test",
+        "exitCode": 0,
+        "note": "Started before Lab/Notification edits; replaced their report inventory with final full reruns"
+      },
+      {
+        "command": "mvn -q -pl backend/lab-service -am test",
+        "exitCode": 0,
+        "moduleTests": 221
+      },
+      {
+        "command": "mvn -q -pl backend/notification-service -am test",
+        "exitCode": 0,
+        "moduleTests": 281
+      },
+      {
+        "command": "mvn -q -DskipTests install",
+        "exitCode": 0,
+        "note": "Fresh jars and local classifier libraries, build only"
+      },
+      {
+        "command": "mvn -q -pl backend/support-service test",
+        "exitCode": 0,
+        "moduleTests": 18,
+        "note": "Fresh installed Notification/Report classifier libraries"
+      }
+    ]
+  },
+  "openRegressionReproductions": [
+    {
+      "finding": "Gateway missing exp",
+      "tests": 1,
+      "failures": 1,
+      "expected": "401",
+      "actual": "503 from downstream after authentication passed",
+      "fixture": "gateway-core-missing-exp-regression.patch"
+    },
+    {
+      "finding": "Core Organization missing exp",
+      "tests": 1,
+      "failures": 1,
+      "expected": "No authentication",
+      "actual": "ROLE_ADMIN authentication",
+      "fixture": "gateway-core-missing-exp-regression.patch"
+    },
+    {
+      "finding": "Core credential verifier accepts Pharmacy service caller",
+      "tests": 1,
+      "failures": 1,
+      "expected": "403",
+      "actual": "200 and mocked verification use case invoked",
+      "fixture": "core-verifier-caller-regression.patch"
+    },
+    {
+      "finding": "Pharmacy ADMIN/PHARMACIST missing exp",
+      "tests": 2,
+      "failures": 2,
+      "expected": "No authentication",
+      "actual": "Authentication created",
+      "fixture": "huy-jwt-missing-exp-regression.patch"
+    },
+    {
+      "finding": "Report outpatient ADMIN missing exp",
+      "tests": 1,
+      "failures": 1,
+      "expected": "No authentication",
+      "actual": "Authentication created",
+      "fixture": "huy-jwt-missing-exp-regression.patch"
+    },
+    {
+      "finding": "Notification V1 different raw bytes with same event ID",
+      "tests": 1,
+      "failures": 1,
+      "expected": "Conflict",
+      "actual": "Duplicate ACK",
+      "fixture": "notification-v1-byte-identity-regression.patch",
+      "note": "Observed test output; retained patch is reproducible evidence, raw red log was not retained"
+    }
+  ],
+  "reproductionPolicy": "Deliberately red test edits were restored; all four patches pass git apply --check. No production fixes were made in another owner module.",
+  "otherOpenEvidence": {
+    "coreDepartmentStaffRace": "Static candidate only, PostgreSQL concurrency proof pending",
+    "pharmacyV1Ui": "Source/contract confirmed integration gap, browser acceptance pending"
+  },
+  "review": {
+    "ownedFixesAndHandoffPr": "GO",
+    "globalBackendCloseout": "NO-GO"
+  },
+  "packagedRuntime": {
+    "command": "mvn -q -pl backend/support-service -Psix-service-acceptance -Dtest=__NoUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false verify",
+    "exitCode": 0,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "durationSeconds": 144.153,
+    "exam": {
+      "recordInsertRollbackVerified": true,
+      "concurrentStartStatuses": [
+        200,
+        422
+      ]
+    },
+    "refund": {
+      "originalAmount": 30000,
+      "raceStatuses": [
+        201,
+        422
+      ],
+      "firstAmount": 20000.0,
+      "finalAmount": 10000.0,
+      "remainingObligations": 0,
+      "signedActorVerified": true,
+      "cancelledPrescriptionStock": 20
+    },
+    "scope": [
+      "Real Gateway and Eureka",
+      "Six business application jars",
+      "PostgreSQL and RabbitMQ Testcontainers",
+      "Paid EXAM start and rollback",
+      "Paid prescription dispense and retry across Pharmacy outage",
+      "Support restart and legacy rollback on current stores",
+      "Refund endpoint authorization, budget race, idempotency, actor/correlation and outbox reconciliation"
+    ],
+    "limits": [
+      "Lab startup is not paid-Lab end-to-end acceptance",
+      "Refund outbox HELD is not refund event propagation acceptance",
+      "Notification uses mock delivery adapters; no real email provider acceptance",
+      "No production database inventory or upgrade/backfill of Notification receipts"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+diff --git a/backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptIntegrationTest.java b/backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptIntegrationTest.java
+--- a/backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptIntegrationTest.java
++++ b/backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptIntegrationTest.java
+@@ -94,4 +94,18 @@ class CareReceiptIntegrationTest {
+         assertThat(jdbc.queryForObject("SELECT content FROM NOTIFICATION", String.class)).contains("100");
+     }
+ 
++    @Test void sameEventWithDifferentRawBytesConflictsWithoutReplacingHistory() throws Exception {
++        byte[] original = fixture("service");
++        handler.receive("payment.completed", original);
++        byte[] whitespaceVariant = (" \n" + new String(original, StandardCharsets.UTF_8) + "\n")
++                .getBytes(StandardCharsets.UTF_8);
++
++        assertThatThrownBy(() -> handler.receive("payment.completed", whitespaceVariant))
++                .isInstanceOf(org.springframework.amqp.AmqpRejectAndDontRequeueException.class)
++                .hasMessageContaining("Conflicting");
++        assertThat(count("NOTIFICATION")).isEqualTo(1);
++        assertThat(count("PROCESSED_EVENT")).isEqualTo(1);
++        assertThat(jdbc.queryForObject("SELECT content FROM NOTIFICATION", String.class)).contains("100");
++    }
++
+     @Test void deliveryOutboxFailureRollsBackInboxAndHistoryThenRedeliveryRecovers() throws Exception {

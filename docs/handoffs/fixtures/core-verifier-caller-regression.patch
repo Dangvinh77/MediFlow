@@ -1,0 +1,85 @@
+diff --git a/backend/core-service/src/test/java/com/mediflow/CoreCompositionSmokeTest.java b/backend/core-service/src/test/java/com/mediflow/CoreCompositionSmokeTest.java
+index 1988ddba..7618d3cd 100644
+--- a/backend/core-service/src/test/java/com/mediflow/CoreCompositionSmokeTest.java
++++ b/backend/core-service/src/test/java/com/mediflow/CoreCompositionSmokeTest.java
+@@ -1,6 +1,10 @@
+ package com.mediflow;
+ 
+ import static org.assertj.core.api.Assertions.assertThat;
++import static org.mockito.ArgumentMatchers.anyString;
++import static org.mockito.Mockito.never;
++import static org.mockito.Mockito.verify;
++import static org.mockito.Mockito.when;
+ 
+ import jakarta.persistence.EntityManagerFactory;
+ import org.junit.jupiter.api.Test;
+@@ -8,17 +12,24 @@ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.boot.test.context.SpringBootTest;
+ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.mock.mockito.MockBean;
+ import com.mediflow.core.CoreServiceApplication;
++import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
++import com.mediflow.organization.domain.model.Role;
+ import org.springframework.test.context.TestPropertySource;
+ import org.springframework.test.web.servlet.MockMvc;
+ import org.springframework.test.web.servlet.MvcResult;
+ import org.springframework.security.test.context.support.WithMockUser;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import io.jsonwebtoken.Jwts;
+ import io.jsonwebtoken.security.Keys;
+ import java.nio.charset.StandardCharsets;
++import java.time.Instant;
++import java.time.temporal.ChronoUnit;
++import java.util.Date;
+ import java.util.UUID;
+ 
+ @SpringBootTest(classes = CoreServiceApplication.class)
+@@ -48,6 +59,9 @@ class CoreCompositionSmokeTest {
+     @Autowired
+     ObjectMapper objectMapper;
+ 
++    @MockBean
++    VerifyCredentialsUseCase verifyCredentialsUseCase;
++
+     @Autowired
+     @Qualifier("organizationEntityManagerFactory")
+     EntityManagerFactory organizationEntityManagerFactory;
+@@ -95,6 +109,34 @@ class CoreCompositionSmokeTest {
+         }
+     }
+ 
++    @Test
++    void pharmacyServiceTokenCannotVerifyAccountCredentials() throws Exception {
++        when(verifyCredentialsUseCase.execute("admin", "password"))
++                .thenReturn(new VerifyCredentialsUseCase.VerifiedAccount(
++                        UUID.randomUUID(), null, null, null, Role.ADMIN));
++        Instant issuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
++        String pharmacyService = "Bearer " + Jwts.builder()
++                .subject("pharmacy-service")
++                .claim("type", "service")
++                .claim("role", "SYSTEM")
++                .issuedAt(Date.from(issuedAt))
++                .expiration(Date.from(issuedAt.plusSeconds(60)))
++                .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8)))
++                .compact();
++
++        mockMvc.perform(post("/api/v1/org/accounts/verify")
++                        .header("Authorization", pharmacyService)
++                        .contentType("application/json")
++                        .content("""
++                                {
++                                  "username": "admin",
++                                  "password": "password"
++                                }
++                                """))
++                .andExpect(status().isForbidden());
++        verify(verifyCredentialsUseCase, never()).execute(anyString(), anyString());
++    }
++
+     private String bearer(String type, String role, String subject) {
+         return "Bearer " + Jwts.builder().subject(subject)
+                 .claim("type", type).claim("role", role)
