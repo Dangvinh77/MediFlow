@@ -1,6 +1,6 @@
 # Chọn sơ đồ Review 2 cho Word
 
-Bộ bổ sung có phiên bản gốc và phiên bản dàn trang Word. Mỗi sơ đồ có bản dàn cho A4 dọc và A4 ngang, cùng nguồn Mermaid, SVG và PNG. PNG dùng nền trắng, rộng 2200 hoặc 3200 px; nên chèn PNG vào Word để giữ nguyên nhãn HTML, logo và actor.
+Bộ bổ sung có phiên bản gốc và phiên bản dàn trang Word. Mỗi sơ đồ có bản dàn cho A4 dọc và A4 ngang, cùng nguồn Mermaid, SVG và PNG. PNG dùng nền trắng, rộng 2400 hoặc 3600 px (cạnh dài tối đa 14000 px); nên chèn PNG vào Word để giữ nguyên nhãn HTML, logo và actor.
 
 - [Báo cáo option Word tiếng Việt](../04-review-2-word-vi.md) — giữ phần nội dung và bảng, thay bằng hình phù hợp trang.
 - [English Word layout option](../03-review-2-word-en.md).
@@ -39,20 +39,20 @@ Hình 01 là tổng quan gom nhóm sáu deployment và tám store, có liệt k�
 | 15 | ERD — Organization | A4 dọc | [Dọc](portrait/png/15-vi.png) · [Ngang](landscape/png/15-vi.png) | [Dọc](portrait/png/15-en.png) · [Ngang](landscape/png/15-en.png) | — |
 | 16 | ERD — Patient | A4 ngang | [Dọc](portrait/png/16-vi.png) · [Ngang](landscape/png/16-vi.png) | [Dọc](portrait/png/16-en.png) · [Ngang](landscape/png/16-en.png) | — |
 | 17 | ERD — Clinical | A4 dọc | [Dọc](portrait/png/17-vi.png) · [Ngang](landscape/png/17-vi.png) | [Dọc](portrait/png/17-en.png) · [Ngang](landscape/png/17-en.png) | — |
-| 18 | ERD — Lab | A4 ngang | [Dọc](portrait/png/18-vi.png) · [Ngang](landscape/png/18-vi.png) | [Dọc](portrait/png/18-en.png) · [Ngang](landscape/png/18-en.png) | — |
-| 19 | ERD — Pharmacy | A4 dọc | [Dọc](portrait/png/19-vi.png) · [Ngang](landscape/png/19-vi.png) | [Dọc](portrait/png/19-en.png) · [Ngang](landscape/png/19-en.png) | — |
+| 18 | ERD — Lab | A4 dọc | [Dọc](portrait/png/18-vi.png) · [Ngang](landscape/png/18-vi.png) | [Dọc](portrait/png/18-en.png) · [Ngang](landscape/png/18-en.png) | — |
+| 19 | ERD — Pharmacy | A4 ngang | [Dọc](portrait/png/19-vi.png) · [Ngang](landscape/png/19-vi.png) | [Dọc](portrait/png/19-en.png) · [Ngang](landscape/png/19-en.png) | — |
 | 20 | ERD — Billing | Dùng các phần | [Dọc](portrait/png/20-vi.png) · [Ngang](landscape/png/20-vi.png) | [Dọc](portrait/png/20-en.png) · [Ngang](landscape/png/20-en.png) | [1](panels/png/20-vi-part-01.png) · [2](panels/png/20-vi-part-02.png) · [3](panels/png/20-vi-part-03.png) · [4](panels/png/20-vi-part-04.png) |
 | 21 | ERD — Notification | A4 dọc | [Dọc](portrait/png/21-vi.png) · [Ngang](landscape/png/21-vi.png) | [Dọc](portrait/png/21-en.png) · [Ngang](landscape/png/21-en.png) | — |
-| 22 | ERD — Report | A4 dọc | [Dọc](portrait/png/22-vi.png) · [Ngang](landscape/png/22-vi.png) | [Dọc](portrait/png/22-en.png) · [Ngang](landscape/png/22-en.png) | — |
-| 23 | Triển khai database: một server phát triển, tám authority | A4 dọc | [Dọc](portrait/png/23-vi.png) · [Ngang](landscape/png/23-vi.png) | [Dọc](portrait/png/23-en.png) · [Ngang](landscape/png/23-en.png) | [1](panels/png/23-vi-part-01.png) |
-| 24 | Sitemap web theo nhóm route | A4 dọc | [Dọc](portrait/png/24-vi.png) · [Ngang](landscape/png/24-vi.png) | [Dọc](portrait/png/24-en.png) · [Ngang](landscape/png/24-en.png) | [1](panels/png/24-vi-part-01.png) · [2](panels/png/24-vi-part-02.png) · [3](panels/png/24-vi-part-03.png) |
-| 25 | Sitemap mobile và mức triển khai | A4 ngang | [Dọc](portrait/png/25-vi.png) · [Ngang](landscape/png/25-vi.png) | [Dọc](portrait/png/25-en.png) · [Ngang](landscape/png/25-en.png) | — |
+| 22 | ERD — Report | A4 ngang | [Dọc](portrait/png/22-vi.png) · [Ngang](landscape/png/22-vi.png) | [Dọc](portrait/png/22-en.png) · [Ngang](landscape/png/22-en.png) | — |
+| 23 | Triển khai database: một server phát triển, tám authority | A4 ngang | [Dọc](portrait/png/23-vi.png) · [Ngang](landscape/png/23-vi.png) | [Dọc](portrait/png/23-en.png) · [Ngang](landscape/png/23-en.png) | [1](panels/png/23-vi-part-01.png) |
+| 24 | Sitemap web theo nhóm route | A4 ngang | [Dọc](portrait/png/24-vi.png) · [Ngang](landscape/png/24-vi.png) | [Dọc](portrait/png/24-en.png) · [Ngang](landscape/png/24-en.png) | [1](panels/png/24-vi-part-01.png) · [2](panels/png/24-vi-part-02.png) · [3](panels/png/24-vi-part-03.png) |
+| 25 | Sitemap mobile và mức triển khai | A4 dọc | [Dọc](portrait/png/25-vi.png) · [Ngang](landscape/png/25-vi.png) | [Dọc](portrait/png/25-en.png) · [Ngang](landscape/png/25-en.png) | — |
 | 26 | Thuật toán tạo đơn V1 có kiểm context | Dùng các phần | [Dọc](portrait/png/26-vi.png) · [Ngang](landscape/png/26-vi.png) | [Dọc](portrait/png/26-en.png) · [Ngang](landscape/png/26-en.png) | [1](panels/png/26-vi-part-01.png) · [2](panels/png/26-vi-part-02.png) · [3](panels/png/26-vi-part-03.png) |
 | 27 | Thuật toán payment và clearance | Dùng các phần | [Dọc](portrait/png/27-vi.png) · [Ngang](landscape/png/27-vi.png) | [Dọc](portrait/png/27-en.png) · [Ngang](landscape/png/27-en.png) | [1](panels/png/27-vi-part-01.png) · [2](panels/png/27-vi-part-02.png) · [3](panels/png/27-vi-part-03.png) |
 | 28 | Thuật toán outbox / inbox | A4 dọc | [Dọc](portrait/png/28-vi.png) · [Ngang](landscape/png/28-vi.png) | [Dọc](portrait/png/28-en.png) · [Ngang](landscape/png/28-en.png) | — |
 
 ## Nguồn và tính tương thích
 
-Các thư mục `portrait/`, `landscape/`, `panels/` đều có `mermaid/`, `svg/`, `png/`. Không xoay ảnh để đổi khổ giấy. Hướng TB/LR trong Mermaid có thể khác tên khổ giấy vì bộ chọn đã so sánh tỷ lệ thực tế của hai cách dàn. SVG có nhãn HTML nên PNG là định dạng ưu tiên trong Word. Logo SVG được nhúng offline vào SVG/PNG; nguồn Mermaid dùng cùng CDN Devicon có phiên bản cố định như bộ gốc.
+Các thư mục `portrait/`, `landscape/`, `panels/` đều có `mermaid/`, `svg/`, `png/`. Không xoay ảnh để đổi khổ giấy. Hai khổ được dàn riêng: dọc ưu tiên các cột/luồng cao, ngang ưu tiên các hàng/luồng rộng. Use case và sitemap dùng hướng bố trí riêng để cân bằng trang. Sequence giữ đúng thứ tự thông điệp, thay đổi độ rộng lifeline và cách xuống dòng. Không sao chép bố cục tốt nhất vào cả hai thư mục. Riêng ERD Patient (16) chỉ có một bảng nên cấu trúc trong hai khổ vẫn giống nhau; trang chọn ghi rõ trường hợp này. Các ERD không có quan hệ (21, 22) được xếp lại thành lưới sau khi dựng Mermaid, chỉ di chuyển bảng, không tạo thêm quan hệ. SVG có nhãn HTML nên PNG là định dạng ưu tiên trong Word. Logo SVG được nhúng offline vào SVG/PNG; nguồn Mermaid dùng cùng CDN Devicon có phiên bản cố định như bộ gốc.
 
 Bộ này chỉ bổ sung lựa chọn sơ đồ, chưa thay hoặc xuất lại các tệp DOCX/PDF lịch sử. Muốn dùng một hình cụ thể, mở PNG tương ứng hoặc dùng trang chọn bên trên.
