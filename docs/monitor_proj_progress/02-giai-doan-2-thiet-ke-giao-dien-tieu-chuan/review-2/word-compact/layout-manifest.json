@@ -229,15 +229,15 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 491,
-          "height": 636,
-          "estimatedTextPt": 14.8
+          "width": 492,
+          "height": 642,
+          "estimatedTextPt": 14.7
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1230,
+          "width": 1202,
           "height": 517,
-          "estimatedTextPt": 9.1
+          "estimatedTextPt": 9.3
         }
       },
       "panels": [],
@@ -251,15 +251,15 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 534,
-          "height": 648,
-          "estimatedTextPt": 13.6
+          "width": 526,
+          "height": 656,
+          "estimatedTextPt": 13.8
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1332,
+          "width": 1287,
           "height": 544,
-          "estimatedTextPt": 8.4
+          "estimatedTextPt": 8.7
         }
       },
       "panels": [],
@@ -273,15 +273,15 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 539,
+          "width": 549,
           "height": 727,
-          "estimatedTextPt": 13.5
+          "estimatedTextPt": 13.2
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1193,
+          "width": 1204,
           "height": 544,
-          "estimatedTextPt": 9.4
+          "estimatedTextPt": 9.3
         }
       },
       "panels": [],
@@ -301,7 +301,7 @@
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1211,
+          "width": 1203,
           "height": 544,
           "estimatedTextPt": 9.3
         }
@@ -1639,6 +1639,624 @@
         }
       },
       "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "29-en",
+      "title": "ADMIN — Administrator tasks",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1162,
+          "height": 883,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 2130,
+          "height": 634,
+          "estimatedTextPt": 5.3
+        }
+      },
+      "panels": [
+        {
+          "id": "29-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        },
+        {
+          "id": "29-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.8
+        },
+        {
+          "id": "29-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        },
+        {
+          "id": "29-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "29-vi",
+      "title": "ADMIN — Tác vụ quản trị viên",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1162,
+          "height": 957,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 2184,
+          "height": 635,
+          "estimatedTextPt": 5.1
+        }
+      },
+      "panels": [
+        {
+          "id": "29-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        },
+        {
+          "id": "29-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.6
+        },
+        {
+          "id": "29-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.7
+        },
+        {
+          "id": "29-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.7
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "30-en",
+      "title": "MANAGER — Manager tasks",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 878,
+          "height": 730,
+          "estimatedTextPt": 8.3
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1688,
+          "height": 491,
+          "estimatedTextPt": 6.6
+        }
+      },
+      "panels": [
+        {
+          "id": "30-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.2
+        },
+        {
+          "id": "30-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.8
+        },
+        {
+          "id": "30-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.3
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "30-vi",
+      "title": "MANAGER — Tác vụ quản lý",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 878,
+          "height": 736,
+          "estimatedTextPt": 8.3
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1642,
+          "height": 491,
+          "estimatedTextPt": 6.8
+        }
+      },
+      "panels": [
+        {
+          "id": "30-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.2
+        },
+        {
+          "id": "30-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.8
+        },
+        {
+          "id": "30-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.4
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "31-en",
+      "title": "DOCTOR — Doctor tasks",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1181,
+          "height": 829,
+          "estimatedTextPt": 6.1
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1837,
+          "height": 635,
+          "estimatedTextPt": 6.1
+        }
+      },
+      "panels": [
+        {
+          "id": "31-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.4
+        },
+        {
+          "id": "31-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.6
+        },
+        {
+          "id": "31-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.7
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "31-vi",
+      "title": "DOCTOR — Tác vụ bác sĩ",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1180,
+          "height": 803,
+          "estimatedTextPt": 6.1
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1857,
+          "height": 635,
+          "estimatedTextPt": 6.0
+        }
+      },
+      "panels": [
+        {
+          "id": "31-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.6
+        },
+        {
+          "id": "31-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        },
+        {
+          "id": "31-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "32-en",
+      "title": "NURSE — Nurse tasks",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1167,
+          "height": 885,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1956,
+          "height": 635,
+          "estimatedTextPt": 5.7
+        }
+      },
+      "panels": [
+        {
+          "id": "32-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.5
+        },
+        {
+          "id": "32-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.6
+        },
+        {
+          "id": "32-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.6
+        },
+        {
+          "id": "32-en-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.2
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "32-vi",
+      "title": "NURSE — Tác vụ điều dưỡng",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1129,
+          "height": 829,
+          "estimatedTextPt": 6.4
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1893,
+          "height": 608,
+          "estimatedTextPt": 5.9
+        }
+      },
+      "panels": [
+        {
+          "id": "32-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.6
+        },
+        {
+          "id": "32-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 10.6
+        },
+        {
+          "id": "32-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.6
+        },
+        {
+          "id": "32-vi-part-04",
+          "orientation": "landscape",
+          "estimatedTextPt": 22.2
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "33-en",
+      "title": "LAB_TECH — Laboratory technician tasks",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 879,
+          "height": 803,
+          "estimatedTextPt": 8.3
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1851,
+          "height": 491,
+          "estimatedTextPt": 6.1
+        }
+      },
+      "panels": [
+        {
+          "id": "33-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.9
+        },
+        {
+          "id": "33-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.5
+        },
+        {
+          "id": "33-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.1
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "33-vi",
+      "title": "LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 886,
+          "height": 884,
+          "estimatedTextPt": 8.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1917,
+          "height": 518,
+          "estimatedTextPt": 5.8
+        }
+      },
+      "panels": [
+        {
+          "id": "33-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.6
+        },
+        {
+          "id": "33-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.2
+        },
+        {
+          "id": "33-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.1
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "34-en",
+      "title": "PHARMACIST — Pharmacist tasks",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 905,
+          "height": 885,
+          "estimatedTextPt": 8.0
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1940,
+          "height": 491,
+          "estimatedTextPt": 5.8
+        }
+      },
+      "panels": [
+        {
+          "id": "34-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.0
+        },
+        {
+          "id": "34-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.0
+        },
+        {
+          "id": "34-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.8
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "34-vi",
+      "title": "PHARMACIST — Tác vụ dược sĩ",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 904,
+          "height": 857,
+          "estimatedTextPt": 8.0
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1933,
+          "height": 491,
+          "estimatedTextPt": 5.8
+        }
+      },
+      "panels": [
+        {
+          "id": "34-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.3
+        },
+        {
+          "id": "34-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.1
+        },
+        {
+          "id": "34-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 12.8
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "35-en",
+      "title": "CASHIER — Cashier tasks",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1183,
+          "height": 861,
+          "estimatedTextPt": 6.1
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1857,
+          "height": 635,
+          "estimatedTextPt": 6.0
+        }
+      },
+      "panels": [
+        {
+          "id": "35-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.3
+        },
+        {
+          "id": "35-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.4
+        },
+        {
+          "id": "35-en-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "35-vi",
+      "title": "CASHIER — Tác vụ thu ngân",
+      "recommended": "portrait",
+      "usePanels": true,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1184,
+          "height": 847,
+          "estimatedTextPt": 6.1
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1849,
+          "height": 635,
+          "estimatedTextPt": 6.1
+        }
+      },
+      "panels": [
+        {
+          "id": "35-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.0
+        },
+        {
+          "id": "35-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.4
+        },
+        {
+          "id": "35-vi-part-03",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "36-en",
+      "title": "PATIENT — Patient tasks",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1177,
+          "height": 698,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1448,
+          "height": 635,
+          "estimatedTextPt": 7.7
+        }
+      },
+      "panels": [
+        {
+          "id": "36-en-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 14.3
+        },
+        {
+          "id": "36-en-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        }
+      ],
+      "singleEntity": false
+    },
+    {
+      "id": "36-vi",
+      "title": "PATIENT — Tác vụ bệnh nhân",
+      "recommended": "landscape",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 1177,
+          "height": 704,
+          "estimatedTextPt": 6.2
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 1452,
+          "height": 635,
+          "estimatedTextPt": 7.7
+        }
+      },
+      "panels": [
+        {
+          "id": "36-vi-part-01",
+          "orientation": "landscape",
+          "estimatedTextPt": 13.5
+        },
+        {
+          "id": "36-vi-part-02",
+          "orientation": "landscape",
+          "estimatedTextPt": 9.5
+        }
+      ],
       "singleEntity": false
     }
   ]

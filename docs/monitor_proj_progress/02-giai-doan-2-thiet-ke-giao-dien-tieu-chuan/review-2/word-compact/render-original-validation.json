@@ -1,0 +1,725 @@
+{
+  "renderer": "Mermaid CLI 11.12.0 + isolated Chromium SVG replay",
+  "results": [
+    {
+      "orientation": "original",
+      "file": "04-en.mmd",
+      "status": "pass",
+      "width": 522,
+      "height": 693,
+      "originalViewBox": "0 0 489.4207458496094 661",
+      "viewBox": [
+        -16,
+        -16,
+        522,
+        693
+      ],
+      "paintedBounds": [
+        8.00000044655999,
+        8.000000082963489,
+        481.42073681957476,
+        652.999987995544
+      ],
+      "padding": 24,
+      "leafCount": 58,
+      "images": 4,
+      "pngWidth": 2400,
+      "pngHeight": 3187,
+      "estimatedTextPt": 13.9,
+      "preferred": "portrait",
+      "sourceSha256": "ea34247374b2be11aeebf18d7180ad941d90a2c2658332d5591313ef3c15681b",
+      "svgSha256": "6b9da83148763df9795466621cd27fc45fc27eca6fe24eefad9b8e76689b4b99",
+      "pngSha256": "6607e9e83d70839dcb888ccd5aa480cc46b6806fd6dcedfdb22660ac8d90fc36",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "width": 522,
+      "height": 695,
+      "originalViewBox": "0 0 489.4207458496094 661.5",
+      "viewBox": [
+        -16,
+        -17,
+        522,
+        695
+      ],
+      "paintedBounds": [
+        8.000000322231719,
+        7.999999797073317,
+        481.42072836042905,
+        653.4999825591184
+      ],
+      "padding": 24,
+      "leafCount": 58,
+      "images": 4,
+      "pngWidth": 2400,
+      "pngHeight": 3196,
+      "estimatedTextPt": 13.9,
+      "preferred": "portrait",
+      "sourceSha256": "83b30ede2b74acaa22649ffdbc8cc6d2b4973945f2be1eddecb18896d1291e6b",
+      "svgSha256": "ee0c15720af6738445611e7303b484d7fb72e10cf66d9e815050467ee5b5c63f",
+      "pngSha256": "db86a44a28a66c1c4bc50a768aa679848fdfdf93ab227566ff238a140b341c4d",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "05-en.mmd",
+      "status": "pass",
+      "width": 545,
+      "height": 824,
+      "originalViewBox": "0 0 511.6239013671875 791.5",
+      "viewBox": [
+        -17,
+        -16,
+        545,
+        824
+      ],
+      "paintedBounds": [
+        7.999999634299966,
+        8.00000018977844,
+        503.62387407524034,
+        783.4999788285581
+      ],
+      "padding": 24,
+      "leafCount": 59,
+      "images": 5,
+      "pngWidth": 2400,
+      "pngHeight": 3629,
+      "estimatedTextPt": 12.7,
+      "preferred": "portrait",
+      "sourceSha256": "c2d397c1beff1ae7617f914dfc444c9a55ac9d9846a899e6c5d49c030bff6feb",
+      "svgSha256": "f49e834aae8bb2844c23773f79d06b4670ff4b38bd947e25aed71a1edc9bd480",
+      "pngSha256": "06d412c2f434aafa26bb18d28a6a0bd6ef2e68e7c01f8f8771d56951664a181d",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "05-vi.mmd",
+      "status": "pass",
+      "width": 544,
+      "height": 818,
+      "originalViewBox": "0 0 511.6239013671875 785.5",
+      "viewBox": [
+        -16,
+        -16,
+        544,
+        818
+      ],
+      "paintedBounds": [
+        8.000000239186893,
+        8.000000218242874,
+        503.62387251663284,
+        777.4999740315261
+      ],
+      "padding": 24,
+      "leafCount": 59,
+      "images": 5,
+      "pngWidth": 2400,
+      "pngHeight": 3609,
+      "estimatedTextPt": 12.8,
+      "preferred": "portrait",
+      "sourceSha256": "587e02d0422e7e6f2000087dfac4f9bc6512afa0466a578c48ffd189c4fc5985",
+      "svgSha256": "cb3b030504a05c44c95416c4ced4f7502956c7870b5797fd678d6a1d9cf86402",
+      "pngSha256": "ba0f516f6d3b0e6899f2b4e2dd6127e7c773cb196eec2b7390616cfb3758fe6f",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "29-en.mmd",
+      "status": "pass",
+      "width": 2130,
+      "height": 634,
+      "originalViewBox": "-16 5 2128.217041015625 634",
+      "viewBox": [
+        -17,
+        5,
+        2130,
+        634
+      ],
+      "paintedBounds": [
+        7.999999753496798,
+        29.00000048660375,
+        2088.2171549225195,
+        614.9999913947969
+      ],
+      "padding": 24,
+      "leafCount": 95,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1072,
+      "estimatedTextPt": 5.3,
+      "preferred": "landscape",
+      "sourceSha256": "4b6fcf90aabc9f46f3ef3a51cd5e75b092c8648fcbe4faa20aae79f3a7d72448",
+      "svgSha256": "d74c05b041d18623f7375d7a3d0478bc1bd493cb95327df85ed44eb253c8e307",
+      "pngSha256": "8c10a61f07d9752e5817e6019ec545dddf0f189750563284b654267c57bee444",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "29-vi.mmd",
+      "status": "pass",
+      "width": 2184,
+      "height": 635,
+      "originalViewBox": "-16 5 2183.8544921875 634",
+      "viewBox": [
+        -16,
+        5,
+        2184,
+        635
+      ],
+      "paintedBounds": [
+        8.000000617595202,
+        29.000001024945167,
+        2143.8545748795505,
+        615.0000239679484
+      ],
+      "padding": 24,
+      "leafCount": 95,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1047,
+      "estimatedTextPt": 5.1,
+      "preferred": "landscape",
+      "sourceSha256": "12a32fe304c46cdfd8b2ef24a7bcea9772a6448683ca3bfa9dad76d39fcb2af5",
+      "svgSha256": "e8c37a778700337991ac0837579032bc1e44063283a0828d0310776a4827df8c",
+      "pngSha256": "398c431e6a187e9b9fe8b5560c367ac7225d9afca5c7b11d4d597eed30399bc9",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "30-en.mmd",
+      "status": "pass",
+      "width": 1688,
+      "height": 491,
+      "originalViewBox": "-16 5 1686.6048583984375 489.5",
+      "viewBox": [
+        -17,
+        4,
+        1688,
+        491
+      ],
+      "paintedBounds": [
+        7.999999255740104,
+        28.99999933367308,
+        1646.604794290774,
+        470.4999968515079
+      ],
+      "padding": 24,
+      "leafCount": 65,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1048,
+      "estimatedTextPt": 6.6,
+      "preferred": "landscape",
+      "sourceSha256": "98363348ea15a8652bdae6bc3277547ce0d6e27934f09de984ae73cc6098bb6c",
+      "svgSha256": "ab1b4a21b80c0fe26319da5fd0546871977e083c4155f1bc6adf43fb7be00671",
+      "pngSha256": "2ff76ffad2679d9c1d138474327e4914b625e58b0968abbbcb1c1154f7a2fd8d",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "30-vi.mmd",
+      "status": "pass",
+      "width": 1642,
+      "height": 491,
+      "originalViewBox": "-16 5 1640.2108154296875 489.5",
+      "viewBox": [
+        -17,
+        4,
+        1642,
+        491
+      ],
+      "paintedBounds": [
+        7.9999996609916195,
+        28.99999933367308,
+        1600.2107356574963,
+        470.4999968515079
+      ],
+      "padding": 24,
+      "leafCount": 65,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1077,
+      "estimatedTextPt": 6.8,
+      "preferred": "landscape",
+      "sourceSha256": "2fbfe06661a3194ae8e515a3fd0951d5cc1fdc8b69c5d94d05b2ca12384fe2d7",
+      "svgSha256": "9ce0a57327ffef78fe6606826d0eae42fab62a7e01d748a34c98668b7f1f7e8a",
+      "pngSha256": "4beb7191ba23809b70df297926758b381ea232d0c092bcd1b7d1c546618b987a",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "31-en.mmd",
+      "status": "pass",
+      "width": 1837,
+      "height": 635,
+      "originalViewBox": "-16 5 1836.6898193359375 634",
+      "viewBox": [
+        -16,
+        5,
+        1837,
+        635
+      ],
+      "paintedBounds": [
+        8.000000091759574,
+        29.000000204578715,
+        1796.6898345033433,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 85,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1245,
+      "estimatedTextPt": 6.1,
+      "preferred": "landscape",
+      "sourceSha256": "4ccaa2e1ea7a6605019146c5fb55d8c950d986e690fd0f29d52be22be3c5c754",
+      "svgSha256": "19cf5d2815860dfe9b31baf1e465118f2e5456550406c2e23e5633aa2312b949",
+      "pngSha256": "92f7a3c335e7e517b8682da636ce4c9afd960198c32b55a32696bb8721c7a5f2",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "31-vi.mmd",
+      "status": "pass",
+      "width": 1857,
+      "height": 635,
+      "originalViewBox": "-16 5 1855.95361328125 634",
+      "viewBox": [
+        -17,
+        5,
+        1857,
+        635
+      ],
+      "paintedBounds": [
+        7.999999223804341,
+        29.000000204578715,
+        1815.9534919841249,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 85,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1232,
+      "estimatedTextPt": 6,
+      "preferred": "landscape",
+      "sourceSha256": "64db4762fdd4cf8b234d619b3138411a56094208990a28ee3c0a0d2fff2a5dae",
+      "svgSha256": "79bf9ab95708266834d6f1450dd5a6b6deb547caed2335ddce945878cf93a2e5",
+      "pngSha256": "1e9643f2ca5843b8886ff93ab57ffa03fbaee170c229e689199cb5d168e38723",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "32-en.mmd",
+      "status": "pass",
+      "width": 1956,
+      "height": 635,
+      "originalViewBox": "-16 5 1954.037109375 634",
+      "viewBox": [
+        -17,
+        5,
+        1956,
+        635
+      ],
+      "paintedBounds": [
+        7.999999843557482,
+        29.000000204578715,
+        1914.0372087160158,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 80,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1169,
+      "estimatedTextPt": 5.7,
+      "preferred": "landscape",
+      "sourceSha256": "6bb893f3d6e8893bdff81df7f8f4c3796a5ac9f3b91c0b89f3f4a83f78bdf999",
+      "svgSha256": "caab8265cc3955698eee5cabdab11f0d9dd33cb7c6bb2beae1e0d5a497f42a3b",
+      "pngSha256": "983a3958fdb16452ab3f3404469da55bc91386a16e02c73e4a8acab32c9905ee",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "32-vi.mmd",
+      "status": "pass",
+      "width": 1893,
+      "height": 608,
+      "originalViewBox": "-16 5 1891.4476318359375 607",
+      "viewBox": [
+        -17,
+        4,
+        1893,
+        608
+      ],
+      "paintedBounds": [
+        7.999999093436223,
+        28.99999981145986,
+        1851.447598409342,
+        587.9999772997672
+      ],
+      "padding": 24,
+      "leafCount": 80,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1157,
+      "estimatedTextPt": 5.9,
+      "preferred": "landscape",
+      "sourceSha256": "91d3c6bbcd1cb18a54536f645170af24e5f40ccd308a76baa3d672b4da2890b3",
+      "svgSha256": "1f52904fcd894a3b4a5ce8074e4953a8d6233558aba57841fbcdbc6e87b30103",
+      "pngSha256": "6261ece0c0e56627f88d609e14154dad69da67aaab6eec3da8c677099df89fa8",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "33-en.mmd",
+      "status": "pass",
+      "width": 1851,
+      "height": 491,
+      "originalViewBox": "-16 5 1850.03564453125 489.5",
+      "viewBox": [
+        -16,
+        4,
+        1851,
+        491
+      ],
+      "paintedBounds": [
+        8.000000126641137,
+        28.99999933367308,
+        1810.035549034133,
+        470.4999968515079
+      ],
+      "padding": 24,
+      "leafCount": 70,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 955,
+      "estimatedTextPt": 6.1,
+      "preferred": "landscape",
+      "sourceSha256": "b390a06a6d4c1c2cc6e7d44d0abe71a5952fb7857fce03454a9b253ad58cdd6c",
+      "svgSha256": "bfc4ff689c293270513a04045a62d05daadf1fbfa395fd256aa09e94a3d9ed03",
+      "pngSha256": "4225825fd59fda6e37190449eb8b48e6b7909d42d7fe2ec48640e47cbfcf838d",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "33-vi.mmd",
+      "status": "pass",
+      "width": 1917,
+      "height": 518,
+      "originalViewBox": "-16 5 1916.896484375 516.5",
+      "viewBox": [
+        -16,
+        4,
+        1917,
+        518
+      ],
+      "paintedBounds": [
+        8.000000171721965,
+        28.999999340809236,
+        1876.8963812033362,
+        497.5000216406605
+      ],
+      "padding": 24,
+      "leafCount": 70,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 973,
+      "estimatedTextPt": 5.8,
+      "preferred": "landscape",
+      "sourceSha256": "fdb173ccddfaab02b355c7667fe83d4e667f3c2d8726f95997d3b2631baa4232",
+      "svgSha256": "89af11fed833cf22ebff90a4a4b7107b65a95f6b288e27d5fff706f063ac5e34",
+      "pngSha256": "aa15b6d05febd340bfaeebc04cfc906351cdf4d3e9a1b70499e235674b9217d3",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "34-en.mmd",
+      "status": "pass",
+      "width": 1940,
+      "height": 491,
+      "originalViewBox": "-16 5 1939.990234375 489.5",
+      "viewBox": [
+        -16,
+        4,
+        1940,
+        491
+      ],
+      "paintedBounds": [
+        8.000000670223546,
+        28.99999933367308,
+        1899.9903252604336,
+        470.4999968515079
+      ],
+      "padding": 24,
+      "leafCount": 70,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 912,
+      "estimatedTextPt": 5.8,
+      "preferred": "landscape",
+      "sourceSha256": "465b0e33f14c485f8355a8d7904b2cb774bb318c12778f625d4084e506fa7e89",
+      "svgSha256": "46bdd1bd33cfbd733c1e4f560e4da34e9230ddcd9b4508ad02382af4abaeb860",
+      "pngSha256": "ca3880360a54469c5f563c7084e8a8e211902d3c5f595b4f1db995c0811cb420",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "34-vi.mmd",
+      "status": "pass",
+      "width": 1933,
+      "height": 491,
+      "originalViewBox": "-16 5 1931.4571533203125 489.5",
+      "viewBox": [
+        -17,
+        4,
+        1933,
+        491
+      ],
+      "paintedBounds": [
+        7.999999530453874,
+        28.99999933367308,
+        1891.4570927527543,
+        470.4999968515079
+      ],
+      "padding": 24,
+      "leafCount": 70,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 915,
+      "estimatedTextPt": 5.8,
+      "preferred": "landscape",
+      "sourceSha256": "ab17a27c8edd50e8e694b168782a55b47f11961b1ad06b3fc68bd9757f08bcac",
+      "svgSha256": "5043a69c155f4e850595131035408e0c01974c7e6f2da5960b42b0cfb13adce6",
+      "pngSha256": "16a419812bd51f82cb27da8c1d9994d531da2198fe750fb1859a075f08811b79",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "35-en.mmd",
+      "status": "pass",
+      "width": 1857,
+      "height": 635,
+      "originalViewBox": "-16 5 1856.449462890625 634",
+      "viewBox": [
+        -16,
+        5,
+        1857,
+        635
+      ],
+      "paintedBounds": [
+        8.000000743102092,
+        29.000000204578715,
+        1816.449355333367,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 75,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1232,
+      "estimatedTextPt": 6,
+      "preferred": "landscape",
+      "sourceSha256": "75e17d91561cbaa17806e12c7a0ba6fc7870a725573f770f9cfbdf3ac4253c8b",
+      "svgSha256": "2eb2f4a26c28c141a4519087fe19b8fcfdf26e82f74b5fae5b58473cc5633491",
+      "pngSha256": "6ab34c4b9f4a9e111b644be5d8f4655c63dae053784004e15ecaade5b3cce119",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "35-vi.mmd",
+      "status": "pass",
+      "width": 1849,
+      "height": 635,
+      "originalViewBox": "-16 5 1847.1282958984375 634",
+      "viewBox": [
+        -17,
+        5,
+        1849,
+        635
+      ],
+      "paintedBounds": [
+        7.9999992553937105,
+        29.000000204578715,
+        1807.1283233465829,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 75,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1237,
+      "estimatedTextPt": 6.1,
+      "preferred": "landscape",
+      "sourceSha256": "89f7439fe1a38686d9677989f0a533456cdba697e7973749db38e5dc94146b0d",
+      "svgSha256": "fe2a16d3374870f343ff8f7322d7c06e8d47a69110bf747496b7ab65a5d8024e",
+      "pngSha256": "abe0c04c0429e78c034c3ce72d1febc37716205037bc1d8c3d5499399cd3aa6a",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "36-en.mmd",
+      "status": "pass",
+      "width": 1448,
+      "height": 635,
+      "originalViewBox": "-16 5 1447.6937255859375 634",
+      "viewBox": [
+        -16,
+        5,
+        1448,
+        635
+      ],
+      "paintedBounds": [
+        8.000000350491511,
+        29.000000204578715,
+        1407.6936756431596,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 57,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1579,
+      "estimatedTextPt": 7.7,
+      "preferred": "landscape",
+      "sourceSha256": "96f167dae8526c2efe9c7c948300877c2d4d387f5be03c341a330b6538033c59",
+      "svgSha256": "1e3dbfa2148d7e1944b77cef5ccf373ddbc52ec09a944bab9eae7ba5c502c01c",
+      "pngSha256": "9caeb51ff78bc60dd64c12967bafbf935d0ba13945102272806a2134b949f44f",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "original",
+      "file": "36-vi.mmd",
+      "status": "pass",
+      "width": 1452,
+      "height": 635,
+      "originalViewBox": "-16 5 1451.2427978515625 634",
+      "viewBox": [
+        -16,
+        5,
+        1452,
+        635
+      ],
+      "paintedBounds": [
+        8.000000485874448,
+        29.000000204578715,
+        1411.242835513601,
+        615.0000188693778
+      ],
+      "padding": 24,
+      "leafCount": 57,
+      "images": 1,
+      "pngWidth": 3601,
+      "pngHeight": 1575,
+      "estimatedTextPt": 7.7,
+      "preferred": "landscape",
+      "sourceSha256": "e0faa058d1708729d3dc2f4782841436e7a331857aaac3bb80e7a3d70565d546",
+      "svgSha256": "c76176b2e4a06af9a825f1fbb72387179dc6b62beda1fc55c953e4e5de804c99",
+      "pngSha256": "15d7e1a976ad9ff18f690413f39a66a3fb6d38eecce612b3c81ffb3c0e611bdd",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    }
+  ]
+}

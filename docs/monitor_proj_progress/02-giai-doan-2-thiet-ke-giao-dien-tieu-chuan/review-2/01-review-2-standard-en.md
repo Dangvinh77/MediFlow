@@ -256,7 +256,7 @@ flowchart LR
  DOC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>DOCTOR"]
  LT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — Outpatient MVP"]
- U1(["Sign in / view own data"])
+ U1(["Sign in / refresh session"])
  U2(["Manage appointments / check-in"])
  U3(["Examine / diagnose / complete visit"])
  U4(["Order laboratory tests"])
@@ -265,8 +265,6 @@ flowchart LR
  U7(["Prescribe medication"])
  end
  PAT --- U1
- PAT --- U2
- PAT --- U6
  NUR --- U2
  DOC --- U2
  DOC --- U3
@@ -297,7 +295,7 @@ flowchart LR
  PA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
  subgraph SYS["MediFlow — Outpatient MVP"]
  U8(["Drug catalogue / stock adjustment"])
- U9(["Dispense / cancel / expire"])
+ U9(["Read prescription / dispense"])
  U10(["Read charges / record payment"])
  U11(["Adjust / refund under policy"])
  U12(["Read reports with source coverage"])
@@ -325,6 +323,478 @@ flowchart LR
 | U7–U9 | Server price snapshots; reservations do not decrement stock; atomic deduplicated dispensing; V1 requires actor and clearance. |
 | U10–U11 | Billing owns money; partial payment guards apply; same-key replay returns the receipt, changed intent conflicts. |
 | U12–U13 | Reports are eventually consistent; unavailable differs from zero; notifications do not determine authority. |
+
+<!-- role-usecases:start -->
+### Detailed use cases — one diagram per role
+
+Figures 29–36 follow the supervisor’s presentation: one human actor per diagram, solid arrows to primary tasks, dashed `«include»` arrows for required supporting behavior, and dashed `«extend»` arrows from a conditional extension to its base task. An extension may have its own included subflow. Arrow direction is relational, not chronological. Staff authentication is a precondition; it is not repeated beside every task. Blue ovals are primary tasks; teal ovals are supporting/extension tasks. These are source capabilities, not proof of UI completeness or production enablement.
+
+**Scope correction:** PATIENT currently has authentication/refresh and own-notification access. Overview 04 no longer grants appointment or lab self-service. SYSTEM is a machine identity and has no human-role diagram. All role permissions below are intersected with the Gateway route matrix and downstream guards.
+
+#### ADMIN — Administrator tasks
+
+![ADMIN — Administrator tasks](assets/svg/29-en.svg)
+
+<details>
+<summary>Mermaid · 29-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
+ subgraph SYS["MediFlow — ADMIN"]
+ A1(["Create account"])
+ A2(["Set role and identity"])
+ A3(["Change account status"])
+ A4(["Check target account"])
+ A5(["Create staff member"])
+ A6(["Record staff details"])
+ A7(["Maintain staff profile"])
+ A8(["View staff profile"])
+ A9(["Transfer department"])
+ A10(["Validate target department"])
+ A11(["Maintain departments"])
+ A12(["View department"])
+ A13(["Create department"])
+ A14(["Enter code and name"])
+ A15(["View management reports"])
+ A16(["Choose period and scope"])
+ A17(["Send notification"])
+ A18(["Choose recipient and channel"])
+ end
+ ACTOR --> A1
+ ACTOR --> A3
+ ACTOR --> A5
+ ACTOR --> A7
+ ACTOR --> A11
+ ACTOR --> A13
+ ACTOR --> A15
+ ACTOR --> A17
+ A1 -.->|"«include»"| A2
+ A3 -.->|"«include»"| A4
+ A5 -.->|"«include»"| A6
+ A7 -.->|"«include»"| A8
+ A9 -.->|"«extend» [E1]"| A7
+ A9 -.->|"«include»"| A10
+ A11 -.->|"«include»"| A12
+ A13 -.->|"«include»"| A14
+ A15 -.->|"«include»"| A16
+ A17 -.->|"«include»"| A18
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class A1,A3,A5,A7,A11,A13,A15,A17 main;
+ class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+```
+
+</details>
+
+This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented.
+
+Extension conditions: E1: Transfer department — transfer requested
+
+Source evidence: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+#### MANAGER — Manager tasks
+
+![MANAGER — Manager tasks](assets/svg/30-en.svg)
+
+<details>
+<summary>Mermaid · 30-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
+ subgraph SYS["MediFlow — MANAGER"]
+ M1(["View outpatient report"])
+ M2(["Select reporting period"])
+ M3(["Inspect source coverage"])
+ M4(["View financial report"])
+ M5(["Select day or month"])
+ M6(["View medicine statistics"])
+ M7(["Select period and limit"])
+ M8(["View appointments"])
+ M9(["Read appointment page"])
+ M10(["Filter by department"])
+ M11(["View staff directory"])
+ M12(["Read staff page"])
+ end
+ ACTOR --> M1
+ ACTOR --> M4
+ ACTOR --> M6
+ ACTOR --> M8
+ ACTOR --> M11
+ M1 -.->|"«include»"| M2
+ M1 -.->|"«include»"| M3
+ M4 -.->|"«include»"| M5
+ M6 -.->|"«include»"| M7
+ M8 -.->|"«include»"| M9
+ M10 -.->|"«extend» [E1]"| M8
+ M11 -.->|"«include»"| M12
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class M1,M4,M6,M8,M11 main;
+ class M2,M3,M5,M7,M9,M10,M12 sub;
+```
+
+</details>
+
+Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage.
+
+Extension conditions: E1: Filter by department — department selected
+
+Source evidence: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+
+#### DOCTOR — Doctor tasks
+
+![DOCTOR — Doctor tasks](assets/svg/31-en.svg)
+
+<details>
+<summary>Mermaid · 31-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
+ subgraph SYS["MediFlow — DOCTOR"]
+ D1(["Review clinical history"])
+ D2(["View patient records"])
+ D3(["Start examination [V1]"])
+ D4(["Check exam clearance"])
+ D5(["Record consultation"])
+ D6(["Record clinical findings"])
+ D7(["Add diagnosis"])
+ D8(["Order lab test"])
+ D9(["Specify test and patient"])
+ D10(["Review lab results"])
+ D11(["Issue prescription"])
+ D12(["Select medicines and dose"])
+ D13(["Complete visit [V1]"])
+ D14(["Confirm diagnosis / disposition"])
+ D15(["Cancel prescription"])
+ D16(["Check cancellation eligibility"])
+ end
+ ACTOR --> D1
+ ACTOR --> D3
+ ACTOR --> D5
+ ACTOR --> D10
+ ACTOR --> D11
+ ACTOR --> D13
+ D1 -.->|"«include»"| D2
+ D3 -.->|"«include»"| D4
+ D5 -.->|"«include»"| D6
+ D7 -.->|"«extend» [E1]"| D5
+ D8 -.->|"«extend» [E2]"| D5
+ D8 -.->|"«include»"| D9
+ D11 -.->|"«include»"| D12
+ D13 -.->|"«include»"| D14
+ D15 -.->|"«extend» [E3]"| D11
+ D15 -.->|"«include»"| D16
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class D1,D3,D5,D10,D11,D13 main;
+ class D2,D4,D6,D7,D8,D9,D12,D14,D15,D16 sub;
+```
+
+</details>
+
+Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment.
+
+Extension conditions: E1: Add diagnosis — diagnosis added; E2: Order lab test — test indicated; E3: Cancel prescription — cancellation requested
+
+Source evidence: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### NURSE — Nurse tasks
+
+![NURSE — Nurse tasks](assets/svg/32-en.svg)
+
+<details>
+<summary>Mermaid · 32-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
+ subgraph SYS["MediFlow — NURSE"]
+ N1(["Register patient"])
+ N2(["Record patient details"])
+ N3(["Update patient"])
+ N4(["Find patient record"])
+ N5(["Schedule appointment"])
+ N6(["Choose patient / doctor / date"])
+ N7(["Review appointment"])
+ N8(["Read appointment details"])
+ N9(["Reschedule appointment"])
+ N10(["Validate new schedule"])
+ N11(["Check in [V1]"])
+ N12(["Check appointment state"])
+ N13(["Read care information"])
+ N14(["View medical record / lab"])
+ N15(["View patient notifications"])
+ end
+ ACTOR --> N1
+ ACTOR --> N3
+ ACTOR --> N5
+ ACTOR --> N7
+ ACTOR --> N11
+ ACTOR --> N13
+ ACTOR --> N15
+ N1 -.->|"«include»"| N2
+ N3 -.->|"«include»"| N4
+ N5 -.->|"«include»"| N6
+ N7 -.->|"«include»"| N8
+ N9 -.->|"«extend» [E1]"| N7
+ N9 -.->|"«include»"| N10
+ N11 -.->|"«include»"| N12
+ N13 -.->|"«include»"| N14
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class N1,N3,N5,N7,N11,N13,N15 main;
+ class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+```
+
+</details>
+
+[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role.
+
+Extension conditions: E1: Reschedule appointment — schedule change requested
+
+Source evidence: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+
+#### LAB_TECH — Laboratory technician tasks
+
+![LAB_TECH — Laboratory technician tasks](assets/svg/33-en.svg)
+
+<details>
+<summary>Mermaid · 33-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
+ subgraph SYS["MediFlow — LAB_TECH"]
+ L1(["Review test worklist"])
+ L2(["Read test page"])
+ L3(["Filter pending tests"])
+ L4(["Start test [V1 gate]"])
+ L5(["Check test state"])
+ L6(["Check LAB_TEST clearance [V1]"])
+ L7(["Record test results"])
+ L8(["Enter result values"])
+ L9(["Validate completion time"])
+ L10(["Cancel test"])
+ L11(["Record cancellation reason"])
+ L12(["Update allowed status"])
+ L13(["Validate state transition"])
+ end
+ ACTOR --> L1
+ ACTOR --> L4
+ ACTOR --> L7
+ ACTOR --> L10
+ ACTOR --> L12
+ L1 -.->|"«include»"| L2
+ L3 -.->|"«extend» [E1]"| L1
+ L4 -.->|"«include»"| L5
+ L4 -.->|"«include»"| L6
+ L7 -.->|"«include»"| L8
+ L7 -.->|"«include»"| L9
+ L10 -.->|"«include»"| L11
+ L12 -.->|"«include»"| L13
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class L1,L4,L7,L10,L12 main;
+ class L2,L3,L5,L6,L8,L9,L11,L13 sub;
+```
+
+</details>
+
+Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist.
+
+Extension conditions: E1: Filter pending tests — status filter selected
+
+Source evidence: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+
+#### PHARMACIST — Pharmacist tasks
+
+![PHARMACIST — Pharmacist tasks](assets/svg/34-en.svg)
+
+<details>
+<summary>Mermaid · 34-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
+ subgraph SYS["MediFlow — PHARMACIST"]
+ P1(["Find medicine"])
+ P2(["Read medicine catalogue"])
+ P3(["Filter by keyword"])
+ P4(["Create medicine"])
+ P5(["Enter medicine information"])
+ P6(["Adjust stock"])
+ P7(["Record quantity and reason"])
+ P8(["Review prescription"])
+ P9(["Read prescription lines"])
+ P10(["Dispense prescription [V1]"])
+ P11(["Check exact clearance"])
+ P12(["Validate stock / reservation"])
+ P13(["Record dispense and stock change"])
+ end
+ ACTOR --> P1
+ ACTOR --> P4
+ ACTOR --> P6
+ ACTOR --> P8
+ ACTOR --> P10
+ P1 -.->|"«include»"| P2
+ P3 -.->|"«extend» [E1]"| P1
+ P4 -.->|"«include»"| P5
+ P6 -.->|"«include»"| P7
+ P8 -.->|"«include»"| P9
+ P10 -.->|"«include»"| P11
+ P10 -.->|"«include»"| P12
+ P10 -.->|"«include»"| P13
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class P1,P4,P6,P8,P10 main;
+ class P2,P3,P5,P7,P9,P11,P12,P13 sub;
+```
+
+</details>
+
+The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task.
+
+Extension conditions: E1: Filter by keyword — keyword supplied
+
+Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### CASHIER — Cashier tasks
+
+![CASHIER — Cashier tasks](assets/svg/35-en.svg)
+
+<details>
+<summary>Mermaid · 35-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
+ subgraph SYS["MediFlow — CASHIER"]
+ C1(["Find invoice"])
+ C2(["View patient invoices"])
+ C3(["Create invoice"])
+ C4(["Validate invoice items"])
+ C5(["Record invoice payment"])
+ C6(["Validate payment command"])
+ C7(["Find payment request [V1]"])
+ C8(["Identify source and target"])
+ C9(["Record ledger payment [V1]"])
+ C10(["Check amount and replay key"])
+ C11(["Return payment receipt"])
+ C12(["Refund payment [V1]"])
+ C13(["Check refundable balance"])
+ C14(["Record amount and reason"])
+ end
+ ACTOR --> C1
+ ACTOR --> C3
+ ACTOR --> C5
+ ACTOR --> C7
+ ACTOR --> C9
+ C1 -.->|"«include»"| C2
+ C3 -.->|"«include»"| C4
+ C5 -.->|"«include»"| C6
+ C7 -.->|"«include»"| C8
+ C9 -.->|"«include»"| C10
+ C9 -.->|"«include»"| C11
+ C12 -.->|"«extend» [E1]"| C9
+ C12 -.->|"«include»"| C13
+ C12 -.->|"«include»"| C14
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class C1,C3,C5,C7,C9 main;
+ class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+```
+
+</details>
+
+Invoice compatibility and V1 ledger are separate paths, not mandatory consecutive steps. [V1] depends on feature availability. Refund is a subsequent conditional operation on an eligible original payment; its own workflow includes balance checks and amount/reason. Same-key retries must preserve intent. No inpatient/surgery settlement task is activated.
+
+Extension conditions: E1: Refund payment [V1] — eligible refund requested
+
+Source evidence: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+
+#### PATIENT — Patient tasks
+
+![PATIENT — Patient tasks](assets/svg/36-en.svg)
+
+<details>
+<summary>Mermaid · 36-en</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PATIENT"]
+ subgraph SYS["MediFlow — PATIENT"]
+ T1(["Sign in"])
+ T2(["Submit username / password"])
+ T3(["Receive access / refresh tokens"])
+ T4(["Renew session"])
+ T5(["Validate refresh identity"])
+ T6(["Read own notifications"])
+ T7(["Check patient ownership"])
+ T8(["Read notification page"])
+ T9(["Open notification"])
+ T10(["Read notification content"])
+ end
+ ACTOR --> T1
+ ACTOR --> T4
+ ACTOR --> T6
+ T1 -.->|"«include»"| T2
+ T1 -.->|"«include»"| T3
+ T4 -.->|"«include»"| T5
+ T6 -.->|"«include»"| T7
+ T6 -.->|"«include»"| T8
+ T9 -.->|"«extend» [E1]"| T6
+ T9 -.->|"«include»"| T7
+ T9 -.->|"«include»"| T10
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class T1,T4,T6 main;
+ class T2,T3,T5,T7,T8,T9,T10 sub;
+```
+
+</details>
+
+This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently.
+
+Extension conditions: E1: Open notification — notification selected
+
+Source evidence: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+<!-- role-usecases:end -->
 
 ### 1.3. Sequences Diagrams
 

@@ -1,3 +1,11 @@
+# Use case theo từng role — 2026-10-19
+
+- Thêm hình 29–36 cho Admin, Manager, Doctor, Nurse, Lab Tech, Pharmacist, Cashier và Patient, đồng bộ Việt/Anh.
+- Mỗi hình có một actor, tác vụ oval, liên kết liền tới tác vụ chính, liên kết đứt `«include»` và `«extend»` kèm điều kiện E1/E2.
+- Đối chiếu quyền Gateway và controller; sửa tổng quan để không gán chức năng tự đặt lịch/xem kết quả xét nghiệm chưa có cho Patient.
+- Thêm bố cục portrait/landscape riêng và 50 phần chi tiết để chèn Word; mở rộng trang chọn hình và kiểm tra theo số hình thực tế.
+- Kiểm tra đạt: 268 bộ Word, 48 biến thể role đầy đủ, 216 kiểm tra trang chọn; duyệt ảnh mới và đối chiếu PNG với SVG đã lưu.
+
 # Sửa bộ Word — 2026-10-19
 
 - Bỏ bước sao chép ứng viên có tỷ lệ tốt nhất vào cả hai khổ. Bộ cũ có 38/56 cặp nguồn dọc–ngang trùng nhau. Hai khổ hiện có cách dàn riêng; ERD Patient chỉ một bảng là ngoại lệ được ghi rõ.

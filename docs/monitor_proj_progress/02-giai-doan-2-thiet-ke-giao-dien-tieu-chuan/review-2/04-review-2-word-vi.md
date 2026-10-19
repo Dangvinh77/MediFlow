@@ -137,6 +137,203 @@ Domain Java không phụ thuộc Spring/JPA; ports nằm ở application, adapte
 | U10–U11 | Billing owns tiền; partial payment có guard; replay cùng key trả receipt cũ, khác intent báo conflict. |
 | U12–U13 | Report eventually consistent, unavailable khác zero; Notification không quyết định authority. |
 
+<!-- role-usecases:start -->
+### Use case chi tiết — một sơ đồ cho mỗi vai trò
+
+Hình 29–36 theo mẫu của giảng viên: mỗi hình có một actor người dùng, mũi tên liền đến tác vụ chính, mũi tên đứt `«include»` cho hành vi con bắt buộc và mũi tên đứt `«extend»` từ nhánh mở rộng có điều kiện về tác vụ gốc. Nhánh mở rộng có thể có luồng con `include` riêng. Mũi tên thể hiện quan hệ, không phải thứ tự thực hiện. Nhân viên đã đăng nhập là tiền điều kiện, không lặp lại ở mọi tác vụ. Oval xanh dương là tác vụ chính; xanh teal là tác vụ con/mở rộng. Hình mô tả khả năng trong source, không khẳng định mọi UI đã hoàn thiện hoặc mọi feature đã bật.
+
+**Hiệu chỉnh phạm vi:** PATIENT hiện có đăng nhập/refresh và truy cập thông báo của mình. Hình tổng quan 04 đã bỏ quyền tự thao tác lịch hẹn/xét nghiệm cho PATIENT. SYSTEM là định danh máy, không tạo sơ đồ role người dùng. Quyền từng role lấy giao của ma trận Gateway và guards downstream.
+
+#### ADMIN — Tác vụ quản trị viên
+
+**Phần 1/4 · A4 landscape**
+
+![ADMIN — Tác vụ quản trị viên — Phần 1/4](word-compact/panels/png/29-vi-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/29-vi-part-01.mmd) · [SVG](word-compact/panels/svg/29-vi-part-01.svg)
+
+**Phần 2/4 · A4 landscape**
+
+![ADMIN — Tác vụ quản trị viên — Phần 2/4](word-compact/panels/png/29-vi-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/29-vi-part-02.mmd) · [SVG](word-compact/panels/svg/29-vi-part-02.svg)
+
+**Phần 3/4 · A4 landscape**
+
+![ADMIN — Tác vụ quản trị viên — Phần 3/4](word-compact/panels/png/29-vi-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/29-vi-part-03.mmd) · [SVG](word-compact/panels/svg/29-vi-part-03.svg)
+
+**Phần 4/4 · A4 landscape**
+
+![ADMIN — Tác vụ quản trị viên — Phần 4/4](word-compact/panels/png/29-vi-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/29-vi-part-04.mmd) · [SVG](word-compact/panels/svg/29-vi-part-04.svg)
+
+[Original SVG](assets/svg/29-vi.svg) · [Portrait PNG](word-compact/portrait/png/29-vi.png) · [Landscape PNG](word-compact/landscape/png/29-vi.png)
+
+Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quyền cụ thể tại những nghiệp vụ khác theo ma trận nguồn; không bỏ qua business guards. Không thêm xóa tài khoản hay màn hình chỉnh quyền tùy ý.
+
+Điều kiện mở rộng: E1: Chuyển khoa công tác — cần chuyển khoa
+
+Đối chiếu source: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+#### MANAGER — Tác vụ quản lý
+
+**A4 portrait**
+
+![MANAGER — Tác vụ quản lý](word-compact/portrait/png/30-vi.png)
+
+[Mermaid](word-compact/portrait/mermaid/30-vi.mmd) · [SVG](word-compact/portrait/svg/30-vi.svg)
+
+[Original SVG](assets/svg/30-vi.svg) · [Portrait PNG](word-compact/portrait/png/30-vi.png) · [Landscape PNG](word-compact/landscape/png/30-vi.png)
+
+Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doanh thu khoa, danh sách lịch hẹn/xét nghiệm, nhân viên và khoa. MANAGER không tạo tài khoản, sửa nhân viên hay thực hiện lệnh khám/thu tiền. Báo cáo snapshot phụ thuộc availability và coverage tại runtime.
+
+Điều kiện mở rộng: E1: Lọc theo khoa — đã chọn khoa
+
+Đối chiếu source: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+
+#### DOCTOR — Tác vụ bác sĩ
+
+**Phần 1/3 · A4 landscape**
+
+![DOCTOR — Tác vụ bác sĩ — Phần 1/3](word-compact/panels/png/31-vi-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/31-vi-part-01.mmd) · [SVG](word-compact/panels/svg/31-vi-part-01.svg)
+
+**Phần 2/3 · A4 landscape**
+
+![DOCTOR — Tác vụ bác sĩ — Phần 2/3](word-compact/panels/png/31-vi-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/31-vi-part-02.mmd) · [SVG](word-compact/panels/svg/31-vi-part-02.svg)
+
+**Phần 3/3 · A4 landscape**
+
+![DOCTOR — Tác vụ bác sĩ — Phần 3/3](word-compact/panels/png/31-vi-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/31-vi-part-03.mmd) · [SVG](word-compact/panels/svg/31-vi-part-03.svg)
+
+[Original SVG](assets/svg/31-vi.svg) · [Portrait PNG](word-compact/portrait/png/31-vi.png) · [Landscape PNG](word-compact/landscape/png/31-vi.png)
+
+Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật care-finance-v2; start-exam cần exact EXAM clearance hoặc audited override đã hỗ trợ. AppointmentController còn cấp quyền xem/sửa lịch/trạng thái; source cũng cho phép xem báo cáo vận hành và hủy xét nghiệm. Bác sĩ không check-in thay điều dưỡng, cấp thuốc thay dược sĩ hay thu tiền thay thu ngân.
+
+Điều kiện mở rộng: E1: Thêm chẩn đoán — bổ sung chẩn đoán; E2: Chỉ định xét nghiệm — cần xét nghiệm; E3: Hủy đơn thuốc — yêu cầu hủy đơn
+
+Đối chiếu source: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### NURSE — Tác vụ điều dưỡng
+
+**Phần 1/4 · A4 landscape**
+
+![NURSE — Tác vụ điều dưỡng — Phần 1/4](word-compact/panels/png/32-vi-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/32-vi-part-01.mmd) · [SVG](word-compact/panels/svg/32-vi-part-01.svg)
+
+**Phần 2/4 · A4 landscape**
+
+![NURSE — Tác vụ điều dưỡng — Phần 2/4](word-compact/panels/png/32-vi-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/32-vi-part-02.mmd) · [SVG](word-compact/panels/svg/32-vi-part-02.svg)
+
+**Phần 3/4 · A4 landscape**
+
+![NURSE — Tác vụ điều dưỡng — Phần 3/4](word-compact/panels/png/32-vi-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/32-vi-part-03.mmd) · [SVG](word-compact/panels/svg/32-vi-part-03.svg)
+
+**Phần 4/4 · A4 landscape**
+
+![NURSE — Tác vụ điều dưỡng — Phần 4/4](word-compact/panels/png/32-vi-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/32-vi-part-04.mmd) · [SVG](word-compact/panels/svg/32-vi-part-04.svg)
+
+[Original SVG](assets/svg/32-vi.svg) · [Portrait PNG](word-compact/portrait/png/32-vi.png) · [Landscape PNG](word-compact/landscape/png/32-vi.png)
+
+[V1] check-in cần bật care-finance-v2 và không đồng nghĩa bắt đầu khám. NURSE xem danh sách/chi tiết xét nghiệm và danh sách thông báo theo bệnh nhân; không ghi chẩn đoán, kết quả xét nghiệm, đơn thuốc hay thanh toán; không có quyền mở endpoint chi tiết thông báo. Không tạo role RECEPTIONIST.
+
+Điều kiện mở rộng: E1: Điều chỉnh lịch hẹn — cần đổi lịch
+
+Đối chiếu source: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+
+#### LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm
+
+**A4 portrait**
+
+![LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm](word-compact/portrait/png/33-vi.png)
+
+[Mermaid](word-compact/portrait/mermaid/33-vi.mmd) · [SVG](word-compact/portrait/svg/33-vi.svg)
+
+[Original SVG](assets/svg/33-vi.svg) · [Portrait PNG](word-compact/portrait/png/33-vi.png) · [Landscape PNG](word-compact/landscape/png/33-vi.png)
+
+Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clearance áp dụng cho protected action V1. LAB_TECH tra cứu xét nghiệm, ghi kết quả/trạng thái; không tạo chỉ định, kê đơn hay thu tiền. Lọc trạng thái là nhánh mở rộng tùy chọn của danh sách.
+
+Điều kiện mở rộng: E1: Lọc xét nghiệm chờ — đã chọn bộ lọc
+
+Đối chiếu source: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+
+#### PHARMACIST — Tác vụ dược sĩ
+
+**A4 portrait**
+
+![PHARMACIST — Tác vụ dược sĩ](word-compact/portrait/png/34-vi.png)
+
+[Mermaid](word-compact/portrait/mermaid/34-vi.mmd) · [SVG](word-compact/portrait/svg/34-vi.svg)
+
+[Original SVG](assets/svg/34-vi.svg) · [Portrait PNG](word-compact/portrait/png/34-vi.png) · [Landscape PNG](word-compact/landscape/png/34-vi.png)
+
+Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm tra exact PRESCRIPTION clearance, tồn và reservation. Dược sĩ chủ động cấp thuốc, không tự cấp khi nhận sự kiện thanh toán. PHARMACIST không tạo/hủy đơn; hết hạn là xử lý lifecycle của hệ thống, không phải tác vụ người dùng.
+
+Điều kiện mở rộng: E1: Lọc theo từ khóa — có từ khóa
+
+Đối chiếu source: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### CASHIER — Tác vụ thu ngân
+
+**Phần 1/3 · A4 landscape**
+
+![CASHIER — Tác vụ thu ngân — Phần 1/3](word-compact/panels/png/35-vi-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/35-vi-part-01.mmd) · [SVG](word-compact/panels/svg/35-vi-part-01.svg)
+
+**Phần 2/3 · A4 landscape**
+
+![CASHIER — Tác vụ thu ngân — Phần 2/3](word-compact/panels/png/35-vi-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/35-vi-part-02.mmd) · [SVG](word-compact/panels/svg/35-vi-part-02.svg)
+
+**Phần 3/3 · A4 landscape**
+
+![CASHIER — Tác vụ thu ngân — Phần 3/3](word-compact/panels/png/35-vi-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/35-vi-part-03.mmd) · [SVG](word-compact/panels/svg/35-vi-part-03.svg)
+
+[Original SVG](assets/svg/35-vi.svg) · [Portrait PNG](word-compact/portrait/png/35-vi.png) · [Landscape PNG](word-compact/landscape/png/35-vi.png)
+
+Hóa đơn compatibility và ledger V1 là hai đường xử lý riêng, không phải các bước bắt buộc nối tiếp. [V1] phụ thuộc feature availability. Hoàn tiền là tác vụ mở rộng sau thanh toán gốc đủ điều kiện; có luồng con kiểm tra số dư, số tiền/lý do. Retry cùng khóa phải giữ intent. Không kích hoạt quyết toán nội trú/phẫu thuật.
+
+Điều kiện mở rộng: E1: Hoàn tiền giao dịch [V1] — yêu cầu hoàn hợp lệ
+
+Đối chiếu source: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+
+#### PATIENT — Tác vụ bệnh nhân
+
+**A4 landscape**
+
+![PATIENT — Tác vụ bệnh nhân](word-compact/landscape/png/36-vi.png)
+
+[Mermaid](word-compact/landscape/mermaid/36-vi.mmd) · [SVG](word-compact/landscape/svg/36-vi.svg)
+
+[Original SVG](assets/svg/36-vi.svg) · [Portrait PNG](word-compact/portrait/png/36-vi.png) · [Landscape PNG](word-compact/landscape/png/36-vi.png)
+
+Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực tiếp tạo/xem lịch hẹn, lấy hồ sơ bệnh nhân, kết quả xét nghiệm, đơn thuốc hay hóa đơn qua ma trận Gateway/controller hiện tại. Chưa có tự đăng ký hoặc sửa hồ sơ. Đây là khoảng trống tương lai, không vẽ thành chức năng đã có. Mở chi tiết thông báo vẫn kiểm tra ownership độc lập.
+
+Điều kiện mở rộng: E1: Mở chi tiết thông báo — đã chọn thông báo
+
+Đối chiếu source: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+<!-- role-usecases:end -->
+
 ### 1.3. Sequences Diagrams
 
 ### Đăng nhập và truy cập có kiểm quyền — SOURCE

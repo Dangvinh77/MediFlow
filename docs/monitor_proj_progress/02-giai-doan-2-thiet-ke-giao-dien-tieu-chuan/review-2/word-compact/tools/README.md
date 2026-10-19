@@ -11,4 +11,14 @@ Không dùng lại quy tắc chọn cùng một bố cục cho cả hai khổ gi
 
 Có thể truyền tên nguồn để dựng thử, ví dụ `node render.mjs 06-vi.mmd`. Selected runs write a separate diagnostic ledger; successful results also update the matching entries in the full render-validation.json ledger.
 Nếu dùng dependency đã cài ở nơi khác, đặt `MERMAID_RUNTIME` trỏ tới thư mục chứa `node_modules`.
-Giữ `assets/` của bản chuẩn và các file DOCX bên ngoài bộ này nguyên vẹn.
+Khi chỉ dựng bộ Word, không ghi đè `assets/` của bản chuẩn. Chỉ dùng `--original` khi chủ động cập nhật bản chuẩn; các file DOCX lịch sử bên ngoài bộ này được giữ nguyên.
+
+## Use case theo role — hình 29–36
+
+`role_usecases.py` chứa nhãn Việt/Anh, tác vụ chính, quan hệ và đường dẫn đối chiếu source cho 8 role. Chạy script này khi cập nhật bộ use case. Script bổ sung hai báo cáo chuẩn và các nguồn Word; sau đó render các nguồn thay đổi, chạy `publish.py` để đồng bộ báo cáo Word/trang chọn.
+
+Nguồn Mermaid dùng shape stadium tương thích và mũi tên `extension -.-> base`. Khi xuất, renderer dàn extension sau tác vụ gốc, khôi phục đầu mũi tên trỏ về base và chuyển đường bao thành ellipse. Chỉ hình có marker `%% Role use case:` áp dụng xử lý này. Actor, nội dung và quan hệ giữ theo nguồn. Mã điều kiện E1/E2 được giữ thống nhất giữa hình đầy đủ và các phần; mô tả điều kiện nằm ngay sau hình trong báo cáo.
+
+`node render.mjs --original 29-vi.mmd` dựng bản chuẩn từ `../../assets/mermaid/`; ghi ledger riêng `render-original-validation.json`, không trộn bản chuẩn với ledger Word. Có thể truyền nhiều tên nguồn. Lệnh này cũng tạo PNG chuẩn bên cạnh SVG. Chỉ dùng với các nguồn cần cập nhật.
+
+Sau khi xuất cả bản chuẩn và Word, chạy `python verify_role_usecases.py`. Bước này kiểm tra đủ 8 role, đúng một actor, node/quan hệ Việt–Anh, ellipse, đầu mũi tên include/extend và việc các phần Word giữ đủ tác vụ của hình đầy đủ. `verify.py` và `inspect.mjs` tự lấy danh sách hình hiện có, không giới hạn 28 hình.

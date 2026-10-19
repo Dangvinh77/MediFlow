@@ -1,5 +1,5 @@
 {
-  "checks": 168,
+  "checks": 216,
   "failures": 0,
   "consoleErrors": [],
   "results": [
@@ -592,6 +592,174 @@
       "count": 1
     },
     {
+      "lang": "vi",
+      "id": "29",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "29",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "29",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "vi",
+      "id": "30",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "30",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "30",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "31",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "31",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "31",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "32",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "32",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "32",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "33",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "34",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "35",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "vi",
+      "id": "36",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
+    },
+    {
       "lang": "en",
       "id": "01",
       "mode": "portrait",
@@ -1178,6 +1346,174 @@
       "mode": "panels",
       "status": "pass",
       "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "29",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "29",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "29",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "en",
+      "id": "30",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "30",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "30",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "31",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "31",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "31",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "32",
+      "mode": "panels",
+      "status": "pass",
+      "count": 4
+    },
+    {
+      "lang": "en",
+      "id": "33",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "33",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "33",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "34",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "34",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "34",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "35",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "35",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "35",
+      "mode": "panels",
+      "status": "pass",
+      "count": 3
+    },
+    {
+      "lang": "en",
+      "id": "36",
+      "mode": "portrait",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "36",
+      "mode": "landscape",
+      "status": "pass",
+      "count": 1
+    },
+    {
+      "lang": "en",
+      "id": "36",
+      "mode": "panels",
+      "status": "pass",
+      "count": 2
     }
   ]
 }
