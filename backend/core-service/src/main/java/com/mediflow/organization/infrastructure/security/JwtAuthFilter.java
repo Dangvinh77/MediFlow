@@ -115,6 +115,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)
+                    || claims.getExpiration() == null
+                    || !claims.getExpiration().toInstant().isAfter(java.time.Instant.now())
                     || !isValidHumanIdentity(claims, subject, role)) {
                 SecurityContextHolder.clearContext();
                 return;

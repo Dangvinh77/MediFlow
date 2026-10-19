@@ -203,6 +203,8 @@ class PatientControllerWebTest {
     private String bearer(String type, String role, String subject) {
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         return "Bearer " + Jwts.builder().subject(subject).claim("type", type).claim("role", role)
+                .issuedAt(java.util.Date.from(java.time.Instant.now()))
+                .expiration(java.util.Date.from(java.time.Instant.now().plusSeconds(60)))
                 .signWith(key).compact();
     }
 

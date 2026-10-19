@@ -81,7 +81,7 @@ public class AccountController {
     }
 
     @PostMapping("/verify")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE')")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_SERVICE') and authentication.name == 'gateway'")
     public ResponseEntity<ApiResponse<VerifiedAccountResponse>> verifyCredentials(
             @Valid @RequestBody VerifyCredentialsRequest request) {
 
