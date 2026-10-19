@@ -46,5 +46,15 @@ HTTP 408 được reconcile bằng GET mới như network/5xx; không tự gửi
 
 Regression Pharmacy và route: **233/233 tests, 21 files**; typecheck/lint/build đạt. Các ca
 unpaid/expired/revoked trong component tests cùng dùng wire error 422; chúng kiểm UX nhận lỗi,
-không chứng minh trạng thái clearance thật. Handoff tiếp tục OPEN cho producer/consumer
-acceptance và Vinh review. Evidence candidate cuối được ghi trong plan FE, mục 11.
+không chứng minh trạng thái clearance thật.
+
+Signed browser/API proof trên candidate FE `9a00d7f` + JWT `5334aa8c` đã kiểm create → unpaid 422
+→ CASHIER payment bằng API → GET vẫn false/PENDING → browser refresh/PHARMACIST dispense.
+Stock 40→37; retry trả phiếu có sẵn, một slip/outbox/Clinical attachment. DOCTOR bị deny xuất,
+foreign-doctor create/cancel và PHARMACIST cancel bị deny; ADMIN browser canceled read-only.
+Enter/Escape/return-focus, success focus, theme và 320px có evidence.
+
+Handoff tiếp tục **OPEN cho Vinh review và matrix còn lại**: browser expired/revoked/Billing
+unavailable, signed V0 runtime và nghiệm thu producer/consumer cuối. Không coi payment bằng API
+là Billing browser acceptance. Evidence và giới hạn đầy đủ ở
+[candidate evidence](../../frontend/docs/evidence/huy-six-service/2026-10-19-jwt-v1/README.md).

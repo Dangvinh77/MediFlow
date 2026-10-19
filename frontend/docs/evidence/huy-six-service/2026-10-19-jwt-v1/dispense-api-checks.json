@@ -1,0 +1,48 @@
+{
+  "action" : "VERIFY_DISPENSE",
+  "prescriptionId" : "01b5f30c-acca-484d-80d9-46c51030a271",
+  "checkedAt" : 1792399033.577154500,
+  "checks" : [ {
+    "scenario" : "terminal-dispense-retry",
+    "httpStatus" : 200,
+    "correlationId" : "8b53d35b-a3ee-4944-82cd-160e07dfa8af",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "dispenseId" : "8967e72a-d9d9-4430-b341-8b9ce0df34f5",
+        "prescriptionId" : "01b5f30c-acca-484d-80d9-46c51030a271",
+        "status" : "DISPENSED",
+        "dispensedAt" : "2026-10-19T08:37:00.305859700Z",
+        "dispensedBy" : "039ffeb2-948a-4302-988a-cc0d28aa0396",
+        "dispensedActorType" : "STAFF",
+        "failureReason" : null
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T08:37:13.317322400Z",
+      "correlationId" : "8b53d35b-a3ee-4944-82cd-160e07dfa8af"
+    }
+  }, {
+    "scenario" : "final-drug-stock",
+    "httpStatus" : 200,
+    "correlationId" : "0904e1a7-d1d0-4b08-be07-b14cadee3085",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "drugId" : "13ef9eed-9db2-4273-974a-458186c62695",
+        "drugName" : "FE acceptance c85c9e3ab441",
+        "activeIngredient" : null,
+        "unit" : "tablet",
+        "price" : 10000.0,
+        "stockQuantity" : 37,
+        "expiryDate" : "2027-10-19",
+        "manufacturer" : null,
+        "lowStockThreshold" : 0,
+        "createdAt" : "2026-10-19T08:33:20.229167Z",
+        "updatedAt" : "2026-10-19T08:37:00.309643Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T08:37:13.357579100Z",
+      "correlationId" : "0904e1a7-d1d0-4b08-be07-b14cadee3085"
+    }
+  } ]
+}

@@ -1,0 +1,24 @@
+{
+  "frontendCode": "9a00d7f1749f141ed57544c998587dc04e269375",
+  "backendCode": "5334aa8cdda83f749915997b11ff824b12624fbc",
+  "pharmacySuite": { "tests": 843, "failures": 0, "errors": 0, "skipped": 0 },
+  "reportSuite": { "tests": 1407, "failures": 0, "errors": 0, "skipped": 0 },
+  "supportCompositionSecurity": { "tests": 12, "failures": 0, "errors": 0, "skipped": 0 },
+  "frontendFocused": { "files": 21, "tests": 233, "passed": 233, "exitCode": 0 },
+  "frontendTypecheckExitCode": 0,
+  "frontendLintExitCode": 0,
+  "frontendBuildExitCode": 0,
+  "frontendFull": { "files": 57, "tests": 532, "passed": 529, "exitCode": 1, "failures": ["Existing Lab start-control fixture", "Two Inpatient timeouts"] },
+  "frontendFailureRerun": { "files": 2, "tests": 20, "passed": 19, "remainingFailure": "Existing Lab start-control fixture" },
+  "browserHarness": {
+    "exitCode": 0,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "branch": "Opt-in browser hold; normal packaged refund/rollback/cutover branch not executed",
+    "shutdown": "STOP completed; test containers and owned frontend listener stopped"
+  },
+  "finalSourceVerification": "Production code unchanged after the tested code commits; subsequent FE commit adds documentation/evidence only",
+  "browserAcceptance": "Partial: consult README matrix and limitations; not inferred from mock tests or build"
+}

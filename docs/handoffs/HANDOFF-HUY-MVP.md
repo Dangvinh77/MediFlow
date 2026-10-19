@@ -224,6 +224,12 @@ không phải nguồn browser được phép gọi. Form tiếp tục yêu cầu
 IDs và không tự tính tiền/clearance. Audit này chỉ chốt nguồn có thật; **HF6-01.2 vẫn OPEN** cho
 hai dependency episode/priceCode ở workflow public tổng quát. Không tạo handoff trùng lặp.
 
+Checkpoint mới FE 2026-10-19: **6/14 task, 41/56 subtask**, thêm proof HF6-06.2/.3 bằng issuer
+roles thật, V1 paid GET false vẫn xuất được, stock 40→37 và terminal retry một effect. Evidence
+ở plan mục 11. Các count 39/56 bên dưới là checkpoint lịch sử 2026-10-18; không dùng browser
+cũ có đổi boolean backend để nghiệm thu candidate mới. Report accepted coverage, issuer PATIENT
+privacy và public source dependencies tiếp tục OPEN, Vinh phối hợp backend.
+
 - HF6-01.2: confirmed record/patient/staff/department/episode IDs và priceCode của đúng môi trường.
   Form nhận riêng từng giá trị; public MedicalRecord DTO không có trường episode rõ ràng nên không
   tự lấy appointmentId/recordId thay careEpisodeId hoặc gọi internal lookup từ browser.

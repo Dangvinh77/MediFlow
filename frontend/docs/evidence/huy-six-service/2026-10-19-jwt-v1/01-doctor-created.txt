@@ -1,0 +1,120 @@
+Browser tab: 3, Title: "Chi tiết đơn thuốc | MediFlow", URL: "http://127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271".
+0 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271
+	1 container
+		2 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+			3 image
+		34 text Chi tiết đơn thuốc | MediFlow
+		4 container Điều hướng nghiệp vụ
+			5 text MF
+			6 text MediFlow
+			7 text Hospital workspace
+			8 container
+				9 text NGHIỆP VỤ
+				10 content list
+					11 container
+						12 text TỔ CHỨC & BỆNH NHÂN
+						13 link Description: Tổ chức — Nhân sự & khoa, Value: 127.0.0.1:3182/organization
+					14 link Description: Bệnh nhân — Hồ sơ định danh, Value: 127.0.0.1:3182/patients
+					15 container
+						16 text KHÁM NGOẠI TRÚ
+						17 link Description: Lịch hẹn — Tiếp nhận ngoại trú, Value: 127.0.0.1:3182/appointments
+					18 link Description: Hồ sơ khám — Chẩn đoán & kết luận, Value: 127.0.0.1:3182/records
+					19 container
+						20 text XÉT NGHIỆM
+						21 link Description: Xét nghiệm — Hàng đợi & kết quả, Value: 127.0.0.1:3182/lab
+					22 container
+						23 text DƯỢC
+						24 link Description: Dược — Thuốc & đơn thuốc, Value: 127.0.0.1:3182/pharmacy
+			25 text MediFlow · Quản lý ngoại trú
+		26 text Không gian vận hành MediFlow
+		27 text Bác sĩ
+		28 pop up button (collapsed, settable) Description: Giao diện, Value: Theo hệ thống, Secondary Actions: Expand
+			29 menu
+				30 Sáng
+				31 Tối
+				32 (selected) Theo hệ thống
+		33 button Đăng xuất
+		35 heading Chi tiết đơn thuốc, Value: 1
+			36 text Chi tiết đơn thuốc
+		37 text Thông tin đơn thuốc và trạng thái xuất thuốc.
+		38 container Điều hướng phân hệ Dược
+			39 link Description: Danh mục, Value: 127.0.0.1:3182/pharmacy/drugs
+			40 link Description: Kê đơn, Value: 127.0.0.1:3182/pharmacy/prescriptions/new
+			41 link Description: Đơn thuốc, Value: 127.0.0.1:3182/pharmacy/prescriptions
+		42 container
+			43 text 01b5f30c-acca-484d-80d9-46c51030a271
+			44 heading Chi tiết đơn thuốc, Value: 2
+				45 text Chi tiết đơn thuốc
+			46 text Ngày kê:  19/10/2026 Đang hiệu lực Chờ xuất thuốc Thanh toán được kiểm tra khi xuất thuốc
+			47 button Tải lại trạng thái
+			48 text Thanh toán và kết quả xuất thuốc được cập nhật từ hệ thống.
+			49 heading Thao tác đơn thuốc, Value: 3
+				50 text Thao tác đơn thuốc
+			51 text Hủy đơn sẽ giải phóng số lượng đang giữ. Khi xác nhận xuất thuốc, hệ thống kiểm tra lại quyền, thanh toán và tồn kho.
+			52 button Hủy đơn
+			53 heading Thông tin kê đơn, Value: 3
+				54 text Thông tin kê đơn
+			55 definition list
+				56 container Mã hồ sơ bệnh án
+					57 text Mã hồ sơ bệnh án
+				58 container
+					59 text d7f2cee5-1211-4afc-8f61-2bc6643d0f09
+					60 button Chép
+				61 container Mã bệnh nhân
+					62 text Mã bệnh nhân
+				63 container
+					64 text ff014d28-0b87-467f-8706-5382ba5f27f1
+					65 button Chép
+				66 container Mã bác sĩ
+					67 text Mã bác sĩ
+				68 container
+					69 text 669b2578-f156-477b-a1a5-138a4d8f810a
+					70 button Chép
+				71 container Mã khoa
+					72 text Mã khoa
+				73 container
+					74 text 44cb8393-ddf4-4eaf-9739-052a58c88033
+					75 button Chép
+				76 container Tổng tiền
+					77 text Tổng tiền
+				78 text 30.000 ₫
+				79 container Ngày kê đơn
+					80 text Ngày kê đơn
+				81 text 19/10/2026
+			82 heading Các dòng thuốc, Value: 3
+				83 text Các dòng thuốc
+			84 table
+				85 row
+					86 cell
+						87 text Thuốc
+					88 cell
+						89 text Số lượng
+					90 cell
+						91 text Đơn giá
+					92 cell
+						93 text Cách dùng
+					94 cell
+						95 text Thành tiền
+				96 row
+					97 cell
+						98 text FE acceptance c85c9e3ab441
+						99 text 13ef9eed-9db2-4273-974a-458186c62695
+					100 cell
+						101 text 3
+					102 cell
+						103 text 10.000 ₫
+					104 cell
+						105 text Acceptance only
+					106 cell
+						107 text 30.000 ₫
+			108 heading Lịch sử bản ghi, Value: 3
+				109 text Lịch sử bản ghi
+			110 definition list
+				111 container Tạo lúc
+					112 text Tạo lúc
+				113 text 15:35 19/10/26
+				114 container Cập nhật lúc
+					115 text Cập nhật lúc
+				116 text 15:35 19/10/26
+
+The focused UI element is 0 AXWebArea Chi tiết đơn thuốc | MediFlow, URL: 127.0.0.1:3182/pharmacy/prescriptions/01b5f30c-acca-484d-80d9-46c51030a271
