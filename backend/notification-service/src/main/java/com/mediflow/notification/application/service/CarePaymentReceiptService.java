@@ -11,7 +11,7 @@ public class CarePaymentReceiptService implements ReactToCarePaymentReceiptUseCa
     public CarePaymentReceiptService(CareNotificationRepositoryPort repository) { this.repository = repository; }
 
     @Override public void receive(CarePaymentReceiptCommand receipt) {
-        if (!repository.claim(receipt.eventId(), "payment.completed", receipt.fingerprint())) return;
+        if (!repository.claimPaymentReceipt(receipt.eventId(), receipt.fingerprint(), receipt.legacyFingerprint())) return;
         String template = switch (receipt.classification()) {
             case "ADMISSION_DEPOSIT" -> "ADMISSION_DEPOSIT_RECEIPT";
             case "SETTLEMENT_PAYMENT" -> "SETTLEMENT_PAYMENT_RECEIPT";

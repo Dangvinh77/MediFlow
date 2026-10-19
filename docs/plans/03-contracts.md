@@ -105,6 +105,14 @@ Claim eventId và effect cùng transaction. Business-operation key chống same 
 Same key/different bytes là conflict; source ID/purpose/episode mismatch không được silently accept.
 Không bảo đảm broker exactly-once; phải chứng minh effects không lặp bằng state/locks/receipts.
 
+Notification `payment.completed` V1 giữ SHA-256 exact inbound bytes ở `receipt_raw_hash`;
+`payload_hash` normalized cũ được giữ để tương thích old reader. Hai hash và history/outbox
+commit cùng transaction. Historical V1 raw-NULL fail closed; chỉ offline import từ archive
+original producer có provenance mới được bổ sung raw identity, không học từ replay đầu tiên.
+Coverage/archive và rollback phải theo
+[Notification upgrade runbook](../../backend/notification-service/docs/receipt-byte-identity.md).
+Rollback binary cũ giữ data compatibility nhưng không cung cấp raw-byte enforcement mới.
+
 ### Clinical nhận outpatient prescription.filled V1
 
 Producer bytes khóa tại

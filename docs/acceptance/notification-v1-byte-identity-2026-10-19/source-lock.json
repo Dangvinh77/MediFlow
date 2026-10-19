@@ -1,0 +1,87 @@
+{
+  "sources": [
+    {
+      "sha256": "2bf2e1027de3256209c51c44c8c515daa170df3e64032067fc37c423b0889517",
+      "path": "backend/notification-service/docs/receipt-byte-identity.md"
+    },
+    {
+      "sha256": "b991be29b70601b815b81e184c11bfcfefadcc9d4801a85c97aae6b83403d433",
+      "path": "backend/notification-service/pom.xml"
+    },
+    {
+      "sha256": "28da674f28d489bbc7f04ade45f526286411b086b2efc22b71092b73c6f1aa4a",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/application/dto/command/CarePaymentReceiptCommand.java"
+    },
+    {
+      "sha256": "f4dc2de8a6c0f7d146469837de08d9d4082af8cb0d44ee9b5e5c19d8038908cf",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/application/port/out/CareNotificationRepositoryPort.java"
+    },
+    {
+      "sha256": "35dc33170ebe801205a87d705d1715f54b4146f5b301611d85321e3d7efbb2b9",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/application/service/CarePaymentReceiptService.java"
+    },
+    {
+      "sha256": "3646f9a9cdc2223e36b9b974b304fea384f7524f7a03cff2f3c81a022f104143",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/domain/exception/NotificationEventConflictException.java"
+    },
+    {
+      "sha256": "8d7a47689315663782f3ef527de2429527d1f2a5557148f027c6266418db3482",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/infrastructure/persistence/adapter/CareNotificationRepositoryAdapter.java"
+    },
+    {
+      "sha256": "cf25bbe5a6f55cbb51786645d488cbf6944a17014dba4386a33ad856775fb902",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/infrastructure/recovery/CareReceiptByteIdentityBackfill.java"
+    },
+    {
+      "sha256": "0741f6a296fde98018316d90784b64ef7195dfd6786894f25916748d43389446",
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/messaging/consumer/CarePaymentReceiptWireHandler.java"
+    },
+    {
+      "sha256": "5e763662738bd784bbdb615d22fc7c647326af9cc408dd6a13d4b466e946dd8c",
+      "path": "backend/notification-service/src/main/resources/db/migration/V5__care_receipt_raw_identity.sql"
+    },
+    {
+      "sha256": "ac65a8da5c72c27f8d7e8e62713dae2949d63a15102a549dbd5e8f62939d0e75",
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptByteIdentityBackfillCliIT.java"
+    },
+    {
+      "sha256": "b92d852ed4e3f0ccce0776b3a77daecf0b783a7454f32a65382ff75de911fb68",
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptByteIdentityUpgradeTest.java"
+    },
+    {
+      "sha256": "001f2ef662a67a1f5157a174821b7add11fcb705f05dd5ab3d1a30b44bf1c55d",
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/CareReceiptIntegrationTest.java"
+    },
+    {
+      "sha256": "91422aded4652ecdcadc6cd1b53c09fdc7c351d7338569551ee181d7bf9a86ce",
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/messaging/consumer/CarePaymentReceiptWireHandlerTest.java"
+    },
+    {
+      "sha256": "a8926b422c3f9704f17fce142f033eea89c2fa39ef8306d1ebf8e1b5fdea2534",
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/PrescriptionNoticeRabbitIntegrationTest.java"
+    },
+    {
+      "sha256": "f8c1ebc64f21c8c0c554f05ab50bd69e0daf7af468c78d3406f0e79572edc9eb",
+      "path": "docs/plans/03-contracts.md"
+    }
+  ],
+  "base": "6f0776cf45db5216960cfa3e43a22f9bd41451a2",
+  "producerFixture": {
+    "sha256": "000ed3cf78df31a63793e1fb2be542ff11995a97051febfcffaaa3db0bb65a7e",
+    "path": "backend/billing-service/src/test/resources/contracts/ledger-v1/payment-service.json"
+  },
+  "artifacts": [
+    {
+      "sha256": "b3e2c9fb55a82aefd64fd529c34123be801d73aebe87888ac35612967a9dd911",
+      "path": "backend/notification-service/target/notification-service-0.0.1-SNAPSHOT.jar"
+    },
+    {
+      "sha256": "00f9bdebb729cb4385e8bfa8beb74cf44bf069a5bfeb108ddcd465b8b02c680d",
+      "path": "backend/notification-service/target/notification-service-0.0.1-SNAPSHOT-lib.jar"
+    },
+    {
+      "sha256": "118e5dd6fe9c5b744efa2848c96bd77468d4f375c936d03a62431630d0f253f8",
+      "path": "backend/support-service/target/support-service-0.0.1-SNAPSHOT.jar"
+    }
+  ]
+}

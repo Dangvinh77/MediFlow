@@ -2,7 +2,11 @@
 
 Phát hiện 2026-10-19 trên base `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
 Owner: **Vinh**, tiếp quản Notification từ Lộc theo phân công người dùng.
-Trạng thái: **mở, đã tái hiện**; không tính thành backend đã đóng sạch.
+Trạng thái: **đã có implementation, chờ final runtime acceptance**; không tính thành backend
+đã đóng sạch. Follow-up thêm raw hash riêng, giữ normalized hash, V5 migration và offline
+archive backfill. Xem [runbook](../../backend/notification-service/docs/receipt-byte-identity.md)
+và [evidence hiện hành](../acceptance/notification-v1-byte-identity-2026-10-19/README.md).
+Không áp patch lịch sử bên dưới lên branch fix: regression đã được đưa vào default suite.
 
 `CarePaymentReceiptWireHandler` hash JSON đã parse rồi serialize/sắp xếp lại, thay vì body
 nguyên bản. Hai delivery cùng eventId có JSON tương đương nhưng khác whitespace/order cho

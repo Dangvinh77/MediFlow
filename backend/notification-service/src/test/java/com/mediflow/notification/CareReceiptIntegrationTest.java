@@ -94,6 +94,20 @@ class CareReceiptIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT content FROM NOTIFICATION", String.class)).contains("100");
     }
 
+    @Test void sameEventWithDifferentRawBytesConflictsWithoutReplacingHistory() throws Exception {
+        byte[] original = fixture("service");
+        handler.receive("payment.completed", original);
+        byte[] whitespaceVariant = (" \n" + new String(original, StandardCharsets.UTF_8) + "\n")
+                .getBytes(StandardCharsets.UTF_8);
+
+        assertThatThrownBy(() -> handler.receive("payment.completed", whitespaceVariant))
+                .isInstanceOf(org.springframework.amqp.AmqpRejectAndDontRequeueException.class)
+                .hasMessageContaining("Conflicting");
+        assertThat(count("NOTIFICATION")).isEqualTo(1);
+        assertThat(count("PROCESSED_EVENT")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT content FROM NOTIFICATION", String.class)).contains("100");
+    }
+
     @Test void deliveryOutboxFailureRollsBackInboxAndHistoryThenRedeliveryRecovers() throws Exception {
         jdbc.execute("CREATE FUNCTION reject_care_delivery() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test rollback'; END $$");
         jdbc.execute("CREATE TRIGGER reject_care_delivery BEFORE INSERT ON NOTIFICATION_EVENT_OUTBOX FOR EACH ROW EXECUTE FUNCTION reject_care_delivery()");

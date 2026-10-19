@@ -10,7 +10,7 @@ suite mặc định xanh để kết luận những regression mới sau đây �
 |---|---|---|
 | Vinh | Đã sửa Billing credential boundary, Lab exact clearance khi ghi kết quả, Notification mandatory JWT exp | [Audit evidence](../acceptance/backend-api-audit-2026-10-19/README.md): 5.734 default tests xanh và 1 packaged runtime acceptance xanh; global closeout vẫn NO-GO |
 | Hoàng Anh | Đã tái hiện thiếu expiration và Pharmacy service gọi được credential verifier; department/staff race còn cần PG proof | [JWT/Core audit](HANDOFF-HA-JWT-EXPIRATION-AND-CORE-AUDIT.md) |
-| Vinh | Notification V1 hash normalized JSON không phát hiện khác bytes; cần cutover bảo toàn historical replay | [Notification byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md) |
+| Vinh | Notification V1 đã có fix raw-byte identity và archive backfill; chờ final runtime acceptance trước đóng handoff | [Notification byte identity](HANDOFF-VINH-NOTIFICATION-V1-BYTE-IDENTITY.md), [evidence mới](../acceptance/notification-v1-byte-identity-2026-10-19/README.md) |
 | Huy | FE Pharmacy dùng boolean receipt legacy để chặn command xuất thuốc V1 | [Pharmacy V1 UI](HANDOFF-HUY-PHARMACY-V1-DISPENSE-UI.md) |
 | Huy | Pharmacy và route Report outpatient đều đã tái hiện thiếu mandatory exp; cần đồng bộ boundary | [Pharmacy/Report JWT](HANDOFF-HUY-PHARMACY-REPORT-JWT-EXPIRATION.md) |
 

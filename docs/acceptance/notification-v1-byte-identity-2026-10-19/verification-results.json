@@ -1,0 +1,522 @@
+{
+  "base": "6f0776cf45db5216960cfa3e43a22f9bd41451a2",
+  "fullNotificationAttempt": {
+    "reason": "Docker daemon unavailable; container classes failed initialization",
+    "command": "mvn -q -pl backend/notification-service -am test",
+    "failures": 0,
+    "skipped": 5,
+    "reportedTests": 238,
+    "errors": 5,
+    "logSha256": "219b461abc57e424acb93e116f295b2b6ac72d555d3950896eff025d100d7fc9",
+    "exitCode": 1
+  },
+  "unitSlice": {
+    "tests": 228,
+    "skipped": 0,
+    "errors": 0,
+    "classes": [
+      {
+        "errors": 0,
+        "tests": 2,
+        "skipped": 0,
+        "xmlSha256": "105957f853907c888ac85d7a72648140b426b2d3cca26876c4d2a7278100b551",
+        "name": "com.mediflow.notification.application.mapper.NotificationDtoMapperTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 5,
+        "skipped": 0,
+        "xmlSha256": "09b1e1557fbb1c29ab62edeacf7521f6ef786aca79ed1b91ca4c1bfde90b19f4",
+        "name": "com.mediflow.notification.application.service.CareProjectionServiceTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 9,
+        "skipped": 0,
+        "xmlSha256": "dba1bdd63fa7c011f35ce832f7b9c6be6bcd4dc330f36c000187dde4e32e3f5a",
+        "name": "com.mediflow.notification.application.service.NotificationApplicationServiceTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 10,
+        "skipped": 0,
+        "xmlSha256": "ffaab1350398eab4adb93104cfab5d0a176f85df7e6c6747dda107ede7d4ae65",
+        "name": "com.mediflow.notification.domain.model.NotificationTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 3,
+        "skipped": 0,
+        "xmlSha256": "e4a6886eaa27e0355f0100c283543670963bc86ec035b5cbc547f3993f057050",
+        "name": "com.mediflow.notification.infrastructure.channel.NotificationSendersTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 3,
+        "skipped": 0,
+        "xmlSha256": "cad1d495fd4ae1b4e8846b66cc5959aa4e1bfb86c079e29a2e16cef502bfa3f0",
+        "name": "com.mediflow.notification.infrastructure.config.NotificationListenerRetryTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 3,
+        "skipped": 0,
+        "xmlSha256": "a4d7ff00ef1bbe11b1b9067a3483571a01f92425ada92554fbbf21c1546ba919",
+        "name": "com.mediflow.notification.infrastructure.config.NotificationModuleWiringTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 3,
+        "skipped": 0,
+        "xmlSha256": "9a2350231bdb2c38bdaae2494a6ddc9dd897a9dd80df6cdcc0bc1bc42c547ddf",
+        "name": "com.mediflow.notification.infrastructure.config.SecurityConfigTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 2,
+        "skipped": 0,
+        "xmlSha256": "f3c3d2cabc434db00c08b23502f2e6f8426f61d9333245452eb006ede9263c69",
+        "name": "com.mediflow.notification.infrastructure.messaging.NotificationEventPublisherAdapterTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 12,
+        "skipped": 0,
+        "xmlSha256": "349ebecc46dfd6a39f4cb32ee216e1941c4bf948f917df5c90b08d98c1748202",
+        "name": "com.mediflow.notification.infrastructure.security.JwtAuthFilterTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 13,
+        "skipped": 0,
+        "xmlSha256": "5006b97f7351c6d68e1002e5be2115c60bcbc95e16b857409a4f5e258a7f39cb",
+        "name": "com.mediflow.notification.messaging.consumer.CarePaymentReceiptWireHandlerTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 12,
+        "skipped": 0,
+        "xmlSha256": "95e323f11802f8084eedb9304e8d84ca3fbdbb22ca093b8c0a0b5cd770a14d54",
+        "name": "com.mediflow.notification.messaging.consumer.CareProjectionWireHandlerTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 7,
+        "skipped": 0,
+        "xmlSha256": "a263923ce27223003ca5b4ca18ab4c69a2e52a6216ec14c4f0f9d9a8dc043709",
+        "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerCareProjectionRoutingTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 15,
+        "skipped": 0,
+        "xmlSha256": "d9458a41cfeec321560a3b0a6fc42392f10e98cab0c60c5bb7a2b01f8969506e",
+        "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 7,
+        "skipped": 0,
+        "xmlSha256": "26996cd948403ea51f3e61caa69e5bf077a517632f34ed4b66221ef2a9b6675a",
+        "name": "com.mediflow.notification.PrescriptionNoticeConfigurationTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 27,
+        "skipped": 0,
+        "xmlSha256": "5dd37f62f306b8455003e61f2023ef86e7ed93cd4818a065aa1f67278c3a1676",
+        "name": "com.mediflow.notification.PrescriptionNoticeContractTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 6,
+        "skipped": 0,
+        "xmlSha256": "88895e4e719a478e5541adff5cc3ad88ec0a2db7062369af536ae4affb1b3978",
+        "name": "com.mediflow.notification.RefundNoticeConfigurationTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 19,
+        "skipped": 0,
+        "xmlSha256": "8c9b80c1c2f9e1ae19df83af10872edee95b8e71330a9605a5e88bdf65294b46",
+        "name": "com.mediflow.notification.RefundNoticeContractTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 6,
+        "skipped": 0,
+        "xmlSha256": "20e6c8e400e73272d693c036ffb44e66f1f4893d168609fca91c9633e9dea3b2",
+        "name": "com.mediflow.notification.SurgeryNoticeConfigurationTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 23,
+        "skipped": 0,
+        "xmlSha256": "d1977cf3d3288a311cdb69706fb0527678c6aa822e34b9ce91c29f9b7005bb93",
+        "name": "com.mediflow.notification.SurgeryNoticeContractTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 6,
+        "skipped": 0,
+        "xmlSha256": "69a21d00ef16c997115e63a6866d43d07f6024e7bd7dea678286baef10bbd0b2",
+        "name": "com.mediflow.notification.SurgeryPaymentNoticeConfigurationTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 24,
+        "skipped": 0,
+        "xmlSha256": "797e80d64de95983cef070f0abbbb325e66369ef70b4413ab5034633ec1f26be",
+        "name": "com.mediflow.notification.SurgeryPaymentNoticeContractTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 5,
+        "skipped": 0,
+        "xmlSha256": "230298289b6f5d4c6381e5fa1e448cfaf288703ea94cfc9e9c6284e4d58aa3f2",
+        "name": "com.mediflow.notification.web.GlobalExceptionHandlerTest",
+        "failures": 0
+      },
+      {
+        "errors": 0,
+        "tests": 6,
+        "skipped": 0,
+        "xmlSha256": "19676797d7e272c46fc2e4dc52e7b8c362cda0e624e7fdd33d9d69cb81e57f55",
+        "name": "com.mediflow.notification.web.NotificationControllerTest",
+        "failures": 0
+      }
+    ],
+    "scope": "Explicit non-container slice only, not default full suite",
+    "exitCode": 0,
+    "command": "mvn -q -pl backend/notification-service -Dtest=*Test,!*IntegrationTest,!CareReceiptByteIdentityUpgradeTest,!NotificationPersistenceAdapterTest,!ProcessedEventPersistenceAdapterTest test",
+    "failures": 0
+  },
+  "pending": [
+    "Full Notification suite with Docker and zero skips",
+    "Packaged backfill CLI profile on PostgreSQL",
+    "Support store-isolation and six-service runtime on fresh Notification classifier"
+  ],
+  "status": "PARTIAL - Docker runtime unavailable, final integration gate open",
+  "preliminaryEvidence": {
+    "redRegression": "SameEventWithDifferentRawBytes:1 test/1failure before fix",
+    "stage": "Before final V0 diagnostic condition and packaged CLI IT",
+    "initialReceiptAndWireRun": "Targeted CareReceiptIntegrationTest and CarePaymentReceiptWireHandlerTest exited0 before final minor edits",
+    "upgradeAndQueue": "Observed reports before full rerun:8 V4-to-V5 tests and1 real DLQ test,0failure/error/skip; this does not replace final-source full rerun"
+  },
+  "deployment": {
+    "requires": "Target inventory, authentic original producer archive and operational rehearsal",
+    "archiveProvenanceVerifiedForTarget": false,
+    "targetDatabaseTouched": false
+  },
+  "supportSlice": {
+    "failures": 0,
+    "command": "mvn -q -pl backend/support-service -Dtest=*Test,!SupportStoreIsolationTest test",
+    "tests": 13,
+    "classes": [
+      {
+        "failures": 0,
+        "tests": 1,
+        "xmlSha256": "1dc78b69a84b2d11b42f9b79e70076c370a32e19bba72cf48e8ba24790a83e93",
+        "name": "com.mediflow.support.infrastructure.config.SupportModeConfigurationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "2a4c561988ed50978080d6e22a5650cddbd32ed675a8a88b4cb48092aa3fb986",
+        "name": "com.mediflow.support.SupportCompositionTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "91f440321869766795adf1c42734a0af54c7791e9724573cb0359c1be9f15131",
+        "name": "com.mediflow.support.SupportOutpatientCompositionTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 6,
+        "xmlSha256": "374b14e2fdce955d3384ce2d8b981321a80d37e4d266a53f38d6dfcab267e588",
+        "name": "com.mediflow.support.SupportSecurityTest",
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "exitCode": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "builds": [
+    {
+      "exitCode": 0,
+      "command": "mvn -q -pl backend/notification-service -am -DskipTests install"
+    },
+    {
+      "exitCode": 0,
+      "command": "mvn -q -pl backend/support-service -DskipTests package"
+    }
+  ],
+  "recordedAt": "2026-10-19T14:33:06.6099127+07:00",
+  "initialSlice": {
+    "tests": 233,
+    "skipped": 5,
+    "executedPassing": 228,
+    "exitCode": 0,
+    "errors": 0,
+    "failures": 0,
+    "command": "mvn -q -pl backend/notification-service -Dtest=!*IntegrationTest,!CareReceiptByteIdentityUpgradeTest test",
+    "skipReason": "Existing persistence adapter tests disabledWithoutDocker",
+    "classes": [
+      {
+        "failures": 0,
+        "tests": 2,
+        "xmlSha256": "d1fb1a6de4868e4cd0f6ce7b4170e3a3b7960a82b9406f2660ec3565c42e38e3",
+        "name": "com.mediflow.notification.application.mapper.NotificationDtoMapperTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 5,
+        "xmlSha256": "3517ed213ea36824fb6ef36e1e17aff53ddaff1479c1965454fff359cd78e831",
+        "name": "com.mediflow.notification.application.service.CareProjectionServiceTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 9,
+        "xmlSha256": "44ebffdb847ab2ec8d85b10c4c9c5bc845f52f440f03992d2bd0849814de4e46",
+        "name": "com.mediflow.notification.application.service.NotificationApplicationServiceTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 10,
+        "xmlSha256": "990a73b55dbcf8bfc4761671021ef24e4f2db34a0b823dc19f38b31984012d48",
+        "name": "com.mediflow.notification.domain.model.NotificationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "e5d7606784e7d10fee3a20162d6df5a0d38d01e9de2cd47e3bf688aba534b344",
+        "name": "com.mediflow.notification.infrastructure.channel.NotificationSendersTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "ec66401f21b5360bf36c1bdd598ec6a5de301d957199032a27395be60a1db1d1",
+        "name": "com.mediflow.notification.infrastructure.config.NotificationListenerRetryTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "51285f52c319697656f06705ffea8c8651090e4840c5a6be3bdeaaa703946fd8",
+        "name": "com.mediflow.notification.infrastructure.config.NotificationModuleWiringTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "1feb44bd6cf0ea56e377e9145b485f33b582dc17371b7add7d056108c11cfe50",
+        "name": "com.mediflow.notification.infrastructure.config.SecurityConfigTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 2,
+        "xmlSha256": "42abf6854f9324c8ce0f5c11dcf4e9b3f711820c1c120e98ba1945dd3302ecc0",
+        "name": "com.mediflow.notification.infrastructure.messaging.NotificationEventPublisherAdapterTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 3,
+        "xmlSha256": "0cae44740ea0261fcd9fdd714ab21fb81bf546c80032c5e8541079bd0e81879f",
+        "name": "com.mediflow.notification.infrastructure.persistence.adapter.NotificationPersistenceAdapterTest",
+        "errors": 0,
+        "skipped": 3
+      },
+      {
+        "failures": 0,
+        "tests": 2,
+        "xmlSha256": "897f892f391cdfdd46375ed9b3dfb5a1daf4fe2f0302f580e2b88904bdff238d",
+        "name": "com.mediflow.notification.infrastructure.persistence.adapter.ProcessedEventPersistenceAdapterTest",
+        "errors": 0,
+        "skipped": 2
+      },
+      {
+        "failures": 0,
+        "tests": 12,
+        "xmlSha256": "3fbb6f8a26201a7b1968973c44649975155477d39a549918814d454578334422",
+        "name": "com.mediflow.notification.infrastructure.security.JwtAuthFilterTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 13,
+        "xmlSha256": "f49108cd4c0576e57b2d24b45175d39d09cc49b4e83865299d54f0fd8b46a83c",
+        "name": "com.mediflow.notification.messaging.consumer.CarePaymentReceiptWireHandlerTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 12,
+        "xmlSha256": "f5411caffa9e7e41a09e738493e7eee56e97fd1315fc357e91c5921c6658c310",
+        "name": "com.mediflow.notification.messaging.consumer.CareProjectionWireHandlerTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 7,
+        "xmlSha256": "591b66fee96ed6ecab3cbfe75637e8bc02c11522c10647c333088219f418c960",
+        "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerCareProjectionRoutingTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 15,
+        "xmlSha256": "69636fb09e4bebe05f5fc30e5564717cb1e487f5eb162adece03c8214fec6f8a",
+        "name": "com.mediflow.notification.messaging.consumer.NotificationEventConsumerTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 7,
+        "xmlSha256": "921df6ca8473aa0cc68e49cb7d09d399ba51d514f240aea97ab773bb2ccf991e",
+        "name": "com.mediflow.notification.PrescriptionNoticeConfigurationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 27,
+        "xmlSha256": "638e274adc77ad5cd36e8ef77b20754450935544c95e50fa619ac0775f5a0264",
+        "name": "com.mediflow.notification.PrescriptionNoticeContractTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 6,
+        "xmlSha256": "ef5d2c5e686a449dc30f33736c4b4c1c35d2f61d81e06f9e4559b55afe8191d6",
+        "name": "com.mediflow.notification.RefundNoticeConfigurationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 19,
+        "xmlSha256": "bf1d48d009b463099647ac950658cf98d77104f38a3e336b53e44b5f813e1fad",
+        "name": "com.mediflow.notification.RefundNoticeContractTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 6,
+        "xmlSha256": "06a238dfc153c54b197b9849617d72a2d064c0d38590bfe061910fe8c0ad9e79",
+        "name": "com.mediflow.notification.SurgeryNoticeConfigurationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 23,
+        "xmlSha256": "92c088aab692119ea4f2da22a11014e869ce10f3c912381a3f2a0ab793cef517",
+        "name": "com.mediflow.notification.SurgeryNoticeContractTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 6,
+        "xmlSha256": "e9ae5a4e294cf9764e76aaf4d84178ca67d07f1fb80f194b83bcabbf9f87c502",
+        "name": "com.mediflow.notification.SurgeryPaymentNoticeConfigurationTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 24,
+        "xmlSha256": "b652645adf08d924d48a123278abe5a2ce95e4fba7fa0d1a6c2ba62f1e7eebe5",
+        "name": "com.mediflow.notification.SurgeryPaymentNoticeContractTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 5,
+        "xmlSha256": "7d9465e56a071f9081f143c09670dc3fc9764ba5ca5ee89bca921bcca0bae224",
+        "name": "com.mediflow.notification.web.GlobalExceptionHandlerTest",
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "failures": 0,
+        "tests": 6,
+        "xmlSha256": "8ed9f8b7aae9559e5148ceba42d0f2d09e055f5b4590184ff857b4352fb2cfae",
+        "name": "com.mediflow.notification.web.NotificationControllerTest",
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "cliAttempt": {
+    "errors": 1,
+    "reason": "Compiled and packaged, PostgreSQL container initialization failed because Docker unavailable",
+    "skipped": 0,
+    "exitCode": 1,
+    "logSha256": "64ce22930f30296d556ef3d164ff4d6472b130b9b8a14b401e46536d7bd5096d",
+    "command": "mvn -q -pl backend/notification-service -am -Preceipt-identity-acceptance -Dtest=__NoUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false verify",
+    "reportedTests": 1,
+    "failures": 0
+  },
+  "review": {
+    "quality": "No actionable findings in core/CLI",
+    "merge": "NO-GO pending final runtime gates",
+    "spec": "GO for core design",
+    "pullRequest": "GO draft"
+  }
+}
