@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.mediflow.support.SixServiceOutpatientAcceptanceIT
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 770.5 s -- in com.mediflow.support.SixServiceOutpatientAcceptanceIT

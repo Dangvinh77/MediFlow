@@ -1,0 +1,38 @@
+{
+  "action" : "VERIFY_REPLAY",
+  "prescriptionId" : "26161972-6b4e-433e-84a6-bc8d98d0f4c7",
+  "checkedAt" : 1792395815.591048000,
+  "checks" : [ {
+    "scenario" : "after-replay-stock",
+    "httpStatus" : 200,
+    "correlationId" : "2f45b648-ecf2-46ed-9d98-0f4ccf45fbe6",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "drugId" : "c44a66e5-5a86-420d-9c27-ad26f8441c80",
+        "drugName" : "FE acceptance 63684242eda5",
+        "activeIngredient" : null,
+        "unit" : "tablet",
+        "price" : 10000.0,
+        "stockQuantity" : 37,
+        "expiryDate" : "2027-10-19",
+        "manufacturer" : null,
+        "lowStockThreshold" : 0,
+        "createdAt" : "2026-10-19T07:38:16.344145Z",
+        "updatedAt" : "2026-10-19T07:41:30.200481Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T07:43:35.569828400Z",
+      "correlationId" : "2f45b648-ecf2-46ed-9d98-0f4ccf45fbe6"
+    }
+  }, {
+    "scenario" : "replay-effects",
+    "eventId" : "9ab5df4c-0cbe-41dd-97f6-7131abfb004c",
+    "payloadSha256" : "5302748f0b69764787fc9ebd459837dd37d9523b534a5d2b61ed4eebe87aca27",
+    "clinicalAttachments" : 1,
+    "reportJournalEntries" : 1,
+    "notifications" : 1,
+    "dispenseSlips" : 1,
+    "stock" : 37
+  } ]
+}

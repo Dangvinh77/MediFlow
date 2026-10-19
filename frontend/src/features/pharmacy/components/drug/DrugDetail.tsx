@@ -17,7 +17,7 @@ import {
   getDrugExpiryState,
   isUuid,
 } from "../../utils";
-import { AdjustStockForm } from "./AdjustStockForm";
+import { AdjustStockForm, type StockAdjustmentUncertainty } from "./AdjustStockForm";
 import { PharmacySessionBoundary, usePharmacyRequestScope } from "../PharmacySessionBoundary";
 
 interface DrugDetailProps {
@@ -107,6 +107,10 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
     status: "idle",
   });
   const [retryToken, setRetryToken] = useState(0);
+  const [uncertainAdjustment, setUncertainAdjustment] = useState<StockAdjustmentUncertainty | null>(null);
+  const adjustmentContainerRef = useRef<HTMLDivElement>(null);
+  const uncertaintyRef = useRef<HTMLElement>(null);
+  const focusAfterReconciliation = useRef(false);
   const requestSequence = useRef(0);
   const requestKey = `${drugId}\u0000${retryToken}`;
   const loading = requestState.key !== requestKey;
@@ -120,6 +124,38 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
     requestState.key === requestKey && requestState.status === "error"
       ? requestState.message
       : null;
+
+  useEffect(() => {
+    // Preserve outside focus; replacing a failed read must not lose this command's notice.
+    if (uncertainAdjustment && document.activeElement === document.body) {
+      uncertaintyRef.current?.focus();
+    }
+    if (focusAfterReconciliation.current && !uncertainAdjustment && !loading) {
+      adjustmentContainerRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+      focusAfterReconciliation.current = false;
+    }
+  }, [uncertainAdjustment, loading, requestState.status]);
+
+  const uncertaintyNotice = uncertainAdjustment && (
+    <section ref={uncertaintyRef} tabIndex={-1} aria-labelledby="stock-outcome-heading" className="mt-6 min-w-0 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+      <h3 id="stock-outcome-heading" className="font-semibold">Kết quả điều chỉnh cần đối chiếu</h3>
+      <p role="status" className="mt-2 break-words">{uncertainAdjustment.message}</p>
+      <p className="mt-2">Yêu cầu vừa gửi: {uncertainAdjustment.quantity > 0 ? "+" : ""}{uncertainAdjustment.quantity} {uncertainAdjustment.unit}.</p>
+      <p className="mt-2">Tồn kho tải lại không xác nhận lệnh trước đã thành công hay thất bại. Hãy đối chiếu kết quả trước khi lập điều chỉnh mới; không gửi lại số lượng cũ chỉ vì mất phản hồi.</p>
+      <button
+        type="button"
+        disabled={loading || !drug}
+        onClick={() => {
+          if (loading || !drug || !isCurrent() || !getPharmacyCapabilities(getRole()).canAdjustStock) return;
+          focusAfterReconciliation.current = true;
+          setUncertainAdjustment(null);
+        }}
+        className="mt-3 min-h-11 rounded-lg border border-control-border bg-surface px-3 py-2 font-medium hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Đã đối chiếu kết quả
+      </button>
+    </section>
+  );
 
   useEffect(() => {
     let active = true;
@@ -170,10 +206,12 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
     return <p role="alert" className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">Mã thuốc không hợp lệ. Vui lòng dùng mã UUID đầy đủ.</p>;
   }
 
-  if (loading && !drug && !notFound && !error) return <DetailLoading />;
+  if (loading && !drug && !notFound && !error) return <>{uncertaintyNotice}<DetailLoading /></>;
 
   if (notFound) {
     return (
+      <>
+      {uncertaintyNotice}
       <section className="mt-6 rounded-xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold">Không tìm thấy thuốc</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -187,15 +225,19 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
           Quay lại kho thuốc
         </Link>
       </section>
+      </>
     );
   }
 
   if (error) {
     return (
+      <>
+      {uncertaintyNotice}
       <DetailError
         message={error}
         onRetry={requestState.status === "error" && requestState.forbidden ? undefined : () => setRetryToken((value) => value + 1)}
       />
+      </>
     );
   }
 
@@ -207,6 +249,7 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
 
   return (
     <section className="mt-6 min-w-0 space-y-6 [overflow-wrap:anywhere]">
+      {uncertaintyNotice}
       {loading && (
         <p role="status" className="rounded-lg border border-info/40 bg-info/10 p-3 text-sm text-info">
           Đang tải tồn kho mới nhất…
@@ -251,14 +294,17 @@ function DrugDetailContent({ drugId }: DrugDetailProps) {
             <div><dt className="text-xs text-muted-foreground">Ngưỡng cảnh báo</dt><dd className="mt-1">{drug.lowStockThreshold}</dd></div>
           </dl>
           {capabilities.canAdjustStock && (
+            <div ref={adjustmentContainerRef}>
             <AdjustStockForm
               drug={drug}
-              disabled={loading}
+              disabled={loading || uncertainAdjustment !== null}
               onSuccess={(updatedDrug) => {
                 setRequestState({ key: requestKey, status: "success", drug: updatedDrug });
               }}
               onConflict={() => setRetryToken((value) => value + 1)}
+              onUncertain={setUncertainAdjustment}
             />
+            </div>
           )}
         </section>
       </div>

@@ -96,4 +96,20 @@ describe("OutboxReplayForm", () => {
     render(<OutboxReplayForm />); prepare(); confirm();
     await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/login"));
   });
+  it.each([408, 500, 503, 200])("preserves HTTP %s as an unknown replay outcome and requires deliberate reconfirmation", async status => {
+    mocks.replay.mockRejectedValueOnce(new ApiRequestError("Mất phản hồi", status, "UNKNOWN_RESULT", [], "replay-timeout"))
+      .mockResolvedValueOnce({ eventId, replayed: true });
+    render(<OutboxReplayForm />); prepare(); confirm();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Chưa xác định kết quả replay"); expect(alert).toHaveTextContent("replay-timeout");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(screen.getByLabelText("Event ID")).toHaveValue("  " + eventId + "  ");
+    expect(mocks.replay).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard("{Enter}"); expect(mocks.replay).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("button", { name: "Xem xác nhận" }));
+    expect(screen.getByRole("region", { name: "Xác nhận replay event" })).toHaveTextContent(eventId);
+    expect(mocks.replay).toHaveBeenCalledTimes(1); confirm();
+    await screen.findByRole("heading", { name: "Đã đưa event trở lại hàng đợi replay" });
+    expect(mocks.replay.mock.calls).toEqual([[eventId], [eventId]]);
+  });
 });

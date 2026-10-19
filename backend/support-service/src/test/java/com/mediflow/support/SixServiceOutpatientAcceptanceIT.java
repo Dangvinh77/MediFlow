@@ -477,6 +477,11 @@ class SixServiceOutpatientAcceptanceIT {
             assertThat(payload.path("accountId").asText()).isEqualTo(payment.path("accountId").asText());
             assertThat(data(get(gateway, "/api/v1/appointments/" + appointmentId, nurseToken))
                     .path("examClearanceId").asText()).isEqualTo(payload.path("clearanceId").asText());
+            if ("true".equals(System.getenv("MEDIFLOW_FE_ACCEPTANCE_HOLD"))) {
+                holdForFrontendAcceptance(gateway, setupAdmin, unique, departmentId, doctorId, patientId,
+                        appointmentId, doctorToken, supportPort, eurekaUrl, processes);
+                return;
+            }
             exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken,
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
             Path evidence = Path.of("target", "six-service-paid-exam-evidence.json");
@@ -500,6 +505,164 @@ class SixServiceOutpatientAcceptanceIT {
                 throw cleanupFailure;
             }
         }
+    }
+
+    /** Opt-in, disposable browser environment; normal CI acceptance still runs unchanged. */
+    private void holdForFrontendAcceptance(String gateway, String bootstrap, String unique, UUID department,
+            UUID doctor, UUID patient, UUID appointment, String doctorToken, int supportPort,
+            String eureka, List<Process> processes) throws Exception {
+        UUID adminStaff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "admin");
+        UUID pharmacistStaff = createStaff(gateway, bootstrap, department, unique, "PHARMACIST", "pharmacist");
+        createAccount(gateway, bootstrap, "admin-" + unique, "ADMIN", adminStaff);
+        createAccount(gateway, bootstrap, "pharmacist-" + unique, "PHARMACIST", pharmacistStaff);
+        // All acceptance commands after bootstrap use actual issuer logins, including ADMIN.
+        String admin = login(gateway, "admin-" + unique);
+        String pharmacist = login(gateway, "pharmacist-" + unique);
+        String otherDoctor = login(gateway, "other-doctor-" + unique);
+        JsonNode records = data(get(gateway, "/api/v1/records/patient/" + patient, doctorToken));
+        var matching = new ArrayList<JsonNode>();
+        records.forEach(record -> { if (record.path("appointmentId").asText().equals(appointment.toString())) matching.add(record); });
+        assertThat(matching).hasSize(1);
+        JsonNode record = matching.get(0);
+        assertThat(record.path("doctorId").asText()).isEqualTo(doctor.toString());
+        // This genuine test Lab order exposes an explicit episode through a public DTO.
+        // Do not infer careEpisodeId from appointmentId or call service-only lookup as a human.
+        JsonNode source = data(post(gateway, "/api/v1/records/" + record.path("recordId").asText() + "/lab-orders",
+                doctorToken, "labType", "CBC", "requestedDate", LocalDate.now().toString(), "priceCode", "LAB"));
+        assertThat(source.path("recordId")).isEqualTo(record.path("recordId"));
+        assertThat(source.path("careEpisodeType").asText()).isEqualTo("OUTPATIENT_VISIT");
+        JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
+                "drugName", "FE acceptance " + unique, "unit", "tablet", "price", 10000,
+                "stockQuantity", 40, "expiryDate", LocalDate.now().plusYears(1).toString(), "lowStockThreshold", 0));
+        var body = object("recordId", record.path("recordId").asText(), "patientId", patient, "doctorId", doctor,
+                "departmentId", department, "prescribedDate", LocalDate.now().toString(),
+                "lines", List.of(Map.of("drugId", drug.path("drugId").asText(), "quantity", 3, "dosage", "Acceptance only")),
+                "careContractVersion", 1, "careContext", "OUTPATIENT", "careEpisodeType", "OUTPATIENT_VISIT",
+                "careEpisodeId", source.path("careEpisodeId").asText(), "priceCode", "DRUG");
+        String json = JSON.writeValueAsString(body), key = UUID.randomUUID().toString();
+        var checks = new ArrayList<Map<String, Object>>();
+        recordCheck(checks, "foreign-doctor-create", createRx(gateway, otherDoctor, key, json), 403);
+        JsonNode cancelledRx = data(createRx(gateway, doctorToken, key, json));
+        String cancel = "/api/v1/pharmacy/prescriptions/" + cancelledRx.path("prescriptionId").asText() + "/cancel";
+        String reason = JSON.writeValueAsString(Map.of("reason", "Isolated FE acceptance cancellation"));
+        recordCheck(checks, "foreign-doctor-cancel", request(gateway, "PUT", cancel, otherDoctor, reason), 403);
+        recordCheck(checks, "pharmacist-cancel", request(gateway, "PUT", cancel, pharmacist, reason), 403);
+        var result = request(gateway, "PUT", cancel, doctorToken, reason);
+        recordCheck(checks, "assigned-doctor-cancel", result, 200);
+        assertThat(data(result).path("releasedReservations").asInt()).isEqualTo(1);
+        var manifest = object("gateway", gateway, "createdAt", Instant.now(), "unique", unique,
+                "accounts", Map.of("ADMIN", "admin-" + unique, "DOCTOR", "doctor-" + unique,
+                        "OTHER_DOCTOR", "other-doctor-" + unique, "PHARMACIST", "pharmacist-" + unique,
+                        "CASHIER", "cashier-" + unique, "NURSE", "nurse-" + unique),
+                "sourceRecord", record, "sourceOrder", source, "drug", drug, "prescriptionRequest", body,
+                "cancelledPrescriptionId", cancelledRx.path("prescriptionId").asText(), "roleChecks", checks,
+                "pricePolicy", "mediflow.billing.prescription-charges.allowed-price-codes=DRUG");
+        Path manifestPath = work.resolve("fe-browser-manifest.json");
+        Path commandPath = work.resolve("fe-browser-command.json");
+        Path resultPath = work.resolve("fe-browser-result.json");
+        Files.deleteIfExists(commandPath);
+        Files.deleteIfExists(resultPath);
+        Files.writeString(manifestPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(manifest));
+        long deadline = System.nanoTime() + Duration.ofMinutes(60).toNanos();
+        while (System.nanoTime() < deadline) {
+            assertProcessRunning("gateway");
+            if (Files.exists(commandPath)) {
+                JsonNode command = JSON.readTree(Files.readString(commandPath));
+                Files.delete(commandPath);
+                String action = command.path("action").asText();
+                if (action.equals("STOP")) return;
+                if (action.equals("PAUSE_SUPPORT") || action.equals("RESUME_SUPPORT")) {
+                    if (action.equals("PAUSE_SUPPORT")) stop(processByName("support"));
+                    else {
+                        assertThat(processByName("support").isAlive()).isFalse();
+                        processes.add(start("support", requiredJar("support"), supportPort, supportEnvironment(eureka),
+                                "--mediflow.features.care-finance-v2=true", "--mediflow.report.outpatient-consumer.enabled=true",
+                                "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
+                                "--mediflow.notification.outpatient-prescription-consumer.enabled=true"));
+                        awaitHealthy(supportPort, "support");
+                    }
+                    Files.writeString(resultPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                            object("action", action, "checkedAt", Instant.now(), "supportRunning", processByName("support").isAlive())));
+                    continue;
+                }
+                UUID rx = UUID.fromString(command.path("prescriptionId").asText());
+                String rxPath = "/api/v1/pharmacy/prescriptions/" + rx;
+                String freshAdmin = login(gateway, "admin-" + unique);
+                String freshPharmacist = login(gateway, "pharmacist-" + unique);
+                var evidence = new ArrayList<Map<String, Object>>();
+                if (action.equals("PAY")) {
+                    recordCheck(evidence, "doctor-dispense-denied", request(gateway, "PUT", rxPath + "/dispense",
+                            login(gateway, "doctor-" + unique), null), 403);
+                    recordCheck(evidence, "unpaid-pharmacist-dispense", request(gateway, "PUT", rxPath + "/dispense",
+                            freshPharmacist, null), 422);
+                    String cashier = login(gateway, "cashier-" + unique);
+                    String discovery = "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=" + rx
+                            + "&patientId=" + patient + "&careEpisodeId=" + source.path("careEpisodeId").asText();
+                    JsonNode[] found = new JsonNode[1];
+                    await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> found[0] = data(request(gateway, "GET", discovery, cashier, null)));
+                    JsonNode paymentRequest = found[0];
+                    String paymentPath = "/api/v1/billing/payment-requests/" + paymentRequest.path("paymentRequestId").asText() + "/payments";
+                    String paymentBody = JSON.writeValueAsString(Map.of("idempotencyKey", "fe-paid-" + rx,
+                            "amount", paymentRequest.path("remainingAmount").decimalValue(), "currency", "VND", "paymentMethod", "CASH"));
+                    recordCheck(evidence, "actual-cashier-payment", request(gateway, "POST", paymentPath, cashier, paymentBody), 200);
+                    recordCheck(evidence, "duplicate-payment", request(gateway, "POST", paymentPath, cashier, paymentBody), 200);
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(data(request(gateway, "GET", rxPath, freshPharmacist, null))
+                            .path("paymentConfirmed").asBoolean()).isTrue());
+                    recordCheck(evidence, "paid-still-not-dispensed", request(gateway, "GET", rxPath, freshPharmacist, null), 200);
+                    assertThat(data(request(gateway, "GET", rxPath, freshPharmacist, null)).path("dispenseStatus").asText()).isEqualTo("PENDING");
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(40);
+                } else if (action.equals("VERIFY_DISPENSE")) {
+                    recordCheck(evidence, "terminal-dispense-retry", request(gateway, "PUT", rxPath + "/dispense", freshPharmacist, null), 200);
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM dispense_slip WHERE prescription_id=?", rx)).isOne();
+                    recordCheck(evidence, "final-drug-stock", request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null), 200);
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(37);
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", rx)).isOne();
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(count(store("clinical"),
+                            "SELECT count(*) FROM attached_result WHERE record_id=? AND type='PRESCRIPTION' AND reference_id=?",
+                            UUID.fromString(record.path("recordId").asText()), rx)).isOne());
+                    String bytes = store("pharmacy").queryForObject(
+                            "SELECT payload FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", String.class, rx);
+                    UUID eventId = store("pharmacy").queryForObject(
+                            "SELECT event_id FROM pharmacy_event_outbox WHERE aggregate_id=? AND routing_key='prescription.filled'", UUID.class, rx);
+                    String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                            .digest(bytes.getBytes(StandardCharsets.UTF_8)));
+                    Files.writeString(work.resolve("fe-replay-origin.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                            object("eventId", eventId, "prescriptionId", rx, "routingKey", "prescription.filled", "payloadSha256", hash)));
+                } else if (action.equals("VERIFY_REPLAY")) {
+                    JsonNode origin = JSON.readTree(Files.readString(work.resolve("fe-replay-origin.json")));
+                    UUID eventId = UUID.fromString(origin.path("eventId").asText());
+                    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(count(store("pharmacy"),
+                            "SELECT count(*) FROM pharmacy_event_outbox WHERE event_id=? AND published_at IS NOT NULL", eventId)).isOne());
+                    String bytes = store("pharmacy").queryForObject("SELECT payload FROM pharmacy_event_outbox WHERE event_id=?", String.class, eventId);
+                    assertThat(java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                            .digest(bytes.getBytes(StandardCharsets.UTF_8)))).isEqualTo(origin.path("payloadSha256").asText());
+                    assertThat(count(store("clinical"), "SELECT count(*) FROM attached_result WHERE record_id=? AND type='PRESCRIPTION' AND reference_id=?",
+                            UUID.fromString(record.path("recordId").asText()), rx)).isOne();
+                    assertThat(count(store("report"), "SELECT count(*) FROM operational_event_journal WHERE event_id=?", eventId)).isOne();
+                    assertThat(count(store("notification"), "SELECT count(*) FROM notification WHERE source_id=? AND template_key='OUTPATIENT_PRESCRIPTION_FILLED'", rx)).isOne();
+                    assertThat(count(store("pharmacy"), "SELECT count(*) FROM dispense_slip WHERE prescription_id=? AND status='DISPENSED'", rx)).isOne();
+                    recordCheck(evidence, "after-replay-stock", request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null), 200);
+                    assertThat(data(request(gateway, "GET", "/api/v1/pharmacy/drugs/" + drug.path("drugId").asText(), freshAdmin, null))
+                            .path("stockQuantity").asInt()).isEqualTo(37);
+                    evidence.add(object("scenario", "replay-effects", "eventId", eventId, "payloadSha256", origin.path("payloadSha256").asText(),
+                            "clinicalAttachments", 1, "reportJournalEntries", 1, "notifications", 1, "dispenseSlips", 1, "stock", 37));
+                } else throw new IllegalArgumentException("Unknown FE acceptance action");
+                Files.writeString(resultPath, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object(
+                        "action", action, "prescriptionId", rx, "checkedAt", Instant.now(), "checks", evidence)));
+            }
+            Thread.sleep(500);
+        }
+        throw new AssertionError("FE browser acceptance timed out; disposable processes will be stopped");
+    }
+
+    private void recordCheck(List<Map<String, Object>> checks, String scenario, HttpResponse<String> response, int expected)
+            throws IOException {
+        assertThat(response.statusCode()).as(scenario + ": " + response.body()).isEqualTo(expected);
+        JsonNode body = JSON.readTree(response.body());
+        checks.add(object("scenario", scenario, "httpStatus", response.statusCode(),
+                "correlationId", body.path("correlationId").asText(), "response", body));
     }
 
     private void assertConcurrentCheckIn(String gateway, UUID appointmentId, String nurseToken) throws Exception {

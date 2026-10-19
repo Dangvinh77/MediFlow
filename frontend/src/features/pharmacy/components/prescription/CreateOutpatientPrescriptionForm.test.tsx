@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { Role } from "@/lib/roles";
@@ -78,6 +79,81 @@ describe("outpatient prescription form", () => {
     await validForm(); fill("Mã giá thuốc", "ANOTHER-CATALOG"); submit();
     await waitFor(() => expect(mocks.create).toHaveBeenCalledTimes(2));
     expect(mocks.create.mock.calls[1][0].commandId).not.toBe(oldKey);
+  });
+  it("moves keyboard focus to the new line and preserves its normal tab order", async () => {
+    const user = userEvent.setup();
+    render(<CreatePrescriptionForm />);
+    await screen.findByRole("option", { name: /Paracetamol/ });
+    screen.getByRole("button", { name: "Thêm dòng thuốc" }).focus();
+    await user.keyboard("{Enter}");
+    const row = within(screen.getByRole("region", { name: "Thuốc 2" }));
+    expect(row.getByRole("combobox")).toHaveFocus();
+    await user.tab(); expect(row.getByRole("spinbutton")).toHaveFocus();
+    await user.tab(); expect(row.getByRole("textbox")).toHaveFocus();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it.each([1, 2, 3])("keeps focus on a surviving line after removing line %s", async removed => {
+    const user = userEvent.setup();
+    render(<CreatePrescriptionForm />);
+    await screen.findByRole("option", { name: /Paracetamol/ });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm dòng thuốc" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thêm dòng thuốc" }));
+    const selectors = screen.getAllByRole("combobox");
+    const expected = selectors[removed < 3 ? removed : removed - 2];
+    await user.click(screen.getByRole("button", { name: `Xóa dòng thuốc ${removed}` }));
+    expect(expected).toHaveFocus();
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("focuses the earliest visible source field regardless of server error order", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Invalid source", 400, "VALIDATION_ERROR", [
+      { field: "priceCode", message: "Kiểm tra mã giá" },
+      { field: "patientId", message: "Kiểm tra bệnh nhân" },
+    ]));
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    await waitFor(() => expect(screen.getByLabelText("Mã bệnh nhân", { exact: false })).toHaveFocus());
+  });
+  it("focuses quantity before dosage when server line errors arrive in reverse order", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Invalid line", 400, "VALIDATION_ERROR", [
+      { field: "lines[0].dosage", message: "Kiểm tra cách dùng" },
+      { field: "lines[0].quantity", message: "Kiểm tra số lượng" },
+    ]));
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    await waitFor(() => expect(screen.getByLabelText("Số lượng", { exact: false })).toHaveFocus());
+  });
+  it("returns to the first source field only after an explicit new intent", async () => {
+    const user = userEvent.setup();
+    mocks.create.mockRejectedValue(new TypeError("Unknown outcome"));
+    render(<CreatePrescriptionForm />); await validForm(); submit(); await screen.findByRole("alert");
+    await user.click(screen.getByRole("button", { name: "Đã kiểm tra đơn cũ, bắt đầu đơn mới" }));
+    expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toHaveFocus();
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it("focuses unknown-outcome feedback when draft controls become locked", async () => {
+    mocks.create.mockRejectedValue(new ApiRequestError("Unavailable", 503, "UNAVAILABLE", [], "unknown-rx"));
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("unknown-rx");
+    expect(screen.getByLabelText("Mã hồ sơ", { exact: false })).toBeDisabled();
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it.each([408, 504])("retains the V1 intent on HTTP %s and only retries its frozen payload and key", async status => {
+    mocks.create.mockRejectedValueOnce(new ApiRequestError("Timeout", status, "REQUEST_TIMEOUT", [{ field: "patientId", message: "Không xác nhận được bệnh nhân" }], "timeout-rx"))
+      .mockResolvedValueOnce({ prescriptionId: "rx-after-timeout" });
+    render(<CreatePrescriptionForm />); await validForm(); submit();
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("timeout-rx");
+    const first: OutpatientPrescriptionIntent = mocks.create.mock.calls[0][0];
+    const patient = screen.getByLabelText("Mã bệnh nhân", { exact: false });
+    expect(patient).toBeDisabled(); expect(patient).not.toHaveAttribute("aria-invalid", "true");
+    fill("Mã bệnh nhân", episode); expect(patient).toHaveValue(id);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Thử gửi lại đơn" }));
+    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/pharmacy/prescriptions/rx-after-timeout"));
+    expect(mocks.create).toHaveBeenCalledTimes(2); expect(mocks.create.mock.calls[1][0]).toEqual(first);
+    expect(mocks.legacy).not.toHaveBeenCalled();
   });
   it("focuses a rejected V1 source field and does not downgrade to legacy", async () => {
     mocks.create.mockRejectedValue(new ApiRequestError("Source invalid", 400, "PHARMACY_CARE_CONTEXT_INVALID", [{ field: "careEpisodeId", message: "Lượt khám không khớp" }], "rx-source"));

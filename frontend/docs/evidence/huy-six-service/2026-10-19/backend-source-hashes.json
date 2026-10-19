@@ -1,0 +1,32 @@
+[
+  {
+    "path": "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/application/port/out/PrescriptionClearancePort.java",
+    "sha256": "327F88BD75D361CCE12C115CC17D7B8BB1556805ECE031C11C921DA112E3E166",
+    "snapshotMatches": true
+  },
+  {
+    "path": "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/application/service/PrescriptionApplicationService.java",
+    "sha256": "53ACA8BF442D860D81BBAB5B108E1CFAD077156FEC62D60500CFECEC292231A0",
+    "snapshotMatches": true
+  },
+  {
+    "path": "backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/infrastructure/persistence/adapter/PrescriptionClearancePersistenceAdapter.java",
+    "sha256": "C1A24B6C8AA31D6A82B069BB4B7B56CF356C88444B5C14D98F411939B92FEAB5",
+    "snapshotMatches": true
+  },
+  {
+    "path": "backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/application/service/PharmacyApplicationServicePrescriptionTest.java",
+    "sha256": "18D874B4EEB6E549EC428CC333370A8E3D8CEA9FCAC68914E70B074ED8AB9F95",
+    "snapshotMatches": true
+  },
+  {
+    "path": "backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/infrastructure/persistence/CareDispensePostgresTest.java",
+    "sha256": "FC7C6A8BD5B5257C664E8CBF2E54FC991826990E51A0EF127BA32EEBDEC905E7",
+    "snapshotMatches": true
+  },
+  {
+    "path": "backend/support-service/src/test/java/com/mediflow/support/SixServiceOutpatientAcceptanceIT.java",
+    "sha256": "0629888159CC9150BF89EFAF36C72964BB75AF0D003BD95F063D0529048A0556",
+    "snapshotMatches": true
+  }
+]
