@@ -2,6 +2,7 @@ package com.mediflow.lab.infrastructure.persistence.repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,6 @@ public interface LabFinancialClearanceJpaRepository
             @Param("testId") UUID testId, @Param("at") Instant at);
 
     List<LabFinancialClearanceJpaEntity> findByTestTestIdOrderByGrantedAtDesc(UUID testId);
+
+    Optional<LabFinancialClearanceJpaEntity> findByTestTestIdAndClearanceId(UUID testId, UUID clearanceId);
 }

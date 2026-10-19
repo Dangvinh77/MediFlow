@@ -16,4 +16,6 @@ public interface LabClearanceRepositoryPort {
     Optional<LabFinancialClearance> findValidByTestId(UUID testId, Instant at);
 
     Optional<LabFinancialClearance> findLatestByTestId(UUID testId);
+
+    Optional<LabFinancialClearance> findByTestIdAndClearanceId(UUID testId, UUID clearanceId);
 }

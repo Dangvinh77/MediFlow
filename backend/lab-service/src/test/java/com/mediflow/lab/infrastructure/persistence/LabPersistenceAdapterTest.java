@@ -194,6 +194,9 @@ class LabPersistenceAdapterTest {
         assertThat(processedEvents.tryClaim(eventId, "financial.clearance.granted")).isFalse();
         assertThat(clearances.findLatestByTestId(first.getTestId()))
                 .get().extracting(LabFinancialClearance::currency).isEqualTo("VND");
+        assertThat(clearances.findByTestIdAndClearanceId(first.getTestId(), clearanceId))
+                .get().extracting(LabFinancialClearance::testId).isEqualTo(first.getTestId());
+        assertThat(clearances.findByTestIdAndClearanceId(first.getTestId(), UUID.randomUUID())).isEmpty();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT data_type || ':' || character_maximum_length
                 FROM information_schema.columns
@@ -305,7 +308,7 @@ class LabPersistenceAdapterTest {
             transaction.execute(status -> {
                 LabTest locked = tests.findByIdForUpdate(testId).orElseThrow();
                 locked.recordResults(List.of(LabResult.create("WBC", "7.5", "10^9/L", "4.0-10.0")),
-                        "Normal", LocalDate.now());
+                        "Normal", LocalDate.now(), null, Instant.now());
                 tests.save(locked);
                 return null;
             });
