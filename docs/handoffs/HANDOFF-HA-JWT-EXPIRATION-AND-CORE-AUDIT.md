@@ -4,6 +4,41 @@ Ngày: 2026-10-19. Base: `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
 Owner production: **Hoàng Anh**, Gateway và Core. Vinh giữ việc kiểm thử/review.
 Không sửa production hai module trong PR audit của Vinh.
 
+## Bàn giao bản sửa của Hoàng Anh — 2026-10-19
+
+Nhánh: `codex/ha-jwt-expiration-verifier-caller`. HA-AUDIT-01/02 đã có source fix;
+chưa đóng nghiệm thu, chờ Vinh xác nhận trên commit/artifact của PR.
+
+- Gateway, Organization và Patient yêu cầu access token có `exp` còn hiệu lực.
+  Giữ kiểm tra type/subject/role/identity và các quy tắc TTL của service token hiện có.
+- Riêng `/api/v1/org/accounts/verify` yêu cầu service token `role=SYSTEM`, signed
+  `sub=gateway`, kiểm tại Gateway và method security của Core. Header `X-Service-Id`
+  không cấp quyền. Không thêm claim scope mới hoặc khóa các lookup khác về Gateway.
+- Regression fixtures từ handoff đã được đưa vào suite. Bổ sung thiếu/hết hạn trên
+  cả hai Core chains, positive access/service, Gateway đúng caller và Pharmacy sai
+  caller kể cả khi giả header Gateway; verify sai token type không gọi được use case.
+  Các positive fixtures cũ của Core/Patient được bổ sung `iat`/`exp`.
+- HA-AUDIT-03 vẫn chỉ là nghi vấn: Vinh tái hiện bằng concurrent PostgreSQL test;
+  nếu xác nhận, Hoàng Anh xử lý production trong thay đổi riêng. Invariant nghiệm thu:
+  không còn nhân viên active thuộc khoa inactive.
+- Vinh chạy full Gateway/Core với Docker/PostgreSQL/RabbitMQ, kiểm lại hai refund
+  routes và acceptance trên artifact mới. Không giao viết lại refund production.
+
+Commit, kết quả kiểm thử và trạng thái nghiệm thu được ghi trong PR. Các patch tái hiện
+bên dưới là evidence trên base cũ; không áp lại lên nhánh đã chứa regression tests.
+
+Kiểm thử local trên source của nhánh này:
+
+| Lệnh | Kết quả |
+|---|---|
+| `mvn -q -pl backend/gateway,backend/core-service -am test` | Gateway: 1.451 tests pass. Core lần đầu: 181 tests, 7 failures do positive fixtures Patient thiếu exp, 3 errors do Docker không chạy. Đã sửa fixtures và chạy lại bên dưới. |
+| `mvn -q -pl backend/core-service -am test '-Dtest=!OrganizationServiceIntegrationTest,!SurgeryAuthorityIntegrationTest,!PatientServiceIntegrationTest' '-Dsurefire.failIfNoSpecifiedTests=false'` | 178 tests, 0 failures/errors/skips. Ba integration suites được loại rõ qua selector, chưa được nghiệm thu. |
+| `mvn -q -pl backend/gateway -am test '-Dtest=GatewayRefundRoutesAcceptanceIT' '-Dsurefire.failIfNoSpecifiedTests=false'` | 11 tests, 0 failures/errors/skips; dùng acceptance sẵn có, không sửa refund routes. |
+| `mvn -q -pl backend/gateway,backend/core-service -am package -DskipTests` | Thành công; tạo lại hai executable JAR trong target. Không thay thế full integration/packaged acceptance của Vinh. |
+
+Self-review theo skill `review-pr`: không phát hiện blocker trong diff; đủ điều kiện mở PR.
+Chưa đủ điều kiện kết luận nghiệm thu/merge trước khi Vinh chạy các gate còn thiếu trên PR head.
+
 ## HA-AUDIT-01 — đã tái hiện: signed access token không có exp vẫn được chấp nhận
 
 Gateway `JwtAuthenticationFilter` chỉ dựa vào parser kiểm expiration nếu claim có mặt,

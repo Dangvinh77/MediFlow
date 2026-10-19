@@ -82,6 +82,21 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void humanAccessTokenWithoutExpiration_leavesRequestUnauthenticated() throws Exception {
+        String token = Jwts.builder()
+                .subject(UUID.randomUUID().toString())
+                .claim(JwtClaims.ROLE, "ADMIN")
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .issuedAt(Date.from(Instant.now()))
+                .signWith(SIGNING_KEY)
+                .compact();
+
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void humanRefreshToken_isNotAcceptedAsAuthentication() throws Exception {
         String token = createToken(UUID.randomUUID().toString(), "ADMIN", JwtClaims.REFRESH_TOKEN_TYPE,
                 Instant.now().plusSeconds(300));
