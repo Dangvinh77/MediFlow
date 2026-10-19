@@ -1,5 +1,22 @@
 # Vinh — lỗi kiểm thử mới sau regression 18/10/2026
 
+## Recheck 19/10 — phân biệt nguồn chung và sửa local
+
+Remote master `4c19dd4a` và tag `v0.9.0-backend-feature-complete` chưa chứa hai sửa
+test bên dưới. Vinh đã áp dụng bản sửa test ở branch `codex/backend-loc-verification`;
+commands, source lock và kết quả sau sửa ở [bundle 19/10](../acceptance/backend-recheck-2026-10-19/README.md).
+Full Report sau sửa 1.331/1.331 và hai targeted reruns 8/8 mỗi lượt; Pharmacy opt-in
+1/1 pass, default 2 pass/1 explicit skip. Tất cả các lượt sau sửa exit 0.
+Hai fix đã được kiểm chứng local, chưa có trên remote. Full reactor và actual refund E2E
+không chạy lại ngày 19/10; không ký các acceptance rộng hơn từ những lượt chọn này.
+Giữ phiếu cho đến khi fix được chia sẻ và acceptance rộng hơn đã đủ bằng chứng; không xóa
+failure lịch sử hoặc coi một targeted rerun xanh là toàn backend đã nghiệm thu.
+
+Gateway code đã sửa tại `2805b07c` / PR #431. Recheck ngày 19/10: explicit refund
+11/11 và full Gateway 1.449/1.449 pass. Ghi chú bốn positive cases đỏ phía dưới là lịch sử.
+
+## Báo cáo lỗi lịch sử trước fix
+
 **Owner sửa test và retest:** Vinh. **Baseline:** master `025ef39e358756a28043d9809fad165096528fbf`.
 Đây là phiếu lỗi test; chưa có bằng chứng yêu cầu Huy sửa production Report.
 

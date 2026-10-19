@@ -1,0 +1,256 @@
+{
+  "createdUtc": "2026-10-19T02:04:25.1228199+00:00",
+  "sourceHead": "4c19dd4a8ede06c07545c9290ff77b687b8dd49c",
+  "scope": "Selected local verification after Loc feedback. Reruns are separate; not a new full-backend or deployment acceptance.",
+  "counting": "Tests includes skipped. Build has zero tests. Pharmacy before-fix error is retained. Raw logs/XML remain private.",
+  "stages": [
+    {
+      "name": "gateway-refund",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/gateway",
+        "-am",
+        "-Dtest=GatewayRefundRoutesAcceptanceIT",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "test"
+      ],
+      "appliedTestFixes": [],
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T08:49:56+07:00",
+      "duration": "17.332 s",
+      "privateLogSha256": "cb3d18e621c4152fd005c5334d0327591f1908fe1d4846cb618ac86ee1f12dad"
+    },
+    {
+      "name": "gateway-suite",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/gateway",
+        "-am",
+        "test"
+      ],
+      "appliedTestFixes": [],
+      "tests": 1449,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T08:51:22+07:00",
+      "duration": "52.377 s",
+      "privateLogSha256": "0b351e174b41bba6a9b3f95f18d55b28348322f18d205596e39981f4dd2b0672"
+    },
+    {
+      "name": "report-before",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/report-service",
+        "-am",
+        "-Dtest=ReportTelemetryPostgresTest",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "test"
+      ],
+      "appliedTestFixes": [],
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T08:50:50+07:00",
+      "duration": "48.760 s",
+      "privateLogSha256": "59406e1901acf7c6897790344dccb1dc26ff9b697e92476b192f9a406483c1df"
+    },
+    {
+      "name": "package",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/pharmacy-service,backend/billing-service,backend/report-service",
+        "-am",
+        "-DskipTests",
+        "package"
+      ],
+      "appliedTestFixes": [
+        "Report test only; production unchanged"
+      ],
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T08:51:14+07:00",
+      "duration": "53.265 s",
+      "privateLogSha256": "85c8d26f4274c71ceb205ab822d2dd9d322a8709569c05120c2b6ed278ed3bd1"
+    },
+    {
+      "name": "pharmacy-before",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/pharmacy-service",
+        "-am",
+        "-Dtest=__NoUnitTests__",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-Pdistributed-acceptance",
+        "-Dit.test=PharmacyOutpatientRuntimeAcceptanceIT#actualV1IssuerGrantSurvivesPharmacyJvmRestartAndDuplicatesNeverAutoDispense",
+        "-Dfailsafe.failIfNoSpecifiedTests=false",
+        "-Dmediflow.acceptance.billing-v1-published=true",
+        "verify"
+      ],
+      "appliedTestFixes": [],
+      "tests": 1,
+      "failures": 0,
+      "errors": 1,
+      "skipped": 0,
+      "exit": 1,
+      "finishedAt": "2026-10-19T08:54:24+07:00",
+      "duration": "02:50 min",
+      "privateLogSha256": "5ae36e7ac5cf57860ea3be36286559880380af632b85396031b9285ca0c5e4b0"
+    },
+    {
+      "name": "report-suite-after",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/report-service",
+        "-am",
+        "test"
+      ],
+      "appliedTestFixes": [
+        "V-TEST-BUG-01"
+      ],
+      "tests": 1331,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T09:02:42+07:00",
+      "duration": "10:57 min",
+      "privateLogSha256": "ee1fa82c14251496257979ffea924b0384009a600fa92314482593d70d09de3c"
+    },
+    {
+      "name": "pharmacy-optin-after",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/pharmacy-service",
+        "-am",
+        "-Dtest=__NoUnitTests__",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-Pdistributed-acceptance",
+        "-Dit.test=PharmacyOutpatientRuntimeAcceptanceIT#actualV1IssuerGrantSurvivesPharmacyJvmRestartAndDuplicatesNeverAutoDispense",
+        "-Dfailsafe.failIfNoSpecifiedTests=false",
+        "-Dmediflow.acceptance.billing-v1-published=true",
+        "verify"
+      ],
+      "appliedTestFixes": [
+        "V-TEST-BUG-02"
+      ],
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T08:58:09+07:00",
+      "duration": "03:28 min",
+      "privateLogSha256": "ecd1ab800fe50663e3e3cdceebd47db7ec8793cd07a12abb78cac49ba97cc186"
+    },
+    {
+      "name": "pharmacy-default-after",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/pharmacy-service",
+        "-am",
+        "-Dtest=__NoUnitTests__",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-Pdistributed-acceptance",
+        "-Dit.test=PharmacyOutpatientRuntimeAcceptanceIT",
+        "-Dfailsafe.failIfNoSpecifiedTests=false",
+        "verify"
+      ],
+      "appliedTestFixes": [
+        "V-TEST-BUG-02"
+      ],
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "exit": 0,
+      "finishedAt": "2026-10-19T09:01:17+07:00",
+      "duration": "02:57 min",
+      "privateLogSha256": "2aaca77d81a0e55e74ba4b1fd2de84fa0f3fff3f5668d1f5720564c1651cc04a"
+    },
+    {
+      "name": "report-clock-repeat-1",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/report-service",
+        "-am",
+        "-Dtest=ReportTelemetryPostgresTest",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "test"
+      ],
+      "appliedTestFixes": [
+        "V-TEST-BUG-01"
+      ],
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T09:03:17+07:00",
+      "duration": "17.861 s",
+      "privateLogSha256": "fb30eab5946e8c6a64d4bbd409fc2e829085bce7d81ea25b4bb0f5498e03c348"
+    },
+    {
+      "name": "report-clock-repeat-2",
+      "command": [
+        "mvn",
+        "-B",
+        "-ntp",
+        "-pl",
+        "backend/report-service",
+        "-am",
+        "-Dtest=ReportTelemetryPostgresTest",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "test"
+      ],
+      "appliedTestFixes": [
+        "V-TEST-BUG-01"
+      ],
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit": 0,
+      "finishedAt": "2026-10-19T09:03:35+07:00",
+      "duration": "17.326 s",
+      "privateLogSha256": "cb2332c84e4b59800d362891d0b8820337a18cc45441eeaf8a037a20ac066314"
+    }
+  ]
+}

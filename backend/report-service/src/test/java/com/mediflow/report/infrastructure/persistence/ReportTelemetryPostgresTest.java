@@ -49,8 +49,11 @@ class ReportTelemetryPostgresTest {
 
     @Test
     void emptySnapshot_hasZeroLocalBacklogButDoesNotPublishCoverage() {
+        // Capture bounds from the same database clock used by the snapshot.
+        Instant before = jdbc.queryForObject("SELECT clock_timestamp()", Timestamp.class).toInstant();
         var snapshot = reader.capture();
-        assertThat(snapshot.sampledAt()).isBeforeOrEqualTo(Instant.now()).isAfter(Instant.now().minusSeconds(10));
+        Instant after = jdbc.queryForObject("SELECT clock_timestamp()", Timestamp.class).toInstant();
+        assertThat(snapshot.sampledAt()).isBetween(before, after);
         assertThat(snapshot.pendingAdmissions()).isZero();
         assertThat(snapshot.oldestPendingObservedAt()).isNull();
         assertThat(snapshot.operational().remainingInputs()).isZero();

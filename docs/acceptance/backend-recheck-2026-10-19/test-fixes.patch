@@ -1,0 +1,43 @@
+diff --git a/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/PharmacyOutpatientRuntimeAcceptanceIT.java b/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/PharmacyOutpatientRuntimeAcceptanceIT.java
+index 48d48c04..31e58fdc 100644
+--- a/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/PharmacyOutpatientRuntimeAcceptanceIT.java
++++ b/backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/PharmacyOutpatientRuntimeAcceptanceIT.java
+@@ -39,6 +39,12 @@ class PharmacyOutpatientRuntimeAcceptanceIT {
+             .withEnv("MEDIFLOW_BILLING_LEDGER_ENABLED","true")
+             .withEnv("MEDIFLOW_BILLING_PRESCRIPTION_CHARGE_CONSUMER_ENABLED","true")
+             .withEnv("MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES","DRUG")
++            .withEnv("MEDIFLOW_FEATURES_OUTPATIENT_MVP_ENABLED",
++                    Boolean.toString(Boolean.getBoolean("mediflow.acceptance.billing-v1-published")))
++            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED",
++                    Boolean.toString(Boolean.getBoolean("mediflow.acceptance.billing-v1-published")))
++            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES","PRESCRIPTION")
++            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE","ISOLATED_ACCEPTANCE_ONLY")
+             .withEnv("MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED","true");
+     @Container static final GenericContainer<?> PHARMACY=service("pharmacy",8085,PHARMACY_DB,"pharmacy-db")
+             .withEnv("SPRING_PROFILES_ACTIVE","outpatient-mvp")
+@@ -145,6 +151,8 @@ class PharmacyOutpatientRuntimeAcceptanceIT {
+             } finally {PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();healthy(PHARMACY,8085);}
+             String statePath="/api/v1/pharmacy/admin/acceptance/state/"+prescription;
+             await().atMost(Duration.ofSeconds(25)).untilAsserted(()->assertThat(raw(PHARMACY,8085,statePath,"GET",null,200).path("grants").asInt()).isOne());
++            PHARMACY.getDockerClient().stopContainerCmd(PHARMACY.getContainerId()).withTimeout(0).exec();
++            PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();healthy(PHARMACY,8085);
+             for(int i=0;i<2;i++) {
+                 channel.basicPublish("mediflow.events","financial.clearance.granted",true,grant.getProps(),grant.getBody());
+                 channel.basicPublish("mediflow.events","payment.completed",true,cash.getProps(),cash.getBody());
+diff --git a/backend/report-service/src/test/java/com/mediflow/report/infrastructure/persistence/ReportTelemetryPostgresTest.java b/backend/report-service/src/test/java/com/mediflow/report/infrastructure/persistence/ReportTelemetryPostgresTest.java
+index c8ce59cc..57f53d26 100644
+--- a/backend/report-service/src/test/java/com/mediflow/report/infrastructure/persistence/ReportTelemetryPostgresTest.java
++++ b/backend/report-service/src/test/java/com/mediflow/report/infrastructure/persistence/ReportTelemetryPostgresTest.java
+@@ -49,8 +49,11 @@ class ReportTelemetryPostgresTest {
+ 
+     @Test
+     void emptySnapshot_hasZeroLocalBacklogButDoesNotPublishCoverage() {
++        // Capture bounds from the same database clock used by the snapshot.
++        Instant before = jdbc.queryForObject("SELECT clock_timestamp()", Timestamp.class).toInstant();
+         var snapshot = reader.capture();
+-        assertThat(snapshot.sampledAt()).isBeforeOrEqualTo(Instant.now()).isAfter(Instant.now().minusSeconds(10));
++        Instant after = jdbc.queryForObject("SELECT clock_timestamp()", Timestamp.class).toInstant();
++        assertThat(snapshot.sampledAt()).isBetween(before, after);
+         assertThat(snapshot.pendingAdmissions()).isZero();
+         assertThat(snapshot.oldestPendingObservedAt()).isNull();
+         assertThat(snapshot.operational().remainingInputs()).isZero();
