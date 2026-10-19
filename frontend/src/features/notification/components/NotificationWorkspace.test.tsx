@@ -139,6 +139,23 @@ describe("Notification detail", () => {
 });
 
 describe("Notification manual send", () => {
+  it("focuses the earliest visible field rather than the order of server details", async () => {
+    mocks.send.mockRejectedValue(new ApiRequestError("Validation", 400, "VALIDATION_ERROR", [
+      { field: "content", message: "Kiểm tra nội dung" },
+      { field: "title", message: "Kiểm tra tiêu đề" },
+    ]));
+    render(<SendNotificationForm />); fillSend(); submit();
+    await waitFor(() => expect(screen.getByLabelText("Tiêu đề", { exact: false })).toHaveFocus());
+  });
+  it.each([403, 503, 400])("focuses form feedback for HTTP %s without dispatching another send", async status => {
+    mocks.send.mockRejectedValue(new ApiRequestError("Request failed", status, "COMMAND_REJECTED", [], "send-focus"));
+    render(<SendNotificationForm />); fillSend(); submit();
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("send-focus");
+    expect(mocks.send).toHaveBeenCalledTimes(1);
+    if (status !== 400) expect(screen.getByRole("button", { name: "Gửi thông báo" })).toBeDisabled();
+  });
   it("locks a server-denied command including direct form resubmission", async () => {
     mocks.send.mockRejectedValue(new ApiRequestError("Denied", 403, "FORBIDDEN", [], "send-denied"));
     render(<SendNotificationForm />); fillSend(); submit();
@@ -188,6 +205,17 @@ describe("Notification manual send", () => {
     render(<SendNotificationForm />); fillSend(); submit();
     await waitFor(() => expect(screen.getByLabelText("Tiêu đề", { exact: false })).toHaveFocus());
     expect(screen.getByText(/send-trace/)).toBeVisible(); expect(screen.getByText("Tiêu đề không phù hợp")).toBeVisible();
+  });
+  it.each([408, 504])("locks notification HTTP %s for history reconciliation instead of treating it as validation", async status => {
+    mocks.send.mockRejectedValueOnce(new ApiRequestError("Timeout", status, "REQUEST_TIMEOUT", [{ field: "title", message: "Chưa xác nhận tiêu đề" }], "send-timeout"));
+    render(<SendNotificationForm />); fillSend(); submit();
+    const alert = await screen.findByRole("alert"); await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("send-timeout"); expect(alert).toHaveTextContent("tra cứu lịch sử bệnh nhân");
+    expect(screen.getByLabelText("Tiêu đề", { exact: false })).toBeDisabled();
+    expect(screen.getByLabelText("Tiêu đề", { exact: false })).not.toHaveAttribute("aria-invalid", "true");
+    submit(); expect(mocks.send).toHaveBeenCalledTimes(1); expect(mocks.router.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Tra cứu lịch sử bệnh nhân" }));
+    expect(mocks.router.push).toHaveBeenCalledWith("/notifications"); expect(mocks.send).toHaveBeenCalledTimes(1);
   });
   it("rechecks role at submit and ignores success after actor change", async () => {
     const pending = deferred<NotificationDTO>(); mocks.send.mockReturnValueOnce(pending.promise);

@@ -63,6 +63,8 @@ class PrescriptionApplicationServiceTest {
     private final StockReservationRepositoryPort reservationRepo = mock(StockReservationRepositoryPort.class);
     private final PharmacyEventPublisherPort eventPublisher = mock(PharmacyEventPublisherPort.class);
     private final PaymentReceiptRepositoryPort paymentReceiptRepo = mock(PaymentReceiptRepositoryPort.class);
+    private final com.mediflow.pharmacy.application.port.out.PrescriptionClearancePort clearances =
+            mock(com.mediflow.pharmacy.application.port.out.PrescriptionClearancePort.class);
     private final PrescriptionDtoMapper prescriptionDtoMapper = mock(PrescriptionDtoMapper.class);
 
     private PrescriptionApplicationService service;
@@ -76,6 +78,7 @@ class PrescriptionApplicationServiceTest {
                 reservationRepo,
                 eventPublisher,
                 paymentReceiptRepo,
+                clearances,
                 prescriptionDtoMapper,
                 Clock.systemUTC(),
                 Duration.ofHours(24));
@@ -308,7 +311,54 @@ class PrescriptionApplicationServiceTest {
         verify(prescriptionRepo, never()).findByIdForUpdate(prescriptionId);
         verify(drugRepo).findByIds(List.of(drugId));
         verify(paymentReceiptRepo).findByPrescriptionId(prescriptionId);
+        verifyNoInteractions(clearances);
         verify(prescriptionDtoMapper).toDto(eq(prescription), eq(slip.getStatus()), eq(true), any());
+    }
+
+    @Test
+    void getV1_verifiedMatchingGrantConfirmsPaymentWithoutReceiptOrWriteLocks() {
+        verifyV1Confirmation("matching", true);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "missing", "patient", "episode", "prescription", "expired", "future"
+    })
+    void getV1_missingOrMismatchedGrantCannotUseLegacyPaymentReceipt(String scenario) {
+        verifyV1Confirmation(scenario, false);
+    }
+
+    private void verifyV1Confirmation(String scenario, boolean expected) {
+        Instant now = Instant.now();
+        UUID id = UUID.randomUUID(), patient = UUID.randomUUID(), episodeId = UUID.randomUUID();
+        var episode = new com.mediflow.pharmacy.domain.model.CareEpisode(CareEpisodeType.OUTPATIENT_VISIT, episodeId);
+        Prescription prescription = mock(Prescription.class);
+        when(prescription.getPrescriptionId()).thenReturn(id);
+        when(prescription.getPatientId()).thenReturn(patient);
+        when(prescription.getCareContext()).thenReturn(
+                com.mediflow.pharmacy.domain.model.PrescriptionCareContext.v1(CareContext.OUTPATIENT, episode, null, "DRUG"));
+        when(prescription.getLines()).thenReturn(List.of());
+        when(prescriptionRepo.findById(id)).thenReturn(Optional.of(prescription));
+        when(dispenseSlipRepo.findByPrescription(id)).thenReturn(Optional.of(DispenseSlip.createPending(id)));
+        var grant = new com.mediflow.pharmacy.domain.model.PrescriptionClearance(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                scenario.equals("prescription") ? UUID.randomUUID() : id,
+                scenario.equals("patient") ? UUID.randomUUID() : patient,
+                scenario.equals("episode") ? new com.mediflow.pharmacy.domain.model.CareEpisode(
+                        CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID()) : episode,
+                new BigDecimal("1000"), "VND", "CASH",
+                scenario.equals("future") ? now.plusSeconds(3600) : now.minusSeconds(3600),
+                scenario.equals("expired") ? now.minusSeconds(60) : now.plusSeconds(7200), "a".repeat(64));
+        when(clearances.findVerifiedByTarget(id)).thenReturn(scenario.equals("missing") ? List.of() : List.of(grant));
+
+        service.getPrescriptionById(id);
+
+        verify(prescriptionDtoMapper).toDto(eq(prescription), eq(DispenseStatus.PENDING), eq(expected), any());
+        verify(clearances).findVerifiedByTarget(id);
+        verify(clearances, never()).lockTarget(any());
+        verify(clearances, never()).findByTargetForUpdate(any());
+        verify(clearances, never()).markVerified(any());
+        verifyNoInteractions(paymentReceiptRepo, reservationRepo, eventPublisher);
     }
 
     private void stubSavedPrescription(UUID prescriptionId) {

@@ -119,6 +119,24 @@ describe("Prescription terminal actions", () => {
     expect(screen.queryByText(/Đã xuất thuốc thành công|Đã hủy đơn thuốc\. Đã giải phóng/)).not.toBeInTheDocument();
     expect(action === "cancel" ? mocks.cancel : mocks.dispense).toHaveBeenCalledTimes(1);
   });
+  it.each(["cancel", "dispense"] as const)("reconciles HTTP 408 for %s and retries only a failed follow-up read", async action => {
+    const mutation = action === "cancel" ? mocks.cancel : mocks.dispense;
+    mutation.mockRejectedValue(new ApiRequestError("Timeout", 408, "REQUEST_TIMEOUT", [], "terminal-timeout"));
+    mocks.get.mockResolvedValueOnce(prescription)
+      .mockRejectedValueOnce(new ApiRequestError("Unavailable", 503, "READ_FAILED", [], "terminal-read"))
+      .mockResolvedValueOnce(action === "cancel" ? cancelled : { ...prescription, status: "FULFILLED", dispenseStatus: "DISPENSED" });
+    await open(action);
+    if (action === "cancel") fireEvent.change(screen.getByLabelText("Lý do hủy", { exact: false }), { target: { value: "Hủy theo yêu cầu" } });
+    submit(action);
+    expect(await screen.findByText(/Chưa tải được chi tiết mới/)).toHaveTextContent("terminal-read");
+    expect(screen.getByText(/Chưa xác định được kết quả/)).toHaveTextContent("terminal-timeout");
+    expect(screen.queryByRole("button", { name: /Xác nhận (hủy đơn|xuất thuốc)/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Đã xuất thuốc thành công|Đã hủy đơn thuốc\. Đã giải phóng/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Xuất thuốc" })).not.toBeInTheDocument());
+    expect(mutation).toHaveBeenCalledTimes(1);
+  });
   it.each(["PAYMENT_PROOF_REQUIRED", "PHARMACY_CLEARANCE_REQUIRED"])("refreshes a rejected %s and removes dispense when payment is no longer confirmed", async code => {
     mocks.dispense.mockRejectedValue(new ApiRequestError("No proof", 422, code, [], "proof-rx"));
     mocks.get.mockResolvedValueOnce(prescription).mockResolvedValue({ ...prescription, paymentConfirmed: false });

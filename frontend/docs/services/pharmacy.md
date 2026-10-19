@@ -1,5 +1,48 @@
 # Frontend Service: Pharmacy
 
+2026-10-19 signed acceptance PASS: actual issuer DOCTOR creates V1 in the browser, CASHIER public
+API pays, PHARMACIST refreshes and dispenses in the browser. Payment alone leaves PENDING;
+one dispense reduces stock 40→37 and terminal retry preserves one effect. Actual ADMIN creates
+a separate drug and adjusts stock 5→12; known-event replay preserves payload and observed consumer
+counts. Cancel/dispense role denial and keyboard/theme evidence are in
+[the acceptance record](../evidence/huy-six-service/2026-10-19/README.md). This closes HF6-01/06/07/10;
+the remaining Report/Notification/release gates are tracked in plan section 14.
+
+2026-10-19 signed acceptance source procedure: obtain the exact `recordId`, `patientId` and
+assigned `doctorId` from the public patient-record response after the source visit is opened.
+For the isolated acceptance case, a genuine Clinical Lab order under that record supplies an
+explicit `careEpisodeType`/`careEpisodeId` in its public response. This is evidence for that
+source visit, not permission to infer an episode from an appointment UUID or to create an
+unnecessary Lab order in production. Department/staff identifiers come from the corresponding
+Core public setup responses and the signed staff relationship. `DRUG` is used only because this
+disposable Billing instance explicitly allows that catalog key; it is not a frontend default.
+
+The paid V1 browser test exposed a read-side defect: the prescription detail consulted only V0
+payment receipts. The candidate now reads verified, exact-target, non-expired local V1 clearance
+projections without a write lock. `paymentConfirmed` remains a local confirmation indicator;
+the dispense command still checks current Billing authority after locks and can reject a stale
+or revoked grant. No receipt is manufactured for V1 and payment does not auto-dispense stock.
+
+2026-10-19 five-item follow-up: all Pharmacy commands classify HTTP 408 as uncertain, using a
+feature-local helper also shared by stock. V1 retry preserves the original payload/key; drug creation
+locks for catalogue reconciliation; cancel/dispense refresh only the read; outbox keeps its known
+event and requires deliberate reconfirmation. Unknown replies are not interpreted as field validation
+or proof of rollback. See [plan section 13](../huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19)
+for tests and remaining signed-browser gates.
+
+2026-10-19 stock reconciliation follow-up: an uncertain adjustment retains its delta/unit and
+correlation across failed stock reads and explicit read retries. HTTP 408/5xx/unreadable success
+and network failures discard the old draft. A fresh GET does not prove the previous command's
+outcome; new adjustments stay closed until the operator confirms reconciliation. That confirmation
+only opens an empty draft, never resends the command or certifies backend success. State is scoped
+to the current drug/session in memory. See [plan section 12](../huy-six-service-frontend-plan.md#12-giữ-kết-quả-điều-chỉnh-kho-chưa-rõ-qua-lỗi-tải-lại--2026-10-19).
+
+2026-10-19 keyboard follow-up: adding/removing prescription lines retains a usable focus target;
+server errors focus the first visible field, independent of detail order. Unknown creation outcome
+focuses feedback while preserving the frozen intent; explicit new intent returns to the record field.
+See [current plan, section 11](../huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19)
+for local test evidence and the remaining browser acceptance gate.
+
 **Owner:** Huy (`LQHuy0210`)  
 **Backend:** `backend/pharmacy-service/**`  
 **Contract context:** [`docs/ai/services/pharmacy.md`](../../../docs/ai/services/pharmacy.md)  

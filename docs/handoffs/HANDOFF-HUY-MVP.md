@@ -193,6 +193,32 @@ contracts/service docs; chỉ gỡ file handoff khi mọi active gate được c
 
 ## 6. Frontend MVP — gate tích hợp còn lại (2026-10-16)
 
+**Checkpoint hiện hành 2026-10-19:** signed Gateway/browser acceptance đạt trên candidate
+`51eedfcd` + diff, nâng plan lên **10/14 task; 45/56 subtask**. Đóng HF6-01/06/07/10:
+actual issuer login, browser tạo Rx V1, API CASH payment, browser refresh/xuất một effect,
+catalog/stock/outbox, Report legacy và keyboard/theme/responsive. Đã sửa read Pharmacy V1
+không nhận verified clearance; focused backend rerun 48/48, opt-in browser hold 1/1 PASS, 770.5s.
+Xem [plan mục 14](../../frontend/docs/huy-six-service-frontend-plan.md#14-nghiệm-thu-signed-gateway-và-browser--2026-10-19)
+và [evidence](../../frontend/docs/evidence/huy-six-service/2026-10-19/README.md).
+Các ghi chú local/runtime bên dưới giữ lịch sử; không dùng chúng thay checkpoint mới.
+
+**Năm đầu việc local 2026-10-19:** hoàn tất B5-01…05 cho timeout tạo Rx V1/tạo thuốc/gửi Notification/
+hủy-xuất Rx/replay outbox. Thêm 13 ca hồi quy, focused 124/124; HTTP 408 không mở lại blind mutation,
+Rx V1 retry giữ key/payload, terminal retry chỉ đọc và outbox cần explicit confirmation cùng event.
+Chi tiết và checks cuối ở [plan mục 13](../../frontend/docs/huy-six-service-frontend-plan.md#13-đợt-năm-đầu-việc-timeout--2026-10-19).
+Đây là local work items, không đóng năm HF6 runtime task hoặc sinh handoff mới.
+
+**Stock follow-up 2026-10-19:** local Pharmacy giữ kết quả điều chỉnh kho chưa rõ qua lỗi refresh,
+403/404 và retry đọc; giữ correlation/delta, bỏ draft cũ và cần đối chiếu sau fresh read trước khi lập
+lệnh mới. Không thêm API/idempotency key hoặc tự kết luận lệnh đã rollback. Thêm 11 ca hồi quy,
+focused 46/46; candidate/checks cuối ở [plan mục 12](../../frontend/docs/huy-six-service-frontend-plan.md#12-giữ-kết-quả-điều-chỉnh-kho-chưa-rõ-qua-lỗi-tải-lại--2026-10-19).
+Không tạo dependency hoặc handoff mới; signed browser/coverage/shared auth dưới đây giữ OPEN.
+
+**Local FE follow-up 2026-10-19:** trên `51eedfcd` + diff, Huy tiếp tục keyboard/focus cho kê đơn,
+gửi Notification và bốn Report views, gồm 22 ca hồi quy mới. Chi tiết/evidence candidate cuối ở
+[plan mục 11](../../frontend/docs/huy-six-service-frontend-plan.md#11-keyboard-và-focus-sau-đồng-bộ-master--2026-10-19)
+và workboard. Không tự đóng signed browser, Report coverage hoặc shared late-401 bên dưới.
+
 **Refresh 2026-10-18:** plan thực thi FE hiện hành ở
 [FE Huy — 6 service](../../frontend/docs/huy-six-service-frontend-plan.md).
 Gateway exact Pharmacy cancel/dispense policy và Support/backend EXAM/Rx acceptance đã có ở
@@ -210,7 +236,7 @@ evidence/checklist lịch sử, không tự đóng mới hoặc mở flags theo 
 
 **Các việc còn thực sự cần nghiệm thu FE:**
 
-**Source audit 2026-10-19, base `5ccecf83` — dependency cho Vinh:**
+**Source audit PR #446, base `5ccecf83` — checkpoint lịch sử cho Vinh:**
 
 | Input public Rx V1 | Nguồn public đã xác nhận | Phần còn thiếu / điều kiện sử dụng |
 |---|---|---|
@@ -221,24 +247,25 @@ evidence/checklist lịch sử, không tự đóng mới hoặc mở flags theo 
 
 `ClinicalLabOrderContextDTO` và prescription context lookup là contract service-to-service,
 không phải nguồn browser được phép gọi. Form tiếp tục yêu cầu đầu vào riêng, không sinh authority
-IDs và không tự tính tiền/clearance. Audit này chỉ chốt nguồn có thật; **HF6-01.2 vẫn OPEN** cho
-hai dependency episode/priceCode ở workflow public tổng quát. Không tạo handoff trùng lặp.
+IDs và không tự tính tiền/clearance. Audit này chỉ chốt nguồn có thật; **HF6-01.2 còn OPEN tại checkpoint này** cho
+hai dependency episode/priceCode ở workflow public tổng quát. Nghiệm thu visit test và trạng thái
+HF6-01 mới hơn được ghi bên dưới; vẫn không suy diễn nguồn ID hoặc priceCode cho production. Không tạo handoff trùng lặp.
 
-Checkpoint mới FE 2026-10-19: **6/14 task, 41/56 subtask**, thêm proof HF6-06.2/.3 bằng issuer
-roles thật, V1 paid GET false vẫn xuất được, stock 40→37 và terminal retry một effect. Evidence
-ở plan mục 11. Các count 39/56 bên dưới là checkpoint lịch sử 2026-10-18; không dùng browser
-cũ có đổi boolean backend để nghiệm thu candidate mới. Report accepted coverage, issuer PATIENT
-privacy và public source dependencies tiếp tục OPEN, Vinh phối hợp backend.
+Evidence V1 riêng của PR #446 được giữ tại [plan mục 15](../../frontend/docs/huy-six-service-frontend-plan.md#15-checkpoint-pr-446-sửa-dispense-v1-theo-runtime-contract--2026-10-19).
+Tiến độ hiện hành theo mục 14: **10/14 task, 45/56 subtask**; checkpoint 6/14, 41/56 của PR này là lịch sử.
 
-- HF6-01.2: confirmed record/patient/staff/department/episode IDs và priceCode của đúng môi trường.
-  Form nhận riêng từng giá trị; public MedicalRecord DTO không có trường episode rõ ràng nên không
-  tự lấy appointmentId/recordId thay careEpisodeId hoặc gọi internal lookup từ browser.
-- HF6-06/09/11: signed-role tạo/hủy/xuất Rx đã thanh toán; Gateway→Support reader với accepted
-  coverage, đúng profiles/flags; phân biệt backend acceptance đã hoàn tất với browser FE chưa chạy.
-- HF6-10/14: browser fixture đã kiểm theme/mobile và một phần focus/Escape (evidence trong plan mục 9),
-  còn full keyboard matrix và Notification bằng signed ADMIN/NURSE/PATIENT thật,
-  owner/cross-patient denial, manual IN_APP và lifecycle notice. EMAIL/SMS cần test provider/recipient
-  được cấp; không gửi người thật để lấy evidence. Retry/read-state API không tồn tại, không thêm nút giả.
+- HF6-01/06/07/10 đã đóng: public source record/Core responses và explicit episode từ public
+  Clinical order của visit test; `DRUG` chỉ là allowlist của Billing test. Không suy appointmentId
+  thành episode hoặc biến Lab order thành bước bắt buộc production. Signed role/payment/dispense,
+  stock/replay và keyboard/theme có evidence mới; không còn chờ các gate này.
+- HF6-09: accepted outpatient coverage đúng scope, ADMIN/MANAGER, reader ON/OFF có restart.
+  Report legacy ADMIN 200/DOCTOR 403 và recovery Support đã đạt; chưa thay accepted coverage.
+- HF6-11: nối tiếp Pharmacy workflow đã đạt tới Report sau đối soát, hoàn tất session/unavailable
+  matrix và Notification private notice bằng public API, đúng người/cross-patient deny.
+- HF6-14: browser Notification signed ADMIN/NURSE/PATIENT, owner/cross-patient denial,
+  manual IN_APP và lifecycle/payment/refund privacy. EMAIL/SMS cần test provider/recipient
+  được cấp; không gửi người thật để lấy evidence. Intake một notice sau replay chưa đóng privacy.
+- HF6-12.4: release cuối sau các gate trên; shared late-401 dependency bên dưới vẫn OPEN.
 - Server FE: `MEDIFLOW_PHARMACY_PRESCRIPTION_MODE` unset/`outpatient`→V1, `legacy`→V0 explicit,
   giá trị khác đóng form; route dynamic. `MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED` vẫn OFF mặc định,
   chỉ ON sau reader/coverage acceptance. Hai env không bật profile/flags backend.
@@ -252,8 +279,8 @@ privacy và public source dependencies tiếp tục OPEN, Vinh phối hợp back
 
 Candidate B10 đạt **501/501 FE tests, 55 files**, zero failures/skips; typecheck/lint/build PASS.
 B20 denial/focus tiếp theo focused 108/108, full **506/506 / 55 files**; final checks ở plan mục 10/evidence.
-Plan mở rộng **6/14 task; 39/56 subtask** (Pharmacy/Report gốc 5/12; 35/48, Notification thêm 4/8).
-Tiến độ/checks candidate hiện hành ghi ở plan mục 9/10 và workboard; chỉ dùng một handoff này.
+Plan hiện hành **10/14 task; 45/56 subtask** (Pharmacy/Report gốc 9/12; 41/48, Notification 4/8).
+Tiến độ/checks candidate hiện hành ghi ở plan mục 14 và workboard; chỉ dùng một handoff này.
 
 **Shared dependency — old 401 clears new session (OPEN, Vinh/shared frontend):**
 `frontend/src/lib/api.ts` captures token khi dispatch nhưng line 81 clearSession vô điều kiện khi response 401.

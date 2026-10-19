@@ -2,7 +2,7 @@
 
 **Ngày lập:** 2026-10-18. **Owner thực thi:** Huy (`LQHuy0210`).  
 **Source baseline:** `025ef39e358756a28043d9809fad165096528fbf` trên nhánh local `Huy`.  
-**Trạng thái:** IN PROGRESS — 6/14 task, 41/56 subtask; checkpoint mới nhất ở mục 11.
+**Trạng thái:** IN PROGRESS — 10/14 task, 45/56 subtask; checkpoint mới nhất ở mục 14.
 
 Đây là plan thực thi hiện hành cho FE Pharmacy và Support (Report/Notification) trong MVP ngoại trú. Thay thứ tự
 thực thi của [plan Huy cũ](huy-frontend-implementation-plan.md), giữ nguyên checklist và evidence
@@ -106,10 +106,10 @@ HF6-01…12 giữ nguyên 48 tiêu chí gốc. HF6-13/14 thêm tám tiêu chí c
 
 ### HF6-01 — Refresh hợp đồng và chốt cách chạy MVP
 
-Owner Huy; READY. Liên hệ HFE-02/P-08/Q-02 cũ.
+Owner Huy; DONE trên candidate mục 14. Liên hệ HFE-02/P-08/Q-02 cũ.
 
 - [x] HF6-01.1 Ghi commit candidate, diff, route/method/role/error matrix và fixtures request/response từ source hiện tại.
-- [ ] HF6-01.2 Khóa nguồn `recordId`, `careEpisodeId`, patient/doctor/department và `priceCode`; ghi cách lấy từ public workflow đã có, không tự sinh authority IDs.
+- [x] HF6-01.2 Khóa nguồn `recordId`, `careEpisodeId`, patient/doctor/department và `priceCode`; ghi cách lấy từ public workflow đã có, không tự sinh authority IDs.
 - [x] HF6-01.3 Chốt cách FE chọn mode ngoại trú từ cấu hình runtime được xác nhận; nếu cần env mới, ghi exact name/path/semantics và scope trước khi code; không đoán mode từ DTO hoặc lỗi API.
 - [x] HF6-01.4 Ghi dependency/owner/acceptance trong handoff chung; phân biệt gap FE hiện tại với backend đã nghiệm thu và giữ scope deferred.
 
@@ -170,9 +170,9 @@ thêm Billing entrypoint nếu chưa có contract, có thể chuyển qua workfl
 Owner Huy; sau HF6-04/05 và runtime được xác nhận. Đóng phần còn lại P-06.
 
 - [x] HF6-06.1 Recheck ADMIN/DOCTOR cancel, ADMIN/PHARMACIST dispense; unknown/null role và đường không allowlist bị deny, backend vẫn quyết định resource authority.
-- [x] HF6-06.2 Browser/API thực với signed users: bác sĩ được phép tạo/hủy đúng quan hệ, bác sĩ khác không có authority bị deny; PHARMACIST không hủy, DOCTOR không xuất. Evidence candidate 2026-10-19 ở mục 11.
-- [x] HF6-06.3 Xuất trước thanh toán bị backend chặn; sau thanh toán chỉ một dispense effect và tồn kho đúng; paid không tự xuất thuốc, terminal retry không tạo effect mới. V1 UI không dùng boolean V0 chặn command.
-- [ ] HF6-06.4 Giữ reason/releasedReservations, confirmation/focus/Escape, conflict/unknown outcome→fresh read; kiểm thử bằng role thật và lưu HTTP/correlation/effect evidence đã bỏ thông tin nhạy cảm.
+- [x] HF6-06.2 Browser/API thực với signed users: bác sĩ được phép tạo/hủy đúng quan hệ, bác sĩ khác không có authority bị deny; PHARMACIST không hủy, DOCTOR không xuất.
+- [x] HF6-06.3 Xuất trước thanh toán bị chặn; sau thanh toán chỉ một dispense effect và tồn kho đúng; paid không tự xuất thuốc, terminal retry không tạo effect mới.
+- [x] HF6-06.4 Giữ reason/releasedReservations, confirmation/focus/Escape, conflict/unknown outcome→fresh read; kiểm thử bằng role thật và lưu HTTP/correlation/effect evidence đã bỏ thông tin nhạy cảm.
 
 Đóng khi cả allowed/denied scenarios qua Gateway thật và hiệu ứng nghiệp vụ đúng; không dùng
 fixture token hoặc đổi role để bypass. Không chỉnh backend chỉ để UI test xanh.
@@ -184,7 +184,7 @@ Owner Huy; có thể làm độc lập sau HF6-01. Kế thừa P-01/02/03/07, kh
 - [x] HF6-07.1 Kiểm catalog/search/page/size/deep links, stale request, empty/404 và bảng đúng mẫu trên API hiện tại.
 - [x] HF6-07.2 Kiểm ADMIN/PHARMACIST tạo thuốc/stock delta, DOCTOR chỉ đọc; validation/focus, khóa gửi trùng và dùng số tồn server.
 - [x] HF6-07.3 Kiểm outbox ADMIN-only, known event UUID, bodyless replay và replayed false/true; không dựng list API hoặc tự replay khi mount.
-- [ ] HF6-07.4 Chạy regression component/API và smoke có signed session cho các flow ảnh hưởng; replay thật chỉ dùng event test có nguồn gốc và effect được xác định.
+- [x] HF6-07.4 Chạy regression component/API và smoke có signed session cho các flow ảnh hưởng; replay thật chỉ dùng event test có nguồn gốc và effect được xác định.
 
 Đóng khi code cũ hoạt động trong topology mới và không regress sau bổ sung V1.
 
@@ -217,7 +217,7 @@ Owner Huy trong Pharmacy/Report/Notification; sau HF6-04/05/08/13, tận dụng 
 
 - [x] HF6-10.1 Đối chiếu màn thay đổi với mẫu đã duyệt: title/nav/panel/table/lookup, semantic tokens và shared primitives; không mang fixture/BẢN MẪU vào production.
 - [x] HF6-10.2 Browser Sáng/Tối/Hệ thống tại desktop, tablet và mobile 320–360px; chỉ bảng cuộn ngang, UUID/tên dài vẫn đọc được.
-- [ ] HF6-10.3 Kiểm bàn phím/tab order/label/focus lỗi/Escape/return-focus/status text/loading/empty/error/permission trên flow V1 và Report.
+- [x] HF6-10.3 Kiểm bàn phím/tab order/label/focus lỗi/Escape/return-focus/status text/loading/empty/error/permission trên flow V1 và Report.
 - [x] HF6-10.4 Lưu screenshot/evidence theo route/theme/viewport; gap shared drawer/header ghi trong handoff chung, sửa đúng owner scope trước khi đóng.
 
 Đóng khi các màn thuộc Huy dùng được trên thiết bị/theme đã cam kết; không lấy việc Surgery chưa
@@ -511,7 +511,152 @@ Red run tái hiện đúng **10 failing cases / 7 files**, 98 cases cũ vẫn đ
 **108/108 / 7 files** đạt. Kết quả final và browser follow-up được ghi tiếp tại evidence README;
 không cộng các đầu việc B10/B20 vào mẫu số 14 HF6 hoặc tick thêm runtime criteria chỉ vì test giả lập.
 
-## 11. Sửa dispense V1 theo runtime contract — 2026-10-19
+## 11. Keyboard và focus sau đồng bộ master — 2026-10-19
+
+Candidate: `51eedfcd` cộng diff của lượt này. Đây là phần local của HF6-10.3 và regression
+HF6-04/08/13, không mở scope shared auth hoặc feature Clinical/Lab/Inpatient.
+
+- Kê đơn: Enter trên nút thêm dòng đưa focus đến chọn thuốc mới; Tab tiếp tục qua số lượng/cách dùng.
+  Xóa dòng đầu/giữa/cuối đưa focus đến dòng còn lại phù hợp, vẫn giữ tối thiểu một dòng.
+- Server validation: focus theo thứ tự field/dòng hiển thị, không theo thứ tự `details` của server.
+  Áp dụng form kê đơn và gửi Notification; không đổi wire DTO hoặc request.
+- Kết quả tạo Rx chưa rõ: vùng lỗi nhận focus khi draft bị khóa; chỉ khi người dùng xác nhận bắt đầu
+  ý định mới mới đưa focus về mã hồ sơ. Snapshot/key và explicit retry giữ nguyên.
+- Notification: lỗi tổng quát, 403 và unknown outcome nhận focus sau khi kết thúc trạng thái đang gửi;
+  không thêm resend/idempotency contract. Fields bị khóa vẫn không nhận focus sai.
+- Cả bốn Report views: vùng lỗi có tên/mô tả truy cập được, giữ correlation/code và retry theo lỗi.
+  Tab/Enter retry chỉ đọc; lỗi đến muộn không giành focus khi người dùng nhập bộ lọc hoặc làm việc
+  ngoài Report. Sau lỗi, sửa bộ lọc không tự đổi focus hoặc phát thêm request.
+
+Thêm **22 ca hồi quy**: Pharmacy 8, Notification 4, Report 10. Red runs đầu tái hiện 8 + 4 + 6 ca;
+thêm 4 ca pending Report xác nhận cần giữ focus khi đang nhập. Sau sửa, ba file create/send đạt
+74/74; Report lifecycle cuối đạt 24/24. Focused toàn phạm vi trước guard cuối đạt 392/392 trong
+31 file; kết quả candidate cuối ghi tại workboard.
+
+Candidate cuối: `pnpm test -- --maxWorkers=1` đạt **527/528 trong 55 file**, 133.14s,
+chỉ lỗi `LabDetail.test.tsx:194` đã có trên master (fixture V1 READY thiếu clearance nhưng mong nút
+bắt đầu). Cả 22 ca mới đạt; Inpatient đạt trong lượt full này. `pnpm typecheck`, `pnpm lint`,
+`pnpm build` đều PASS, exit 0. Không đổi foreign source hoặc làm yếu test để có kết quả xanh.
+
+Kiểm thử keyboard dùng Testing Library/user-event trong jsdom. Chưa chạy browser mới, screen reader
+hoặc signed Gateway workflow trong lượt này; **HF6-10.3 vẫn OPEN**, tiến độ 6/14 và 39/56 giữ nguyên.
+Lỗi Lab có trên master và shared late-401/session race tiếp tục tách khỏi evidence local của Huy;
+phụ thuộc vẫn ở một handoff chung.
+
+## 12. Giữ kết quả điều chỉnh kho chưa rõ qua lỗi tải lại — 2026-10-19
+
+Candidate: `51eedfcd` cộng working diff, tiếp nối mục 11. IMPLEMENT trong Pharmacy; không đổi
+API/backend hoặc shared auth. Đã đối chiếu `DrugController`, `AdjustStockRequest`,
+`DrugApplicationService` và controller tests: endpoint cộng/trừ delta, có audit trong transaction,
+không có command key hay public API tra kết quả riêng. Tải lại tồn không chứng minh lệnh trước rollback.
+
+- Network error, HTTP 408/5xx và success envelope không đọc được chuyển sang kết quả chưa rõ.
+  Giữ message/correlation và delta/unit của lệnh; xóa delta/reason cũ, không tự gửi lại mutation.
+- Detail giữ cảnh báo ngoài vòng đời form. Lỗi refresh, retry read đang chờ, 403 và 404 không làm mất
+  evidence; không hiển thị lại dữ liệu cũ như kết quả tải thành công hoặc mở retry trái quyền.
+- Chỉ sau khi đọc lại thành công mới cho xác nhận đã đối chiếu. GET thành công, kể cả tồn không đổi,
+  không tự đóng cảnh báo. Người dùng đối chiếu qua nguồn nghiệp vụ; nút xác nhận không gọi API hoặc
+  tự kết luận lệnh cũ đã thành công. Sau đó mở draft trống, focus số lượng để lập yêu cầu mới.
+- Cảnh báo nhận focus nếu control trước đã biến mất; không lấy focus đang ở ngoài. State chỉ ở bộ nhớ
+  của drug/session hiện tại, không ghi localStorage; đổi thuốc/tài khoản bỏ state và response cũ.
+- Validation 422 giữ input để sửa như trước, không buộc đối chiếu. Definite stock conflict vẫn refresh
+  theo flow cũ; signed role và backend vẫn là authority.
+
+Thêm **11 ca hồi quy**: 8 DrugDetail, 1 validation stock, 2 session lifecycle. Red run tái hiện đúng
+8 ca DrugDetail fail trước sửa, 10 ca cũ vẫn đạt. Focused candidate cuối **46/46 trong 3 file**.
+Candidate cuối: full suite **538/539 trong 55 file**, 136.68s, exit 1; chỉ lỗi đã có ở
+`LabDetail.test.tsx:194`, không có local diff Lab. Typecheck cuối (sau build), lint và build đều
+**PASS, exit 0**. Lần typecheck chạy song song build trước đó gặp generated routes đang tái tạo;
+không sửa source/config để né lỗi và lần tuần tự đã đạt. Logs chi tiết ở workboard.
+
+Đây là bổ sung local, không đóng signed Gateway/browser hoặc Report coverage. Tiến độ giữ
+**6/14 task, 39/56 subtask**; HF6-10.3 vẫn OPEN. Không có browser/screen-reader acceptance mới.
+
+## 13. Đợt năm đầu việc timeout — 2026-10-19
+
+User giao “chạy 5 task tiếp theo”. Candidate `51eedfcd` + working diff, giữ các thay đổi mục 11/12.
+Đây là năm đầu việc local trong HF6-04/06/07/13, không phải năm HF6 task đã nghiệm thu runtime.
+Huy IMPLEMENT Pharmacy, DELEGATED Notification theo scope mục 1. Chỉ VERIFY-CONTRACT backend/Gateway.
+
+| ID | Trạng thái | Kết quả |
+|---|---|---|
+| B5-01 — tạo Rx V1 | DONE local | HTTP 408/5xx không bị coi là validation; khóa draft, giữ snapshot/key và correlation. Chỉ explicit retry mới gửi lại nguyên intent, không fallback V0. |
+| B5-02 — tạo thuốc | DONE local | HTTP 408 đưa vào kết quả chưa rõ; giữ input, khóa field/handler và focus vùng lỗi sau pending. Không map detail của phản hồi chưa rõ thành lỗi field; có đường tra cứu danh mục. |
+| B5-03 — gửi Notification | DONE local | HTTP 408 khóa gửi để tra lịch sử, không resend/idempotency tự chế. Giữ correlation, focus feedback và không hiển thị validation giả từ timeout details. |
+| B5-04 — hủy/xuất Rx | DONE local | HTTP 408 đóng confirmation, GET trạng thái mới trước thao tác tiếp. Nếu GET lỗi, giữ evidence lệnh chưa rõ; explicit retry chỉ đọc, không hủy/xuất lại hoặc khẳng định effect. |
+| B5-05 — replay outbox | DONE local | HTTP 408/5xx/unreadable success hiển thị kết quả chưa rõ và focus cảnh báo, không focus nút gửi lại. Giữ event UUID; Enter trên cảnh báo không replay; chỉ explicit confirmation mới replay bodyless cùng event. |
+
+Pharmacy dùng helper context-local `mutationOutcome.ts` để đồng nhất 408, 5xx và status của success
+không đọc được; AdjustStock tái sử dụng nhưng giữ nguyên flow đối chiếu mục 12. Notification giữ
+classification trong feature riêng, không import chéo hoặc sửa shared transport/auth. Business 4xx,
+401/403 và known duplicate/stock conflict giữ semantics cũ. Public controllers/DTO/Gateway role matrix
+đã đối chiếu; wire/body/header và capability không đổi. Replay vẫn là requeue immutable event,
+không chứng minh consumer đã xử lý thành công.
+
+Thêm **13 ca hồi quy / 5 file**: Rx V1 2, tạo thuốc 3, Notification 2, terminal Rx 2, outbox 4.
+Red run **12 fail / 112 pass**, 27.82s, tái hiện lỗi ở cả năm nhóm; case Notification 504 đã đạt trước sửa.
+Sau sửa **124/124 trong 5 file**, 20.55s. Full suite candidate cuối **551/552 trong 55 file**,
+143.16s, exit 1; chỉ lỗi Lab đã có tại `LabDetail.test.tsx:194`, không có local diff Lab.
+Typecheck, lint và build đều **PASS, exit 0**; typecheck chạy trước build. Full suite bao gồm cả
+stock và Report regressions trước đó; Inpatient đạt. Commands/logs candidate cuối ở workboard.
+
+Không có browser hoặc signed Gateway acceptance mới; không mở profile/env/coverage, không đổi
+source ngoài Pharmacy/Notification và docs được giao, không tạo handoff mới. Tiến độ HF6 giữ
+**6/14 task, 39/56 subtask**; các tiêu chí runtime còn mở không được tick từ component fixtures.
+
+## 14. Nghiệm thu signed Gateway và browser — 2026-10-19
+
+Candidate `51eedfcd` trên `Huy` + working diff. Sau khi user khởi động Docker, chạy sáu business
+executables thật + Gateway/Eureka với PostgreSQL/RabbitMQ disposable; actual issuer staff login.
+Môi trường `63684242eda5`, manifest lúc 14:38 giờ địa phương. Không dùng mock Gateway hoặc fixture
+token cho các browser actors. [Evidence và ảnh](evidence/huy-six-service/2026-10-19/README.md)
+ghi rõ browser/API steps và các lần chạy lỗi trước đó.
+
+**Tiến độ: 10/14 task, 45/56 subtask.** Sáu tiêu chí mới là HF6-01.2, HF6-06.2/.3/.4,
+HF6-07.4 và HF6-10.3; đóng thêm bốn task HF6-01/06/07/10. Pharmacy/Report gốc đạt
+9/12 task, 41/48 tiêu chí; Notification giữ 1/2 task, 4/8 tiêu chí.
+
+| Task đóng mới | Bằng chứng trên candidate |
+|---|---|
+| HF6-01 | Source record/patient/doctor/department từ public workflow/Core responses; public Clinical order của visit test trả explicit episode. `DRUG` được Billing test allowlist xác nhận. Không suy episode từ appointment hoặc bắt production tạo Lab order. |
+| HF6-06 | DOCTOR browser tạo Rx V1; assigned-doctor cancel API 200/releasedReservations=1, foreign-doctor create/cancel và PHARMACIST cancel 403. DOCTOR dispense 403, unpaid dispense 422. CASHIER API thanh toán 30.000 VND; browser refresh rồi PHARMACIST xác nhận xuất. |
+| HF6-07 | Signed catalog/search/empty/page-size/deep link, ADMIN browser tạo thuốc và stock 5→12. Xuất Rx giảm stock 40→37; duplicate payment/dispense không thêm effect. Replay event có nguồn gốc giữ nguyên payload hash, stock 37, một Clinical attachment/Report journal/Notification notice/dispense slip trong kiểm tra quan sát. |
+| HF6-10 | V1 validation/tab/add-remove line/submit/loading, cancel/dispense focus/Escape/return-focus/status; Report invalid date/UUID/limit, empty, permission, unavailable/error focus và keyboard retry. Light/Dark/System, mobile 320px, tablet 768px, desktop 1366px có ảnh. Outpatient active view có component keyboard evidence mục 11; browser route vẫn OFF. |
+
+Rx browser `26161972-6b4e-433e-84a6-bc8d98d0f4c7`: payment không tự xuất, manual dispense chỉ
+một effect. Fresh read sau thanh toán đã phát hiện lỗi BE V1 chỉ đọc legacy receipts. Pharmacy nay
+đọc projection clearance VERIFIED đúng Rx/patient/episode, còn hạn và không future-dated; read-only,
+không lock/write/receipt giả. `paymentConfirmed` là chỉ báo xác nhận cục bộ, command xuất vẫn kiểm
+current Billing authority sau locks. DTO và FE guard không đổi.
+
+Report legacy DAILY/MONTHLY/TOP_MEDICINES qua Support thật: signed ADMIN 200, DOCTOR 403 ở cả
+ba API; browser ngày/tháng/top empty-zero và DOCTOR permission đạt. Tạm dừng riêng Support test
+để kiểm unavailable/correlation/focus, restart cùng stores/flags rồi Enter retry tải thành công.
+`MEDIFLOW_REPORT_OUTPATIENT_UI_ENABLED=false` suốt lượt; route outpatient chỉ status/backlink.
+Chưa accepted coverage, MANAGER, outpatient ON hoặc privacy Notification browser.
+
+Verification:
+
+- Focused backend đầu 40/40. Full Pharmacy đầu 846 tests/108 classes: zero assertion failures,
+  tám lỗi class-file ở event-writer suite khi IDE cùng ghi output; invocation exit 1.
+- Snapshot source-identical, hashes sáu Java files khớp: rerun service/persistence/event-writer
+  **48/48 PASS**, zero failures/errors/skips. Counts chồng nhau, không cộng vào 846.
+- Isolated reactor `clean package` với `maven.test.skip=true` **exit 0** để dựng fresh executables;
+  package không phải full regression run.
+- Opt-in `SixServiceOutpatientAcceptanceIT` browser hold **1/1 PASS, 770.5s, exit 0**, zero
+  failures/errors/skips. PASS bao gồm explicit verification commands; hold không chạy nhánh
+  standalone Support rollback. Nguồn khám và payment là public API, không gọi đây là all-browser E2E.
+- FE production không đổi trong lượt này: kết quả cuối mục 13 **551/552, 55 files**, lỗi Lab fixture
+  đã có `LabDetail.test.tsx:194`; typecheck/lint/production build PASS. Không ghi full FE xanh.
+
+Còn **HF6-09 (1/4), HF6-11 (1/4), HF6-12 (3/4), HF6-14 (0/4)**: accepted Report coverage và
+ADMIN/MANAGER/ON-OFF, workflow Report sau đối soát và session/privacy, signed Notification
+ADMIN/NURSE/PATIENT/manual IN_APP/lifecycle, rồi release cuối. Shared late-401 vẫn ở
+[handoff chung](../../docs/handoffs/HANDOFF-HUY-MVP.md); không mở shared auth scope trong lượt này.
+Đã STOP hold, dọn disposable processes/containers, dừng FE test và trả theme System/logout;
+Docker Desktop vẫn chạy. Chưa commit/push hoặc rollout production.
+
+## 15. Checkpoint PR #446: sửa dispense V1 theo runtime contract — 2026-10-19
 
 Base `5ccecf83` đã có PR #439 (clock/publisher) và #443 (Notification byte identity).
 Backend security và FE được tách thành hai PR. Phần FE chỉ sửa Pharmacy feature và route tương ứng;
@@ -531,7 +676,7 @@ Full FE lần đầu **529/532**: một lỗi Lab fixture và hai timeout Inpati
 với fixture hiện hành. Không sửa feature/test ngoài scope để làm xanh. Đây là kết quả unit/component,
 không phải browser acceptance và không tự đóng HF6.
 
-**Trạng thái nghiệm thu:** baseline master **6/14 task, 39/56 subtask**; proof mới bên dưới đóng
+**Trạng thái nghiệm thu tại checkpoint PR #446 (lịch sử, được mục 14 cập nhật):** baseline master **6/14 task, 39/56 subtask**; proof mới bên dưới đóng
 HF6-06.2/.3 thành **6/14 task, 41/56 subtask**. Không lấy kết quả
 browser cũ có sửa boolean backend làm bằng chứng cho candidate này. Report chưa có accepted
 outpatient coverage nên UI gate giữ OFF; Notification cần issuer PATIENT và cross-patient proof
@@ -551,7 +696,8 @@ NURSE browser đọc thông báo đơn/thu tiền/đã cấp thuốc đúng pati
 issuer PATIENT/cross-patient acceptance. NURSE bị chặn trang Report; ADMIN outpatient giữ unavailable
 khi UI gate OFF, không hiển thị số 0. Chưa chạy browser accepted Report coverage ADMIN/MANAGER,
 expired/revoked/Billing-down matrix, V0 signed runtime hoặc toàn bộ keyboard matrix; không đóng
-HF6-06.4/09/10.3/11/14 từ các proof một phần này.
+HF6-06.4/09/10.3/11/14 từ riêng các proof một phần này. Kết quả nghiệm thu tiếp theo
+và tiến độ hiện hành 10/14 task, 45/56 subtask được giữ ở mục 14.
 
 [Evidence candidate và giới hạn nghiệm thu](evidence/huy-six-service/2026-10-19-jwt-v1/README.md)
 chứa ảnh/AX, public response/correlation, source IDs, JAR hashes và local test overlay. Payment

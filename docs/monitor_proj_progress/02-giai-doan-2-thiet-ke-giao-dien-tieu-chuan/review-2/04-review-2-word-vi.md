@@ -167,7 +167,7 @@ Domain Java không phụ thuộc Spring/JPA; ports nằm ở application, adapte
 
 ### Chỉ định và trả kết quả xét nghiệm — V1 GATED
 
-**Phần 1/2 · A4 landscape**
+**Phần 1/2 · A4 portrait**
 
 ![Chỉ định và trả kết quả xét nghiệm — V1 GATED — Phần 1/2](word-compact/panels/png/08-vi-part-01.png)
 
@@ -340,21 +340,21 @@ ERD dưới đây là lát cắt vật lý của mỗi database, trích từ mig
 
 ### ERD — Lab
 
-**A4 landscape**
+**A4 portrait**
 
-![ERD — Lab](word-compact/landscape/png/18-vi.png)
+![ERD — Lab](word-compact/portrait/png/18-vi.png)
 
-[Mermaid](word-compact/landscape/mermaid/18-vi.mmd) · [SVG](word-compact/landscape/svg/18-vi.svg)
+[Mermaid](word-compact/portrait/mermaid/18-vi.mmd) · [SVG](word-compact/portrait/svg/18-vi.svg)
 
 [Original SVG](assets/svg/18-vi.svg) · [Portrait PNG](word-compact/portrait/png/18-vi.png) · [Landscape PNG](word-compact/landscape/png/18-vi.png)
 
 ### ERD — Pharmacy
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Pharmacy](word-compact/portrait/png/19-vi.png)
+![ERD — Pharmacy](word-compact/landscape/png/19-vi.png)
 
-[Mermaid](word-compact/portrait/mermaid/19-vi.mmd) · [SVG](word-compact/portrait/svg/19-vi.svg)
+[Mermaid](word-compact/landscape/mermaid/19-vi.mmd) · [SVG](word-compact/landscape/svg/19-vi.svg)
 
 [Original SVG](assets/svg/19-vi.svg) · [Portrait PNG](word-compact/portrait/png/19-vi.png) · [Landscape PNG](word-compact/landscape/png/19-vi.png)
 
@@ -372,7 +372,7 @@ ERD dưới đây là lát cắt vật lý của mỗi database, trích từ mig
 
 [Mermaid](word-compact/panels/mermaid/20-vi-part-02.mmd) · [SVG](word-compact/panels/svg/20-vi-part-02.svg)
 
-**Phần 3/4 · A4 portrait**
+**Phần 3/4 · A4 landscape**
 
 ![ERD — Billing — Phần 3/4](word-compact/panels/png/20-vi-part-03.png)
 
@@ -398,11 +398,11 @@ ERD dưới đây là lát cắt vật lý của mỗi database, trích từ mig
 
 ### ERD — Report
 
-**A4 portrait**
+**A4 landscape**
 
-![ERD — Report](word-compact/portrait/png/22-vi.png)
+![ERD — Report](word-compact/landscape/png/22-vi.png)
 
-[Mermaid](word-compact/portrait/mermaid/22-vi.mmd) · [SVG](word-compact/portrait/svg/22-vi.svg)
+[Mermaid](word-compact/landscape/mermaid/22-vi.mmd) · [SVG](word-compact/landscape/svg/22-vi.svg)
 
 [Original SVG](assets/svg/22-vi.svg) · [Portrait PNG](word-compact/portrait/png/22-vi.png) · [Landscape PNG](word-compact/landscape/png/22-vi.png)
 Cardinality bổ sung từ unique index: một appointment có tối đa một medical_record (`uq_medical_record_appointment`); một prescription có tối đa một dispense_slip; một financial_clearance ứng với một payment_request. Report là read model có UUID nguồn, không FK về Billing/Pharmacy. Trường `invoice_id` trong PAYMENT_REQUEST không được suy thành FK tới bảng INVOICE V0.
@@ -1085,11 +1085,11 @@ Chọn các bảng của hành trình ngoại trú. Kiểu/ràng buộc cột đ
 
 ### Triển khai database: một server phát triển, tám authority
 
-**A4 portrait**
+**A4 landscape**
 
-![Triển khai database: một server phát triển, tám authority](word-compact/portrait/png/23-vi.png)
+![Triển khai database: một server phát triển, tám authority](word-compact/landscape/png/23-vi.png)
 
-[Mermaid](word-compact/portrait/mermaid/23-vi.mmd) · [SVG](word-compact/portrait/svg/23-vi.svg)
+[Mermaid](word-compact/landscape/mermaid/23-vi.mmd) · [SVG](word-compact/landscape/svg/23-vi.svg)
 
 [Original SVG](assets/svg/23-vi.svg) · [Portrait PNG](word-compact/portrait/png/23-vi.png) · [Landscape PNG](word-compact/landscape/png/23-vi.png)
 
@@ -1099,11 +1099,11 @@ Sitemap lấy từ `frontend/src/app/**/page.tsx` và `mobile/lib/app/router.dar
 
 ### Sitemap web theo nhóm route
 
-**A4 portrait**
+**A4 landscape**
 
-![Sitemap web theo nhóm route](word-compact/portrait/png/24-vi.png)
+![Sitemap web theo nhóm route](word-compact/landscape/png/24-vi.png)
 
-[Mermaid](word-compact/portrait/mermaid/24-vi.mmd) · [SVG](word-compact/portrait/svg/24-vi.svg)
+[Mermaid](word-compact/landscape/mermaid/24-vi.mmd) · [SVG](word-compact/landscape/svg/24-vi.svg)
 
 [Original SVG](assets/svg/24-vi.svg) · [Portrait PNG](word-compact/portrait/png/24-vi.png) · [Landscape PNG](word-compact/landscape/png/24-vi.png)
 
@@ -1162,11 +1162,11 @@ Sitemap lấy từ `frontend/src/app/**/page.tsx` và `mobile/lib/app/router.dar
 
 ### Sitemap mobile và mức triển khai
 
-**A4 landscape**
+**A4 portrait**
 
-![Sitemap mobile và mức triển khai](word-compact/landscape/png/25-vi.png)
+![Sitemap mobile và mức triển khai](word-compact/portrait/png/25-vi.png)
 
-[Mermaid](word-compact/landscape/mermaid/25-vi.mmd) · [SVG](word-compact/landscape/svg/25-vi.svg)
+[Mermaid](word-compact/portrait/mermaid/25-vi.mmd) · [SVG](word-compact/portrait/svg/25-vi.svg)
 
 [Original SVG](assets/svg/25-vi.svg) · [Portrait PNG](word-compact/portrait/png/25-vi.png) · [Landscape PNG](word-compact/landscape/png/25-vi.png)
 Loading/error/empty/retry phải rõ; 401 yêu cầu đăng nhập lại, không tự gửi lại mutation chưa biết kết quả. UI role gating chỉ hỗ trợ UX. Flutter có real login và read-only Appointment/Lab, các workspace còn lại không được mô tả như native app đã hoàn tất.

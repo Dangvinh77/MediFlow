@@ -92,6 +92,11 @@ rollback and cutover acceptance run: its early return skips that branch. Vinh ow
 
 ## Verdict and remaining acceptance
 
+This section records the original PR #446 checkpoint. Later acceptance and the current
+**10/14 tasks, 45/56 subtasks** are tracked in [plan section 14](../../../huy-six-service-frontend-plan.md#14-nghiệm-thu-signed-gateway-và-browser--2026-10-19).
+The merge with master preserves that newer progress and the feature-local uncertain-mutation
+helper; the historical runtime evidence below does not replace the later acceptance record.
+
 The blocking V1 boolean defect is fixed and demonstrated with a paid real prescription whose GET
 still returns false. This closes HF6-06.2/.3 only: **6/14 task, 41/56 subtask**. Handoffs remain OPEN.
 

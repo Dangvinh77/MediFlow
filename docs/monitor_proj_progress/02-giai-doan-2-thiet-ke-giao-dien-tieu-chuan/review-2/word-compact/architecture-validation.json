@@ -1,10 +1,118 @@
 {
-  "architectureSourcesChecked": 12,
-  "checks": [
-    "Client side / Server side",
-    "Request / response",
-    "No numeric deployment ports",
-    "Embedded side icons"
-  ],
-  "errors": []
+  "architectureSourcesChecked": 8,
+  "errors": [],
+  "results": [
+    {
+      "file": "portrait/mermaid/01-en.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "224dfff5c361faa3efa00efe3757372a820b7a1b5a7c38086888254a598a6766",
+      "svgSha256": "fbd68e1229b05fd93f0c035970a52119fc28b61c888559c87e89676c8dbbe3d5",
+      "pngSha256": "e85be47c230be448618a0ee5c2848e8753df0cfcefbbfc8af87e24816c351188"
+    },
+    {
+      "file": "portrait/mermaid/01-vi.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "2d79dcdba448ad28b749adc2dc8244b6b7ada988441499fa451f219a0633a480",
+      "svgSha256": "a2826e82e6cf6aff200208a672cd46f9f5e747bcbb047c6f3b7d35d1298b3351",
+      "pngSha256": "e9d84579df66924e2eb39c97e87287912eadf7ffbbc24d62af045fbeea28a75a"
+    },
+    {
+      "file": "portrait/mermaid/03-en.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "bdcdef190b6101a54b17e0a48a5820e9cb17fd1d122dc027353a2122bebdff51",
+      "svgSha256": "5eb42620874f079e0c1e152e8a92283e769b7b1b8353162ac522fb7a825cae21",
+      "pngSha256": "29de0026bcfd03bd1d3a54c4665d7814c1094dcd35e35283abe9df647dcc2747"
+    },
+    {
+      "file": "portrait/mermaid/03-vi.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "bfc6727aabf0bed45c02756272b4b41dbc55b478fbca4e079328f5c7647899bd",
+      "svgSha256": "666a54a33f95b69122ddb3fe1b368847e66d92b5d1018b2f80dd0a863ff0f3b0",
+      "pngSha256": "c6f013ee6ea4c2553aff4f17eb8f099f1c8d6a6b3ad51bb44abc26e1d1628474"
+    },
+    {
+      "file": "landscape/mermaid/01-en.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "ea39b45aa974b2f2fa704d1f4ff1717bd300a622cee8a0b57c7a28e1371fc02c",
+      "svgSha256": "0820c8bd1bb9ffc947bd75411edf2447177bc438dcf60f5d24e04a69b3da81c4",
+      "pngSha256": "f40cf5df9da4f8582dc6aaa6981257e7b245386739836438dd2e146c31ceace5"
+    },
+    {
+      "file": "landscape/mermaid/01-vi.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "fe6f46cc9f367a106638f1c78457278ca15d4331fbf7ab8ba14df4ce7e199d44",
+      "svgSha256": "480322bc674cf840f205026627f44b80c216b056a18fee949b1efcb794c59f98",
+      "pngSha256": "342f5ebac893ba72454d1eaf9e360beff6aff96b54bded6fdd3d5bd67d5b525b"
+    },
+    {
+      "file": "landscape/mermaid/03-en.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "4573aded930bbc7801116f4b594b5c06cdfbc72947dd1b104c2c58463c489f58",
+      "svgSha256": "89dee86a4bcc9f62be2af5a4a40eb455aca0f341863a510f30a8c02fe11bbd90",
+      "pngSha256": "ee3b1f6f869f5cfb648dcc0a53fbd2528ecdada1a557dfcc1499c45d94784502"
+    },
+    {
+      "file": "landscape/mermaid/03-vi.mmd",
+      "checks": {
+        "clientSide": true,
+        "serverSide": true,
+        "request": true,
+        "response": true,
+        "noNumericPorts": true,
+        "sideIcons": true
+      },
+      "sourceSha256": "dcfa108a6001078976437d2ac266c9ad1fe6dbc17c24fedaeb01c26767802e4e",
+      "svgSha256": "30858719fabb11bc917dc4c307af8f798aef7f06d9ddfa1f2ea12a5394f22ba0",
+      "pngSha256": "984d087bc9d126c7bb9f06021008e81934b44ed1cee936a88497c04fe25f0ebb"
+    }
+  ]
 }

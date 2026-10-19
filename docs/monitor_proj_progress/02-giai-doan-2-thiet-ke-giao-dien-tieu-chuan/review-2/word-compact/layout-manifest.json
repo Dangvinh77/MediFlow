@@ -12,6 +12,8 @@
     ]
   },
   "textEstimate": "Conservative 16px base text scaled to page bounds; actual font sizes vary",
+  "layoutRule": "Portrait and landscape are authored independently; Patient ERD is a single-table exception",
+  "rasterization": "PNG captured from the saved standalone SVG after font/image decode; no global CSS overrides",
   "diagrams": [
     {
       "id": "01-en",
@@ -21,29 +23,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1068.265625,
-          "height": 1089.96875,
-          "estimatedTextPt": 6.8
+          "width": 1141,
+          "height": 1238,
+          "estimatedTextPt": 6.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1068.265625,
-          "height": 1089.96875,
-          "estimatedTextPt": 6.2
+          "candidate": "landscape",
+          "width": 2543,
+          "height": 605,
+          "estimatedTextPt": 4.4
         }
       },
       "panels": [
         {
           "id": "01-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.2
+          "estimatedTextPt": 11.0
         },
         {
           "id": "01-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 10.7
+          "estimatedTextPt": 9.8
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "01-vi",
@@ -53,29 +56,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1068.265625,
-          "height": 1089.96875,
-          "estimatedTextPt": 6.8
+          "width": 1141,
+          "height": 1238,
+          "estimatedTextPt": 6.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1068.265625,
-          "height": 1089.96875,
-          "estimatedTextPt": 6.2
+          "candidate": "landscape",
+          "width": 2543,
+          "height": 605,
+          "estimatedTextPt": 4.4
         }
       },
       "panels": [
         {
           "id": "01-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.2
+          "estimatedTextPt": 11.0
         },
         {
           "id": "01-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 10.7
+          "estimatedTextPt": 9.8
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "02-en",
@@ -85,18 +89,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 319.4375,
-          "height": 654.609375,
-          "estimatedTextPt": 15.9
+          "width": 368,
+          "height": 783,
+          "estimatedTextPt": 13.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 578.5,
-          "height": 427.625,
-          "estimatedTextPt": 15.9
+          "width": 663,
+          "height": 524,
+          "estimatedTextPt": 13.0
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "02-vi",
@@ -106,112 +111,115 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 319.4375,
-          "height": 654.609375,
-          "estimatedTextPt": 15.9
+          "width": 368,
+          "height": 783,
+          "estimatedTextPt": 13.3
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 578.5,
-          "height": 427.625,
-          "estimatedTextPt": 15.9
+          "width": 663,
+          "height": 524,
+          "estimatedTextPt": 13.0
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "03-en",
       "title": "Application architecture and dependency direction",
-      "recommended": "landscape",
+      "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 3460.25390625,
-          "height": 2692.649169921875,
-          "estimatedTextPt": 2.1
+          "width": 3642,
+          "height": 3169,
+          "estimatedTextPt": 2.0
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 3460.25390625,
-          "height": 2692.649169921875,
-          "estimatedTextPt": 2.5
+          "candidate": "landscape",
+          "width": 8453,
+          "height": 1416,
+          "estimatedTextPt": 1.3
         }
       },
       "panels": [
         {
           "id": "03-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 14.8
+          "estimatedTextPt": 13.3
         },
         {
           "id": "03-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 15.3
+          "estimatedTextPt": 13.9
         },
         {
           "id": "03-en-part-03",
           "orientation": "portrait",
-          "estimatedTextPt": 7.8
+          "estimatedTextPt": 7.2
         },
         {
           "id": "03-en-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 9.4
+          "estimatedTextPt": 8.6
         },
         {
           "id": "03-en-part-05",
           "orientation": "portrait",
-          "estimatedTextPt": 9.1
+          "estimatedTextPt": 8.3
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "03-vi",
       "title": "Kiến trúc ứng dụng và chiều phụ thuộc",
-      "recommended": "landscape",
+      "recommended": "portrait",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 3460.25390625,
-          "height": 2692.649169921875,
-          "estimatedTextPt": 2.1
+          "width": 3642,
+          "height": 3169,
+          "estimatedTextPt": 2.0
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 3460.25390625,
-          "height": 2692.649169921875,
-          "estimatedTextPt": 2.5
+          "candidate": "landscape",
+          "width": 8453,
+          "height": 1416,
+          "estimatedTextPt": 1.3
         }
       },
       "panels": [
         {
           "id": "03-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 14.8
+          "estimatedTextPt": 13.3
         },
         {
           "id": "03-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 15.3
+          "estimatedTextPt": 13.9
         },
         {
           "id": "03-vi-part-03",
           "orientation": "portrait",
-          "estimatedTextPt": 7.8
+          "estimatedTextPt": 7.2
         },
         {
           "id": "03-vi-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 9.4
+          "estimatedTextPt": 8.6
         },
         {
           "id": "03-vi-part-05",
           "orientation": "portrait",
-          "estimatedTextPt": 9.1
+          "estimatedTextPt": 8.3
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "04-en",
@@ -221,18 +229,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 409.8570251464844,
-          "height": 485.328125,
-          "estimatedTextPt": 17.7
+          "width": 491,
+          "height": 636,
+          "estimatedTextPt": 14.8
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 409.8570251464844,
-          "height": 485.328125,
-          "estimatedTextPt": 14.0
+          "candidate": "landscape",
+          "width": 1230,
+          "height": 517,
+          "estimatedTextPt": 9.1
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "04-vi",
@@ -242,18 +251,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 451.7025146484375,
-          "height": 499.9140625,
-          "estimatedTextPt": 16.1
+          "width": 534,
+          "height": 648,
+          "estimatedTextPt": 13.6
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 451.7025146484375,
-          "height": 499.9140625,
-          "estimatedTextPt": 13.6
+          "candidate": "landscape",
+          "width": 1332,
+          "height": 544,
+          "estimatedTextPt": 8.4
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "05-en",
@@ -263,18 +273,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 456.8882751464844,
-          "height": 558.0703125,
-          "estimatedTextPt": 15.9
+          "width": 539,
+          "height": 727,
+          "estimatedTextPt": 13.5
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 456.8882751464844,
-          "height": 558.0703125,
-          "estimatedTextPt": 12.2
+          "candidate": "landscape",
+          "width": 1193,
+          "height": 544,
+          "estimatedTextPt": 9.4
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "05-vi",
@@ -284,18 +295,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 473.6243896484375,
-          "height": 578.3203125,
-          "estimatedTextPt": 15.3
+          "width": 555,
+          "height": 747,
+          "estimatedTextPt": 13.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 473.6243896484375,
-          "height": 578.3203125,
-          "estimatedTextPt": 11.8
+          "candidate": "landscape",
+          "width": 1211,
+          "height": 544,
+          "estimatedTextPt": 9.3
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "06-en",
@@ -305,18 +317,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 742.0,
-          "height": 904.0,
-          "estimatedTextPt": 9.8
+          "width": 834,
+          "height": 1075,
+          "estimatedTextPt": 8.7
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 742.0,
-          "height": 904.0,
-          "estimatedTextPt": 7.5
+          "candidate": "landscape",
+          "width": 1286,
+          "height": 990,
+          "estimatedTextPt": 6.9
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "06-vi",
@@ -326,18 +339,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 742.0,
-          "height": 904.0,
-          "estimatedTextPt": 9.8
+          "width": 834,
+          "height": 1075,
+          "estimatedTextPt": 8.7
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 742.0,
-          "height": 904.0,
-          "estimatedTextPt": 7.5
+          "candidate": "landscape",
+          "width": 1286,
+          "height": 990,
+          "estimatedTextPt": 6.9
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "07-en",
@@ -347,29 +361,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 739.0,
-          "height": 1489.0,
-          "estimatedTextPt": 7.0
+          "width": 826,
+          "height": 1505,
+          "estimatedTextPt": 6.9
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 739.0,
-          "height": 1489.0,
-          "estimatedTextPt": 4.6
+          "candidate": "landscape",
+          "width": 1272,
+          "height": 1420,
+          "estimatedTextPt": 4.8
         }
       },
       "panels": [
         {
           "id": "07-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 9.8
+          "estimatedTextPt": 10.0
         },
         {
           "id": "07-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 9.9
+          "estimatedTextPt": 10.1
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "07-vi",
@@ -379,29 +394,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 739.0,
-          "height": 1489.0,
-          "estimatedTextPt": 7.0
+          "width": 826,
+          "height": 1505,
+          "estimatedTextPt": 6.9
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 739.0,
-          "height": 1489.0,
-          "estimatedTextPt": 4.6
+          "candidate": "landscape",
+          "width": 1272,
+          "height": 1420,
+          "estimatedTextPt": 4.8
         }
       },
       "panels": [
         {
           "id": "07-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 9.8
+          "estimatedTextPt": 10.0
         },
         {
           "id": "07-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 9.9
+          "estimatedTextPt": 10.1
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "08-en",
@@ -411,29 +427,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1041.0,
-          "height": 1405.0,
-          "estimatedTextPt": 7.0
+          "width": 1183,
+          "height": 1497,
+          "estimatedTextPt": 6.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1041.0,
-          "height": 1405.0,
-          "estimatedTextPt": 4.8
+          "candidate": "landscape",
+          "width": 1828,
+          "height": 1395,
+          "estimatedTextPt": 4.9
         }
       },
       "panels": [
         {
           "id": "08-en-part-01",
-          "orientation": "landscape",
-          "estimatedTextPt": 8.4
+          "orientation": "portrait",
+          "estimatedTextPt": 7.1
         },
         {
           "id": "08-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 10.1
+          "estimatedTextPt": 8.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "08-vi",
@@ -443,29 +460,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1041.0,
-          "height": 1405.0,
-          "estimatedTextPt": 7.0
+          "width": 1183,
+          "height": 1497,
+          "estimatedTextPt": 6.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1041.0,
-          "height": 1405.0,
-          "estimatedTextPt": 4.8
+          "candidate": "landscape",
+          "width": 1828,
+          "height": 1395,
+          "estimatedTextPt": 4.9
         }
       },
       "panels": [
         {
           "id": "08-vi-part-01",
-          "orientation": "landscape",
-          "estimatedTextPt": 8.4
+          "orientation": "portrait",
+          "estimatedTextPt": 7.1
         },
         {
           "id": "08-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 10.1
+          "estimatedTextPt": 8.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "09-en",
@@ -475,18 +493,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 751.0,
-          "height": 1301.0,
-          "estimatedTextPt": 8.0
+          "width": 845,
+          "height": 1426,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 751.0,
-          "height": 1301.0,
-          "estimatedTextPt": 5.2
+          "candidate": "landscape",
+          "width": 1285,
+          "height": 1259,
+          "estimatedTextPt": 5.4
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "09-vi",
@@ -496,18 +515,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 751.0,
-          "height": 1301.0,
-          "estimatedTextPt": 8.0
+          "width": 845,
+          "height": 1426,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 751.0,
-          "height": 1301.0,
-          "estimatedTextPt": 5.2
+          "candidate": "landscape",
+          "width": 1285,
+          "height": 1259,
+          "estimatedTextPt": 5.4
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "10-en",
@@ -517,18 +537,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 930.939453125,
-          "height": 872.0,
-          "estimatedTextPt": 7.8
+          "width": 964,
+          "height": 905,
+          "estimatedTextPt": 7.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1364.7734375,
-          "height": 608.0,
-          "estimatedTextPt": 8.2
+          "width": 1397,
+          "height": 640,
+          "estimatedTextPt": 8.0
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "10-vi",
@@ -538,18 +559,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 930.939453125,
-          "height": 872.0,
-          "estimatedTextPt": 7.8
+          "width": 964,
+          "height": 905,
+          "estimatedTextPt": 7.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1364.7734375,
-          "height": 608.0,
-          "estimatedTextPt": 8.2
+          "width": 1397,
+          "height": 640,
+          "estimatedTextPt": 8.0
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "11-en",
@@ -559,29 +581,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1424.837890625,
-          "height": 1129.0,
-          "estimatedTextPt": 5.1
+          "width": 1458,
+          "height": 1162,
+          "estimatedTextPt": 5.0
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1845.9453125,
-          "height": 850.5,
-          "estimatedTextPt": 6.1
+          "width": 1878,
+          "height": 883,
+          "estimatedTextPt": 6.0
         }
       },
       "panels": [
         {
           "id": "11-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 8.2
+          "estimatedTextPt": 7.9
         },
         {
           "id": "11-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 14.1
+          "estimatedTextPt": 13.5
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "11-vi",
@@ -591,29 +614,30 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1424.837890625,
-          "height": 1129.0,
-          "estimatedTextPt": 5.1
+          "width": 1458,
+          "height": 1162,
+          "estimatedTextPt": 5.0
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1845.9453125,
-          "height": 850.5,
-          "estimatedTextPt": 6.1
+          "width": 1878,
+          "height": 883,
+          "estimatedTextPt": 6.0
         }
       },
       "panels": [
         {
           "id": "11-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 8.2
+          "estimatedTextPt": 7.9
         },
         {
           "id": "11-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 14.1
+          "estimatedTextPt": 13.5
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "12-en",
@@ -623,18 +647,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 985.109375,
-          "height": 318.2537841796875,
-          "estimatedTextPt": 7.4
+          "width": 998,
+          "height": 820,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 985.109375,
-          "height": 318.2537841796875,
-          "estimatedTextPt": 11.4
+          "candidate": "landscape",
+          "width": 1289,
+          "height": 493,
+          "estimatedTextPt": 8.7
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "12-vi",
@@ -644,18 +669,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 981.25,
-          "height": 342.0086975097656,
-          "estimatedTextPt": 7.4
+          "width": 997,
+          "height": 874,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 981.25,
-          "height": 342.0086975097656,
-          "estimatedTextPt": 11.4
+          "candidate": "landscape",
+          "width": 1316,
+          "height": 520,
+          "estimatedTextPt": 8.5
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "13-en",
@@ -665,54 +691,55 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 2157.390625,
-          "height": 1260.5245361328125,
-          "estimatedTextPt": 3.4
+          "width": 3077,
+          "height": 1004,
+          "estimatedTextPt": 2.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 2157.390625,
-          "height": 1260.5245361328125,
-          "estimatedTextPt": 5.2
+          "candidate": "landscape",
+          "width": 2330,
+          "height": 1446,
+          "estimatedTextPt": 4.7
         }
       },
       "panels": [
         {
           "id": "13-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 11.3
+          "estimatedTextPt": 10.9
         },
         {
           "id": "13-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.4
+          "estimatedTextPt": 12.8
         },
         {
           "id": "13-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 11.8
+          "estimatedTextPt": 11.2
         },
         {
           "id": "13-en-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 14.8
+          "estimatedTextPt": 13.4
         },
         {
           "id": "13-en-part-05",
           "orientation": "landscape",
-          "estimatedTextPt": 10.2
+          "estimatedTextPt": 9.9
         },
         {
           "id": "13-en-part-06",
           "orientation": "landscape",
-          "estimatedTextPt": 12.8
+          "estimatedTextPt": 12.3
         },
         {
           "id": "13-en-part-07",
           "orientation": "portrait",
-          "estimatedTextPt": 28.6
+          "estimatedTextPt": 23.9
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "13-vi",
@@ -722,54 +749,55 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 2157.390625,
-          "height": 1260.5245361328125,
-          "estimatedTextPt": 3.4
+          "width": 3077,
+          "height": 1004,
+          "estimatedTextPt": 2.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 2157.390625,
-          "height": 1260.5245361328125,
-          "estimatedTextPt": 5.2
+          "candidate": "landscape",
+          "width": 2330,
+          "height": 1446,
+          "estimatedTextPt": 4.7
         }
       },
       "panels": [
         {
           "id": "13-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 11.3
+          "estimatedTextPt": 10.9
         },
         {
           "id": "13-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 13.4
+          "estimatedTextPt": 12.8
         },
         {
           "id": "13-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 11.8
+          "estimatedTextPt": 11.2
         },
         {
           "id": "13-vi-part-04",
           "orientation": "landscape",
-          "estimatedTextPt": 14.8
+          "estimatedTextPt": 13.4
         },
         {
           "id": "13-vi-part-05",
           "orientation": "landscape",
-          "estimatedTextPt": 10.2
+          "estimatedTextPt": 9.9
         },
         {
           "id": "13-vi-part-06",
           "orientation": "landscape",
-          "estimatedTextPt": 12.8
+          "estimatedTextPt": 12.3
         },
         {
           "id": "13-vi-part-07",
           "orientation": "portrait",
-          "estimatedTextPt": 28.6
+          "estimatedTextPt": 23.9
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "14-en",
@@ -779,34 +807,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 683.22265625,
-          "height": 1798.8099365234375,
-          "estimatedTextPt": 5.8
+          "width": 746,
+          "height": 2007,
+          "estimatedTextPt": 5.2
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 683.22265625,
-          "height": 1798.8099365234375,
-          "estimatedTextPt": 3.8
+          "candidate": "landscape",
+          "width": 3235,
+          "height": 392,
+          "estimatedTextPt": 3.5
         }
       },
       "panels": [
         {
           "id": "14-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.9
+          "estimatedTextPt": 12.1
         },
         {
           "id": "14-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 12.2
+          "estimatedTextPt": 11.5
         },
         {
           "id": "14-en-part-03",
           "orientation": "portrait",
-          "estimatedTextPt": 23.7
+          "estimatedTextPt": 21.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "14-vi",
@@ -816,34 +845,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 683.22265625,
-          "height": 1798.8099365234375,
-          "estimatedTextPt": 5.8
+          "width": 746,
+          "height": 2007,
+          "estimatedTextPt": 5.2
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 683.22265625,
-          "height": 1798.8099365234375,
-          "estimatedTextPt": 3.8
+          "candidate": "landscape",
+          "width": 3235,
+          "height": 392,
+          "estimatedTextPt": 3.5
         }
       },
       "panels": [
         {
           "id": "14-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.9
+          "estimatedTextPt": 12.1
         },
         {
           "id": "14-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 12.2
+          "estimatedTextPt": 11.5
         },
         {
           "id": "14-vi-part-03",
           "orientation": "portrait",
-          "estimatedTextPt": 23.7
+          "estimatedTextPt": 21.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "15-en",
@@ -853,18 +883,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 480.1640625,
-          "height": 552.5,
-          "estimatedTextPt": 15.1
+          "width": 631,
+          "height": 609,
+          "estimatedTextPt": 11.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 906.765625,
-          "height": 314.5,
-          "estimatedTextPt": 12.4
+          "width": 1169,
+          "height": 370,
+          "estimatedTextPt": 9.6
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "15-vi",
@@ -874,18 +905,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 480.1640625,
-          "height": 552.5,
-          "estimatedTextPt": 15.1
+          "width": 631,
+          "height": 609,
+          "estimatedTextPt": 11.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 906.765625,
-          "height": 314.5,
-          "estimatedTextPt": 12.4
+          "width": 1169,
+          "height": 370,
+          "estimatedTextPt": 9.6
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "16-en",
@@ -895,18 +927,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 182.125,
-          "height": 95.0,
-          "estimatedTextPt": 39.8
+          "width": 275,
+          "height": 127,
+          "estimatedTextPt": 26.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 182.125,
-          "height": 95.0,
-          "estimatedTextPt": 61.5
+          "candidate": "landscape",
+          "width": 275,
+          "height": 127,
+          "estimatedTextPt": 40.7
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": true
     },
     {
       "id": "16-vi",
@@ -916,18 +949,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 182.125,
-          "height": 95.0,
-          "estimatedTextPt": 39.8
+          "width": 275,
+          "height": 127,
+          "estimatedTextPt": 26.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 182.125,
-          "height": 95.0,
-          "estimatedTextPt": 61.5
+          "candidate": "landscape",
+          "width": 275,
+          "height": 127,
+          "estimatedTextPt": 40.7
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": true
     },
     {
       "id": "17-en",
@@ -937,18 +971,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 831.46875,
-          "height": 1145.0,
-          "estimatedTextPt": 8.7
+          "width": 1060,
+          "height": 1201,
+          "estimatedTextPt": 6.8
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1093.609375,
-          "height": 918.375,
-          "estimatedTextPt": 7.4
+          "width": 1356,
+          "height": 997,
+          "estimatedTextPt": 6.8
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "17-vi",
@@ -958,186 +993,193 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 831.46875,
-          "height": 1145.0,
-          "estimatedTextPt": 8.7
+          "width": 1060,
+          "height": 1201,
+          "estimatedTextPt": 6.8
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1093.609375,
-          "height": 918.375,
-          "estimatedTextPt": 7.4
+          "width": 1356,
+          "height": 997,
+          "estimatedTextPt": 6.8
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "18-en",
       "title": "ERD — Lab",
-      "recommended": "landscape",
+      "recommended": "portrait",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 470.25,
-          "height": 936.0,
-          "estimatedTextPt": 11.1
+          "width": 631,
+          "height": 980,
+          "estimatedTextPt": 10.6
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 687.59375,
-          "height": 599.75,
-          "estimatedTextPt": 11.3
+          "width": 865,
+          "height": 646,
+          "estimatedTextPt": 10.5
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "18-vi",
       "title": "ERD — Lab",
+      "recommended": "portrait",
+      "usePanels": false,
+      "variants": {
+        "portrait": {
+          "candidate": "portrait",
+          "width": 631,
+          "height": 980,
+          "estimatedTextPt": 10.6
+        },
+        "landscape": {
+          "candidate": "landscape",
+          "width": 865,
+          "height": 646,
+          "estimatedTextPt": 10.5
+        }
+      },
+      "panels": [],
+      "singleEntity": false
+    },
+    {
+      "id": "19-en",
+      "title": "ERD — Pharmacy",
       "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 470.25,
-          "height": 936.0,
-          "estimatedTextPt": 11.1
+          "width": 1013,
+          "height": 783,
+          "estimatedTextPt": 7.2
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 687.59375,
-          "height": 599.75,
-          "estimatedTextPt": 11.3
+          "width": 840,
+          "height": 810,
+          "estimatedTextPt": 8.4
         }
       },
-      "panels": []
-    },
-    {
-      "id": "19-en",
-      "title": "ERD — Pharmacy",
-      "recommended": "portrait",
-      "usePanels": false,
-      "variants": {
-        "portrait": {
-          "candidate": "portrait",
-          "width": 661.3125,
-          "height": 730.0,
-          "estimatedTextPt": 11.0
-        },
-        "landscape": {
-          "candidate": "portrait",
-          "width": 661.3125,
-          "height": 730.0,
-          "estimatedTextPt": 9.3
-        }
-      },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "19-vi",
       "title": "ERD — Pharmacy",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 661.3125,
-          "height": 730.0,
-          "estimatedTextPt": 11.0
+          "width": 1013,
+          "height": 783,
+          "estimatedTextPt": 7.2
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 661.3125,
-          "height": 730.0,
-          "estimatedTextPt": 9.3
+          "candidate": "landscape",
+          "width": 840,
+          "height": 810,
+          "estimatedTextPt": 8.4
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "20-en",
       "title": "ERD — Billing",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1174.36328125,
-          "height": 1484.1500244140625,
-          "estimatedTextPt": 6.2
+          "width": 1437,
+          "height": 1566,
+          "estimatedTextPt": 5.0
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1638.6187744140625,
-          "height": 1162.75,
-          "estimatedTextPt": 5.9
+          "width": 2012,
+          "height": 1248,
+          "estimatedTextPt": 5.5
         }
       },
       "panels": [
         {
           "id": "20-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 11.5
+          "estimatedTextPt": 9.5
         },
         {
           "id": "20-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.2
+          "estimatedTextPt": 8.8
         },
         {
           "id": "20-en-part-03",
-          "orientation": "portrait",
-          "estimatedTextPt": 11.9
+          "orientation": "landscape",
+          "estimatedTextPt": 9.7
         },
         {
           "id": "20-en-part-04",
           "orientation": "portrait",
-          "estimatedTextPt": 12.4
+          "estimatedTextPt": 9.9
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "20-vi",
       "title": "ERD — Billing",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": true,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1174.36328125,
-          "height": 1484.1500244140625,
-          "estimatedTextPt": 6.2
+          "width": 1437,
+          "height": 1566,
+          "estimatedTextPt": 5.0
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1638.6187744140625,
-          "height": 1162.75,
-          "estimatedTextPt": 5.9
+          "width": 2012,
+          "height": 1248,
+          "estimatedTextPt": 5.5
         }
       },
       "panels": [
         {
           "id": "20-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 11.5
+          "estimatedTextPt": 9.5
         },
         {
           "id": "20-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 9.2
+          "estimatedTextPt": 8.8
         },
         {
           "id": "20-vi-part-03",
-          "orientation": "portrait",
-          "estimatedTextPt": 11.9
+          "orientation": "landscape",
+          "estimatedTextPt": 9.7
         },
         {
           "id": "20-vi-part-04",
           "orientation": "portrait",
-          "estimatedTextPt": 12.4
+          "estimatedTextPt": 9.9
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "21-en",
@@ -1147,18 +1189,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 262.140625,
-          "height": 393.5,
-          "estimatedTextPt": 26.5
+          "width": 355,
+          "height": 444,
+          "estimatedTextPt": 20.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 441.234375,
-          "height": 292.5,
-          "estimatedTextPt": 23.3
+          "width": 611,
+          "height": 325,
+          "estimatedTextPt": 18.3
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "21-vi",
@@ -1168,230 +1211,239 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 262.140625,
-          "height": 393.5,
-          "estimatedTextPt": 26.5
+          "width": 355,
+          "height": 444,
+          "estimatedTextPt": 20.4
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 441.234375,
-          "height": 292.5,
-          "estimatedTextPt": 23.3
+          "width": 611,
+          "height": 325,
+          "estimatedTextPt": 18.3
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "22-en",
       "title": "ERD — Report",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 293.171875,
-          "height": 933.5,
-          "estimatedTextPt": 11.2
+          "width": 690,
+          "height": 642,
+          "estimatedTextPt": 10.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1161.671875,
-          "height": 292.5,
-          "estimatedTextPt": 9.6
+          "width": 993,
+          "height": 562,
+          "estimatedTextPt": 11.3
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "22-vi",
       "title": "ERD — Report",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 293.171875,
-          "height": 933.5,
-          "estimatedTextPt": 11.2
+          "width": 690,
+          "height": 642,
+          "estimatedTextPt": 10.5
         },
         "landscape": {
           "candidate": "landscape",
-          "width": 1161.671875,
-          "height": 292.5,
-          "estimatedTextPt": 9.6
+          "width": 993,
+          "height": 562,
+          "estimatedTextPt": 11.3
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "23-en",
       "title": "Database deployment: one development server, eight authorities",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 807.671875,
-          "height": 976.4454345703125,
-          "estimatedTextPt": 9.0
+          "width": 1125,
+          "height": 811,
+          "estimatedTextPt": 6.5
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 807.671875,
-          "height": 976.4454345703125,
-          "estimatedTextPt": 7.0
+          "candidate": "landscape",
+          "width": 1365,
+          "height": 589,
+          "estimatedTextPt": 8.2
         }
       },
       "panels": [
         {
           "id": "23-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 12.1
+          "estimatedTextPt": 8.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "23-vi",
       "title": "Triển khai database: một server phát triển, tám authority",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 807.671875,
-          "height": 976.4454345703125,
-          "estimatedTextPt": 9.0
+          "width": 1125,
+          "height": 811,
+          "estimatedTextPt": 6.5
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 807.671875,
-          "height": 976.4454345703125,
-          "estimatedTextPt": 7.0
+          "candidate": "landscape",
+          "width": 1365,
+          "height": 589,
+          "estimatedTextPt": 8.2
         }
       },
       "panels": [
         {
           "id": "23-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 12.1
+          "estimatedTextPt": 8.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "24-en",
       "title": "Web sitemap by route group",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 782.328125,
-          "height": 941.0,
-          "estimatedTextPt": 9.3
+          "width": 891,
+          "height": 1126,
+          "estimatedTextPt": 8.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 782.328125,
-          "height": 941.0,
-          "estimatedTextPt": 7.2
+          "candidate": "landscape",
+          "width": 1300,
+          "height": 713,
+          "estimatedTextPt": 8.6
         }
       },
       "panels": [
         {
           "id": "24-en-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 17.3
+          "estimatedTextPt": 15.4
         },
         {
           "id": "24-en-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 11.0
+          "estimatedTextPt": 9.9
         },
         {
           "id": "24-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 21.4
+          "estimatedTextPt": 18.5
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "24-vi",
       "title": "Sitemap web theo nhóm route",
-      "recommended": "portrait",
+      "recommended": "landscape",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 782.328125,
-          "height": 941.0,
-          "estimatedTextPt": 9.3
+          "width": 891,
+          "height": 1126,
+          "estimatedTextPt": 8.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 782.328125,
-          "height": 941.0,
-          "estimatedTextPt": 7.2
+          "candidate": "landscape",
+          "width": 1300,
+          "height": 713,
+          "estimatedTextPt": 8.6
         }
       },
       "panels": [
         {
           "id": "24-vi-part-01",
           "orientation": "landscape",
-          "estimatedTextPt": 17.3
+          "estimatedTextPt": 15.4
         },
         {
           "id": "24-vi-part-02",
           "orientation": "landscape",
-          "estimatedTextPt": 11.0
+          "estimatedTextPt": 9.9
         },
         {
           "id": "24-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 21.4
+          "estimatedTextPt": 18.5
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "25-en",
       "title": "Mobile sitemap and implementation level",
-      "recommended": "landscape",
+      "recommended": "portrait",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 789.40625,
-          "height": 484.0,
-          "estimatedTextPt": 9.2
+          "width": 898,
+          "height": 588,
+          "estimatedTextPt": 8.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 789.40625,
-          "height": 484.0,
-          "estimatedTextPt": 14.1
+          "candidate": "landscape",
+          "width": 1476,
+          "height": 432,
+          "estimatedTextPt": 7.6
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "25-vi",
       "title": "Sitemap mobile và mức triển khai",
-      "recommended": "landscape",
+      "recommended": "portrait",
       "usePanels": false,
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 789.40625,
-          "height": 484.0,
-          "estimatedTextPt": 9.2
+          "width": 898,
+          "height": 588,
+          "estimatedTextPt": 8.1
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 789.40625,
-          "height": 484.0,
-          "estimatedTextPt": 14.1
+          "candidate": "landscape",
+          "width": 1476,
+          "height": 432,
+          "estimatedTextPt": 7.6
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "26-en",
@@ -1401,34 +1453,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 749.8369140625,
-          "height": 1667.3125,
-          "estimatedTextPt": 6.3
+          "width": 822,
+          "height": 1921,
+          "estimatedTextPt": 5.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 749.8369140625,
-          "height": 1667.3125,
-          "estimatedTextPt": 4.1
+          "candidate": "landscape",
+          "width": 4248,
+          "height": 518,
+          "estimatedTextPt": 2.6
         }
       },
       "panels": [
         {
           "id": "26-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.3
+          "estimatedTextPt": 11.4
         },
         {
           "id": "26-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 11.0
+          "estimatedTextPt": 10.2
         },
         {
           "id": "26-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 23.4
+          "estimatedTextPt": 19.4
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "26-vi",
@@ -1438,34 +1491,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 749.8369140625,
-          "height": 1667.3125,
-          "estimatedTextPt": 6.3
+          "width": 822,
+          "height": 1921,
+          "estimatedTextPt": 5.4
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 749.8369140625,
-          "height": 1667.3125,
-          "estimatedTextPt": 4.1
+          "candidate": "landscape",
+          "width": 4248,
+          "height": 518,
+          "estimatedTextPt": 2.6
         }
       },
       "panels": [
         {
           "id": "26-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 12.3
+          "estimatedTextPt": 11.4
         },
         {
           "id": "26-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 11.0
+          "estimatedTextPt": 10.2
         },
         {
           "id": "26-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 23.4
+          "estimatedTextPt": 19.4
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "27-en",
@@ -1475,34 +1529,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1170.614013671875,
-          "height": 1578.984375,
-          "estimatedTextPt": 6.2
+          "width": 1270,
+          "height": 1809,
+          "estimatedTextPt": 5.7
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1170.614013671875,
-          "height": 1578.984375,
-          "estimatedTextPt": 4.3
+          "candidate": "landscape",
+          "width": 3831,
+          "height": 808,
+          "estimatedTextPt": 2.9
         }
       },
       "panels": [
         {
           "id": "27-en-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 13.8
+          "estimatedTextPt": 12.6
         },
         {
           "id": "27-en-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 8.0
+          "estimatedTextPt": 7.5
         },
         {
           "id": "27-en-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 12.5
+          "estimatedTextPt": 11.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "27-vi",
@@ -1512,34 +1567,35 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 1170.614013671875,
-          "height": 1578.984375,
-          "estimatedTextPt": 6.2
+          "width": 1270,
+          "height": 1809,
+          "estimatedTextPt": 5.7
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 1170.614013671875,
-          "height": 1578.984375,
-          "estimatedTextPt": 4.3
+          "candidate": "landscape",
+          "width": 3831,
+          "height": 808,
+          "estimatedTextPt": 2.9
         }
       },
       "panels": [
         {
           "id": "27-vi-part-01",
           "orientation": "portrait",
-          "estimatedTextPt": 13.8
+          "estimatedTextPt": 12.6
         },
         {
           "id": "27-vi-part-02",
           "orientation": "portrait",
-          "estimatedTextPt": 8.0
+          "estimatedTextPt": 7.5
         },
         {
           "id": "27-vi-part-03",
           "orientation": "landscape",
-          "estimatedTextPt": 12.5
+          "estimatedTextPt": 11.2
         }
-      ]
+      ],
+      "singleEntity": false
     },
     {
       "id": "28-en",
@@ -1549,18 +1605,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 909.85546875,
-          "height": 978.140625,
-          "estimatedTextPt": 8.0
+          "width": 1000,
+          "height": 1148,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 909.85546875,
-          "height": 978.140625,
-          "estimatedTextPt": 7.0
+          "candidate": "landscape",
+          "width": 2398,
+          "height": 554,
+          "estimatedTextPt": 4.7
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     },
     {
       "id": "28-vi",
@@ -1570,18 +1627,19 @@
       "variants": {
         "portrait": {
           "candidate": "portrait",
-          "width": 909.85546875,
-          "height": 978.140625,
-          "estimatedTextPt": 8.0
+          "width": 1000,
+          "height": 1148,
+          "estimatedTextPt": 7.3
         },
         "landscape": {
-          "candidate": "portrait",
-          "width": 909.85546875,
-          "height": 978.140625,
-          "estimatedTextPt": 7.0
+          "candidate": "landscape",
+          "width": 2398,
+          "height": 554,
+          "estimatedTextPt": 4.7
         }
       },
-      "panels": []
+      "panels": [],
+      "singleEntity": false
     }
   ]
 }

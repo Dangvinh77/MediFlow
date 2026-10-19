@@ -1,0 +1,136 @@
+{
+  "gateway" : "http://127.0.0.1:60224",
+  "createdAt" : 1792395497.382121900,
+  "unique" : "63684242eda5",
+  "accounts" : {
+    "ADMIN" : "admin-63684242eda5",
+    "OTHER_DOCTOR" : "other-doctor-63684242eda5",
+    "DOCTOR" : "doctor-63684242eda5",
+    "NURSE" : "nurse-63684242eda5",
+    "PHARMACIST" : "pharmacist-63684242eda5",
+    "CASHIER" : "cashier-63684242eda5"
+  },
+  "sourceRecord" : {
+    "recordId" : "7575868e-0f69-4bf6-a648-f2266627f58d",
+    "patientId" : "e714af93-bb07-4e11-9c63-f09929cec827",
+    "doctorId" : "1a9f1809-9df0-430b-aaa0-eba17e70f7f7",
+    "departmentId" : "039cb367-0f31-45bc-acc2-15da3a12e4d3",
+    "examinationDate" : "2026-10-19",
+    "symptoms" : null,
+    "appointmentId" : "e9efa472-f9d6-481c-8aae-c8f1eb965baf",
+    "diagnoses" : [ ],
+    "createdAt" : "2026-10-19T07:38:14.645327Z",
+    "updatedAt" : null,
+    "status" : "OPEN",
+    "disposition" : null,
+    "dispositionNote" : null,
+    "completedAt" : null
+  },
+  "sourceOrder" : {
+    "sourceOrderId" : "fcea4a06-20ca-4305-84f8-7876c74526e9",
+    "recordId" : "7575868e-0f69-4bf6-a648-f2266627f58d",
+    "patientId" : "e714af93-bb07-4e11-9c63-f09929cec827",
+    "requestingDoctorId" : "1a9f1809-9df0-430b-aaa0-eba17e70f7f7",
+    "requestingDepartmentId" : "039cb367-0f31-45bc-acc2-15da3a12e4d3",
+    "careEpisodeType" : "OUTPATIENT_VISIT",
+    "careEpisodeId" : "e9efa472-f9d6-481c-8aae-c8f1eb965baf",
+    "labType" : "CBC",
+    "requestedDate" : "2026-10-19",
+    "priceCode" : "LAB",
+    "orderedAt" : "2026-10-19T07:38:15.758010Z"
+  },
+  "drug" : {
+    "drugId" : "c44a66e5-5a86-420d-9c27-ad26f8441c80",
+    "drugName" : "FE acceptance 63684242eda5",
+    "activeIngredient" : null,
+    "unit" : "tablet",
+    "price" : 10000,
+    "stockQuantity" : 40,
+    "expiryDate" : "2027-10-19",
+    "manufacturer" : null,
+    "lowStockThreshold" : 0,
+    "createdAt" : "2026-10-19T07:38:16.344145Z",
+    "updatedAt" : "2026-10-19T07:38:16.344145Z"
+  },
+  "prescriptionRequest" : {
+    "recordId" : "7575868e-0f69-4bf6-a648-f2266627f58d",
+    "patientId" : "e714af93-bb07-4e11-9c63-f09929cec827",
+    "doctorId" : "1a9f1809-9df0-430b-aaa0-eba17e70f7f7",
+    "departmentId" : "039cb367-0f31-45bc-acc2-15da3a12e4d3",
+    "prescribedDate" : "2026-10-19",
+    "lines" : [ {
+      "drugId" : "c44a66e5-5a86-420d-9c27-ad26f8441c80",
+      "dosage" : "Acceptance only",
+      "quantity" : 3
+    } ],
+    "careContractVersion" : 1,
+    "careContext" : "OUTPATIENT",
+    "careEpisodeType" : "OUTPATIENT_VISIT",
+    "careEpisodeId" : "e9efa472-f9d6-481c-8aae-c8f1eb965baf",
+    "priceCode" : "DRUG"
+  },
+  "cancelledPrescriptionId" : "226a4496-c25e-4d31-bcc5-61b836c09a95",
+  "roleChecks" : [ {
+    "scenario" : "foreign-doctor-create",
+    "httpStatus" : 403,
+    "correlationId" : "84ac66d1-c375-48b1-b4bf-16e1ced6e408",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "PRESCRIPTION_CREATION_FORBIDDEN",
+        "message" : "Only an authenticated prescribing doctor or administrator may create",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-19T07:38:16.512280300Z",
+      "correlationId" : "84ac66d1-c375-48b1-b4bf-16e1ced6e408"
+    }
+  }, {
+    "scenario" : "foreign-doctor-cancel",
+    "httpStatus" : 403,
+    "correlationId" : "a64b1a63-530f-419d-a7dc-7bc990032413",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "PRESCRIPTION_CANCELLATION_FORBIDDEN",
+        "message" : "Only the prescribing doctor or an administrator may cancel",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-19T07:38:17.276406400Z",
+      "correlationId" : "a64b1a63-530f-419d-a7dc-7bc990032413"
+    }
+  }, {
+    "scenario" : "pharmacist-cancel",
+    "httpStatus" : 403,
+    "correlationId" : "30232194-2a8d-4820-a641-f89175ffeb66",
+    "response" : {
+      "success" : false,
+      "data" : null,
+      "error" : {
+        "code" : "AUTH_FORBIDDEN",
+        "message" : "Role is not allowed to access this route",
+        "details" : [ ]
+      },
+      "timestamp" : "2026-10-19T07:38:17.284406500Z",
+      "correlationId" : "30232194-2a8d-4820-a641-f89175ffeb66"
+    }
+  }, {
+    "scenario" : "assigned-doctor-cancel",
+    "httpStatus" : 200,
+    "correlationId" : "cd704976-be30-412a-99f2-80f799f14e94",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "226a4496-c25e-4d31-bcc5-61b836c09a95",
+        "status" : "CANCELLED",
+        "releasedReservations" : 1,
+        "cancelledAt" : "2026-10-19T07:38:17.325990600Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-19T07:38:17.374018Z",
+      "correlationId" : "cd704976-be30-412a-99f2-80f799f14e94"
+    }
+  } ],
+  "pricePolicy" : "mediflow.billing.prescription-charges.allowed-price-codes=DRUG"
+}

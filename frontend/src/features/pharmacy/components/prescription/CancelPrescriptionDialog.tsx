@@ -7,6 +7,7 @@ import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import { pharmacyApi } from "../../api";
+import { hasUncertainMutationStatus } from "../../mutationOutcome";
 import { getPharmacyCapabilities } from "../../permissions";
 import type { CancelPrescriptionResult } from "../../types";
 import { usePharmacyRequestScope } from "../PharmacySessionBoundary";
@@ -87,7 +88,7 @@ export function CancelPrescriptionDialog({ prescriptionId, onClose, onSuccess, o
         router.replace("/login");
         return;
       }
-      if (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status < 400) {
+      if (!(cause instanceof ApiRequestError) || hasUncertainMutationStatus(cause)) {
         const correlation = cause instanceof ApiRequestError && cause.correlationId ? ` (Mã tra cứu: ${cause.correlationId})` : "";
         onConflict(`Chưa xác định được kết quả hủy đơn.${correlation} Đang tải lại đơn để kiểm tra trước khi thao tác tiếp.`);
         return;
