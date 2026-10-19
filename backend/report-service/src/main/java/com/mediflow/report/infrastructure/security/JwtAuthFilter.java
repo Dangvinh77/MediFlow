@@ -2,6 +2,7 @@ package com.mediflow.report.infrastructure.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -57,6 +58,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     .build()
                     .parseSignedClaims(authorization.substring(BEARER_PREFIX.length()))
                     .getPayload();
+            if (claims.getExpiration() == null
+                    || !claims.getExpiration().toInstant().isAfter(Instant.now())) {
+                SecurityContextHolder.clearContext();
+                return;
+            }
             String tokenType = claims.get(JwtClaims.TYPE, String.class);
             if (!JwtClaims.ACCESS_TOKEN_TYPE.equals(tokenType)) {
                 SecurityContextHolder.clearContext();
@@ -70,7 +76,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
             if (request.getRequestURI().startsWith("/api/v1/reports/financial/")
                     || request.getRequestURI().startsWith("/api/v1/reports/operations/")) {
-                if (claims.getExpiration()==null || !java.util.UUID.fromString(subject).toString().equals(subject)) {
+                if (!java.util.UUID.fromString(subject).toString().equals(subject)) {
                     SecurityContextHolder.clearContext();
                     return;
                 }

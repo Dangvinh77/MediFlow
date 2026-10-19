@@ -45,3 +45,36 @@ read routes, rồi chạy full Pharmacy/Report suites, Support co-host regressio
 refund/paid-prescription acceptance trên fresh artifacts. Không đổi semantics `paymentConfirmed`,
 không mở service token thành human access, không sửa chữ ký/type parser theo cách nới validation
 để làm test xanh.
+
+## Huy implementation — 2026-10-19
+
+PR [#445](https://github.com/Dangvinh77/MediFlow/pull/445), base `5ccecf83`, code `5334aa8c`.
+Hai human filters yêu cầu `exp` có mặt và strictly after current time, sau xác minh chữ ký
+và trước tạo Authentication. Report áp guard trước mọi phân nhánh URI, bao gồm outpatient
+daily/monthly và legacy daily/monthly/top-medicines. UUID rule riêng của các prefix Report
+financial/operations, subject/role/type validation còn lại và service credential path giữ nguyên.
+Không đổi DTO, API, boolean `paymentConfirmed`, rollout flags hoặc Notification source.
+
+Red baseline: Pharmacy **11 tests, 2 failures**; Report **76 tests, 11 failures**. Regression
+bao phủ ADMIN/PHARMACIST và ADMIN/MANAGER, valid/expired/missing expiry, signature/type/subject,
+cùng HTTP negative tests chứng minh không gọi lifecycle/read use cases. Các sửa clock/publisher
+ở #439 đã nằm trong base, không được làm lại.
+
+Full module Docker-backed verification trên code `5334aa8c`:
+
+```powershell
+mvn -q -pl backend/pharmacy-service,backend/report-service -am test
+```
+
+Exit 0. Pharmacy **843 tests / 108 classes**, Report **1.407 tests / 137 classes**;
+**0 failures, 0 errors, 0 skipped** cho cả hai. Các integration tests dùng PG16/RabbitMQ thật.
+Count lấy từ Surefire XML của checkout riêng, không cộng lượt red hoặc rerun.
+Support co-host regression cũng đạt **12/12 tests / 3 classes**, exit 0, zero failure/error/skip:
+
+```powershell
+mvn -q -pl backend/support-service -am '-Dtest=SupportSecurityTest,SupportOutpatientCompositionTest,SupportCompositionTest' '-Dsurefire.failIfNoSpecifiedTests=false' package
+```
+
+Handoff vẫn **OPEN cho Vinh regression/acceptance chung**; test filter/controller
+không thay issuer/Gateway/package/browser acceptance. PR FE dispense được tách ở
+[#446](https://github.com/Dangvinh77/MediFlow/pull/446).
