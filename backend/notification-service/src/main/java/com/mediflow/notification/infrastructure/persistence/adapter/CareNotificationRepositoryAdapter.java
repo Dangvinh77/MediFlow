@@ -31,6 +31,27 @@ public class CareNotificationRepositoryAdapter implements CareNotificationReposi
         return false;
     }
 
+    @Override public boolean claimPaymentReceipt(UUID eventId, String rawFingerprint, String legacyFingerprint) {
+        int inserted = jdbc.update("""
+                INSERT INTO PROCESSED_EVENT(event_id,routing_key,payload_hash,receipt_raw_hash)
+                VALUES (?,'payment.completed',?,?) ON CONFLICT(event_id) DO NOTHING
+                """, eventId, legacyFingerprint, rawFingerprint);
+        if (inserted == 1) return true;
+        var previous = jdbc.queryForMap(
+                "SELECT routing_key,payload_hash,receipt_raw_hash FROM PROCESSED_EVENT WHERE event_id=?", eventId);
+        // A normalized historical digest cannot prove which raw bytes were originally accepted.
+        // Only the offline archive backfill may supply that missing evidence.
+        if ("payment.completed".equals(previous.get("routing_key"))
+                && previous.get("payload_hash") != null && previous.get("receipt_raw_hash") == null)
+            throw new com.mediflow.notification.domain.exception.NotificationEventConflictException(
+                    "Historical care receipt requires original-byte archive backfill");
+        if (!"payment.completed".equals(previous.get("routing_key"))
+                || !rawFingerprint.equals(previous.get("receipt_raw_hash"))
+                || !legacyFingerprint.equals(previous.get("payload_hash")))
+            throw new com.mediflow.notification.domain.exception.NotificationEventConflictException();
+        return false;
+    }
+
     @Override public void deliverInApp(CareNotificationIntent intent) {
         jdbc.update("""
                 INSERT INTO NOTIFICATION(notification_id,patient_id,title,content,channel,status,sent_at,

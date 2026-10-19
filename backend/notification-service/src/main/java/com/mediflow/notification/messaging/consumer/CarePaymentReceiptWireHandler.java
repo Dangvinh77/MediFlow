@@ -73,9 +73,10 @@ public class CarePaymentReceiptWireHandler {
             BigDecimal money = amount.decimalValue();
             if (money.stripTrailingZeros().scale() > 2 || money.precision() - money.scale() > 17)
                 throw new IllegalArgumentException("Invalid receipt money precision");
-            String fingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+            String legacyFingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(mapper.writeValueAsBytes(mapper.convertValue(root, Map.class))));
-            command = new CarePaymentReceiptCommand(uuid(root, "eventId"), fingerprint, text(root, "correlationId"),
+            String fingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body));
+            command = new CarePaymentReceiptCommand(uuid(root, "eventId"), fingerprint, legacyFingerprint, text(root, "correlationId"),
                     uuid(payload, "transactionId"), uuid(payload, "patientId"), money, text(payload, "currency"), classification);
         } catch (Exception malformed) {
             throw new AmqpRejectAndDontRequeueException("Invalid care payment receipt", malformed);

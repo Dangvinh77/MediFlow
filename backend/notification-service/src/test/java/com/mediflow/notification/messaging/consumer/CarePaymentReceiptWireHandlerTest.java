@@ -44,7 +44,9 @@ class CarePaymentReceiptWireHandlerTest {
         assertThat(command.getValue().classification()).isEqualTo(name.equals("deposit") ? "ADMISSION_DEPOSIT" : "SERVICE_PAYMENT");
         assertThat(command.getValue().amount()).isEqualByComparingTo("100");
         assertThat(command.getValue().patientId()).isEqualTo(UUID.fromString("00000000-0000-0000-0000-000000000002"));
-        assertThat(command.getValue().fingerprint()).hasSize(64);
+        assertThat(command.getValue().fingerprint()).isEqualTo(java.util.HexFormat.of().formatHex(
+                java.security.MessageDigest.getInstance("SHA-256").digest(fixture(name))));
+        assertThat(command.getValue().legacyFingerprint()).hasSize(64);
     }
 
     @Test void existingQueueReaderDispatchesV1WithoutCallingLegacyOrCompetingListener() throws Exception {

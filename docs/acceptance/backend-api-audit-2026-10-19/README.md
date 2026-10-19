@@ -2,6 +2,10 @@
 
 ## Source và kết luận phát hành
 
+Follow-up Notification V1 sau PR #441: implementation raw identity/backfill và trạng thái
+verification mới nằm trong [bundle riêng](../notification-v1-byte-identity-2026-10-19/README.md).
+Inventory và red reproductions trong tài liệu audit này là lịch sử của revision bên dưới.
+
 Base chung sau merge PR #439: `05c7690c3a37b602e336fac4902ced7f3a1f7d89`.
 Branch audit: `codex/backend-api-business-audit`, checkout riêng. Không đưa thay đổi chưa commit
 của checkout làm việc chính vào audit. Theo phân công người dùng, Vinh tiếp quản Billing và
