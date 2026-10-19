@@ -1,0 +1,23 @@
+{
+  "baseHead": "4c19dd4a8ede06c07545c9290ff77b687b8dd49c",
+  "remoteMaster": "4c19dd4a8ede06c07545c9290ff77b687b8dd49c",
+  "featureCompleteTag": "8d7e6c690d7816f7a502acc4db145031c62e999e",
+  "committed": false,
+  "productionChanged": false,
+  "patch": "test-fixes.patch",
+  "patchSha256": "1ef2d4898aeaec7af2c964520ff47ba18c946b0cd047cd1dd33ecb32e3ddc739",
+  "files": [
+    {
+      "path": "backend/report-service/src/test/java/com/mediflow/report/infrastructure/persistence/ReportTelemetryPostgresTest.java",
+      "baseBlob": "c8ce59cca78e90289c85ba4ae3241f20d022d3e5",
+      "workingBytes": 10364,
+      "workingSha256": "a2c2286552b31e3f348daad2dda1cd3b4a2a62bc03e41eb8670b1a4e25e455bb"
+    },
+    {
+      "path": "backend/pharmacy-service/src/test/java/com/mediflow/pharmacy/PharmacyOutpatientRuntimeAcceptanceIT.java",
+      "baseBlob": "48d48c048795ba05022c807aa5f2abef695880f9",
+      "workingBytes": 19226,
+      "workingSha256": "dc167f9404aaf56e0fbc6b44e5fc977ed4d52870835eea32943ea21b5f5fc7a9"
+    }
+  ]
+}

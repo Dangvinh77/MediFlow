@@ -332,6 +332,102 @@ class LabCareFinanceV2ApplicationServiceTest {
         assertThat(payload.completedAt()).isEqualTo(NOW);
         assertThat(payload.verifiedBy()).isEqualTo(verifiedBy);
         assertThat(payload.resultVersion()).isEqualTo(1);
+        verifyNoInteractions(clearances);
+    }
+
+    @Test
+    void addResults_v2CompletesWithTheExactPaidClearanceBoundToTest() {
+        LabTest test = v2Test();
+        UUID verifiedBy = UUID.randomUUID();
+        UUID correlationId = UUID.randomUUID();
+        LabFinancialClearance clearance = LabFinancialClearance.grant(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), test.getTestId(), test.getPatientId(),
+                test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
+                new BigDecimal("250000.00"), "VND", NOW.plusSeconds(60), false, NOW.minusSeconds(60));
+        test.grantClearance(clearance);
+        test.markPaid();
+        test.start(clearance, null, NOW.minusSeconds(1));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(clearances.findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId()))
+                .thenReturn(Optional.of(clearance));
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(verifiedBy, "LAB_TECH")));
+        when(correlations.currentOrCreate()).thenReturn(correlationId);
+
+        service.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")),
+                "Normal", REQUESTED_DATE));
+
+        assertThat(test.isPaid()).isTrue();
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
+        assertThat(test.getUpdatedAt()).isEqualTo(NOW);
+        verify(clearances).findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId());
+        ArgumentCaptor<DomainEventEnvelope<?>> envelope = ArgumentCaptor.forClass(DomainEventEnvelope.class);
+        verify(outbox).append(envelope.capture());
+        assertThat(envelope.getValue().occurredAt()).isEqualTo(NOW);
+        LabResultV2Payload payload = (LabResultV2Payload) envelope.getValue().payload();
+        assertThat(payload.completedAt()).isEqualTo(NOW);
+        assertThat(payload.verifiedBy()).isEqualTo(verifiedBy);
+        assertThat(payload.resultVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void addResults_v2RejectsMissingBoundClearanceProjection() {
+        LabTest test = v2Test();
+        LabFinancialClearance clearance = LabFinancialClearance.grant(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), test.getTestId(), test.getPatientId(),
+                test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
+                new BigDecimal("250000.00"), "VND", null, false, NOW.minusSeconds(60));
+        test.grantClearance(clearance);
+        test.start(clearance, null, NOW.minusSeconds(1));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(clearances.findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")),
+                "Normal", REQUESTED_DATE)))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_CLEARANCE_REQUIRED");
+
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
+        verify(clearances).findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId());
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
+    void addResults_v2RejectsClearanceExpiredAtResultAction() {
+        LabTest test = v2Test();
+        LabFinancialClearance clearance = LabFinancialClearance.grant(UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), test.getTestId(), test.getPatientId(),
+                test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
+                new BigDecimal("250000.00"), "VND", NOW, false, NOW.minusSeconds(60));
+        test.grantClearance(clearance);
+        test.start(clearance, null, NOW.minusSeconds(1));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(tests.save(test)).thenReturn(test);
+        when(clearances.findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId()))
+                .thenReturn(Optional.of(clearance));
+        when(authenticatedStaff.currentStaff()).thenReturn(Optional.of(
+                new AuthenticatedStaffContext(UUID.randomUUID(), "LAB_TECH")));
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> service.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")),
+                "Normal", REQUESTED_DATE)))
+                .isInstanceOf(LabRuleException.class)
+                .extracting(LabRuleException.class::cast)
+                .extracting(LabRuleException::getCode)
+                .isEqualTo("LAB_CLEARANCE_EXPIRED");
+
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
+        verify(clearances).findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId());
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
     }
 
     @Test

@@ -179,4 +179,37 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>receipt-identity-acceptance</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>3.2.5</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includes>
+                                <include>**/CareReceiptByteIdentityBackfillCliIT.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <notification.packaged.jar>${project.build.directory}/${project.build.finalName}.jar</notification.packaged.jar>
+                                <notification.classes.dir>${project.build.outputDirectory}</notification.classes.dir>
+                                <notification.billing.fixture>${project.basedir}/../billing-service/src/test/resources/contracts/ledger-v1/payment-service.json</notification.billing.fixture>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

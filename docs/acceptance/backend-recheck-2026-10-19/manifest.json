@@ -1,0 +1,30 @@
+{
+  "algorithm": "SHA-256",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 234,
+      "sha256": "307092e344f803a60b85113d28526e484d2ad64d6389236b5ef5024ccd45de50"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5249,
+      "sha256": "add36801dc8a38995a2ab84d312b6bb0ae081947b136343e8c88465bacf40412"
+    },
+    {
+      "path": "results.json",
+      "bytes": 7266,
+      "sha256": "b7f670cb0d8420e844315e481f79df921b94fc9b43bcac97953beb0bc7495f6c"
+    },
+    {
+      "path": "source-lock.json",
+      "bytes": 1041,
+      "sha256": "e701af427c5a97c89cd1b0dd9961c63e24c524b197bcca05d803cce67b9e9620"
+    },
+    {
+      "path": "test-fixes.patch",
+      "bytes": 3876,
+      "sha256": "1ef2d4898aeaec7af2c964520ff47ba18c946b0cd047cd1dd33ecb32e3ddc739"
+    }
+  ]
+}

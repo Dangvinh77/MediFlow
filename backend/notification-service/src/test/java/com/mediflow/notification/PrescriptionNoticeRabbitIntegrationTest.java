@@ -182,6 +182,31 @@ class PrescriptionNoticeRabbitIntegrationTest {
         assertThat(count("NOTIFICATION_EVENT_OUTBOX")).isOne();
     }
 
+    @Test void paymentReceiptByteConflictDeadLettersOriginalVariantWithoutDuplicateEffects() throws Exception {
+        byte[] original = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(
+                "../billing-service/src/test/resources/contracts/ledger-v1/payment-service.json"));
+        byte[] variant = (" \n" + new String(original, StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8);
+        registry.getListenerContainers().forEach(container -> container.start());
+        try {
+            rabbit.send("mediflow.events", "payment.completed", new Message(original, new MessageProperties()));
+            await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(count("NOTIFICATION")).isOne());
+            rabbit.send("mediflow.events", "payment.completed", new Message(original, new MessageProperties()));
+            rabbit.send("mediflow.events", "payment.completed", new Message(variant, new MessageProperties()));
+            Message rejected = rabbit.receive("notification.dlq", 15000);
+            assertThat(rejected).isNotNull();
+            assertThat(rejected.getBody()).isEqualTo(variant);
+            assertThat(rejected.getMessageProperties().getXDeathHeader()).hasSize(1);
+            assertThat(rejected.getMessageProperties().getXDeathHeader().getFirst().get("count")).isEqualTo(1L);
+        } finally {
+            registry.getListenerContainers().forEach(container -> container.stop());
+        }
+        assertThat(count("NOTIFICATION")).isOne();
+        assertThat(count("PROCESSED_EVENT")).isOne();
+        assertThat(count("NOTIFICATION_EVENT_OUTBOX")).isOne();
+        assertThat(jdbc.queryForObject("SELECT receipt_raw_hash FROM PROCESSED_EVENT", String.class)).isEqualTo(
+                java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(original)));
+    }
+
     @Test void historyUsesSignedPatientMappingAndDoesNotTrustAccountOrHeader() throws Exception {
         handler.receive("prescription.filled", PrescriptionNoticeContractTest.fixture("filled"));
         UUID patient = UUID.fromString("10000000-0000-4000-8000-000000000002");

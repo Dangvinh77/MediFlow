@@ -43,7 +43,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Six packaged business apps with real Gateway/discovery, EXAM and prescription payments.
- * Business setup uses public APIs; SQL is read-only reconciliation in disposable test stores.
+ * Business setup uses public APIs; SQL reconciles disposable test stores and injects an
+ * isolated commit failure to verify rollback without changing business state directly.
  */
 @Testcontainers
 class SixServiceOutpatientAcceptanceIT {
@@ -327,6 +328,7 @@ class SixServiceOutpatientAcceptanceIT {
                     "--spring.config.additional-location=" + catalog.toUri(),
                     "--mediflow.features.outpatient-mvp.enabled=true",
                     "--mediflow.billing.ledger.enabled=true",
+                    "--mediflow.billing.refunds.enabled=true",
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
                     "--mediflow.billing.outpatient-publication.enabled=true",
@@ -443,10 +445,7 @@ class SixServiceOutpatientAcceptanceIT {
                         .path("status").asText()).isEqualTo("READY_FOR_EXAM");
             });
 
-            HttpResponse<String> started = request(gateway, "PUT",
-                    "/api/v1/appointments/" + appointmentId + "/start-exam", doctorToken, "{}");
-            assertThat(started.statusCode()).as(started.body()).isEqualTo(200);
-            assertThat(data(started).path("status").asText()).isEqualTo("IN_EXAM");
+            assertExamRollbackAndConcurrentStart(gateway, appointmentId, doctorToken, clinicalDb);
             assertThat(count(clinicalDb,
                     "SELECT count(*) FROM medical_record WHERE appointment_id=? AND status='OPEN'", appointmentId))
                     .isOne();
@@ -484,10 +483,13 @@ class SixServiceOutpatientAcceptanceIT {
             }
             exercisePrescription(gateway, setupAdmin, doctorToken, cashierToken, nurseToken,
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
+            exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken,
+                    patientId, doctorId, departmentId, appointmentId, recordId);
             Path evidence = Path.of("target", "six-service-paid-exam-evidence.json");
             Files.createDirectories(evidence.getParent());
             Files.writeString(evidence, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(Map.of(
                     "appointmentId", appointmentId, "recordId", recordId, "payment", payment,
+                    "recordInsertRollbackVerified", true, "concurrentExamStatuses", List.of(200, 422),
                     "grant", JSON.readTree(grant), "grantSha256", java.util.HexFormat.of().formatHex(
                             java.security.MessageDigest.getInstance("SHA-256").digest(grant)))));
         } finally {
@@ -663,6 +665,168 @@ class SixServiceOutpatientAcceptanceIT {
         JsonNode body = JSON.readTree(response.body());
         checks.add(object("scenario", scenario, "httpStatus", response.statusCode(),
                 "correlationId", body.path("correlationId").asText(), "response", body));
+    }
+
+    private void assertExamRollbackAndConcurrentStart(String gateway, UUID appointment, String doctor,
+            JdbcTemplate clinicalDb) throws Exception {
+        String path = "/api/v1/appointments/" + appointment + "/start-exam";
+        int recordsPublished = count(clinicalDb,
+                "SELECT count(*) FROM clinical_outbox_event WHERE event_type='medicalrecord.created'");
+        // Fault injection belongs only to this disposable test database. The application still
+        // performs every business write through its public API and normal transaction boundary.
+        clinicalDb.execute("""
+                CREATE FUNCTION acceptance_fail_exam_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN RAISE EXCEPTION 'isolated acceptance failure after record insert'; END; $$
+                """);
+        // records.saveAndFlush() has already inserted the record before this appointment update.
+        clinicalDb.execute("CREATE TRIGGER acceptance_fail_exam_commit AFTER UPDATE OF status ON appointment "
+                + "FOR EACH ROW WHEN (NEW.status='IN_EXAM') EXECUTE FUNCTION acceptance_fail_exam_commit()");
+        try {
+            HttpResponse<String> failed = request(gateway, "PUT", path, doctor, "{}");
+            assertThat(failed.statusCode()).as(failed.body()).isEqualTo(500);
+            assertThat(data(get(gateway, "/api/v1/appointments/" + appointment, doctor))
+                    .path("status").asText()).isEqualTo("READY_FOR_EXAM");
+            assertThat(count(clinicalDb, "SELECT count(*) FROM medical_record WHERE appointment_id=?", appointment)).isZero();
+            assertThat(count(clinicalDb,
+                    "SELECT count(*) FROM clinical_outbox_event WHERE event_type='medicalrecord.created'"))
+                    .isEqualTo(recordsPublished);
+        } finally {
+            clinicalDb.execute("DROP TRIGGER acceptance_fail_exam_commit ON appointment");
+            clinicalDb.execute("DROP FUNCTION acceptance_fail_exam_commit()");
+        }
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<HttpResponse<String>> first = pool.submit(() -> { ready.countDown(); start.await(); return request(gateway, "PUT", path, doctor, "{}"); });
+            Future<HttpResponse<String>> second = pool.submit(() -> { ready.countDown(); start.await(); return request(gateway, "PUT", path, doctor, "{}"); });
+            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            HttpResponse<String> a = first.get(45, java.util.concurrent.TimeUnit.SECONDS);
+            HttpResponse<String> b = second.get(45, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(List.of(a.statusCode(), b.statusCode())).containsExactlyInAnyOrder(200, 422);
+            assertThat(data(a.statusCode() == 200 ? a : b).path("status").asText()).isEqualTo("IN_EXAM");
+            assertClinicalFailure(a.statusCode() == 422 ? a : b, 422, "CLINICAL_INVALID_STATUS_TRANSITION");
+        } finally { pool.shutdownNow(); }
+    }
+
+    private void exerciseRefund(String gateway, String admin, String doctor, String cashier,
+            UUID patient, UUID prescriber, UUID department, UUID episode, UUID record) throws Exception {
+        JsonNode drug = data(post(gateway, "/api/v1/pharmacy/drugs", admin,
+                "drugName", "Refund acceptance drug", "unit", "tablet", "price", 10000,
+                "stockQuantity", 20, "expiryDate", LocalDate.now().plusYears(1).toString(), "lowStockThreshold", 0));
+        UUID drugId = UUID.fromString(drug.path("drugId").asText());
+        String body = JSON.writeValueAsString(object("recordId", record, "patientId", patient, "doctorId", prescriber,
+                "departmentId", department, "prescribedDate", LocalDate.now().toString(), "lines",
+                List.of(Map.of("drugId", drugId, "quantity", 3, "dosage", "Refund acceptance")),
+                "careContractVersion", 1, "careContext", "OUTPATIENT", "careEpisodeType", "OUTPATIENT_VISIT",
+                "careEpisodeId", episode, "priceCode", "DRUG"));
+        UUID rx = UUID.fromString(data(createRx(gateway, doctor, UUID.randomUUID().toString(), body))
+                .path("prescriptionId").asText());
+        String discovery = "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=" + rx
+                + "&patientId=" + patient + "&careEpisodeId=" + episode;
+        JsonNode[] found = new JsonNode[1];
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(() -> found[0] = data(get(gateway, discovery, cashier)));
+        String paymentPath = "/api/v1/billing/payment-requests/" + found[0].path("paymentRequestId").asText() + "/payments";
+        JsonNode payment = data(request(gateway, "POST", paymentPath, cashier, JSON.writeValueAsString(Map.of(
+                "idempotencyKey", "refund-payment-" + rx, "amount", 30000, "currency", "VND", "paymentMethod", "CASH"))));
+        UUID original = UUID.fromString(payment.path("transactionId").asText());
+        data(request(gateway, "PUT", "/api/v1/pharmacy/prescriptions/" + rx + "/cancel", doctor,
+                "{\"reason\":\"Isolated paid cancellation acceptance\"}"));
+        String duePath = "/api/v1/billing/prescription-adjustments/" + rx + "/refunds-due";
+        await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+            JsonNode adjustment = data(get(gateway, duePath, cashier));
+            assertThat(adjustment.path("status").asText()).isEqualTo("APPLIED");
+            assertThat(adjustment.path("refundsDue")).hasSize(1);
+            assertThat(adjustment.path("refundsDue").get(0).path("originalTransactionId").asText()).isEqualTo(original.toString());
+            assertThat(adjustment.path("refundsDue").get(0).path("amount").decimalValue()).isEqualByComparingTo("30000.00");
+        });
+        assertThat(data(get(gateway, duePath, admin)).path("refundsDue")).hasSize(1);
+        String refundPath = "/api/v1/billing/transactions/" + original + "/refunds";
+        String firstBody = refundBody(UUID.randomUUID().toString(), 20000);
+        String secondBody = refundBody(UUID.randomUUID().toString(), 20000);
+        for (String denied : List.of(doctor, scopedToken("PATIENT", "access", patient),
+                scopedToken("SYSTEM", "service", null))) {
+            assertThat(request(gateway, "GET", duePath, denied, null).statusCode()).isEqualTo(403);
+            assertThat(request(gateway, "POST", refundPath, denied, firstBody).statusCode()).isEqualTo(403);
+        }
+        for (String denied : List.of(scopedToken("ADMIN", "refresh", null), scopedToken("SYSTEM", "access", null), "invalid")) {
+            assertThat(request(gateway, "GET", duePath, denied, null).statusCode()).isEqualTo(401);
+            assertThat(request(gateway, "POST", refundPath, denied, firstBody).statusCode()).isEqualTo(401);
+        }
+        assertThat(HTTP.send(HttpRequest.newBuilder(URI.create(gateway + duePath)).GET().build(),
+                HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(401);
+        assertThat(request(gateway, "POST", duePath, admin, firstBody).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", refundPath, admin, null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", duePath + "/extra", admin, null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "POST", refundPath + "/extra", admin, firstBody).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "GET", "/api/v1/billing/prescription-adjustments/refunds-due", admin, null).statusCode()).isEqualTo(403);
+        assertThat(request(gateway, "POST", "/api/v1/billing/transactions/refunds", admin, firstBody).statusCode()).isEqualTo(403);
+        assertThat(count(store("billing"), "SELECT count(*) FROM payment_transaction WHERE original_transaction_id=? AND transaction_type='REFUND'", original)).isZero();
+
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        JsonNode refund;
+        String winningBody;
+        try {
+            Future<HttpResponse<String>> first = pool.submit(() -> { ready.countDown(); start.await(); return request(gateway, "POST", refundPath, cashier, firstBody); });
+            Future<HttpResponse<String>> second = pool.submit(() -> { ready.countDown(); start.await(); return request(gateway, "POST", refundPath, cashier, secondBody); });
+            assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            HttpResponse<String> a = first.get(45, java.util.concurrent.TimeUnit.SECONDS);
+            HttpResponse<String> b = second.get(45, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(List.of(a.statusCode(), b.statusCode())).containsExactlyInAnyOrder(201, 422);
+            refund = data(a.statusCode() == 201 ? a : b);
+            winningBody = a.statusCode() == 201 ? firstBody : secondBody;
+            JsonNode rejected = JSON.readTree((a.statusCode() == 422 ? a : b).body());
+            assertThat(rejected.path("error").path("code").asText()).isEqualTo("BILLING_REFUND_EXCEEDS_PAYMENT");
+        } finally { pool.shutdownNow(); }
+        assertThat(data(request(gateway, "POST", refundPath, cashier, winningBody)).path("refundTransactionId"))
+                .isEqualTo(refund.path("refundTransactionId"));
+        assertThat(request(gateway, "POST", refundPath, admin, winningBody).statusCode()).isEqualTo(409);
+        UUID refundId = UUID.fromString(refund.path("refundTransactionId").asText());
+        String actor = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8)))
+                .build().parseSignedClaims(cashier).getPayload().getSubject();
+        assertThat(store("billing").queryForObject("SELECT actor_account_id FROM payment_transaction WHERE transaction_id=?", UUID.class, refundId))
+                .isEqualTo(UUID.fromString(actor));
+        assertThat(data(get(gateway, duePath, cashier)).path("refundsDue").get(0).path("amount").decimalValue()).isEqualByComparingTo("10000.00");
+        String finalKey = UUID.randomUUID().toString();
+        String finalBody = refundBody(finalKey, 10000);
+        String correlation = UUID.randomUUID().toString();
+        HttpResponse<String> completed = HTTP.send(HttpRequest.newBuilder(URI.create(gateway + refundPath))
+                .timeout(Duration.ofSeconds(30)).header("Authorization", "Bearer " + admin)
+                .header("Content-Type", "application/json").header("X-Correlation-Id", correlation)
+                .POST(HttpRequest.BodyPublishers.ofString(finalBody)).build(), HttpResponse.BodyHandlers.ofString());
+        assertThat(completed.statusCode()).isEqualTo(201);
+        assertThat(completed.headers().firstValue("X-Correlation-Id")).contains(correlation);
+        assertThat(JSON.readTree(completed.body()).path("correlationId").asText()).isEqualTo(correlation);
+        JsonNode last = data(completed);
+        assertThat(last.path("originalTransactionId").asText()).isEqualTo(original.toString());
+        assertThat(last.path("status").asText()).isEqualTo("COMPLETED");
+        assertThat(data(request(gateway, "POST", refundPath, admin, finalBody)).path("refundTransactionId"))
+                .isEqualTo(last.path("refundTransactionId"));
+        assertThat(request(gateway, "POST", refundPath, admin, refundBody(finalKey, 9000)).statusCode()).isEqualTo(409);
+        assertThat(request(gateway, "POST", refundPath, admin, refundBody(UUID.randomUUID().toString(), 1)).statusCode()).isEqualTo(422);
+        assertThat(data(get(gateway, duePath, cashier)).path("refundsDue")).isEmpty();
+        assertThat(count(store("billing"), "SELECT count(*) FROM payment_transaction WHERE original_transaction_id=? AND transaction_type='REFUND'", original)).isEqualTo(2);
+        assertThat(store("billing").queryForObject("SELECT sum(amount) FROM payment_transaction WHERE original_transaction_id=? AND transaction_type='REFUND'", java.math.BigDecimal.class, original))
+                .isEqualByComparingTo("30000.00");
+        assertThat(count(store("billing"), """
+                SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'
+                  AND payload::jsonb->'payload'->>'originalTransactionId'=? AND NOT publication_enabled
+                """, original.toString())).isEqualTo(2);
+        assertThat(store("pharmacy").queryForObject("SELECT stock_quantity FROM drug WHERE drug_id=?", Integer.class, drugId)).isEqualTo(20);
+        assertThat(request(gateway, "PUT", "/api/v1/pharmacy/prescriptions/" + rx + "/dispense", admin, null).statusCode()).isEqualTo(422);
+        Files.writeString(work.resolve("gateway-refund-evidence.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                Map.of("prescriptionId", rx, "originalPayment", payment, "firstRefund", refund, "finalRefund", last,
+                        "raceStatuses", List.of(201, 422), "signedActorVerified", true, "correlationId", correlation,
+                        "remainingObligations", 0, "stock", 20)));
+    }
+
+    private String refundBody(String key, int amount) throws IOException {
+        return JSON.writeValueAsString(Map.of("idempotencyKey", key, "amount", amount,
+                "reason", "Isolated cashier recorded refund", "paymentMethod", "CASH"));
     }
 
     private void assertConcurrentCheckIn(String gateway, UUID appointmentId, String nurseToken) throws Exception {

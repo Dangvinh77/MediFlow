@@ -51,6 +51,12 @@ public class LabClearancePersistenceAdapter implements LabClearanceRepositoryPor
         return clearances.findByTestTestIdOrderByGrantedAtDesc(testId).stream().findFirst().map(this::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<LabFinancialClearance> findByTestIdAndClearanceId(UUID testId, UUID clearanceId) {
+        return clearances.findByTestTestIdAndClearanceId(testId, clearanceId).map(this::toDomain);
+    }
+
     private LabFinancialClearanceJpaEntity toEntity(LabFinancialClearance value) {
         return LabFinancialClearanceJpaEntity.builder()
                 .clearanceTargetId(value.clearanceTargetId())

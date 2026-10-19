@@ -274,7 +274,15 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         List<LabResult> results = request.results().stream()
                 .map(item -> LabResult.create(item.indicator(), item.value(), item.unit(), item.referenceRange()))
                 .toList();
-        test.recordResults(results, request.conclusion(), request.performedDate());
+        Instant completedAt = test.getCareContractVersion() == 1 ? clock.instant() : null;
+        if (test.getCareContractVersion() == 1) {
+            LabFinancialClearance clearance = test.getEmergencyOverrideId() == null && test.getClearanceId() != null
+                    ? clearances.findByTestIdAndClearanceId(test.getTestId(), test.getClearanceId()).orElse(null)
+                    : null;
+            test.recordResults(results, request.conclusion(), request.performedDate(), clearance, completedAt);
+        } else {
+            test.recordResults(results, request.conclusion(), request.performedDate());
+        }
         UUID verifiedBy = null;
         if (test.getCareContractVersion() == 1) {
             verifiedBy = authenticatedStaff.currentStaff().map(AuthenticatedStaffContext::staffId)
@@ -283,7 +291,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         }
         LabTest saved = tests.save(test);
         if (saved.getCareContractVersion() == 1) {
-            appendResultEvent(saved, verifiedBy);
+            appendResultEvent(saved, verifiedBy, completedAt);
         } else {
             publisher.publishResultCreated(
                     LabResultCreatedEvent.from(saved, correlationIds.currentOrCreate().toString()));
@@ -392,9 +400,8 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         return mapper.toDto(saved);
     }
 
-    private void appendResultEvent(LabTest test, UUID verifiedBy) {
+    private void appendResultEvent(LabTest test, UUID verifiedBy, Instant occurredAt) {
         String correlationId = correlationIds.currentOrCreate().toString();
-        Instant occurredAt = clock.instant();
         LabResultV2Payload payload = new LabResultV2Payload(test.getTestId(), test.getPatientId(),
                 test.getRecordId(), test.getRequestingDepartmentId(), test.getCareEpisodeType(),
                 test.getCareEpisodeId(), test.getLabType(), test.getResultVersion(),

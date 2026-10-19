@@ -50,10 +50,13 @@ pointers, not additional specs or backlogs.
 
 | Developer | Owned backend modules |
 |---|---|
-| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service`, deferred `inpatient-service` |
+| Vinh (`Dangvinh77` / `Harori`) | `clinical-service`, `lab-service`, `billing-service`, `notification-service`, deferred `inpatient-service` |
 | Huy (`LQHuy0210`) | `pharmacy-service`, `report-service`, deferred `surgery-service` |
 | Hoàng Anh (`TranHoangAnh94`) | Organization/Patient packages in `core-service`, `gateway` |
-| Lộc (`locgit-89`) | `billing-service`, `notification-service` |
+
+From 2026-10-18, per user assignment, Vinh takes over Billing and Notification from Lộc.
+Vinh owns backend verification across modules, including test-only fixes; production fixes
+outside Vinh's modules require an owner handoff.
 
 Frontend ownership mirrors these bounded contexts. The exact feature and route paths are canonical
 in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
@@ -68,7 +71,7 @@ in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
 - `backend/common`, `backend/eureka-server`, root build files, `.github`, and repository scripts are
   shared. Change them only when the task explicitly assigns that shared work.
 - Vinh may coordinate, review, and merge across the repository; this does not silently expand
-  Harori's production write scope beyond Clinical and Lab.
+  Harori's production write scope beyond Clinical, Lab, Billing and Notification.
 - Frontend shared-scope exception: Vinh coordinates and has default write authority for the shared
   frontend paths defined in [`docs/ai/15-frontend-ownership.md`](docs/ai/15-frontend-ownership.md).
   This exception does not grant default authority over another owner's feature or route.

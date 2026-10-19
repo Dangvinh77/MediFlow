@@ -1,0 +1,100 @@
+{
+  "base": "05c7690c3a37b602e336fac4902ced7f3a1f7d89",
+  "productionCommits": [
+    "f6d303ae4f6386b27232be8ee8741ad40d5082b9",
+    "cc3789a81340cca8aac564a305d7c629a0c1bac4",
+    "07d044497da173c677797e727e86920cc824b93f"
+  ],
+  "sourceFiles": [
+    {
+      "path": "backend/billing-service/AGENTS.md",
+      "sha256": "5da8c256288b125e1604b1468bfdfff79882661b3f4e27c629de83e150a4ac80"
+    },
+    {
+      "path": "backend/billing-service/src/main/java/com/mediflow/billing/infrastructure/security/JwtAuthFilter.java",
+      "sha256": "ab798c260c0b4d2f33608bf380e303a15ea00ec6e9249ed290a009f5d4fd67da"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/infrastructure/security/JwtAuthFilterTest.java",
+      "sha256": "547661942c8b3e7aa376b079bf3e7911adb3d765766018781630ad3dcbf5a880"
+    },
+    {
+      "path": "backend/billing-service/src/test/java/com/mediflow/billing/web/BillingHumanTokenBoundaryTest.java",
+      "sha256": "5f5ff220296bf22e5372d7b5a0fcbdda920d5464e155344ef65a2a9ea1b03466"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/port/out/LabClearanceRepositoryPort.java",
+      "sha256": "7ba766e68fc2309817e592d4074fe6a5be3da42e4599fcec54c70c87c1055f43"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/application/service/LabApplicationService.java",
+      "sha256": "3c6cac7b552cf7abf9a6dbe3619658277d12c54560e4f1d2a43b52d2c7c0397a"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/domain/model/LabTest.java",
+      "sha256": "ee1a2bb3c1f6fc3ec8b1bc9abe4a7b8d5526707bdeb3a3d1f8ca08d47ce9a315"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/persistence/adapter/LabClearancePersistenceAdapter.java",
+      "sha256": "02027e0e26f9c7f5789829f2f0968f41703da23570eb854388292235dd071262"
+    },
+    {
+      "path": "backend/lab-service/src/main/java/com/mediflow/lab/infrastructure/persistence/repository/LabFinancialClearanceJpaRepository.java",
+      "sha256": "2af6f98e704aaa0d6bafe3551142ea6e0c16c1828186231d9ceda9c0ddf3cde8"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/application/service/LabCareFinanceV2ApplicationServiceTest.java",
+      "sha256": "a6b08eddb8f7074f74280155d878b48cb2b6f259cb4a2ef8a3fc592758e6441d"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/domain/model/LabCareFinanceV2DomainTest.java",
+      "sha256": "e7e484ae6e405e1955c670a5087d2d0bb18a44f68fdbd171e40d47c8a1575dec"
+    },
+    {
+      "path": "backend/lab-service/src/test/java/com/mediflow/lab/infrastructure/persistence/LabPersistenceAdapterTest.java",
+      "sha256": "17233d9777272777fe9bf6499bafd63103b05564c62e1462bd21493ebc46fffe"
+    },
+    {
+      "path": "backend/notification-service/AGENTS.md",
+      "sha256": "26a64b46b31b15234a35851504c4adb3f003e5780f3b30830be8b758aab9f4cc"
+    },
+    {
+      "path": "backend/notification-service/src/main/java/com/mediflow/notification/infrastructure/security/JwtAuthFilter.java",
+      "sha256": "e338a34aa428cb4d119e509a5d8c110e36cd542acfce3b50fa97247f8dcc4d40"
+    },
+    {
+      "path": "backend/notification-service/src/test/java/com/mediflow/notification/infrastructure/security/JwtAuthFilterTest.java",
+      "sha256": "0850b1517e2b88e61f2ffa6dc3ed99cd3f9ff5c8299026f7f92885799b32db80"
+    },
+    {
+      "path": "backend/support-service/src/test/java/com/mediflow/support/SixServiceOutpatientAcceptanceIT.java",
+      "sha256": "07b7dc30ae22ef9111d98cff9df7f6ff8ed699a5c9038e7ca805b581f67ee5c9"
+    },
+    {
+      "path": "docs/plans/01-system-design.md",
+      "sha256": "ad065919a86e2973c992e42bfd6d3e44980ee41dd760970e8fc1d3119a1e4bdd"
+    },
+    {
+      "path": "docs/plans/02-business-flows.md",
+      "sha256": "eef7f3379e1d6ab073a1b36aa2cdb01884c4e20816aea592754d53df70602af1"
+    },
+    {
+      "path": "docs/plans/03-contracts.md",
+      "sha256": "b99e815762c63196bcbc979c7c35e04b2e991b239ee7696afb02cc5064072cdc"
+    },
+    {
+      "path": "docs/plans/04-data-reliability.md",
+      "sha256": "9013caca5890c73d81ad15f65559075fe15b40ef920b7da1e90505d1f80e6a59"
+    },
+    {
+      "path": "docs/plans/05-implementation-plan.md",
+      "sha256": "8dec73f5ebdf8db705b9dfe790a0831fcd125d7e6fec30035f21d23fc22b2e3b"
+    },
+    {
+      "path": "docs/plans/06-acceptance-runbook.md",
+      "sha256": "c6b81a244d2dac9443edcd4498282a37a33c94915c2d0515f54c617e10c962d1"
+    }
+  ],
+  "note": "Source hashes are checked before audit test/docs commit; no production change after the three listed commits. Packaged runtime uses fresh jars from this source.",
+  "packagedAcceptanceTestCommit": "9d451330f5faa68fc6422fa0c9a1be3f289e402c"
+}

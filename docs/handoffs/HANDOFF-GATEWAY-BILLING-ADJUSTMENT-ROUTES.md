@@ -1,7 +1,12 @@
 # Hoàng Anh — bổ sung Gateway routes hoàn tiền ngoại trú
 
-**Refresh:** 2026-10-18, master `025ef39e` đã merge PR #427.
-**Trạng thái:** OPEN — cần code. **Dev code:** Hoàng Anh (`TranHoangAnh94`).
+**Refresh:** 2026-10-19, remote master `4c19dd4a`.
+**Trạng thái:** CODE IMPLEMENTED tại `2805b07c` / PR #431; không giao lại code.
+Vinh retest ngày 19/10: explicit routes 11/11 và full Gateway 1.449/1.449, không skips.
+Phần runtime HTTP/Billing và financial race trong acceptance rộng hơn vẫn cần evidence
+được chia sẻ trên cùng source lock trước khi xóa phiếu; policy tests không thay runtime E2E.
+[Kết quả và giới hạn](../acceptance/backend-recheck-2026-10-19/README.md).
+**Dev code:** Hoàng Anh (`TranHoangAnh94`).
 **Toàn bộ kiểm thử/nghiệm thu:** Vinh, theo phân công người dùng ngày 2026-10-18;
 xem [queue kiểm thử chung](HANDOFF-VINH-BACKEND-VERIFICATION.md).
 Phiếu này thay yêu cầu cũ mở cả Surgery và dùng wildcard `/**`.
@@ -49,7 +54,7 @@ Không mở Surgery cancellation, account deposit/settlement hoặc Report maint
 CSV cũng có dòng `false`. Surgery/Inpatient/full V2 deferred, không là blocker ngoại trú.
 Chỉ đóng phiếu sau khi cả code và nghiệm thu Vinh đạt.
 
-## Tái hiện thực tế — 18/10/2026
+## Tái hiện lịch sử trước fix — 18/10/2026
 
 Vinh đã thêm test `backend/gateway/src/test/java/com/mediflow/gateway/GatewayRefundRoutesAcceptanceIT.java`.
 Chạy explicit (tên IT không nằm trong default Surefire):

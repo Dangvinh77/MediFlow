@@ -39,6 +39,12 @@ class PharmacyOutpatientRuntimeAcceptanceIT {
             .withEnv("MEDIFLOW_BILLING_LEDGER_ENABLED","true")
             .withEnv("MEDIFLOW_BILLING_PRESCRIPTION_CHARGE_CONSUMER_ENABLED","true")
             .withEnv("MEDIFLOW_BILLING_PRESCRIPTION_PRICE_CODES","DRUG")
+            .withEnv("MEDIFLOW_FEATURES_OUTPATIENT_MVP_ENABLED",
+                    Boolean.toString(Boolean.getBoolean("mediflow.acceptance.billing-v1-published")))
+            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ENABLED",
+                    Boolean.toString(Boolean.getBoolean("mediflow.acceptance.billing-v1-published")))
+            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_PURPOSES","PRESCRIPTION")
+            .withEnv("MEDIFLOW_BILLING_OUTPATIENT_PUBLICATION_ACCEPTANCE_REFERENCE","ISOLATED_ACCEPTANCE_ONLY")
             .withEnv("MEDIFLOW_BILLING_CLEARANCE_LOOKUP_ENABLED","true");
     @Container static final GenericContainer<?> PHARMACY=service("pharmacy",8085,PHARMACY_DB,"pharmacy-db")
             .withEnv("SPRING_PROFILES_ACTIVE","outpatient-mvp")
@@ -145,6 +151,8 @@ class PharmacyOutpatientRuntimeAcceptanceIT {
             } finally {PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();healthy(PHARMACY,8085);}
             String statePath="/api/v1/pharmacy/admin/acceptance/state/"+prescription;
             await().atMost(Duration.ofSeconds(25)).untilAsserted(()->assertThat(raw(PHARMACY,8085,statePath,"GET",null,200).path("grants").asInt()).isOne());
+            PHARMACY.getDockerClient().stopContainerCmd(PHARMACY.getContainerId()).withTimeout(0).exec();
+            PHARMACY.getDockerClient().startContainerCmd(PHARMACY.getContainerId()).exec();healthy(PHARMACY,8085);
             for(int i=0;i<2;i++) {
                 channel.basicPublish("mediflow.events","financial.clearance.granted",true,grant.getProps(),grant.getBody());
                 channel.basicPublish("mediflow.events","payment.completed",true,cash.getProps(),cash.getBody());

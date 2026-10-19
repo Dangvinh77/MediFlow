@@ -1,0 +1,187 @@
+{
+  "generatedAt": "2026-10-19T09:49:24.7115131+07:00",
+  "privateEvidence": [
+    {
+      "name": "mediflow-backend-api-audit-default-2026-10-19.log",
+      "bytes": 3299783,
+      "sha256": "9b769ca864aa2a4485db55bb1d345b55ff9beadc8e366e46df3ee92db83e96b7",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "mediflow-audit-fresh-install-2026-10-19.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "mediflow-audit-support-fresh-libs-2026-10-19.log",
+      "bytes": 69782,
+      "sha256": "47a9a8a88702db73eb5954c43cf75fac30f64dc1379ac3314cce9b58c51b4e85",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "mediflow-audit-six-service-runtime-2026-10-19.log",
+      "bytes": 2876,
+      "sha256": "37ffe48cdf020ef4cc8cced7f6bb4d7920337736b9921ffdac007d4eba574388",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "mediflow-billing-final-boundary-2026-10-19.log",
+      "bytes": 8745,
+      "sha256": "b52514878c77d2a6a4d0508358926bb2f4087528b67fa24d676023c9fd7d9244",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "mediflow-billing-token-red-2026-10-19.log",
+      "bytes": 81638,
+      "sha256": "88bcc0391b51788ee940ef45eddea975cc4d915f9cdd99fb6a17722fa510fb89",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "huy-jwt-missing-exp-pharmacy-baseline-20261019.log",
+      "bytes": 2110,
+      "sha256": "96c54e60eabd6adc1998e020e645419feb1fe85bd795e9043f1d974dab843dd6",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "huy-jwt-missing-exp-pharmacy-red-20261019.log",
+      "bytes": 5843,
+      "sha256": "cfab8bd7eb171107c464f1429143b5ef26e036e6fc7e67bd9e13cba1e2755d94",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "huy-jwt-missing-exp-report-baseline-20261019.log",
+      "bytes": 2638,
+      "sha256": "b6207591542e6783ed70c2468061dcf1f486b20ff81395736fedb417f4fc8629",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "huy-jwt-missing-exp-report-red-20261019.log",
+      "bytes": 4923,
+      "sha256": "c921f05c920b7bd329aeecc36b1a23392af2b3f1b6e5f0ed2b6d3d3668cb56b6",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "core-security-and-composition-tests.log",
+      "bytes": 11537,
+      "sha256": "67a6313b73a359458ba46b1ca1f04da8c5ae7a1a9a30650c7b7cafe4c6701370",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "gateway-web-test.log",
+      "bytes": 10829,
+      "sha256": "af37fcb64a56dbc30efb23bb0509058253cc37d5ad995ef87d0da8cd52435cd8",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "audit-jwt-auth-filter-green.log",
+      "bytes": 4340,
+      "sha256": "ee0a28df26f79810e310cba0dd0f6a111d7da4383c3db50f7295fc83045fe54e",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "audit-notification-full-green.log",
+      "bytes": 178081,
+      "sha256": "b5a3d1091547c29285903271dd629a125b5bb3d2dec25ad5f996db35d78cf3cb",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "audit-notification-security-controller-green.log",
+      "bytes": 10282,
+      "sha256": "beefbf3ccc674a4093587ac921047f244c28943308de4681d381ca23544a4784",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "gateway-refund-evidence.json",
+      "bytes": 1654,
+      "sha256": "4ca000a516b539bee7b8edfe396d46d18648ba8e6cfaccc35f939816356b2d1d",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "paid-prescription-evidence.json",
+      "bytes": 956,
+      "sha256": "1c0fa82fd2bd271a98c89051d1f2754d7198dc4eb8a56ce981f4dd69fed1d9e3",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "six-service-paid-exam-evidence.json",
+      "bytes": 1782,
+      "sha256": "fa925eaaac683107022a618c44cf2c85f76555e6d6e33f34e20df1c24dad8f55",
+      "retention": "Private local artifact; content not published"
+    },
+    {
+      "name": "TEST-com.mediflow.support.SixServiceOutpatientAcceptanceIT.xml",
+      "bytes": 50364,
+      "sha256": "67cb2d92716aa2924f0ac00ecbdd0d2f5e45000928c393f03cfe209fba90e768",
+      "retention": "Private local artifact; content not published"
+    }
+  ],
+  "freshBuiltJars": [
+    {
+      "module": "billing-service",
+      "name": "billing-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "32d4e3f057986fd8a362406c55244bb02a955b85140c118700313c55f5494882"
+    },
+    {
+      "module": "clinical-service",
+      "name": "clinical-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "1342e3b1a0b5ac91aad611cdff3ea94d9be7dcd0994c574935e4b382f43b383c"
+    },
+    {
+      "module": "common",
+      "name": "common-0.0.1-SNAPSHOT.jar",
+      "sha256": "309179a6d85af226ebcb74b7d7f55123c78a74c91fd2759242a09e41660e8240"
+    },
+    {
+      "module": "core-service",
+      "name": "core-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "5d237e8734c96c4176aebfdac6b87078d6805b920b063f702186e106236f88a6"
+    },
+    {
+      "module": "eureka-server",
+      "name": "eureka-server-0.0.1-SNAPSHOT.jar",
+      "sha256": "e0df8ffa9f8fafd758e94f26258d5d9b54c6c432ae1eda402387471cf521b5c8"
+    },
+    {
+      "module": "gateway",
+      "name": "gateway-0.0.1-SNAPSHOT.jar",
+      "sha256": "b0cc082cc1548ac8a7100165ebcf5acefadcde0860e8d2f68629819efa29b3fe"
+    },
+    {
+      "module": "inpatient-service",
+      "name": "inpatient-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "52c6606a03a4a739787947a134e109fa49f77c78c87c39323ab2ae2b7416ee59"
+    },
+    {
+      "module": "lab-service",
+      "name": "lab-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "f6385ad71f61c5e5981d120a36a45a8380e81c64b0a98629193c449d5db997ca"
+    },
+    {
+      "module": "notification-service",
+      "name": "notification-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "e129c8fbf8c61ad2116a2b10a9adc71a71723756496e6bc90afd57b2186605c9"
+    },
+    {
+      "module": "pharmacy-service",
+      "name": "pharmacy-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "c977341cfd0b8af5614519cbfff425a085b7a996a27d6f28bebd6a88652d3036"
+    },
+    {
+      "module": "report-service",
+      "name": "report-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "af353b91731ffdae3ac8660545d3a83b54fdd391ced86c475439c80bbb298c64"
+    },
+    {
+      "module": "support-service",
+      "name": "support-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "118e5dd6fe9c5b744efa2848c96bd77468d4f375c936d03a62431630d0f253f8"
+    },
+    {
+      "module": "surgery-service",
+      "name": "surgery-service-0.0.1-SNAPSHOT.jar",
+      "sha256": "9ae22b2c3c6ac52d69bd26a9fa42e59b9ead8b43c6cadbc1321f3d212a5f7b8f"
+    }
+  ],
+  "note": "Root build also packages deferred modules; this does not activate them. Test runtime starts only six business deployments plus Gateway/Eureka."
+}

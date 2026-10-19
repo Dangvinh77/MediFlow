@@ -1,5 +1,29 @@
 # Backend verification — 2026-10-18
 
+## Trạng thái sau audit bổ sung 19/10
+
+Hai sửa test Report/Pharmacy đã được phát hành qua PR #439 và merge trước base audit
+`05c7690c`; mô tả “chưa commit” bên dưới là trạng thái tại remote `4c19dd4a` khi recheck.
+[Audit API/nghiệp vụ mới](../backend-api-audit-2026-10-19/README.md) phát hiện thêm lỗi
+credential boundary, hiệu lực Lab result và Notification byte identity. Không dùng bundle
+lịch sử hoặc tag feature-complete để bỏ qua các handoff mới trong registry.
+
+## Đính chính sau phản hồi của Lộc — 19/10/2026
+
+Các bảng bên dưới là **kết quả lịch sử trước Gateway fix**, không phải trạng thái của
+master hiện tại. Đối chiếu remote `4c19dd4a8ede06c07545c9290ff77b687b8dd49c` xác nhận
+Gateway đã sửa tại `2805b07c` (PR #431), nhưng hai sửa test V-TEST-BUG-01/02 chưa được
+commit lên master. Tag `v0.9.0-backend-feature-complete` trỏ `8d7e6c69` cũng không chứa
+hai sửa test này. Vì vậy không dùng tag hoặc kết quả local chưa commit để khẳng định
+nguồn chung đã hoàn tất mọi việc trong PR #429.
+
+Ngày 19/10 Vinh chạy lại explicit Gateway refund acceptance **11/11**, toàn Gateway
+**1.449/1.449**, đều 0 failure/error/skip. Hai route đã qua kiểm tra policy sau sửa;
+11 cases dùng filter/mock exchange, không tự chứng minh toàn luồng HTTP/JWT/Billing.
+Phần Report/Pharmacy và phạm vi nguồn được cập nhật trong
+[bundle xác minh 19/10](../backend-recheck-2026-10-19/README.md).
+Giữ nguyên số liệu đỏ lịch sử bên dưới để truy vết, không tính rerun thành baseline mới.
+
 Baseline master `025ef39e358756a28043d9809fad165096528fbf`, gồm PR #427.
 Production source không sửa trong lượt này; Gateway có thêm explicit acceptance test chưa commit.
 Đây là kết quả local Windows/Docker Desktop, không phải production activation.
