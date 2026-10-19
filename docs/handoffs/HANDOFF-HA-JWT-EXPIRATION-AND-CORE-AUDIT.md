@@ -39,6 +39,23 @@ Kiểm thử local trên source của nhánh này:
 Self-review theo skill `review-pr`: không phát hiện blocker trong diff; đủ điều kiện mở PR.
 Chưa đủ điều kiện kết luận nghiệm thu/merge trước khi Vinh chạy các gate còn thiếu trên PR head.
 
+### Cập nhật sau khi bật Docker — 2026-10-19
+
+Đã chạy lại `mvn -q -pl backend/gateway,backend/core-service -am test` trên commit
+`cea553d1d853e396cbcf052acb0d16ed9a02c511`, Docker Engine 28.5.1, PostgreSQL
+`postgres:16-alpine` và RabbitMQ `rabbitmq:3.13-management-alpine` qua Testcontainers.
+Lệnh kết thúc exit code 0:
+
+- Gateway: **1.451 tests, 0 failures, 0 errors, 0 skips**.
+- Core: **187 tests, 0 failures, 0 errors, 0 skips**.
+- Trong Core, `OrganizationServiceIntegrationTest`: 2 pass,
+  `SurgeryAuthorityIntegrationTest`: 6 pass, `PatientServiceIntegrationTest`: 1 pass.
+  Ba integration suites trước đó bị chặn bởi Docker nay đã chạy thành công.
+
+Đây là evidence local của Hoàng Anh, không thay cho xác nhận độc lập của Vinh.
+Vẫn chờ Vinh nghiệm thu artifact mới/refund routes và tái hiện riêng HA-AUDIT-03;
+không coi full suite hiện có là bằng chứng đã kiểm concurrent race khoa/nhân viên.
+
 ## HA-AUDIT-01 — đã tái hiện: signed access token không có exp vẫn được chấp nhận
 
 Gateway `JwtAuthenticationFilter` chỉ dựa vào parser kiểm expiration nếu claim có mặt,
