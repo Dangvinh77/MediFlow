@@ -137,6 +137,203 @@ These diagrams map MVP actors to use cases. Associations identify user groups an
 | U10–U11 | Billing owns money; partial payment guards apply; same-key replay returns the receipt, changed intent conflicts. |
 | U12–U13 | Reports are eventually consistent; unavailable differs from zero; notifications do not determine authority. |
 
+<!-- role-usecases:start -->
+### Detailed use cases — one diagram per role
+
+Figures 29–36 follow the supervisor’s presentation: one human actor per diagram, solid arrows to primary tasks, dashed `«include»` arrows for required supporting behavior, and dashed `«extend»` arrows from a conditional extension to its base task. An extension may have its own included subflow. Arrow direction is relational, not chronological. Staff authentication is a precondition; it is not repeated beside every task. Blue ovals are primary tasks; teal ovals are supporting/extension tasks. These are source capabilities, not proof of UI completeness or production enablement.
+
+**Scope correction:** PATIENT currently has authentication/refresh and own-notification access. Overview 04 no longer grants appointment or lab self-service. SYSTEM is a machine identity and has no human-role diagram. All role permissions below are intersected with the Gateway route matrix and downstream guards.
+
+#### ADMIN — Administrator tasks
+
+**Part 1/4 · A4 landscape**
+
+![ADMIN — Administrator tasks — Part 1/4](word-compact/panels/png/29-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/29-en-part-01.mmd) · [SVG](word-compact/panels/svg/29-en-part-01.svg)
+
+**Part 2/4 · A4 landscape**
+
+![ADMIN — Administrator tasks — Part 2/4](word-compact/panels/png/29-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/29-en-part-02.mmd) · [SVG](word-compact/panels/svg/29-en-part-02.svg)
+
+**Part 3/4 · A4 landscape**
+
+![ADMIN — Administrator tasks — Part 3/4](word-compact/panels/png/29-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/29-en-part-03.mmd) · [SVG](word-compact/panels/svg/29-en-part-03.svg)
+
+**Part 4/4 · A4 landscape**
+
+![ADMIN — Administrator tasks — Part 4/4](word-compact/panels/png/29-en-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/29-en-part-04.mmd) · [SVG](word-compact/panels/svg/29-en-part-04.svg)
+
+[Original SVG](assets/svg/29-en.svg) · [Portrait PNG](word-compact/portrait/png/29-en.png) · [Landscape PNG](word-compact/landscape/png/29-en.png)
+
+This diagram focuses on organization/account administration. ADMIN also has explicit permissions in the other seven context diagrams; it does not bypass business guards. No account deletion or arbitrary permission editor is invented.
+
+Extension conditions: E1: Transfer department — transfer requested
+
+Source evidence: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+#### MANAGER — Manager tasks
+
+**A4 portrait**
+
+![MANAGER — Manager tasks](word-compact/portrait/png/30-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/30-en.mmd) · [SVG](word-compact/portrait/svg/30-en.svg)
+
+[Original SVG](assets/svg/30-en.svg) · [Portrait PNG](word-compact/portrait/png/30-en.png) · [Landscape PNG](word-compact/landscape/png/30-en.png)
+
+Read-only management tasks: daily/monthly reports, top medicines, department revenue, appointment/lab lists, staff and department directories. MANAGER cannot create accounts, update staff or record clinical/financial commands. Snapshot reports remain subject to their runtime availability and coverage.
+
+Extension conditions: E1: Filter by department — department selected
+
+Source evidence: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+
+#### DOCTOR — Doctor tasks
+
+**Part 1/3 · A4 landscape**
+
+![DOCTOR — Doctor tasks — Part 1/3](word-compact/panels/png/31-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/31-en-part-01.mmd) · [SVG](word-compact/panels/svg/31-en-part-01.svg)
+
+**Part 2/3 · A4 landscape**
+
+![DOCTOR — Doctor tasks — Part 2/3](word-compact/panels/png/31-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/31-en-part-02.mmd) · [SVG](word-compact/panels/svg/31-en-part-02.svg)
+
+**Part 3/3 · A4 landscape**
+
+![DOCTOR — Doctor tasks — Part 3/3](word-compact/panels/png/31-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/31-en-part-03.mmd) · [SVG](word-compact/panels/svg/31-en-part-03.svg)
+
+[Original SVG](assets/svg/31-en.svg) · [Portrait PNG](word-compact/portrait/png/31-en.png) · [Landscape PNG](word-compact/landscape/png/31-en.png)
+
+Clinical authority and patient/context checks still apply. [V1] requires care-finance-v2 enabled; start-exam needs exact EXAM clearance or the supported audited override. AppointmentController additionally authorizes appointment reads/updates/status; operational report reads and lab cancellation are also source-authorized. A doctor cannot perform nurse check-in, pharmacy dispensing or cashier payment.
+
+Extension conditions: E1: Add diagnosis — diagnosis added; E2: Order lab test — test indicated; E3: Cancel prescription — cancellation requested
+
+Source evidence: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### NURSE — Nurse tasks
+
+**Part 1/4 · A4 landscape**
+
+![NURSE — Nurse tasks — Part 1/4](word-compact/panels/png/32-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/32-en-part-01.mmd) · [SVG](word-compact/panels/svg/32-en-part-01.svg)
+
+**Part 2/4 · A4 landscape**
+
+![NURSE — Nurse tasks — Part 2/4](word-compact/panels/png/32-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/32-en-part-02.mmd) · [SVG](word-compact/panels/svg/32-en-part-02.svg)
+
+**Part 3/4 · A4 landscape**
+
+![NURSE — Nurse tasks — Part 3/4](word-compact/panels/png/32-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/32-en-part-03.mmd) · [SVG](word-compact/panels/svg/32-en-part-03.svg)
+
+**Part 4/4 · A4 landscape**
+
+![NURSE — Nurse tasks — Part 4/4](word-compact/panels/png/32-en-part-04.png)
+
+[Mermaid](word-compact/panels/mermaid/32-en-part-04.mmd) · [SVG](word-compact/panels/svg/32-en-part-04.svg)
+
+[Original SVG](assets/svg/32-en.svg) · [Portrait PNG](word-compact/portrait/png/32-en.png) · [Landscape PNG](word-compact/landscape/png/32-en.png)
+
+[V1] check-in requires care-finance-v2 enabled and does not start an examination. NURSE can query lab list/detail and notification lists by patient, but cannot write diagnoses, lab results, prescriptions or payments; individual notification detail is not granted to NURSE. There is no separate RECEPTIONIST role.
+
+Extension conditions: E1: Reschedule appointment — schedule change requested
+
+Source evidence: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+
+#### LAB_TECH — Laboratory technician tasks
+
+**A4 portrait**
+
+![LAB_TECH — Laboratory technician tasks](word-compact/portrait/png/33-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/33-en.mmd) · [SVG](word-compact/portrait/svg/33-en.svg)
+
+[Original SVG](assets/svg/33-en.svg) · [Portrait PNG](word-compact/portrait/png/33-en.png) · [Landscape PNG](word-compact/landscape/png/33-en.png)
+
+Start/cancel remain subject to lifecycle and feature availability; exact LAB_TEST clearance applies to the V1 protected action. LAB_TECH can search/read tests and write results/status, but cannot create an indication, prescribe or collect payment. Filtering is an optional extension of the worklist.
+
+Extension conditions: E1: Filter pending tests — status filter selected
+
+Source evidence: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+
+#### PHARMACIST — Pharmacist tasks
+
+**A4 portrait**
+
+![PHARMACIST — Pharmacist tasks](word-compact/portrait/png/34-en.png)
+
+[Mermaid](word-compact/portrait/mermaid/34-en.mmd) · [SVG](word-compact/portrait/svg/34-en.svg)
+
+[Original SVG](assets/svg/34-en.svg) · [Portrait PNG](word-compact/portrait/png/34-en.png) · [Landscape PNG](word-compact/landscape/png/34-en.png)
+
+The public outpatient dispense action resolves the signed actor and V1 lifecycle; exact PRESCRIPTION clearance, stock and reservation guards apply. It is explicit pharmacist action, not automatic dispensing on payment. PHARMACIST cannot create/cancel prescriptions; expiration is system lifecycle behavior rather than a human task.
+
+Extension conditions: E1: Filter by keyword — keyword supplied
+
+Source evidence: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### CASHIER — Cashier tasks
+
+**Part 1/3 · A4 landscape**
+
+![CASHIER — Cashier tasks — Part 1/3](word-compact/panels/png/35-en-part-01.png)
+
+[Mermaid](word-compact/panels/mermaid/35-en-part-01.mmd) · [SVG](word-compact/panels/svg/35-en-part-01.svg)
+
+**Part 2/3 · A4 landscape**
+
+![CASHIER — Cashier tasks — Part 2/3](word-compact/panels/png/35-en-part-02.png)
+
+[Mermaid](word-compact/panels/mermaid/35-en-part-02.mmd) · [SVG](word-compact/panels/svg/35-en-part-02.svg)
+
+**Part 3/3 · A4 landscape**
+
+![CASHIER — Cashier tasks — Part 3/3](word-compact/panels/png/35-en-part-03.png)
+
+[Mermaid](word-compact/panels/mermaid/35-en-part-03.mmd) · [SVG](word-compact/panels/svg/35-en-part-03.svg)
+
+[Original SVG](assets/svg/35-en.svg) · [Portrait PNG](word-compact/portrait/png/35-en.png) · [Landscape PNG](word-compact/landscape/png/35-en.png)
+
+Invoice compatibility and V1 ledger are separate paths, not mandatory consecutive steps. [V1] depends on feature availability. Refund is a subsequent conditional operation on an eligible original payment; its own workflow includes balance checks and amount/reason. Same-key retries must preserve intent. No inpatient/surgery settlement task is activated.
+
+Extension conditions: E1: Refund payment [V1] — eligible refund requested
+
+Source evidence: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+
+#### PATIENT — Patient tasks
+
+**A4 landscape**
+
+![PATIENT — Patient tasks](word-compact/landscape/png/36-en.png)
+
+[Mermaid](word-compact/landscape/mermaid/36-en.mmd) · [SVG](word-compact/landscape/svg/36-en.svg)
+
+[Original SVG](assets/svg/36-en.svg) · [Portrait PNG](word-compact/portrait/png/36-en.png) · [Landscape PNG](word-compact/landscape/png/36-en.png)
+
+This intentionally reflects the narrow current source permission surface. PATIENT cannot directly create/read appointments, retrieve patient records, lab results, prescriptions or invoices through the current Gateway/controller matrix. Self-registration and profile editing are not exposed. Those are future gaps, not implemented use cases. Notification detail checks ownership independently.
+
+Extension conditions: E1: Open notification — notification selected
+
+Source evidence: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+<!-- role-usecases:end -->
+
 ### 1.3. Sequences Diagrams
 
 ### Login and authorized access — SOURCE

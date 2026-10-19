@@ -1,0 +1,149 @@
+{
+  "renderer": "Mermaid CLI 11.12.0 + isolated Chromium SVG replay",
+  "results": [
+    {
+      "orientation": "portrait",
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "width": 526,
+      "height": 656,
+      "originalViewBox": "-16 -37 524.6536254882812 655.328125",
+      "viewBox": [
+        -17,
+        -37,
+        526,
+        656
+      ],
+      "paintedBounds": [
+        7.999999122344029,
+        -12.99999994433356,
+        484.6535920320246,
+        594.3281554633671
+      ],
+      "padding": 24,
+      "leafCount": 58,
+      "images": 4,
+      "pngWidth": 2400,
+      "pngHeight": 2994,
+      "estimatedTextPt": 13.8,
+      "preferred": "portrait",
+      "sourceSha256": "a7dbbed3f47bb579e1b4640dde90d133e7c10b0e6cdee47f128cd444bca86524",
+      "svgSha256": "5fab9af8cdf617ecde815088cf1607067385057d51179fd069ac7701d51e6f4b",
+      "pngSha256": "bc0f049631940ba2031e0ddb09cb8989a0e205845726571260e26adfe4a2cf2a",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "landscape",
+      "file": "04-vi.mmd",
+      "status": "pass",
+      "width": 1287,
+      "height": 544,
+      "originalViewBox": "-16 5 1285.29736328125 543.984375",
+      "viewBox": [
+        -17,
+        5,
+        1287,
+        544
+      ],
+      "paintedBounds": [
+        7.999999258186303,
+        29.00000080520201,
+        1245.297280097313,
+        524.9843570281672
+      ],
+      "padding": 24,
+      "leafCount": 66,
+      "images": 4,
+      "pngWidth": 3600,
+      "pngHeight": 1522,
+      "estimatedTextPt": 8.7,
+      "preferred": "landscape",
+      "sourceSha256": "816b6b1f984d32c4c8a2c68005ea42bda1014a19c13bbcf5296298c62de64f63",
+      "svgSha256": "d8d88a3963fe1157cc243e3465ea9be82aae50e425bb0addf76a0736df6f2193",
+      "pngSha256": "2ee9524ee57d9728f5ae680670ff4c1e518859b5428ab85399ccc06f22cadff3",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "panels",
+      "file": "32-en-part-04.mmd",
+      "status": "pass",
+      "width": 505,
+      "height": 217,
+      "originalViewBox": "-16 -31.5 503.4755859375 215.5",
+      "viewBox": [
+        -17,
+        -32,
+        505,
+        217
+      ],
+      "paintedBounds": [
+        7.999999606110592,
+        -7.499999362695782,
+        463.4755577190853,
+        160.0000069926435
+      ],
+      "padding": 24,
+      "leafCount": 10,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1547,
+      "estimatedTextPt": 22.2,
+      "preferred": "landscape",
+      "sourceSha256": "58a42fdbd708c9f9ddac3e7d7e85d90fe2890fcb42566732436a96dfcbfb0a11",
+      "svgSha256": "73ae053b99b37a1a1a6b16c74aa5fc266b16060bb4f85b3b1fb0127e421c1819",
+      "pngSha256": "93906cbf428c18328b42c0f44f0cde340188fb04195e549c40bf2e319ac34a3e",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": true,
+        "maxChannelDelta": 0,
+        "changedFraction": 0
+      }
+    },
+    {
+      "orientation": "panels",
+      "file": "32-vi-part-04.mmd",
+      "status": "pass",
+      "width": 505,
+      "height": 217,
+      "originalViewBox": "-16 -31.5 503.4755859375 215.5",
+      "viewBox": [
+        -17,
+        -32,
+        505,
+        217
+      ],
+      "paintedBounds": [
+        7.999999606110592,
+        -7.499999362695782,
+        463.4755577190853,
+        160.0000069926435
+      ],
+      "padding": 24,
+      "leafCount": 10,
+      "images": 1,
+      "pngWidth": 3600,
+      "pngHeight": 1547,
+      "estimatedTextPt": 22.2,
+      "preferred": "landscape",
+      "sourceSha256": "0428857ec8d8579a5bf38b9f260a77b5677a60df40b7038e7279301859d22eac",
+      "svgSha256": "93e6bac5bcbc6388547035c046c097455ccbad9ca176079aa56b936f1884852b",
+      "pngSha256": "dbffdbb03b3d673b6066b24f6bd42a588934e616a841188d910ae6446ccf94b7",
+      "pngMatchesSavedSvg": true,
+      "pixelComparison": {
+        "identical": false,
+        "maxChannelDelta": 2,
+        "changedFraction": 0.000002334267040149393
+      }
+    }
+  ]
+}

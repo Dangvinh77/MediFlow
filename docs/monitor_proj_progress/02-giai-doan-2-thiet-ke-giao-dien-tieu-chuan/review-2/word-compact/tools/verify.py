@@ -3,7 +3,9 @@ import hashlib, json, re, xml.etree.ElementTree as ET
 from PIL import Image, ImageChops, ImageDraw
 out=Path(__file__).resolve().parents[1]
 ledger=json.loads((out/'render-validation.json').read_text(encoding='utf8'))
-results=ledger['results']; assert len(results)==186
+results=ledger['results']
+expected={(o,p.name) for o in ['portrait','landscape','panels'] for p in (out/o/'mermaid').glob('*.mmd')}
+assert len(results)==len(expected) and {(r['orientation'],r['file']) for r in results}==expected
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 issues=[];verified=[]
 for r in results:
@@ -52,7 +54,7 @@ for group in ['portrait','landscape','panels']:
             x=(i%3)*600+(600-im.width)//2;y=(i//3)*450+30
             sheet.paste(im,(x,y));draw.text(((i%3)*600+12,(i//3)*450+8),p.stem,fill='#0f172a')
         sheet.save(qa/(group+'-'+str(start//12+1).zfill(2)+'.jpg'),quality=90)
-summary={'checked':len(verified),'issues':issues,'orientationsIndependentlyLaidOut':54,'singleEntityException':['16-en','16-vi'],'checks':['source/SVG/PNG SHA-256','SVG XML and offline assets','PNG dimensions','white borders on four sides','saved SVG pixel replay','distinct orientation geometry','all PNG contact sheets'],'results':verified}
+summary={'checked':len(verified),'issues':issues,'orientationsIndependentlyLaidOut':sum(not d.get('singleEntity') for d in manifest['diagrams']),'singleEntityException':['16-en','16-vi'],'checks':['source/SVG/PNG SHA-256','SVG XML and offline assets','PNG dimensions','white borders on four sides','saved SVG pixel replay','distinct orientation geometry','all PNG contact sheets'],'results':verified}
 (out/'validation.json').write_text(json.dumps(summary,indent=2),encoding='utf8')
 print(json.dumps({k:v for k,v in summary.items() if k!='results'},indent=2))
 assert not issues

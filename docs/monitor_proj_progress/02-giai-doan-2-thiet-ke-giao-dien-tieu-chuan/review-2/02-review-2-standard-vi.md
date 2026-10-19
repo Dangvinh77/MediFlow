@@ -256,7 +256,7 @@ flowchart LR
  DOC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>DOCTOR"]
  LT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — Outpatient MVP"]
- U1(["Đăng nhập / xem dữ liệu của mình"])
+ U1(["Đăng nhập / gia hạn phiên"])
  U2(["Quản lý lịch hẹn / check-in"])
  U3(["Khám / diagnosis / hoàn tất ngoại trú"])
  U4(["Chỉ định xét nghiệm"])
@@ -265,8 +265,6 @@ flowchart LR
  U7(["Kê đơn thuốc"])
  end
  PAT --- U1
- PAT --- U2
- PAT --- U6
  NUR --- U2
  DOC --- U2
  DOC --- U3
@@ -297,7 +295,7 @@ flowchart LR
  PA["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>PATIENT"]
  subgraph SYS["MediFlow — Outpatient MVP"]
  U8(["Danh mục thuốc / điều chỉnh tồn"])
- U9(["Cấp thuốc / hủy / hết hạn"])
+ U9(["Tra cứu đơn / cấp thuốc"])
  U10(["Xem khoản thu / ghi nhận thanh toán"])
  U11(["Điều chỉnh / refund theo policy"])
  U12(["Xem báo cáo có source coverage"])
@@ -325,6 +323,478 @@ flowchart LR
 | U7–U9 | Giá snapshot từ server; reserve không trừ stock; dispense nguyên tử, chống trùng; V1 cần actor và clearance. |
 | U10–U11 | Billing owns tiền; partial payment có guard; replay cùng key trả receipt cũ, khác intent báo conflict. |
 | U12–U13 | Report eventually consistent, unavailable khác zero; Notification không quyết định authority. |
+
+<!-- role-usecases:start -->
+### Use case chi tiết — một sơ đồ cho mỗi vai trò
+
+Hình 29–36 theo mẫu của giảng viên: mỗi hình có một actor người dùng, mũi tên liền đến tác vụ chính, mũi tên đứt `«include»` cho hành vi con bắt buộc và mũi tên đứt `«extend»` từ nhánh mở rộng có điều kiện về tác vụ gốc. Nhánh mở rộng có thể có luồng con `include` riêng. Mũi tên thể hiện quan hệ, không phải thứ tự thực hiện. Nhân viên đã đăng nhập là tiền điều kiện, không lặp lại ở mọi tác vụ. Oval xanh dương là tác vụ chính; xanh teal là tác vụ con/mở rộng. Hình mô tả khả năng trong source, không khẳng định mọi UI đã hoàn thiện hoặc mọi feature đã bật.
+
+**Hiệu chỉnh phạm vi:** PATIENT hiện có đăng nhập/refresh và truy cập thông báo của mình. Hình tổng quan 04 đã bỏ quyền tự thao tác lịch hẹn/xét nghiệm cho PATIENT. SYSTEM là định danh máy, không tạo sơ đồ role người dùng. Quyền từng role lấy giao của ma trận Gateway và guards downstream.
+
+#### ADMIN — Tác vụ quản trị viên
+
+![ADMIN — Tác vụ quản trị viên](assets/svg/29-vi.svg)
+
+<details>
+<summary>Mermaid · 29-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>ADMIN"]
+ subgraph SYS["MediFlow — ADMIN"]
+ A1(["Tạo tài khoản"])
+ A2(["Gán vai trò và định danh"])
+ A3(["Đổi trạng thái tài khoản"])
+ A4(["Kiểm tra tài khoản đích"])
+ A5(["Tạo hồ sơ nhân viên"])
+ A6(["Ghi thông tin nhân viên"])
+ A7(["Cập nhật hồ sơ nhân viên"])
+ A8(["Xem hồ sơ nhân viên"])
+ A9(["Chuyển khoa công tác"])
+ A10(["Kiểm tra khoa tiếp nhận"])
+ A11(["Cập nhật khoa"])
+ A12(["Xem thông tin khoa"])
+ A13(["Tạo khoa"])
+ A14(["Nhập mã và tên khoa"])
+ A15(["Xem báo cáo quản lý"])
+ A16(["Chọn kỳ và phạm vi"])
+ A17(["Gửi thông báo"])
+ A18(["Chọn người nhận và kênh"])
+ end
+ ACTOR --> A1
+ ACTOR --> A3
+ ACTOR --> A5
+ ACTOR --> A7
+ ACTOR --> A11
+ ACTOR --> A13
+ ACTOR --> A15
+ ACTOR --> A17
+ A1 -.->|"«include»"| A2
+ A3 -.->|"«include»"| A4
+ A5 -.->|"«include»"| A6
+ A7 -.->|"«include»"| A8
+ A9 -.->|"«extend» [E1]"| A7
+ A9 -.->|"«include»"| A10
+ A11 -.->|"«include»"| A12
+ A13 -.->|"«include»"| A14
+ A15 -.->|"«include»"| A16
+ A17 -.->|"«include»"| A18
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class A1,A3,A5,A7,A11,A13,A15,A17 main;
+ class A2,A4,A6,A8,A9,A10,A12,A14,A16,A18 sub;
+```
+
+</details>
+
+Hình tập trung quản trị tổ chức/tài khoản. ADMIN còn có các quyền cụ thể tại những nghiệp vụ khác theo ma trận nguồn; không bỏ qua business guards. Không thêm xóa tài khoản hay màn hình chỉnh quyền tùy ý.
+
+Điều kiện mở rộng: E1: Chuyển khoa công tác — cần chuyển khoa
+
+Đối chiếu source: [AccountController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/AccountController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java) · [DepartmentController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/DepartmentController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+#### MANAGER — Tác vụ quản lý
+
+![MANAGER — Tác vụ quản lý](assets/svg/30-vi.svg)
+
+<details>
+<summary>Mermaid · 30-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>MANAGER"]
+ subgraph SYS["MediFlow — MANAGER"]
+ M1(["Xem báo cáo ngoại trú"])
+ M2(["Chọn kỳ báo cáo"])
+ M3(["Xem độ phủ nguồn dữ liệu"])
+ M4(["Xem báo cáo tài chính"])
+ M5(["Chọn ngày hoặc tháng"])
+ M6(["Xem thống kê thuốc"])
+ M7(["Chọn kỳ và số lượng"])
+ M8(["Xem danh sách lịch hẹn"])
+ M9(["Đọc trang lịch hẹn"])
+ M10(["Lọc theo khoa"])
+ M11(["Xem danh sách nhân viên"])
+ M12(["Đọc trang nhân viên"])
+ end
+ ACTOR --> M1
+ ACTOR --> M4
+ ACTOR --> M6
+ ACTOR --> M8
+ ACTOR --> M11
+ M1 -.->|"«include»"| M2
+ M1 -.->|"«include»"| M3
+ M4 -.->|"«include»"| M5
+ M6 -.->|"«include»"| M7
+ M8 -.->|"«include»"| M9
+ M10 -.->|"«extend» [E1]"| M8
+ M11 -.->|"«include»"| M12
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class M1,M4,M6,M8,M11 main;
+ class M2,M3,M5,M7,M9,M10,M12 sub;
+```
+
+</details>
+
+Nghiệp vụ quản lý chỉ đọc: báo cáo ngày/tháng, top thuốc, doanh thu khoa, danh sách lịch hẹn/xét nghiệm, nhân viên và khoa. MANAGER không tạo tài khoản, sửa nhân viên hay thực hiện lệnh khám/thu tiền. Báo cáo snapshot phụ thuộc availability và coverage tại runtime.
+
+Điều kiện mở rộng: E1: Lọc theo khoa — đã chọn khoa
+
+Đối chiếu source: [OutpatientReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/OutpatientReportController.java) · [FinancialSnapshotReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/FinancialSnapshotReportController.java) · [ReportController](../../../../backend/report-service/src/main/java/com/mediflow/report/web/ReportController.java) · [RevenueController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/RevenueController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [StaffController](../../../../backend/core-service/src/main/java/com/mediflow/organization/web/controller/StaffController.java)
+
+#### DOCTOR — Tác vụ bác sĩ
+
+![DOCTOR — Tác vụ bác sĩ](assets/svg/31-vi.svg)
+
+<details>
+<summary>Mermaid · 31-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>DOCTOR"]
+ subgraph SYS["MediFlow — DOCTOR"]
+ D1(["Tra cứu hồ sơ khám"])
+ D2(["Xem các lần khám"])
+ D3(["Bắt đầu khám [V1]"])
+ D4(["Kiểm tra quyền khám"])
+ D5(["Ghi nhận khám bệnh"])
+ D6(["Ghi nội dung thăm khám"])
+ D7(["Thêm chẩn đoán"])
+ D8(["Chỉ định xét nghiệm"])
+ D9(["Chọn xét nghiệm và bệnh nhân"])
+ D10(["Xem kết quả xét nghiệm"])
+ D11(["Kê đơn thuốc"])
+ D12(["Chọn thuốc và liều dùng"])
+ D13(["Hoàn tất lượt khám [V1]"])
+ D14(["Xác nhận chẩn đoán / hướng xử trí"])
+ D15(["Hủy đơn thuốc"])
+ D16(["Kiểm tra điều kiện hủy"])
+ end
+ ACTOR --> D1
+ ACTOR --> D3
+ ACTOR --> D5
+ ACTOR --> D10
+ ACTOR --> D11
+ ACTOR --> D13
+ D1 -.->|"«include»"| D2
+ D3 -.->|"«include»"| D4
+ D5 -.->|"«include»"| D6
+ D7 -.->|"«extend» [E1]"| D5
+ D8 -.->|"«extend» [E2]"| D5
+ D8 -.->|"«include»"| D9
+ D11 -.->|"«include»"| D12
+ D13 -.->|"«include»"| D14
+ D15 -.->|"«extend» [E3]"| D11
+ D15 -.->|"«include»"| D16
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class D1,D3,D5,D10,D11,D13 main;
+ class D2,D4,D6,D7,D8,D9,D12,D14,D15,D16 sub;
+```
+
+</details>
+
+Vẫn kiểm tra clinical authority, bệnh nhân và context. [V1] cần bật care-finance-v2; start-exam cần exact EXAM clearance hoặc audited override đã hỗ trợ. AppointmentController còn cấp quyền xem/sửa lịch/trạng thái; source cũng cho phép xem báo cáo vận hành và hủy xét nghiệm. Bác sĩ không check-in thay điều dưỡng, cấp thuốc thay dược sĩ hay thu tiền thay thu ngân.
+
+Điều kiện mở rộng: E1: Thêm chẩn đoán — bổ sung chẩn đoán; E2: Chỉ định xét nghiệm — cần xét nghiệm; E3: Hủy đơn thuốc — yêu cầu hủy đơn
+
+Đối chiếu source: [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [ClinicalLabOrderController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalLabOrderController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### NURSE — Tác vụ điều dưỡng
+
+![NURSE — Tác vụ điều dưỡng](assets/svg/32-vi.svg)
+
+<details>
+<summary>Mermaid · 32-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>NURSE"]
+ subgraph SYS["MediFlow — NURSE"]
+ N1(["Tạo hồ sơ bệnh nhân"])
+ N2(["Nhập thông tin bệnh nhân"])
+ N3(["Cập nhật bệnh nhân"])
+ N4(["Tra cứu bệnh nhân"])
+ N5(["Tạo lịch hẹn"])
+ N6(["Chọn bệnh nhân / bác sĩ / ngày"])
+ N7(["Xem lịch hẹn"])
+ N8(["Đọc chi tiết lịch"])
+ N9(["Điều chỉnh lịch hẹn"])
+ N10(["Kiểm tra lịch mới"])
+ N11(["Tiếp nhận check-in [V1]"])
+ N12(["Kiểm tra trạng thái lịch"])
+ N13(["Tra cứu thông tin chăm sóc"])
+ N14(["Xem hồ sơ khám / xét nghiệm"])
+ N15(["Xem thông báo bệnh nhân"])
+ end
+ ACTOR --> N1
+ ACTOR --> N3
+ ACTOR --> N5
+ ACTOR --> N7
+ ACTOR --> N11
+ ACTOR --> N13
+ ACTOR --> N15
+ N1 -.->|"«include»"| N2
+ N3 -.->|"«include»"| N4
+ N5 -.->|"«include»"| N6
+ N7 -.->|"«include»"| N8
+ N9 -.->|"«extend» [E1]"| N7
+ N9 -.->|"«include»"| N10
+ N11 -.->|"«include»"| N12
+ N13 -.->|"«include»"| N14
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class N1,N3,N5,N7,N11,N13,N15 main;
+ class N2,N4,N6,N8,N9,N10,N12,N14 sub;
+```
+
+</details>
+
+[V1] check-in cần bật care-finance-v2 và không đồng nghĩa bắt đầu khám. NURSE xem danh sách/chi tiết xét nghiệm và danh sách thông báo theo bệnh nhân; không ghi chẩn đoán, kết quả xét nghiệm, đơn thuốc hay thanh toán; không có quyền mở endpoint chi tiết thông báo. Không tạo role RECEPTIONIST.
+
+Điều kiện mở rộng: E1: Điều chỉnh lịch hẹn — cần đổi lịch
+
+Đối chiếu source: [PatientController](../../../../backend/core-service/src/main/java/com/mediflow/patient/web/PatientController.java) · [AppointmentController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/AppointmentController.java) · [ClinicalCareFinanceController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/ClinicalCareFinanceController.java) · [MedicalRecordController](../../../../backend/clinical-service/src/main/java/com/mediflow/clinical/web/MedicalRecordController.java) · [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java)
+
+#### LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm
+
+![LAB_TECH — Tác vụ kỹ thuật viên xét nghiệm](assets/svg/33-vi.svg)
+
+<details>
+<summary>Mermaid · 33-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>LAB_TECH"]
+ subgraph SYS["MediFlow — LAB_TECH"]
+ L1(["Xem danh sách xét nghiệm"])
+ L2(["Đọc trang xét nghiệm"])
+ L3(["Lọc xét nghiệm chờ"])
+ L4(["Bắt đầu xét nghiệm [V1 gate]"])
+ L5(["Kiểm tra trạng thái xét nghiệm"])
+ L6(["Kiểm tra LAB_TEST clearance [V1]"])
+ L7(["Ghi kết quả xét nghiệm"])
+ L8(["Nhập các giá trị kết quả"])
+ L9(["Kiểm tra thời gian hoàn tất"])
+ L10(["Hủy xét nghiệm"])
+ L11(["Ghi lý do hủy"])
+ L12(["Cập nhật trạng thái hợp lệ"])
+ L13(["Kiểm tra chuyển trạng thái"])
+ end
+ ACTOR --> L1
+ ACTOR --> L4
+ ACTOR --> L7
+ ACTOR --> L10
+ ACTOR --> L12
+ L1 -.->|"«include»"| L2
+ L3 -.->|"«extend» [E1]"| L1
+ L4 -.->|"«include»"| L5
+ L4 -.->|"«include»"| L6
+ L7 -.->|"«include»"| L8
+ L7 -.->|"«include»"| L9
+ L10 -.->|"«include»"| L11
+ L12 -.->|"«include»"| L13
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class L1,L4,L7,L10,L12 main;
+ class L2,L3,L5,L6,L8,L9,L11,L13 sub;
+```
+
+</details>
+
+Start/cancel tuân theo lifecycle và feature availability; exact LAB_TEST clearance áp dụng cho protected action V1. LAB_TECH tra cứu xét nghiệm, ghi kết quả/trạng thái; không tạo chỉ định, kê đơn hay thu tiền. Lọc trạng thái là nhánh mở rộng tùy chọn của danh sách.
+
+Điều kiện mở rộng: E1: Lọc xét nghiệm chờ — đã chọn bộ lọc
+
+Đối chiếu source: [LabController](../../../../backend/lab-service/src/main/java/com/mediflow/lab/web/LabController.java)
+
+#### PHARMACIST — Tác vụ dược sĩ
+
+![PHARMACIST — Tác vụ dược sĩ](assets/svg/34-vi.svg)
+
+<details>
+<summary>Mermaid · 34-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PHARMACIST"]
+ subgraph SYS["MediFlow — PHARMACIST"]
+ P1(["Tra cứu thuốc"])
+ P2(["Đọc danh mục thuốc"])
+ P3(["Lọc theo từ khóa"])
+ P4(["Thêm thuốc"])
+ P5(["Nhập thông tin thuốc"])
+ P6(["Điều chỉnh tồn kho"])
+ P7(["Ghi số lượng và lý do"])
+ P8(["Tra cứu đơn thuốc"])
+ P9(["Xem các dòng thuốc"])
+ P10(["Cấp thuốc theo đơn [V1]"])
+ P11(["Kiểm tra clearance đúng đơn"])
+ P12(["Kiểm tra tồn / giữ chỗ"])
+ P13(["Ghi cấp thuốc và biến động tồn"])
+ end
+ ACTOR --> P1
+ ACTOR --> P4
+ ACTOR --> P6
+ ACTOR --> P8
+ ACTOR --> P10
+ P1 -.->|"«include»"| P2
+ P3 -.->|"«extend» [E1]"| P1
+ P4 -.->|"«include»"| P5
+ P6 -.->|"«include»"| P7
+ P8 -.->|"«include»"| P9
+ P10 -.->|"«include»"| P11
+ P10 -.->|"«include»"| P12
+ P10 -.->|"«include»"| P13
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class P1,P4,P6,P8,P10 main;
+ class P2,P3,P5,P7,P9,P11,P12,P13 sub;
+```
+
+</details>
+
+Lệnh cấp thuốc ngoại trú lấy actor đã ký và lifecycle V1; kiểm tra exact PRESCRIPTION clearance, tồn và reservation. Dược sĩ chủ động cấp thuốc, không tự cấp khi nhận sự kiện thanh toán. PHARMACIST không tạo/hủy đơn; hết hạn là xử lý lifecycle của hệ thống, không phải tác vụ người dùng.
+
+Điều kiện mở rộng: E1: Lọc theo từ khóa — có từ khóa
+
+Đối chiếu source: [DrugController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/DrugController.java) · [PrescriptionController](../../../../backend/pharmacy-service/src/main/java/com/mediflow/pharmacy/web/PrescriptionController.java)
+
+#### CASHIER — Tác vụ thu ngân
+
+![CASHIER — Tác vụ thu ngân](assets/svg/35-vi.svg)
+
+<details>
+<summary>Mermaid · 35-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>CASHIER"]
+ subgraph SYS["MediFlow — CASHIER"]
+ C1(["Tra cứu hóa đơn"])
+ C2(["Xem hóa đơn bệnh nhân"])
+ C3(["Tạo hóa đơn"])
+ C4(["Kiểm tra các khoản thu"])
+ C5(["Ghi thanh toán hóa đơn"])
+ C6(["Kiểm tra lệnh thanh toán"])
+ C7(["Tra cứu yêu cầu thu [V1]"])
+ C8(["Xác định nguồn và đối tượng"])
+ C9(["Ghi thanh toán ledger [V1]"])
+ C10(["Kiểm tra số tiền và khóa lặp"])
+ C11(["Trả biên nhận thanh toán"])
+ C12(["Hoàn tiền giao dịch [V1]"])
+ C13(["Kiểm tra số dư được hoàn"])
+ C14(["Ghi số tiền và lý do"])
+ end
+ ACTOR --> C1
+ ACTOR --> C3
+ ACTOR --> C5
+ ACTOR --> C7
+ ACTOR --> C9
+ C1 -.->|"«include»"| C2
+ C3 -.->|"«include»"| C4
+ C5 -.->|"«include»"| C6
+ C7 -.->|"«include»"| C8
+ C9 -.->|"«include»"| C10
+ C9 -.->|"«include»"| C11
+ C12 -.->|"«extend» [E1]"| C9
+ C12 -.->|"«include»"| C13
+ C12 -.->|"«include»"| C14
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class C1,C3,C5,C7,C9 main;
+ class C2,C4,C6,C8,C10,C11,C12,C13,C14 sub;
+```
+
+</details>
+
+Hóa đơn compatibility và ledger V1 là hai đường xử lý riêng, không phải các bước bắt buộc nối tiếp. [V1] phụ thuộc feature availability. Hoàn tiền là tác vụ mở rộng sau thanh toán gốc đủ điều kiện; có luồng con kiểm tra số dư, số tiền/lý do. Retry cùng khóa phải giữ intent. Không kích hoạt quyết toán nội trú/phẫu thuật.
+
+Điều kiện mở rộng: E1: Hoàn tiền giao dịch [V1] — yêu cầu hoàn hợp lệ
+
+Đối chiếu source: [InvoiceController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/InvoiceController.java) · [PaymentRequestDiscoveryController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/PaymentRequestDiscoveryController.java) · [LedgerPaymentController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerPaymentController.java) · [LedgerRefundController](../../../../backend/billing-service/src/main/java/com/mediflow/billing/web/LedgerRefundController.java) · [LedgerRefundService](../../../../backend/billing-service/src/main/java/com/mediflow/billing/application/service/LedgerRefundService.java)
+
+#### PATIENT — Tác vụ bệnh nhân
+
+![PATIENT — Tác vụ bệnh nhân](assets/svg/36-vi.svg)
+
+<details>
+<summary>Mermaid · 36-vi</summary>
+
+```mermaid
+%%{init: {"theme": "base", "securityLevel": "loose", "fontFamily": "Arial, sans-serif", "themeVariables": {"primaryColor": "#e0f2fe", "primaryTextColor": "#0f172a", "primaryBorderColor": "#0284c7", "lineColor": "#475569", "secondaryColor": "#ccfbf1", "tertiaryColor": "#f1f5f9", "background": "#ffffff", "mainBkg": "#e0f2fe", "nodeBorder": "#0284c7", "clusterBkg": "#f8fafc", "clusterBorder": "#94a3b8", "actorBkg": "#e0f2fe", "actorBorder": "#0284c7", "actorTextColor": "#0f172a", "signalColor": "#475569", "signalTextColor": "#0f172a", "labelBoxBkgColor": "#f1f5f9", "labelBoxBorderColor": "#94a3b8", "activationBkgColor": "#ccfbf1", "activationBorderColor": "#0f766e", "sequenceNumberColor": "#ffffff", "attributeBackgroundColorOdd": "#ffffff", "attributeBackgroundColorEven": "#f0f9ff", "fontSize": "18px"}, "flowchart": {"htmlLabels": true, "curve": "linear", "nodeSpacing": 30, "rankSpacing": 44, "padding": 24, "diagramPadding": 24, "wrappingWidth": 165, "subGraphTitleMargin": {"top": 10, "bottom": 32}}, "sequence": {"useMaxWidth": true, "wrap": true, "actorMargin": 65, "width": 210, "height": 55, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 16, "messageMargin": 24, "diagramMarginX": 24, "diagramMarginY": 24, "mirrorActors": true, "actorFontSize": 17, "messageFontSize": 16, "noteFontSize": 16, "wrapPadding": 10}, "er": {"useMaxWidth": true, "nodeSpacing": 45, "rankSpacing": 55, "diagramPadding": 24, "entityPadding": 10, "fontSize": 17}, "themeCSS": ".nodeLabel p {margin:0;} .edgeLabel {font-size:15px;} .nodeLabel img {display:inline-block!important;width:36px!important;height:48px!important;}", "class": {"diagramPadding": 24, "nodeSpacing": 32, "rankSpacing": 45}}}%%
+%% Role use case: one actor; solid primary task; dashed include/extend.
+flowchart TB
+ ACTOR["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='36' height='48'/><br/>PATIENT"]
+ subgraph SYS["MediFlow — PATIENT"]
+ T1(["Đăng nhập"])
+ T2(["Nhập tên đăng nhập / mật khẩu"])
+ T3(["Nhận access / refresh token"])
+ T4(["Gia hạn phiên truy cập"])
+ T5(["Kiểm tra định danh refresh"])
+ T6(["Xem thông báo của mình"])
+ T7(["Kiểm tra đúng bệnh nhân"])
+ T8(["Xem danh sách thông báo"])
+ T9(["Mở chi tiết thông báo"])
+ T10(["Đọc nội dung thông báo"])
+ end
+ ACTOR --> T1
+ ACTOR --> T4
+ ACTOR --> T6
+ T1 -.->|"«include»"| T2
+ T1 -.->|"«include»"| T3
+ T4 -.->|"«include»"| T5
+ T6 -.->|"«include»"| T7
+ T6 -.->|"«include»"| T8
+ T9 -.->|"«extend» [E1]"| T6
+ T9 -.->|"«include»"| T7
+ T9 -.->|"«include»"| T10
+ classDef actor fill:transparent,stroke:transparent,color:#0f172a;
+ classDef main fill:#e0f2fe,stroke:#0284c7,color:#0f172a;
+ classDef sub fill:#f0fdfa,stroke:#0f766e,color:#0f172a;
+ class ACTOR actor;
+ class T1,T4,T6 main;
+ class T2,T3,T5,T7,T8,T9,T10 sub;
+```
+
+</details>
+
+Hình phản ánh đúng phạm vi quyền hiện có. PATIENT chưa trực tiếp tạo/xem lịch hẹn, lấy hồ sơ bệnh nhân, kết quả xét nghiệm, đơn thuốc hay hóa đơn qua ma trận Gateway/controller hiện tại. Chưa có tự đăng ký hoặc sửa hồ sơ. Đây là khoảng trống tương lai, không vẽ thành chức năng đã có. Mở chi tiết thông báo vẫn kiểm tra ownership độc lập.
+
+Điều kiện mở rộng: E1: Mở chi tiết thông báo — đã chọn thông báo
+
+Đối chiếu source: [AuthController](../../../../backend/gateway/src/main/java/com/mediflow/gateway/auth/AuthController.java) · [NotificationController](../../../../backend/notification-service/src/main/java/com/mediflow/notification/web/NotificationController.java) · [RouteAuthorizationFilter](../../../../backend/gateway/src/main/java/com/mediflow/gateway/filter/RouteAuthorizationFilter.java)
+
+<!-- role-usecases:end -->
 
 ### 1.3. Sequences Diagrams
 

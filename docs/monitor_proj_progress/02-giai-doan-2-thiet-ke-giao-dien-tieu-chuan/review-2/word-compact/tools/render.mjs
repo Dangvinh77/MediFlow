@@ -9,8 +9,10 @@ const require=createRequire(path.join(process.env.MERMAID_RUNTIME || toolDir,'pa
 const puppeteer=(await import(pathToFileURL(require.resolve('puppeteer')).href)).default;
 const {renderMermaid}=await import(pathToFileURL(path.join(process.env.MERMAID_RUNTIME || toolDir,'node_modules/@mermaid-js/mermaid-cli/src/index.js')).href);
 const out=path.resolve(toolDir,'..');const root=path.resolve(out,'..');
-const selected=process.argv.slice(2);const jobs=[];
-for(const orientation of ['portrait','landscape','panels'])for(const file of (await fs.readdir(path.join(out,orientation,'mermaid'))).filter(x=>x.endsWith('.mmd')))if(!selected.length||selected.includes(file))jobs.push({orientation,file});
+const original=process.argv.includes('--original');
+const selected=process.argv.slice(2).filter(x=>x!=='--original');const jobs=[];
+const baseFor=orientation=>orientation==='original'?path.join(root,'assets'):path.join(out,orientation);
+for(const orientation of (original?['original']:['portrait','landscape','panels']))for(const file of (await fs.readdir(path.join(baseFor(orientation),'mermaid'))).filter(x=>x.endsWith('.mmd')))if(!selected.length||selected.includes(file))jobs.push({orientation,file});
 const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH || undefined,headless:true,args:['--allow-file-access-from-files','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows']});
 const config=JSON.parse(await fs.readFile(path.join(root,'assets/mermaid-config.json'),'utf8'));
 const results=[];let next=0;
@@ -31,19 +33,43 @@ async function normalize(page){return page.$eval('svg',svg=>{
  });}
 async function screenshot(svgPath,pngPath,width){const p=await browser.newPage();try{await p.setViewport({width:2000,height:1200,deviceScaleFactor:1});await p.goto(pathToFileURL(svgPath).href,{waitUntil:'load'});await ready(p);const dims=await p.$eval('svg',e=>({w:e.viewBox.baseVal.width,h:e.viewBox.baseVal.height}));const factor=Math.min(width/dims.w,14000/Math.max(dims.w,dims.h));const w=Math.ceil(dims.w*factor),h=Math.ceil(dims.h*factor);await p.setViewport({width:w,height:h,deviceScaleFactor:1});await p.$eval('svg',(e,{w,h})=>{e.setAttribute('width',w);e.setAttribute('height',h);e.style.width=w+'px';e.style.height=h+'px';e.style.maxWidth='none'},{w,h});await p.bringToFront();await ready(p);const el=await p.$('svg');const data=await el.screenshot({path:pngPath,omitBackground:false});return {data,w,h};}finally{await p.close();}}
 async function worker(){while(next<jobs.length){const j=jobs[next++];let page;try{
- const srcPath=path.join(out,j.orientation,'mermaid',j.file);let def=await fs.readFile(srcPath,'utf8');
+ const base=baseFor(j.orientation);await fs.mkdir(path.join(base,'png'),{recursive:true});
+ const srcPath=path.join(base,'mermaid',j.file);let def=await fs.readFile(srcPath,'utf8');
+ // Rank extensions after their base during layout, then restore the true
+ // extension-to-base arrowhead in the exported SVG. Source remains valid Mermaid.
+ const extensionEdges=[];
+ if(def.includes('%% Role use case:'))def=def.replace(/^\s+(\w+) -\.->\|"([^"]*«extend»[^"]*)"\| (\w+)$/gm,(_,src,label,dst)=>{
+  extensionEdges.push({src,dst});return ` ${dst} -.->|"${label}"| ${src}`;
+ });
  for(const url of [...new Set(def.match(/https:\/\/cdn\.jsdelivr\.net\/gh\/devicons\/devicon@v2\.17\.0\/icons\/[^'"\s]+/g)||[])]){const key=url.split('/icons/')[1].split('/')[0];def=def.replaceAll(url,'data:image/svg+xml;base64,'+(await fs.readFile(path.join(root,'assets/logos',key+'.svg'))).toString('base64'));}
  const rendered=await renderMermaid(browser,def,'svg',{viewport:{width:2000,height:1400,deviceScaleFactor:1},mermaidConfig:config});const svg=new TextDecoder().decode(rendered.data);if(/Maximum text size|NaN|Syntax error in text/.test(svg))throw Error('Invalid Mermaid render');
  page=await browser.newPage();await page.setViewport({width:2000,height:1400});await page.setContent('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:white}</style>'+svg);await ready(page);const grid=def.match(/%% Word entity-grid columns: (\d+)/);
+ if(extensionEdges.length)await page.evaluate(edges=>{
+  const marker=document.querySelector('marker[id$="pointStart"]');if(!marker)throw Error('Missing start arrow marker');
+  for(const {src,dst} of edges){const edge=[...document.querySelectorAll('path.flowchart-link')].find(e=>e.getAttribute('data-id')?.startsWith(`L_${dst}_${src}_`));
+   if(!edge)throw Error('Missing extension edge');edge.removeAttribute('marker-end');edge.setAttribute('marker-start',`url(#${marker.id})`);
+  }
+ },extensionEdges);
  if(grid)await page.$eval('svg',(svg,columns)=>{
   if(svg.querySelector('.edgePaths path'))throw Error('Entity grid requires disconnected tables');
   const nodes=[...svg.querySelectorAll('g.nodes > g.node')];const boxes=nodes.map(e=>e.getBBox());const gap=40;const widths=Array.from({length:columns},(_,c)=>Math.max(0,...boxes.filter((_,i)=>i%columns===c).map(b=>b.width)));
   let y=0;for(let row=0;row<Math.ceil(nodes.length/columns);row++){let x=0;const height=Math.max(...boxes.slice(row*columns,(row+1)*columns).map(b=>b.height));for(let c=0;c<columns;c++){const i=row*columns+c;if(i>=nodes.length)break;const b=boxes[i];nodes[i].setAttribute('transform',`translate(${x-b.x} ${y-b.y})`);x+=widths[c]+gap;}y+=height+gap;}
  },Number(grid[1]));
- const geometry=await normalize(page);await ready(page);const finalSvg=await page.$eval('svg',e=>new XMLSerializer().serializeToString(e));const stem=j.file.slice(0,-4);const svgPath=path.join(out,j.orientation,'svg',stem+'.svg');await fs.writeFile(svgPath,finalSvg);await page.close();page=null;
+ // Mermaid's portable stadium syntax remains editable in Markdown. For the
+ // role-specific use cases, export true UML-style ellipses at the same bounds.
+ // Actor geometry and edge attachment points stay unchanged.
+ if(def.includes('%% Role use case:'))await page.$$eval('g.node',nodes=>{
+  for(const node of nodes){if(node.classList.contains('actor'))continue;
+   const boundary=node.querySelector('.label-container');if(!boundary)continue;
+   const b=boundary.getBBox(),ellipse=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+   ellipse.setAttribute('style',node.classList.contains('main')?'fill:#e0f2fe;stroke:#0284c7;stroke-width:1.3px':'fill:#f0fdfa;stroke:#0f766e;stroke-width:1.3px');
+   ellipse.setAttribute('cx',b.x+b.width/2);ellipse.setAttribute('cy',b.y+b.height/2);ellipse.setAttribute('rx',b.width/2);ellipse.setAttribute('ry',b.height/2);boundary.replaceChildren(ellipse);
+  }
+ });
+ const geometry=await normalize(page);await ready(page);const finalSvg=await page.$eval('svg',e=>new XMLSerializer().serializeToString(e));const stem=j.file.slice(0,-4);const svgPath=path.join(base,'svg',stem+'.svg');await fs.writeFile(svgPath,finalSvg);await page.close();page=null;
  const fit=o=>16*Math.min((o==='portrait'?160:247)/geometry.width,(o==='portrait'?230:150)/geometry.height)*72/25.4;
- const preferred=j.orientation==='panels'?(fit('portrait')>=fit('landscape')?'portrait':'landscape'):j.orientation;
- const raster=await screenshot(svgPath,path.join(out,j.orientation,'png',stem+'.png'),preferred==='portrait'?2400:3600);
+ const preferred=['panels','original'].includes(j.orientation)?(fit('portrait')>=fit('landscape')?'portrait':'landscape'):j.orientation;
+ const raster=await screenshot(svgPath,path.join(base,'png',stem+'.png'),preferred==='portrait'?2400:3600);
  // Reopen the saved SVG independently and compare exact pixel output, not merely PNG existence.
  const replay=await screenshot(svgPath,undefined,preferred==='portrait'?2400:3600);
  let pixelComparison={identical:true,maxChannelDelta:0,changedFraction:0};
@@ -58,8 +84,8 @@ async function worker(){while(next<jobs.length){const j=jobs[next++];let page;tr
  results.push({...j,status:'pass',...geometry,pngWidth:raster.w,pngHeight:raster.h,estimatedTextPt:+fit(preferred).toFixed(1),preferred,sourceSha256:hash((await fs.readFile(srcPath,'utf8')).replace(/\r\n/g,'\n')),svgSha256:hash(finalSvg),pngSha256:hash(raster.data),pngMatchesSavedSvg:true,pixelComparison});console.log('PASS',j.orientation,j.file,geometry.width,geometry.height);
  }catch(e){results.push({...j,status:'fail',error:String(e)});console.log('FAIL',j.orientation,j.file,String(e));if(page)await page.close();}}}
 await Promise.all(Array.from({length:Number(process.env.RENDER_WORKERS||3)},()=>worker()));await browser.close();
-const target=selected.length?'render-selected-validation.json':'render-validation.json';await fs.writeFile(path.join(out,target),JSON.stringify({renderer:'Mermaid CLI 11.12.0 + isolated Chromium SVG replay',results},null,2));
-if(selected.length&&results.every(r=>r.status==='pass')){
+const target=original?'render-original-validation.json':selected.length?'render-selected-validation.json':'render-validation.json';await fs.writeFile(path.join(out,target),JSON.stringify({renderer:'Mermaid CLI 11.12.0 + isolated Chromium SVG replay',results},null,2));
+if(!original&&selected.length&&results.every(r=>r.status==='pass')){
  const ledger=JSON.parse(await fs.readFile(path.join(out,'render-validation.json'),'utf8'));const keys=new Set(results.map(r=>r.orientation+'/'+r.file));ledger.results=[...ledger.results.filter(r=>!keys.has(r.orientation+'/'+r.file)),...results];await fs.writeFile(path.join(out,'render-validation.json'),JSON.stringify(ledger,null,2));
 }
 if(results.some(r=>r.status!=='pass'))process.exitCode=1;

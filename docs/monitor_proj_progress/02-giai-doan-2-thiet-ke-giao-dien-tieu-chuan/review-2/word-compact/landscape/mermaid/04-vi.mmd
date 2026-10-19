@@ -5,7 +5,7 @@ flowchart TB
  DOC["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>DOCTOR"]
  LT["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI3NCIgdmlld0JveD0iMCAwIDU2IDc0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMzY5YTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIyOCIgY3k9IjExIiByPSI4Ii8+PHBhdGggZD0iTTI4IDIwdjI4TTggMzNoNDBNMjggNDhMMTIgNjlNMjggNDhsMTYgMjEiLz48L2c+PC9zdmc+' width='34' height='34'/><br/>LAB_TECH"]
  subgraph SYS["MediFlow — Outpatient MVP"]
- U1(["Đăng nhập / xem dữ liệu của<br/>mình"])
+ U1(["Đăng nhập / gia hạn phiên"])
  U2(["Quản lý lịch hẹn / check-in"])
  U3(["Khám / diagnosis / hoàn tất<br/>ngoại trú"])
  U4(["Chỉ định xét nghiệm"])
@@ -14,8 +14,6 @@ flowchart TB
  U7(["Kê đơn thuốc"])
  end
  PAT --- U1
- PAT --- U2
- PAT --- U6
  NUR --- U2
  DOC --- U2
  DOC --- U3
