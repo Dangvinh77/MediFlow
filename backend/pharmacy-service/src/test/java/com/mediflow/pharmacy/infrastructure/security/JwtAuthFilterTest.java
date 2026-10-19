@@ -64,12 +64,37 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void accessTokenWithoutExpiration_adminLeavesRequestUnauthenticated() throws Exception {
+        String token = createTokenWithoutExpiration(UUID.randomUUID().toString(), "ADMIN");
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void accessTokenWithoutExpiration_pharmacistLeavesRequestUnauthenticated() throws Exception {
+        String token = createTokenWithoutExpiration(UUID.randomUUID().toString(), "PHARMACIST");
+
+        filter.doFilter(
+                requestWithToken(token),
+                new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
     void invalidSignature_leavesRequestUnauthenticated() throws Exception {
         SecretKey otherKey = Keys.hmacShaKeyFor(
                 "different-test-secret-that-is-at-least-32-bytes".getBytes(StandardCharsets.UTF_8));
         String token = Jwts.builder()
                 .subject(UUID.randomUUID().toString())
                 .claim(JwtClaims.ROLE, "PHARMACIST")
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
                 .expiration(Date.from(Instant.now().plusSeconds(300)))
                 .signWith(otherKey)
                 .compact();
@@ -141,6 +166,14 @@ class JwtAuthFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    @Test
+    void malformedSubject_withOtherwiseValidAccessClaims_isRejected() throws Exception {
+        String token = createToken("not-a-uuid", "PHARMACIST", JwtClaims.ACCESS_TOKEN_TYPE,
+                Instant.now().plusSeconds(300));
+        filter.doFilter(requestWithToken(token), new MockHttpServletResponse(), new MockFilterChain());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
     private MockHttpServletRequest requestWithToken(String token) {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
@@ -164,5 +197,15 @@ class JwtAuthFilterTest {
             builder.claim(JwtClaims.TYPE, tokenType);
         }
         return builder.signWith(SIGNING_KEY).compact();
+    }
+
+    private String createTokenWithoutExpiration(String subject, String role) {
+        return Jwts.builder()
+                .subject(subject)
+                .claim(JwtClaims.ROLE, role)
+                .claim(JwtClaims.TYPE, JwtClaims.ACCESS_TOKEN_TYPE)
+                .issuedAt(Date.from(Instant.now().minusSeconds(10)))
+                .signWith(SIGNING_KEY)
+                .compact();
     }
 }
