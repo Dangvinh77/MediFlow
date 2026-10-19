@@ -18,8 +18,10 @@ ledger "selected charge payment" flow (`LedgerPaymentController`) that Clinical/
 charges depend on for clearance — there is no live list/search endpoint for a pending payment
 request, so the cashier enters the exact id given by the originating screen. `/billing/revenue`
 is the administrator/manager revenue-by-department report. `/billing/admin/outbox` is the
-administrator outbox-replay tool. UI roles are `ADMIN` and `CASHIER` for invoices/payments,
-`ADMIN`/`MANAGER` for revenue, `ADMIN` only for outbox replay; the browser never calculates
+administrator outbox-replay tool. `/billing/prescription-adjustments` + `/billing/prescription-adjustments/{prescriptionId}`
+let a cashier look up refunds still owed after a paid prescription is rejected/cancelled and record
+each refund. UI roles are `ADMIN` and `CASHIER` for invoices/payments/prescription-adjustment
+refunds, `ADMIN`/`MANAGER` for revenue, `ADMIN` only for outbox replay; the browser never calculates
 authoritative totals.
 
 ## Owner queue
@@ -28,17 +30,28 @@ authoritative totals.
 - `FE-BILLING-02` — `DONE`: invoice creation and fee detail are implemented.
 - `FE-BILLING-03` — `DONE` for payment; refund remains absent because no live controller command exists.
 - `FE-BILLING-04` — `IMPLEMENT`: test pagination, money display, terminal states, errors, and retries
-  after the shared harness exists.
+  after the shared harness exists. The shared harness (`frontend/src/test/{setup.ts,harness.test.tsx}`)
+  has existed since before 2026-10-15; only the new `FE-BILLING-07` prescription-adjustment
+  components have local tests so far (2026-10-19, 11 tests: loading/empty/401/error-retry, render,
+  refund validation, success+refetch, refund API error). `InvoiceLookup`, `InvoiceDetail`,
+  `InvoiceForm`, `LedgerPaymentForm`, `PaymentRequestLookupForm`, `RevenueReport`, and
+  `OutboxReplayForm` still have no local tests.
 - `FE-BILLING-05` — `DONE` (2026-10-15): `/billing/revenue`, confirmed against the live Gateway rule
   (`ADMIN`/`MANAGER`), `RevenueByDeptDTO`, and empty/error behavior.
 - `FE-BILLING-06` — `DONE` (2026-10-15): `/billing/admin/outbox`, confirmed against the live Gateway
   rule (`ADMIN`), the conditional maintenance settings, and the 404 not-found response.
 - `FE-BILLING-07` — split in two (2026-10-15):
-  - Prescription-adjustment refund-due view: `BLOCKED` — `PrescriptionAdjustmentController` is live
-    and its two ledger consumer settings are already on in `docker-compose.yml`, but the Gateway has
-    no allowlist rule for `/api/v1/billing/prescription-adjustments/**` (default-deny), so any call
-    is rejected before reaching Billing. See
-    [HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES](../../../docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md).
+  - Prescription-adjustment refund-due view: `DONE` (2026-10-19) — `/billing/prescription-adjustments`
+    (lookup) and `/billing/prescription-adjustments/{prescriptionId}` (detail) now call the live
+    `PrescriptionAdjustmentController` (`GET .../refunds-due`) and `LedgerRefundController`
+    (`POST /v1/billing/transactions/{id}/refunds`) through the Gateway, which now allowlists the
+    route (`HA-CODE-01/02`, see
+    [HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES](../../../docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md)).
+    Refund method is restricted client-side to CASH/TRANSFER, matching `LedgerRefundService`'s
+    `BILLING_INVALID_REFUND_METHOD` rule (INSURANCE is rejected server-side, same as ledger payment).
+    Refund amount is capped client-side at the due amount; the server still owns the authoritative
+    `BILLING_REFUND_EXCEEDS_PAYMENT` check. Component tests mock the API facade only; no
+    authenticated browser/Gateway acceptance yet.
   - Surgery-cancellation refund-due view: stays out of scope — Surgery is deferred from the MVP
     (`docs/plans/01-system-design.md`), not merely Gateway-blocked.
 - `FE-BILLING-08` — `DONE` (2026-10-15): `/billing/payment-requests` + `/billing/payment-requests/{id}`,
@@ -57,8 +70,8 @@ authoritative totals.
 - Patient display enrichment requires Patient's live contract. Producer: Patient / Hoàng Anh.
 - Lab/Pharmacy references and saga state must come from Billing DTOs/events; do not query or import
   those frontend features to reconstruct an invoice.
-- Prescription-adjustment refund-due view is blocked on the Gateway allowlist gap above; Surgery
-  cancellation refund-due stays deferred with Surgery itself.
+- Prescription-adjustment refund-due view is DONE (2026-10-19); Surgery cancellation refund-due
+  stays deferred with Surgery itself.
 
 ## Contract and verification gate
 

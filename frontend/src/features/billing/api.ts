@@ -5,9 +5,12 @@ import type {
   CreateInvoiceRequest,
   InvoiceDTO,
   LedgerPaymentDTO,
+  LedgerRefundDTO,
   OutboxReplayResult,
   PaymentResultDTO,
   PayInvoiceRequest,
+  PrescriptionAdjustmentDTO,
+  RefundLedgerPaymentRequest,
   RevenueByDeptDTO,
 } from "./types";
 
@@ -22,6 +25,12 @@ export const billingApi = {
     api.put<PaymentResultDTO>(`/v1/billing/invoices/${encodeURIComponent(invoiceId)}/pay`, body),
   completeLedgerPayment: (requestId: string, body: CompleteLedgerPaymentRequest) =>
     api.post<LedgerPaymentDTO>(`/v1/billing/payment-requests/${encodeURIComponent(requestId)}/payments`, body),
+  getPrescriptionAdjustment: (prescriptionId: string) =>
+    api.get<PrescriptionAdjustmentDTO>(
+      `/v1/billing/prescription-adjustments/${encodeURIComponent(prescriptionId)}/refunds-due`,
+    ),
+  refundLedgerPayment: (originalTransactionId: string, body: RefundLedgerPaymentRequest) =>
+    api.post<LedgerRefundDTO>(`/v1/billing/transactions/${encodeURIComponent(originalTransactionId)}/refunds`, body),
   revenueByDepartment: (fromDate: string, toDate: string, departmentId?: string) => {
     const params = new URLSearchParams({ fromDate, toDate });
     if (departmentId) params.set("departmentId", departmentId);

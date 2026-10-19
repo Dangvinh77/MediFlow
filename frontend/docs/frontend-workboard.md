@@ -1,5 +1,38 @@
 # Frontend Workboard
 
+## Lộc — Billing prescription-adjustment refund-due view, 2026-10-19
+
+Scope: `frontend/src/features/billing/**` and `frontend/src/app/(dashboard)/billing/**`, per canonical
+ownership in `frontend/docs/services/billing.md`. Closes the `FE-BILLING-07` prescription-adjustment
+half, unblocked by the Gateway allowlist fix merged the night before (`HA-CODE-01/02`,
+`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+
+- New routes `/billing/prescription-adjustments` (lookup by prescription UUID) and
+  `/billing/prescription-adjustments/[prescriptionId]` (detail + refund). Detail calls
+  `GET /api/v1/billing/prescription-adjustments/{id}/refunds-due` on mount; each refund-due row opens
+  an inline form calling `POST /api/v1/billing/transactions/{originalTransactionId}/refunds`.
+- Refund method is restricted to CASH/TRANSFER (matches live `LedgerRefundService.validate`'s
+  `BILLING_INVALID_REFUND_METHOD` rule — INSURANCE is rejected server-side here too, same as the
+  existing ledger-payment form). Refund amount is validated client-side against the due amount; the
+  server's `BILLING_REFUND_EXCEEDS_PAYMENT`/idempotency rules remain authoritative. A successful
+  refund shows a confirmation banner and refetches the adjustment so a partial refund's remaining
+  due amount reflects the server's state, not a client guess.
+- A 404 (`BILLING_PRESCRIPTION_ADJUSTMENT_NOT_FOUND`) renders a neutral empty state, not an error —
+  most prescriptions never have a terminal rejection/cancellation event. 401 redirects to `/login`;
+  other errors show the message and correlation id with retry, matching existing Billing forms.
+- `FE-NOTIFICATION-03` (mark-as-read) was NOT picked up: `backend/notification-service/AGENTS.md`
+  moved that module's ownership to Vinh on 2026-10-18, so adding the missing endpoint is no longer
+  this owner's call to make; it stays `BLOCKED` pending a Vinh-side contract.
+- New component tests: 11 tests across `PrescriptionAdjustmentLookupForm.test.tsx` and
+  `PrescriptionAdjustmentRefundDue.test.tsx` (loading, 404-empty, 401 redirect, error+retry, render,
+  empty-due state, client validation, success+refetch, refund API error+correlation id). Broader
+  `FE-BILLING-04` coverage for the older Billing components remains open — see
+  `frontend/docs/services/billing.md`.
+- `pnpm typecheck`, `pnpm lint` (scoped to Billing), and `pnpm build`: PASS, exit 0. Full
+  `pnpm test -- --maxWorkers=2`: **516/517 PASS, 57 files**; the one failure is the pre-existing
+  `LabDetail.test.tsx:194` fixture gap already logged above (2026-10-19 sync note), unrelated to this
+  change and not touched.
+
 ## Đồng bộ master vào Huy — 2026-10-19
 
 - Fast-forward từ `025ef39e` tới `3cc3439b` (12 commit); local `Huy` và `master` cùng
@@ -283,8 +316,8 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
   authority handoff is open.
 - Refund, notification read-state/retry and other commands absent from live controllers are not
   represented as UI controls.
-- Billing's prescription-adjustment refund-due view is not exposed: the controller is live but the
-  Gateway has no allowlist rule for it yet (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
+- Billing's prescription-adjustment refund-due view shipped 2026-10-19 (`/billing/prescription-adjustments`)
+  once the Gateway allowlist rule landed (`docs/handoffs/HANDOFF-GATEWAY-BILLING-ADJUSTMENT-ROUTES.md`).
   Its Surgery-cancellation counterpart stays unavailable because Surgery itself is deferred.
 
 ## Next tasks tại baseline 2026-10-09 (historical; ưu tiên hiện tại ở trên)
