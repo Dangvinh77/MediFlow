@@ -703,3 +703,28 @@ và tiến độ hiện hành 10/14 task, 45/56 subtask được giữ ở mục
 chứa ảnh/AX, public response/correlation, source IDs, JAR hashes và local test overlay. Payment
 được thao tác bằng API harness; không gọi đây là toàn bộ luồng Billing qua trình duyệt. Các profile
 test vốn có chỉ chạy trên stores disposable; không sửa Compose/env/gate rollout hoặc mở scope deferred.
+
+## 16. Notification detail: tải lại trạng thái và focus — 2026-10-20
+
+Candidate `b7146306` + diff của lượt này. Huy DELEGATED trong Notification FE theo phạm vi
+Support đã giao; chỉ sửa detail, feature tests và tài liệu. Đối chiếu public NotificationController,
+NotificationDTO và API facade: ADMIN/PATIENT được GET detail, NURSE chỉ list, không có command
+resend/read-state. Không gọi backend nội bộ hoặc thêm authority từ JWT subject.
+
+- Thêm tải lại chủ động bằng GET đúng notificationId để xem trạng thái delivery mới; không polling
+  hoặc gửi lại thông báo. Trong lúc tải, bỏ nội dung cũ và nút refresh cũ để tránh hiển thị dữ liệu cũ.
+- Lỗi detail có vùng feedback được đặt tên/mô tả, giữ correlation; HTTP 403 không hiện retry.
+- Sau retry/refresh, focus đến lỗi hoặc tiêu đề mới nếu trigger đã biến mất và focus đang ở body.
+  Nếu người dùng đã chuyển sang control khác thì không lấy focus. Tab/Enter retry chỉ đọc.
+- Đổi session hoặc notification vẫn bỏ response cũ; không lưu thêm thông tin bệnh nhân hay người nhận.
+
+Thêm bảy ca component regression: refresh PENDING→SENT không send, focus 403/503, giữ focus ngoài
+khi lỗi/tải lại, Tab/Enter retry và late response sau đổi session. Không dùng các fixture này để
+đóng HF6-14 hoặc thay signed PATIENT/cross-patient acceptance. Report accepted coverage và các
+dependency đã ghi trong handoff chung vẫn mở; không tạo handoff mới hoặc bật gate.
+
+Sau đồng bộ `origin/master` tại `b7146306`: `pnpm test -- src/features/notification` đạt **62/62
+tests, 3 files**; `pnpm typecheck`, `pnpm lint`, `pnpm build` đều **PASS, exit 0**. Rà diff theo
+review checklist: không phát hiện blocker trong slice này, đủ gửi review FE; chưa phải go cho
+release tích hợp. Không chạy lại full-suite hoặc browser/signed Gateway trong lượt này; không
+ghi nhận thêm nghiệm thu HF6 hoặc thay kết quả lỗi Lab đã lưu ở checkpoint trước.

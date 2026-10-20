@@ -1,5 +1,12 @@
 # Frontend Service: Notification
 
+2026-10-20 detail follow-up: authorized ADMIN/PATIENT readers can explicitly reload the same
+notification with GET to observe updated delivery status. Refresh clears the previous private
+result while pending; it never resends a notification or polls automatically. Named error feedback
+receives focus after read failure; retry/refresh returns focus to the new title only when the user
+has not moved elsewhere. HTTP 403 still has no retry control. Session/resource guards discard late
+results. This is local FE verification, not signed PATIENT/cross-patient or provider acceptance.
+
 2026-10-19 actual Support intake check: replaying the known PrescriptionFilled event preserved one
 observed Notification notice, alongside one Report journal and Clinical attachment. This is backend
 intake/deduplication evidence, not signed Notification browser privacy, manual delivery or provider
