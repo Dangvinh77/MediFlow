@@ -1,5 +1,17 @@
 # Frontend Workboard
 
+## Huy — Notification detail refresh/focus, 2026-10-20
+
+IMPLEMENT under the existing user delegation for Support FE. Only Notification detail and its
+feature tests change; backend, shared transport/auth, routes and gates stay unchanged.
+Explicit GET refresh observes delivery status without resend/polling, clears old content while
+pending, and restores keyboard focus after retry. HTTP 403 stays closed; outside focus and session
+boundaries are preserved. Seven additional component regression cases cover these behaviors.
+Verification and limits are recorded in the current plan's 2026-10-20 checkpoint. No additional
+HF6 acceptance criterion is closed by component tests or build.
+Final base `b7146306`: Notification **62/62 tests / 3 files**, typecheck/lint/build **PASS**.
+No new full-suite, signed Gateway, browser or provider acceptance is claimed.
+
 ## Huy — signed Gateway/browser acceptance, 2026-10-19
 
 Candidate `51eedfcd` + working diff: **10/14 task, 45/56 subtask**. Đóng thêm
