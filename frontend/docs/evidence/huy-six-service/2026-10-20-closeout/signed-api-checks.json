@@ -1,0 +1,1312 @@
+{
+  "candidate": "44ff1ed7 + Notification test wait fix",
+  "gateway": "http://127.0.0.1:62256",
+  "unique": "161b9e8196d7",
+  "syntheticDataOnly": true,
+  "checks": [
+    {
+      "name": "admin-daily-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/daily?fromDate=2026-10-19&toDate=2026-10-19",
+      "status": 404,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "REPORT_NOT_FOUND",
+          "message": "Requested projection does not have accepted coverage",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.313378700Z",
+        "correlationId": "b2aa3b12-2464-41b6-9d57-56a6c7aa68dd"
+      }
+    },
+    {
+      "name": "admin-monthly-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/monthly?year=2026",
+      "status": 404,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "REPORT_NOT_FOUND",
+          "message": "Requested projection does not have accepted coverage",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.377035700Z",
+        "correlationId": "11bbd690-77b5-4e25-805e-162421bdd5c4"
+      }
+    },
+    {
+      "name": "manager-daily-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/daily?fromDate=2026-10-19&toDate=2026-10-19",
+      "status": 404,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "REPORT_NOT_FOUND",
+          "message": "Requested projection does not have accepted coverage",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.404508Z",
+        "correlationId": "3e86ed23-085e-4555-a1ac-eb505d7c3009"
+      }
+    },
+    {
+      "name": "manager-monthly-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/monthly?year=2026",
+      "status": 404,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "REPORT_NOT_FOUND",
+          "message": "Requested projection does not have accepted coverage",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.432374300Z",
+        "correlationId": "a7ac8ad3-2612-4dea-aa9d-ccbe3c8796c8"
+      }
+    },
+    {
+      "name": "doctor-daily-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/daily?fromDate=2026-10-19&toDate=2026-10-19",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.441169700Z",
+        "correlationId": "e69a9ac3-a517-46e5-bb96-27cf1e4b75aa"
+      }
+    },
+    {
+      "name": "doctor-monthly-no-coverage",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/monthly?year=2026",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:35:36.448398200Z",
+        "correlationId": "fc9acbb6-edb0-4430-85de-e211e9ba87e1"
+      }
+    },
+    {
+      "name": "owner-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+          "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+          "title": "Nghiệm thu IN_APP 161b9e8196d7",
+          "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+          "channel": "IN_APP",
+          "status": "SENT",
+          "failureReason": null,
+          "createdAt": "2026-10-20T06:36:09.244779Z",
+          "sentAt": "2026-10-20T06:36:09.247718Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:36:28.806566800Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Không có quyền xem thông báo này",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.830906500Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.839409100Z",
+        "correlationId": "623a52f3-fb72-4ba8-8069-ea2afde2eaeb"
+      }
+    },
+    {
+      "name": "manager-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.844157500Z",
+        "correlationId": "56c9c20a-9e30-4920-a7d7-0420b629dc4c"
+      }
+    },
+    {
+      "name": "owner-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:36:28.941037600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Cannot read another patient's notifications",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.959462600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:36:28.983717300Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "owner-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.992800900Z",
+        "correlationId": "753a4f4c-f580-495e-b1c9-3127969578de"
+      }
+    },
+    {
+      "name": "foreign-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:28.997493400Z",
+        "correlationId": "81b1b09a-a49f-4992-8c36-956c3ba2fcdf"
+      }
+    },
+    {
+      "name": "nurse-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:36:29.001495900Z",
+        "correlationId": "ee573a3c-db8c-43fc-8a57-bd38167ff95a"
+      }
+    },
+    {
+      "name": "current-notices",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:36:29.317807500Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "owner-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/b91ee385-87dd-4766-a1b2-e2edd346be23",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+          "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+          "title": "Đơn thuốc đã hủy",
+          "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+          "channel": "IN_APP",
+          "status": "SENT",
+          "failureReason": null,
+          "createdAt": "2026-10-20T06:35:17.816738Z",
+          "sentAt": "2026-10-20T06:35:17.816738Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:21.198384700Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/b91ee385-87dd-4766-a1b2-e2edd346be23",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Không có quyền xem thông báo này",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.229529500Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/b91ee385-87dd-4766-a1b2-e2edd346be23",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.240248Z",
+        "correlationId": "6357fa75-cc91-4f89-a085-fce617939371"
+      }
+    },
+    {
+      "name": "manager-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/b91ee385-87dd-4766-a1b2-e2edd346be23",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.245340300Z",
+        "correlationId": "bffd0d55-eb38-4055-b522-8006c1e10ae8"
+      }
+    },
+    {
+      "name": "owner-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:21.484857200Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Cannot read another patient's notifications",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.506385700Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:21.531152500Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "owner-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.540967100Z",
+        "correlationId": "61cb5b97-fe92-4336-be0d-942c13fe8d72"
+      }
+    },
+    {
+      "name": "foreign-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.545077500Z",
+        "correlationId": "76163bc5-9f3f-4ed7-9a46-eeff501d7ed8"
+      }
+    },
+    {
+      "name": "nurse-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:21.550082100Z",
+        "correlationId": "44b46fa8-77ea-4d8b-9fa4-c280be6a996f"
+      }
+    },
+    {
+      "name": "owner-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+          "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+          "title": "Đã ghi nhận thanh toán",
+          "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+          "channel": "IN_APP",
+          "status": "SENT",
+          "failureReason": null,
+          "createdAt": "2026-10-20T06:35:13.627856Z",
+          "sentAt": "2026-10-20T06:35:13.627856Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:22.352868200Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Không có quyền xem thông báo này",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.375943300Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.384399200Z",
+        "correlationId": "7b0e90d9-2c88-4db7-8f7e-da2bbe39a763"
+      }
+    },
+    {
+      "name": "manager-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.389215200Z",
+        "correlationId": "b4786c09-b91f-4908-afce-9cfcd15fe063"
+      }
+    },
+    {
+      "name": "owner-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:22.411340600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "foreign-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Cannot read another patient's notifications",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.427345800Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "nurse-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:22.450665700Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "owner-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.459316200Z",
+        "correlationId": "89446f76-a33c-4de4-a6c2-87419786f360"
+      }
+    },
+    {
+      "name": "foreign-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.463678200Z",
+        "correlationId": "0d3d63aa-713c-4dbb-889d-06171b0f7165"
+      }
+    },
+    {
+      "name": "nurse-send-denied",
+      "method": "POST",
+      "path": "/api/v1/notifications/send",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_FORBIDDEN",
+          "message": "Role is not allowed to access this route",
+          "details": []
+        },
+        "timestamp": "2026-10-20T06:44:22.467606800Z",
+        "correlationId": "4a2fa2e5-a00b-4720-af6c-418a8a39c82c"
+      }
+    },
+    {
+      "name": "current-notices",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e?page=0&size=20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "8e992b96-37d6-4901-ac36-e2ca5ea165e6",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nghiệm thu IN_APP 161b9e8196d7",
+              "content": "Thông báo thử nghiệm cô lập, không gửi email hoặc SMS.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:36:09.244779Z",
+              "sentAt": "2026-10-20T06:36:09.247718Z"
+            },
+            {
+              "notificationId": "b91ee385-87dd-4766-a1b2-e2edd346be23",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.816738Z",
+              "sentAt": "2026-10-20T06:35:17.816738Z"
+            },
+            {
+              "notificationId": "1762a9a4-fd76-4eef-afaf-5be0dac01d04",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:17.692202Z",
+              "sentAt": "2026-10-20T06:35:17.692202Z"
+            },
+            {
+              "notificationId": "84d362a2-c710-4bb4-9cdd-cc09cb03e4b5",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:16.767196Z",
+              "sentAt": "2026-10-20T06:35:16.767196Z"
+            },
+            {
+              "notificationId": "7ae7de5b-e1ac-442f-a82a-df44c774aa31",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:13.627856Z",
+              "sentAt": "2026-10-20T06:35:13.627856Z"
+            },
+            {
+              "notificationId": "f468cc3d-2361-49ad-8501-e91a83a856a3",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-21 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:10.804993Z",
+              "sentAt": "2026-10-20T06:35:10.811239Z"
+            },
+            {
+              "notificationId": "bb65e1e8-17b4-4c78-a710-2154730f5115",
+              "patientId": "1ef6c5b7-4ca8-4e2b-94f6-5a83c0465b3e",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 161b9e8196d7, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-20T06:35:09.385771Z",
+              "sentAt": "2026-10-20T06:35:09.484793Z"
+            }
+          ],
+          "totalElements": 7,
+          "totalPages": 1,
+          "number": 0,
+          "size": 20
+        },
+        "error": null,
+        "timestamp": "2026-10-20T06:44:22.760401500Z",
+        "correlationId": null
+      }
+    }
+  ]
+}

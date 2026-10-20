@@ -1,5 +1,23 @@
 # Frontend Workboard
 
+## Huy — signed Support browser closeout, 2026-10-20
+
+Current candidate `44ff1ed7` + Notification focus-test timing correction. **10/14 tasks (71.4%),
+49/56 criteria (87.5%)**, up four criteria: HF6-11.4 and HF6-14.1/.2/.4. Existing branch retained;
+no commit/push/PR. [Plan section 18](huy-six-service-frontend-plan.md#18-signed-notification-acceptance-và-audit-report-source--2026-10-20)
+and [runtime evidence](evidence/huy-six-service/2026-10-20-closeout/README.md) supersede prior counts.
+
+- Actual issuer ADMIN/NURSE/PATIENT via Gateway→Support; owner/cross-patient deny, manual IN_APP,
+  real lifecycle/payment privacy, themes and Support failure→keyboard retry recovery observed.
+- Focused Pharmacy/Report/Notification **446/446 / 31 files**, typecheck/lint/build PASS. Full
+  rerun **590/591 / 57 files**, one existing foreign Lab fixture failure; not a full PASS.
+- Report audit includes fetched master `71328cbc`: no production accepted-coverage writer;
+  five-source export/reconciliation remains missing. Signed ADMIN/MANAGER receive 404, DOCTOR 403.
+  Report UI stays OFF; fixtures are not accepted coverage.
+- Notification refund/missing-claim, full workflow/failure matrix and final release remain open.
+  Refund consumer stays OFF; no EMAIL/SMS provider delivery claim. Verdict **HOLD integration**.
+  Single consolidated Huy handoff updated; disposable runtime stopped, browser logged out.
+
 ## Huy — Notification history refresh, 2026-10-20
 
 DELEGATED Support FE, base `26bf2ef7`: explicit GET refresh preserves the submitted patient/page

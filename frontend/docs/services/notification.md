@@ -97,3 +97,10 @@ Loading removes old rows. Retry/pagination/refresh can restore focus to a named 
 focus has fallen to the body, preserving another focused control. A forbidden scope has no retry.
 Notification local regression: 68/68 tests in 3 files; signed ownership/provider acceptance stays
 open in HF6-14 and the existing consolidated Huy handoff.
+
+2026-10-20 signed follow-up: actual issuer ADMIN/NURSE/PATIENT browser checks via Gateway→Support
+now cover manual IN_APP, owner/foreign denial, NURSE history-only access, lifecycle/payment detail
+privacy and Support outage→keyboard retry recovery. HF6-14.1/.2/.4 close with an integrated-release
+HOLD verdict. Refund consumer remains OFF, refund and signed missing-patient-claim runtime checks
+remain open under HF6-14.3; EMAIL/SMS external delivery is unverified. See
+[closeout evidence](../evidence/huy-six-service/2026-10-20-closeout/README.md) and plan section 18.
