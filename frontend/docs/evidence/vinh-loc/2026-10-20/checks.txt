@@ -1,0 +1,40 @@
+MediFlow Vinh/Loc frontend closeout, 2026-10-20
+Integrated base: 8883f49d
+Runtime: Node 22.22.0; pnpm 11.8.0; Next.js 16.2.11; Vitest 4.1.11
+Prior candidate: 667/667 tests, 70/70 files, 140.16s, exit 0.
+Integrated typecheck: exit 0
+Integrated lint: exit 0
+Integrated production build: exit 0
+Independent review: no remaining actionable P1/P2 findings.
+git diff --check: pass
+Packaged backend held acceptance: 1 run, 0 failures/errors/skips, 1189s, exit 0.
+Disposable Docker containers and test app processes stopped.
+Backend/browser runtime baseline: a9f06017 plus test-only fixture; newer Report writer not runtime-certified.
+
+Production build excerpt:
+Already up to date
+Done in 56ms using pnpm v11.8.0
+$ next build
+▲ Next.js 16.2.11 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.8s
+  Running TypeScript ...
+  Finished TypeScript in 7.1s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/29) ...
+  Generating static pages using 11 workers (7/29)
+  Generating static pages using 11 workers (14/29)
+  Generating static pages using 11 workers (21/29)
+✓ Generating static pages using 11 workers (29/29) in 493ms
+  Finalizing page optimization ...
+
+
+Integrated full frontend test run: exit 0
+
+Not implemented: navigation to another Document
+
+ Test Files  70 passed (70)
+      Tests  673 passed (673)
+   Start at  16:28:39
+   Duration  140.61s (transform 1.96s, setup 18.33s, import 7.45s, tests 50.56s, environment 51.41s)

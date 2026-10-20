@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import type { Role } from "@/lib/roles";
 import { appointmentApi } from "../api";
@@ -34,6 +34,7 @@ type DetailRequestState =
 
 const actionRoles: readonly Role[] = ["ADMIN", "DOCTOR", "NURSE"];
 const getServerRole = (): Role | null => null;
+const getServerToken = (): string | null => null;
 
 function getRequestError(cause: unknown): RequestError {
   if (cause instanceof ApiRequestError) {
@@ -55,17 +56,18 @@ function Identifier({ label, value }: { label: string; value: string }) {
 }
 
 export function AppointmentDetail(props: AppointmentDetailProps) {
-  return <AppointmentDetailContent key={props.appointmentId} {...props} />;
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerToken);
+  return <AppointmentDetailContent key={`${props.appointmentId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, renderRecordLink }: AppointmentDetailProps) {
+function AppointmentDetailContent({ appointmentId, outpatientEnabled = false, renderRecordLink, role }: AppointmentDetailProps & { role: Role | null }) {
   const router = useRouter();
   const active = useRef(false);
   useEffect(() => {
     active.current = true;
     return () => { active.current = false; };
   }, []);
-  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [requestState, setRequestState] = useState<DetailRequestState>({
     key: "",
     status: "idle",

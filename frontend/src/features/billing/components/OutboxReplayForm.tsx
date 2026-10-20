@@ -3,32 +3,18 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
-import { ApiRequestError } from "@/lib/api";
+import { CommandFeedback } from "@/components/ui/CommandFeedback";
+import { useCommand } from "@/lib/use-command";
 import { isUuid } from "@/lib/validation";
 import { billingApi } from "../api";
 import type { OutboxReplayResult } from "../types";
 
-interface RequestError {
-  message: string;
-  correlationId: string | null;
-}
-
-function getRequestError(cause: unknown): RequestError {
-  if (cause instanceof ApiRequestError) {
-    return { message: cause.message, correlationId: cause.correlationId };
-  }
-  return {
-    message: cause instanceof Error ? cause.message : "Không thể phát lại event.",
-    correlationId: null,
-  };
-}
-
 export function OutboxReplayForm() {
   const [eventId, setEventId] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [error, setError] = useState<RequestError | null>(null);
+  const command = useCommand();
   const [result, setResult] = useState<OutboxReplayResult | null>(null);
-  const [replaying, setReplaying] = useState(false);
+  const replaying = command.busy;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,17 +24,8 @@ export function OutboxReplayForm() {
       return;
     }
     setValidationError(null);
-    setError(null);
     setResult(null);
-    setReplaying(true);
-    try {
-      const outcome = await billingApi.replayOutboxEvent(id);
-      setResult(outcome);
-    } catch (cause: unknown) {
-      setError(getRequestError(cause));
-    } finally {
-      setReplaying(false);
-    }
+    void command.run(() => billingApi.replayOutboxEvent(id), setResult);
   }
 
   return (
@@ -60,18 +37,11 @@ export function OutboxReplayForm() {
 
       {validationError ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{validationError}</p> : null}
 
-      {error ? (
-        <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-          {error.message}
-          {error.correlationId ? (
-            <span className="mt-1 block text-xs text-muted-foreground">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span>
-          ) : null}
-        </p>
-      ) : null}
+      <CommandFeedback error={command.error} uncertain={command.uncertain} />
 
       {result ? (
         <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          Đã phát lại event <span className="font-mono">{result.eventId}</span>.
+          {result.replayed ? "Đã đưa event vào hàng đợi phát lại; chưa xác nhận bên nhận xử lý" : "Event không được phát lại"} <span className="font-mono">{result.eventId}</span>.
         </p>
       ) : null}
 
@@ -79,6 +49,7 @@ export function OutboxReplayForm() {
         <input
           id="outbox-event-id"
           required
+          disabled={replaying || command.uncertain}
           value={eventId}
           onChange={(event) => setEventId(event.target.value)}
           placeholder="Nhập UUID event"
@@ -86,7 +57,7 @@ export function OutboxReplayForm() {
         />
       </Field>
 
-      <Button type="submit" variant="primary" loading={replaying}>Phát lại event</Button>
+      <Button type="submit" variant="primary" loading={replaying} disabled={command.uncertain}>Phát lại event</Button>
     </form>
   );
 }

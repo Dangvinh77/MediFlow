@@ -1,5 +1,22 @@
 # Frontend Service: Clinical
 
+## Accepted closeout — 2026-10-20
+
+This checkpoint supersedes the runtime/test gaps below. Appointment, record and Lab-order workspaces
+reset on resource, role and bearer changes; late replies cannot expose old content or redirect a new
+session. Shared command guards prevent duplicate sends and blind retries after ambiguous replies.
+Regression tests cover check-in/start eligibility, exact record lookup, source identity and immutable
+completion. Signed browser acceptance created a Clinical Lab order, submitted its unchanged source
+context to Lab, added a diagnosis and completed the outpatient record. Appointment detail then showed
+COMPLETED and linked the exact record. Initial appointment check-in/start were exercised by the
+packaged API harness, not manually through the browser in this run.
+
+`FE-CLINICAL-04` is DONE for the implemented MVP regression/runtime scope. `FE-CLINICAL-05` is DONE
+for the conditional command UI and matched opt-in runtime; production rollout remains default-off.
+See [evidence and limits](../evidence/vinh-loc/2026-10-20/README.md). The dated sections below remain
+historical; external selector/attachment contract dependencies are not silently closed.
+
+
 **Owner:** Vinh (`Dangvinh77` / `Harori`)  
 **Backend:** `backend/clinical-service/**`  
 **Contract context:** [`docs/ai/services/clinical.md`](../../../docs/ai/services/clinical.md)
@@ -85,10 +102,8 @@ typecheck/lint/build pass. Authenticated browser smoke remains open. See the dat
   request, response, role, validation, conflict, correlation-ID, and transition contracts.
 - `FE-CLINICAL-03` — `DONE`: record detail, create, update and add-diagnosis commands mirror the
   live controller DTOs, roles, validation and error states.
-- `FE-CLINICAL-04` — `IN PROGRESS`: focused MVP command API and detail tests plus appointment/record
-  list/form lifecycle regressions; authenticated runtime smoke remains open.
-- `FE-CLINICAL-05` — `BLOCKED`: enable and smoke Care/Finance V2 through Gateway before adding its
-  conditional command controls.
+- `FE-CLINICAL-04` — `DONE`: MVP regression and signed runtime acceptance; see latest checkpoint.
+- `FE-CLINICAL-05` — `DONE`: gated outpatient controls accepted in matched opt-in runtime; production rollout stays OFF.
 
 ## Handoffs and blockers
 

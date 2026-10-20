@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FinancialStatus } from "./FinancialStatus";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -314,9 +315,7 @@ export function LabTable({ outpatientEnabled = false }: { outpatientEnabled?: bo
                         <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge tone={test.paid ? "success" : "warning"}>
-                          {test.paid ? "Đã thanh toán" : "Chưa thanh toán"}
-                        </StatusBadge>
+                        <FinancialStatus test={test} />
                       </td>
                       <td className="max-w-md whitespace-normal px-4 py-3">
                         {test.conclusion ?? "—"}

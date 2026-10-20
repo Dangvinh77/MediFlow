@@ -62,6 +62,17 @@ describe("shared POST idempotency transport", () => {
     await expect(api.post("/v1/command", {}, { idempotencyKey: key })).rejects.toThrow("Connection lost");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("does not clear a newer session when an old bearer receives a late 401", async () => {
+    let finish!: (response: Response) => void;
+    fetchMock.mockReturnValueOnce(new Promise<Response>((resolve) => { finish = resolve; }));
+    const request = api.get("/v1/records/old");
+    const rejected = expect(request).rejects.toMatchObject({ status: 401 });
+    session.getToken.mockReturnValue("new-session-token");
+    finish(new Response(JSON.stringify({ message: "Expired old token" }), { status: 401 }));
+    await rejected;
+    expect(session.clearSession).not.toHaveBeenCalled();
+    expect(new Headers(sent().headers).get("Authorization")).toBe("Bearer signed-token");
+  });
   it("rejects empty success without generating a replacement command", async () => {
     respond(200, { success: true, data: null, correlationId: "trace-empty" });
     await expect(api.post("/v1/command", {}, { idempotencyKey: key }))

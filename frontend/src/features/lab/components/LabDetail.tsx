@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FinancialStatus } from "./FinancialStatus";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -128,7 +129,7 @@ function LabDetailContent({ testId, notice }: LabDetailProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusBadge tone={lifecycle.tone}>{lifecycle.label}</StatusBadge>
-          <StatusBadge tone={test.paid ? "success" : "warning"}>{test.paid ? "Đã thanh toán" : "Chưa thanh toán"}</StatusBadge>
+          <FinancialStatus test={test} />
         </div>
       </div>
 

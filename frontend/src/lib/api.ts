@@ -77,7 +77,7 @@ async function requestJson<T>(
     // A rejected bearer token must not remain in localStorage. Otherwise the
     // dashboard can immediately render again with the same invalid session
     // after redirecting to the login page.
-    if (response.status === 401) {
+    if (response.status === 401 && getToken() === token) {
       clearSession();
     }
 

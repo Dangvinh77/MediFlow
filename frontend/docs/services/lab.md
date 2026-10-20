@@ -1,5 +1,20 @@
 # Frontend Service: Lab
 
+## Accepted closeout — 2026-10-20
+
+This checkpoint supersedes the runtime/test gaps below. V1 READY requires an actual clearance ID;
+a legacy `paid` boolean cannot authorize start. Financial display likewise uses the V1 clearance:
+a real paid/cleared request can retain legacy `paid: false`. V0 keeps its compatibility paid display.
+The stale READY test fixture now includes real-shaped clearance identity, with a negative test for
+READY lacking clearance. Session/resource guards clear stale detail and workspace drafts.
+
+Signed browser acceptance created Lab from the Clinical source, paid its discovered LAB_TEST request
+through Billing, observed READY/clearance, started it and recorded results to COMPLETED/version 1.
+`FE-LAB-04` is DONE for the implemented outpatient MVP scope. See
+[evidence and limits](../evidence/vinh-loc/2026-10-20/README.md). Production UI activation stays OFF;
+external enrichment and unrelated production rollout remain separate.
+
+
 **Owner:** Vinh (`Dangvinh77` / `Harori`)  
 **Backend:** `backend/lab-service/**`  
 **Contract context:** [`docs/ai/services/lab.md`](../../../docs/ai/services/lab.md)
@@ -57,12 +72,7 @@ Billing and Clinical acceptance and V1 create controls remain open under `FE-VIN
   success navigation, and 400/403/404/409/business-rule handling.
 - `FE-LAB-03` — `DONE`: start, multi-indicator result entry and audited cancellation use the exact
   live request records and roles.
-- `FE-LAB-04` — `IN PROGRESS`: source identity/normal start HTTP tests plus 15 detail component
-  regressions for loading/retry/correlation, stale read/mutation, roles/terminal states and payment
-  separation. Detail workspace resets by testId so an old start response cannot blank the current
-  detail. Queue filter/pagination and create-form lifecycle are now component-tested; authenticated
-  Gateway/browser smoke remains open. API/session are mocked, not proof of runtime authorization or
-  actual payment.
+- `FE-LAB-04` — `DONE`: outpatient API/component coverage and signed browser flow; see latest checkpoint.
 
 2026-10-17 continuation adds queue pagination/filter coverage and the Lab create-form lifecycle.
 Pagination keeps the submitted status/episode filters; retry ignores unsent drafts. Validation

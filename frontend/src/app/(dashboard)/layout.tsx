@@ -1,28 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import {
   getRole,
-  isAuthenticated,
+  getToken,
   logout,
   subscribeToAuthChanges,
 } from "@/lib/auth";
 
-const getAuthSnapshot = (): boolean | null => isAuthenticated();
-const getServerAuthSnapshot = (): boolean | null => null;
+const getServerSnapshot = () => null;
+const getServerTokenSnapshot = () => undefined;
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const authorized = useSyncExternalStore(
+  const token = useSyncExternalStore(
     subscribeToAuthChanges,
-    getAuthSnapshot,
-    getServerAuthSnapshot,
+    getToken,
+    getServerTokenSnapshot,
   );
-  const role = authorized ? getRole() : null;
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerSnapshot);
+  const authorized = token === undefined ? null : Boolean(token?.trim());
 
   useEffect(() => {
     if (authorized === false) {
@@ -52,7 +53,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
           onLogout={onLogout}
           onOpenNavigation={() => setNavigationOpen(true)}
         />
-        {children}
+        <Fragment key={`${token}:${role}`}>{children}</Fragment>
       </div>
     </div>
   );

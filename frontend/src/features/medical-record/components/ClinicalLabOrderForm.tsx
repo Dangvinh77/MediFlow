@@ -42,6 +42,6 @@ export function ClinicalLabOrderForm({ recordId, onCreated }: { recordId: string
       <Field label="Ngày yêu cầu" htmlFor="order-date" required><input id="order-date" required type="date" max={localToday()} className={controlClassName} value={requestedDate} onChange={(event) => setRequestedDate(event.target.value)} /></Field>
       <div className="sm:col-span-2"><Button type="submit" variant="primary" loading={command.busy}>Lập chỉ định</Button></div>
     </fieldset>
-    {command.uncertain ? <p className="text-sm text-warning">Không gửi lại chỉ định khi chưa đối soát kết quả với bộ phận xét nghiệm. Giữ mã theo dõi ở trên để kiểm tra.</p> : null}
+    {command.uncertain ? <p className="text-sm text-warning">Không gửi lại chỉ định khi chưa đối soát kết quả với bộ phận xét nghiệm. Hãy liên hệ bộ phận xét nghiệm để xác nhận tình trạng chỉ định trước khi tiếp tục.</p> : null}
   </form>;
 }

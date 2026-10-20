@@ -1,0 +1,98 @@
+- button "Open Next.js Dev Tools":
+- alert
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Tổ chức & bệnh nhân
+      - link "Tổ chức — Nhân sự & khoa":
+        - /url: /organization
+        - generic: Tổ chức
+        - generic: Nhân sự & khoa
+      - link "Bệnh nhân — Hồ sơ định danh":
+        - /url: /patients
+        - generic: Bệnh nhân
+        - generic: Hồ sơ định danh
+      - paragraph: Khám ngoại trú
+      - link "Lịch hẹn — Tiếp nhận ngoại trú":
+        - /url: /appointments
+        - generic: Lịch hẹn
+        - generic: Tiếp nhận ngoại trú
+      - link "Hồ sơ khám — Chẩn đoán & kết luận":
+        - /url: /records
+        - generic: Hồ sơ khám
+        - generic: Chẩn đoán & kết luận
+      - paragraph: Xét nghiệm
+      - link "Xét nghiệm — Hàng đợi & kết quả":
+        - /url: /lab
+        - generic: Xét nghiệm
+        - generic: Hàng đợi & kết quả
+      - paragraph: Dược
+      - link "Dược — Thuốc & đơn thuốc":
+        - /url: /pharmacy
+        - generic: Dược
+        - generic: Thuốc & đơn thuốc
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Bác sĩ
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Chi tiết xét nghiệm" [level=1]
+  - paragraph: Thông tin yêu cầu, tài chính và kết quả xét nghiệm.
+  - paragraph: CBC
+  - paragraph: cc1c90c6-3661-408a-8abc-f9cc84a8a0d2
+  - generic: Đã hoàn tất
+  - generic: Có xác nhận tài chính
+  - term: Bệnh nhân
+  - definition: c0306ab4-aa9c-4dad-a88f-a23efdc82116
+  - term: Hồ sơ khám
+  - definition: 3c0c37b1-0af1-4bcc-9361-1a778b4818cd
+  - term: Khoa yêu cầu
+  - definition: ef9d973b-9f01-4ee8-aeeb-3304d0631121
+  - term: Nguồn chỉ định
+  - definition: 0e710190-005a-4384-9813-29650584e21c
+  - term: Đợt chăm sóc
+  - definition: 86767f99-f9f4-4400-8af1-98fdc67d19c6
+  - term: Xác nhận tài chính
+  - definition: 980bd66c-1729-475b-a45c-5a8d079ed28f
+  - term: Loại đợt chăm sóc
+  - definition: OUTPATIENT_VISIT
+  - term: Mã giá
+  - definition: LAB
+  - term: Phiên bản contract/kết quả
+  - definition: 1 / 1
+  - term: Ngày yêu cầu
+  - definition: 20/10/2026
+  - term: Ngày thực hiện
+  - definition: 20/10/2026
+  - term: Ngày tạo
+  - definition: 16:09 20/10/26
+  - term: Cập nhật
+  - definition: 16:12 20/10/26
+  - heading "Kết quả xét nghiệm" [level=2]
+  - table:
+    - rowgroup:
+      - row "Chỉ số Giá trị Đơn vị Khoảng tham chiếu":
+        - columnheader "Chỉ số"
+        - columnheader "Giá trị"
+        - columnheader "Đơn vị"
+        - columnheader "Khoảng tham chiếu"
+    - rowgroup:
+      - row "WBC 7.0 G/L 4-10":
+        - cell "WBC"
+        - cell "7.0"
+        - cell "G/L"
+        - cell "4-10"
+  - heading "Kết luận" [level=3]
+  - paragraph: Kết quả thử nghiệm chấp nhận
+  - button "Cập nhật trạng thái xét nghiệm"
+  - link "Quay lại danh sách":
+    - /url: /lab
