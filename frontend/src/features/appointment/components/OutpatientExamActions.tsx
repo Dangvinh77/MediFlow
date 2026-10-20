@@ -1,20 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
+import { getToken, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { useCommand } from "@/lib/use-command";
 import { appointmentApi } from "../api";
 import type { AppointmentDTO } from "../types";
 
-export function OutpatientExamActions({ appointment, role, onUpdated, onRefresh }: {
+interface OutpatientExamActionsProps {
   appointment: AppointmentDTO;
   role: Role | null;
   onUpdated: (appointment: AppointmentDTO) => void;
   onRefresh: () => void;
-}) {
+}
+
+export function OutpatientExamActions(props: OutpatientExamActionsProps) {
+  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  const sessionKey = token?.trim() ? token : null;
+
+  return <OutpatientExamActionsForSession
+    key={sessionKey ?? "anonymous"}
+    {...props}
+    role={sessionKey ? props.role : null}
+  />;
+}
+
+function OutpatientExamActionsForSession({ appointment, role, onUpdated, onRefresh }: OutpatientExamActionsProps) {
   const command = useCommand();
   const [confirm, setConfirm] = useState<"check-in" | "start" | "cancel" | null>(null);
   const canCheckIn = (role === "ADMIN" || role === "NURSE")

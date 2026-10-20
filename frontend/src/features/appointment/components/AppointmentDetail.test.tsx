@@ -3,9 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { AppointmentDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ getById: vi.fn(), changeStatus: vi.fn(), role: "NURSE", router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ getById: vi.fn(), changeStatus: vi.fn(), role: "NURSE", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, subscribeToAuthChanges: () => () => {} }));
+vi.mock("@/lib/auth", () => ({
+  getRole: () => mocks.role,
+  getToken: () => mocks.token,
+  subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => { mocks.listeners.delete(listener); }; },
+}));
 vi.mock("../api", () => ({ appointmentApi: { getById: mocks.getById, changeStatus: mocks.changeStatus } }));
 import { AppointmentDetail } from "./AppointmentDetail";
 
@@ -24,7 +28,7 @@ function deferred<T>() {
 }
 
 describe("Appointment detail identity and request states", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.changeStatus.mockReset(); mocks.role = "NURSE"; });
+  beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.changeStatus.mockReset(); mocks.role = "NURSE"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
   it("preserves the current appointment when an old status mutation finishes", async () => {
     const pending = deferred<AppointmentDTO>();
@@ -47,6 +51,24 @@ describe("Appointment detail identity and request states", () => {
     view.rerender(<AppointmentDetail appointmentId="appointment-b" />);
     await screen.findByText("Second visit");
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("clears the previous patient's appointment while the replacement session reloads it", async () => {
+    const pending = deferred<AppointmentDTO>();
+    mocks.getById.mockResolvedValueOnce(appointment).mockReturnValueOnce(pending.promise);
+    render(<AppointmentDetail appointmentId="appointment-a" />);
+    expect(await screen.findByText("First visit")).toBeVisible();
+
+    act(() => {
+      mocks.token = "session-b";
+      for (const listener of mocks.listeners) listener();
+    });
+
+    expect(screen.queryByText("First visit")).not.toBeInTheDocument();
+    expect(screen.getByText("Đang tải chi tiết lịch hẹn…")).toBeVisible();
+    await act(async () => pending.resolve({ ...appointment, patientId: "patient-b", reason: "Second session visit" }));
+    expect(screen.getByText("Second session visit")).toBeVisible();
+    expect(mocks.getById).toHaveBeenCalledTimes(2);
   });
 
   it("ignores an old mutation authentication error after navigation", async () => {

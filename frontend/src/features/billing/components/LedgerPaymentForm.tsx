@@ -1,161 +1,152 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
-import { formatDecimal, formatInstant } from "@/lib/format";
+import { formatDecimal } from "@/lib/format";
+import { BillingSessionBoundary } from "./BillingSessionBoundary";
 import { billingApi } from "../api";
-import type { LedgerPaymentDTO, LedgerPaymentMethod } from "../types";
+import type { CompleteLedgerPaymentRequest, LedgerPaymentDTO, LedgerPaymentMethod } from "../types";
 
-const paymentMethodLabels: Record<LedgerPaymentMethod, string> = {
-  CASH: "Tiền mặt",
-  TRANSFER: "Chuyển khoản",
-};
+const methodLabels: Record<LedgerPaymentMethod, string> = { CASH: "Tiền mặt", TRANSFER: "Chuyển khoản" };
 
-interface RequestError {
-  message: string;
-  correlationId: string | null;
+interface LedgerPaymentFormProps {
+  requestId: string;
+  remainingAmount?: number;
+  currency?: string;
+  onLockChange?: (locked: boolean) => void;
 }
 
-function getRequestError(cause: unknown): RequestError {
-  if (cause instanceof ApiRequestError) {
-    return { message: cause.message, correlationId: cause.correlationId };
-  }
-  return {
-    message: cause instanceof Error ? cause.message : "Không thể hoàn tất thanh toán.",
-    correlationId: null,
-  };
+export function LedgerPaymentForm(props: LedgerPaymentFormProps) {
+  return (
+    <BillingSessionBoundary identity={`ledger:${props.requestId}`}>
+      <LedgerPaymentFormSession {...props} />
+    </BillingSessionBoundary>
+  );
 }
 
-export function LedgerPaymentForm({ requestId }: { requestId: string }) {
-  // Giữ cùng một idempotencyKey cho mọi lần thử lại của ĐÚNG lượt thanh toán này — bấm lại sau
-  // lỗi mạng tái dùng key cũ (server coi là cùng một giao dịch); tải lại trang mới sinh key mới.
-  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
-  const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<LedgerPaymentMethod>("CASH");
+function LedgerPaymentFormSession({ requestId, remainingAmount, currency, onLockChange }: LedgerPaymentFormProps) {
+  const [amount, setAmount] = useState(remainingAmount === undefined ? "" : String(remainingAmount));
+  const [method, setMethod] = useState<LedgerPaymentMethod>("CASH");
   const [providerReference, setProviderReference] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<RequestError | null>(null);
+  const [pendingRetry, setPendingRetry] = useState<CompleteLedgerPaymentRequest | null>(null);
   const [result, setResult] = useState<LedgerPaymentDTO | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; correlationId: string | null } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedCurrency = currency.trim().toUpperCase();
-    const parsedAmount = Number(amount);
+  const hasSnapshot = Number.isFinite(remainingAmount) && (remainingAmount ?? 0) > 0 && Boolean(currency?.trim());
 
-    if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
-      setValidationError("Mã tiền phải gồm đúng 3 chữ cái (ví dụ VND).");
-      return;
-    }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setValidationError("Số tiền phải lớn hơn 0.");
-      return;
-    }
-
-    setValidationError(null);
-    setSaving(true);
+  async function runPayment(body: CompleteLedgerPaymentRequest) {
+    if (submitLock.current) return;
+    submitLock.current = true;
+    onLockChange?.(true);
+    setSubmitting(true);
     setError(null);
-
     try {
-      const payment = await billingApi.completeLedgerPayment(requestId, {
-        idempotencyKey,
-        amount: parsedAmount,
-        currency: normalizedCurrency,
-        paymentMethod,
-        providerReference: providerReference.trim() ? providerReference.trim() : null,
-      });
+      const payment = await billingApi.completeLedgerPayment(requestId, body);
+      setPendingRetry(null);
       setResult(payment);
+      onLockChange?.(payment.status === "PENDING");
+      if (payment.status === "COMPLETED") {
+        setError(null);
+      } else if (payment.status === "PENDING") {
+        setError({ message: "Giao dịch đang chờ xác nhận. Hãy tra cứu lại khoản phí để kiểm tra trạng thái trước khi thanh toán tiếp.", correlationId: null });
+      } else {
+        setError({ message: "Giao dịch chưa hoàn tất. Hãy tra cứu lại khoản phí trước khi tạo giao dịch mới.", correlationId: null });
+      }
     } catch (cause: unknown) {
-      setError(getRequestError(cause));
+      const uncertain = !(cause instanceof ApiRequestError) || cause.status < 400 || cause.status === 408 || cause.status >= 500;
+      setPendingRetry(uncertain ? body : null);
+      onLockChange?.(uncertain);
+      const message = uncertain
+        ? "Chưa xác nhận được kết quả thanh toán. Hãy thử lại đúng giao dịch đã gửi để kiểm tra kết quả."
+        : cause instanceof Error ? cause.message : "Không thể thanh toán khoản phí.";
+      setError({ message, correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
     } finally {
-      setSaving(false);
+      submitLock.current = false;
+      setSubmitting(false);
     }
   }
 
-  if (result) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitLock.current || pendingRetry || result !== null || !hasSnapshot) return;
+    const amountText = amount.trim();
+    if (!/^\d+(?:\.\d{1,2})?$/.test(amountText)) {
+      setError({ message: "Số tiền phải lớn hơn 0 và có tối đa 2 chữ số thập phân.", correlationId: null });
+      return;
+    }
+    const cents = Math.round(Number(amountText) * 100);
+    const remainingCents = Math.round((remainingAmount as number) * 100);
+    if (!Number.isSafeInteger(cents) || cents <= 0 || !Number.isSafeInteger(remainingCents) || cents > remainingCents) {
+      setError({ message: `Số tiền phải lớn hơn 0 và không vượt quá số dư ${formatDecimal(remainingAmount)} ${currency}.`, correlationId: null });
+      return;
+    }
+    const reference = providerReference.trim();
+    void runPayment({
+      idempotencyKey: crypto.randomUUID(),
+      amount: cents / 100,
+      currency: currency as string,
+      paymentMethod: method,
+      providerReference: reference || null,
+    });
+  }
+
+  if (!hasSnapshot) {
     return (
-      <section className="mt-6 max-w-xl space-y-4 rounded-xl border border-success/40 bg-success/10 p-6">
-        <p role="status" className="text-sm font-semibold text-success">Thanh toán thành công.</p>
-        <dl className="grid gap-4 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mã giao dịch</dt><dd className="mt-1 break-all font-mono text-xs">{result.transactionId}</dd></div>
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Số tiền</dt><dd className="mt-1">{formatDecimal(result.amount)} {result.currency}</dd></div>
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trạng thái</dt><dd className="mt-1">{result.status}</dd></div>
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hoàn tất lúc</dt><dd className="mt-1">{formatInstant(result.completedAt)}</dd></div>
-        </dl>
-        <Link href="/billing/payment-requests" className="inline-flex min-h-11 items-center rounded-lg border border-control-border px-4 py-2 text-sm font-semibold">Thanh toán khoản phí khác</Link>
-      </section>
+      <p role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        Cần tra cứu khoản phí nguồn để lấy số dư và mã tiền do Billing xác nhận trước khi thanh toán. <Link className="font-semibold underline" href="/billing/payment-requests">Tra cứu khoản phí</Link>
+      </p>
     );
   }
 
-  return (
-    <form onSubmit={submit} noValidate className="mt-6 max-w-xl space-y-5 rounded-xl border border-border bg-surface p-6">
-      <p className="break-all text-xs text-muted-foreground">
-        Khoản phí (payment request): <span className="font-mono">{requestId}</span>
-      </p>
+  const lockedToRetry = pendingRetry !== null;
 
+  return (
+    <form onSubmit={submit} noValidate className="mt-4 space-y-4 border-t border-border pt-4">
+      <p className="text-sm text-muted-foreground">Số dư theo Billing: <strong>{formatDecimal(remainingAmount)} {currency}</strong></p>
       {error ? (
         <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
-          {error.message}
-          {error.correlationId ? (
-            <span className="mt-1 block text-xs text-muted-foreground">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span>
-          ) : null}
+          {error.message}{error.correlationId ? <span className="mt-1 block text-xs">Mã theo dõi: <span className="font-mono">{error.correlationId}</span></span> : null}
         </p>
       ) : null}
-
-      {validationError ? (
-        <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{validationError}</p>
+      {result?.status === "COMPLETED" ? (
+        <p role="status" className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
+          Thanh toán thành công. Mã giao dịch: <span className="font-mono">{result.transactionId}</span>
+        </p>
       ) : null}
-
-      <Field label="Số tiền" htmlFor="ledger-amount" required hint="Khớp đúng số tiền của khoản phí đã chọn.">
-        <input
-          id="ledger-amount"
-          required
-          inputMode="decimal"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-          className={controlClassName}
-        />
-      </Field>
-
-      <Field label="Mã tiền (ISO 4217)" htmlFor="ledger-currency" required hint="Ví dụ VND — nhập đúng mã tiền của tài khoản bệnh nhân.">
-        <input
-          id="ledger-currency"
-          required
-          maxLength={3}
-          value={currency}
-          onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-          className={controlClassName}
-        />
-      </Field>
-
-      <Field label="Hình thức" htmlFor="ledger-payment-method" required>
-        <select
-          id="ledger-payment-method"
-          value={paymentMethod}
-          onChange={(event) => setPaymentMethod(event.target.value as LedgerPaymentMethod)}
-          className={controlClassName}
-        >
-          {Object.entries(paymentMethodLabels).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label="Tham chiếu thanh toán" htmlFor="ledger-provider-reference" hint="Tuỳ chọn — mã biên lai/chuyển khoản, tối đa 120 ký tự.">
-        <input
-          id="ledger-provider-reference"
-          maxLength={120}
-          value={providerReference}
-          onChange={(event) => setProviderReference(event.target.value)}
-          className={controlClassName}
-        />
-      </Field>
-
-      <Button type="submit" variant="primary" loading={saving}>Xác nhận thanh toán</Button>
+      {result?.status === "PENDING" ? (
+        <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+          Giao dịch đang chờ xác nhận. Mã giao dịch: <span className="font-mono">{result.transactionId}</span>
+        </p>
+      ) : null}
+      {result && result.status !== "COMPLETED" ? (
+        <p className="text-sm text-muted-foreground"><Link className="font-semibold underline" href="/billing/payment-requests">Tra cứu lại trạng thái khoản phí</Link> trước khi gửi giao dịch khác.</p>
+      ) : null}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Số tiền" htmlFor="ledger-payment-amount" required hint={`Tối đa ${formatDecimal(remainingAmount)} ${currency}`}>
+          <input id="ledger-payment-amount" inputMode="decimal" value={amount} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setAmount(event.target.value); setError(null); setResult(null); }} className={controlClassName} />
+        </Field>
+        <Field label="Mã tiền (ISO 4217)" htmlFor="ledger-payment-currency" required>
+          <input id="ledger-payment-currency" value={currency} readOnly disabled={submitting || lockedToRetry || result !== null} className={controlClassName} />
+        </Field>
+        <Field label="Hình thức" htmlFor="ledger-payment-method" required>
+          <select id="ledger-payment-method" value={method} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setMethod(event.target.value as LedgerPaymentMethod); setError(null); setResult(null); }} className={controlClassName}>
+            {Object.entries(methodLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </Field>
+        <Field label="Mã tham chiếu" htmlFor="ledger-payment-reference" hint="Dùng cho chuyển khoản nếu có.">
+          <input id="ledger-payment-reference" value={providerReference} disabled={submitting || lockedToRetry || result !== null} onChange={(event) => { setProviderReference(event.target.value); setError(null); setResult(null); }} className={controlClassName} />
+        </Field>
+      </div>
+      {pendingRetry ? (
+        <Button type="button" variant="primary" loading={submitting} onClick={() => void runPayment(pendingRetry)}>Thử lại cùng giao dịch</Button>
+      ) : result !== null ? null : (
+        <Button type="submit" variant="primary" loading={submitting}>Xác nhận thanh toán</Button>
+      )}
     </form>
   );
 }

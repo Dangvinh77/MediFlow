@@ -1,5 +1,35 @@
 # Frontend Workboard
 
+## Vinh/Lộc — outpatient frontend closeout, 2026-10-20
+
+User delegated completion of both Vinh and Lộc frontend scope. Candidate is based on master
+`8883f49d`, preserving Huy's latest Notification/history and Report work. The earlier sections
+below retain their dated evidence and counts. Master now includes the Report coverage acceptance
+controller/service/adapter; older statements that no writer exists describe the audit at `71328cbc`.
+Accepted five-source reconciliation and runtime approval remain separate from implementing that writer.
+
+- Clinical/Lab: session/resource boundaries, exact source order composition, check-in/start and
+  completion regressions; READY V1 requires clearance, independent of legacy paid boolean.
+- Billing: discover request by source/patient/episode; server-owned remaining amount/currency;
+  duplicate/uncertain payment locks and exact-key retry; authoritative fee refresh after payment;
+  prescription refund obligation lookup and recording with explicit reconciliation confirmation.
+  Gateway rules for adjustment/refund already exist; the old route blocker is superseded.
+- Shared: late old-session 401 cannot clear a new account; command uncertainty includes 408;
+  dashboard hydration preserves valid login and clears private workspaces on account change;
+  role login lands in an authorized workspace (including CASHIER and PATIENT).
+- Signed browser: Clinical source → Lab → cashier payment → clearance → results COMPLETED;
+  diagnosis/record completion reflected on the appointment; prescription refund recorded;
+  manual IN_APP and own/cross-patient privacy checked with actual issuer accounts.
+- Integrated full suite **673/673 tests / 70 files**, typecheck/lint/production build **PASS**.
+  Independent review reports no actionable P1/P2 findings. Complete evidence is in
+  [acceptance evidence](evidence/vinh-loc/2026-10-20/README.md) and its checks.txt.
+  Packaged held acceptance ended **1/1 PASS, 1189s, exit 0**; test containers/processes stopped.
+
+Implemented Vinh/Lộc MVP frontend is ready for review. Production UI stays OFF. Provider delivery,
+Notification resend/read-state commands and external selectors remain separate contract/release
+work; the existing Huy handoff tracks broader Report/source-coverage integration. No foreign
+production backend, deferred Surgery/Inpatient scope, or shared dependency was changed.
+
 ## Huy — shared session race fix, 2026-10-20
 
 Base `8883f49d` synchronized with master; current Huy working diff, no branch/commit/push.

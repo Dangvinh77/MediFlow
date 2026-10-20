@@ -258,6 +258,7 @@ class SixServiceOutpatientAcceptanceIT {
         int gatewayPort = freePort();
         int billingPort = freePort();
         int pharmacyPort = freePort(), supportPort = freePort(), labPort = freePort();
+        boolean frontendAcceptance = "true".equals(System.getenv("MEDIFLOW_FE_ACCEPTANCE_HOLD"));
         String eurekaUrl = "http://127.0.0.1:" + eurekaPort + "/eureka/";
         String organizationUrl = databaseUrl("mediflow_organization");
         String patientUrl = databaseUrl("mediflow_patient");
@@ -314,6 +315,9 @@ class SixServiceOutpatientAcceptanceIT {
                           OUTPATIENT_EXAM:
                             description: Outpatient exam acceptance
                             unit-amount: 100000.00
+                          LAB:
+                            description: Isolated frontend Lab acceptance
+                            unit-amount: 150000.00
                     """);
             processes.add(start("billing", billingJar, billingPort, Map.ofEntries(
                     Map.entry("MEDIFLOW_JWT_SECRET", JWT_SECRET),
@@ -331,8 +335,10 @@ class SixServiceOutpatientAcceptanceIT {
                     "--mediflow.billing.refunds.enabled=true",
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
+                    "--mediflow.billing.lab-test-charge-consumer.enabled=" + frontendAcceptance,
                     "--mediflow.billing.outpatient-publication.enabled=true",
-                    "--mediflow.billing.outpatient-publication.purposes=EXAM,PRESCRIPTION",
+                    "--mediflow.billing.outpatient-publication.purposes="
+                            + (frontendAcceptance ? "EXAM,LAB_TEST,PRESCRIPTION" : "EXAM,PRESCRIPTION"),
                     "--mediflow.billing.prescription-charge-consumer.enabled=true",
                     "--mediflow.billing.prescription-charges.allowed-price-codes=DRUG",
                     "--mediflow.billing.clearance-lookup.enabled=true",
@@ -342,7 +348,10 @@ class SixServiceOutpatientAcceptanceIT {
 
             processes.add(startPharmacy(pharmacyPort, billingPort, eurekaUrl));
             processes.add(start("lab", requiredJar("lab"), labPort, singleStore("lab", eurekaUrl),
-                    "--mediflow.features.outpatient-mvp.enabled=true"));
+                    "--mediflow.features.outpatient-mvp.enabled=true",
+                    "--mediflow.features.care-finance-v2=" + frontendAcceptance,
+                    "--mediflow.lab.clinical-context.enabled=" + frontendAcceptance,
+                    "--mediflow.lab.clinical.base-url=http://127.0.0.1:" + clinicalPort));
             processes.add(start("support", requiredJar("support"), supportPort, supportEnvironment(eurekaUrl),
                     "--mediflow.features.care-finance-v2=true", "--mediflow.report.outpatient-consumer.enabled=true",
                     "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
