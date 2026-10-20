@@ -193,6 +193,31 @@ contracts/service docs; chỉ gỡ file handoff khi mọi active gate được c
 
 ## 6. Frontend MVP — gate tích hợp còn lại (2026-10-16)
 
+**Mobile Pharmacy 2026-10-20 — MP-HUY-01/02/03 local DONE:** **3/12 task**, model/DTO/Gateway
+read adapter và catalog/detail/refresh đã triển khai trong feature Huy, không sửa shared mobile.
+Full mobile+loader **87/87 test PASS**, analyzer/format/web build PASS; chưa có signed Gateway/native proof.
+[Plan mobile](../../mobile/docs/huy-pharmacy-mobile-plan.md) và
+[integration manifest](../../mobile/lib/features/pharmacy/README.md) là đầu mối code/contract.
+MP-HUY-11 cần Vinh phối hợp `mobile/lib/app/dependencies.dart`, `router.dart`, `modules.dart`:
+bind `pharmacyRepositoryProvider` với shared ApiClient, bind `pharmacyAccessProvider` từ reactive
+actual session, opaque identity đổi theo phiên và role guard cho nested route. Local detail navigation
+đã có; optional callback dùng nếu chọn deep links. Không mark module implemented trước smoke.
+Read slice không cần mở API Gateway mới hoặc Report coverage. PUT/Idempotency-Key shared transport
+chỉ cần trước mobile commands 04/05/08–10; không bypass client hoặc nới auth để demo read slice.
+Tất cả dependency mobile vẫn ghi tại file chung này; không tạo handoff mới.
+
+**Cập nhật 2026-10-20 sau merge master `8883f49d`:** người dùng giao đúng hai shared files
+`frontend/src/lib/api.ts` / `api.test.ts` để bảo vệ phiên mới trước late 401. Working diff
+đã sửa và bốn regression tái hiện lỗi trước sửa, sau sửa focused transport + Pharmacy/Report/
+Notification **459/459**. Shared late-401 dưới đây đã giải quyết ở mức code/regression;
+không còn chờ giao quyền hoặc chờ Vinh viết fix. Vẫn cần runtime matrix HF6-11.3 và release
+candidate cuối; không dùng unit tests để đóng task browser. Tiến độ giữ **10/14, 49/56**;
+chi tiết kết quả cuối tại [plan mục 19](../../frontend/docs/huy-six-service-frontend-plan.md#19-bảo-vệ-phiên-mới-trước-phản-hồi-401-cũ--2026-10-20)
+và workboard. Core public account contract bắt buộc PATIENT có patientId; negative signed-token
+thiếu claim cần bộ kiểm thử backend được cấp, không tạo invalid account hoặc tự ký token rồi
+gọi là actual issuer evidence. Refund acceptance, reviewed coverage và Gateway dependency còn mở.
+Giữ đúng nhánh Huy, không commit/push trong lượt này; các checkpoint dưới là lịch sử.
+
 **Report writer bổ sung 2026-10-20 — triển khai theo yêu cầu người dùng:** đã thêm production
 preview/ADMIN acceptance trong Report, V28 audit và idempotent atomic approval; contract và
 quy trình ở [operator workflow](../../backend/report-service/operations/outpatient-coverage-acceptance.md).
@@ -233,7 +258,7 @@ Các đầu vào còn thiếu, gom tại đúng file này:
   nghiệm thu các trường hợp này trong môi trường được cấp; giữ no accountId fallback. Lifecycle
   và EXAM payment privacy đã đạt, không giao lại. EMAIL/SMS chưa có provider/recipient acceptance.
 - **HF6-11.3/HF6-12.4:** hoàn tất global session/unavailable/retry matrix và final browser release
-  trên candidate sau dependency. Shared late-401 bên dưới vẫn OPEN. Full rerun 590/591 còn Lab
+  trên candidate sau dependency. Shared late-401 đã sửa theo checkpoint mới đầu mục 6. Full rerun 590/591 còn Lab
   fixture `LabDetail.test.tsx:194` ngoài scope Huy; Vinh regression phối hợp owner để xử lý.
   Focused 446/446 và typecheck/lint/build PASS không thay full-suite hoặc browser acceptance.
 
@@ -330,7 +355,7 @@ B20 denial/focus tiếp theo focused 108/108, full **506/506 / 55 files**; final
 Plan hiện hành **10/14 task; 45/56 subtask** (Pharmacy/Report gốc 9/12; 41/48, Notification 4/8).
 Tiến độ/checks candidate hiện hành ghi ở plan mục 14 và workboard; chỉ dùng một handoff này.
 
-**Shared dependency — old 401 clears new session (OPEN, Vinh/shared frontend):**
+**Shared dependency — old 401 clears new session (đã sửa code/regression 2026-10-20; mô tả lỗi gốc):**
 `frontend/src/lib/api.ts` captures token khi dispatch nhưng line 81 clearSession vô điều kiện khi response 401.
 Request của A có thể trả 401 sau khi B đã login và xóa session B. Feature-local guards/remount hiện tại
 bỏ callback cũ nhưng không ngăn side effect global của wrapper. Lifecycle tests mock feature facades,

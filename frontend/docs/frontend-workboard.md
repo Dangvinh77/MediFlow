@@ -30,6 +30,32 @@ Notification resend/read-state commands and external selectors remain separate c
 work; the existing Huy handoff tracks broader Report/source-coverage integration. No foreign
 production backend, deferred Surgery/Inpatient scope, or shared dependency was changed.
 
+## Huy — shared session race fix, 2026-10-20
+
+Base `8883f49d` synchronized with master; current Huy working diff, no branch/commit/push.
+Explicit human DELEGATED scope: `src/lib/api.ts` and `src/lib/api.test.ts`, late-401 session
+protection only. A rejected request clears the session only if its bearer is still current,
+after reading the response body; a newer login survives. Original errors and no-auto-retry remain.
+Four added regression cases failed before the fix and pass after it. Notification error-focus
+test now waits for the focus effect, preserving the actual accessibility assertion.
+
+- Transport + Pharmacy/Report/Notification: **459/459 tests, 32 files**.
+- Final full suite with two workers: **594/595 tests, 57 files**, only existing Lab fixture
+  `LabDetail.test.tsx:194` failing; not a full PASS. Initial unrestricted run had six failures
+  (Lab, Notification focus timing, four deferred Inpatient tests); after the Notification test
+  correction and bounded concurrency, only Lab remains. No Inpatient/Lab source changes.
+- Typecheck/lint/build PASS; no signed Gateway/browser acceptance added in this checkpoint.
+  Raw full-suite reports: `.git/huy-fe-remaining-tests.json` and
+  `.git/huy-fe-remaining-tests-final.json` (local, not committed).
+- **10/14 tasks (71.4%), 49/56 criteria (87.5%)**. HF6-09/11/12/14 remain open. Shared 401 fix
+  is complete at code/regression level; HF6-11.3 still needs the complete runtime matrix.
+- Report writer is now merged. Gateway's two ADMIN coverage policy entries and five-source
+  reviewed reconciliation remain dependencies. Refund stays OFF. Core public account creation
+  requires PATIENT patientId; missing-claim signed negative testing needs backend test support.
+  Report UI stays OFF; integrated release **HOLD**. Current details: [plan section 19](huy-six-service-frontend-plan.md#19-bảo-vệ-phiên-mới-trước-phản-hồi-401-cũ--2026-10-20).
+
+Earlier checkpoints below describe their historical candidates and evidence.
+
 ## Huy — signed Support browser closeout, 2026-10-20
 
 Current candidate `44ff1ed7` + Notification focus-test timing correction. **10/14 tasks (71.4%),

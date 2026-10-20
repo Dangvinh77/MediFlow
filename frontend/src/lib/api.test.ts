@@ -12,7 +12,7 @@ function respond(status = 200, body: unknown = { success: true, data: { id: "ser
 }
 function sent() { return fetchMock.mock.calls[0][1] as RequestInit; }
 
-describe("shared POST idempotency transport", () => {
+describe("shared API transport", () => {
   beforeEach(() => {
     fetchMock.mockReset(); session.clearSession.mockReset();
     session.getToken.mockReturnValue("signed-token");
@@ -62,16 +62,43 @@ describe("shared POST idempotency transport", () => {
     await expect(api.post("/v1/command", {}, { idempotencyKey: key })).rejects.toThrow("Connection lost");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
-  it("does not clear a newer session when an old bearer receives a late 401", async () => {
+  it.each(["signed-token", null])("preserves a new login when an older request started with %s", async (originalToken) => {
+    session.getToken.mockReturnValue(originalToken);
     let finish!: (response: Response) => void;
     fetchMock.mockReturnValueOnce(new Promise<Response>((resolve) => { finish = resolve; }));
-    const request = api.get("/v1/records/old");
-    const rejected = expect(request).rejects.toMatchObject({ status: 401 });
+    const pending = expect(api.get("/v1/notifications")).rejects.toMatchObject({ status: 401 });
+
     session.getToken.mockReturnValue("new-session-token");
-    finish(new Response(JSON.stringify({ message: "Expired old token" }), { status: 401 }));
-    await rejected;
+    finish(new Response(JSON.stringify({ message: "Expired" }), { status: 401 }));
+
+    await pending;
     expect(session.clearSession).not.toHaveBeenCalled();
-    expect(new Headers(sent().headers).get("Authorization")).toBe("Bearer signed-token");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new Headers(sent().headers).get("Authorization"))
+      .toBe(originalToken ? `Bearer ${originalToken}` : null);
+  });
+  it("checks the current session after a delayed error body finishes reading", async () => {
+    let finishBody!: (body: unknown) => void;
+    const json = vi.fn(() => new Promise((resolve) => { finishBody = resolve; }));
+    fetchMock.mockResolvedValueOnce({ status: 401, ok: false, json });
+    const pending = expect(api.postRaw("/v1/command")).rejects.toMatchObject({ status: 401 });
+    await vi.waitFor(() => expect(json).toHaveBeenCalledOnce());
+
+    session.getToken.mockReturnValue("new-session-token");
+    finishBody({ message: "Expired" });
+
+    await pending;
+    expect(session.clearSession).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("does not clear an already logged-out session for a late 401", async () => {
+    let finish!: (response: Response) => void;
+    fetchMock.mockReturnValueOnce(new Promise<Response>((resolve) => { finish = resolve; }));
+    const pending = expect(api.get("/v1/reports/daily")).rejects.toMatchObject({ status: 401 });
+    session.getToken.mockReturnValue(null);
+    finish(new Response("Unauthorized", { status: 401 }));
+    await pending;
+    expect(session.clearSession).not.toHaveBeenCalled();
   });
   it("rejects empty success without generating a replacement command", async () => {
     respond(200, { success: true, data: null, correlationId: "trace-empty" });
