@@ -26,8 +26,8 @@ Local wiring does not prove real DB/broker/Support startup acceptance.
 
 Cutover preparation and rollback checklist: [owned runbook](../../docs/plans/huy-mvp-cutover-runbook.md).
 The operator inventory in `src/main/resources/operations/mvp-cutover-inventory.sql` is READ ONLY,
-not a publication/recovery/acceptance writer. Current Report migration history contains 24 SQL files,
-latest V27; version gaps are preserved. Artifact profile now compares every SQL copy and runs three
+not a publication/recovery/acceptance writer. Current Report migration history contains 25 SQL files,
+latest V28; version gaps are preserved. Artifact profile now compares every SQL copy and runs three
 forked-JVM probes from the actual plain JAR, not Report target/classes; DB/broker gates remain open.
 Canonical scope: [MVP design](../../docs/plans/01-system-design.md),
 [Huy plan](../../docs/plans/2026-10-14-huy-backend-mvp-adjustment-plan.md),
@@ -49,7 +49,9 @@ years 2000–2100, configured Report zone, VND. Periods carry visits/Lab/Rx/unit
 refunds/netCash; never earned revenue/liability. Coverage metadata includes coverageId,
 sourceObservedAt/reconciledAt. Legacy endpoints retain their wire and zero-fill semantics.
 
-V27 creates an EMPTY accepted-coverage table. No write API or automatic acceptance is provided.
+V27 creates an EMPTY accepted-coverage table. The additive V28 approval audit supports an
+ADMIN-only preview/acceptance workflow, separately gated OFF by default; it does not accept data
+automatically. See the [operator workflow and exact contracts](operations/outpatient-coverage-acceptance.md).
 An audited source export/reconciliation for all five inputs and exact department/date/zone is
 required before rollout. No coverage, pending/invalid refund, fingerprint drift, wrong scope or
 future acceptance returns 404 REPORT_NOT_FOUND, not invented zero. One REPEATABLE READ snapshot

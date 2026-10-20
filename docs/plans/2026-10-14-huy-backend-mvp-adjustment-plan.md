@@ -83,6 +83,11 @@ Inventory đầy đủ exact DTO/errors/role/queue/profile sẽ được khóa �
 
 ## 3. Cách theo dõi
 
+**Scope bổ sung 2026-10-20:** người dùng giao triển khai writer duyệt accepted outpatient
+coverage trong Report. Đây là H6-13 bên dưới, ngoài 48 subtask lịch sử; 48/48 không chứng nhận
+luồng duyệt production này đã tồn tại từ trước. Người dùng chọn **chỉ sửa Report**, giữ
+`backend/gateway/**` thành dependency. Không bật rollout gates hoặc fabricate source exports.
+
 **12 task chính / 48 subtask**, hiện **48/48 subtask trong môi trường phát triển hiện có**,
 nghiệm thu ngày 2026-10-17. H6-02.3/H6-12.3 đã chạy inventory và cutover/rollback trên cold
 copies của chính hai Compose volumes cũ theo yêu cầu tiếp tục của người dùng; kiểm cả hai
@@ -516,6 +521,31 @@ Surgery historical notes không là backlog/activation. .http dùng canonical pr
 manifest + commands/evidence cập nhật, operator inventory và cutover/rollback checklist có owner
 boundaries rõ. Không chỉnh host/Gateway/shared runtime, không claim global M6 hoặc Surgery/full V2
 hoàn thành. .1–.3 giữ mở cho real chain và rehearsal.
+
+### H6-13 — Luồng ADMIN duyệt accepted outpatient coverage (bổ sung 2026-10-20)
+
+Owner Huy/Report. Phạm vi `backend/report-service/**`; Gateway/source producers read-only.
+Không kích hoạt full-V2 publication, không ký thay external completeness.
+
+- [x] **H6-13.1** Khóa additive GET preview / POST acceptances contract, ADMIN-only, signed
+  actor/server time; năm nguồn, exact scope/zone/VND, export hashes/references và local witnesses.
+- [x] **H6-13.2** Production use case + Report persistence, V28 audit, bounded local locks,
+  atomic coverage/receipt, exact requestId retry và changed-body/actor conflict; gates default OFF.
+- [x] **H6-13.3** Unit/web/real PostgreSQL/HTTP regression: no-exp/expired/wrong-role, đầy đủ
+  nguồn/thời gian/scope, races/rollback, V27→V28, late facts fail closed. Final clean verify PASS:
+  **1.440/1.440 Report tests + 5/5 packaging acceptance**, không fail/error/skip; 33 test mới
+  trong 5 suite gồm HTTP thật với signed JWT và PostgreSQL. Fixtures không là production coverage.
+- [x] **H6-13.4** Operator workflow và `.http`, cập nhật một handoff chung. Gateway giữ OPEN:
+  owner cần allowlist đúng GET `/api/v1/reports/outpatient/coverage/preview` và POST
+  `/api/v1/reports/outpatient/coverage/acceptances`, chỉ ADMIN, rồi nghiệm thu Gateway→Support.
+
+[Contract/runbook](../../backend/report-service/operations/outpatient-coverage-acceptance.md).
+H6-13 **4/4 phần Report đã hoàn thành**, ngoài 48 subtask lịch sử. Candidate working tree trên
+`44ff1ed7`, ngày 2026-10-20; `mvn -q -pl backend/report-service -am -Preport-packaging-acceptance clean verify`
+exit 0. Chưa commit/push hoặc đổi nhánh; Gateway→Support/browser acceptance vẫn OPEN.
+Thêm writer không tự tạo accepted coverage: source owners vẫn phải cung cấp reviewed exports,
+cursor/completeness và đối soát cho period thật. Nghiệm thu fixtures chỉ chứng minh cơ chế writer.
+H6-09 dòng `không API accept/write` phía trên là baseline trước H6-13, không phải source hiện hành.
 
 ## 5. Bảng phối hợp — chỉ các blocker MVP
 

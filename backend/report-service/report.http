@@ -22,6 +22,41 @@
 @host = http://localhost:8080
 # @token = paste-access-token-here
 
+### ADMIN coverage preview — NEW, Gateway allowlist dependency OPEN (user kept Gateway out of scope).
+### Requires explicit outpatient-coverage-acceptance gate in addition to the existing reader gates.
+### Module verification is separate; do not bypass Gateway from FE or treat this sample as source acceptance.
+GET {{host}}/api/v1/reports/outpatient/coverage/preview?fromDate=2026-10-01&toDate=2026-10-01
+Authorization: Bearer {{token}}
+X-Correlation-Id: outpatient-coverage-preview
+
+### ADMIN approval — complete operator review before replacing any placeholder below.
+### Full five-source body and field semantics: operations/outpatient-coverage-acceptance.md.
+### Deliberately invalid proof placeholders prevent accidental acceptance from this sample.
+POST {{host}}/api/v1/reports/outpatient/coverage/acceptances
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Correlation-Id: outpatient-coverage-approval
+
+{
+  "requestId": "{{$uuid}}",
+  "fromDate": "2026-10-01",
+  "toDate": "2026-10-01",
+  "departmentId": null,
+  "zoneId": "Asia/Bangkok",
+  "currency": "VND",
+  "sources": {
+    "CLINICAL": {"reference":"REPLACE_AFTER_REVIEW","exportSha256":"REPLACE","rowCount":0,"localFingerprint":"REPLACE"},
+    "LAB": {"reference":"REPLACE_AFTER_REVIEW","exportSha256":"REPLACE","rowCount":0,"localFingerprint":"REPLACE"},
+    "PHARMACY": {"reference":"REPLACE_AFTER_REVIEW","exportSha256":"REPLACE","rowCount":0,"localFingerprint":"REPLACE"},
+    "BILLING_CASH": {"reference":"REPLACE_AFTER_REVIEW","exportSha256":"REPLACE","rowCount":0,"localFingerprint":"REPLACE"},
+    "BILLING_REFUND": {"reference":"REPLACE_AFTER_REVIEW","exportSha256":"REPLACE","rowCount":0,"localFingerprint":"REPLACE"}
+  },
+  "sourceObservedAt": "REPLACE_WITH_ACTUAL_OBSERVATION_INSTANT",
+  "reconciledAt": "REPLACE_WITH_ACTUAL_RECONCILIATION_INSTANT",
+  "acceptanceReference": "REPLACE_WITH_RETAINED_REVIEW_REFERENCE",
+  "expectedFingerprint": "REPLACE_WITH_REVIEWED_LOCAL_FINGERPRINT"
+}
+
 ### MVP outpatient DAILY — proposed Gateway route, default OFF, ADMIN/MANAGER only
 ### Requires outpatient-mvp (mvp-outpatient alias) + care-finance-v2 + outpatient-read and accepted real source coverage.
 ### No coverage => 404 REPORT_NOT_FOUND; never treat fixture seed/quiet queue as true zero.

@@ -14,7 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker=true)
 class ReportModuleUpgradePostgresTest {
     @Container static final PostgreSQLContainer<?> PG=new PostgreSQLContainer<>("postgres:16-alpine");
-    @Test void standaloneV26ToNamespacedV27PreservesHistoryAndRollbackReadability() {
+    @Test void standaloneV26ToNamespacedV28PreservesHistoryAndRollbackReadability() {
         var jdbc=new JdbcTemplate(new DriverManagerDataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword()));
         var original=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
                 .locations("classpath:db/migration").target("26").cleanDisabled(true).load();
@@ -24,12 +24,13 @@ class ReportModuleUpgradePostgresTest {
         var before=jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE success ORDER BY installed_rank");
         var module=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
                 .locations("classpath:mediflow/report/db/migration").cleanDisabled(true).load();
-        assertThat(module.migrate().migrationsExecuted).isOne();
+        assertThat(module.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(module.validateWithResult().validationSuccessful).isTrue();
-        assertThat(jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE version<>'27' AND success ORDER BY installed_rank"))
+        assertThat(jdbc.queryForList("SELECT version,script,checksum FROM flyway_schema_history WHERE version NOT IN ('27','28') AND success ORDER BY installed_rank"))
                 .containsExactlyElementsOf(before);
         assertThat(jdbc.queryForObject("SELECT visit_count FROM daily_visit_report WHERE report_id=?",Integer.class,legacy)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage_acceptance",Integer.class)).isZero();
         // A new accepted write is retained when changing back to the standalone migration location.
         jdbc.update("UPDATE daily_visit_report SET visit_count=4 WHERE report_id=?",legacy);
         var rollback=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
@@ -37,6 +38,6 @@ class ReportModuleUpgradePostgresTest {
         assertThat(rollback.validateWithResult().validationSuccessful).isTrue();
         assertThat(rollback.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject("SELECT visit_count FROM daily_visit_report WHERE report_id=?",Integer.class,legacy)).isEqualTo(4);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success",Integer.class)).isEqualTo(24);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success",Integer.class)).isEqualTo(25);
     }
 }
