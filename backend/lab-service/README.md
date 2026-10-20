@@ -70,6 +70,36 @@ must not infer one from `invoiceId` or `recordId`; `ReactToClinicalUseCase` and
 
 ## Tests
 
+### Outbox failure and recovery
+
+Flyway V4 adds delivery scheduling and quarantine without changing existing event IDs, payloads
+or published history. The dispatcher excludes future retries and quarantined rows from its
+100-row batch. Defaults: five failed send attempts total, exponential waits of 1, 2, 4, 8 seconds
+(capped at 60 seconds when a larger retry budget is configured). Configure using
+`MEDIFLOW_LAB_OUTBOX_MAX_RETRIES`, `MEDIFLOW_LAB_OUTBOX_INITIAL_BACKOFF_MS` and
+`MEDIFLOW_LAB_OUTBOX_MAX_BACKOFF_MS`. Historical rows already at the configured limit are
+quarantined without another send. A NACK, return or missing confirm never marks a row published.
+
+Monitor `quarantined_at IS NOT NULL` and the redacted `last_failure_code`; quarantine emits an
+error containing event ID/type and retry count, without patient data. After fixing the binding
+or broker problem, record the incident and snapshot the selected row before an operator replay.
+On the Lab-owned database only, replay exactly the reviewed unpublished event in a transaction:
+
+```sql
+BEGIN;
+SELECT event_id, event_type, retry_count, last_failure_code
+FROM lab_outbox_event WHERE event_id = :reviewed_event_id FOR UPDATE;
+UPDATE lab_outbox_event
+SET retry_count = 0, next_attempt_at = NULL, quarantined_at = NULL, last_failure_code = NULL
+WHERE event_id = :reviewed_event_id AND published_at IS NULL AND quarantined_at IS NOT NULL;
+-- Require exactly one affected row; otherwise ROLLBACK and investigate.
+COMMIT;
+```
+
+Do not regenerate identity/payload/correlation or reset published history/inbox dedupe. A crash
+after broker acceptance but before the DB mark can redeliver the same event; consumers must
+remain idempotent. Replay renews the bounded retry budget and retains the original event.
+
 ```bash
 mvn -pl backend/lab-service test        # unit/contract tests + PostgreSQL slices when Docker is available
 mvn -pl backend/lab-service verify

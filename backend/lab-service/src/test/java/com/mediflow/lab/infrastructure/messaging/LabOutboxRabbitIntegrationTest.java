@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ class LabOutboxRabbitIntegrationTest {
     static final RabbitMQContainer MQ = new RabbitMQContainer("rabbitmq:3.13-alpine");
     @Autowired LabOutboxEventJpaRepository outbox;
     @Autowired PlatformTransactionManager transactionManager;
+    @Autowired JdbcTemplate jdbc;
     private CachingConnectionFactory connection;
     private RabbitTemplate rabbit;
     private RabbitAdmin admin;
@@ -74,11 +76,28 @@ class LabOutboxRabbitIntegrationTest {
     }
 
     @Test
+    void failedFullBatchDoesNotStarveLaterRoutableEvent() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            var poison = save();
+            poison.setEventType("lab.request.created");
+            poison.setOccurredAt(Instant.now().minusSeconds(60));
+            outbox.saveAndFlush(poison);
+        }
+        var healthy = save();
+        bind();
+        dispatch(false);
+        dispatch(false);
+        assertEvent(rabbit.receive(queue, 1000), healthy);
+        assertThat(row(healthy).getPublishedAt()).isNotNull();
+    }
+
+    @Test
     void unroutableEventRemainsPendingThenNewDispatcherResumesSameIdentityAndPayload() throws Exception {
         var event = save();
         dispatch(false);
         assertThat(row(event).getPublishedAt()).isNull();
         assertThat(row(event).getRetryCount()).isOne();
+        makeDue(event);
         bind();
         connection.resetConnection();
         dispatch(false);
@@ -122,6 +141,7 @@ class LabOutboxRabbitIntegrationTest {
             assertThat(MQ.execInContainer("rabbitmqctl", "start_app").getExitCode()).isZero();
             connection.resetConnection();
             assertEvent(rabbit.receive(queue, 10000), confirmed);
+            makeDue(pending);
             dispatch(false);
             assertEvent(rabbit.receive(queue, 5000), pending);
             assertThat(row(pending).getPublishedAt()).isNotNull();
@@ -139,13 +159,58 @@ class LabOutboxRabbitIntegrationTest {
                 .occurredAt(Instant.now()).build());
     }
 
+    @Test
+    void quarantineSurvivesRestartAndExplicitReplayPreservesIdentityAndPayload() throws Exception {
+        var event = save();
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            makeDue(event);
+            dispatch(false);
+            assertThat(row(event).getRetryCount()).isEqualTo(attempt);
+        }
+        assertThat(row(event).getQuarantinedAt()).isNotNull();
+        assertThat(row(event).getPublishedAt()).isNull();
+        bind();
+        connection.resetConnection();
+        dispatch(false);
+        assertThat(rabbit.receive(queue, 300)).isNull();
+        assertThat(jdbc.update("""
+                UPDATE lab_outbox_event SET retry_count=0, next_attempt_at=NULL,
+                    quarantined_at=NULL, last_failure_code=NULL
+                WHERE event_id=? AND published_at IS NULL AND quarantined_at IS NOT NULL
+                """, event.getEventId())).isOne();
+        dispatch(false);
+        assertEvent(rabbit.receive(queue, 5000), event);
+        assertThat(row(event).getPublishedAt()).isNotNull();
+        assertThat(row(event).getQuarantinedAt()).isNull();
+    }
+
+    @Test
+    void fullQuarantinedBatchDoesNotBlockLaterEvent() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            var poison = save();
+            poison.setQuarantinedAt(Instant.now());
+            poison.setOccurredAt(Instant.now().minusSeconds(60));
+            poison.setRetryCount(5);
+            outbox.saveAndFlush(poison);
+        }
+        var healthy = save();
+        bind();
+        dispatch(false);
+        assertEvent(rabbit.receive(queue, 5000), healthy);
+        assertThat(row(healthy).getPublishedAt()).isNotNull();
+    }
+
+    private void makeDue(LabOutboxEventJpaEntity event) {
+        jdbc.update("UPDATE lab_outbox_event SET next_attempt_at=NULL WHERE event_id=?", event.getEventId());
+    }
+
     private LabOutboxEventJpaEntity row(LabOutboxEventJpaEntity event) {
         return outbox.findById(event.getEventId()).orElseThrow();
     }
 
     private void dispatch(boolean rollback) {
         transactions.executeWithoutResult(status -> {
-            new LabOutboxDispatcher(outbox, rabbit, 5000).dispatchPending();
+            new LabOutboxDispatcher(outbox, rabbit, 5000, 5, 60000, 60000).dispatchPending();
             if (rollback) status.setRollbackOnly();
         });
     }

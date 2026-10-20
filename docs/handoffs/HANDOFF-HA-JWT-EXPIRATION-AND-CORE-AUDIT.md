@@ -105,15 +105,18 @@ Owner cần khóa rõ caller/scope cho riêng route verify, thêm test wrong-sub
 giữ các internal lookup khác đúng caller contracts. Không đổi mọi Core internal route thành
 Gateway-only. Nếu hiện trạng là chủ đích, phải cập nhật contract và threat boundary trước đóng.
 
-## HA-AUDIT-03 — static race candidate: deactivate department và create staff
+## HA-AUDIT-03 — PostgreSQL-confirmed race: deactivate department và create staff
 
 `UpdateDepartmentService` kiểm không có active staff rồi save inactive; `CreateStaffService`
 đọc department active rồi insert staff. Các reads hiện không khóa/version aggregate; FK chỉ
 bảo đảm department tồn tại. Có interleaving để cả hai check đều qua rồi tạo active staff ở
 department inactive, trái invariant Organization.
 
-**Chưa tái hiện bằng PostgreSQL concurrency test**; không tính là lỗi runtime đã xác nhận.
-Owner bổ sung barrier test với DB thật cho hai giao dịch và giải quyết nếu test đỏ. Acceptance:
+**Update 20/10/2026:** đã tái hiện bằng PostgreSQL 16 concurrency test: 3 tests,
+1 expected invariant failure, 0 errors; hai test có sẵn vẫn pass. Barrier cho phép create staff
+commit sau check không có active staff rồi mới cho deactivation commit.
+[Handoff cập nhật và regression patch](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md) giữ evidence và
+phân công sửa cho Hoàng Anh; đây vẫn là cùng task HA-AUDIT-03. Acceptance:
 ít nhất một giao dịch bị từ chối/serialize, không có active staff thuộc department inactive;
 sequential guards và API errors hiện hành vẫn đúng.
 

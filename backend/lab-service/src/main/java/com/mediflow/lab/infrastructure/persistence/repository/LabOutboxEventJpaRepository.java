@@ -13,7 +13,9 @@ public interface LabOutboxEventJpaRepository extends JpaRepository<LabOutboxEven
     @Query(value = """
             SELECT * FROM lab_outbox_event
             WHERE published_at IS NULL
-            ORDER BY occurred_at
+              AND quarantined_at IS NULL
+              AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP)
+            ORDER BY occurred_at, event_id
             LIMIT 100
             FOR UPDATE SKIP LOCKED
             """, nativeQuery = true)

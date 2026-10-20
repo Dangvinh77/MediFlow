@@ -26,6 +26,7 @@ import static org.awaitility.Awaitility.await;
 
 @Testcontainers
 @SpringBootTest(properties = {"eureka.client.enabled=false", "mediflow.billing.ledger.enabled=true",
+        "mediflow.jwt.secret=billing-integration-test-only-key-at-least-32-bytes",
         "mediflow.billing.admission-charge-close.enabled=true", "mediflow.billing.outbox.enabled=false",
         "mediflow.billing.outbox.metrics-enabled=false", "mediflow.billing.outbox.maintenance-enabled=false",
         "mediflow.billing.rabbit.retry.initial-interval-ms=100", "mediflow.billing.rabbit.retry.max-interval-ms=100",
