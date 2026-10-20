@@ -2,7 +2,7 @@
 
 **Ngày lập:** 2026-10-18. **Owner thực thi:** Huy (`LQHuy0210`).  
 **Source baseline:** `025ef39e358756a28043d9809fad165096528fbf` trên nhánh local `Huy`.  
-**Trạng thái:** IN PROGRESS — **10/14 task (71,4%)**, **49/56 subtask (87,5%)**; checkpoint mới nhất và giới hạn nghiệm thu ở mục 18.
+**Trạng thái:** IN PROGRESS — **10/14 task (71,4%)**, **49/56 subtask (87,5%)**; checkpoint mới nhất và giới hạn nghiệm thu ở mục 19.
 
 Đây là plan thực thi hiện hành cho FE Pharmacy và Support (Report/Notification) trong MVP ngoại trú. Thay thứ tự
 thực thi của [plan Huy cũ](huy-frontend-implementation-plan.md), giữ nguyên checklist và evidence
@@ -812,3 +812,30 @@ verification tại H6-13 trong plan backend. Phạm vi người dùng chọn ch�
 owner allowlist đúng hai route, source owners vẫn cần reviewed exports/completeness thật.
 Module HTTP/PostgreSQL với fixtures không đóng HF6-09/11/12 hoặc thay browser acceptance;
 tiến độ FE giữ **10/14 task, 49/56 tiêu chí**, các gate và Report UI vẫn OFF.
+
+## 19. Bảo vệ phiên mới trước phản hồi 401 cũ — 2026-10-20
+
+Base `8883f49d` trên nhánh Huy, working diff chưa commit/push. Người dùng giao rõ
+`frontend/src/lib/api.ts` và `frontend/src/lib/api.test.ts` để sửa race phiên đăng nhập.
+Wrapper chỉ clear session nếu bearer của yêu cầu bị 401 vẫn là token hiện hành, kiểm tra
+sau khi đọc body. Yêu cầu cũ vẫn trả lỗi gốc; không retry command hoặc đổi hợp đồng API.
+Anonymous request và request của phiên đã logout không được xóa phiên đăng nhập mới.
+
+Bốn regression mới tái hiện lỗi trước sửa (4 fail / 9 pass); sau sửa bộ transport cùng
+Pharmacy/Report/Notification đạt **459/459 tests, 32 files**. Test focus Notification detail
+403/503 cũng đợi focus effect trước assertion; không thay production Notification.
+Typecheck/lint/build PASS. Full-suite cuối chạy hai workers: **594/595 tests, 57 files**, còn
+Lab fixture `LabDetail.test.tsx:194` ngoài scope. Lượt đầu có sáu lỗi (Lab, Notification focus,
+bốn test Inpatient); sau sửa timing Notification và giới hạn concurrency, chỉ Lab còn lỗi.
+Không sửa Lab/Inpatient; kết quả chi tiết và local report paths ở workboard. Không thay browser acceptance.
+
+Shared late-401 đã sửa và có regression, nhưng **HF6-11.3 chưa đóng**: còn matrix thật trên
+candidate cuối. Bốn task HF6-09/11/12/14 vẫn mở; tổng **10/14, 49/56**, không cộng criterion
+cho một bản sửa con. Report writer đã merge, cần Gateway allowlist ADMIN cho hai route coverage
+và reviewed source exports đủ năm nguồn trước success ADMIN/MANAGER/đối soát chỉ số.
+Refund Notification vẫn OFF. Core `Account.validate` bắt buộc PATIENT có patientId; public
+account workflow không phát hành được PATIENT thiếu claim. Negative signed-token acceptance
+cần bộ kiểm thử bảo mật được backend cấp, không nới Core hoặc tự tạo token để gọi là issuer proof.
+
+Không có signed Gateway/browser acceptance mới trong lượt này. Không đổi gates, Gateway,
+Lab, Inpatient hoặc Surgery. Toàn bộ dependency vẫn ở handoff chung hiện có.
