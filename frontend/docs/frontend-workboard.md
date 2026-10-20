@@ -1,5 +1,15 @@
 # Frontend Workboard
 
+## Huy — Notification history refresh, 2026-10-20
+
+DELEGATED Support FE, base `26bf2ef7`: explicit GET refresh preserves the submitted patient/page
+even when the UUID draft changes; empty history can discover new notices. Result scope is visible,
+old content clears during loading, and keyboard focus returns to result/error without interrupting
+another control. HTTP 403/session/stale guards remain enforced. Six additional regression cases;
+Notification **68/68 tests / 3 files**, typecheck/lint/build **PASS, exit 0**.
+Plan progress remains **10/14 tasks (71.4%), 45/56 criteria (80.4%)**; see section 17 for the
+remaining 11 criteria. Docker engine is unavailable during this run; no new signed/browser proof.
+
 ## Huy — Notification detail refresh/focus, 2026-10-20
 
 IMPLEMENT under the existing user delegation for Support FE. Only Notification detail and its

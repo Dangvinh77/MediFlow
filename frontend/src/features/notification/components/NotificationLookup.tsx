@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -53,6 +53,9 @@ function LookupWorkspace() {
   const isCurrent = useNotificationRequestScope("lookup");
   const sequence = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const feedbackId = useId();
   const deniedPatient = useRef<{ id: string; error: RequestError } | null>(null);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [patientId, setPatientId] = useState("");
@@ -69,6 +72,13 @@ function LookupWorkspace() {
     patientId: "",
     page: 0,
   });
+
+  useEffect(() => {
+    // Pagination/retry removes its trigger; do not interrupt someone editing the lookup.
+    if (loading || !searched || document.activeElement !== document.body) return;
+    if (error) feedbackRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [loading, searched, error, notifications]);
 
   const loadNotifications = useCallback(
     async (id: string, page: number) => {
@@ -193,14 +203,32 @@ function LookupWorkspace() {
       {loading ? <AsyncState kind="loading" message="Đang tải thông báo…" /> : null}
 
       {!loading && error ? (
-        error.forbidden ? <NotificationDenied message={error.message} correlationId={error.correlationId} /> : <AsyncState
-          kind="error"
-          message={error.message}
-          correlationId={error.correlationId}
-          onRetry={() =>
-            void loadNotifications(lastRequest.patientId, lastRequest.page)
-          }
-        />
+        <div ref={feedbackRef} role="group" aria-label="Lỗi tải lịch sử thông báo" aria-describedby={feedbackId} tabIndex={-1}
+          className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger">
+          <div id={feedbackId}>
+            {error.forbidden ? <NotificationDenied message={error.message} correlationId={error.correlationId} /> : <AsyncState
+              kind="error"
+              message={error.message}
+              correlationId={error.correlationId}
+              onRetry={() =>
+                void loadNotifications(lastRequest.patientId, lastRequest.page)
+              }
+            />}
+          </div>
+        </div>
+      ) : null}
+
+      {searched && !loading && !error ? (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 ref={headingRef} tabIndex={-1} className="rounded-sm text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Kết quả tra cứu thông báo</h2>
+            <p className="mt-1 break-all text-sm text-muted-foreground">Bệnh nhân: {activePatientId}</p>
+          </div>
+          <button type="button" onClick={() => void loadNotifications(lastRequest.patientId, lastRequest.page)}
+            className="min-h-11 rounded-lg border border-control-border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">
+            Tải lại lịch sử
+          </button>
+        </div>
       ) : null}
 
       {searched && !loading && !error && notifications.length === 0 ? (

@@ -90,3 +90,10 @@ codes. UI role hiding does not replace backend authorization for a patient UUID.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and focused Notification tests when available.
 Smoke test invalid UUID, empty/error/retry, privacy-safe rendering, and cross-patient denial.
+
+2026-10-20 history follow-up: explicit GET refresh retains the submitted patient and current page,
+including empty results, and displays the result patient separately from the editable UUID draft.
+Loading removes old rows. Retry/pagination/refresh can restore focus to a named result/error when
+focus has fallen to the body, preserving another focused control. A forbidden scope has no retry.
+Notification local regression: 68/68 tests in 3 files; signed ownership/provider acceptance stays
+open in HF6-14 and the existing consolidated Huy handoff.

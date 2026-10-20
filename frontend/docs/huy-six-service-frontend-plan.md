@@ -2,7 +2,7 @@
 
 **Ngày lập:** 2026-10-18. **Owner thực thi:** Huy (`LQHuy0210`).  
 **Source baseline:** `025ef39e358756a28043d9809fad165096528fbf` trên nhánh local `Huy`.  
-**Trạng thái:** IN PROGRESS — 10/14 task, 45/56 subtask; checkpoint mới nhất ở mục 14.
+**Trạng thái:** IN PROGRESS — **10/14 task (71,4%)**, **45/56 subtask (80,4%)**; nghiệm thu tích hợp ở mục 14, cập nhật code mới nhất ở mục 17.
 
 Đây là plan thực thi hiện hành cho FE Pharmacy và Support (Report/Notification) trong MVP ngoại trú. Thay thứ tự
 thực thi của [plan Huy cũ](huy-frontend-implementation-plan.md), giữ nguyên checklist và evidence
@@ -728,3 +728,32 @@ tests, 3 files**; `pnpm typecheck`, `pnpm lint`, `pnpm build` đều **PASS, exi
 review checklist: không phát hiện blocker trong slice này, đủ gửi review FE; chưa phải go cho
 release tích hợp. Không chạy lại full-suite hoặc browser/signed Gateway trong lượt này; không
 ghi nhận thêm nghiệm thu HF6 hoặc thay kết quả lỗi Lab đã lưu ở checkpoint trước.
+
+## 17. Notification history: tải lại theo scope đã tra cứu — 2026-10-20
+
+Candidate base `26bf2ef7` + diff Notification history. Trong scope Support FE đã giao cho Huy:
+
+- Tải lại chủ động bằng GET cùng bệnh nhân và trang đã gửi; sửa ô UUID chưa submit không đổi
+  scope của bảng. Hiển thị mã bệnh nhân của kết quả để phân biệt với draft đang nhập.
+- Cả kết quả rỗng cũng có tải lại để phát hiện thông báo mới. Trong lúc tải, xóa nội dung cũ;
+  không polling, gửi lại hay tự tạo notification.
+- Sau phân trang/tải lại/retry, focus kết quả hoặc vùng lỗi có mô tả/correlation khi focus đang
+  ở body. Giữ focus nếu người dùng đang sửa mã hoặc thao tác control khác. HTTP 403 không retry;
+  đổi session vẫn bỏ response cũ.
+- Sáu regression cases bổ sung kiểm scope/trang, empty→new notice, focus/draft, 403/503 với
+  Tab/Enter retry và late response sau đổi session. Notification **68/68 tests, 3 files PASS**;
+  typecheck/lint/build **PASS, exit 0**. Rà scope/contract/diff theo review checklist: không có
+  blocker cho slice FE này; đủ gửi review, chưa chốt release tích hợp. Không chạy full-suite mới.
+
+Tiến độ checklist giữ nguyên; local improvement này không đóng tiêu chí tích hợp:
+
+| Hạng mục còn mở | Đạt | Còn lại |
+|---|---:|---|
+| HF6-09 Report thật | 1/4 | Coverage backend chấp nhận, signed ADMIN/MANAGER, ON/OFF UI |
+| HF6-11 Workflow liên service | 1/4 | Workflow hoàn chỉnh, failure/retry matrix, Notification privacy |
+| HF6-12 Chốt release | 3/4 | Browser/evidence/release verdict trên candidate cuối |
+| HF6-14 Notification thật | 0/4 | Signed users/ownership, manual delivery, intake, UI/browser evidence |
+
+Mười task còn lại đã đủ 4/4: tổng **10/14 task, 45/56 subtask**, còn **11 tiêu chí**.
+Docker API hiện không kết nối được `dockerDesktopLinuxEngine`; chưa có browser/Gateway/Support
+acceptance mới trong lượt này. Giữ các dependency trong handoff chung hiện có, không bật gates.

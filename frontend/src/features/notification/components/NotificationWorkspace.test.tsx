@@ -38,6 +38,70 @@ beforeEach(() => {
 });
 
 describe("Notification patient history", () => {
+  it("refreshes the submitted patient and current page, without resending or using the edited draft", async () => {
+    const user = userEvent.setup();
+    mocks.list.mockResolvedValueOnce(page()).mockResolvedValueOnce(page([notice], 1))
+      .mockResolvedValueOnce(page([{ ...notice, status: "FAILED", failureReason: "Không thể giao" }], 1));
+    render(<NotificationLookup />); search(); await screen.findByText(notice.title);
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    await screen.findByText("Trang 2/2", { exact: false });
+    fill("Mã bệnh nhân", otherId);
+    await user.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
+    expect(await screen.findByText("Gửi thất bại")).toBeVisible();
+    expect(screen.getByText(`Bệnh nhân: ${id}`)).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Kết quả tra cứu thông báo" })).toHaveFocus();
+    expect(mocks.list).toHaveBeenLastCalledWith(id, 1, 20);
+    expect(mocks.list).toHaveBeenCalledTimes(3); expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("can refresh an empty history to discover a new notification", async () => {
+    mocks.list.mockResolvedValueOnce(page([]));
+    render(<NotificationLookup />); search(); await screen.findByText("Bệnh nhân chưa có thông báo.");
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
+    expect(await screen.findByText(notice.title)).toBeVisible();
+    expect(mocks.list).toHaveBeenLastCalledWith(id, 0, 20); expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("clears old history while refreshing and preserves focus in the patient draft", async () => {
+    const pending = deferred<ReturnType<typeof page>>();
+    mocks.list.mockResolvedValueOnce(page()).mockReturnValueOnce(pending.promise);
+    render(<NotificationLookup />); search(); await screen.findByText(notice.title);
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
+    expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
+    const input = screen.getByLabelText("Mã bệnh nhân"); input.focus(); fill("Mã bệnh nhân", otherId);
+    await act(async () => pending.resolve(page()));
+    expect(input).toHaveFocus(); expect(input).toHaveValue(otherId);
+    expect(screen.getByText(`Bệnh nhân: ${id}`)).toBeVisible();
+  });
+  it.each([403, 503])("focuses history refresh error %i with correlation and respects retry policy", async status => {
+    const user = userEvent.setup();
+    mocks.list.mockResolvedValueOnce(page()).mockRejectedValueOnce(new ApiRequestError("Unavailable", status, "READ_ERROR", [], "history-refresh"));
+    render(<NotificationLookup />); search(); await screen.findByText(notice.title);
+    await user.click(screen.getByRole("button", { name: "Tải lại lịch sử" }));
+    const feedback = await screen.findByRole("group", { name: "Lỗi tải lịch sử thông báo" });
+    expect(feedback).toHaveFocus(); expect(feedback).toHaveAccessibleDescription(/history-refresh/);
+    expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
+    if (status === 403) {
+      expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
+      search(); expect(mocks.list).toHaveBeenCalledTimes(2);
+    } else {
+      await user.tab(); expect(screen.getByRole("button", { name: "Thử lại" })).toHaveFocus();
+      await user.keyboard("{Enter}");
+      expect(await screen.findByRole("heading", { name: "Kết quả tra cứu thông báo" })).toHaveFocus();
+      expect(mocks.list).toHaveBeenCalledTimes(3);
+    }
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("discards a history refresh that finishes after session change", async () => {
+    const pending = deferred<ReturnType<typeof page>>();
+    mocks.list.mockResolvedValueOnce(page()).mockReturnValueOnce(pending.promise);
+    render(<NotificationLookup />); search(); await screen.findByText(notice.title);
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại lịch sử" })); changeSession();
+    await act(async () => pending.resolve(page()));
+    expect(screen.getByLabelText("Mã bệnh nhân")).toHaveValue("");
+    expect(screen.queryByText(notice.content)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tải lại lịch sử" })).not.toBeInTheDocument();
+  });
   it.each(["DOCTOR", "PHARMACIST", "MANAGER", null] as const)("blocks role %s before mounting a reader", role => {
     mocks.role = role; render(<NotificationLookup />);
     expect(screen.queryByLabelText("Mã bệnh nhân")).not.toBeInTheDocument(); expect(mocks.list).not.toHaveBeenCalled();
