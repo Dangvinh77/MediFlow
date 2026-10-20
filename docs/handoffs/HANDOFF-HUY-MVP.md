@@ -193,6 +193,54 @@ contracts/service docs; chỉ gỡ file handoff khi mọi active gate được c
 
 ## 6. Frontend MVP — gate tích hợp còn lại (2026-10-16)
 
+**Report writer bổ sung 2026-10-20 — triển khai theo yêu cầu người dùng:** đã thêm production
+preview/ADMIN acceptance trong Report, V28 audit và idempotent atomic approval; contract và
+quy trình ở [operator workflow](../../backend/report-service/operations/outpatient-coverage-acceptance.md).
+Các dòng audit `chưa có writer` dưới đây là kết quả trước thay đổi này. Không tạo coverage giả
+hoặc tự ký thay source owners; giữ tất cả gate mặc định OFF. Final clean verify ngày 2026-10-20
+PASS **1.440/1.440 Report tests + 5/5 packaging acceptance**, không fail/error/skip; có 33 test
+mới, gồm signed JWT qua HTTP thật và PostgreSQL. H6-13 đạt **4/4 phần Report** trong plan backend.
+Candidate là working tree trên `44ff1ed7`; chưa commit/push. Đây chưa là Gateway→Support,
+browser acceptance hoặc chứng nhận bộ dữ liệu production.
+
+**Gateway dependency (người dùng chọn giữ ngoài scope):** Hoàng Anh/Vinh phối hợp thêm đúng
+GET `/api/v1/reports/outpatient/coverage/preview` và POST
+`/api/v1/reports/outpatient/coverage/acceptances`, chỉ ADMIN; giữ Support target, default deny
+nested/wrong methods và signed access-token validation. Gateway hiện chưa allowlist hai route.
+Không sửa Gateway trong task này hoặc cho FE gọi service port. Sau khi có route và reviewed
+exports thật đủ năm nguồn mới chạy HF6-09/11/12 qua Gateway; module HTTP/PG không thay browser
+acceptance và không tự nâng tiến độ FE 49/56.
+
+**Checkpoint hiện hành 2026-10-20:** **10/14 task, 49/56 tiêu chí**. Chi tiết tại
+[FE plan mục 18](../../frontend/docs/huy-six-service-frontend-plan.md#18-signed-notification-acceptance-và-audit-report-source--2026-10-20)
+và [evidence](../../frontend/docs/evidence/huy-six-service/2026-10-20-closeout/README.md).
+Các checkpoint bên dưới giữ làm lịch sử. Đã đóng HF6-11.4 và HF6-14.1/.2/.4 bằng actual issuer
+ADMIN/NURSE/PATIENT qua Gateway→Support: đúng người/cross-patient deny, manual IN_APP, private
+lifecycle/payment intake, theme/keyboard và actual Support unavailable→retry recovery.
+
+Các đầu vào còn thiếu, gom tại đúng file này:
+
+- **Report HF6-09.2/.3/.4, HF6-11.2:** writer Report đã được bổ sung tại H6-13; Gateway và
+  nguồn đối soát thật vẫn OPEN. Audit trước đó trên local/master `71328cbc` chưa có writer là
+  baseline lịch sử; INSERT trong isolated test vẫn không là accepted source export. Cần source owners
+  CLINICAL/LAB/PHARMACY/BILLING_CASH/BILLING_REFUND cung cấp export/cursor/reconciliation và
+  acceptance authority đúng scope/zone/VND/period, timestamps bao trùm ngày cuối, actor/reference.
+  Vinh phối hợp coverage được backend chấp nhận trước signed success ADMIN/MANAGER và UI ON/OFF.
+  Không seed coverage, tự ký thay source owners hoặc coi 404 REPORT_NOT_FOUND là zero. Signed
+  ADMIN/MANAGER 404, DOCTOR 403 đã ghi; Report UI tiếp tục OFF.
+- **Notification HF6-14.3 — Vinh backend:** refund consumer OFF mặc định, existing acceptance
+  hold không bật; chưa nghiệm thu refund notice hoặc signed token thiếu patientId. Cần backend
+  nghiệm thu các trường hợp này trong môi trường được cấp; giữ no accountId fallback. Lifecycle
+  và EXAM payment privacy đã đạt, không giao lại. EMAIL/SMS chưa có provider/recipient acceptance.
+- **HF6-11.3/HF6-12.4:** hoàn tất global session/unavailable/retry matrix và final browser release
+  trên candidate sau dependency. Shared late-401 bên dưới vẫn OPEN. Full rerun 590/591 còn Lab
+  fixture `LabDetail.test.tsx:194` ngoài scope Huy; Vinh regression phối hợp owner để xử lý.
+  Focused 446/446 và typecheck/lint/build PASS không thay full-suite hoặc browser acceptance.
+
+Verdict **HOLD integrated release**. Không bật thêm gates, không sửa backend/shared auth/Lab,
+không tạo nhánh/commit/push/PR. Disposable hold đã STOP, không dùng normal refund/rollback branch
+trong lượt này; không claim lặp lại toàn bộ Pharmacy workflow từ bằng chứng cũ.
+
 **Checkpoint hiện hành 2026-10-19:** signed Gateway/browser acceptance đạt trên candidate
 `51eedfcd` + diff, nâng plan lên **10/14 task; 45/56 subtask**. Đóng HF6-01/06/07/10:
 actual issuer login, browser tạo Rx V1, API CASH payment, browser refresh/xuất một effect,

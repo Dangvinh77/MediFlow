@@ -202,7 +202,8 @@ describe("Notification detail", () => {
     const user = userEvent.setup();
     mocks.detail.mockRejectedValueOnce(new ApiRequestError("Unavailable", 503));
     render(<NotificationDetail notificationId={id} />);
-    expect(await screen.findByRole("group", { name: "Lỗi tải thông báo" })).toHaveFocus();
+    const feedback = await screen.findByRole("group", { name: "Lỗi tải thông báo" });
+    await waitFor(() => expect(feedback).toHaveFocus());
     await user.tab();
     expect(screen.getByRole("button", { name: "Thử lại" })).toHaveFocus();
     await user.keyboard("{Enter}");

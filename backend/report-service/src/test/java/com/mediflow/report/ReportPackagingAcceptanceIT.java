@@ -12,6 +12,7 @@ class ReportPackagingAcceptanceIT {
     @Test void plainLibraryHasRootClassesNotBootInfAndKeepsMigrationBytes()throws Exception{
         try(var jar=new JarFile(Path.of("target",artifact+"-lib.jar").toFile())){
             assertThat(jar.getJarEntry("com/mediflow/report/application/service/ReportApplicationService.class")).isNotNull();
+            assertThat(jar.getJarEntry("com/mediflow/report/web/OutpatientCoverageAcceptanceController.class")).isNotNull();
             assertThat(jar.getJarEntry("BOOT-INF/classes/")).isNull();
             assertThat(jar.getJarEntry("db/migration/V1__init.sql")).isNotNull();
             assertThat(jar.getJarEntry("db/migration/V27__outpatient_read_coverage.sql")).isNotNull();
@@ -19,8 +20,9 @@ class ReportPackagingAcceptanceIT {
             try (var files = Files.list(Path.of("src/main/resources/db/migration"))) {
                 migrations = files.map(p -> p.getFileName().toString()).filter(n -> n.endsWith(".sql")).sorted().toList();
             }
-            // Version 27 is the latest version, not a count: released V3–V5 do not exist here.
-            assertThat(migrations).hasSize(24).contains("V1__init.sql", "V27__outpatient_read_coverage.sql");
+            // Version 28 is the latest version, not a count: released V3–V5 do not exist here.
+            assertThat(migrations).hasSize(25).contains("V1__init.sql", "V27__outpatient_read_coverage.sql",
+                    "V28__outpatient_coverage_acceptance_audit.sql");
             for (String migration : migrations) {
                 try (var bytes = jar.getInputStream(jar.getJarEntry("db/migration/" + migration))) {
                     assertThat(bytes.readAllBytes()).isEqualTo(Files.readAllBytes(

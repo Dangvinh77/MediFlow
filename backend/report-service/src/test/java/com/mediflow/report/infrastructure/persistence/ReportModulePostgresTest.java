@@ -43,7 +43,7 @@ class ReportModulePostgresTest {
 
     @Test void migrationRepositoriesAndTransactionsRemainInReportStoreWithAnotherStorePresent() {
         assertThat(report.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class))
-                .isEqualTo(24);
+                .isEqualTo(25);
         assertThat(other.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_name='flyway_schema_history'",
                 Integer.class)).isZero();
         assertThat(reports.daily(LocalDate.of(2026, 10, 1), null)).isNotNull();

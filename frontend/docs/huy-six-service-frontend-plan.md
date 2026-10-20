@@ -2,7 +2,7 @@
 
 **Ngày lập:** 2026-10-18. **Owner thực thi:** Huy (`LQHuy0210`).  
 **Source baseline:** `025ef39e358756a28043d9809fad165096528fbf` trên nhánh local `Huy`.  
-**Trạng thái:** IN PROGRESS — **10/14 task (71,4%)**, **45/56 subtask (80,4%)**; nghiệm thu tích hợp ở mục 14, cập nhật code mới nhất ở mục 17.
+**Trạng thái:** IN PROGRESS — **10/14 task (71,4%)**, **49/56 subtask (87,5%)**; checkpoint mới nhất và giới hạn nghiệm thu ở mục 18.
 
 Đây là plan thực thi hiện hành cho FE Pharmacy và Support (Report/Notification) trong MVP ngoại trú. Thay thứ tự
 thực thi của [plan Huy cũ](huy-frontend-implementation-plan.md), giữ nguyên checklist và evidence
@@ -230,7 +230,7 @@ Huy chịu trách nhiệm đoạn Pharmacy/Report; owners khác hỗ trợ setup
 - [x] HF6-11.1 Dùng môi trường test có PostgreSQL/RabbitMQ, sáu business apps + Gateway/Eureka; ghi commit/profile/flags/health/routing và tài khoản role hợp lệ, không ghi secrets.
 - [ ] HF6-11.2 Workflow thật: nguồn khám ngoại trú đủ điều kiện → FE tạo Rx V1 → Billing payment qua surface hiện có → Pharmacy refresh/dispense → Report sau đối soát; IDs từ response thật.
 - [ ] HF6-11.3 Kiểm chưa thanh toán, source không hợp lệ, role denial, session hết hạn, API unavailable và retry; không tạo trùng Rx/dispense, không tự fallback V0/legacy report.
-- [ ] HF6-11.4 Kiểm Notification intake trong workflow được nghiệm thu: private notice đúng người theo public API, người khác bị deny; Notification FE thuộc scope user giao, nghiệm thu riêng tại HF6-14.
+- [x] HF6-11.4 Kiểm Notification intake trong workflow được nghiệm thu: private notice đúng người theo public API, người khác bị deny; Notification FE thuộc scope user giao, nghiệm thu riêng tại HF6-14. Evidence lifecycle/payment và signed ownership ở mục 18; không đóng Report/refund.
 
 Đóng khi acceptance Pharmacy/Report qua browser thật đạt. Không yêu cầu viết lại Clinical/Billing/Lab
 FE để làm test: dùng public flow/API đã có cho setup hoặc đoạn chưa có UI, ghi rõ đoạn nào chạy bằng
@@ -261,10 +261,10 @@ Huy DELEGATED; canonical owner Lộc. Local implementation/contract tests, khôn
 
 Huy thực hiện cùng môi trường test; không tự gửi email/SMS tới người thật để đóng task.
 
-- [ ] HF6-14.1 Browser qua Gateway→Support có signed ADMIN/NURSE/PATIENT; đọc đúng người, cross-patient deny, NURSE không detail/send; không coi mock role là proof.
-- [ ] HF6-14.2 Manual IN_APP gửi một effect, lịch sử/detail khớp response; EMAIL/SMS chỉ nghiệm thu với provider/test recipient được cấp, ghi giới hạn delivery rõ.
+- [x] HF6-14.1 Browser qua Gateway→Support có signed ADMIN/NURSE/PATIENT; đọc đúng người, cross-patient deny, NURSE không detail/send; không coi mock role là proof.
+- [x] HF6-14.2 Manual IN_APP gửi một effect, lịch sử/detail khớp response; EMAIL/SMS chỉ nghiệm thu với provider/test recipient được cấp, ghi giới hạn delivery rõ. IN_APP đạt; không có external provider acceptance, xem mục 18.
 - [ ] HF6-14.3 Lifecycle/payment/refund notice hiển thị đúng từ backend intake, giữ privacy; missing patient identity claim không fallback accountId hoặc tự orchestration từ FE.
-- [ ] HF6-14.4 Browser Light/Dark/System desktop/mobile, keyboard/error/focus/retry, ảnh/evidence candidate và release verdict Support; không đưa secrets/PII vào repo.
+- [x] HF6-14.4 Browser Light/Dark/System desktop/mobile, keyboard/error/focus/retry, ảnh/evidence candidate và release verdict Support; không đưa secrets/PII vào repo. Verdict HOLD tích hợp, không đồng nghĩa bật gates hoặc global release GO.
 
 ## 5. Thứ tự triển khai và điều kiện chuyển bước
 
@@ -757,3 +757,58 @@ Tiến độ checklist giữ nguyên; local improvement này không đóng tiêu
 Mười task còn lại đã đủ 4/4: tổng **10/14 task, 45/56 subtask**, còn **11 tiêu chí**.
 Docker API hiện không kết nối được `dockerDesktopLinuxEngine`; chưa có browser/Gateway/Support
 acceptance mới trong lượt này. Giữ các dependency trong handoff chung hiện có, không bật gates.
+
+## 18. Signed Notification acceptance và audit Report source — 2026-10-20
+
+Candidate `44ff1ed7` + một sửa test Notification chờ focus effect. Giữ nguyên nhánh hiện tại theo
+yêu cầu người dùng; không tạo nhánh, commit, push hoặc PR. Fetched master `71328cbc` chỉ để so
+sánh, chưa merge. [Evidence và ảnh browser](evidence/huy-six-service/2026-10-20-closeout/README.md)
+ghi kết quả/giới hạn, signed API responses không chứa credentials và trạng thái môi trường đã dọn.
+
+- Chạy tám packaged JVMs (sáu business apps + Gateway/Eureka) từ source archive, PG16/RabbitMQ
+  disposable bằng hold harness có sẵn. Hệ thống thật, signed issuer login; không chỉnh backend
+  harness hoặc bật thêm default gates. Hold **1/1 PASS, exit 0**; không chạy normal refund/rollback
+  branch trong lượt này. Backend/user stores có sẵn không bị dùng làm dữ liệu giả.
+- Browser ADMIN gửi IN_APP đúng một entry; history/detail khớp public response, pending khóa
+  submit. PATIENT owner đọc history/detail; foreign PATIENT 403, không lộ private content.
+  NURSE đọc history, không detail/send; route và backend role denial đều được kiểm.
+- Lifecycle Rx cancel và EXAM payment từ backend intake hiển thị đúng người. Signed public API
+  kiểm owner 200, foreign/NURSE/MANAGER detail 403. Đóng **HF6-11.4**, **HF6-14.1/.2**.
+  Không coi payment request là receipt; EMAIL/SMS local SENT không là provider delivery proof.
+- Light/Dark detail 320px không overflow; System history 320px cuộn bảng cục bộ, desktop System
+  1366×900. Enter submit/refresh, Support pause→focus lỗi→Tab/Enter retry→focus heading sau resume
+  thực sự đạt. Đóng **HF6-14.4** với verdict **HOLD integrated release**, không phải release GO.
+- Full rerun **590/591 tests, 57 files**: chỉ còn Lab fixture `LabDetail.test.tsx:194` ngoài scope.
+  Notification focus test đợi effect thay vì assert ngay khi DOM vừa xuất hiện; production không đổi.
+  Focused Pharmacy/Report/Notification **446/446, 31 files**; typecheck/lint/build **PASS**.
+  Không dùng focused PASS thay full-suite/browser acceptance; không sửa Lab để tăng tiến độ.
+
+| Task còn mở | Đạt | Điều kiện còn thiếu |
+|---|---:|---|
+| HF6-09 | 1/4 | Accepted coverage, signed successful ADMIN/MANAGER reports, ON/OFF nghiệm thu |
+| HF6-11 | 2/4 | Workflow tới Report sau đối soát; đầy đủ session/unavailable/retry matrix |
+| HF6-12 | 3/4 | Release cuối sau các dependency và full regression |
+| HF6-14 | 3/4 | Refund intake và signed missing-patient-claim no-fallback runtime |
+
+Tổng **10/14 task (71,4%), 49/56 subtask (87,5%)**, còn **7 tiêu chí**. Mục 17 và các counts
+cũ là lịch sử. Chưa thể ghi bốn task còn lại hoàn tất chỉ từ source/build hoặc dữ liệu fixture:
+
+1. Đã dò local và master: V27 chỉ tạo bảng coverage rỗng, production adapter chỉ đọc/check.
+   Chưa có public/operation acceptance writer; INSERT chỉ thấy trong test fixture. Cần export và
+   đối soát đủ CLINICAL/LAB/PHARMACY/BILLING_CASH/BILLING_REFUND, đúng period/scope/zone/VND,
+   actor/reference và thời gian quan sát bao trùm ngày cuối. Không seed hoặc giả accepted coverage.
+   Signed ADMIN/MANAGER hiện 404 REPORT_NOT_FOUND, DOCTOR 403; không hiển thị thành báo cáo zero.
+2. Notification refund consumer OFF mặc định và hold hiện tại không bật. Không tự bật consumer
+   để đóng HF6-14.3; lifecycle/payment không thay refund hoặc missing-claim signed denial.
+3. Shared late-401 dependency và Lab fixture vẫn giữ trong handoff chung. Outpatient Report UI
+   OFF; không kích hoạt thêm Surgery/Inpatient/full V2. Chỉ dùng `HANDOFF-HUY-MVP.md` hiện có.
+
+### Cập nhật sau audit: writer Report H6-13 — 2026-10-20
+
+Theo yêu cầu mới, Report đã có ADMIN preview/acceptance và V28 audit; nhận định chưa có writer
+ở checkpoint trên là baseline trước thay đổi. Contract/quy trình tại
+[Report operator workflow](../../backend/report-service/operations/outpatient-coverage-acceptance.md),
+verification tại H6-13 trong plan backend. Phạm vi người dùng chọn chỉ Report: Gateway vẫn cần
+owner allowlist đúng hai route, source owners vẫn cần reviewed exports/completeness thật.
+Module HTTP/PostgreSQL với fixtures không đóng HF6-09/11/12 hoặc thay browser acceptance;
+tiến độ FE giữ **10/14 task, 49/56 tiêu chí**, các gate và Report UI vẫn OFF.

@@ -6,6 +6,8 @@ mediflow:
       enabled: ${MEDIFLOW_REPORT_OUTPATIENT_CONSUMER_ENABLED:false}
     outpatient-read:
       enabled: ${MEDIFLOW_REPORT_OUTPATIENT_READ_ENABLED:false}
+    outpatient-coverage-acceptance:
+      enabled: ${MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED:false}
     financial-read:
       enabled: false
     financial-archive:
