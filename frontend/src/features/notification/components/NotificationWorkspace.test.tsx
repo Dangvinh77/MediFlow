@@ -186,7 +186,7 @@ describe("Notification detail", () => {
     mocks.detail.mockRejectedValueOnce(new ApiRequestError("Unavailable", status, "READ_ERROR", [], "detail-focus"));
     render(<NotificationDetail notificationId={id} />);
     const feedback = await screen.findByRole("group", { name: "Lỗi tải thông báo" });
-    expect(feedback).toHaveFocus();
+    await waitFor(() => expect(feedback).toHaveFocus());
     expect(feedback).toHaveAccessibleDescription(/detail-focus/);
     if (status === 403) expect(screen.queryByRole("button", { name: "Thử lại" })).not.toBeInTheDocument();
   });
