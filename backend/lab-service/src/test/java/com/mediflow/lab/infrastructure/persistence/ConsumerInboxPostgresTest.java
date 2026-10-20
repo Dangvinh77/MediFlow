@@ -47,7 +47,7 @@ class ConsumerInboxPostgresTest {
     @org.junit.jupiter.api.Test
     void freshSchema_preservesExactDeliveryBytesAndDedupeSemantics() {
         TestDatabase db = migrateFresh();
-        assertThat(latestVersion(db)).isEqualTo("3");
+        assertThat(latestVersion(db)).isEqualTo("4");
         ConsumerInboxBoundary boundary = boundary(db);
         String operationKey = "lab:medical-record:v0:" + RECORD_ID;
         UUID firstEvent = UUID.fromString("00000000-0000-0000-0000-000000002101");
@@ -165,7 +165,7 @@ class ConsumerInboxPostgresTest {
 
         migrate(db, null);
 
-        assertThat(latestVersion(db)).isEqualTo("3");
+        assertThat(latestVersion(db)).isEqualTo("4");
         createEffectTable(db);
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "lab_test")).isEqualTo(1);
@@ -191,6 +191,43 @@ class ConsumerInboxPostgresTest {
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "lab_test")).isEqualTo(1);
         assertThat(count(db, "lab_financial_clearance")).isEqualTo(1);
+    }
+
+    @org.junit.jupiter.api.Test
+    void upgradeFromV3PreservesOutboxPayloadIdentityAndPublishedHistory() throws Exception {
+        TestDatabase db = newDatabase();
+        migrate(db, "3");
+        UUID pending = UUID.randomUUID();
+        UUID published = UUID.randomUUID();
+        String payload = "{\"eventId\":\"" + pending + "\",\"value\":1}";
+        Instant occurred = Instant.parse("2026-10-19T00:00:00Z");
+        Instant sent = occurred.plusSeconds(10);
+        for (UUID id : List.of(pending, published)) {
+            db.jdbc.update("""
+                    INSERT INTO lab_outbox_event(event_id,aggregate_type,aggregate_id,event_type,
+                        event_version,correlation_id,payload,occurred_at,published_at,retry_count)
+                    VALUES (?,'LAB_TEST',?,'lab.result.created',1,'upgrade-correlation',?::jsonb,?,?,2)
+                    """, id, TEST_ID, payload, Timestamp.from(occurred),
+                    id.equals(published) ? Timestamp.from(sent) : null);
+        }
+        migrate(db, null);
+        assertThat(latestVersion(db)).isEqualTo("4");
+        assertThat(count(db, "lab_outbox_event")).isEqualTo(2);
+        for (UUID id : List.of(pending, published)) {
+            var row = db.jdbc.queryForMap("SELECT * FROM lab_outbox_event WHERE event_id=?", id);
+            assertThat(row.get("aggregate_id")).isEqualTo(TEST_ID);
+            assertThat(row.get("correlation_id")).isEqualTo("upgrade-correlation");
+            assertThat(new ObjectMapper().readTree(row.get("payload").toString()))
+                    .isEqualTo(new ObjectMapper().readTree(payload));
+            assertThat(row.get("retry_count")).isEqualTo(2);
+            assertThat(row.get("next_attempt_at")).isNull();
+            assertThat(row.get("quarantined_at")).isNull();
+            assertThat(row.get("last_failure_code")).isNull();
+        }
+        assertThat(db.jdbc.queryForObject("SELECT published_at FROM lab_outbox_event WHERE event_id=?",
+                Timestamp.class, pending)).isNull();
+        assertThat(db.jdbc.queryForObject("SELECT published_at FROM lab_outbox_event WHERE event_id=?",
+                Timestamp.class, published)).isEqualTo(Timestamp.from(sent));
     }
 
     private static TestDatabase migrateFresh() {

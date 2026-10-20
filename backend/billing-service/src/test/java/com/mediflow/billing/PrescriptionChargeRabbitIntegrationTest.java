@@ -36,6 +36,7 @@ import static org.awaitility.Awaitility.await;
 
 @Testcontainers
 @SpringBootTest(properties = {"eureka.client.enabled=false", "mediflow.billing.ledger.enabled=true",
+        "mediflow.jwt.secret=billing-integration-test-only-key-at-least-32-bytes",
         "mediflow.billing.prescription-charge-consumer.enabled=true", "mediflow.billing.outbox.enabled=false",
         "mediflow.billing.prescription-charges.allowed-price-codes=RX-DEFAULT",
         "mediflow.billing.refunds.enabled=true",

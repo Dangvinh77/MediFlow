@@ -6,9 +6,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,6 +100,45 @@ class LabOutboxDispatcherTest {
 
         assertThat(event.getPublishedAt()).isNull();
         assertThat(event.getRetryCount()).isEqualTo(1);
+    }
+
+    @Test
+    void failuresBackOffExponentiallyThenQuarantineAtFiveFailedAttempts() {
+        var event = pendingEvent();
+        var originalPayload = event.getPayload().deepCopy();
+        var originalId = event.getEventId();
+        var now = Instant.parse("2026-10-20T00:00:00Z");
+        when(repository.lockNextBatch()).thenReturn(List.of(event));
+        var dispatcher = new LabOutboxDispatcher(repository, rabbitTemplate, 1, 5, 1000, 3000,
+                Clock.fixed(now, ZoneOffset.UTC));
+        long[] delays = {1000, 2000, 3000, 3000};
+        for (long delay : delays) {
+            dispatcher.dispatchPending();
+            assertThat(event.getNextAttemptAt()).isEqualTo(now.plusMillis(delay));
+            assertThat(event.getPublishedAt()).isNull();
+            assertThat(event.getQuarantinedAt()).isNull();
+            assertThat(event.getLastFailureCode()).isEqualTo("PUBLISH_FAILED");
+        }
+        dispatcher.dispatchPending();
+        assertThat(event.getRetryCount()).isEqualTo(5);
+        assertThat(event.getQuarantinedAt()).isEqualTo(now);
+        assertThat(event.getNextAttemptAt()).isNull();
+        assertThat(event.getPublishedAt()).isNull();
+        assertThat(event.getLastFailureCode()).isEqualTo("RETRY_EXHAUSTED");
+        assertThat(event.getEventId()).isEqualTo(originalId);
+        assertThat(event.getPayload()).isEqualTo(originalPayload);
+    }
+
+    @Test
+    void historicalExhaustedRowsAreQuarantinedWithoutAnotherSendOrCounterOverflow() {
+        var event = pendingEvent();
+        event.setRetryCount(Integer.MAX_VALUE);
+        when(repository.lockNextBatch()).thenReturn(List.of(event));
+        new LabOutboxDispatcher(repository, rabbitTemplate, 5).dispatchPending();
+        assertThat(event.getRetryCount()).isEqualTo(Integer.MAX_VALUE);
+        assertThat(event.getQuarantinedAt()).isNotNull();
+        assertThat(event.getPublishedAt()).isNull();
+        verifyNoInteractions(rabbitTemplate);
     }
 
     private static LabOutboxEventJpaEntity pendingEvent() {

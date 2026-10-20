@@ -48,7 +48,7 @@ mediflow:
     outpatient-prescription-consumer:
       enabled: ${MEDIFLOW_NOTIFICATION_OUTPATIENT_PRESCRIPTION_CONSUMER_ENABLED:false}
   jwt:
-    secret: ${MEDIFLOW_JWT_SECRET:dev-only-change-me-please-32bytes-minimum-secret-key}
+    secret: ${MEDIFLOW_JWT_SECRET}
 
 management:
   endpoints:
