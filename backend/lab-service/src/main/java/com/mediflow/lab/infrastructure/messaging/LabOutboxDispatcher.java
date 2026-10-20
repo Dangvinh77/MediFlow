@@ -1,7 +1,7 @@
 package com.mediflow.lab.infrastructure.messaging;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +15,7 @@ import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,15 +33,38 @@ public class LabOutboxDispatcher {
     private final LabOutboxEventJpaRepository repository;
     private final RabbitTemplate rabbitTemplate;
     private final long confirmTimeoutMs;
+    private final int maxRetries;
+    private final long initialBackoffMs;
+    private final long maxBackoffMs;
+    private final Clock clock;
 
     public LabOutboxDispatcher(LabOutboxEventJpaRepository repository, RabbitTemplate rabbitTemplate,
-                               @Value("${mediflow.events.outbox-confirm-timeout-ms:5000}") long confirmTimeoutMs) {
-        if (confirmTimeoutMs <= 0) {
-            throw new IllegalArgumentException("Lab outbox confirm timeout must be positive");
+                               long confirmTimeoutMs) {
+        this(repository, rabbitTemplate, confirmTimeoutMs, 5, 1000, 60000);
+    }
+
+    @Autowired
+    public LabOutboxDispatcher(LabOutboxEventJpaRepository repository, RabbitTemplate rabbitTemplate,
+            @Value("${mediflow.events.outbox-confirm-timeout-ms:5000}") long confirmTimeoutMs,
+            @Value("${mediflow.events.outbox-max-retries:5}") int maxRetries,
+            @Value("${mediflow.events.outbox-initial-backoff-ms:1000}") long initialBackoffMs,
+            @Value("${mediflow.events.outbox-max-backoff-ms:60000}") long maxBackoffMs) {
+        this(repository, rabbitTemplate, confirmTimeoutMs, maxRetries, initialBackoffMs, maxBackoffMs,
+                Clock.systemUTC());
+    }
+
+    LabOutboxDispatcher(LabOutboxEventJpaRepository repository, RabbitTemplate rabbitTemplate,
+            long confirmTimeoutMs, int maxRetries, long initialBackoffMs, long maxBackoffMs, Clock clock) {
+        if (confirmTimeoutMs <= 0 || maxRetries <= 0 || initialBackoffMs <= 0 || maxBackoffMs < initialBackoffMs) {
+            throw new IllegalArgumentException("Lab outbox timeout, retry limit and backoff must be positive and ordered");
         }
         this.repository = repository;
         this.rabbitTemplate = rabbitTemplate;
         this.confirmTimeoutMs = confirmTimeoutMs;
+        this.maxRetries = maxRetries;
+        this.initialBackoffMs = initialBackoffMs;
+        this.maxBackoffMs = maxBackoffMs;
+        this.clock = clock;
     }
 
     @Scheduled(fixedDelayString = "${mediflow.events.outbox-poll-interval:1000}")
@@ -48,15 +72,43 @@ public class LabOutboxDispatcher {
     public void dispatchPending() {
         List<LabOutboxEventJpaEntity> events = repository.lockNextBatch();
         for (LabOutboxEventJpaEntity event : events) {
+            if (event.getRetryCount() >= maxRetries) {
+                quarantine(event);
+                continue;
+            }
             try {
                 publish(event);
-                event.setPublishedAt(Instant.now());
+                event.setPublishedAt(clock.instant());
+                event.setNextAttemptAt(null);
+                event.setLastFailureCode(null);
             } catch (RuntimeException exception) {
                 event.setRetryCount(event.getRetryCount() + 1);
+                event.setLastFailureCode("PUBLISH_FAILED");
+                if (event.getRetryCount() >= maxRetries) {
+                    quarantine(event);
+                } else {
+                    event.setNextAttemptAt(clock.instant().plusMillis(backoff(event.getRetryCount())));
+                }
                 log.warn("Lab outbox publish failed eventId={} eventType={} retryCount={}",
                         event.getEventId(), event.getEventType(), event.getRetryCount());
             }
         }
+    }
+
+    private void quarantine(LabOutboxEventJpaEntity event) {
+        event.setQuarantinedAt(clock.instant());
+        event.setNextAttemptAt(null);
+        event.setLastFailureCode("RETRY_EXHAUSTED");
+        log.error("Lab outbox quarantined eventId={} eventType={} retryCount={}",
+                event.getEventId(), event.getEventType(), event.getRetryCount());
+    }
+
+    private long backoff(int retryCount) {
+        long delay = initialBackoffMs;
+        for (int retry = 1; retry < retryCount && delay < maxBackoffMs; retry++) {
+            delay = delay > maxBackoffMs / 2 ? maxBackoffMs : delay * 2;
+        }
+        return delay;
     }
 
     private void publish(LabOutboxEventJpaEntity event) {

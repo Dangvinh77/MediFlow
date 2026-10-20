@@ -1,0 +1,81 @@
+diff --git a/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java b/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
+index 6ccaf78b..7caf5924 100644
+--- a/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
++++ b/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
+@@ -22,6 +22,8 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+ import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+ import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
+ import com.mediflow.organization.application.port.in.LookupRoomUseCase;
++import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
++import com.mediflow.organization.application.port.in.UpdateStaffUseCase;
+ import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
+ import com.mediflow.organization.domain.model.DepartmentType;
+ import com.mediflow.organization.domain.model.JobTitle;
+@@ -82,6 +84,12 @@ class OrganizationServiceIntegrationTest {
+     @Autowired
+     private CreateStaffUseCase createStaffUseCase;
+
++    @Autowired
++    private UpdateDepartmentUseCase updateDepartmentUseCase;
++
++    @Autowired
++    private UpdateStaffUseCase updateStaffUseCase;
++
+     @Autowired
+     private CreateAccountUseCase createAccountUseCase;
+
+@@ -228,6 +236,54 @@ class OrganizationServiceIntegrationTest {
+         assertThat(verified.staffId()).isNull();
+     }
+
++    @Test
++    void changingDepartmentHeadToNonDoctorCannotLeaveInvalidHeadReference() {
++        var department = createDepartmentUseCase.execute(
++                "Head Invariant " + UUID.randomUUID().toString().substring(0, 8),
++                "HEAD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
++                DepartmentType.CLINICAL,
++                "Building H");
++        var doctor = createStaffUseCase.execute(
++                "Head Doctor " + UUID.randomUUID().toString().substring(0, 8),
++                department.getDepartmentId(),
++                JobTitle.DOCTOR,
++                "Cardiology",
++                "HEAD-LIC-" + UUID.randomUUID(),
++                "0901234567",
++                "head-" + UUID.randomUUID() + "@example.test");
++
++        updateDepartmentUseCase.execute(
++                department.getDepartmentId(),
++                department.getDepartmentName(),
++                department.getDepartmentType(),
++                department.getLocation(),
++                doctor.getStaffId(),
++                null);
++
++        try {
++            updateStaffUseCase.execute(
++                    doctor.getStaffId(),
++                    doctor.getFullName(),
++                    JobTitle.NURSE,
++                    doctor.getSpecialization(),
++                    doctor.getLicenseNumber(),
++                    doctor.getPhoneNumber(),
++                    doctor.getEmail());
++        } catch (com.mediflow.organization.domain.exception.InvalidDepartmentHeadException expected) {
++            // Rejecting the downgrade preserves the assignment; clearing the head is also safe.
++        }
++
++        var savedDepartment = departmentStore.findById(department.getDepartmentId()).orElseThrow();
++        var savedStaff = staffStore.findById(doctor.getStaffId()).orElseThrow();
++        assertThat(savedDepartment.getDepartmentHeadId() == null
++                || (doctor.getStaffId().equals(savedDepartment.getDepartmentHeadId())
++                        && savedStaff.isActive()
++                        && savedStaff.getJobTitle() == JobTitle.DOCTOR
++                        && department.getDepartmentId().equals(savedStaff.getDepartmentId())))
++                .as("a department head must remain an active doctor in the same department")
++                .isTrue();
++    }
++
+     @Test
+     void postgresUniqueConstraints_areMappedToStableApiErrors() {
+         String abbreviation = "DUP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

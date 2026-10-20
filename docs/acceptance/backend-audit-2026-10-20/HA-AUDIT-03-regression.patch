@@ -1,0 +1,211 @@
+diff --git a/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java b/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
+index 6ccaf78b..843d385d 100644
+--- a/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
++++ b/backend/core-service/src/test/java/com/mediflow/organization/OrganizationServiceIntegrationTest.java
+@@ -3,12 +3,22 @@ package com.mediflow.organization;
+ import static org.assertj.core.api.Assertions.assertThat;
+ import static org.junit.jupiter.api.Assertions.assertThrows;
+
++import java.time.Duration;
+ import java.util.UUID;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.Future;
+
+ import org.springframework.dao.DataIntegrityViolationException;
+ import org.junit.jupiter.api.Test;
+ import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Primary;
+ import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.context.TestConfiguration;
++import org.springframework.context.annotation.Import;
+ import org.springframework.test.context.DynamicPropertyRegistry;
+ import org.springframework.test.context.DynamicPropertySource;
+ import org.testcontainers.containers.PostgreSQLContainer;
+@@ -22,6 +32,7 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+ import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
+ import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
+ import com.mediflow.organization.application.port.in.LookupRoomUseCase;
++import com.mediflow.organization.application.port.in.UpdateDepartmentUseCase;
+ import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
+ import com.mediflow.organization.domain.model.DepartmentType;
+ import com.mediflow.organization.domain.model.JobTitle;
+@@ -35,6 +46,9 @@ import com.mediflow.organization.infrastructure.persistence.repository.AccountJp
+ import com.mediflow.organization.infrastructure.persistence.entity.RoomEntity;
+ import com.mediflow.organization.infrastructure.persistence.entity.AccountEntity;
+ import com.mediflow.organization.infrastructure.persistence.entity.DepartmentEntity;
++import com.mediflow.organization.infrastructure.persistence.adapter.StaffRepositoryAdapter;
++import com.mediflow.common.api.PageQuery;
++import com.mediflow.common.api.PageResult;
+ import com.mediflow.organization.web.handler.OrganizationGlobalExceptionHandler;
+ import java.time.Instant;
+
+@@ -44,6 +58,7 @@ import java.time.Instant;
+  * missing Docker runtime must fail the build instead of silently skipping it.
+  */
+ @SpringBootTest(classes = com.mediflow.core.CoreServiceApplication.class)
++@Import(OrganizationServiceIntegrationTest.ConcurrencyTestConfiguration.class)
+ @Testcontainers
+ class OrganizationServiceIntegrationTest {
+
+@@ -82,6 +97,9 @@ class OrganizationServiceIntegrationTest {
+     @Autowired
+     private CreateStaffUseCase createStaffUseCase;
+
++    @Autowired
++    private UpdateDepartmentUseCase updateDepartmentUseCase;
++
+     @Autowired
+     private CreateAccountUseCase createAccountUseCase;
+
+@@ -100,6 +118,9 @@ class OrganizationServiceIntegrationTest {
+     @Autowired
+     private StaffRepository staffStore;
+
++    @Autowired
++    private DeactivationRaceBarrier deactivationRaceBarrier;
++
+     @Autowired
+     private DepartmentRepository departmentStore;
+
+@@ -266,4 +287,137 @@ class OrganizationServiceIntegrationTest {
+         assertThat(accountResponse.getBody().error().code())
+                 .isEqualTo("ACCOUNT_USERNAME_DUPLICATE");
+     }
++
++    @Test
++    void concurrentStaffCreationCannotLeaveActiveStaffInDeactivatedDepartment()
++            throws Exception {
++        var department = createDepartmentUseCase.execute(
++                "Race " + UUID.randomUUID().toString().substring(0, 8),
++                "RACE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
++                DepartmentType.CLINICAL,
++                "Building R");
++        deactivationRaceBarrier.arm(department.getDepartmentId());
++
++        ExecutorService executor = Executors.newFixedThreadPool(2);
++        try {
++            Future<?> deactivation = executor.submit(() -> updateDepartmentUseCase.execute(
++                    department.getDepartmentId(),
++                    department.getDepartmentName(),
++                    department.getDepartmentType(),
++                    department.getLocation(),
++                    null,
++                    false));
++
++            assertThat(deactivationRaceBarrier.awaitStaffCheck(Duration.ofSeconds(15)))
++                    .as("deactivation must reach the active-staff check")
++                    .isTrue();
++
++            Future<?> creation = executor.submit(() -> createStaffUseCase.execute(
++                    "Concurrent Staff " + UUID.randomUUID().toString().substring(0, 8),
++                    department.getDepartmentId(),
++                    JobTitle.DOCTOR,
++                    "Race Test",
++                    "RACE-LIC-" + UUID.randomUUID(),
++                    "0901234567",
++                    "race-" + UUID.randomUUID() + "@example.test"));
++            creation.get(15, TimeUnit.SECONDS);
++
++            deactivationRaceBarrier.release();
++            deactivation.get(15, TimeUnit.SECONDS);
++        } finally {
++            deactivationRaceBarrier.release();
++            executor.shutdownNow();
++        }
++
++        boolean activeStaff = staffStore.existsByDepartmentIdAndActiveTrue(
++                department.getDepartmentId());
++        boolean activeDepartment = departmentRepository.findById(department.getDepartmentId())
++                .orElseThrow()
++                .isActive();
++
++        assertThat(activeDepartment || !activeStaff)
++                .as("an inactive department must not contain active staff")
++                .isTrue();
++    }
++
++    @TestConfiguration(proxyBeanMethods = false)
++    static class ConcurrencyTestConfiguration {
++
++        @Bean
++        DeactivationRaceBarrier deactivationRaceBarrier() {
++            return new DeactivationRaceBarrier();
++        }
++
++        @Bean
++        @Primary
++        StaffRepository staffRepositoryWithDeactivationBarrier(
++                StaffRepositoryAdapter delegate,
++                DeactivationRaceBarrier barrier) {
++            return new StaffRepository() {
++                @Override
++                public boolean existsByDepartmentIdAndActiveTrue(UUID departmentId) {
++                    boolean hasActiveStaff = delegate.existsByDepartmentIdAndActiveTrue(
++                            departmentId);
++                    barrier.pauseAfterActiveStaffCheck(departmentId, hasActiveStaff);
++                    return hasActiveStaff;
++                }
++
++                @Override
++                public java.util.Optional<com.mediflow.organization.domain.model.Staff> findById(
++                        UUID staffId) {
++                    return delegate.findById(staffId);
++                }
++
++                @Override
++                public com.mediflow.organization.domain.model.Staff save(
++                        com.mediflow.organization.domain.model.Staff staff) {
++                    return delegate.save(staff);
++                }
++
++                @Override
++                public PageResult<com.mediflow.organization.domain.model.Staff> search(
++                        UUID departmentId,
++                        JobTitle jobTitle,
++                        PageQuery pageQuery) {
++                    return delegate.search(departmentId, jobTitle, pageQuery);
++                }
++            };
++        }
++    }
++
++    static class DeactivationRaceBarrier {
++
++        private volatile UUID targetDepartmentId;
++        private volatile CountDownLatch checked = new CountDownLatch(0);
++        private volatile CountDownLatch released = new CountDownLatch(0);
++
++        void arm(UUID departmentId) {
++            targetDepartmentId = departmentId;
++            checked = new CountDownLatch(1);
++            released = new CountDownLatch(1);
++        }
++
++        boolean awaitStaffCheck(Duration timeout) throws InterruptedException {
++            return checked.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
++        }
++
++        void release() {
++            released.countDown();
++        }
++
++        void pauseAfterActiveStaffCheck(UUID departmentId, boolean hasActiveStaff) {
++            if (!departmentId.equals(targetDepartmentId) || hasActiveStaff) {
++                return;
++            }
++            checked.countDown();
++            try {
++                if (!released.await(15, TimeUnit.SECONDS)) {
++                    throw new AssertionError("test did not release deactivation barrier");
++                }
++            } catch (InterruptedException exception) {
++                Thread.currentThread().interrupt();
++                throw new AssertionError("deactivation barrier was interrupted", exception);
++            }
++        }
++    }
+ }

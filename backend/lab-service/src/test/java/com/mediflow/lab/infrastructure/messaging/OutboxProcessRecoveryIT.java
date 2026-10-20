@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -134,6 +135,13 @@ class OutboxProcessRecoveryIT {
                 }
             }
         }
+        // Windows can retain redirected-output handles briefly after waitFor reports JVM exit.
+        // Retry cleanup only after every assertion passed; failed runs keep their diagnostic logs.
+        await().atMost(Duration.ofSeconds(10)).ignoreException(IOException.class).until(() -> {
+            Files.deleteIfExists(logs.resolve("before-kill.log"));
+            Files.deleteIfExists(logs.resolve("after-restart.log"));
+            return true;
+        });
     }
 
     private void seed(JdbcTemplate jdbc, UUID eventId, String type, String json, byte[] body) {
