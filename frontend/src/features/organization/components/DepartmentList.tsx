@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { organizationApi } from "../api";
+import { getToken } from "@/lib/auth";
+import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, DepartmentType } from "../types";
 
 const departmentTypeLabels: Record<DepartmentType, string> = {
@@ -40,55 +42,34 @@ export function DepartmentList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<RequestError | null>(null);
 
-  const loadDepartments = useCallback(async () => {
+  const [attempt, setAttempt] = useState(0);
+
+  function loadDepartments() {
     setLoading(true);
     setError(null);
-
-    try {
-      const result = await organizationApi.departments(false);
-      setDepartments(result);
-    } catch (cause: unknown) {
-      if (cause instanceof ApiRequestError && cause.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
-      setError(getRequestError(cause));
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+    setAttempt((value) => value + 1);
+  }
 
   useEffect(() => {
     let disposed = false;
-
-    organizationApi
-      .departments(false)
+    const sessionToken = getToken();
+    organizationApi.departments(false)
       .then((result) => {
-        if (!disposed) {
-          setDepartments(result);
-        }
+        if (!disposed && isRequestSessionCurrent(sessionToken)) setDepartments(result);
       })
       .catch((cause: unknown) => {
-        if (disposed) return;
-
+        if (disposed || !isRequestSessionCurrent(sessionToken, cause)) return;
         if (cause instanceof ApiRequestError && cause.status === 401) {
           router.replace("/login");
           return;
         }
-
         setError(getRequestError(cause));
       })
       .finally(() => {
-        if (!disposed) {
-          setLoading(false);
-        }
+        if (!disposed && isRequestSessionCurrent(sessionToken)) setLoading(false);
       });
-
-    return () => {
-      disposed = true;
-    };
-  }, [router]);
+    return () => { disposed = true; };
+  }, [router, attempt]);
 
   return (
     <section className="mt-8" aria-labelledby="organization-departments-heading">

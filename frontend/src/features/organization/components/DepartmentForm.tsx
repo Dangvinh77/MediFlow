@@ -9,12 +9,17 @@ import { ApiRequestError } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { isUuid } from "@/lib/validation";
 import { organizationApi } from "../api";
+import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentType } from "../types";
 
 interface Props { departmentId?: string }
 const typeOptions: { value: DepartmentType; label: string }[] = [{ value: "CLINICAL", label: "Lâm sàng" }, { value: "PARACLINICAL", label: "Cận lâm sàng" }, { value: "ADMINISTRATIVE", label: "Hành chính" }];
 
 export function DepartmentForm({ departmentId }: Props) {
+  return <DepartmentFormWorkspace key={departmentId ?? "new"} departmentId={departmentId} />;
+}
+
+function DepartmentFormWorkspace({ departmentId }: Props) {
   const router = useRouter(); const editing = Boolean(departmentId);
   const [name, setName] = useState(""); const [abbreviation, setAbbreviation] = useState(""); const [type, setType] = useState<DepartmentType>("CLINICAL"); const [location, setLocation] = useState(""); const [headId, setHeadId] = useState(""); const [active, setActive] = useState(true);
   const [loading, setLoading] = useState(editing);
@@ -24,6 +29,7 @@ export function DepartmentForm({ departmentId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const mounted = useRef(true);
+  const submitting = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -33,8 +39,9 @@ export function DepartmentForm({ departmentId }: Props) {
   useEffect(() => {
     if (!departmentId) return;
     let mounted = true;
+    const sessionToken = getToken();
     organizationApi.department(departmentId).then((department) => {
-      if (!mounted) return;
+      if (!mounted || !isRequestSessionCurrent(sessionToken)) return;
       setName(department.departmentName);
       setAbbreviation(department.abbreviation);
       setType(department.departmentType);
@@ -43,7 +50,7 @@ export function DepartmentForm({ departmentId }: Props) {
       setActive(department.active);
       setLoadedDepartmentId(departmentId);
     }).catch((cause: unknown) => {
-      if (!mounted) return;
+      if (!mounted || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
       setLoadError({ key: departmentId, message: cause instanceof Error ? cause.message : "Không thể tải khoa." });
     }).finally(() => { if (mounted) setLoading(false); });
@@ -51,9 +58,12 @@ export function DepartmentForm({ departmentId }: Props) {
   }, [departmentId, retryToken, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const normalizedHead = headId.trim();
+    event.preventDefault();
+    if (submitting.current) return;
+    const normalizedHead = headId.trim();
     if (normalizedHead && !isUuid(normalizedHead)) { setError("Mã trưởng khoa phải là UUID hợp lệ."); return; }
     const sessionToken = getToken();
+    submitting.current = true;
     setSaving(true); setError(null);
     try {
       const department = departmentId
@@ -62,9 +72,9 @@ export function DepartmentForm({ departmentId }: Props) {
       if (!mounted.current || getToken() !== sessionToken) return;
       router.push(`/organization/departments/${department.departmentId}?notice=${editing ? "updated" : "created"}`);
     } catch (cause: unknown) {
-      if (!mounted.current || getToken() !== sessionToken) return;
+      if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setError(cause instanceof Error ? cause.message : "Không thể lưu khoa.");
-    } finally { if (mounted.current && getToken() === sessionToken) setSaving(false); }
+    } finally { submitting.current = false; if (mounted.current && getToken() === sessionToken) setSaving(false); }
   }
 
   const currentLoadError = loadError;
