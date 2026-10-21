@@ -97,7 +97,7 @@ export function DepartmentList() {
           Khoa phòng
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Các khoa đang hoạt động trong bệnh viện.
+          Danh sách khoa phòng và trạng thái hoạt động.
         </p>
       </div>
 

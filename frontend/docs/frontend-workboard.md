@@ -105,6 +105,69 @@ distinguishes browser steps, actual issuer API checks, regressions and missing a
   Integrated release HOLD. Refund/Report approval/Report UI gates unchanged. Runtime stopped,
   browser logged out, no new handoff file.
 
+## Hoàng Anh/Lộc client completion — 2026-10-21
+
+The user delegates Organization/Patient and Billing/Notification frontend/mobile
+completion to Vinh. Existing web Billing/Notification workflows remain in place;
+this frontend slice closes Organization/Patient form/error-path and FE-04 test gaps.
+The corresponding mobile implementations and app composition are recorded in
+[mobile completion](../../mobile/docs/ha-loc-client-completion.md).
+
+Organization edit forms must not become editable after a failed initial read.
+Staff profile update and department transfer are separate commands: if transfer
+fails after saving the profile, the UI reports the saved portion and retries only
+against refreshed authoritative state. Patient identity is editable on update; the
+service retains the existing UUID and creation time and rejects duplicate corrections.
+The API has no account-list, notification resend or mark-read command; this closeout
+does not invent those workflows or enable deferred Surgery/Inpatient.
+
+Verification before the latest Patient logic merge: full frontend suite **701/701
+tests, 75 files PASS** (two workers, Node 26 with experimental web storage disabled);
+Organization/Patient **39/39, 9 files PASS**. Typecheck, lint and production build PASS.
+Independent review found no actionable defect in that web slice. Mobile evidence is
+recorded separately; older dated evidence below refers to its original candidate.
+
+## Hoàng Anh — đồng bộ master và khôi phục Patient, 2026-10-21
+
+Master sync `07a87477` → `63b5f233` includes PR #477 / Patient logic commit `ac7ed78b`; local
+Patient BE/FE work remains intact. The `patient-cccd-before-master-update-2026-10-21` stash
+remains as a backup. Core/Patient source matches the Docker-verified revision (**194/194**); the
+backend source did not change in this merge. The Patient + shared API regression after the prior
+sync passed **71/71 tests across 7 files**. Master also includes the shared late-401 fix, so earlier
+handoff blockers describe the state before that fix. Final merged frontend verification:
+**745/745 tests across 77 files**, typecheck, lint and production build PASS. The merged
+Patient regression subset passes **64/64 tests across 6 files**.
+
+## Vinh/Lộc — outpatient frontend closeout, 2026-10-20
+
+User delegated completion of both Vinh and Lộc frontend scope. Candidate is based on master
+`8883f49d`, preserving Huy's latest Notification/history and Report work. The earlier sections
+below retain their dated evidence and counts. Master now includes the Report coverage acceptance
+controller/service/adapter; older statements that no writer exists describe the audit at `71328cbc`.
+Accepted five-source reconciliation and runtime approval remain separate from implementing that writer.
+
+- Clinical/Lab: session/resource boundaries, exact source order composition, check-in/start and
+  completion regressions; READY V1 requires clearance, independent of legacy paid boolean.
+- Billing: discover request by source/patient/episode; server-owned remaining amount/currency;
+  duplicate/uncertain payment locks and exact-key retry; authoritative fee refresh after payment;
+  prescription refund obligation lookup and recording with explicit reconciliation confirmation.
+  Gateway rules for adjustment/refund already exist; the old route blocker is superseded.
+- Shared: late old-session 401 cannot clear a new account; command uncertainty includes 408;
+  dashboard hydration preserves valid login and clears private workspaces on account change;
+  role login lands in an authorized workspace (including CASHIER and PATIENT).
+- Signed browser: Clinical source → Lab → cashier payment → clearance → results COMPLETED;
+  diagnosis/record completion reflected on the appointment; prescription refund recorded;
+  manual IN_APP and own/cross-patient privacy checked with actual issuer accounts.
+- Integrated full suite **673/673 tests / 70 files**, typecheck/lint/production build **PASS**.
+  Independent review reports no actionable P1/P2 findings. Complete evidence is in
+  [acceptance evidence](evidence/vinh-loc/2026-10-20/README.md) and its checks.txt.
+  Packaged held acceptance ended **1/1 PASS, 1189s, exit 0**; test containers/processes stopped.
+
+Implemented Vinh/Lộc MVP frontend is ready for review. Production UI stays OFF. Provider delivery,
+Notification resend/read-state commands and external selectors remain separate contract/release
+work; the existing Huy handoff tracks broader Report/source-coverage integration. No foreign
+production backend, deferred Surgery/Inpatient scope, or shared dependency was changed.
+
 ## Huy — shared session race fix, 2026-10-20
 
 Base `8883f49d` synchronized with master; current Huy working diff, no branch/commit/push.
@@ -158,6 +221,57 @@ another control. HTTP 403/session/stale guards remain enforced. Six additional r
 Notification **68/68 tests / 3 files**, typecheck/lint/build **PASS, exit 0**.
 Plan progress remains **10/14 tasks (71.4%), 45/56 criteria (80.4%)**; see section 17 for the
 remaining 11 criteria. Docker engine is unavailable during this run; no new signed/browser proof.
+## Hoàng Anh — Docker retest CCCD, 2026-10-21
+
+`mvn -q -pl backend/core-service -am test` **PASS, exit 0** với Docker Engine 28.5.1.
+Core **194/194 tests**, zero failures/errors/skips. Ba test `PatientServiceIntegrationTest`
+đạt trên PostgreSQL/RabbitMQ Testcontainers: tạo/publish/lookup, sửa CCCD và giữ UUID/ngày tạo,
+giữ nguyên số hoặc request cũ thiếu số, từ chối số thuộc bệnh nhân khác; hai cập nhật đồng thời
+tranh cùng CCCD chỉ một thành công, hồ sơ thua giữ số cũ. Hai integration classes Organization
+cũng đạt. Blocker Docker ở checkpoint 2026-10-20 đã được giải quyết.
+
+FE checkpoint đã hoàn tất: Patient **58/58**, typecheck/lint/production build **PASS**.
+Không chạy lại FE hôm nay vì không đổi source; chưa có signed Gateway/browser acceptance mới.
+Log backend ignored: `.patient-cccd-docker-retest.log`; Surefire reports ở Core `target/`.
+Chưa commit/push.
+
+## Hoàng Anh — sửa CCCD ở Core Patient và FE, 2026-10-20
+
+Theo yêu cầu người dùng, mở cập nhật `soCmnd` trên chính UUID bệnh nhân. Core giữ quyền
+ADMIN/NURSE, kiểm tra trùng với bệnh nhân khác và giữ unique constraint PostgreSQL. Request cũ
+thiếu/null `soCmnd` giữ nguyên; request mới không được gửi số rỗng/trắng hoặc quá 20 ký tự.
+FE gửi số đã trim, giữ draft/correlation khi bị 409 và cho sửa lại. Chỉ mở khóa trường có sẵn;
+không dựng màn hình/layout mới. Event contract và mã bệnh nhân không đổi.
+
+Patient FE **58/58 tests / 6 files**. Core tests không cần Docker **183/183**, zero skipped;
+full Core chưa đạt vì ba integration classes không khởi tạo được Docker engine. Đã bổ sung test
+PostgreSQL cho lưu CCCD, tương thích request cũ và hai cập nhật tranh cùng số, chưa có runtime
+evidence cho các ca này. Chi tiết build/typecheck/lint cuối ghi ở Patient guide.
+Không chạy lại full FE trong đợt sửa CCCD; kết quả 623/628 dưới đây thuộc checkpoint trước.
+Chưa commit/push.
+
+## Hoàng Anh — Patient logic checkpoint, 2026-10-20
+
+IMPLEMENT on base `26bf2ef7`, branch `codex/patient-fe-logic`. Only Patient feature logic,
+its regression fixtures and Patient documentation change. Existing markup is wired to headless
+logic; no new screen, layout or styling. Backend, shared transport/auth and other features stay
+outside this change.
+
+- Exact public Gateway CRUD/search mapping, normalized paging and request field whitelists.
+- Create/edit validation against live Core Patient DTO/domain, editable `soCmnd`, role checks,
+  preserved draft, server field errors and correlation IDs.
+- Synchronous duplicate mutation guard; unknown network/408/5xx/unreadable-success outcomes block
+  replay. Unmount, patient change and session replacement discard stale local callbacks.
+- Delete requires ADMIN and confirmation; error retry reads the patient rather than repeating DELETE.
+- Focused Patient **56/56 tests / 6 files**; typecheck, lint and production build **PASS**.
+  Full FE suite **623/628 tests / 60 files**, exit 1: one known Lab fixture failure at
+  `LabDetail.test.tsx:194` and four Inpatient `CreateAdmissionForm` timeouts. All Patient cases pass;
+  no Lab/Inpatient source changes or full-suite PASS claim. Logs: ignored `.patient-*.log` files.
+
+Signed Gateway/browser/packaged acceptance remains open. Shared old-request 401 session clearing
+remains tracked in `docs/handoffs/HANDOFF-HUY-MVP.md`; Patient guards cannot fix shared transport.
+Headless entry points, mounting requirements and limits: [Patient guide](services/patient.md).
+Changes are local; no commit or push at this checkpoint.
 
 ## Huy — Notification detail refresh/focus, 2026-10-20
 
@@ -527,7 +641,7 @@ API/types đã được review đối chiếu backend; chưa chạy authenticate
 | Lab | Queue/detail/create plus start, result entry and cancel with live role/status guards | `DONE` |
 | Inpatient | Admission list/detail, admission create, and bed list with exact Vietnamese wire names | `IN PROGRESS` command workspace |
 | Organization | Department and staff list/detail/create/update; staff transfer; account create/status | `DONE` |
-| Patient | List/detail/create/update/delete with immutable identity number | `DONE` |
+| Patient | List/detail/create/update/delete; CCCD correction on the same patient UUID | `DONE` |
 | Pharmacy | Drug, stock, prescription, dispense/cancel and ADMIN outbox replay workflows | `DONE` |
 | Billing | Patient invoice lookup/detail/create/payment (V0); V1 selected-charge ledger payment, revenue-by-department, outbox replay | `DONE`, see `frontend/docs/services/billing.md` |
 | Notification | Patient history, secured detail and ADMIN manual send without exposing recipient PII | `DONE` |

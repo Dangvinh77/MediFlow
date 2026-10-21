@@ -3,10 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "@/lib/api";
 import type { DiagnosisDTO, MedicalRecordDTO } from "../types";
 
-const mocks = vi.hoisted(() => ({ getById: vi.fn(), addDiagnosis: vi.fn(), role: "DOCTOR", router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ getById: vi.fn(), addDiagnosis: vi.fn(), complete: vi.fn(), createLabOrder: vi.fn(), role: "DOCTOR", token: "session-a", listeners: new Set<() => void>(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, subscribeToAuthChanges: () => () => {} }));
-vi.mock("../api", () => ({ medicalRecordApi: { getById: mocks.getById, addDiagnosis: mocks.addDiagnosis } }));
+vi.mock("@/lib/auth", () => ({
+  getRole: () => mocks.role,
+  getToken: () => mocks.token,
+  subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => { mocks.listeners.delete(listener); }; },
+}));
+vi.mock("../api", () => ({ medicalRecordApi: { getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder } }));
 import { MedicalRecordDetail } from "./MedicalRecordDetail";
 
 const record: MedicalRecordDTO = {
@@ -17,7 +21,7 @@ const record: MedicalRecordDTO = {
 };
 
 describe("Medical record detail identity and permissions", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.role = "DOCTOR"; });
+  beforeEach(() => { vi.clearAllMocks(); mocks.getById.mockReset(); mocks.addDiagnosis.mockReset(); mocks.complete.mockReset(); mocks.createLabOrder.mockReset(); mocks.role = "DOCTOR"; mocks.token = "session-a"; mocks.listeners.clear(); });
 
   it("never attaches an old diagnosis response to another record", async () => {
     let resolve!: (value: DiagnosisDTO) => void;
@@ -41,6 +45,24 @@ describe("Medical record detail identity and permissions", () => {
     view.rerender(<MedicalRecordDetail recordId="record-b" />);
     await screen.findByText("Second record");
     expect(screen.getByLabelText("Tên chẩn đoán", { exact: false })).toHaveValue("");
+  });
+
+  it("clears the previous patient's record while the replacement session reloads it", async () => {
+    let resolve!: (value: MedicalRecordDTO) => void;
+    mocks.getById.mockResolvedValueOnce(record).mockReturnValueOnce(new Promise<MedicalRecordDTO>((done) => { resolve = done; }));
+    render(<MedicalRecordDetail recordId="record-a" />);
+    expect(await screen.findByText("First record")).toBeVisible();
+
+    act(() => {
+      mocks.token = "session-b";
+      for (const listener of mocks.listeners) listener();
+    });
+
+    expect(screen.queryByText("First record")).not.toBeInTheDocument();
+    expect(screen.getByText("Đang tải chi tiết hồ sơ khám…")).toBeVisible();
+    await act(async () => resolve({ ...record, patientId: "patient-b", symptoms: "Second session record" }));
+    expect(screen.getByText("Second session record")).toBeVisible();
+    expect(mocks.getById).toHaveBeenCalledTimes(2);
   });
 
   it("ignores an old diagnosis authentication error after navigation", async () => {
@@ -75,6 +97,45 @@ describe("Medical record detail identity and permissions", () => {
     render(<MedicalRecordDetail recordId="record-a" />);
     await screen.findByText("First record");
     expect(Boolean(screen.queryByRole("button", { name: "Thêm chẩn đoán" }))).toBe(role !== "NURSE");
+  });
+
+  it.each(["ADMIN", "DOCTOR"])("shows outpatient order and completion controls for %s only on an appointment-backed open record", async (role) => {
+    mocks.role = role;
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a" });
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+    await screen.findByText("First record");
+
+    expect(screen.getByRole("link", { name: "Chỉ định xét nghiệm" })).toHaveAttribute("href", "/records/record-a/lab-order");
+    expect(screen.getByRole("heading", { name: "Hoàn tất khám" })).toBeVisible();
+  });
+
+  it("does not expose outpatient commands to nurses or to a record without an appointment", async () => {
+    mocks.role = "NURSE";
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a" });
+    const nurseView = render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+    await screen.findByText("First record");
+    expect(screen.queryByRole("link", { name: "Chỉ định xét nghiệm" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hoàn tất khám" })).not.toBeInTheDocument();
+    nurseView.unmount();
+
+    mocks.role = "DOCTOR";
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: null });
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled />);
+    await screen.findByText("First record");
+    expect(screen.queryByRole("link", { name: "Chỉ định xét nghiệm" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hoàn tất khám" })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["a disabled outpatient feature", false, "OPEN"],
+    ["a completed record", true, "COMPLETED"],
+  ] as const)("does not expose outpatient commands for %s", async (_reason, outpatientEnabled, status) => {
+    mocks.getById.mockResolvedValue({ ...record, appointmentId: "appointment-a", status });
+    render(<MedicalRecordDetail recordId="record-a" outpatientEnabled={outpatientEnabled} />);
+    await screen.findByText("First record");
+
+    expect(screen.queryByRole("link", { name: "Chỉ định xét nghiệm" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hoàn tất khám" })).not.toBeInTheDocument();
   });
 
   it("keeps completed records immutable even for a doctor", async () => {

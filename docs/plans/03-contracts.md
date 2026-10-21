@@ -43,6 +43,11 @@ Organization hiện yêu cầu `departmentHeadId` trong request
 `PUT /api/v1/org/departments/{id}`: UUID để bổ nhiệm, `null` để bỏ trưởng khoa;
 thiếu field là request không hợp lệ, không có nghĩa giữ nguyên. Trưởng khoa phải là bác sĩ
 đang hoạt động trong cùng khoa; không chuyển khoa của trưởng khoa trước khi bỏ/đổi bổ nhiệm.
+Đổi chức danh trưởng khoa từ `DOCTOR` sang `NURSE` hoặc chức danh không phải bác sĩ cũng
+phải bỏ/đổi bổ nhiệm trước; yêu cầu đổi khi còn giữ chức bị từ chối với lỗi hiện hành
+`422 DEPARTMENT_HEAD_INVALID`. Sau miễn nhiệm/thay thế, cho phép đổi chức danh theo validation
+nhân viên hiện có. Bổ nhiệm/miễn nhiệm không tự thay `jobTitle`; bảng quy định và giới hạn
+mô hình nằm trong [Core docs](../../backend/core-service/docs.md).
 Giữ nguyên hợp đồng này khi đóng gói Core; kiểm tra consumer theo DTO/test nguồn master.
 
 Clinical/Pharmacy gọi Core để xác minh patient/staff/department bằng signed service credential.

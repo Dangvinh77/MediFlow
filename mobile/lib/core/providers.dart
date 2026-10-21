@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/app_config.dart';
+import 'domain/workspace_access.dart';
 import 'network/api_client.dart';
+
+final workspaceAccessProvider = Provider<WorkspaceAccess?>((ref) => null);
 
 // Auth writes this bridge; other contexts depend only on shared Gateway services.
 class ApiSession {

@@ -1,0 +1,43 @@
+- button "Open Next.js Dev Tools":
+- alert
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Báo cáo & thông báo
+      - link "Thông báo — Lịch sử gửi":
+        - /url: /notifications
+        - generic: Thông báo
+        - generic: Lịch sử gửi
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Bệnh nhân
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Chi tiết thông báo" [level=1]
+  - paragraph: Nội dung và trạng thái gửi.
+  - paragraph: Trong ứng dụng
+  - heading "FE acceptance nội bộ" [level=2]
+  - paragraph: 418f57cf-2e05-415e-b281-60524bdff8c3
+  - generic: Đã gửi
+  - term: Bệnh nhân
+  - definition: c0306ab4-aa9c-4dad-a88f-a23efdc82116
+  - term: Tạo lúc
+  - definition: 16:14 20/10/26
+  - term: Gửi lúc
+  - definition: 16:14 20/10/26
+  - term: Lý do thất bại
+  - definition: —
+  - heading "Nội dung" [level=2]
+  - paragraph: Thông báo giả lập để kiểm tra quyền truy cập.
+  - button "Tải lại thông báo"
+  - link "Quay lại tra cứu":
+    - /url: /notifications

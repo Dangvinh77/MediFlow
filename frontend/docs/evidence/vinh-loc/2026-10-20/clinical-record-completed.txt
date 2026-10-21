@@ -1,0 +1,80 @@
+- button "Open Next.js Dev Tools":
+- alert
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Tổ chức & bệnh nhân
+      - link "Tổ chức — Nhân sự & khoa":
+        - /url: /organization
+        - generic: Tổ chức
+        - generic: Nhân sự & khoa
+      - link "Bệnh nhân — Hồ sơ định danh":
+        - /url: /patients
+        - generic: Bệnh nhân
+        - generic: Hồ sơ định danh
+      - paragraph: Khám ngoại trú
+      - link "Lịch hẹn — Tiếp nhận ngoại trú":
+        - /url: /appointments
+        - generic: Lịch hẹn
+        - generic: Tiếp nhận ngoại trú
+      - link "Hồ sơ khám — Chẩn đoán & kết luận":
+        - /url: /records
+        - generic: Hồ sơ khám
+        - generic: Chẩn đoán & kết luận
+      - paragraph: Xét nghiệm
+      - link "Xét nghiệm — Hàng đợi & kết quả":
+        - /url: /lab
+        - generic: Xét nghiệm
+        - generic: Hàng đợi & kết quả
+      - paragraph: Dược
+      - link "Dược — Thuốc & đơn thuốc":
+        - /url: /pharmacy
+        - generic: Dược
+        - generic: Thuốc & đơn thuốc
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Bác sĩ
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Chi tiết hồ sơ khám" [level=1]
+  - paragraph: Thông tin khám, chẩn đoán và hướng xử trí.
+  - paragraph: Mã hồ sơ
+  - paragraph: 3c0c37b1-0af1-4bcc-9361-1a778b4818cd
+  - generic: Đã hoàn tất
+  - term: Bệnh nhân
+  - definition: c0306ab4-aa9c-4dad-a88f-a23efdc82116
+  - term: Bác sĩ
+  - definition: 6358b2f2-df5b-4569-a6a8-fc214da94e59
+  - term: Khoa
+  - definition: ef9d973b-9f01-4ee8-aeeb-3304d0631121
+  - term: Lịch hẹn
+  - definition: 86767f99-f9f4-4400-8af1-98fdc67d19c6
+  - term: Ngày khám
+  - definition: 20/10/2026
+  - term: Ngày tạo
+  - definition: 16:08 20/10/26
+  - term: Cập nhật
+  - definition: 16:20 20/10/26
+  - term: Hoàn tất
+  - definition: 16:20 20/10/26
+  - heading "Nội dung khám" [level=2]
+  - term: Triệu chứng
+  - definition: —
+  - term: Hướng xử trí
+  - definition: Theo dõi ngoại trú
+  - heading "Chẩn đoán" [level=2]
+  - list:
+    - paragraph: Chẩn đoán nghiệm thu giả lập
+    - generic: ICD J00
+  - button "Cập nhật hồ sơ"
+  - link "Quay lại tra cứu":
+    - /url: /records

@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
+import type { Role } from "@/lib/roles";
 import { medicalRecordApi } from "../api";
 import type { DiagnosisDTO, MedicalRecordDTO, RecordDisposition } from "../types";
 import { AddDiagnosisForm } from "./AddDiagnosisForm";
@@ -59,14 +60,16 @@ function Identifier({ label, value }: { label: string; value: string | null }) {
 }
 
 const getServerRole = () => null;
+const getServerToken = () => null;
 
 export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
-  return <MedicalRecordDetailContent key={props.recordId} {...props} />;
+  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerToken);
+  return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 
-function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false }: MedicalRecordDetailProps) {
+function MedicalRecordDetailContent({ recordId, notice, outpatientEnabled = false, role }: MedicalRecordDetailProps & { role: Role | null }) {
   const router = useRouter();
-  const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
   const [state, setState] = useState<DetailState>({ key: "", status: "idle" });
   const [retryToken, setRetryToken] = useState(0);
   const requestKey = `${recordId}\u0000${retryToken}`;

@@ -16,6 +16,11 @@ import java.util.UUID;
 public class DepartmentRepositoryAdapter
         implements DepartmentRepository {
 
+    @Override
+    public Optional<Department> findByIdForUpdate(UUID departmentId) {
+        return jpaRepository.findByIdForUpdate(departmentId).map(this::toDomain);
+    }
+
     private final DepartmentJpaRepository jpaRepository;
 
         public DepartmentRepositoryAdapter(

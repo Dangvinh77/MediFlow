@@ -1,5 +1,22 @@
 # Frontend Service: Notification
 
+## Signed closeout — 2026-10-20
+
+Vinh's delegated Vinh/Lộc closeout preserves the existing Notification implementation and Huy's
+prior work. Real issuer accounts now verify manual IN_APP send and safe detail rendering through
+Gateway: ADMIN and the owning PATIENT receive 200; another PATIENT, DOCTOR and NURSE receive 403
+for detail. History allows ADMIN, owning PATIENT and NURSE; DOCTOR and another PATIENT receive 403.
+Ten signed role checks preserve the privacy DTO (no recipient address/provider payload/retry count).
+Browser evidence shows own-patient detail and cross-patient denial without retry/private content.
+
+`FE-NOTIFICATION-04` now includes this signed IN_APP/browser evidence in addition to local tests.
+This does not close all HF6-14 criteria or email/SMS provider acceptance. `FE-NOTIFICATION-03`
+remains contract-blocked: no resend/read-state command is invented. A verified patient UUID is
+still entered explicitly rather than inferred from account subject. See
+[evidence and limits](../evidence/vinh-loc/2026-10-20/README.md). Older checkpoints below describe
+what had been verified at their dates.
+
+
 2026-10-20 detail follow-up: authorized ADMIN/PATIENT readers can explicitly reload the same
 notification with GET to observe updated delivery status. Refresh clears the previous private
 result while pending; it never resends a notification or polls automatically. Named error feedback
@@ -70,7 +87,7 @@ the history/detail views or newly persisted by the form.
 - `FE-NOTIFICATION-03` — `BLOCKED`: retry/read-state commands do not exist in the live contract.
 - `FE-NOTIFICATION-04` — `DONE — FE local`: API, validation and component tests cover pagination,
   roles, channel/status display, errors, stale/session/unmount guards, privacy and manual send.
-  Real signed-role/provider/browser acceptance remains HF6-14.
+  Signed IN_APP role/browser acceptance is recorded above; remaining provider/HF6-14 scope stays open.
 
 ## Handoffs and blockers
 

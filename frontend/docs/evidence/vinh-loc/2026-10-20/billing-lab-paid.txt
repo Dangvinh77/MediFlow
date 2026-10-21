@@ -1,0 +1,84 @@
+- button "Open Next.js Dev Tools":
+- alert
+- complementary "Điều hướng nghiệp vụ":
+  - generic: MF
+  - paragraph: MediFlow
+  - paragraph: Hospital workspace
+  - navigation:
+    - paragraph: Nghiệp vụ
+    - list:
+      - paragraph: Viện phí
+      - link "Viện phí — Hóa đơn & thanh toán":
+        - /url: /billing
+        - generic: Viện phí
+        - generic: Hóa đơn & thanh toán
+  - generic: MediFlow · Quản lý ngoại trú
+- banner:
+  - paragraph: Không gian vận hành MediFlow
+  - paragraph: Thu ngân
+  - combobox "Giao diện":
+    - option "Sáng"
+    - option "Tối"
+    - option "Theo hệ thống" [selected]
+  - button "Đăng xuất"
+- main:
+  - heading "Thanh toán khoản phí đã chọn" [level=1]
+  - paragraph: Hoàn tất thanh toán một khoản phí khám/xét nghiệm/thuốc theo mã do bên phát sinh cung cấp.
+  - paragraph: Tra cứu chính xác bằng mã nguồn, bệnh nhân và đợt điều trị. Billing sẽ trả về số tiền còn phải thu và mã tiền; không nhập hoặc ước tính các giá trị này thủ công.
+  - generic: Loại khoản phí*
+  - combobox "Loại khoản phíbắt buộc":
+    - option "Khám"
+    - option "Xét nghiệm" [selected]
+    - option "Đơn thuốc"
+  - generic: Mã xét nghiệm*
+  - textbox "Mã xét nghiệmbắt buộc":
+    - /placeholder: UUID
+    - text: cc1c90c6-3661-408a-8abc-f9cc84a8a0d2
+  - generic: Mã bệnh nhân*
+  - textbox "Mã bệnh nhânbắt buộc":
+    - /placeholder: UUID
+    - text: c0306ab4-aa9c-4dad-a88f-a23efdc82116
+  - generic: Mã đợt điều trị*
+  - textbox "Mã đợt điều trịbắt buộc":
+    - /placeholder: UUID
+    - text: 86767f99-f9f4-4400-8af1-98fdc67d19c6
+  - paragraph: Nhập mã do màn hình nguồn cung cấp; không suy ra từ mã xét nghiệm hoặc đơn thuốc.
+  - button "Tra cứu khoản phí"
+  - region "Chi tiết khoản phí":
+    - heading "Khoản phí được xác nhận" [level=2]
+    - paragraph: 67371b37-0039-4f8b-a436-0b4c9de263b1
+    - generic: Chờ thanh toán
+    - term: Tổng khoản phí
+    - definition: 150.000 VND
+    - term: Đã thanh toán
+    - definition: 0 VND
+    - term: Còn phải thu
+    - definition: 150.000 VND
+    - term: Trạng thái tài khoản
+    - definition: Đang mở
+    - term: Nguồn phí
+    - definition: Xét nghiệm
+    - term: Mã bệnh nhân
+    - definition: c0306ab4-aa9c-4dad-a88f-a23efdc82116
+    - term: Mã đợt điều trị
+    - definition: 86767f99-f9f4-4400-8af1-98fdc67d19c6
+    - term: Hạn thanh toán
+    - definition: Không có hạn
+    - term: Dữ liệu Billing ghi nhận lúc
+    - definition: 16:10 20/10/26
+    - paragraph:
+      - text: "Số dư theo Billing:"
+      - strong: 150.000 VND
+    - status: "Thanh toán thành công. Mã giao dịch: b6c65bad-1bf5-4db7-b0b0-93d1cd004007"
+    - generic: Số tiền*
+    - textbox "Số tiềnbắt buộc" [disabled]: "150000"
+    - paragraph: Tối đa 150.000 VND
+    - generic: Mã tiền (ISO 4217)*
+    - textbox "Mã tiền (ISO 4217)bắt buộc" [disabled]: VND
+    - generic: Hình thức*
+    - combobox "Hình thứcbắt buộc" [disabled]:
+      - option "Tiền mặt" [selected]
+      - option "Chuyển khoản"
+    - generic: Mã tham chiếu
+    - textbox "Mã tham chiếu" [disabled]
+    - paragraph: Dùng cho chuyển khoản nếu có.

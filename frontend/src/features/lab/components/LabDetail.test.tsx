@@ -66,7 +66,7 @@ describe("Lab detail read and permission states", () => {
     render(<LabDetail testId={test.testId} />);
     expect(screen.getByRole("status", { busy: true })).toBeVisible();
     await act(async () => pending.resolve({ ...test, paid: true }));
-    expect(await screen.findByText("Đã thanh toán")).toBeVisible();
+    expect(await screen.findByText("Chưa có xác nhận tài chính")).toBeVisible();
     expect(screen.getByText("Chờ quyền tài chính")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Bắt đầu xét nghiệm" })).not.toBeInTheDocument();
     expect(screen.getByText("Chưa có chỉ số kết quả.")).toBeVisible();
@@ -188,7 +188,7 @@ describe("Lab detail read and permission states", () => {
   it("does not let an old pending mutation replace the currently viewed test", async () => {
     const pending = deferred<LabTestDTO>();
     mocks.start.mockReturnValue(pending.promise);
-    mocks.getById.mockResolvedValueOnce({ ...test, status: "READY", clearanceId: "accepted-clearance" })
+    mocks.getById.mockResolvedValueOnce({ ...test, status: "READY", clearanceId: "10000000-0000-4000-8000-000000000007" })
       .mockResolvedValueOnce({ ...test, testId: "next-test", labType: "Xét nghiệm tiếp theo", status: "COMPLETED" });
     const view = render(<LabDetail testId={test.testId} />);
     fireEvent.click(await screen.findByRole("button", { name: "Bắt đầu xét nghiệm" }));
@@ -200,5 +200,20 @@ describe("Lab detail read and permission states", () => {
     expect(screen.queryByRole("button", { name: "Nhập kết quả" })).not.toBeInTheDocument();
     expect(mocks.getById).toHaveBeenCalledTimes(2);
     expect(mocks.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows V1 financial clearance independently of the legacy paid flag", async () => {
+    mocks.getById.mockResolvedValue({ ...test, careContractVersion: 1, status: "READY", paid: false, clearanceId: "10000000-0000-4000-8000-000000000007" });
+    render(<LabDetail testId={test.testId} />);
+    expect(await screen.findByText("Có xác nhận tài chính")).toBeVisible();
+    expect(screen.queryByText("Chưa thanh toán")).not.toBeInTheDocument();
+  });
+
+  it("does not start V1 READY without a server financial clearance", async () => {
+    mocks.getById.mockResolvedValue({ ...test, status: "READY", paid: true, clearanceId: null });
+    render(<LabDetail testId={test.testId} />);
+    expect(await screen.findByText(test.labType)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Bắt đầu xét nghiệm" })).not.toBeInTheDocument();
+    expect(mocks.start).not.toHaveBeenCalled();
   });
 });

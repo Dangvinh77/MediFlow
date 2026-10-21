@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "./api";
 import type { ApiError } from "./types";
+import { getToken } from "./session";
 
 export interface CommandError {
   status: number | null;
@@ -33,23 +34,30 @@ export function useCommand() {
     setBusy(true);
     setError(null);
     setUncertain(false);
+    let unknownOutcome = false;
+    const token = getToken();
+    const isCurrent = () => mounted.current && getToken() === token;
     try {
       const result = await command();
-      if (mounted.current) onSuccess(result);
+      if (isCurrent()) onSuccess(result);
     } catch (cause: unknown) {
-      if (!mounted.current) return;
+      if (!isCurrent()) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;
       }
       // Empty/malformed 2xx payloads can follow a committed write too. Only a
       // definitive 4xx rejection establishes that this intent was rejected.
-      setUncertain(!(cause instanceof ApiRequestError) || cause.status < 400 || cause.status >= 500);
+      unknownOutcome = !(cause instanceof ApiRequestError) || cause.status < 400
+        || cause.status === 408 || cause.status >= 500;
+      setUncertain(unknownOutcome);
       setError(cause instanceof ApiRequestError
         ? { status: cause.status, message: cause.message, code: cause.code, details: cause.details, correlationId: cause.correlationId }
         : { status: null, message: cause instanceof Error ? cause.message : "Không thể xử lý yêu cầu.", details: [], correlationId: null });
     } finally {
-      locked.current = false;
+      // Reconciliation must remount the workspace before another mutation.
+      // Keep this guard synchronous even when a consumer misses its disabled state.
+      locked.current = unknownOutcome;
       if (mounted.current) setBusy(false);
     }
   }

@@ -62,7 +62,7 @@ describe("patientApi facade contract", () => {
     expect(createPatientContractFixture).toHaveProperty("soCmnd", "001234567890");
   });
 
-  it("puts update DTO without immutable soCmnd and preserves nullable fields", async () => {
+  it("puts the corrected soCmnd and preserves nullable fields", async () => {
     put.mockResolvedValueOnce(patientContractFixture);
     await patientApi.update(patientContractFixture.maBenhNhan, updatePatientContractFixture);
 
@@ -70,7 +70,7 @@ describe("patientApi facade contract", () => {
       `/v1/patients/${patientContractFixture.maBenhNhan}`,
       updatePatientContractFixture,
     );
-    expect(updatePatientContractFixture).not.toHaveProperty("soCmnd");
+    expect(updatePatientContractFixture).toHaveProperty("soCmnd", "001234567891");
     expect(updatePatientContractFixture.diaChi).toBeNull();
     expect(updatePatientContractFixture.bhytSo).toBeNull();
   });
@@ -81,6 +81,16 @@ describe("patientApi facade contract", () => {
     expect(delEmpty).toHaveBeenCalledWith(
       `/v1/patients/${patientContractFixture.maBenhNhan}`,
     );
+  });
+
+  it("supports legacy updates without an identity correction and explicit null", async () => {
+    put.mockResolvedValue(patientContractFixture);
+    const { soCmnd: originalIdentity, ...legacy } = updatePatientContractFixture;
+    expect(originalIdentity).toBeTruthy();
+    await patientApi.update(patientContractFixture.maBenhNhan, legacy);
+    expect(put.mock.calls[0][1]).not.toHaveProperty("soCmnd");
+    await patientApi.update(patientContractFixture.maBenhNhan, { ...legacy, soCmnd: null });
+    expect(put.mock.calls[1][1]).toHaveProperty("soCmnd", null);
   });
 
   it("preserves the backend duplicate-CMND error code for the form", async () => {
@@ -96,5 +106,24 @@ describe("patientApi facade contract", () => {
       code: "PATIENT_CMND_DUPLICATE",
       status: 409,
     });
+  });
+
+  it("normalizes paging like PageQuery and trims blank keywords", async () => {
+    get.mockResolvedValue(patientPage);
+    await patientApi.search({ page: -1, size: 999, keyword: "  " });
+    expect(get).toHaveBeenLastCalledWith("/v1/patients?page=0&size=100");
+    await patientApi.search({ page: Number.NaN, size: 0, keyword: "  A & B  " });
+    expect(get).toHaveBeenLastCalledWith("/v1/patients?page=0&size=20&keyword=A+%26+B");
+  });
+
+  it("keeps identity corrections but strips runtime server fields from updates", async () => {
+    put.mockResolvedValue(patientContractFixture);
+    await patientApi.update(patientContractFixture.maBenhNhan, { ...updatePatientContractFixture,
+      ...patientContractFixture });
+    const body = put.mock.calls[0][1];
+    expect(body).toHaveProperty("soCmnd", patientContractFixture.soCmnd);
+    expect(body).not.toHaveProperty("maBenhNhan");
+    expect(body).not.toHaveProperty("createdAt");
+    expect(body).toHaveProperty("hoTen", patientContractFixture.hoTen);
   });
 });

@@ -14,6 +14,29 @@ PageResult<String> result(int page) => PageResult(
 );
 
 void main() {
+  testWidgets('feature policy suppresses retry after forbidden response', (
+    tester,
+  ) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PagedList<String>(
+            load: (_) async {
+              calls++;
+              throw const ApiFailure('Forbidden', status: 403);
+            },
+            canRetry: (error) => error is! ApiFailure || error.status != 403,
+            itemBuilder: (_, item) => Text(item),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Forbidden'), findsOneWidget);
+    expect(find.text('Thử lại'), findsNothing);
+    expect(calls, 1);
+  });
   testWidgets(
     'next page, error correlation and retry preserve requested page',
     (tester) async {

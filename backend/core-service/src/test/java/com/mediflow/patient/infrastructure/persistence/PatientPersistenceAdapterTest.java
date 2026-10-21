@@ -38,6 +38,8 @@ class PatientPersistenceAdapterTest {
 
         assertThat(adapter.findById(id)).isPresent();
         assertThat(adapter.existsById(id)).isTrue();
+        assertThat(adapter.existsByIdentityNumberAndPatientIdNot("123", id)).isFalse();
+        assertThat(adapter.existsByIdentityNumberAndPatientIdNot("123", UUID.randomUUID())).isTrue();
         assertThat(adapter.search("nguyen", new PageQuery(0, 20)).content()).hasSize(1);
         assertThat(adapter.search("missing", new PageQuery(0, 20)).content()).isEmpty();
     }

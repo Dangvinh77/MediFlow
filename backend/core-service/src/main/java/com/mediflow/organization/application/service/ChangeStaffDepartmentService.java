@@ -17,7 +17,7 @@ import com.mediflow.organization.domain.model.Department;
 import com.mediflow.organization.domain.model.Staff;
 import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
+@Transactional("organizationTransactionManager")
 public class ChangeStaffDepartmentService
         implements ChangeStaffDepartmentUseCase {
 
@@ -52,28 +52,27 @@ public class ChangeStaffDepartmentService
             UUID newDepartmentId) {
 
         Staff staff = staffRepository
-                .findById(staffId)
+                .findByIdForUpdate(staffId)
                 .orElseThrow(() ->
                         new StaffNotFoundException(staffId));
 
-        Department newDepartment = departmentRepository
-                .findById(newDepartmentId)
-                .orElseThrow(() ->
-                        new DepartmentNotFoundException(newDepartmentId));
-
+        UUID oldDepartmentId = staff.getDepartmentId();
+        // All membership writers lock departments in the same order.
+        UUID firstId = oldDepartmentId.compareTo(newDepartmentId) <= 0 ? oldDepartmentId : newDepartmentId;
+        UUID secondId = firstId.equals(oldDepartmentId) ? newDepartmentId : oldDepartmentId;
+        Department first = departmentRepository.findByIdForUpdate(firstId)
+                .orElseThrow(() -> new DepartmentNotFoundException(firstId));
+        Department second = firstId.equals(secondId) ? first
+                : departmentRepository.findByIdForUpdate(secondId)
+                        .orElseThrow(() -> new DepartmentNotFoundException(secondId));
+        Department oldDepartment = firstId.equals(oldDepartmentId) ? first : second;
+        Department newDepartment = firstId.equals(newDepartmentId) ? first : second;
         if (!newDepartment.isActive()) {
             throw new DepartmentInactiveException(newDepartmentId);
         }
-
-        if (staff.getDepartmentId().equals(newDepartmentId)) {
+        if (oldDepartmentId.equals(newDepartmentId)) {
             return staff;
         }
-
-        UUID oldDepartmentId = staff.getDepartmentId();
-        Department oldDepartment = departmentRepository
-                .findById(oldDepartmentId)
-                .orElseThrow(() ->
-                        new DepartmentNotFoundException(oldDepartmentId));
 
         if (staff.getStaffId().equals(oldDepartment.getDepartmentHeadId())) {
             throw new InvalidDepartmentHeadException(
