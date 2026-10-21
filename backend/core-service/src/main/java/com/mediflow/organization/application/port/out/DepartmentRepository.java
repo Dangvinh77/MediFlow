@@ -12,6 +12,9 @@ public interface DepartmentRepository {
 
         Optional<Department> findById(UUID departmentId);
 
+    /** Serializes department membership/head/state decisions until transaction commit. */
+    Optional<Department> findByIdForUpdate(UUID departmentId);
+
         Department save(Department department);
     List<Department> findAll();
 }

@@ -1,6 +1,7 @@
 # Core backend audit — Hoàng Anh — 2026-10-20
 
-Owner: Hoàng Anh (`TranHoangAnh94`). Status: **OPEN**, production fixes required.
+Owner: Hoàng Anh (`TranHoangAnh94`). Status: **OPEN**, owner implementation on
+`codex/core-audit-reliability`; final shared-revision verification remains required.
 Audit source: `26bf2ef7` (backend unchanged from `553ec59e`); Vinh verifies across modules but does not change Core production code.
 Canonical requirements: [contracts](../plans/03-contracts.md), [reliability](../plans/04-data-reliability.md).
 
@@ -86,3 +87,33 @@ inactive department after both transactions finish.
 
 Hoàng Anh implements Core fixes; Vinh reruns Core, Gateway, Notification and relevant packaged
 workflows on the final shared revision. Close this handoff only after code and its acceptance pass.
+
+## Owner implementation — 21 October
+
+Business clarification from the user: a department head must first be dismissed or replaced
+before changing `DOCTOR` to `NURSE`. This is not a blanket prohibition on professional-title
+changes for ordinary staff. Appointment/dismissal and professional-title changes are separate
+operations. See [Core rules and operations](../../backend/core-service/docs.md).
+
+| Item | Owner change | Local regression |
+|---|---|---|
+| HA-20-01 | Patient state and outbox commit in the Patient transaction; confirmed mandatory publishing, original payload/identity, bounded backoff and quarantine | `PatientServiceIntegrationTest`: broker outage during create/update, worker reconstruction, post-confirm mark failure/replay, outbox failure rollback, returns/quarantine |
+| HA-20-02 | Reject incompatible title while still head; always revalidate a supplied head UUID; serialize appointment and title changes on the department | `OrganizationServiceIntegrationTest`: rejection, dismissal then title change, retained invalid UUID, both concurrent orders; `StaffControllerContractTest`: existing `422 DEPARTMENT_HEAD_INVALID` contract |
+| HA-AUDIT-03 | Department row locks cover deactivation, staff creation and incoming transfer; staff mutation locks the staff first and transfer locks departments in UUID order | `OrganizationServiceIntegrationTest`: both orders for deactivation/create and deactivation/transfer |
+
+Local verification on 21 October: `mvn -q -pl backend/core-service -am test` completed with
+exit code 0: **205 Core tests / 38 suites, 0 failures, 0 errors, 0 skipped**. Docker Engine
+28.5.1, PostgreSQL 16 and RabbitMQ 3.13 Testcontainers. Organization integration **7/7**,
+Patient integration **7/7**, Staff controller contract **18/18**. `git diff --check` also passed.
+
+The old race patch waited for creation to commit while deactivation was paused. With the fix,
+creation correctly blocks on the department lock. The installed regression instead asserts
+that wait, releases the winning transaction, and verifies the competing command rejects the
+new committed state. It covers the inverse order as well.
+
+The post-confirm crash test injects failure at the DB mark and reconstructs the worker; it does
+not certify a killed JVM/container restart. Vinh still owns the final Core/Gateway/Notification
+and packaged workflow gates, including duplicate welcome-event consumption without repeated
+effects. No Notification production change is included. Do not close this handoff from Core
+test counts alone. At this verification the owner changes were uncommitted; the final artifact
+SHA must be recorded after commit and used for Vinh's acceptance run.

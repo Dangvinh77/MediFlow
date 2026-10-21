@@ -16,7 +16,7 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
+@Transactional("organizationTransactionManager")
 public class CreateStaffService implements CreateStaffUseCase {
 
     private final StaffRepository staffRepository;
@@ -55,7 +55,7 @@ public class CreateStaffService implements CreateStaffUseCase {
             String email) {
 
         Department department = departmentRepository
-                .findById(departmentId)
+                .findByIdForUpdate(departmentId)
                 .orElseThrow(() ->
                         new DepartmentNotFoundException(departmentId));
 

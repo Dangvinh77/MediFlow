@@ -10,6 +10,7 @@ import com.mediflow.organization.domain.model.JobTitle;
 import com.mediflow.organization.domain.model.Staff;
 
 public interface StaffRepository {
+    Optional<Staff> findByIdForUpdate(UUID staffId);
 
         boolean existsByDepartmentIdAndActiveTrue(UUID departmentId);
 

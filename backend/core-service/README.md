@@ -1,5 +1,14 @@
 # Core Service
 
+Quy định chức danh/trưởng khoa, xử lý đồng thời và vận hành Patient outbox:
+[docs.md](docs.md).
+
+Audit fixes verified locally on 2026-10-21: `mvn -q -pl backend/core-service -am test`
+passed **205 Core tests** across 38 suites, zero failures/errors/skips, with Docker
+PostgreSQL/RabbitMQ. Includes Patient transactional outbox and Organization head-title/
+department-state concurrency regressions. Final Gateway/Notification/packaged acceptance
+remains with Vinh; see [owner handoff](../../docs/handoffs/HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
+
 ## Product scope — 2026-10-17
 
 Part of **MediFlow: A Microservices-Based Hospital Information System for Outpatient Care Management**. Core hosts Organization and Patient for outpatient identity, staff and departments, retaining separate data authority.

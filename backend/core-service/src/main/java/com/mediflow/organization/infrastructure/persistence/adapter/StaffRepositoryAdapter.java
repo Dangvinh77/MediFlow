@@ -31,6 +31,11 @@ import java.util.UUID;
 public class StaffRepositoryAdapter
         implements StaffRepository {
 
+    @Override
+    public Optional<Staff> findByIdForUpdate(UUID staffId) {
+        return jpaRepository.findByIdForUpdate(staffId).map(this::toDomain);
+    }
+
     private final StaffJpaRepository jpaRepository;
 
         public StaffRepositoryAdapter(

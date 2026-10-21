@@ -45,6 +45,7 @@ import java.time.Instant;
  */
 @SpringBootTest(classes = com.mediflow.core.CoreServiceApplication.class)
 @Testcontainers
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class OrganizationServiceIntegrationTest {
 
     @Container
@@ -72,6 +73,7 @@ class OrganizationServiceIntegrationTest {
         registry.add("spring.rabbitmq.username", RABBITMQ::getAdminUsername);
         registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
         registry.add("eureka.client.enabled", () -> false);
+        registry.add("mediflow.patient.outbox.scheduling-enabled", () -> false);
         registry.add("mediflow.jwt.secret", () ->
                 "integration-test-secret-that-is-long-enough-for-hs256");
     }
@@ -117,6 +119,149 @@ class OrganizationServiceIntegrationTest {
 
     @Autowired
     private OrganizationGlobalExceptionHandler exceptionHandler;
+
+    @Autowired
+    private com.mediflow.organization.application.port.in.UpdateStaffUseCase updateStaff;
+    @Autowired
+    private com.mediflow.organization.application.port.in.UpdateDepartmentUseCase updateDepartment;
+    @Autowired
+    private com.mediflow.organization.application.port.in.ChangeStaffDepartmentUseCase transferStaff;
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("organizationTransactionManager")
+    private org.springframework.transaction.PlatformTransactionManager organizationTransactions;
+
+    @Test
+    void changingDepartmentHeadToNonDoctorCannotLeaveInvalidHeadReference() {
+        var department = newDepartment();
+        var doctor = newDoctor(department.getDepartmentId());
+        changeHead(department, doctor.getStaffId());
+        assertThrows(com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class,
+                () -> changeToNurse(doctor.getStaffId()));
+        assertThat(staffStore.findById(doctor.getStaffId()).orElseThrow().getJobTitle()).isEqualTo(JobTitle.DOCTOR);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getDepartmentHeadId())
+                .isEqualTo(doctor.getStaffId());
+        changeHead(department, null);
+        changeToNurse(doctor.getStaffId());
+        assertThat(staffStore.findById(doctor.getStaffId()).orElseThrow().getJobTitle()).isEqualTo(JobTitle.NURSE);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getDepartmentHeadId()).isNull();
+    }
+
+    @Test
+    void unchangedHeadIdIsRevalidatedEvenForLegacyInvalidData() {
+        var department = newDepartment();
+        var doctor = newDoctor(department.getDepartmentId());
+        changeHead(department, doctor.getStaffId());
+        doctor.update("Former Doctor", JobTitle.NURSE, null, null, null, null);
+        staffStore.save(doctor); // Deliberately reproduce a row left by the old implementation.
+        assertThrows(com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class,
+                () -> changeHead(department, doctor.getStaffId()));
+        changeHead(department, null); // Explicit dismissal remains the repair path.
+    }
+
+    @Test
+    void concurrentAppointmentAndTitleChangeSerializeInBothOrders() throws Exception {
+        var department = newDepartment();
+        var doctor = newDoctor(department.getDepartmentId());
+        race(() -> changeHead(department, doctor.getStaffId()), () -> changeToNurse(doctor.getStaffId()),
+                com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class);
+        changeHead(department, null);
+        race(() -> changeToNurse(doctor.getStaffId()), () -> changeHead(department, doctor.getStaffId()),
+                com.mediflow.organization.domain.exception.InvalidDepartmentHeadException.class);
+        assertThat(departmentStore.findById(department.getDepartmentId()).orElseThrow().getDepartmentHeadId()).isNull();
+        assertThat(staffStore.findById(doctor.getStaffId()).orElseThrow().getJobTitle()).isEqualTo(JobTitle.NURSE);
+    }
+
+    @Test
+    void departmentDeactivationAndStaffCreationSerializeInBothOrders() throws Exception {
+        var inactiveFirst = newDepartment();
+        race(() -> deactivate(inactiveFirst), () -> newDoctor(inactiveFirst.getDepartmentId()),
+                com.mediflow.organization.domain.exception.DepartmentInactiveException.class);
+        assertThat(departmentStore.findById(inactiveFirst.getDepartmentId()).orElseThrow().isActive()).isFalse();
+        assertThat(staffStore.existsByDepartmentIdAndActiveTrue(inactiveFirst.getDepartmentId())).isFalse();
+
+        var staffFirst = newDepartment();
+        race(() -> newDoctor(staffFirst.getDepartmentId()), () -> deactivate(staffFirst),
+                com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException.class);
+        assertThat(departmentStore.findById(staffFirst.getDepartmentId()).orElseThrow().isActive()).isTrue();
+        assertThat(staffStore.existsByDepartmentIdAndActiveTrue(staffFirst.getDepartmentId())).isTrue();
+    }
+
+    @Test
+    void departmentDeactivationAndIncomingTransferSerializeInBothOrders() throws Exception {
+        var source = newDepartment();
+        var doctor = newDoctor(source.getDepartmentId());
+        var inactiveFirst = newDepartment();
+        race(() -> deactivate(inactiveFirst),
+                () -> transferStaff.execute(doctor.getStaffId(), inactiveFirst.getDepartmentId()),
+                com.mediflow.organization.domain.exception.DepartmentInactiveException.class);
+        assertThat(staffStore.existsByDepartmentIdAndActiveTrue(inactiveFirst.getDepartmentId())).isFalse();
+        var transferFirst = newDepartment();
+        race(() -> transferStaff.execute(doctor.getStaffId(), transferFirst.getDepartmentId()),
+                () -> deactivate(transferFirst),
+                com.mediflow.organization.domain.exception.DepartmentHasActiveStaffException.class);
+        assertThat(departmentStore.findById(transferFirst.getDepartmentId()).orElseThrow().isActive()).isTrue();
+        assertThat(staffStore.findById(doctor.getStaffId()).orElseThrow().getDepartmentId())
+                .isEqualTo(transferFirst.getDepartmentId());
+    }
+
+    private com.mediflow.organization.domain.model.Department newDepartment() {
+        return createDepartmentUseCase.execute("Audit Department", "A-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT),
+                DepartmentType.CLINICAL, "Building A");
+    }
+
+    private com.mediflow.organization.domain.model.Staff newDoctor(UUID departmentId) {
+        return createStaffUseCase.execute("Audit Doctor", departmentId, JobTitle.DOCTOR, "General",
+                "LIC-" + UUID.randomUUID(), null, null);
+    }
+
+    private void changeHead(com.mediflow.organization.domain.model.Department department, UUID head) {
+        updateDepartment.execute(department.getDepartmentId(), department.getDepartmentName(),
+                department.getDepartmentType(), department.getLocation(), head, true);
+    }
+
+    private void deactivate(com.mediflow.organization.domain.model.Department department) {
+        updateDepartment.execute(department.getDepartmentId(), department.getDepartmentName(),
+                department.getDepartmentType(), department.getLocation(), null, false);
+    }
+
+    private void changeToNurse(UUID staffId) {
+        updateStaff.execute(staffId, "Audit Nurse", JobTitle.NURSE, null, null, null, null);
+    }
+
+    /** Hold the winning use case before commit, then prove the competing use case waits and rechecks. */
+    private void race(Runnable first, Runnable second, Class<? extends Throwable> rejection) throws Exception {
+        var ready = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var secondStarted = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var winner = pool.submit(() -> new org.springframework.transaction.support.TransactionTemplate(
+                    organizationTransactions).executeWithoutResult(status -> {
+                        first.run();
+                        ready.countDown();
+                        try {
+                            if (!release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                                throw new IllegalStateException("Race release timed out");
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(interrupted);
+                        }
+                    }));
+            try {
+                assertThat(ready.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+                var competitor = pool.submit(() -> { secondStarted.countDown(); second.run(); });
+                assertThat(secondStarted.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+                assertThrows(java.util.concurrent.TimeoutException.class,
+                        () -> competitor.get(300, java.util.concurrent.TimeUnit.MILLISECONDS));
+                release.countDown();
+                winner.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                var failure = assertThrows(java.util.concurrent.ExecutionException.class,
+                        () -> competitor.get(10, java.util.concurrent.TimeUnit.SECONDS));
+                assertThat(failure.getCause()).isInstanceOf(rejection);
+            } finally {
+                release.countDown();
+            }
+        }
+    }
 
     @Test
     void createsDepartmentAndStaffAgainstFlywaySchema() {
