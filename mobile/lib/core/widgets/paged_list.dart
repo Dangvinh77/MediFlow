@@ -5,9 +5,15 @@ import 'request_state.dart';
 
 // Receives a domain use case; widgets never call the API client directly.
 class PagedList<T> extends StatefulWidget {
-  const PagedList({super.key, required this.load, required this.itemBuilder});
+  const PagedList({
+    super.key,
+    required this.load,
+    required this.itemBuilder,
+    this.canRetry,
+  });
   final Future<PageResult<T>> Function(int page) load;
   final Widget Function(BuildContext, T) itemBuilder;
+  final bool Function(Object error)? canRetry;
   @override
   State<PagedList<T>> createState() => _PagedListState<T>();
 }
@@ -53,7 +59,12 @@ class _PagedListState<T> extends State<PagedList<T>> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return RequestError(_error!, onRetry: () => _load(_requestedPage));
+      return RequestError(
+        _error!,
+        onRetry: (widget.canRetry?.call(_error!) ?? true)
+            ? () => _load(_requestedPage)
+            : null,
+      );
     }
     if (_loading) {
       return const Center(

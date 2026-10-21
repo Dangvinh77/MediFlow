@@ -51,6 +51,14 @@ class ApiClient {
     bool public = false,
   }) => _request(path, 'POST', body: body, raw: raw, public: public);
 
+  Future<Object?> put(String path, Object body) =>
+      _request(path, 'PUT', body: body);
+
+  Future<Object?> patch(String path, Object body) =>
+      _request(path, 'PATCH', body: body);
+
+  Future<Object?> delete(String path) => _request(path, 'DELETE');
+
   Future<Object?> _request(
     String path,
     String method, {
@@ -73,6 +81,7 @@ class ApiClient {
         queryParameters: query,
         options: Options(method: method, extra: {'public': public}),
       );
+      if (method == 'DELETE' && response.statusCode == 204) return null;
       if (raw) return response.data;
       final envelope = response.data;
       if (envelope is! Map ||
