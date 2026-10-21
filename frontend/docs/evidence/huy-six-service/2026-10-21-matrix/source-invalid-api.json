@@ -1,0 +1,114 @@
+{
+  "candidate": "42aab198 + Gateway coverage working diff",
+  "gateway": "http://127.0.0.1:63181",
+  "unique": "7366928c712b",
+  "checks": [
+    {
+      "name": "stock-before-invalid-source",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/drugs/1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "drugId": "1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+          "drugName": "FE acceptance 7366928c712b",
+          "activeIngredient": null,
+          "unit": "tablet",
+          "price": 10000,
+          "stockQuantity": 40,
+          "expiryDate": "2027-10-21",
+          "manufacturer": null,
+          "lowStockThreshold": 0,
+          "createdAt": "2026-10-21T02:14:41.366067Z",
+          "updatedAt": "2026-10-21T02:14:41.366067Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:08.335762300Z",
+        "correlationId": "8a2e605a-6d3a-4c8a-8b20-b88193c8d580"
+      }
+    },
+    {
+      "name": "invalid-source-rejected",
+      "method": "POST",
+      "path": "/api/v1/pharmacy/prescriptions",
+      "commandId": "c5888dcc-1c81-4e6a-a5b0-5d78a063370d",
+      "status": 422,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "PHARMACY_CARE_CONTEXT_INVALID",
+          "message": "Clinical relationship does not match",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:15:08.390380800Z",
+        "correlationId": "43da5ed4-94bd-4e80-ba3a-c47bc3505684"
+      }
+    },
+    {
+      "name": "invalid-source-exact-key-retry-rejected",
+      "method": "POST",
+      "path": "/api/v1/pharmacy/prescriptions",
+      "commandId": "c5888dcc-1c81-4e6a-a5b0-5d78a063370d",
+      "status": 422,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "PHARMACY_CARE_CONTEXT_INVALID",
+          "message": "Clinical relationship does not match",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:15:08.432493200Z",
+        "correlationId": "b9226925-7a34-44f1-8f97-29117102f200"
+      }
+    },
+    {
+      "name": "stock-after-invalid-source-and-retry",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/drugs/1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "drugId": "1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+          "drugName": "FE acceptance 7366928c712b",
+          "activeIngredient": null,
+          "unit": "tablet",
+          "price": 10000,
+          "stockQuantity": 40,
+          "expiryDate": "2027-10-21",
+          "manufacturer": null,
+          "lowStockThreshold": 0,
+          "createdAt": "2026-10-21T02:14:41.366067Z",
+          "updatedAt": "2026-10-21T02:14:41.366067Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:08.459917400Z",
+        "correlationId": "fb252a2b-b113-4107-a019-01bdc7ef2a6b"
+      }
+    }
+  ],
+  "invalidRequest": {
+    "recordId": "a9da3ef1-acf5-4a1d-99fa-22efe85b8b90",
+    "patientId": "7de6c4db-98ef-4b27-a56f-86df5f05524e",
+    "doctorId": "7b799bf0-1982-4635-a082-b397bfe0c873",
+    "departmentId": "f430c241-8488-4a00-9839-514fd63b96d7",
+    "prescribedDate": "2026-10-21",
+    "lines": [
+      {
+        "drugId": "1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+        "quantity": 3,
+        "dosage": "Acceptance only"
+      }
+    ],
+    "careContractVersion": 1,
+    "careContext": "OUTPATIENT",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "3be7eec2-874d-4d06-b132-d4608c161124",
+    "priceCode": "DRUG"
+  },
+  "provenance": "All authority IDs come from public Core/Clinical/Pharmacy responses. Negative request deliberately combines a real foreign patient with the real source record; no invented authority IDs.",
+  "stockUnchanged": true
+}

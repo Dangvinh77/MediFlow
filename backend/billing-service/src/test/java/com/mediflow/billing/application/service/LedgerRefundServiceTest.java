@@ -37,7 +37,7 @@ class LedgerRefundServiceTest {
         when(payments.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
     }
 
-    @Test void refund_valid_appendsLinkedTransactionReversalsAndRedactedHeldEvent() {
+    @Test void refund_valid_appendsLinkedTransactionReversalsAndRedactedCohortEvent() {
         var result = service.refund(originalId, command("20"), actor, "trace");
         assertThat(result.originalTransactionId()).isEqualTo(originalId);
         assertThat(result.refundTransactionId()).isNotEqualTo(originalId);
@@ -51,7 +51,7 @@ class LedgerRefundServiceTest {
         verify(refunds).reverseAllocations(original, refund);
         verify(refunds).revokeUnsatisfiedClearance(original.getPaymentRequestId(), now);
         var event = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
-        verify(events).appendHeld(eq(accountId), event.capture());
+        verify(events).appendForOutpatientRequest(eq(accountId), eq(original.getPaymentRequestId()), event.capture());
         assertThat(event.getValue().eventType()).isEqualTo("payment.refunded");
         assertThat(((LedgerIntegrationEvent.PaymentRefundedPayload) event.getValue().payload()).reason())
                 .isEqualTo(LedgerRefundService.PUBLIC_REASON);

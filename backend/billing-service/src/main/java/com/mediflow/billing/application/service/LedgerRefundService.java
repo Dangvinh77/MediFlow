@@ -14,7 +14,7 @@ import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.*;
 import com.mediflow.common.exception.DuplicateResourceException;
 
-/** V2 spec §6: bounded, append-only refunds and reversal allocations commit with a held fact. */
+/** Bounded, append-only refunds and reversal allocations commit atomically with their outbox fact. */
 public class LedgerRefundService implements RefundLedgerPaymentUseCase {
     public static final String PUBLIC_REASON = "CASHIER_RECORDED_REFUND";
     private final LedgerPaymentRepositoryPort payments;
@@ -80,10 +80,15 @@ public class LedgerRefundService implements RefundLedgerPaymentUseCase {
         refunds.reverseAllocations(original, refund);
         // Irreversible denial; this operation never reopens a PAID request or fabricates another grant.
         refunds.revokeUnsatisfiedClearance(original.getPaymentRequestId(), now);
-        events.appendHeld(account.getAccountId(), new LedgerIntegrationEvent(UUID.randomUUID(), "payment.refunded", 1,
+        var event = new LedgerIntegrationEvent(UUID.randomUUID(), "payment.refunded", 1,
                 now, correlation, "billing-service", new PaymentRefundedPayload(refund.getTransactionId(), originalId,
                 account.getAccountId(), account.getPatientId(), account.getDepartmentId(), account.getCareEpisodeType().name(),
-                account.getCareEpisodeId(), refund.getAmount(), refund.getCurrency(), PUBLIC_REASON, now)));
+                account.getCareEpisodeId(), refund.getAmount(), refund.getCurrency(), PUBLIC_REASON, now));
+        if (account.getCareEpisodeType() == CareEpisodeType.OUTPATIENT_VISIT) {
+            events.appendForOutpatientRequest(account.getAccountId(), original.getPaymentRequestId(), event);
+        } else {
+            events.appendHeld(account.getAccountId(), event);
+        }
         return mapper.toRefundDTO(refund);
     }
 

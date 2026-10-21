@@ -84,6 +84,14 @@ class GatewayWebTest {
     }
 
     @Test
+    void reportCoverageWithoutSupportReturnsUnavailableRatherThanApproval() {
+        expectDownstreamUnavailable(HttpMethod.GET,
+                "/api/v1/reports/outpatient/coverage/preview", Roles.ADMIN);
+        expectDownstreamUnavailable(HttpMethod.POST,
+                "/api/v1/reports/outpatient/coverage/acceptances", Roles.ADMIN);
+    }
+
+    @Test
     void careCommandsEnforceSpecificSignedRolesWithoutBroadAppointmentFallback() {
         String nurse = jwt.issueAccessToken(UUID.randomUUID(), Roles.NURSE);
         String doctor = jwt.issueAccessToken(UUID.randomUUID(), Roles.DOCTOR);

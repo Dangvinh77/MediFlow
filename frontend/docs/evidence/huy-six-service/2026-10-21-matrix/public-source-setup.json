@@ -1,0 +1,131 @@
+{
+  "candidate": "42aab198 + Gateway coverage routes + Pharmacy focus test wait",
+  "gateway": "http://127.0.0.1:63181",
+  "unique": "7366928c712b",
+  "checks": [
+    {
+      "name": "create-test-foreign-patient",
+      "method": "POST",
+      "path": "/api/v1/patients",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "maBenhNhan": "7de6c4db-98ef-4b27-a56f-86df5f05524e",
+          "hoTen": "Isolated foreign patient 7366928c712b",
+          "ngaySinh": "1990-01-02",
+          "gioiTinh": "F",
+          "soCmnd": "992548907277",
+          "diaChi": "Acceptance only",
+          "soDienThoai": "0900000000",
+          "email": "foreign-7366928c712b@example.test",
+          "bhytSo": null,
+          "createdAt": "2026-10-21T02:15:07.306444900Z",
+          "updatedAt": "2026-10-21T02:15:07.306444900Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:07.313642200Z",
+        "correlationId": "d5181978-1dcb-4db5-a969-fdf766baf4a7"
+      }
+    },
+    {
+      "name": "create-test-owner-account",
+      "method": "POST",
+      "path": "/api/v1/org/accounts",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "accountId": "f65567bc-153e-474f-ae93-54392b60791b",
+          "username": "fe-owner-7366928c712b",
+          "staffId": null,
+          "patientId": "866f9c28-653e-4b39-8986-9409a511e9e2",
+          "role": "PATIENT",
+          "isActive": true,
+          "lastLoginAt": null,
+          "createdAt": "2026-10-21T02:15:07.443815700Z",
+          "updatedAt": "2026-10-21T02:15:07.443815700Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:07.454687500Z",
+        "correlationId": "fae6f967-3679-464a-b5cf-4625e818cdbe"
+      }
+    },
+    {
+      "name": "create-test-foreign-account",
+      "method": "POST",
+      "path": "/api/v1/org/accounts",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "accountId": "e66b3b06-ba48-445b-b678-4cd762e2c39a",
+          "username": "fe-foreign-7366928c712b",
+          "staffId": null,
+          "patientId": "7de6c4db-98ef-4b27-a56f-86df5f05524e",
+          "role": "PATIENT",
+          "isActive": true,
+          "lastLoginAt": null,
+          "createdAt": "2026-10-21T02:15:07.580455200Z",
+          "updatedAt": "2026-10-21T02:15:07.580455200Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:07.588260100Z",
+        "correlationId": "10b38d11-060f-49fc-a4b5-184bd656a06e"
+      }
+    },
+    {
+      "name": "create-test-manager-staff",
+      "method": "POST",
+      "path": "/api/v1/org/staff",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "staffId": "437e4043-7e02-44e8-bcb3-bdff6f7bbda0",
+          "fullName": "Acceptance Manager 7366928c712b",
+          "departmentId": "f430c241-8488-4a00-9839-514fd63b96d7",
+          "jobTitle": "ADMINISTRATIVE",
+          "specialization": null,
+          "licenseNumber": null,
+          "phoneNumber": "0900000001",
+          "email": "manager-7366928c712b@example.test",
+          "active": true,
+          "createdAt": "2026-10-21T02:15:07.609887300Z",
+          "updatedAt": "2026-10-21T02:15:07.609887300Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:07.618067100Z",
+        "correlationId": "cc2afa06-1483-429f-bec6-cbb53a994d2c"
+      }
+    },
+    {
+      "name": "create-test-manager-account",
+      "method": "POST",
+      "path": "/api/v1/org/accounts",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "accountId": "65f90ea3-bc26-4a0a-a992-f630ab452148",
+          "username": "fe-manager-7366928c712b",
+          "staffId": "437e4043-7e02-44e8-bcb3-bdff6f7bbda0",
+          "patientId": null,
+          "role": "MANAGER",
+          "isActive": true,
+          "lastLoginAt": null,
+          "createdAt": "2026-10-21T02:15:07.750328800Z",
+          "updatedAt": "2026-10-21T02:15:07.750328800Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:15:07.763827200Z",
+        "correlationId": "e4a7b6f0-96b1-403d-9e5e-0a1275a0646d"
+      }
+    }
+  ],
+  "patientId": "866f9c28-653e-4b39-8986-9409a511e9e2",
+  "foreignPatientId": "7de6c4db-98ef-4b27-a56f-86df5f05524e",
+  "ownerUsername": "fe-owner-7366928c712b",
+  "foreignUsername": "fe-foreign-7366928c712b",
+  "managerUsername": "fe-manager-7366928c712b"
+}

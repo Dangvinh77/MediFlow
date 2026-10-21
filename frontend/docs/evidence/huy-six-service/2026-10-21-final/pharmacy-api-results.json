@@ -1,0 +1,364 @@
+{
+  "candidate": "42aab198 + Gateway coverage + Pharmacy test wait",
+  "gateway": "http://127.0.0.1:52865",
+  "checks": [
+    {
+      "name": "prescription-before-payment",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/prescriptions/9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "recordId": "294904b7-47f6-4437-ae16-8ddab5058a6c",
+          "patientId": "8943e73b-2004-43ea-857b-814a224b3e72",
+          "doctorId": "5dd06c09-6c5a-4400-87a5-1cb38c06e5b3",
+          "departmentId": "51b26ca4-4bff-44e5-ba3f-b0248fb96977",
+          "prescribedDate": "2026-10-21",
+          "totalAmount": 30000,
+          "lines": [
+            {
+              "lineId": "1f448468-d3d4-4cdd-8b05-bebe873bbe2a",
+              "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+              "drugName": "FE acceptance 46b165432b2c",
+              "quantity": 3,
+              "unitPrice": 10000,
+              "dosage": "Acceptance only",
+              "lineTotal": 30000
+            }
+          ],
+          "status": "ACTIVE",
+          "dispenseStatus": "PENDING",
+          "paymentConfirmed": false,
+          "cancelledAt": null,
+          "cancelledBy": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-20T23:58:48.733703Z",
+          "updatedAt": "2026-10-20T23:58:48.733703Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:21.594381600Z",
+        "correlationId": "787f9387-ae61-4919-9516-3089917d27e5"
+      }
+    },
+    {
+      "name": "stock-before-dispense",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/drugs/df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+          "drugName": "FE acceptance 46b165432b2c",
+          "activeIngredient": null,
+          "unit": "tablet",
+          "price": 10000,
+          "stockQuantity": 40,
+          "expiryDate": "2027-10-21",
+          "manufacturer": null,
+          "lowStockThreshold": 0,
+          "createdAt": "2026-10-20T23:56:57.238673Z",
+          "updatedAt": "2026-10-20T23:56:57.238673Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:21.620214Z",
+        "correlationId": "17c910f6-e0ce-4df9-989b-8ab6f9578b16"
+      }
+    },
+    {
+      "name": "payment-request-from-public-discovery",
+      "method": "GET",
+      "path": "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=9d544191-44c5-4286-8a5f-dc3af8d9b2c5&patientId=8943e73b-2004-43ea-857b-814a224b3e72&careEpisodeId=d955845b-d636-41db-9f34-d52bd5cd7d37",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "paymentRequestId": "5b05e435-578c-4ed4-a90f-446547f9344e",
+          "invoiceId": "3a75d4d9-3976-491a-8cdb-96a6991e2ae4",
+          "accountId": "17e4c8f2-596f-45b1-a917-87b42c455d99",
+          "patientId": "8943e73b-2004-43ea-857b-814a224b3e72",
+          "departmentId": "51b26ca4-4bff-44e5-ba3f-b0248fb96977",
+          "purpose": "PRESCRIPTION",
+          "sourceType": "PRESCRIPTION",
+          "sourceId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "careEpisodeId": "d955845b-d636-41db-9f34-d52bd5cd7d37",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "appointmentId": null,
+          "recordId": null,
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "labTestIds": [],
+          "requestedAmount": 30000,
+          "paidAmount": 0,
+          "remainingAmount": 30000,
+          "currency": "VND",
+          "status": "PENDING",
+          "accountStatus": "OPEN",
+          "expiresAt": null,
+          "observedAt": "2026-10-20T23:59:42.611024Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:42.612720300Z",
+        "correlationId": "434cd727-7c37-4e6c-b32e-98726bf16d23"
+      }
+    },
+    {
+      "name": "record-test-cash-payment-api",
+      "method": "POST",
+      "path": "/api/v1/billing/payment-requests/5b05e435-578c-4ed4-a90f-446547f9344e/payments",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "transactionId": "5d506c51-e407-4455-b7b6-0746fb47166f",
+          "accountId": "17e4c8f2-596f-45b1-a917-87b42c455d99",
+          "paymentRequestId": "5b05e435-578c-4ed4-a90f-446547f9344e",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-20T23:59:42.642411Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:42.668840700Z",
+        "correlationId": "48e6c818-feff-4eb9-8a8f-8627248eb2f2"
+      }
+    },
+    {
+      "name": "payment-request-from-public-discovery",
+      "method": "GET",
+      "path": "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=9d544191-44c5-4286-8a5f-dc3af8d9b2c5&patientId=8943e73b-2004-43ea-857b-814a224b3e72&careEpisodeId=d955845b-d636-41db-9f34-d52bd5cd7d37",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "paymentRequestId": "5b05e435-578c-4ed4-a90f-446547f9344e",
+          "invoiceId": "3a75d4d9-3976-491a-8cdb-96a6991e2ae4",
+          "accountId": "17e4c8f2-596f-45b1-a917-87b42c455d99",
+          "patientId": "8943e73b-2004-43ea-857b-814a224b3e72",
+          "departmentId": "51b26ca4-4bff-44e5-ba3f-b0248fb96977",
+          "purpose": "PRESCRIPTION",
+          "sourceType": "PRESCRIPTION",
+          "sourceId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "careEpisodeId": "d955845b-d636-41db-9f34-d52bd5cd7d37",
+          "careEpisodeType": "OUTPATIENT_VISIT",
+          "appointmentId": null,
+          "recordId": null,
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "labTestIds": [],
+          "requestedAmount": 30000,
+          "paidAmount": 30000,
+          "remainingAmount": 0,
+          "currency": "VND",
+          "status": "PAID",
+          "accountStatus": "OPEN",
+          "expiresAt": null,
+          "observedAt": "2026-10-20T23:59:54.928516Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:54.932010900Z",
+        "correlationId": "82892a3d-fd5a-4148-b93b-a5fdb50844e7"
+      }
+    },
+    {
+      "name": "record-test-cash-payment-api",
+      "method": "POST",
+      "path": "/api/v1/billing/payment-requests/5b05e435-578c-4ed4-a90f-446547f9344e/payments",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "transactionId": "5d506c51-e407-4455-b7b6-0746fb47166f",
+          "accountId": "17e4c8f2-596f-45b1-a917-87b42c455d99",
+          "paymentRequestId": "5b05e435-578c-4ed4-a90f-446547f9344e",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-20T23:59:42.642411Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:54.960741300Z",
+        "correlationId": "a8f53dcc-5176-42ab-ba0f-cee7844bde14"
+      }
+    },
+    {
+      "name": "same-payment-key-api-retry",
+      "method": "POST",
+      "path": "/api/v1/billing/payment-requests/5b05e435-578c-4ed4-a90f-446547f9344e/payments",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "transactionId": "5d506c51-e407-4455-b7b6-0746fb47166f",
+          "accountId": "17e4c8f2-596f-45b1-a917-87b42c455d99",
+          "paymentRequestId": "5b05e435-578c-4ed4-a90f-446547f9344e",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-20T23:59:42.642411Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-20T23:59:54.988505200Z",
+        "correlationId": "cd739dd0-13b4-4b97-abcc-4c3228ca6c8b"
+      }
+    },
+    {
+      "name": "prescription-after-browser-dispense",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/prescriptions/9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "recordId": "294904b7-47f6-4437-ae16-8ddab5058a6c",
+          "patientId": "8943e73b-2004-43ea-857b-814a224b3e72",
+          "doctorId": "5dd06c09-6c5a-4400-87a5-1cb38c06e5b3",
+          "departmentId": "51b26ca4-4bff-44e5-ba3f-b0248fb96977",
+          "prescribedDate": "2026-10-21",
+          "totalAmount": 30000,
+          "lines": [
+            {
+              "lineId": "1f448468-d3d4-4cdd-8b05-bebe873bbe2a",
+              "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+              "drugName": "FE acceptance 46b165432b2c",
+              "quantity": 3,
+              "unitPrice": 10000,
+              "dosage": "Acceptance only",
+              "lineTotal": 30000
+            }
+          ],
+          "status": "FULFILLED",
+          "dispenseStatus": "DISPENSED",
+          "paymentConfirmed": true,
+          "cancelledAt": null,
+          "cancelledBy": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-20T23:58:48.733703Z",
+          "updatedAt": "2026-10-21T00:00:13.145062Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T00:00:22.105739600Z",
+        "correlationId": "84af2092-2a46-417a-be45-418aa06fcaf8"
+      }
+    },
+    {
+      "name": "prescription-after-browser-dispense",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/prescriptions/9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "recordId": "294904b7-47f6-4437-ae16-8ddab5058a6c",
+          "patientId": "8943e73b-2004-43ea-857b-814a224b3e72",
+          "doctorId": "5dd06c09-6c5a-4400-87a5-1cb38c06e5b3",
+          "departmentId": "51b26ca4-4bff-44e5-ba3f-b0248fb96977",
+          "prescribedDate": "2026-10-21",
+          "totalAmount": 30000,
+          "lines": [
+            {
+              "lineId": "1f448468-d3d4-4cdd-8b05-bebe873bbe2a",
+              "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+              "drugName": "FE acceptance 46b165432b2c",
+              "quantity": 3,
+              "unitPrice": 10000,
+              "dosage": "Acceptance only",
+              "lineTotal": 30000
+            }
+          ],
+          "status": "FULFILLED",
+          "dispenseStatus": "DISPENSED",
+          "paymentConfirmed": true,
+          "cancelledAt": null,
+          "cancelledBy": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-20T23:58:48.733703Z",
+          "updatedAt": "2026-10-21T00:00:13.145062Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T00:00:30.544463600Z",
+        "correlationId": "96b08dfd-7454-4b15-9a86-5fcaaecdf254"
+      }
+    },
+    {
+      "name": "stock-after-browser-dispense",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/drugs/df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+          "drugName": "FE acceptance 46b165432b2c",
+          "activeIngredient": null,
+          "unit": "tablet",
+          "price": 10000,
+          "stockQuantity": 37,
+          "expiryDate": "2027-10-21",
+          "manufacturer": null,
+          "lowStockThreshold": 0,
+          "createdAt": "2026-10-20T23:56:57.238673Z",
+          "updatedAt": "2026-10-21T00:00:13.141780Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T00:00:30.564481500Z",
+        "correlationId": "26c84d80-a431-4df1-83a9-499ec34bc11d"
+      }
+    },
+    {
+      "name": "terminal-repeat-dispense-api",
+      "method": "PUT",
+      "path": "/api/v1/pharmacy/prescriptions/9d544191-44c5-4286-8a5f-dc3af8d9b2c5/dispense",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "dispenseId": "8869ec3b-be16-4ba1-8499-64e5c81fae80",
+          "prescriptionId": "9d544191-44c5-4286-8a5f-dc3af8d9b2c5",
+          "status": "DISPENSED",
+          "dispensedAt": "2026-10-21T00:00:13.138333Z",
+          "dispensedBy": "32007d72-d010-4864-81cf-afe2cf7615a2",
+          "dispensedActorType": "STAFF",
+          "failureReason": null
+        },
+        "error": null,
+        "timestamp": "2026-10-21T00:00:30.612218300Z",
+        "correlationId": "2719ffe6-ec27-4fc5-a722-2b47e436f69c"
+      }
+    },
+    {
+      "name": "stock-after-terminal-repeat",
+      "method": "GET",
+      "path": "/api/v1/pharmacy/drugs/df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "drugId": "df9f0a62-7978-4f71-bbb4-bb6a8d04aa81",
+          "drugName": "FE acceptance 46b165432b2c",
+          "activeIngredient": null,
+          "unit": "tablet",
+          "price": 10000,
+          "stockQuantity": 37,
+          "expiryDate": "2027-10-21",
+          "manufacturer": null,
+          "lowStockThreshold": 0,
+          "createdAt": "2026-10-20T23:56:57.238673Z",
+          "updatedAt": "2026-10-21T00:00:13.141780Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T00:00:30.630347800Z",
+        "correlationId": "1973f74e-3b51-42db-8800-0249945378d8"
+      }
+    }
+  ],
+  "observedPaymentConfirmed": true
+}

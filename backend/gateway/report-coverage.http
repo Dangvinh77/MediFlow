@@ -1,0 +1,19 @@
+### ADMIN operator only. Set host/accessToken/fromDate/toDate using the approved environment.
+### Login through auth.http; never store a real bearer token in this file.
+### Report profile/gates must be approved separately; these requests do not activate them.
+@host = http://localhost:8080
+
+### Preview whole-scope local evidence; optional departmentId must come from the real workflow.
+GET {{host}}/api/v1/reports/outpatient/coverage/preview?fromDate={{fromDate}}&toDate={{toDate}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Approve only after reviewing all five source-owner proofs.
+### coverageAcceptanceBody is the complete reviewed JSON from the Report operator runbook:
+### ../report-service/operations/outpatient-coverage-acceptance.md
+### Keep the identical body/requestId/actor on an ambiguous retry. No automatic approval.
+POST {{host}}/api/v1/reports/outpatient/coverage/acceptances
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{{coverageAcceptanceBody}}

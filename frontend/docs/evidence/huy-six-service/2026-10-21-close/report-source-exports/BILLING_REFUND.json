@@ -1,0 +1,173 @@
+{
+  "provenance" : "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+  "scope" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+  "fromDate" : "2026-01-01",
+  "toDate" : "2026-12-31",
+  "source" : "BILLING_REFUND",
+  "zoneId" : "Asia/Bangkok",
+  "currency" : "VND",
+  "allWritersStopped" : true,
+  "wallTimeSealedAt" : "2026-10-21T06:34:25.942342900Z",
+  "completedOperationEvidenceRows" : 2,
+  "receipts" : [ {
+    "source" : "BILLING_REFUND",
+    "method" : "GET",
+    "path" : "/api/v1/billing/prescription-adjustments/6da7feed-cf8c-4878-9d2c-c1bf4ec98ada/refunds-due",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:21.720090900Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "eventType" : "prescription.cancelled",
+        "status" : "APPLIED",
+        "rejectionCode" : null,
+        "refundsDue" : [ {
+          "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+          "amount" : 30000.0,
+          "currency" : "VND"
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:21.713239200Z",
+      "correlationId" : null
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "GET",
+    "path" : "/api/v1/billing/prescription-adjustments/6da7feed-cf8c-4878-9d2c-c1bf4ec98ada/refunds-due",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:21.741436900Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "eventType" : "prescription.cancelled",
+        "status" : "APPLIED",
+        "rejectionCode" : null,
+        "refundsDue" : [ {
+          "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+          "amount" : 30000.0,
+          "currency" : "VND"
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:21.736509600Z",
+      "correlationId" : null
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "POST",
+    "path" : "/api/v1/billing/transactions/3aec2677-323b-4e6a-a0b8-f711c93146f9/refunds",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:34:21.966825400Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "refundTransactionId" : "6c740219-ed7f-466f-8592-070a5f26de88",
+        "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "32bd3597-c6f5-4a93-be89-c53547ddce7e",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 20000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:34:21.899382Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:21.959650600Z",
+      "correlationId" : "3d3aef7f-3e80-4646-a115-694cd6eb1cec"
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "POST",
+    "path" : "/api/v1/billing/transactions/3aec2677-323b-4e6a-a0b8-f711c93146f9/refunds",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:34:22.005170700Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "refundTransactionId" : "6c740219-ed7f-466f-8592-070a5f26de88",
+        "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "32bd3597-c6f5-4a93-be89-c53547ddce7e",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 20000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:34:21.899382Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:22.001301600Z",
+      "correlationId" : "9c828e2f-7de1-4072-a743-fd655fcb1b5b"
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "GET",
+    "path" : "/api/v1/billing/prescription-adjustments/6da7feed-cf8c-4878-9d2c-c1bf4ec98ada/refunds-due",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:22.148804900Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "eventType" : "prescription.cancelled",
+        "status" : "APPLIED",
+        "rejectionCode" : null,
+        "refundsDue" : [ {
+          "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+          "amount" : 10000.0,
+          "currency" : "VND"
+        } ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:22.143754900Z",
+      "correlationId" : null
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "POST",
+    "path" : "/api/v1/billing/transactions/3aec2677-323b-4e6a-a0b8-f711c93146f9/refunds",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:34:22.260358700Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "refundTransactionId" : "753163c4-59fe-4fcc-a5fd-85e972e3dde1",
+        "originalTransactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "32bd3597-c6f5-4a93-be89-c53547ddce7e",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 10000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:34:22.175125Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:22.256454400Z",
+      "correlationId" : "fb525cd4-dd6e-4be3-8fd0-a09365714742"
+    }
+  }, {
+    "source" : "BILLING_REFUND",
+    "method" : "GET",
+    "path" : "/api/v1/billing/prescription-adjustments/6da7feed-cf8c-4878-9d2c-c1bf4ec98ada/refunds-due",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:22.326765300Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "eventType" : "prescription.cancelled",
+        "status" : "APPLIED",
+        "rejectionCode" : null,
+        "refundsDue" : [ ]
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:22.322627500Z",
+      "correlationId" : null
+    }
+  } ]
+}

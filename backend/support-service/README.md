@@ -149,3 +149,20 @@ for source fingerprints, actual evidence and limitations. The retained pre-Flywa
 schema is not certified to run unchanged with the new artifact. Production activation,
 another environment's historical data, coverage and the separate paid Lab workflow remain
 outside this local rehearsal.
+
+### Isolated FE Report calendar acceptance
+
+The existing `six-service-acceptance` profile can additionally opt into a fresh finite
+public-workflow Report scenario. Set `MEDIFLOW_FE_REFUND_ACCEPTANCE=true` and
+`MEDIFLOW_FE_REPORT_CALENDAR_ACCEPTANCE=true` before running the profile. Optionally set
+`MEDIFLOW_FE_REPORT_BROWSER_HOLD=true` to retain the runtime for up to45 minutes; write
+`target/six-service-acceptance/report-browser-stop` after browser evidence is saved.
+`report-browser-manifest.json` supplies the ephemeral Gateway URL and test account names.
+
+This test seals five public command journals after stopping source writers, reconciles the
+projection, and uses the real ADMIN approval API. A separate helper JAR built from test classes
+advances **only Report's injected application Clock** to the next calendar year. Production
+Support JAR, JWT/system/source clocks and default gates are unchanged. The helper is loaded
+only by this opt-in harness using PropertiesLauncher; it is not a production configuration.
+Never use these finite test journals as source-owner production completeness evidence.
+Production approval still requires reviewed exports/cursors for the actual closed period.

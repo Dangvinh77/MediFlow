@@ -1,0 +1,237 @@
+{
+  "provenance" : "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+  "scope" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+  "fromDate" : "2026-01-01",
+  "toDate" : "2026-12-31",
+  "source" : "PHARMACY",
+  "zoneId" : "Asia/Bangkok",
+  "currency" : "VND",
+  "allWritersStopped" : true,
+  "wallTimeSealedAt" : "2026-10-21T06:34:25.955997500Z",
+  "completedOperationEvidenceRows" : 2,
+  "receipts" : [ {
+    "source" : "PHARMACY",
+    "method" : "POST",
+    "path" : "/api/v1/pharmacy/drugs",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:33:10.642913500Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "drugId" : "9a341b38-4044-430a-9ad9-90353431e075",
+        "drugName" : "Six deployment acceptance drug",
+        "activeIngredient" : null,
+        "unit" : "tablet",
+        "price" : 10000,
+        "stockQuantity" : 20,
+        "expiryDate" : "2027-10-21",
+        "manufacturer" : null,
+        "lowStockThreshold" : 0,
+        "createdAt" : "2026-10-21T06:33:10.604757Z",
+        "updatedAt" : "2026-10-21T06:33:10.604757Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:10.628415300Z",
+      "correlationId" : "0c18448b-cd50-4d82-be03-0a88820a0ee2"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "POST",
+    "path" : "/api/v1/pharmacy/prescriptions",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:33:11.323739700Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "recordId" : "0fd08a8e-68fa-4d23-86a8-f5d3f77c573c",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "doctorId" : "9bfeabfc-132f-4290-ac42-22905a50c328",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "prescribedDate" : "2026-10-21",
+        "totalAmount" : 30000.0,
+        "lines" : [ {
+          "lineId" : "84f98352-8e89-406f-827d-ed496ccca783",
+          "drugId" : "9a341b38-4044-430a-9ad9-90353431e075",
+          "drugName" : "Six deployment acceptance drug",
+          "quantity" : 3,
+          "unitPrice" : 10000.0,
+          "dosage" : "Acceptance only",
+          "lineTotal" : 30000.0
+        } ],
+        "status" : "ACTIVE",
+        "dispenseStatus" : "PENDING",
+        "paymentConfirmed" : false,
+        "cancelledAt" : null,
+        "cancelledBy" : null,
+        "cancellationReason" : null,
+        "createdAt" : "2026-10-21T06:33:11.195626Z",
+        "updatedAt" : "2026-10-21T06:33:11.195626Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:11.314910600Z",
+      "correlationId" : "c315d560-f741-4299-89f8-d036ddf70695"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "POST",
+    "path" : "/api/v1/pharmacy/prescriptions",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:33:11.424368300Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "recordId" : "0fd08a8e-68fa-4d23-86a8-f5d3f77c573c",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "doctorId" : "9bfeabfc-132f-4290-ac42-22905a50c328",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "prescribedDate" : "2026-10-21",
+        "totalAmount" : 30000.0,
+        "lines" : [ {
+          "lineId" : "84f98352-8e89-406f-827d-ed496ccca783",
+          "drugId" : "9a341b38-4044-430a-9ad9-90353431e075",
+          "drugName" : "Six deployment acceptance drug",
+          "quantity" : 3,
+          "unitPrice" : 10000.0,
+          "dosage" : "Acceptance only",
+          "lineTotal" : 30000.0
+        } ],
+        "status" : "ACTIVE",
+        "dispenseStatus" : "PENDING",
+        "paymentConfirmed" : false,
+        "cancelledAt" : null,
+        "cancelledBy" : null,
+        "cancellationReason" : null,
+        "createdAt" : "2026-10-21T06:33:11.195626Z",
+        "updatedAt" : "2026-10-21T06:33:11.195626Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:11.419924300Z",
+      "correlationId" : "da792baf-7935-44f6-ab06-c54ebdbfb27f"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "PUT",
+    "path" : "/api/v1/pharmacy/prescriptions/2f7f53d3-115d-431d-b02b-6726ec29291e/dispense",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:34.409420300Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "dispenseId" : "134630ca-a266-4af9-b02b-8c59b61e3c7f",
+        "prescriptionId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "status" : "DISPENSED",
+        "dispensedAt" : "2026-10-21T06:33:34.298672200Z",
+        "dispensedBy" : "08295730-1eac-43aa-8ee4-c869597ae33a",
+        "dispensedActorType" : "ACCOUNT",
+        "failureReason" : null
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:34.397985800Z",
+      "correlationId" : "9f677ab7-ce84-41db-9532-bccd07d32323"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "PUT",
+    "path" : "/api/v1/pharmacy/prescriptions/2f7f53d3-115d-431d-b02b-6726ec29291e/dispense",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:34.467722200Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "dispenseId" : "134630ca-a266-4af9-b02b-8c59b61e3c7f",
+        "prescriptionId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "status" : "DISPENSED",
+        "dispensedAt" : "2026-10-21T06:33:34.298672200Z",
+        "dispensedBy" : "08295730-1eac-43aa-8ee4-c869597ae33a",
+        "dispensedActorType" : "ACCOUNT",
+        "failureReason" : null
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:34.463441500Z",
+      "correlationId" : "50edeb67-7bae-4943-a3e6-418e547cac42"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "POST",
+    "path" : "/api/v1/pharmacy/drugs",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:34:19.505537300Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "drugId" : "c27efe87-9b06-443a-bbdf-f094045a59c1",
+        "drugName" : "Refund acceptance drug",
+        "activeIngredient" : null,
+        "unit" : "tablet",
+        "price" : 10000,
+        "stockQuantity" : 20,
+        "expiryDate" : "2027-10-21",
+        "manufacturer" : null,
+        "lowStockThreshold" : 0,
+        "createdAt" : "2026-10-21T06:34:19.487088Z",
+        "updatedAt" : "2026-10-21T06:34:19.487088Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:19.496704800Z",
+      "correlationId" : "5ce89a4d-7b4b-4674-a6c3-a345dc491a5e"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "POST",
+    "path" : "/api/v1/pharmacy/prescriptions",
+    "status" : 201,
+    "recordedAt" : "2026-10-21T06:34:20.049387100Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "recordId" : "0fd08a8e-68fa-4d23-86a8-f5d3f77c573c",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "doctorId" : "9bfeabfc-132f-4290-ac42-22905a50c328",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "prescribedDate" : "2026-10-21",
+        "totalAmount" : 30000.0,
+        "lines" : [ {
+          "lineId" : "6e15d4b3-acb8-4e1f-9247-117ba496d535",
+          "drugId" : "c27efe87-9b06-443a-bbdf-f094045a59c1",
+          "drugName" : "Refund acceptance drug",
+          "quantity" : 3,
+          "unitPrice" : 10000.0,
+          "dosage" : "Refund acceptance",
+          "lineTotal" : 30000.0
+        } ],
+        "status" : "ACTIVE",
+        "dispenseStatus" : "PENDING",
+        "paymentConfirmed" : false,
+        "cancelledAt" : null,
+        "cancelledBy" : null,
+        "cancellationReason" : null,
+        "createdAt" : "2026-10-21T06:34:19.970371Z",
+        "updatedAt" : "2026-10-21T06:34:19.970371Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:20.039745500Z",
+      "correlationId" : "96623d0d-15c3-4a08-9b7b-ca0e23dddf12"
+    }
+  }, {
+    "source" : "PHARMACY",
+    "method" : "PUT",
+    "path" : "/api/v1/pharmacy/prescriptions/6da7feed-cf8c-4878-9d2c-c1bf4ec98ada/cancel",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:20.823220200Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "status" : "CANCELLED",
+        "releasedReservations" : 1,
+        "cancelledAt" : "2026-10-21T06:34:20.792190200Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:20.817784Z",
+      "correlationId" : "1234720a-23f2-457d-9f2e-afa2e9713eb9"
+    }
+  } ]
+}

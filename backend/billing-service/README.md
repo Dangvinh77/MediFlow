@@ -121,6 +121,27 @@ Swagger UI: http://localhost:8086/swagger-ui.html
 
 ## Events
 
+### New outpatient refund publication (default OFF)
+
+The additional Spring property `mediflow.billing.outpatient-refund-publication.enabled`
+defaults to false. Enabling it requires a nonblank `acceptance-reference` under the same
+prefix (maximum 200 characters). Existing refund/ledger command gates and roles still apply.
+Only a **new completed refund** of a request already enrolled in the immutable outpatient
+publication cohort can publish `payment.refunded` V1. The original JSON payload and public
+redacted reason remain unchanged. Admission/deposit facts and requests outside that cohort
+remain HELD.
+
+V24 records the per-refund approval and outbox fact in the refund transaction. The SQL fence
+checks the authoritative original/refund/account/request/target/charge, amount, currency and
+completion timestamps. Failed publication validation rolls back the business transaction.
+Retry returns the original refund without another outbox fact or approval. Toggling this
+property never releases historical HELD facts; retroactive approval and audit mutation are
+rejected. This does not enable a deployment gate or start a rollout.
+
+For isolated six-service acceptance only, `MEDIFLOW_FE_REFUND_ACCEPTANCE=true` opts the
+packaged test harness into this producer flag and the existing Notification refund consumer.
+The normal harness leaves both off and continues checking that refund facts are held.
+
 - **Publish:** `invoice.created`, `payment.completed`, `payment.failed`
 - **Subscribe:** `prescription.created`, `lab.result.created`, `medicalrecord.created`, `appointment.status.changed`
 - **Opt-in planned Surgery charges:** `surgery.case.created` (not upstream `surgery.requested`).

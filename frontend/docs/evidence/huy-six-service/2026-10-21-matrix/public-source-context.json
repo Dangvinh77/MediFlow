@@ -1,0 +1,47 @@
+{
+  "gateway": "http://127.0.0.1:63181",
+  "unique": "7366928c712b",
+  "sourceRecord": {
+    "recordId": "a9da3ef1-acf5-4a1d-99fa-22efe85b8b90",
+    "patientId": "866f9c28-653e-4b39-8986-9409a511e9e2",
+    "doctorId": "7b799bf0-1982-4635-a082-b397bfe0c873",
+    "departmentId": "f430c241-8488-4a00-9839-514fd63b96d7",
+    "examinationDate": "2026-10-21",
+    "symptoms": null,
+    "appointmentId": "3be7eec2-874d-4d06-b132-d4608c161124",
+    "diagnoses": [],
+    "createdAt": "2026-10-21T02:14:39.849597Z",
+    "updatedAt": null,
+    "status": "OPEN",
+    "disposition": null,
+    "dispositionNote": null,
+    "completedAt": null
+  },
+  "sourceOrder": {
+    "sourceOrderId": "5aebeb40-dca9-4f79-b3a2-a52bdc5c2dd2",
+    "recordId": "a9da3ef1-acf5-4a1d-99fa-22efe85b8b90",
+    "patientId": "866f9c28-653e-4b39-8986-9409a511e9e2",
+    "requestingDoctorId": "7b799bf0-1982-4635-a082-b397bfe0c873",
+    "requestingDepartmentId": "f430c241-8488-4a00-9839-514fd63b96d7",
+    "careEpisodeType": "OUTPATIENT_VISIT",
+    "careEpisodeId": "3be7eec2-874d-4d06-b132-d4608c161124",
+    "labType": "CBC",
+    "requestedDate": "2026-10-21",
+    "priceCode": "LAB",
+    "orderedAt": "2026-10-21T02:14:40.903958900Z"
+  },
+  "drug": {
+    "drugId": "1cf667e4-415e-4ccc-83c2-f05f5180d7f2",
+    "drugName": "FE acceptance 7366928c712b",
+    "activeIngredient": null,
+    "unit": "tablet",
+    "price": 10000,
+    "stockQuantity": 40,
+    "expiryDate": "2027-10-21",
+    "manufacturer": null,
+    "lowStockThreshold": 0,
+    "createdAt": "2026-10-21T02:14:41.366067Z",
+    "updatedAt": "2026-10-21T02:14:41.366067Z"
+  },
+  "pricePolicy": "mediflow.billing.prescription-charges.allowed-price-codes=DRUG"
+}

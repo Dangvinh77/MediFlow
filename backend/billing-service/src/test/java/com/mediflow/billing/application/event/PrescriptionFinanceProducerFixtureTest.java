@@ -91,7 +91,8 @@ class PrescriptionFinanceProducerFixtureTest {
         new com.mediflow.billing.application.service.LedgerRefundService(payments, refunds, events,
                 Mappers.getMapper(LedgerPaymentMapper.class), Clock.fixed(at, ZoneOffset.UTC))
                 .refund(originalId, command, UUID.randomUUID(), expected.path("correlationId").asText());
-        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(accountId), capture.capture());
+        var capture = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        verify(events).appendForOutpatientRequest(eq(accountId), eq(request), capture.capture());
         var actual = (ObjectNode)mapper.valueToTree(capture.getValue()); actual.set("eventId", expected.get("eventId"));
         ((ObjectNode)actual.path("payload")).set("refundTransactionId", p.get("refundTransactionId"));
         assertThat(actual).isEqualTo(expected);
