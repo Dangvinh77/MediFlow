@@ -66,6 +66,11 @@ class SixServiceOutpatientAcceptanceIT {
 
     private Map<String, String> supportEnvironment(String eureka) {
         var env = new java.util.HashMap<>(singleStore("report", eureka));
+        if (reportCalendarAcceptance()) {
+            env.put("MEDIFLOW_FE_REPORT_TIME_FILE", work.resolve("report-test-clock.txt").toAbsolutePath().toString());
+            env.put("MEDIFLOW_REPORT_OUTPATIENT_COVERAGE_ACCEPTANCE_ENABLED", "true");
+        }
+        env.put("MEDIFLOW_NOTIFICATION_REFUND_CONSUMER_ENABLED", Boolean.toString(refundPublicationAcceptance()));
         for (String context : List.of("REPORT", "NOTIFICATION")) {
             env.put("MEDIFLOW_" + context + "_DB_URL", databaseUrl("mediflow_" + context.toLowerCase(Locale.ROOT)));
             env.put("MEDIFLOW_" + context + "_DB_USER", POSTGRES.getUsername());
@@ -208,10 +213,12 @@ class SixServiceOutpatientAcceptanceIT {
     }
 
     private HttpResponse<String> createRx(String gateway, String token, String key, String body) throws Exception {
-        return HTTP.send(HttpRequest.newBuilder(URI.create(gateway + "/api/v1/pharmacy/prescriptions"))
+        var response = HTTP.send(HttpRequest.newBuilder(URI.create(gateway + "/api/v1/pharmacy/prescriptions"))
                 .timeout(Duration.ofSeconds(30)).header("Authorization", "Bearer " + token)
                 .header("X-Correlation-Id", UUID.randomUUID().toString()).header("Content-Type", "application/json")
                 .header("Idempotency-Key", key).POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        retainPublicReceipt("POST", "/api/v1/pharmacy/prescriptions", response);
+        return response;
     }
 
     private String scopedToken(String role, String type, UUID patient) {
@@ -250,6 +257,10 @@ class SixServiceOutpatientAcceptanceIT {
         Path eurekaJar = requiredJar("eureka-server");
         Path billingJar = requiredJar("billing");
         Files.createDirectories(work);
+        if (reportCalendarAcceptance()) {
+            Files.deleteIfExists(work.resolve("report-test-clock.txt"));
+            Files.deleteIfExists(work.resolve("report-calendar-test-only.jar"));
+        }
         createDatabases();
 
         int eurekaPort = freePort();
@@ -332,6 +343,8 @@ class SixServiceOutpatientAcceptanceIT {
                     "--mediflow.billing.payment-request-discovery.enabled=true",
                     "--mediflow.billing.exam-charge-consumer.enabled=true",
                     "--mediflow.billing.outpatient-publication.enabled=true",
+                    "--mediflow.billing.outpatient-refund-publication.enabled=" + refundPublicationAcceptance(),
+                    "--mediflow.billing.outpatient-refund-publication.acceptance-reference=Huy-isolated-refund-acceptance",
                     "--mediflow.billing.outpatient-publication.purposes=EXAM,PRESCRIPTION",
                     "--mediflow.billing.prescription-charge-consumer.enabled=true",
                     "--mediflow.billing.prescription-charges.allowed-price-codes=DRUG",
@@ -346,6 +359,7 @@ class SixServiceOutpatientAcceptanceIT {
             processes.add(start("support", requiredJar("support"), supportPort, supportEnvironment(eurekaUrl),
                     "--mediflow.features.care-finance-v2=true", "--mediflow.report.outpatient-consumer.enabled=true",
                     "--mediflow.report.outpatient-read.enabled=true", "--mediflow.notification.care-v1.enabled=true",
+                    "--mediflow.notification.refund-consumer.enabled=" + refundPublicationAcceptance(),
                     "--mediflow.notification.outpatient-prescription-consumer.enabled=true"));
             awaitHealthy(pharmacyPort, "pharmacy"); awaitRegistered(eurekaPort, "PHARMACY-SERVICE", "pharmacy");
             awaitHealthy(labPort, "lab"); awaitRegistered(eurekaPort, "LAB-SERVICE", "lab");
@@ -485,6 +499,9 @@ class SixServiceOutpatientAcceptanceIT {
                     patientId, doctorId, departmentId, appointmentId, recordId, supportPort, pharmacyPort, billingPort, eurekaUrl, processes);
             exerciseRefund(gateway, setupAdmin, doctorToken, cashierToken,
                     patientId, doctorId, departmentId, appointmentId, recordId);
+            if (reportCalendarAcceptance()) {
+                exerciseAcceptedReport(gateway, setupAdmin, doctorToken, departmentId, unique);
+            }
             Path evidence = Path.of("target", "six-service-paid-exam-evidence.json");
             Files.createDirectories(evidence.getParent());
             Files.writeString(evidence, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(Map.of(
@@ -814,14 +831,169 @@ class SixServiceOutpatientAcceptanceIT {
                 .isEqualByComparingTo("30000.00");
         assertThat(count(store("billing"), """
                 SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'
-                  AND payload::jsonb->'payload'->>'originalTransactionId'=? AND NOT publication_enabled
-                """, original.toString())).isEqualTo(2);
+                  AND payload::jsonb->'payload'->>'originalTransactionId'=? AND publication_enabled=?
+                """, original.toString(), refundPublicationAcceptance())).isEqualTo(2);
+        if (refundPublicationAcceptance()) {
+            await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+                assertThat(count(store("billing"), """
+                        SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'
+                          AND payload::jsonb->'payload'->>'originalTransactionId'=?
+                          AND publication_enabled AND published_at IS NOT NULL
+                        """, original.toString())).isEqualTo(2);
+                assertThat(count(store("notification"), """
+                        SELECT count(*) FROM notification WHERE template_key='PAYMENT_REFUNDED' AND source_id IN (?,?)
+                        """, refundId, UUID.fromString(last.path("refundTransactionId").asText()))).isEqualTo(2);
+                assertThat(count(store("report"), """
+                        SELECT count(*) FROM report_cash_refund WHERE original_transaction_id=? AND state='APPLIED'
+                        """, original)).isEqualTo(2);
+            });
+        }
         assertThat(store("pharmacy").queryForObject("SELECT stock_quantity FROM drug WHERE drug_id=?", Integer.class, drugId)).isEqualTo(20);
         assertThat(request(gateway, "PUT", "/api/v1/pharmacy/prescriptions/" + rx + "/dispense", admin, null).statusCode()).isEqualTo(422);
         Files.writeString(work.resolve("gateway-refund-evidence.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
                 Map.of("prescriptionId", rx, "originalPayment", payment, "firstRefund", refund, "finalRefund", last,
                         "raceStatuses", List.of(201, 422), "signedActorVerified", true, "correlationId", correlation,
                         "remainingObligations", 0, "stock", 20)));
+    }
+
+    private static boolean refundPublicationAcceptance() {
+        return "true".equalsIgnoreCase(System.getenv("MEDIFLOW_FE_REFUND_ACCEPTANCE"));
+    }
+
+    private static boolean reportCalendarAcceptance() {
+        return "true".equalsIgnoreCase(System.getenv("MEDIFLOW_FE_REPORT_CALENDAR_ACCEPTANCE"));
+    }
+
+    private final List<Map<String,Object>> publicReceipts = java.util.Collections.synchronizedList(new ArrayList<>());
+
+    private void retainPublicReceipt(String method, String path, HttpResponse<String> response) throws IOException {
+        if (!reportCalendarAcceptance() || response.statusCode() < 200 || response.statusCode() >= 300) return;
+        String source = path.startsWith("/api/v1/billing/")
+                ? (path.contains("/refund") ? "BILLING_REFUND" : "BILLING_CASH")
+                : path.startsWith("/api/v1/pharmacy/") ? "PHARMACY"
+                : path.startsWith("/api/v1/appointments") || path.startsWith("/api/v1/records") ? "CLINICAL"
+                : path.startsWith("/api/v1/lab/") ? "LAB" : null;
+        if (source != null) publicReceipts.add(object("source", source, "method", method, "path", path,
+                "status", response.statusCode(), "recordedAt", Instant.now().toString(),
+                "response", JSON.readTree(response.body())));
+    }
+
+    /** Finite fresh-container scenario, not production source completeness or historical cutover. */
+    private void exerciseAcceptedReport(String gateway, String bootstrap, String doctor,
+            UUID department, String unique) throws Exception {
+        assertThat(refundPublicationAcceptance()).as("calendar acceptance needs real refund delivery").isTrue();
+        LocalDate day = LocalDate.now(java.time.ZoneId.of("Asia/Bangkok"));
+        int year = day.getYear();
+        UUID staff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-admin");
+        UUID managerStaff = createStaff(gateway, bootstrap, department, unique, "ADMINISTRATIVE", "report-manager");
+        String adminName = "report-admin-" + unique, managerName = "report-manager-" + unique;
+        createAccount(gateway, bootstrap, adminName, "ADMIN", staff);
+        createAccount(gateway, bootstrap, managerName, "MANAGER", managerStaff);
+        String admin = login(gateway, adminName), manager = login(gateway, managerName);
+        String scope = "&departmentId=" + department;
+        String daily = "/api/v1/reports/outpatient/daily?fromDate=" + day + "&toDate=" + day + scope;
+        String monthly = "/api/v1/reports/outpatient/monthly?year=" + year + scope;
+        var checks = new ArrayList<Map<String,Object>>();
+        recordCheck(checks, "missing-coverage-before-approval", request(gateway,"GET",daily,admin,null),404);
+        String previewPath = "/api/v1/reports/outpatient/coverage/preview?fromDate=" + year
+                + "-01-01&toDate=" + year + "-12-31" + scope;
+        JsonNode[] snapshot = new JsonNode[1];
+        var expectedRows = Map.of("CLINICAL",0,"LAB",0,"PHARMACY",2,"BILLING_CASH",3,"BILLING_REFUND",2);
+        await().atMost(Duration.ofSeconds(45)).untilAsserted(() -> {
+            snapshot[0] = data(request(gateway,"GET",previewPath,admin,null));
+            assertThat(snapshot[0].path("pendingOrInvalid").asBoolean()).isFalse();
+            expectedRows.forEach((source,count) -> assertThat(snapshot[0].path("sources").path(source)
+                    .path("rowCount").asInt()).as(source).isEqualTo(count));
+        });
+        // Freeze all source writers. Only Core identity, Gateway and Support remain for browser reads.
+        for (String source : List.of("clinical","lab","pharmacy","billing")) stop(processByName(source));
+        List<Map<String,Object>> receipts;
+        synchronized (publicReceipts) { receipts = List.copyOf(publicReceipts); }
+        var payments = new java.util.TreeMap<String,JsonNode>();
+        var refunds = new java.util.TreeMap<String,JsonNode>();
+        for (var receipt : receipts) {
+            JsonNode value = ((JsonNode)receipt.get("response")).path("data");
+            if (receipt.get("method").equals("POST") && ((String)receipt.get("path")).endsWith("/payments")
+                    && value.hasNonNull("transactionId")) payments.put(value.path("transactionId").asText(),value);
+            if (receipt.get("method").equals("POST") && ((String)receipt.get("path")).endsWith("/refunds")
+                    && value.hasNonNull("refundTransactionId")) refunds.put(value.path("refundTransactionId").asText(),value);
+        }
+        assertThat(payments).hasSize(3); assertThat(refunds).hasSize(2);
+        var cash = payments.values().stream().map(v -> v.path("amount").decimalValue())
+                .reduce(java.math.BigDecimal.ZERO,java.math.BigDecimal::add);
+        var refundTotal = refunds.values().stream().map(v -> v.path("amount").decimalValue())
+                .reduce(java.math.BigDecimal.ZERO,java.math.BigDecimal::add);
+        assertThat(cash).isEqualByComparingTo("160000.00");
+        assertThat(refundTotal).isEqualByComparingTo("30000.00");
+        Path exports = work.resolve("report-source-exports"); Files.createDirectories(exports);
+        var proofs = new java.util.TreeMap<String,Object>();
+        for (String source : expectedRows.keySet()) {
+            Path file = exports.resolve(source + ".json");
+            String bytes = JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object(
+                    "provenance", "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+                    "scope", department, "fromDate", year + "-01-01", "toDate", year + "-12-31",
+                    "source", source, "zoneId", "Asia/Bangkok", "currency", "VND",
+                    "allWritersStopped", true, "wallTimeSealedAt", Instant.now().toString(),
+                    "completedOperationEvidenceRows", expectedRows.get(source),
+                    "receipts", receipts.stream().filter(r -> source.equals(r.get("source"))).toList()));
+            Files.writeString(file,bytes);
+            String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(bytes.getBytes(StandardCharsets.UTF_8)));
+            proofs.put(source,object("reference","ISOLATED_CALENDAR_TEST:" + unique + "/" + source + ".json",
+                    "exportSha256",hash,"rowCount",expectedRows.get(source),
+                    "localFingerprint",snapshot[0].path("sources").path(source).path("fingerprint").asText()));
+        }
+        // Advance only an injected test Clock; production uses the original system clock and guards.
+        Instant calendarEnd = LocalDate.of(year+1,1,2).atStartOfDay(java.time.ZoneId.of("Asia/Bangkok")).toInstant();
+        Files.writeString(work.resolve("report-test-clock.txt"),calendarEnd.toString());
+        var approval = object("requestId",UUID.randomUUID(),"fromDate",year+"-01-01","toDate",year+"-12-31",
+                "departmentId",department,"zoneId","Asia/Bangkok","currency","VND","sources",proofs,
+                "sourceObservedAt",calendarEnd,"reconciledAt",calendarEnd,
+                "acceptanceReference","ISOLATED_CALENDAR_TEST:"+unique+":sealed-public-receipts",
+                "expectedFingerprint",snapshot[0].path("fingerprint").asText());
+        String approvalBytes = JSON.writeValueAsString(approval);
+        String approvalPath = "/api/v1/reports/outpatient/coverage/acceptances";
+        recordCheck(checks,"manager-cannot-approve",request(gateway,"POST",approvalPath,manager,approvalBytes),403);
+        HttpResponse<String> accepted = request(gateway,"POST",approvalPath,admin,approvalBytes);
+        recordCheck(checks,"admin-accepts-reviewed-test-scenario",accepted,200);
+        assertThat(data(request(gateway,"POST",approvalPath,admin,approvalBytes))).isEqualTo(data(accepted));
+        for (String token : List.of(admin,manager)) {
+            HttpResponse<String> result = request(gateway,"GET",daily,token,null);
+            recordCheck(checks,"authorized-daily",result,200);
+            JsonNode period = data(result).path("periods").get(0);
+            assertReportPeriod(period,cash,refundTotal);
+            HttpResponse<String> months = request(gateway,"GET",monthly,token,null);
+            recordCheck(checks,"authorized-monthly",months,200);
+            assertThat(data(months).path("periods")).hasSize(12);
+            assertReportPeriod(data(months).path("periods").get(day.getMonthValue()-1),cash,refundTotal);
+        }
+        recordCheck(checks,"doctor-daily-denied",request(gateway,"GET",daily,doctor,null),403);
+        recordCheck(checks,"doctor-monthly-denied",request(gateway,"GET",monthly,doctor,null),403);
+        recordCheck(checks,"unapproved-scope-unavailable",request(gateway,"GET",daily.replace(scope,""),admin,null),404);
+        Files.writeString(work.resolve("report-calendar-api.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                object("scenario","ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE","wallTime",Instant.now(),
+                        "reportApplicationClock",calendarEnd,"systemAndJwtClocksUnchanged",true,
+                        "approval",approval,"checks",checks)));
+        Files.writeString(work.resolve("report-browser-manifest.json"),JSON.writerWithDefaultPrettyPrinter().writeValueAsString(
+                object("gateway",gateway,"unique",unique,"ADMIN",adminName,"MANAGER",managerName,
+                        "DOCTOR","doctor-"+unique,"departmentId",department,"date",day,"year",year,
+                        "reportApplicationClock",calendarEnd,"dailyPath",daily,"monthlyPath",monthly)));
+        if ("true".equals(System.getenv("MEDIFLOW_FE_REPORT_BROWSER_HOLD"))) {
+            Path stopFile = work.resolve("report-browser-stop"); Files.deleteIfExists(stopFile);
+            long deadline = System.nanoTime()+Duration.ofMinutes(45).toNanos();
+            while (!Files.exists(stopFile) && System.nanoTime()<deadline) Thread.sleep(500);
+            assertThat(Files.exists(stopFile)).as("browser acceptance completed before timeout").isTrue();
+        }
+    }
+
+    private void assertReportPeriod(JsonNode period, java.math.BigDecimal cash, java.math.BigDecimal refunds) {
+        assertThat(period.path("completedVisits").asInt()).isZero();
+        assertThat(period.path("labTests").asInt()).isZero();
+        assertThat(period.path("dispensedPrescriptions").asInt()).isEqualTo(1);
+        assertThat(period.path("dispensedUnits").asInt()).isEqualTo(3);
+        assertThat(period.path("cashReceived").decimalValue()).isEqualByComparingTo(cash);
+        assertThat(period.path("refunds").decimalValue()).isEqualByComparingTo(refunds);
+        assertThat(period.path("netCash").decimalValue()).isEqualByComparingTo(cash.subtract(refunds));
     }
 
     private String refundBody(String key, int amount) throws IOException {
@@ -986,6 +1158,7 @@ class SixServiceOutpatientAcceptanceIT {
             try {
                 HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
                 if (!gatewayRouteUnavailable(response) || System.nanoTime() >= deadline) {
+                    retainPublicReceipt(method, path, response);
                     return response;
                 }
             } catch (ConnectException | HttpConnectTimeoutException exception) {
@@ -1050,6 +1223,27 @@ class SixServiceOutpatientAcceptanceIT {
                 "--eureka.instance.ip-address=127.0.0.1",
                 "--spring.main.banner-mode=off", "--eureka.client.registry-fetch-interval-seconds=1",
                 "--eureka.instance.lease-renewal-interval-in-seconds=2", "--eureka.client.initial-instance-info-replication-interval-seconds=1"));
+        if (name.equals("support") && reportCalendarAcceptance()) {
+            Path fixtureJar = work.resolve("report-calendar-test-only.jar").toAbsolutePath();
+            if (!Files.exists(fixtureJar)) {
+                String resource = "com/mediflow/acceptance/ReportCalendarAcceptanceInitializer";
+                try (var output = new java.util.jar.JarOutputStream(Files.newOutputStream(fixtureJar))) {
+                    for (String suffix : List.of(".class", "$1.class")) {
+                        String entry = resource + suffix;
+                        output.putNextEntry(new java.util.jar.JarEntry(entry));
+                        try (var input = getClass().getClassLoader().getResourceAsStream(entry)) {
+                            if (input == null) throw new IOException("Missing test clock class " + entry);
+                            input.transferTo(output);
+                        }
+                        output.closeEntry();
+                    }
+                }
+            }
+            command.subList(2, 4).clear();
+            command.addAll(2, List.of("-Dloader.path=" + fixtureJar, "-cp", jar.toString(),
+                    "org.springframework.boot.loader.launch.PropertiesLauncher"));
+            command.add("--context.initializer.classes=com.mediflow.acceptance.ReportCalendarAcceptanceInitializer");
+        }
         if (environment.containsKey("EUREKA_DEFAULT_ZONE"))
             command.add("--eureka.client.service-url.defaultZone=" + environment.get("EUREKA_DEFAULT_ZONE"));
         command.addAll(List.of(arguments));

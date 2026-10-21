@@ -32,10 +32,13 @@ No automatic fallback or zero-fill follows an error. Source locks have a 2s acqu
 and 10s statement budget; failure rolls the entire transaction back. Review/HTTP/file retrieval
 never runs while locks are held. Choose a quiet bounded operational window for approval.
 
-**Gateway dependency remains OPEN by explicit user assignment:** the current Gateway allowlist
-does not expose either new route. Its owner must add only these exact methods/paths for ADMIN,
-test denied roles/nested paths and route to Support. Do not call a service port from FE or loosen
-the existing read routes as a workaround. Module HTTP/DB verification does not prove Gateway acceptance.
+**Gateway source connected on 2026-10-21 by explicit user assignment:** the allowlist exposes
+only the two exact methods/paths above for ADMIN, using the existing Report route to Support.
+Gateway regression covers signed authentication, denied roles/methods/nested paths and HTTP
+pass-through to a synthetic Support peer. Packaged Gateway→Support ADMIN preview returned 200
+in the isolated 2026-10-21 acceptance runtime; this does not approve real source evidence.
+See `frontend/docs/evidence/huy-six-service/2026-10-21-close/README.md` for the current evidence
+and remaining source reconciliation. FE uses Gateway only.
 
 ## Review and approve
 

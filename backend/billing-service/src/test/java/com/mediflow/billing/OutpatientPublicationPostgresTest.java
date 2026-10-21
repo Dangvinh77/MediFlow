@@ -226,7 +226,7 @@ class OutpatientPublicationPostgresTest {
         UUID request = issueExam(cohort, appointment);
         UUID account = jdbc.queryForObject("SELECT account_id FROM PAYMENT_REQUEST WHERE payment_request_id=?", UUID.class, request);
         var outbox = new LedgerEventOutboxAdapter(jdbc, MAPPER);
-        var event = new LedgerIntegrationEvent(UUID.randomUUID(), "payment.refunded", 1, Instant.now(), "corr", "billing-service",
+        var event = new LedgerIntegrationEvent(UUID.randomUUID(), "payment.unsupported", 1, Instant.now(), "corr", "billing-service",
                 new LedgerIntegrationEvent.PaymentRefundedPayload(UUID.randomUUID(), UUID.randomUUID(), account, UUID.randomUUID(),
                         UUID.randomUUID(), "OUTPATIENT_VISIT", appointment, new BigDecimal("10"), "VND", "reason", Instant.now()));
         assertThatThrownBy(() -> tx().executeWithoutResult(status -> outbox.appendForOutpatientRequest(account, request, event)))
@@ -346,4 +346,48 @@ class OutpatientPublicationPostgresTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    void refundNeedsBothExactCohortAndSeparateGateAndRetryNeverReleasesHistory(boolean enrolled, boolean enabled) throws Exception {
+        var cohort = new OutpatientPublicationCohortAdapter(jdbc, new OutpatientMvpMode(true), properties(enrolled, List.of("EXAM")));
+        UUID request = issueExam(cohort, UUID.randomUUID());
+        jdbc.update("UPDATE payment_request SET expires_at=now()+interval '1 day' WHERE payment_request_id=?", request);
+        var repository = new LedgerPaymentRepositoryAdapter(jdbc);
+        var mapper = Mappers.getMapper(LedgerPaymentMapper.class);
+        var outbox = new LedgerEventOutboxAdapter(jdbc, MAPPER,
+                new com.mediflow.billing.infrastructure.config.OutpatientRefundPublicationProperties(enabled, enabled ? "refund-review-test" : null));
+        UUID actor = UUID.randomUUID();
+        var paid = tx().execute(status -> new LedgerPaymentService(repository, outbox, mapper, Clock.systemUTC())
+                .complete(request, new CompleteLedgerPaymentRequest("pay", new BigDecimal("100000"), "VND", PaymentMethod.CASH, null), actor, "corr"));
+        var service = new com.mediflow.billing.application.service.LedgerRefundService(repository,
+                new com.mediflow.billing.infrastructure.persistence.adapter.LedgerRefundRepositoryAdapter(jdbc), outbox, mapper, Clock.systemUTC());
+        var command = new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("refund", new BigDecimal("10000"), "private reason", PaymentMethod.CASH);
+        var refund = tx().execute(status -> service.refund(paid.transactionId(), command, actor, "corr"));
+        var retry = tx().execute(status -> service.refund(paid.transactionId(), command, actor, "corr"));
+        assertThat(retry.refundTransactionId()).isEqualTo(refund.refundTransactionId());
+        var row = jdbc.queryForMap("SELECT * FROM billing_event_outbox WHERE routing_key='payment.refunded'");
+        assertThat(row.get("publication_enabled")).isEqualTo(enrolled && enabled);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM billing_outpatient_refund_publication", Integer.class)).isEqualTo(enrolled && enabled ? 1 : 0);
+        // A later gate toggle and the exact same business retry cannot release an earlier held fact.
+        var active = new com.mediflow.billing.application.service.LedgerRefundService(repository,
+                new com.mediflow.billing.infrastructure.persistence.adapter.LedgerRefundRepositoryAdapter(jdbc),
+                new LedgerEventOutboxAdapter(jdbc, MAPPER,
+                    new com.mediflow.billing.infrastructure.config.OutpatientRefundPublicationProperties(true, "later-review")), mapper, Clock.systemUTC());
+        tx().executeWithoutResult(status -> active.refund(paid.transactionId(), command, actor, "corr"));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM billing_event_outbox WHERE routing_key='payment.refunded'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT publication_enabled FROM billing_event_outbox WHERE routing_key='payment.refunded'", Boolean.class)).isEqualTo(enrolled && enabled);
+        if (enrolled && enabled) {
+            var envelope = (ObjectNode) MAPPER.readTree((String) row.get("payload"));
+            for (String field : List.of("patientId", "originalTransactionId", "amount", "completedAt")) {
+                var forged = envelope.deepCopy();
+                ((ObjectNode) forged.get("payload")).put(field, field.equals("amount") ? "99999" : UUID.randomUUID().toString());
+                assertThat(jdbc.queryForObject("SELECT billing_outpatient_event_matches(?,?,?,?,?,?)", Boolean.class,
+                        request, row.get("aggregate_id"), row.get("event_id"), "payment.refunded", forged.toString(), 1)).isFalse();
+            }
+        } else if (enrolled) {
+            assertThatThrownBy(() -> jdbc.update("INSERT INTO billing_outpatient_refund_publication VALUES (?,?,?,now())",
+                    refund.refundTransactionId(), request, "cannot-release-old-held"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        }
+    }
 }

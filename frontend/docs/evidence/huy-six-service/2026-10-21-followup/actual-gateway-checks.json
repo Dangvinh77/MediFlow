@@ -1,0 +1,457 @@
+{
+  "candidate": "42aab198 + Gateway coverage allowlist",
+  "gateway": "http://127.0.0.1:55066",
+  "unique": "51c02ae4258d",
+  "checks": [
+    {
+      "name": "create-refundable-prescription",
+      "method": "POST",
+      "path": "/api/v1/pharmacy/prescriptions",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "a2002c7c-33b8-4acb-aa0f-33d3d49cc675",
+          "recordId": "b4619b2a-b9e2-42ef-887e-8529fb54ff21",
+          "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+          "doctorId": "e0a01a39-0d95-4077-b61f-82dac1d8c076",
+          "departmentId": "5df63a4c-d78a-4629-83d7-7dcdbf194237",
+          "prescribedDate": "2026-10-21",
+          "totalAmount": 30000,
+          "lines": [
+            {
+              "lineId": "43bde349-8cf4-40a1-9d51-c5c9d29fd5ee",
+              "drugId": "a3fb1e13-a829-408b-b696-620db41253aa",
+              "drugName": "FE acceptance 51c02ae4258d",
+              "quantity": 3,
+              "unitPrice": 10000,
+              "dosage": "Disposable refund acceptance only",
+              "lineTotal": 30000
+            }
+          ],
+          "status": "ACTIVE",
+          "dispenseStatus": "PENDING",
+          "paymentConfirmed": false,
+          "cancelledAt": null,
+          "cancelledBy": null,
+          "cancellationReason": null,
+          "createdAt": "2026-10-21T01:58:12.468046Z",
+          "updatedAt": "2026-10-21T01:58:12.468046Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:12.508563900Z",
+        "correlationId": "350fe31f-e927-4929-bbfd-3a8308fc24bd"
+      }
+    },
+    {
+      "name": "cashier-payment",
+      "method": "POST",
+      "path": "/api/v1/billing/payment-requests/530ceb4c-dc93-410c-a6bf-388eae22a855/payments",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "transactionId": "2895faee-20f9-45e3-8353-8b20c5fbb1ae",
+          "accountId": "5d6fabc2-785d-4668-9655-d40bd2430666",
+          "paymentRequestId": "530ceb4c-dc93-410c-a6bf-388eae22a855",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T01:58:13.599814Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:13.626624300Z",
+        "correlationId": "625d976c-c377-4199-b44c-75ac4e1aac67"
+      }
+    },
+    {
+      "name": "cancel-paid-prescription",
+      "method": "PUT",
+      "path": "/api/v1/pharmacy/prescriptions/a2002c7c-33b8-4acb-aa0f-33d3d49cc675/cancel",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "a2002c7c-33b8-4acb-aa0f-33d3d49cc675",
+          "status": "CANCELLED",
+          "releasedReservations": 1,
+          "cancelledAt": "2026-10-21T01:58:13.663947900Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:13.687316Z",
+        "correlationId": "4be1a21c-8d8c-4215-931a-79dc65bdf377"
+      }
+    },
+    {
+      "name": "refund-due",
+      "method": "GET",
+      "path": "/api/v1/billing/prescription-adjustments/a2002c7c-33b8-4acb-aa0f-33d3d49cc675/refunds-due",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "prescriptionId": "a2002c7c-33b8-4acb-aa0f-33d3d49cc675",
+          "eventType": "prescription.cancelled",
+          "status": "APPLIED",
+          "rejectionCode": null,
+          "refundsDue": [
+            {
+              "originalTransactionId": "2895faee-20f9-45e3-8353-8b20c5fbb1ae",
+              "amount": 30000,
+              "currency": "VND"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:14.775313100Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "cashier-completed-refund",
+      "method": "POST",
+      "path": "/api/v1/billing/transactions/2895faee-20f9-45e3-8353-8b20c5fbb1ae/refunds",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "refundTransactionId": "94718735-d5a8-4b21-baa4-2142563522ab",
+          "originalTransactionId": "2895faee-20f9-45e3-8353-8b20c5fbb1ae",
+          "accountId": "5d6fabc2-785d-4668-9655-d40bd2430666",
+          "paymentRequestId": "530ceb4c-dc93-410c-a6bf-388eae22a855",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T01:58:14.811368Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:14.832170300Z",
+        "correlationId": "f1a80fdf-7937-4565-8472-bc7afd80d3f2"
+      }
+    },
+    {
+      "name": "same-key-refund-retry",
+      "method": "POST",
+      "path": "/api/v1/billing/transactions/2895faee-20f9-45e3-8353-8b20c5fbb1ae/refunds",
+      "status": 201,
+      "response": {
+        "success": true,
+        "data": {
+          "refundTransactionId": "94718735-d5a8-4b21-baa4-2142563522ab",
+          "originalTransactionId": "2895faee-20f9-45e3-8353-8b20c5fbb1ae",
+          "accountId": "5d6fabc2-785d-4668-9655-d40bd2430666",
+          "paymentRequestId": "530ceb4c-dc93-410c-a6bf-388eae22a855",
+          "classification": "SERVICE_PAYMENT",
+          "status": "COMPLETED",
+          "amount": 30000,
+          "currency": "VND",
+          "paymentMethod": "CASH",
+          "completedAt": "2026-10-21T01:58:14.811368Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:58:14.862393Z",
+        "correlationId": "f0359eff-ae59-4ba2-897a-44614f5ab16d"
+      }
+    },
+    {
+      "name": "signed-missing-patient-claim-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/undefined",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid access token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T01:59:02.418652800Z",
+        "correlationId": "88d01f9f-b70e-4de3-9060-4e641964b9a0"
+      }
+    },
+    {
+      "name": "enabled-packaged-coverage-preview",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/coverage/preview?fromDate=2026-10-20&toDate=2026-10-20",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "pendingOrInvalid": false,
+          "sources": {
+            "BILLING_CASH": {
+              "rowCount": 0,
+              "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "PHARMACY": {
+              "rowCount": 0,
+              "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "LAB": {
+              "rowCount": 0,
+              "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "BILLING_REFUND": {
+              "rowCount": 0,
+              "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "CLINICAL": {
+              "rowCount": 0,
+              "fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          }
+        },
+        "error": null,
+        "timestamp": "2026-10-21T01:59:03.060122600Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "unapproved-report-remains-unavailable",
+      "method": "GET",
+      "path": "/api/v1/reports/outpatient/daily?fromDate=2026-10-20&toDate=2026-10-20",
+      "status": 404,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "REPORT_NOT_FOUND",
+          "message": "Requested projection does not have accepted coverage",
+          "details": []
+        },
+        "timestamp": "2026-10-21T01:59:03.143847600Z",
+        "correlationId": "f61ebf6a-8822-45ce-a93c-bf3aec4a44ca"
+      }
+    },
+    {
+      "name": "negative-owner-history",
+      "method": "GET",
+      "path": "/api/v1/notifications/patient/4a3227e9-e941-4521-9d04-730a823b079c?page=0&size=100",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "content": [
+            {
+              "notificationId": "e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 30000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:58:14.206438Z",
+              "sentAt": "2026-10-21T01:58:14.206438Z"
+            },
+            {
+              "notificationId": "abfb5937-6918-46d1-97b0-e04c37959865",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:58:13.789236Z",
+              "sentAt": "2026-10-21T01:58:13.789236Z"
+            },
+            {
+              "notificationId": "d44ca4e9-ff29-46f6-a4eb-56bb5a41bed7",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:58:13.180092Z",
+              "sentAt": "2026-10-21T01:58:13.180092Z"
+            },
+            {
+              "notificationId": "a8ecb527-3635-4c10-b54e-022b088caf87",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:58:12.763555Z",
+              "sentAt": "2026-10-21T01:58:12.763555Z"
+            },
+            {
+              "notificationId": "e530196f-1d6c-436c-ac10-676c28349c6a",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đơn thuốc đã hủy",
+              "content": "Đơn thuốc đã được hủy. Vui lòng liên hệ nhà thuốc nếu cần hỗ trợ.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:57.512277Z",
+              "sentAt": "2026-10-21T01:57:57.512277Z"
+            },
+            {
+              "notificationId": "bb14ae08-cf4f-4788-8bb3-e0a56d39d574",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Yêu cầu thanh toán đơn thuốc",
+              "content": "Khoản thanh toán được yêu cầu: 30000 VND. Vui lòng liên hệ quầy thu ngân. Đây không phải biên nhận đã thanh toán và không xác nhận thuốc đã được cấp.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:56.899840Z",
+              "sentAt": "2026-10-21T01:57:56.899840Z"
+            },
+            {
+              "notificationId": "c9f9207b-6901-4ccf-affe-71b33d064bc1",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đã ghi nhận đơn thuốc",
+              "content": "Đơn thuốc đã được ghi nhận. Vui lòng xem viện phí và hướng dẫn nhận thuốc.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:56.457490Z",
+              "sentAt": "2026-10-21T01:57:56.457490Z"
+            },
+            {
+              "notificationId": "9864e2d2-f853-4b8c-8d0e-a4968c9b508a",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Đã ghi nhận thanh toán",
+              "content": "Đã ghi nhận khoản thanh toán 100000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:51.758364Z",
+              "sentAt": "2026-10-21T01:57:51.758364Z"
+            },
+            {
+              "notificationId": "cb5256f1-a4b4-43af-bc5e-972ce69e5e0f",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Nhắc lịch khám",
+              "content": "Bạn có lịch khám ngày 2026-10-22 lúc 09:00.",
+              "channel": "IN_APP",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:49.880929Z",
+              "sentAt": "2026-10-21T01:57:49.886430Z"
+            },
+            {
+              "notificationId": "8ea2ea15-2c60-44d8-9168-2d8f888c897e",
+              "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+              "title": "Chào mừng đến với MediFlow",
+              "content": "Xin chào Acceptance Patient 51c02ae4258d, hồ sơ của bạn đã được tạo.",
+              "channel": "EMAIL",
+              "status": "SENT",
+              "failureReason": null,
+              "createdAt": "2026-10-21T01:57:48.726048Z",
+              "sentAt": "2026-10-21T01:57:48.789093Z"
+            }
+          ],
+          "totalElements": 10,
+          "totalPages": 1,
+          "number": 0,
+          "size": 100
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:02:32.169883100Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "negative-positive-owner-detail",
+      "method": "GET",
+      "path": "/api/v1/notifications/e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "notificationId": "e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+          "patientId": "4a3227e9-e941-4521-9d04-730a823b079c",
+          "title": "Đã ghi nhận thanh toán",
+          "content": "Đã ghi nhận khoản thanh toán 30000 VND. Xem tài khoản viện phí để biết số tiền còn lại.",
+          "channel": "IN_APP",
+          "status": "SENT",
+          "failureReason": null,
+          "createdAt": "2026-10-21T01:58:14.206438Z",
+          "sentAt": "2026-10-21T01:58:14.206438Z"
+        },
+        "error": null,
+        "timestamp": "2026-10-21T02:02:32.325274100Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "signed-missing-patient-claim-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid access token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:02:32.334034400Z",
+        "correlationId": "6aef40bf-a5c9-4473-b404-ce888917c444"
+      }
+    },
+    {
+      "name": "signed-wrong-patient-claim-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+      "status": 403,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "NOTIFICATION_ACCESS_DENIED",
+          "message": "Không có quyền xem thông báo này",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:02:32.351265300Z",
+        "correlationId": null
+      }
+    },
+    {
+      "name": "signed-expired-access-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid or expired token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:02:32.357850100Z",
+        "correlationId": "a76c4d44-c0d2-4a16-9716-0c0b21406eec"
+      }
+    },
+    {
+      "name": "signed-no-exp-access-denied",
+      "method": "GET",
+      "path": "/api/v1/notifications/e11fa1be-9c1d-4186-8051-9e15ff1379f3",
+      "status": 401,
+      "response": {
+        "success": false,
+        "data": null,
+        "error": {
+          "code": "AUTH_UNAUTHORIZED",
+          "message": "Invalid or expired access token",
+          "details": []
+        },
+        "timestamp": "2026-10-21T02:02:32.361094200Z",
+        "correlationId": "d6affc14-e819-44f4-85a9-1c90c4d31591"
+      }
+    }
+  ],
+  "prescriptionId": "a2002c7c-33b8-4acb-aa0f-33d3d49cc675",
+  "originalTransactionId": "2895faee-20f9-45e3-8353-8b20c5fbb1ae",
+  "negativeTokenProvenance": "Deliberately malformed signed TEST credential using existing disposable harness signing key, matching backend CareReceiptIntegrationTest pattern; not a Core-issued user token. Subject equals target patient to detect forbidden accountId fallback. No token retained."
+}

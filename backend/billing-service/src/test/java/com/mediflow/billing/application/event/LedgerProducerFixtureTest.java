@@ -88,7 +88,12 @@ class LedgerProducerFixtureTest {
                 Clock.fixed(p.completedAt(), ZoneOffset.UTC)).refund(p.originalTransactionId(),
                 new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("refund", p.amount(), "Private audit reason", PaymentMethod.CASH),
                 id(9), id(9).toString());
-        var captured = ArgumentCaptor.forClass(LedgerIntegrationEvent.class); verify(events).appendHeld(eq(p.accountId()), captured.capture());
+        var captured = ArgumentCaptor.forClass(LedgerIntegrationEvent.class);
+        if (account.getCareEpisodeType() == CareEpisodeType.OUTPATIENT_VISIT) {
+            verify(events).appendForOutpatientRequest(eq(p.accountId()), eq(original.getPaymentRequestId()), captured.capture());
+        } else {
+            verify(events).appendHeld(eq(p.accountId()), captured.capture());
+        }
         var actual = mapper.<JsonNode>valueToTree(captured.getValue());
         ((com.fasterxml.jackson.databind.node.ObjectNode) actual).set("eventId", expected.path("eventId"));
         ((com.fasterxml.jackson.databind.node.ObjectNode) actual.path("payload")).set("refundTransactionId", expected.path("payload").path("refundTransactionId"));

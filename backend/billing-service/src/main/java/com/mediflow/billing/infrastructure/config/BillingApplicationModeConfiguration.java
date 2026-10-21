@@ -10,7 +10,7 @@ import org.springframework.core.env.Profiles;
 
 /** Mirrors clinical/lab's own outpatient-mvp mode detection (profile OR explicit property). */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(OutpatientPublicationProperties.class)
+@EnableConfigurationProperties({OutpatientPublicationProperties.class, OutpatientRefundPublicationProperties.class})
 public class BillingApplicationModeConfiguration {
 
     @Bean

@@ -1,0 +1,14 @@
+{
+  "scenario": "ISOLATED_CALENDAR_TEST_NOT_PRODUCTION_COVERAGE",
+  "wallTime": "2026-10-21T06:43:01.773Z",
+  "wallClock": {
+    "status": 404,
+    "errorCode": "REPORT_NOT_FOUND"
+  },
+  "isolatedClock": {
+    "status": 200,
+    "errorCode": null
+  },
+  "clockFileRestored": true,
+  "systemAndJwtClocksUnchanged": true
+}

@@ -1,0 +1,21 @@
+{
+  "registeredApplications" : [ "PHARMACY-SERVICE", "GATEWAY", "CLINICAL-SERVICE", "LAB-SERVICE", "SUPPORT-SERVICE", "CORE-SERVICE", "BILLING-SERVICE" ],
+  "patientId" : "4ff368b5-b764-4a03-83a9-541b5dde9676",
+  "prescriptionId" : "5ba75601-0294-453b-8e60-b313d4842fad",
+  "payment" : {
+    "transactionId" : "d67185c1-c781-4135-8286-314c15274a95",
+    "accountId" : "f7d5572e-5f0f-4276-a226-f1f9bc3415bd",
+    "paymentRequestId" : "f7217e51-2bec-463e-85dd-a627eecf7027",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 30000,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-21T01:54:03.849753Z"
+  },
+  "supportRollbackOnCurrentStores" : true,
+  "recordId" : "2167f27f-8bb3-41f9-a1f4-f695d680ffab",
+  "noticeId" : "708b2076-1cf4-4dc9-8460-660adacfd47b",
+  "drugId" : "f5a92311-b7fe-40dd-a024-0e6aaf99154c",
+  "episodeId" : "2ea5b7cb-6633-4e55-9e64-eeed7dd887e7"
+}

@@ -102,7 +102,7 @@ describe("AdjustStockForm", () => {
     const onUncertain = vi.fn();
     render(<AdjustStockForm drug={drug} onSuccess={onSuccess} onConflict={onConflict} onUncertain={onUncertain} />); prepare(); confirm();
     expect(await screen.findByText(/corr-validation/)).toBeVisible();
-    expect(screen.getByLabelText("Lý do")).toHaveFocus();
+    await vi.waitFor(() => expect(screen.getByLabelText("Lý do")).toHaveFocus());
     expect(screen.getByLabelText("Số lượng điều chỉnh", { exact: false })).toHaveValue(-5);
     expect(screen.getByLabelText("Lý do")).toBeEnabled();
     expect(onUncertain).not.toHaveBeenCalled(); expect(onConflict).not.toHaveBeenCalled();

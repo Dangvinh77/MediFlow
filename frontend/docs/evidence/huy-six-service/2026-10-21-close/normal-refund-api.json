@@ -1,0 +1,43 @@
+{
+  "correlationId" : "41c49501-abaa-4839-bcbb-81d748606dc3",
+  "stock" : 20,
+  "signedActorVerified" : true,
+  "prescriptionId" : "49914dff-4e10-4517-ae40-c5b986e9bf9a",
+  "originalPayment" : {
+    "transactionId" : "d3ffa198-30c5-4de0-b8fd-23b7ed595917",
+    "accountId" : "9ce3efde-073f-4f22-88db-c3f2a110aed8",
+    "paymentRequestId" : "3a7cdd61-0f5f-47ad-993c-3d9892c8b021",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 30000,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-21T06:16:06.188290Z"
+  },
+  "finalRefund" : {
+    "refundTransactionId" : "cb0b593b-ef57-4f18-a2c8-509ce6a5d217",
+    "originalTransactionId" : "d3ffa198-30c5-4de0-b8fd-23b7ed595917",
+    "accountId" : "9ce3efde-073f-4f22-88db-c3f2a110aed8",
+    "paymentRequestId" : "3a7cdd61-0f5f-47ad-993c-3d9892c8b021",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 10000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-21T06:16:07.561197Z"
+  },
+  "raceStatuses" : [ 201, 422 ],
+  "remainingObligations" : 0,
+  "firstRefund" : {
+    "refundTransactionId" : "e9b87de0-3910-4c65-9168-188040e4001f",
+    "originalTransactionId" : "d3ffa198-30c5-4de0-b8fd-23b7ed595917",
+    "accountId" : "9ce3efde-073f-4f22-88db-c3f2a110aed8",
+    "paymentRequestId" : "3a7cdd61-0f5f-47ad-993c-3d9892c8b021",
+    "classification" : "SERVICE_PAYMENT",
+    "status" : "COMPLETED",
+    "amount" : 20000.0,
+    "currency" : "VND",
+    "paymentMethod" : "CASH",
+    "completedAt" : "2026-10-21T06:16:07.333613Z"
+  }
+}

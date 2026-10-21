@@ -12,18 +12,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mediflow.billing.application.event.LedgerIntegrationEvent;
 import com.mediflow.billing.application.port.out.LedgerEventPort;
 import com.mediflow.billing.domain.exception.BillingRuleException;
+import com.mediflow.billing.infrastructure.config.OutpatientRefundPublicationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Component
 @Transactional(propagation = Propagation.MANDATORY)
 public class LedgerEventOutboxAdapter implements LedgerEventPort {
     private static final Set<String> ALLOWED_OUTPATIENT_EVENT_TYPES =
-            Set.of("invoice.created", "payment.completed", "financial.clearance.granted");
+            Set.of("invoice.created", "payment.completed", "financial.clearance.granted", "payment.refunded");
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
+    private final OutpatientRefundPublicationProperties refunds;
     public LedgerEventOutboxAdapter(JdbcTemplate jdbc, ObjectMapper mapper) {
+        this(jdbc, mapper, new OutpatientRefundPublicationProperties(false, null));
+    }
+    @Autowired
+    public LedgerEventOutboxAdapter(JdbcTemplate jdbc, ObjectMapper mapper,
+            OutpatientRefundPublicationProperties refunds) {
         this.jdbc = jdbc;
         this.mapper = mapper;
+        this.refunds = refunds;
     }
     @Override
     public void appendHeld(UUID accountId, LedgerIntegrationEvent event) {
@@ -42,6 +51,20 @@ public class LedgerEventOutboxAdapter implements LedgerEventPort {
         if (!accountId.equals(cohort.getFirst()) || !ALLOWED_OUTPATIENT_EVENT_TYPES.contains(event.eventType())) {
             throw new BillingRuleException("BILLING_OUTPATIENT_PUBLICATION_CONFLICT",
                     "Outpatient publication cohort mismatch for request " + paymentRequestId);
+        }
+        if ("payment.refunded".equals(event.eventType())) {
+            if (!refunds.enabled()) {
+                insert(accountId, event, false, null);
+                return;
+            }
+            if (!(event.payload() instanceof LedgerIntegrationEvent.PaymentRefundedPayload payload)) {
+                throw new BillingRuleException("BILLING_OUTPATIENT_PUBLICATION_CONFLICT", "Typed refund evidence required");
+            }
+            jdbc.update("""
+                    INSERT INTO billing_outpatient_refund_publication
+                        (refund_transaction_id,payment_request_id,acceptance_reference)
+                    VALUES (?,?,?)
+                    """, payload.refundTransactionId(), paymentRequestId, refunds.acceptanceReference());
         }
         insert(accountId, event, true, paymentRequestId);
     }

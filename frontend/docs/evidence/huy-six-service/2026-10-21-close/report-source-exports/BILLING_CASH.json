@@ -1,0 +1,272 @@
+{
+  "provenance" : "ISOLATED_FRESH_CONTAINER_PUBLIC_COMMAND_JOURNAL_NOT_PRODUCTION_EXPORT",
+  "scope" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+  "fromDate" : "2026-01-01",
+  "toDate" : "2026-12-31",
+  "source" : "BILLING_CASH",
+  "zoneId" : "Asia/Bangkok",
+  "currency" : "VND",
+  "allWritersStopped" : true,
+  "wallTimeSealedAt" : "2026-10-21T06:34:25.952906700Z",
+  "completedOperationEvidenceRows" : 3,
+  "receipts" : [ {
+    "source" : "BILLING_CASH",
+    "method" : "GET",
+    "path" : "/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=b2e4ef18-a828-484a-a80e-3feb2adc7204&patientId=9766652c-a3b9-44d1-9f23-6c0e77fa25bd&careEpisodeId=b2e4ef18-a828-484a-a80e-3feb2adc7204",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:07.881712600Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "paymentRequestId" : "e6cca5ad-0385-46e8-ae0f-7fc62af7f558",
+        "invoiceId" : "afc364a1-a799-4b83-a8f5-718cc9ae8ff4",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "purpose" : "EXAM",
+        "sourceType" : "EXAM",
+        "sourceId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeType" : "OUTPATIENT_VISIT",
+        "appointmentId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "recordId" : null,
+        "prescriptionId" : null,
+        "labTestIds" : [ ],
+        "requestedAmount" : 100000.0,
+        "paidAmount" : 0,
+        "remainingAmount" : 100000.0,
+        "currency" : "VND",
+        "status" : "PENDING",
+        "accountStatus" : "OPEN",
+        "expiresAt" : null,
+        "observedAt" : "2026-10-21T06:33:07.844063Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:07.859599600Z",
+      "correlationId" : "2ee36694-9b78-4c24-b856-1e06b6d3c24d"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "POST",
+    "path" : "/api/v1/billing/payment-requests/e6cca5ad-0385-46e8-ae0f-7fc62af7f558/payments",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:08.149767200Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "a9fa4e1e-0241-4b57-9ae6-c74a87e70a0f",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "e6cca5ad-0385-46e8-ae0f-7fc62af7f558",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 100000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:33:08.069468Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:08.142409200Z",
+      "correlationId" : "f1b83448-d742-4c5c-9400-5a3243ec0b54"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "POST",
+    "path" : "/api/v1/billing/payment-requests/e6cca5ad-0385-46e8-ae0f-7fc62af7f558/payments",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:08.181912500Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "a9fa4e1e-0241-4b57-9ae6-c74a87e70a0f",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "e6cca5ad-0385-46e8-ae0f-7fc62af7f558",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 100000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:33:08.069468Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:08.177510800Z",
+      "correlationId" : "f4c65910-7a85-4bf3-89eb-be5ee451cedd"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "GET",
+    "path" : "/api/v1/billing/payment-requests/by-source?purpose=EXAM&sourceId=b2e4ef18-a828-484a-a80e-3feb2adc7204&patientId=9766652c-a3b9-44d1-9f23-6c0e77fa25bd&careEpisodeId=b2e4ef18-a828-484a-a80e-3feb2adc7204",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:08.210916800Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "paymentRequestId" : "e6cca5ad-0385-46e8-ae0f-7fc62af7f558",
+        "invoiceId" : "afc364a1-a799-4b83-a8f5-718cc9ae8ff4",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "purpose" : "EXAM",
+        "sourceType" : "EXAM",
+        "sourceId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeType" : "OUTPATIENT_VISIT",
+        "appointmentId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "recordId" : null,
+        "prescriptionId" : null,
+        "labTestIds" : [ ],
+        "requestedAmount" : 100000.0,
+        "paidAmount" : 100000.0,
+        "remainingAmount" : 0.0,
+        "currency" : "VND",
+        "status" : "PAID",
+        "accountStatus" : "OPEN",
+        "expiresAt" : null,
+        "observedAt" : "2026-10-21T06:33:08.202711Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:08.205425500Z",
+      "correlationId" : "add1e412-8fbc-4a92-a186-59441e8e789d"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "GET",
+    "path" : "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=2f7f53d3-115d-431d-b02b-6726ec29291e&patientId=9766652c-a3b9-44d1-9f23-6c0e77fa25bd&careEpisodeId=b2e4ef18-a828-484a-a80e-3feb2adc7204",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:13.414091800Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "paymentRequestId" : "7e44ff50-faf3-415d-a0d4-c14287cc966c",
+        "invoiceId" : "5e6b9d69-7718-4038-9b58-5d99d3b1a07d",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "purpose" : "PRESCRIPTION",
+        "sourceType" : "PRESCRIPTION",
+        "sourceId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "careEpisodeId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeType" : "OUTPATIENT_VISIT",
+        "appointmentId" : null,
+        "recordId" : null,
+        "prescriptionId" : "2f7f53d3-115d-431d-b02b-6726ec29291e",
+        "labTestIds" : [ ],
+        "requestedAmount" : 30000.0,
+        "paidAmount" : 0,
+        "remainingAmount" : 30000.0,
+        "currency" : "VND",
+        "status" : "PENDING",
+        "accountStatus" : "OPEN",
+        "expiresAt" : null,
+        "observedAt" : "2026-10-21T06:33:13.407689Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:13.410130500Z",
+      "correlationId" : "c055b1da-d714-4981-aa97-4609434af8af"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "POST",
+    "path" : "/api/v1/billing/payment-requests/7e44ff50-faf3-415d-a0d4-c14287cc966c/payments",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:13.469264300Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "25c614e3-a697-4463-b09f-9278d64f7637",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "7e44ff50-faf3-415d-a0d4-c14287cc966c",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 30000,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:33:13.441257Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:13.465453600Z",
+      "correlationId" : "5ca5b5bd-0a69-4b0e-a87f-0f0b7a9d4f2e"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "POST",
+    "path" : "/api/v1/billing/payment-requests/7e44ff50-faf3-415d-a0d4-c14287cc966c/payments",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:33:13.497942600Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "25c614e3-a697-4463-b09f-9278d64f7637",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "7e44ff50-faf3-415d-a0d4-c14287cc966c",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 30000.0,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:33:13.441257Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:33:13.494140700Z",
+      "correlationId" : "c199870d-b13a-4d81-b6e6-bef657ee567f"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "GET",
+    "path" : "/api/v1/billing/payment-requests/by-source?purpose=PRESCRIPTION&sourceId=6da7feed-cf8c-4878-9d2c-c1bf4ec98ada&patientId=9766652c-a3b9-44d1-9f23-6c0e77fa25bd&careEpisodeId=b2e4ef18-a828-484a-a80e-3feb2adc7204",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:20.693303500Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "paymentRequestId" : "32bd3597-c6f5-4a93-be89-c53547ddce7e",
+        "invoiceId" : "b678f20e-9600-4153-9abe-c650879e4a71",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "patientId" : "9766652c-a3b9-44d1-9f23-6c0e77fa25bd",
+        "departmentId" : "2facb8a6-c1a5-424c-97b9-9ee62cf506d6",
+        "purpose" : "PRESCRIPTION",
+        "sourceType" : "PRESCRIPTION",
+        "sourceId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "careEpisodeId" : "b2e4ef18-a828-484a-a80e-3feb2adc7204",
+        "careEpisodeType" : "OUTPATIENT_VISIT",
+        "appointmentId" : null,
+        "recordId" : null,
+        "prescriptionId" : "6da7feed-cf8c-4878-9d2c-c1bf4ec98ada",
+        "labTestIds" : [ ],
+        "requestedAmount" : 30000.0,
+        "paidAmount" : 0,
+        "remainingAmount" : 30000.0,
+        "currency" : "VND",
+        "status" : "PENDING",
+        "accountStatus" : "OPEN",
+        "expiresAt" : null,
+        "observedAt" : "2026-10-21T06:34:20.686790Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:20.688961Z",
+      "correlationId" : "390f2bc4-a3a0-4510-a2fe-6eed9b660b02"
+    }
+  }, {
+    "source" : "BILLING_CASH",
+    "method" : "POST",
+    "path" : "/api/v1/billing/payment-requests/32bd3597-c6f5-4a93-be89-c53547ddce7e/payments",
+    "status" : 200,
+    "recordedAt" : "2026-10-21T06:34:20.748200500Z",
+    "response" : {
+      "success" : true,
+      "data" : {
+        "transactionId" : "3aec2677-323b-4e6a-a0b8-f711c93146f9",
+        "accountId" : "7a963b36-af54-486b-8a22-b2a8aee3c00d",
+        "paymentRequestId" : "32bd3597-c6f5-4a93-be89-c53547ddce7e",
+        "classification" : "SERVICE_PAYMENT",
+        "status" : "COMPLETED",
+        "amount" : 30000,
+        "currency" : "VND",
+        "paymentMethod" : "CASH",
+        "completedAt" : "2026-10-21T06:34:20.717493Z"
+      },
+      "error" : null,
+      "timestamp" : "2026-10-21T06:34:20.744262400Z",
+      "correlationId" : "ee9fd6f4-24f7-4801-a62f-d5d38c1846dc"
+    }
+  } ]
+}

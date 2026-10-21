@@ -188,7 +188,7 @@ describe("Lab detail read and permission states", () => {
   it("does not let an old pending mutation replace the currently viewed test", async () => {
     const pending = deferred<LabTestDTO>();
     mocks.start.mockReturnValue(pending.promise);
-    mocks.getById.mockResolvedValueOnce({ ...test, status: "READY" })
+    mocks.getById.mockResolvedValueOnce({ ...test, status: "READY", clearanceId: "accepted-clearance" })
       .mockResolvedValueOnce({ ...test, testId: "next-test", labType: "Xét nghiệm tiếp theo", status: "COMPLETED" });
     const view = render(<LabDetail testId={test.testId} />);
     fireEvent.click(await screen.findByRole("button", { name: "Bắt đầu xét nghiệm" }));

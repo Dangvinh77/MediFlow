@@ -1,5 +1,110 @@
 # Frontend Workboard
 
+## Huy — FE isolated acceptance complete, 2026-10-21
+
+**14/14 tasks, 56/56 criteria** for the FE test candidate; plan section 25 supersedes the
+11/14 checkpoint below. [Final evidence](evidence/huy-six-service/2026-10-21-close/README.md).
+Actual Core ADMIN/MANAGER browser daily/monthly checks pass through Gateway → Support,
+including 12 months, correct cash/refund/net metrics, forbidden role, missing coverage,
+error focus/retry/recovery, keyboard and mobile Light/Dark. Existing Pharmacy/Notification
+browser evidence and final 595/595 FE regression remain part of the same source candidate.
+
+The packaged calendar acceptance passed 1/1, exit0, no failures/errors/skips. Its fresh public
+workflow is sealed with five source command journals and a **test-only Report Clock** advanced
+to close the calendar year. System/JWT/source clocks remain unchanged. These are finite test
+receipts, not production source-owner exports. The helper is absent from the production JAR;
+using wall time still refuses the future coverage with404. No validation/gates were weakened.
+
+**FE READY FOR REVIEW; production rollout HOLD.** Default gates stay OFF. Source-owner
+production completeness/cutover remains operational work in the single Huy handoff, not an
+unfinished FE implementation task. All test processes stopped; browser logout/theme reset.
+No branch/commit/push.
+
+## Huy — refund delivered; FE regression complete, 2026-10-21
+
+Current checkpoint supersedes the historical blockers below: **11/14 tasks, 52/56 criteria**.
+Closed **HF6-14.3**. [Evidence](evidence/huy-six-service/2026-10-21-close/README.md), plan
+section 24; all remaining dependencies stay in the single Huy handoff.
+
+- User assigned the concrete missing Billing publication and Lab fixture work. New outpatient
+  refund publication has an independent default-OFF gate, retained approval and persisted-fact
+  validation; historical HELD rows stay unchanged. No branch/commit/push or rollout.
+- Public refund command/retry yielded one transaction/one notice. Actual Core-issued owner
+  browser read the notice; actual foreign patient direct URL denied with error focus. Refund
+  reached Report APPLIED. Signed malformed TEST credentials are labeled separately.
+- Hold harness 1/1 and Support units 18/18 passed. FE **595/595 in 57 files**, focused Lab
+  15/15, typecheck/lint/build passed. Final Docker reruns: Billing **1083/1083**, normal
+  six-service **1/1**, both exit 0 with no failed/errored/skipped tests. Billing fork-JVM
+  shutdown warning is recorded in evidence verification, not hidden as a clean teardown.
+- Remaining **HF6-09.2/.3, HF6-11.2, HF6-12.4** need reviewed five-source coverage for a closed
+  period, successful report metrics and final integrated release. Gateway preview works;
+  today's intake does not establish a completed calendar year's source completeness.
+
+Release **HOLD**. No fake coverage, producer evidence or historical refund release. Earlier
+594/595 and refund-HELD observations below are historical, superseded by this checkpoint.
+
+## Huy — source-invalid matrix complete, 2026-10-21
+
+Current: **10/14 tasks, 51/56 criteria**; closed HF6-11.3. Same candidate, no production
+source change, branch/commit/push. [Matrix evidence](evidence/huy-six-service/2026-10-21-matrix/README.md)
+maps prior unpaid/role/session/unavailable/retry observations plus today's real browser
+source mismatch. DOCTOR form keeps errors/values, no V0 fallback; exact-key API retry returns
+422 twice, on-hand stock 40 → 40. Hold 1/1 PASS exit 0, frontend stopped, browser logout.
+
+Four tasks still open: Report five-source coverage/daily-monthly success (HF6-09), complete
+workflow through Report (HF6-11), Billing refund publication → Notification intake (HF6-14),
+final release/full regression (HF6-12). Previous full FE remains 594/595, Lab fixture outside
+scope. See plan section 23 and single backend handoff; no new environment blocker invented.
+
+## Huy — Docker follow-up: normal six-service + Report gate rollback, 2026-10-21
+
+Current checkpoint supersedes the section below: **10/14 tasks, 50/56 criteria**.
+[Evidence](evidence/huy-six-service/2026-10-21-followup/README.md), plan section 22.
+Same Huy candidate; no new branch/commit/push or default gate changes.
+
+- Normal packaged acceptance: Surefire 18/18, Failsafe 1/1, exit 0; actual refund
+  race/exact retry/over-refund, durable clearance/restart and Support rollback passed.
+  Hold browser runtime 1/1, exit 0, stopped after checks.
+- Closed HF6-09.4: isolated Report UI ON → actual missing-coverage error → restart OFF
+  blocks direct-route form. Actual issuer expired session returns to login. Packaged
+  ADMIN coverage preview 200 with test gate ON; no unsupported acceptance was submitted.
+- Refund command and exact retry passed; delivery did not. Billing appends payment.refunded
+  HELD and publication allowlist excludes it, so consumer ON alone cannot deliver a notice.
+  Vinh publication/contract regression required; no fake event or database release.
+- Valid real-notice positive control plus signed TEST negative credentials: missing patient
+  claim 401, wrong claim 403, missing-exp/expired 401. Explicitly not Core-issued tokens;
+  an earlier undefined-ID helper attempt is retained and excluded from acceptance.
+- Remaining: accepted five-source coverage/successful reports, complete workflow/matrix,
+  refund intake and final release. Previous full FE remains 594/595 (Lab fixture outside
+  assigned scope); typecheck/lint/build PASS at prior checkpoint. Release HOLD.
+
+## Huy — fresh Pharmacy/Support browser checkpoint, 2026-10-21
+
+Candidate `42aab198` plus Gateway coverage allowlist working diff, existing Huy branch.
+No new branch/commit/push. Docker now works; six packaged business apps + Gateway/Eureka
+and disposable PostgreSQL/RabbitMQ ran successfully. [Final-candidate evidence](evidence/huy-six-service/2026-10-21-final/README.md)
+distinguishes browser steps, actual issuer API checks, regressions and missing acceptance.
+
+- Browser DOCTOR created Rx V1 from public Clinical/catalog authority; PHARMACIST unpaid
+  dispense denied, actual cashier API payment/retry returned one transaction, browser refresh
+  and dispense succeeded. Stock **40 → 37 → 37** after terminal command repeat. Cancelled Rx
+  has no dispense button. Paid legacy boolean was true in this run; paid-false is covered by
+  contract/component tests, not claimed as reproduced in this runtime.
+- Generated lifecycle/payment/dispense notices reached the owner. Foreign PATIENT denied in
+  browser; signed owner/foreign/NURSE/MANAGER API matrix passed. Support stop/error focus →
+  resume/Tab/Enter retry → heading focus passed without resending a command.
+- Report ADMIN/MANAGER missing-coverage 404, DOCTOR 403; UI OFF retained. Packaged coverage
+  preview ADMIN 404 with approval gate OFF, other roles 403. Gateway code is complete; no
+  five-source completeness/export proof or coverage approval was fabricated.
+- Pharmacy test focus assertion now awaits the existing effect: **17/17** focused PASS.
+  Full FE **594/595 tests / 57 files**, only Lab's READY-without-clearance fixture fails.
+  Exact Lab test-file delegation pending; no Lab production or test change. Typecheck/lint/
+  production build PASS. Hold harness **1/1 PASS, exit 0**; normal refund branch did not run.
+- **10/14 tasks, 49/56 criteria**; four tasks remain open for the specific evidence in
+  [plan section 21](huy-six-service-frontend-plan.md#21-fresh-pharmacysupport-browser-acceptance--2026-10-21).
+  Integrated release HOLD. Refund/Report approval/Report UI gates unchanged. Runtime stopped,
+  browser logged out, no new handoff file.
+
 ## Huy — shared session race fix, 2026-10-20
 
 Base `8883f49d` synchronized with master; current Huy working diff, no branch/commit/push.
