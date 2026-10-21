@@ -34,6 +34,8 @@ class LedgerRefundServiceTest {
                 UUID.randomUUID(), AccountStatus.OPEN, "VND", 0, now.minusSeconds(100), null, null, now, now);
         original = transaction(originalId, PaymentTransactionType.PAYMENT, PaymentClassification.SERVICE_PAYMENT, null, "100", "paid");
         when(refunds.lockOriginal(originalId)).thenReturn(new LedgerRefundRepositoryPort.RefundContext(account, original, BigDecimal.ZERO));
+        when(refunds.outpatientRefundEligibility(any())).thenReturn(
+                new LedgerRefundRepositoryPort.OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO));
         when(payments.findByIdempotencyKey(anyString())).thenReturn(Optional.empty());
     }
 

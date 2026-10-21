@@ -34,6 +34,9 @@ public final class LabTest {
     private List<LabResult> results;
     private final Instant createdAt;
     private Instant updatedAt;
+    private UUID cancelledBy;
+    private String cancellationReason;
+    private Instant cancelledAt;
 
     private LabTest(UUID testId, UUID recordId, UUID patientId, UUID requestingDepartmentId,
                     String labType, LocalDate requestedDate, LocalDate performedDate,
@@ -202,16 +205,40 @@ public final class LabTest {
 
     /** Cancels an active test through the V2 command instead of the generic status endpoint. */
     public void cancel(String reason, UUID cancelledBy) {
+        cancel(reason, cancelledBy, Instant.now());
+    }
+
+    public void cancel(String reason, UUID cancelledBy, Instant at) {
+        Objects.requireNonNull(at, "Cancellation time is required");
         if (careContractVersion == 1 && (reason == null || reason.isBlank() || reason.length() > 1000
                 || cancelledBy == null)) {
             throw new LabRuleException("LAB_INVALID_STATUS_TRANSITION", "Lý do và người hủy là bắt buộc");
+        }
+        if (status == LabTestStatus.CANCELLED && Objects.equals(this.cancelledBy, cancelledBy)
+                && Objects.equals(cancellationReason, reason)) {
+            return;
         }
         if (isFinal()) {
             throw new LabRuleException("LAB_INVALID_STATUS_TRANSITION", "Xét nghiệm đã kết thúc");
         }
         this.status = LabTestStatus.CANCELLED;
-        this.updatedAt = Instant.now();
+        this.cancelledBy = cancelledBy;
+        this.cancellationReason = reason;
+        this.cancelledAt = at;
+        this.updatedAt = at;
     }
+
+    /** Restore persisted cancellation evidence without inventing audit for historical rows. */
+    public LabTest restoreCancellation(UUID actor, String reason, Instant at) {
+        this.cancelledBy = actor;
+        this.cancellationReason = reason;
+        this.cancelledAt = at;
+        return this;
+    }
+
+    public UUID getCancelledBy() { return cancelledBy; }
+    public String getCancellationReason() { return cancellationReason; }
+    public Instant getCancelledAt() { return cancelledAt; }
 
     /**
      * Stores a non-empty result set and completes a pending or in-progress test atomically.

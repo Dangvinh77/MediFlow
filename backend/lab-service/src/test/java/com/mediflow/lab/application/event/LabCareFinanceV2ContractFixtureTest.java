@@ -24,6 +24,17 @@ class LabCareFinanceV2ContractFixtureTest {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Test
+    void cancellationMatchesExactProducerConsumerFixture() throws IOException {
+        Instant at = Instant.parse("2026-09-28T07:00:00Z");
+        var payload = new LabRequestCancelledPayload(id(2), id(3), id(4), id(5),
+                CareEpisodeType.OUTPATIENT_VISIT, id(6), id(8), "LAB_TEST", id(2),
+                "LAB-CBC", "CBC", id(9), "Patient declined", at);
+        var event = new DomainEventEnvelope<>(id(13), "lab.request.cancelled", 1,
+                at, CORRELATION_ID, "lab-service", payload);
+        assertMatchesFixture("lab-request-cancelled-v1/lab.request.cancelled.v1.json", event);
+    }
+
+    @Test
     void labRequestCreatedMatchesCanonicalV1Fixture() throws IOException {
         var payload = new LabRequestV2Payload(id(2), id(3), id(4), id(5),
                 CareEpisodeType.OUTPATIENT_VISIT, id(6), id(8), "LAB_TEST", id(2),

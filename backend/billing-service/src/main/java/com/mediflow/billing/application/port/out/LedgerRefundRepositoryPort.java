@@ -14,6 +14,11 @@ public interface LedgerRefundRepositoryPort {
     void append(PaymentTransaction refund, String reason, UUID actorAccountId);
     void reverseAllocations(PaymentTransaction original, PaymentTransaction refund);
     void revokeUnsatisfiedClearance(UUID paymentRequestId, Instant revokedAt);
+    default OutpatientRefundEligibility outpatientRefundEligibility(UUID originalTransactionId) {
+        return new OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO);
+    }
 
     record RefundContext(BillingAccount account, PaymentTransaction original, BigDecimal completedRefunds) { }
+    record OutpatientRefundEligibility(boolean outpatientServicePayment, boolean executionStarted,
+            boolean cancellationApplied, BigDecimal refundDue) { }
 }

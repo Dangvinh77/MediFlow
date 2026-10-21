@@ -38,7 +38,8 @@ export const organizationApi = {
   },
   staffMember: (staffId: string) =>
     api.get<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`),
-  createStaff: (body: CreateStaffRequest) => api.post<StaffDTO>("/v1/org/staff", body),
+  createStaff: (body: CreateStaffRequest, idempotencyKey: string) =>
+    api.post<StaffDTO>("/v1/org/staff", body, { idempotencyKey }),
   updateStaff: (staffId: string, body: UpdateStaffRequest) =>
     api.put<StaffDTO>(`/v1/org/staff/${encodeURIComponent(staffId)}`, body),
   changeStaffDepartment: (staffId: string, newDepartmentId: string) =>

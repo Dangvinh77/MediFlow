@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -15,6 +16,16 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+
+import javax.sql.DataSource;
 
 import com.mediflow.organization.application.port.in.CreateDepartmentUseCase;
 import com.mediflow.organization.application.port.in.CreateStaffUseCase;
@@ -22,6 +33,8 @@ import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.LookupDepartmentUseCase;
 import com.mediflow.organization.application.port.in.LookupStaffIdentityUseCase;
 import com.mediflow.organization.application.port.in.LookupRoomUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
+import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.DepartmentType;
 import com.mediflow.organization.domain.model.JobTitle;
@@ -37,6 +50,7 @@ import com.mediflow.organization.infrastructure.persistence.entity.AccountEntity
 import com.mediflow.organization.infrastructure.persistence.entity.DepartmentEntity;
 import com.mediflow.organization.web.handler.OrganizationGlobalExceptionHandler;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Verifies the real Flyway schema, JPA mappings, transaction boundary, and
@@ -74,6 +88,7 @@ class OrganizationServiceIntegrationTest {
         registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
         registry.add("eureka.client.enabled", () -> false);
         registry.add("mediflow.patient.outbox.scheduling-enabled", () -> false);
+        registry.add("mediflow.organization.event-outbox.scheduling-enabled", () -> false);
         registry.add("mediflow.jwt.secret", () ->
                 "integration-test-secret-that-is-long-enough-for-hs256");
     }
@@ -86,6 +101,12 @@ class OrganizationServiceIntegrationTest {
 
     @Autowired
     private CreateAccountUseCase createAccountUseCase;
+
+    @Autowired
+    private LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
+
+    @Autowired
+    private UpdateAccountStatusUseCase updateAccountStatusUseCase;
 
     @Autowired
     private VerifyCredentialsUseCase verifyCredentialsUseCase;
@@ -116,6 +137,19 @@ class OrganizationServiceIntegrationTest {
 
     @Autowired
     private AccountJpaRepository accountRepository;
+
+    @Autowired
+    @Qualifier("organizationDataSource")
+    private DataSource organizationDataSource;
+
+    @Autowired
+    private com.mediflow.organization.infrastructure.messaging.OrganizationEventOutboxDispatcher organizationEventOutboxDispatcher;
+
+    @Autowired
+    private ConnectionFactory rabbitConnectionFactory;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Autowired
     private OrganizationGlobalExceptionHandler exceptionHandler;
@@ -371,6 +405,159 @@ class OrganizationServiceIntegrationTest {
         assertThat(verified.role()).isEqualTo(Role.PATIENT);
         assertThat(verified.patientId()).isEqualTo(patientId);
         assertThat(verified.staffId()).isNull();
+    }
+
+    @Test
+    void createStaff_persistsDurableEventIntentInOrganizationStore() {
+        var department = newDepartment();
+        var staff = createStaffUseCase.execute(
+                "Outbox Integration Staff",
+                department.getDepartmentId(),
+                JobTitle.NURSE,
+                null,
+                null,
+                null,
+                null);
+
+        JdbcTemplate organizationJdbc = new JdbcTemplate(organizationDataSource);
+        boolean eventTableExists = Boolean.TRUE.equals(organizationJdbc.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = current_schema()
+                      AND table_name = 'organization_event_outbox')
+                """, Boolean.class));
+
+        assertThat(eventTableExists).isTrue();
+        String payload = organizationJdbc.queryForObject("""
+                SELECT payload FROM organization_event_outbox
+                WHERE routing_key='staff.created' AND payload LIKE ?
+                """, String.class, "%" + staff.getStaffId() + "%");
+        assertThat(payload).contains(staff.getStaffId().toString());
+    }
+
+    @Test
+    void accountIdentityLookupReflectsCurrentRoleActiveStateAndStaffDepartment() {
+        var department = newDepartment();
+        var staff = newDoctor(department.getDepartmentId());
+        var account = createAccountUseCase.execute(
+                "identity." + UUID.randomUUID().toString().substring(0, 12),
+                "StrongPass123!", staff.getStaffId(), null, Role.DOCTOR);
+
+        var current = lookupAccountIdentityUseCase.lookup(account.getAccountId());
+        assertThat(current.exists()).isTrue();
+        assertThat(current.active()).isTrue();
+        assertThat(current.accountId()).isEqualTo(account.getAccountId());
+        assertThat(current.role()).isEqualTo("DOCTOR");
+        assertThat(current.staffId()).isEqualTo(staff.getStaffId());
+        assertThat(current.departmentId()).isEqualTo(department.getDepartmentId());
+        assertThat(current.patientId()).isNull();
+
+        updateAccountStatusUseCase.execute(account.getAccountId(), false);
+        assertThat(lookupAccountIdentityUseCase.lookup(account.getAccountId()).active()).isFalse();
+        assertThat(lookupAccountIdentityUseCase.lookup(UUID.randomUUID()).exists()).isFalse();
+    }
+
+    @Test
+    void keyedStaffCreateReplaysSameReceiptAndRejectsChangedPayload() {
+        var department = newDepartment();
+        UUID actor = UUID.randomUUID();
+        String key = UUID.randomUUID().toString();
+        var first = createStaffUseCase.executeWithIdempotency(actor, key,
+                "Keyed Staff", department.getDepartmentId(), JobTitle.NURSE,
+                null, null, null, null);
+        var replay = createStaffUseCase.executeWithIdempotency(actor, key,
+                "Keyed Staff", department.getDepartmentId(), JobTitle.NURSE,
+                null, null, null, null);
+
+        assertThat(first.replayed()).isFalse();
+        assertThat(replay.replayed()).isTrue();
+        assertThat(replay.staff().getStaffId()).isEqualTo(first.staff().getStaffId());
+
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM staff WHERE staff_id=?",
+                Integer.class, first.staff().getStaffId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM organization_event_outbox
+                WHERE routing_key='staff.created' AND payload LIKE ?
+                """, Integer.class, "%" + first.staff().getStaffId() + "%")).isEqualTo(1);
+        assertThrows(com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException.class,
+                () -> createStaffUseCase.executeWithIdempotency(actor, key,
+                        "Different Staff", department.getDepartmentId(), JobTitle.NURSE,
+                        null, null, null, null));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM staff WHERE full_name IN (?,?)",
+                Integer.class, "Keyed Staff", "Different Staff")).isEqualTo(1);
+    }
+
+    @Test
+    void outboxInsertFailureRollsBackNewStaffInOrganizationDatabase() {
+        var department = newDepartment();
+        String fullName = "Rollback Staff " + UUID.randomUUID();
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        jdbc.execute("""
+                CREATE OR REPLACE FUNCTION fail_organization_event_outbox_insert()
+                RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'forced outbox insert failure'; END; $$
+                LANGUAGE plpgsql
+                """);
+        jdbc.execute("""
+                CREATE TRIGGER test_fail_organization_event_outbox_insert
+                BEFORE INSERT ON organization_event_outbox
+                FOR EACH ROW EXECUTE FUNCTION fail_organization_event_outbox_insert()
+                """);
+        try {
+            assertThrows(RuntimeException.class, () -> createStaffUseCase.execute(
+                    fullName, department.getDepartmentId(), JobTitle.NURSE, null, null, null, null));
+        } finally {
+            jdbc.execute("DROP TRIGGER IF EXISTS test_fail_organization_event_outbox_insert ON organization_event_outbox");
+            jdbc.execute("DROP FUNCTION IF EXISTS fail_organization_event_outbox_insert()");
+        }
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM staff WHERE full_name=?",
+                Integer.class, fullName)).isZero();
+    }
+
+    @Test
+    void brokerRetryReusesTheOriginalOrganizationEventIdAndPayload() {
+        JdbcTemplate jdbc = new JdbcTemplate(organizationDataSource);
+        jdbc.update("DELETE FROM organization_event_outbox");
+        var department = newDepartment();
+        var staff = newDoctor(department.getDepartmentId());
+        jdbc.update("DELETE FROM organization_event_outbox WHERE routing_key <> 'staff.created'");
+        var original = jdbc.queryForMap("""
+                SELECT event_id,payload,correlation_id,type_id FROM organization_event_outbox
+                WHERE routing_key='staff.created' AND payload LIKE ?
+                """, "%" + staff.getStaffId() + "%");
+        UUID eventId = (UUID) original.get("event_id");
+        String originalPayload = (String) original.get("payload");
+        String queueName = "org-staff-retry-" + UUID.randomUUID();
+
+        organizationEventOutboxDispatcher.dispatch();
+        var afterUnroutable = jdbc.queryForMap(
+                "SELECT status,attempts FROM organization_event_outbox WHERE event_id=?", eventId);
+        assertThat(afterUnroutable.get("status")).isEqualTo("PENDING");
+        assertThat((Integer) afterUnroutable.get("attempts")).isEqualTo(1);
+
+        RabbitAdmin admin = new RabbitAdmin(rabbitConnectionFactory);
+        Queue queue = new Queue(queueName, true, false, false);
+        admin.declareQueue(queue);
+        admin.declareBinding(BindingBuilder.bind(queue)
+                .to(new TopicExchange(com.mediflow.organization.infrastructure.config.RabbitMqConfig.EVENT_EXCHANGE,
+                        true, false))
+                .with(com.mediflow.organization.application.event.StaffCreatedEvent.ROUTING_KEY));
+        jdbc.update("UPDATE organization_event_outbox SET next_attempt_at=CURRENT_TIMESTAMP WHERE event_id=?", eventId);
+
+        organizationEventOutboxDispatcher.dispatch();
+        var message = rabbitTemplate.receive(queueName, 5000);
+        assertThat(message).isNotNull();
+        assertThat(message.getMessageProperties().getMessageId()).isEqualTo(eventId.toString());
+        assertThat(message.getMessageProperties().getCorrelationId()).isEqualTo(original.get("correlation_id"));
+        assertThat((String) message.getMessageProperties().getHeader("__TypeId__"))
+                .isEqualTo(original.get("type_id"));
+        assertThat(new String(message.getBody(), StandardCharsets.UTF_8)).isEqualTo(originalPayload);
+        assertThat(jdbc.queryForObject("SELECT status FROM organization_event_outbox WHERE event_id=?",
+                String.class, eventId)).isEqualTo("PUBLISHED");
+
+        organizationEventOutboxDispatcher.dispatch();
+        assertThat(rabbitTemplate.receive(queueName, 100)).isNull();
+        admin.deleteQueue(queueName);
     }
 
     @Test

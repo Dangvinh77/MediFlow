@@ -4,6 +4,7 @@ import com.mediflow.billing.application.dto.command.LabTestChargeCommand;
 import com.mediflow.billing.application.port.in.IssueLabTestChargeUseCase;
 import com.mediflow.billing.application.port.out.LabTestChargeRepositoryPort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
+import com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort;
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Charge;
 import java.math.BigDecimal;
@@ -14,10 +15,17 @@ import java.util.UUID;
 public final class LabTestPlannedRequestService implements IssueLabTestChargeUseCase {
     private final LabTestChargeRepositoryPort repository;
     private final PriceCatalogPort prices;
+    private final OutpatientCancellationRepositoryPort cancellations;
 
     public LabTestPlannedRequestService(LabTestChargeRepositoryPort repository, PriceCatalogPort prices) {
+        this(repository, prices, null);
+    }
+
+    public LabTestPlannedRequestService(LabTestChargeRepositoryPort repository, PriceCatalogPort prices,
+            OutpatientCancellationRepositoryPort cancellations) {
         this.repository = repository;
         this.prices = prices;
+        this.cancellations = cancellations;
     }
 
     @Override
@@ -25,6 +33,7 @@ public final class LabTestPlannedRequestService implements IssueLabTestChargeUse
         repository.claimDelivery(command);
         var recorded = repository.lockRecordedSource(command);
         if (recorded.isPresent()) {
+            recoverCancellation(command.labId());
             return recorded.get();
         }
         UUID account = repository.openAndLockExactAccount(command);
@@ -38,7 +47,12 @@ public final class LabTestPlannedRequestService implements IssueLabTestChargeUse
         require(money(charge.getGrossAmount()) && charge.getGrossAmount().signum() > 0,
                 "BILLING_PAYMENT_REQUEST_INVALID");
         var issued = repository.saveChargeAndRequest(command, account, charge);
+        recoverCancellation(command.labId());
         return issued.paymentRequestId();
+    }
+
+    private void recoverCancellation(UUID labId) {
+        if (cancellations != null) cancellations.recoverDuringIssuance("LAB_TEST", labId);
     }
 
     private static boolean money(BigDecimal amount) {

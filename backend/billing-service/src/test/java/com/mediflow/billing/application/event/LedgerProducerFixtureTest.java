@@ -84,6 +84,8 @@ class LedgerProducerFixtureTest {
         var payments = mock(LedgerPaymentRepositoryPort.class); var refunds = mock(LedgerRefundRepositoryPort.class); var events = mock(LedgerEventPort.class);
         when(payments.findByIdempotencyKey("refund")).thenReturn(Optional.empty());
         when(refunds.lockOriginal(p.originalTransactionId())).thenReturn(new LedgerRefundRepositoryPort.RefundContext(account, original, BigDecimal.ZERO));
+        when(refunds.outpatientRefundEligibility(p.originalTransactionId())).thenReturn(
+                new LedgerRefundRepositoryPort.OutpatientRefundEligibility(false, false, false, BigDecimal.ZERO));
         new com.mediflow.billing.application.service.LedgerRefundService(payments, refunds, events, Mappers.getMapper(LedgerPaymentMapper.class),
                 Clock.fixed(p.completedAt(), ZoneOffset.UTC)).refund(p.originalTransactionId(),
                 new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest("refund", p.amount(), "Private audit reason", PaymentMethod.CASH),

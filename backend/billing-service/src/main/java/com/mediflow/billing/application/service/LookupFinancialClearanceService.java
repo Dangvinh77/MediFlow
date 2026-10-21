@@ -21,7 +21,8 @@ public final class LookupFinancialClearanceService implements LookupFinancialCle
         return repository.find(id).map(value -> new FinancialClearanceLookupDTO(true, value.clearanceId(), value.eligible(),
                 value.invoiceId(), value.accountId(), value.patientId(), value.purpose(), value.careEpisodeType(),
                 value.careEpisodeId(), value.admissionId(), value.surgeryCaseId(), value.grantedAt(), value.expiresAt(),
-                value.observedAt())).orElseGet(() -> new FinancialClearanceLookupDTO(false, id, false,
-                null, null, null, null, null, null, null, null, null, null, clock.instant()));
+                value.observedAt(), value.eligible() ? value.purpose() : null,
+                value.eligible() ? value.sourceId() : null)).orElseGet(() -> new FinancialClearanceLookupDTO(false, id, false,
+                null, null, null, null, null, null, null, null, null, null, clock.instant(), null, null));
     }
 }

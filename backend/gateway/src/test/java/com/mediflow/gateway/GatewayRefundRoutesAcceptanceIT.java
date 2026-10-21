@@ -22,14 +22,25 @@ class GatewayRefundRoutesAcceptanceIT {
     @CsvSource({
         "GET,/api/v1/billing/prescription-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,ADMIN,true",
         "GET,/api/v1/billing/prescription-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,CASHIER,true",
+        "GET,/api/v1/billing/lab-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,ADMIN,true",
+        "GET,/api/v1/billing/lab-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,CASHIER,true",
+        "GET,/api/v1/billing/exam-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,ADMIN,true",
+        "GET,/api/v1/billing/exam-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,CASHIER,true",
+        "GET,/api/v1/billing/exam-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,DOCTOR,false",
+        "POST,/api/v1/billing/exam-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,ADMIN,false",
+        "GET,/api/v1/billing/exam-adjustments/00000000-0000-0000-0000-000000000001/refunds-due/extra,ADMIN,false",
+        "POST,/api/v1/billing/financial-clearances/00000000-0000-0000-0000-000000000001/execution-starts,SYSTEM,true",
         "POST,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds,ADMIN,true",
         "POST,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds,CASHIER,true",
         "GET,/api/v1/billing/prescription-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,DOCTOR,false",
+        "GET,/api/v1/billing/lab-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,DOCTOR,false",
+        "POST,/api/v1/billing/financial-clearances/00000000-0000-0000-0000-000000000001/execution-starts,ADMIN,false",
         "POST,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds,PATIENT,false",
         "POST,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds,SYSTEM,false",
         "POST,/api/v1/billing/prescription-adjustments/00000000-0000-0000-0000-000000000001/refunds-due,ADMIN,false",
         "GET,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds,ADMIN,false",
         "GET,/api/v1/billing/prescription-adjustments/00000000-0000-0000-0000-000000000001/refunds-due/extra,ADMIN,false",
+        "GET,/api/v1/billing/lab-adjustments/00000000-0000-0000-0000-000000000001/refunds-due/extra,ADMIN,false",
         "POST,/api/v1/billing/transactions/00000000-0000-0000-0000-000000000001/refunds/extra,ADMIN,false"
     })
     void outpatientRefundRoutesMatchLiveControllerPolicy(String method, String path, String role, boolean allowed) {

@@ -100,9 +100,27 @@ mvn -pl backend/clinical-service -am verify
 
 The additive Clinical V2 schema and use cases support check-in, purpose-scoped EXAM clearance,
 examination start, audited emergency overrides, record completion and admission referrals. The
-HTTP endpoints, clearance consumer and transactional outbox dispatcher are registered only when
-`MEDIFLOW_CARE_FINANCE_V2_ENABLED=true`; the default is disabled. Department-specific stable exam
-price codes can be configured under `mediflow.clinical.exam-price.by-department`.
+HTTP endpoints, clearance consumer, Billing authority client and transactional outbox dispatcher
+are registered only when `MEDIFLOW_CARE_FINANCE_V2_ENABLED=true`; the default remains disabled.
+Department-specific stable exam price codes can be configured under
+`mediflow.clinical.exam-price.by-department`. The V1 `financial.clearance.granted` Billing contract
+fixture is checked in at `src/test/resources/contracts/financial.clearance.granted.v1.json`, paired
+with Billing's EXAM ledger example at
+`../billing-service/src/test/resources/contracts/ledger-v1/clearance-exam.json`.
 
-Billing has not yet published the shared `financial.clearance.granted` producer fixture. Clinical
-keeps the consumer behind the gate until Billing's fixture and cross-service acceptance tests pass.
+Before a normal examination starts, Clinical calls Billing's
+`POST /api/v1/billing/financial-clearances/{clearanceId}/execution-starts` with the appointment as
+the stable operation and source ID. Billing serializes admission against refunds and rechecks the
+current exact EXAM ledger grant. Retries use the same appointment ID; Billing revalidates current
+eligibility before replaying its durable start receipt. Revoked, mismatched or unavailable Billing
+authority fails closed. A valid audited emergency override is the explicit exception and is
+recorded locally without relying on a stale clearance snapshot.
+
+For a V1 appointment, `PUT /api/v1/appointments/{id}/status` with `status: "CANCELLED"` and a
+nonblank `reason` records the authenticated staff actor, reason and cancellation time with the
+appointment, then emits `appointment.exam.cancelled` V1 in the same transaction. The producer
+fixture is `src/test/resources/contracts/appointment-exam-cancelled-v1/appointment.exam.cancelled.v1.json`;
+Billing's mirrored consumer fixture is
+`../billing-service/src/test/resources/contracts/appointment-exam-cancelled-v1/appointment.exam.cancelled.v1.json`.
+Billing consumes the matching source identity as cancellation evidence for refund review. The fact
+permits an approved refund against the remaining net obligation; it does not claim cash was returned.

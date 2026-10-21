@@ -95,8 +95,9 @@ describe("organizationApi facade contract", () => {
     expect(get).toHaveBeenCalledWith(`/v1/org/staff/${staffContractFixture.staffId}`);
 
     post.mockResolvedValueOnce(staffContractFixture);
-    await organizationApi.createStaff(createStaffRequestFixture);
-    expect(post).toHaveBeenCalledWith("/v1/org/staff", createStaffRequestFixture);
+    await organizationApi.createStaff(createStaffRequestFixture, "staff-intent-1");
+    expect(post).toHaveBeenCalledWith("/v1/org/staff", createStaffRequestFixture,
+      { idempotencyKey: "staff-intent-1" });
 
     put.mockResolvedValueOnce(staffContractFixture);
     await organizationApi.updateStaff(staffContractFixture.staffId, updateStaffRequestFixture);

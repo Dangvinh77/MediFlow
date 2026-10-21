@@ -31,7 +31,7 @@ public class OutpatientReportReadPersistenceAdapter implements OutpatientReportR
         var proofs=jdbc.query("""
                 SELECT * FROM report_outpatient_coverage
                 WHERE covered_from<=? AND covered_to>=? AND department_id IS NOT DISTINCT FROM CAST(? AS UUID)
-                    AND zone_id=? AND currency=? ORDER BY accepted_at DESC,coverage_id LIMIT 1
+                    AND zone_id=? AND currency=? ORDER BY acceptance_order DESC LIMIT 1
                 """,(rs,n)->{
             try{return new OutpatientCoverage(rs.getObject("coverage_id",UUID.class),rs.getDate("covered_from").toLocalDate(),
                     rs.getDate("covered_to").toLocalDate(),rs.getObject("department_id",UUID.class),rs.getString("zone_id"),

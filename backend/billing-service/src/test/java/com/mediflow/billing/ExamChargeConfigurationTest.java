@@ -2,6 +2,7 @@ package com.mediflow.billing;
 
 import com.mediflow.billing.application.port.out.ExamChargeRepositoryPort;
 import com.mediflow.billing.application.port.out.ExamChargeWirePort;
+import com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
 import com.mediflow.billing.infrastructure.config.ExamChargeConfiguration;
 import com.mediflow.billing.messaging.consumer.ExamChargeConsumer;
@@ -30,6 +31,7 @@ class ExamChargeConfigurationTest {
         return new ApplicationContextRunner().withUserConfiguration(ExamChargeConfiguration.class)
                 .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
                 .withBean(ExamChargeRepositoryPort.class, () -> mock(ExamChargeRepositoryPort.class))
+                .withBean(OutpatientCancellationRepositoryPort.class, () -> mock(OutpatientCancellationRepositoryPort.class))
                 .withBean(ExamChargeWirePort.class, () -> mock(ExamChargeWirePort.class))
                 .withBean(PriceCatalogPort.class, () -> mock(PriceCatalogPort.class));
     }

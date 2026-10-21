@@ -16,6 +16,7 @@ import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
 import com.mediflow.clinical.application.port.out.CurrentClinicalActorPort;
 import com.mediflow.clinical.application.port.out.EmergencyOverrideRepositoryPort;
 import com.mediflow.clinical.application.port.out.ExamClearanceRepositoryPort;
+import com.mediflow.clinical.application.port.out.FinancialExecutionAuthorityPort;
 import com.mediflow.clinical.application.port.out.ExamPricePolicyPort;
 import com.mediflow.clinical.application.port.out.MedicalRecordRepositoryPort;
 import com.mediflow.clinical.application.port.out.OutpatientMvpMode;
@@ -36,6 +37,7 @@ public class ClinicalCareFinanceFeatureConfiguration {
             AppointmentRepositoryPort appointments,
             MedicalRecordRepositoryPort records,
             ExamClearanceRepositoryPort clearances,
+            FinancialExecutionAuthorityPort executionAuthority,
             EmergencyOverrideRepositoryPort overrides,
             AdmissionReferralRepositoryPort referrals,
             ExamPricePolicyPort prices,
@@ -47,7 +49,7 @@ public class ClinicalCareFinanceFeatureConfiguration {
             @Qualifier("clinicalCareFinanceClock") Clock clinicalCareFinanceClock,
             @Value("${mediflow.features.admission-referral.enabled:false}") boolean admissionReferralsEnabled,
             OutpatientMvpMode outpatientMvpMode) {
-        return new ClinicalCareFinanceApplicationService(appointments, records, clearances, overrides,
+        return new ClinicalCareFinanceApplicationService(appointments, records, clearances, executionAuthority, overrides,
                 referrals, prices, outbox, actors, staff, mapper, correlationIds, clinicalCareFinanceClock,
                 admissionReferralsEnabled && !outpatientMvpMode.enabled());
     }

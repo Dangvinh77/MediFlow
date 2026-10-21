@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 
 import com.mediflow.clinical.application.dto.request.CreateAppointmentRequest;
 import com.mediflow.clinical.application.dto.request.UpdateAppointmentRequest;
@@ -15,6 +16,7 @@ import com.mediflow.clinical.application.event.AppointmentCreatedEvent;
 import com.mediflow.clinical.application.event.AppointmentStatusChangedEvent;
 import com.mediflow.clinical.application.mapper.ClinicalDtoMapper;
 import com.mediflow.clinical.application.port.in.ManageAppointmentUseCase;
+import com.mediflow.clinical.application.port.in.CancelCareFinanceExamUseCase;
 import com.mediflow.clinical.application.port.out.AppointmentRepositoryPort;
 import com.mediflow.clinical.application.port.out.ClinicalEventPublisherPort;
 import com.mediflow.clinical.application.port.out.CorrelationIdProvider;
@@ -39,20 +41,30 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
     private final ClinicalDtoMapper mapper;
     private final CorrelationIdProvider correlationIds;
     private final boolean outpatientMvpEnabled;
+    private final CancelCareFinanceExamUseCase careFinanceExamCancellation;
 
     @Autowired
     public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
                                          StaffLookupPort staff, ClinicalEventPublisherPort publisher,
                                          ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds,
-                                         OutpatientMvpMode outpatientMvpMode) {
+                                         OutpatientMvpMode outpatientMvpMode,
+                                         ObjectProvider<CancelCareFinanceExamUseCase> careFinanceExamCancellation) {
         this(appointments, patients, staff, publisher, mapper, correlationIds,
-                outpatientMvpMode.enabled());
+                outpatientMvpMode.enabled(), careFinanceExamCancellation.getIfAvailable());
     }
 
     public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
                                          StaffLookupPort staff, ClinicalEventPublisherPort publisher,
                                          ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds,
                                          boolean outpatientMvpEnabled) {
+        this(appointments, patients, staff, publisher, mapper, correlationIds, outpatientMvpEnabled, null);
+    }
+
+    public AppointmentApplicationService(AppointmentRepositoryPort appointments, PatientLookupPort patients,
+                                         StaffLookupPort staff, ClinicalEventPublisherPort publisher,
+                                         ClinicalDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                         boolean outpatientMvpEnabled,
+                                         CancelCareFinanceExamUseCase careFinanceExamCancellation) {
         this.appointments = appointments;
         this.patients = patients;
         this.staff = staff;
@@ -60,6 +72,7 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
         this.mapper = mapper;
         this.correlationIds = correlationIds;
         this.outpatientMvpEnabled = outpatientMvpEnabled;
+        this.careFinanceExamCancellation = careFinanceExamCancellation;
     }
 
     @Override
@@ -92,9 +105,22 @@ public class AppointmentApplicationService implements ManageAppointmentUseCase {
     @Override
     @Transactional
     public AppointmentDTO changeStatus(UUID id, AppointmentStatus status) {
+        return changeStatus(id, status, null);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentDTO changeStatus(UUID id, AppointmentStatus status, String cancellationReason) {
         if (outpatientMvpEnabled && status != AppointmentStatus.CANCELLED) {
             throw new InvalidClinicalDataException("CLINICAL_V0_STATUS_WRITE_DISABLED",
                     "Legacy appointment status writes are disabled in the outpatient MVP profile");
+        }
+        if (status == AppointmentStatus.CANCELLED && careFinanceExamCancellation != null) {
+            Appointment current = appointments.findById(id)
+                    .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found: " + id));
+            if (current.getCareContractVersion() == 1) {
+                return careFinanceExamCancellation.cancelCareFinanceExam(id, cancellationReason);
+            }
         }
         Appointment appointment = locked(id);
         appointment.changeStatus(status);

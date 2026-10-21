@@ -83,6 +83,63 @@ class LabPersistenceAdapterTest {
     @Autowired ObjectMapper objectMapper;
 
     @Test
+    void cancellationRoundTripRetainsAuditAndCancellationOutbox() {
+        LabTest test = v2Test(UUID.randomUUID());
+        UUID actor = UUID.randomUUID();
+        Instant at = Instant.parse("2026-10-21T10:00:00Z");
+        test.cancel("Patient declined", actor, at);
+        tests.save(test);
+        var payload = new com.mediflow.lab.application.event.LabRequestCancelledPayload(
+                test.getTestId(), test.getPatientId(), test.getRecordId(), test.getRequestingDepartmentId(),
+                test.getCareEpisodeType(), test.getCareEpisodeId(), test.getSourceOrderId(),
+                "LAB_TEST", test.getTestId(), test.getPriceCode(), test.getLabType(), actor,
+                "Patient declined", at);
+        UUID eventId = UUID.randomUUID();
+        outbox.append(new DomainEventEnvelope<>(eventId, "lab.request.cancelled", 1, at,
+                "cancel-audit", "lab-service", payload));
+
+        LabTest restored = tests.findById(test.getTestId()).orElseThrow();
+        assertThat(restored.getCancelledBy()).isEqualTo(actor);
+        assertThat(restored.getCancellationReason()).isEqualTo("Patient declined");
+        assertThat(restored.getCancelledAt()).isEqualTo(at);
+        assertThat(outboxRows.findById(eventId)).get().satisfies(row -> {
+            assertThat(row.getAggregateId()).isEqualTo(test.getTestId());
+            assertThat(row.getPayload().path("payload").path("cancelledBy").asText())
+                    .isEqualTo(actor.toString());
+        });
+    }
+
+    @Test
+    @org.springframework.transaction.annotation.Transactional(propagation =
+            org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    void cancellationAndOutboxRollBackTogetherOnFailure() {
+        LabTest saved = tests.save(v2Test(UUID.randomUUID()));
+        UUID eventId = UUID.randomUUID();
+        try {
+            assertThatThrownBy(() -> new TransactionTemplate(transactionManager).execute(status -> {
+                LabTest test = tests.findByIdForUpdate(saved.getTestId()).orElseThrow();
+                Instant at = Instant.parse("2026-10-21T10:00:00Z");
+                UUID actor = UUID.randomUUID();
+                test.cancel("Patient declined", actor, at);
+                tests.save(test);
+                var payload = new com.mediflow.lab.application.event.LabRequestCancelledPayload(
+                        test.getTestId(), test.getPatientId(), test.getRecordId(), test.getRequestingDepartmentId(),
+                        test.getCareEpisodeType(), test.getCareEpisodeId(), test.getSourceOrderId(),
+                        "LAB_TEST", test.getTestId(), test.getPriceCode(), test.getLabType(), actor,
+                        "Patient declined", at);
+                outbox.append(new DomainEventEnvelope<>(eventId, "lab.request.cancelled", 1, at,
+                        "cancel-rollback", "lab-service", payload));
+                throw new IllegalStateException("Simulated failure after outbox append");
+            })).isInstanceOf(IllegalStateException.class);
+            assertThat(tests.findById(saved.getTestId()).orElseThrow().getStatus()).isEqualTo(saved.getStatus());
+            assertThat(tests.findById(saved.getTestId()).orElseThrow().getCancelledBy()).isNull();
+            assertThat(outboxRows.findById(eventId)).isEmpty();
+        } finally {
+            jdbcTemplate.update("DELETE FROM lab_test WHERE test_id = ?", saved.getTestId());
+        }
+    }
+
+    @Test
     void completedTestRoundTrip_preservesResultsAndPaidFlag() {
         LabTest test = LabTest.create(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "CBC", LocalDate.now());

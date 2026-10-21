@@ -16,6 +16,7 @@ import com.mediflow.organization.domain.exception.InvalidCredentialsException;
 import com.mediflow.organization.domain.exception.InvalidDepartmentHeadException;
 import com.mediflow.organization.domain.exception.StaffAlreadyInDepartmentException;
 import com.mediflow.organization.domain.exception.StaffNotFoundException;
+import com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataAccessException;
@@ -63,6 +64,14 @@ public class OrganizationGlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(
             DuplicateResourceException exception) {
         return buildResponse(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler(StaffCreateIdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStaffIdempotencyConflict(
+            StaffCreateIdempotencyConflictException exception) {
+        return buildResponse(HttpStatus.CONFLICT,
+                "STAFF_IDEMPOTENCY_KEY_REUSED",
+                "Idempotency key was already used for another staff request");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

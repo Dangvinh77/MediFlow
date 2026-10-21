@@ -49,6 +49,54 @@ class CareFinanceV2DomainTest {
     }
 
     @Test
+    void cancelCareFinance_recordsReasonActorAndTimestampBeforeExecution() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        UUID actor = UUID.randomUUID();
+
+        appointment.cancelCareFinance("Patient declined before exam", actor, NOW);
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        assertThat(appointment.getCancelledBy()).isEqualTo(actor);
+        assertThat(appointment.getCancellationReason()).isEqualTo("Patient declined before exam");
+        assertThat(appointment.getCancelledAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void cancelCareFinance_allowsInExamButNeverCompleted() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+        UUID clearanceId = UUID.randomUUID();
+        appointment.recordExamClearance(clearanceId, NOW);
+        appointment.startExam(clearanceId, null, NOW);
+        appointment.cancelCareFinance("Patient requested cancellation during exam", UUID.randomUUID(), NOW);
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+
+        Appointment completed = appointment();
+        completed.checkIn("OUTPATIENT_EXAM", NOW);
+        completed.startExam(UUID.randomUUID(), null, NOW);
+        completed.complete(NOW);
+        assertThatThrownBy(() -> completed.cancelCareFinance("Too late", UUID.randomUUID(), NOW))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_INVALID_STATUS_TRANSITION");
+        assertThat(completed.getStatus()).isEqualTo(AppointmentStatus.COMPLETED);
+        assertThat(completed.getCancelledAt()).isNull();
+    }
+
+    @Test
+    void cancelCareFinance_requiresReasonActorAndNonFutureTimestamp() {
+        Appointment appointment = appointment();
+        appointment.checkIn("OUTPATIENT_EXAM", NOW);
+
+        assertThatThrownBy(() -> appointment.cancelCareFinance(" ", UUID.randomUUID(), NOW))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_INVALID_STATUS_TRANSITION");
+        assertThatThrownBy(() -> appointment.cancelCareFinance("valid reason", null, NOW))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_INVALID_STATUS_TRANSITION");
+        assertThatThrownBy(() -> appointment.cancelCareFinance("valid reason", UUID.randomUUID(), NOW.plusSeconds(1)))
+                .hasFieldOrPropertyWithValue("code", "CLINICAL_INVALID_STATUS_TRANSITION");
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.AWAITING_PAYMENT);
+    }
+
+    @Test
     void openRecord_withoutDiagnosis_remainsOpenUntilCompletion() {
         MedicalRecord record = MedicalRecord.openForAppointment(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(CLOCK),

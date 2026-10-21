@@ -129,7 +129,7 @@ public class ClinicalOutboxPersistenceAdapter implements ClinicalOutboxPort {
     private static UUID aggregateId(DomainEventEnvelope<?> event, JsonNode envelope) {
         JsonNode payload = envelope.path("payload");
         String field = switch (event.eventType()) {
-            case "appointment.status.changed" -> "appointmentId";
+            case "appointment.status.changed", "appointment.exam.cancelled" -> "appointmentId";
             case "admission.requested" -> "admissionRequestId";
             default -> "recordId";
         };

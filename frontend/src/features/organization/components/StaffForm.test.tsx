@@ -48,6 +48,28 @@ describe("StaffForm", () => {
     mocks.router.replace.mockReset();
   });
 
+  it("retains the request key on an ambiguous retry and rotates it for changed content", async () => {
+    mocks.departments.mockResolvedValue([departmentContractFixture]);
+    mocks.createStaff.mockRejectedValue(new Error("Network interrupted"));
+    render(<StaffForm />);
+    await screen.findByLabelText(/Họ tên/);
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van A" } });
+    fireEvent.change(screen.getByLabelText(/Khoa/), { target: { value: departmentContractFixture.departmentId } });
+    const submit = () => fireEvent.submit(screen.getByRole("button", { name: "Tạo nhân sự" }).closest("form")!);
+    submit();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác nhận được kết quả tạo nhân sự");
+    const firstKey = mocks.createStaff.mock.calls[0][1];
+    expect(firstKey).toEqual(expect.any(String));
+    submit();
+    await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledTimes(2));
+    await screen.findByRole("alert");
+    expect(mocks.createStaff.mock.calls[1][1]).toBe(firstKey);
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van B" } });
+    submit();
+    await waitFor(() => expect(mocks.createStaff).toHaveBeenCalledTimes(3));
+    expect(mocks.createStaff.mock.calls[2][1]).not.toBe(firstKey);
+  });
+
   it("blocks a new staff form when department loading fails and retries the lookup", async () => {
     mocks.departments
       .mockRejectedValueOnce(new Error("Khoa không tải được"))
@@ -79,7 +101,7 @@ describe("StaffForm", () => {
       licenseNumber: null,
       phoneNumber: null,
       email: null,
-    }));
+    }, expect.any(String)));
     expect(mocks.router.push).toHaveBeenCalledWith(
       `/organization/staff/${staffContractFixture.staffId}?notice=created`,
     );
