@@ -3,6 +3,7 @@ import { isRole } from "./roles";
 
 const ACCESS_TOKEN_KEY = "mediflow.accessToken";
 const REFRESH_TOKEN_KEY = "mediflow.refreshToken";
+const SESSION_KEY = "mediflow.sessionId";
 const ROLE_KEY = "mediflow.role";
 export const AUTH_CHANGE_EVENT = "mediflow:auth-change";
 
@@ -17,6 +18,25 @@ export function getToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+/** One login identity; rotating the access token must not reset mounted forms. */
+export function getSessionKey(): string | null {
+  if (!getToken()) return null;
+  return localStorage.getItem(SESSION_KEY) ?? getToken();
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function renewAccessToken(expectedSession: string, accessToken: string): boolean {
+  if (getSessionKey() !== expectedSession) return false;
+  localStorage.setItem(SESSION_KEY, expectedSession);
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  notifySessionChanged();
+  return true;
+}
+
 export function getRole(): Role | null {
   if (typeof window === "undefined") return null;
   const role = localStorage.getItem(ROLE_KEY);
@@ -24,6 +44,7 @@ export function getRole(): Role | null {
 }
 
 export function storeSession(session: AuthSession) {
+  localStorage.setItem(SESSION_KEY, crypto.randomUUID());
   localStorage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
   localStorage.setItem(ROLE_KEY, session.role);
@@ -31,6 +52,7 @@ export function storeSession(session: AuthSession) {
 }
 
 export function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(ROLE_KEY);

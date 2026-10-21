@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import type { Role } from "@/lib/roles";
 import { medicalRecordApi } from "../api";
@@ -64,7 +64,7 @@ const getServerToken = () => null;
 
 export function MedicalRecordDetail(props: MedicalRecordDetailProps) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
-  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerToken);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, getServerToken);
   return <MedicalRecordDetailContent key={`${props.recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 

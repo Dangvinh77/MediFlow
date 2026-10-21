@@ -1,12 +1,14 @@
 "use client";
 
+import { useUnsavedChanges } from "../use-unsaved-changes";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getSessionKey } from "@/lib/auth";
+import { FormSection } from "./RecordLayout";
 import { organizationApi } from "../api";
 import { CreationIntentError, prepareCreation } from "../creation-intent";
 import { isRequestSessionCurrent } from "../request-session";
@@ -20,6 +22,7 @@ export function StaffForm({ staffId }: Props) {
 }
 
 function StaffFormWorkspace({ staffId }: Props) {
+  const { markDirty, markSaved, confirmLeave } = useUnsavedChanges();
   const [identityNumber, setIdentityNumber] = useState("");
   const router = useRouter(); const editing = Boolean(staffId);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
@@ -35,7 +38,7 @@ function StaffFormWorkspace({ staffId }: Props) {
 
   useEffect(() => {
     let mounted = true;
-    const sessionToken = getToken();
+    const sessionToken = getSessionKey();
     Promise.all([organizationApi.departments(!staffId), staffId ? organizationApi.staffMember(staffId) : Promise.resolve(null)]).then(([departmentList, staff]) => {
       if (!mounted || !isRequestSessionCurrent(sessionToken)) return;
       setDepartments(departmentList.filter((department) => department.active || department.departmentId === staff?.departmentId));
@@ -79,7 +82,7 @@ function StaffFormWorkspace({ staffId }: Props) {
     }
     submitting.current = true;
     setSaving(true); setError(null);
-    const sessionToken = getToken();
+    const sessionToken = getSessionKey();
     // Capture the user's transfer intent before a save/read refreshes the baseline.
     const wantsTransfer = departmentId !== originalDepartment.current;
     const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null };
@@ -93,17 +96,17 @@ function StaffFormWorkspace({ staffId }: Props) {
         const updatedStaff = savedProfile.current?.fingerprint === fingerprint && savedProfile.current.session === sessionToken
           ? await organizationApi.staffMember(staffId)
           : await organizationApi.updateStaff(staffId, shared);
-        if (!mounted.current || getToken() !== sessionToken) return;
+        if (!mounted.current || getSessionKey() !== sessionToken) return;
         savedProfile.current = { fingerprint, session: sessionToken };
         applyStaff(updatedStaff);
         if (wantsTransfer && departmentId !== updatedStaff.departmentId) {
           const requestedDepartmentId = departmentId;
           try {
             const movedStaff = await organizationApi.changeStaffDepartment(staffId, requestedDepartmentId);
-            if (!mounted.current || getToken() !== sessionToken) return;
+            if (!mounted.current || getSessionKey() !== sessionToken) return;
             applyStaff(movedStaff);
             setDepartmentId(movedStaff.departmentId);
-            router.push(`/organization/staff/${movedStaff.staffId}?notice=updated`);
+            markSaved(); router.push(`/organization/staff/${movedStaff.staffId}?notice=updated`);
             completed = true;
             return;
           } catch (transferCause: unknown) {
@@ -115,11 +118,11 @@ function StaffFormWorkspace({ staffId }: Props) {
 
             try {
               const currentStaff = await organizationApi.staffMember(staffId);
-              if (!mounted.current || getToken() !== sessionToken) return;
+              if (!mounted.current || getSessionKey() !== sessionToken) return;
               applyStaff(currentStaff);
               if (currentStaff.departmentId === requestedDepartmentId) {
                 setDepartmentId(currentStaff.departmentId);
-                router.push(`/organization/staff/${currentStaff.staffId}?notice=updated`);
+                markSaved(); router.push(`/organization/staff/${currentStaff.staffId}?notice=updated`);
                 completed = true;
                 return;
               }
@@ -138,16 +141,16 @@ function StaffFormWorkspace({ staffId }: Props) {
             return;
           }
         }
-        router.push(`/organization/staff/${updatedStaff.staffId}?notice=updated`);
+        markSaved(); router.push(`/organization/staff/${updatedStaff.staffId}?notice=updated`);
         completed = true;
       } else {
         const body = { ...shared, departmentId, identityNumber: identityNumber.trim() };
         creationIntent = await prepareCreation("staff", sessionToken, body, body.identityNumber);
-        if (!mounted.current || getToken() !== sessionToken) { creationIntent.cancelUnsent(); return; }
+        if (!mounted.current || getSessionKey() !== sessionToken) { creationIntent.cancelUnsent(); return; }
         const staff = await organizationApi.createStaff(body, creationIntent.key);
         creationIntent.settle();
-        if (!mounted.current || getToken() !== sessionToken) return;
-        router.push(`/organization/staff/${staff.staffId}?notice=created`);
+        if (!mounted.current || getSessionKey() !== sessionToken) return;
+        markSaved(); router.push(`/organization/staff/${staff.staffId}?notice=created`);
         completed = true;
       }
     } catch (cause: unknown) {
@@ -169,7 +172,7 @@ function StaffFormWorkspace({ staffId }: Props) {
     finally {
       if (!completed) {
         submitting.current = false;
-        if (mounted.current && getToken() === sessionToken) setSaving(false);
+        if (mounted.current && getSessionKey() === sessionToken) setSaving(false);
       }
     }
   }
@@ -180,5 +183,25 @@ function StaffFormWorkspace({ staffId }: Props) {
     return <AsyncState kind="error" message={message} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
   }
   if (loading || loadedStaffId !== (staffId ?? "new")) return <AsyncState kind="loading" message="Đang tải dữ liệu nhân sự…" />;
-  return <form onSubmit={submit} className="mt-6 space-y-6">{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}<fieldset disabled={saving} className="grid gap-5 rounded-xl border border-border bg-surface p-6 md:grid-cols-2"><Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field><Field label="CCCD" htmlFor="staff-identity" required={!editing} hint={editing ? "CCCD được xác lập khi tạo hồ sơ." : "Nhập đủ 12 chữ số."}><input id="staff-identity" required={!editing} readOnly={editing} inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field><Field label="Khoa" htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value="">Chọn khoa</option>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</select></Field><Field label="Chức danh" htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}>{jobs.map((job) => <option key={job.value} value={job.value}>{job.label}</option>)}</select></Field><Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field><Field label="Số giấy phép" htmlFor="staff-license"><input id="staff-license" maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field><Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field><Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field></fieldset><div className="flex gap-2"><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button><Button type="button" disabled={saving} onClick={() => router.back()}>Quay lại</Button></div></form>;
+  return <form onChangeCapture={markDirty} onSubmit={submit} className="mt-6 max-w-5xl space-y-5">
+    {error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}
+    <p className="text-sm text-muted-foreground">Các trường có dấu * là bắt buộc.</p>
+    <fieldset disabled={saving} className="min-w-0 space-y-5">
+      <FormSection title="Thông tin định danh" description="Họ tên và CCCD dùng để xác định hồ sơ nhân sự.">
+        <Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field>
+        <Field label="CCCD" htmlFor="staff-identity" required={!editing} hint={editing ? "CCCD được xác lập khi tạo hồ sơ." : "Nhập đủ 12 chữ số."}><input id="staff-identity" required={!editing} readOnly={editing} aria-describedby="staff-identity-hint" autoComplete="off" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field>
+      </FormSection>
+      <FormSection title="Phân công & chuyên môn" description="Khoa công tác, chức danh và thông tin hành nghề.">
+        <Field label="Khoa" htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value="">Chọn khoa</option>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}{!department.active ? " (ngừng hoạt động)" : ""}</option>)}</select></Field>
+        <Field label="Chức danh" htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}>{jobs.map((job) => <option key={job.value} value={job.value}>{job.label}</option>)}</select></Field>
+        <Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Số giấy phép" htmlFor="staff-license"><input id="staff-license" maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field>
+      </FormSection>
+      <FormSection title="Thông tin liên hệ" description="Thông tin liên lạc của nhân sự.">
+        <Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" type="tel" autoComplete="tel" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field>
+        <Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" autoComplete="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field>
+      </FormSection>
+    </fieldset>
+    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5"><Button type="button" disabled={saving} onClick={() => { if (confirmLeave()) router.back(); }}>Quay lại</Button><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button></div>
+  </form>;
 }

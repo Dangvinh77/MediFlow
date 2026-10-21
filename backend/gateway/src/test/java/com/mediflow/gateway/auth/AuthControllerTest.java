@@ -35,6 +35,29 @@ class AuthControllerTest {
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
 
     @Test
+    void refreshBeforePasswordChangeIsRejectedButNewLoginVersionWorks() {
+        JwtTokenService jwt = new JwtTokenService(new JwtProperties(SECRET, 30, 1440, 1));
+        OrganizationAuthClient organization = mock(OrganizationAuthClient.class);
+        UUID accountId = UUID.randomUUID(), staffId = UUID.randomUUID();
+        String correlationId = UUID.randomUUID().toString();
+        when(organization.lookupCurrentIdentity(accountId, correlationId))
+                .thenReturn(Mono.just(new OrganizationAuthClient.CurrentIdentity(
+                        true, true, accountId, "DOCTOR", staffId, null, null, 1)));
+        var controller = new AuthController(jwt, organization);
+        var oldToken = jwt.issueRefreshToken(accountId, "DOCTOR", staffId, null, null, 0);
+        assertThat(controller.refresh(new RefreshRequest(oldToken), correlationId).block().getStatusCode().value())
+                .isEqualTo(401);
+        var newToken = jwt.issueRefreshToken(accountId, "DOCTOR", staffId, null, null, 1);
+        assertThat(controller.refresh(new RefreshRequest(newToken), correlationId).block().getStatusCode().value())
+                .isEqualTo(200);
+        when(organization.verify("doctor", "new-password", correlationId)).thenReturn(Mono.just(
+                new OrganizationAuthClient.VerifiedAccount(accountId, staffId, null, null, "DOCTOR", 1)));
+        var login = (LoginResponse) controller.login(new LoginRequest("doctor", "new-password"), correlationId).block().getBody();
+        assertThat(jwt.parse(login.refreshToken()).get(JwtTokenService.CREDENTIAL_VERSION_CLAIM, Number.class).longValue())
+                .isEqualTo(1);
+    }
+
+    @Test
     void login_mintsTokensFromOrganizationIdentity() {
         JwtTokenService jwt = new JwtTokenService(new JwtProperties(SECRET, 30, 1440, 1));
         OrganizationAuthClient organization = mock(OrganizationAuthClient.class);

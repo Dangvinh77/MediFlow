@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   return {
     getById: vi.fn(), delete: vi.fn(), getRole: vi.fn(() => "DOCTOR"),
-    getToken: vi.fn(() => token),
+    getSessionKey: vi.fn(() => token),
     subscribeToAuthChanges: vi.fn((listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -26,7 +26,7 @@ vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
   subscribeToAuthChanges: mocks.subscribeToAuthChanges,
 }));
-vi.mock("@/lib/session", () => ({ getToken: mocks.getToken, subscribeToAuthChanges: mocks.subscribeToAuthChanges }));
+vi.mock("@/lib/session", () => ({ getSessionKey: mocks.getSessionKey, subscribeToAuthChanges: mocks.subscribeToAuthChanges }));
 vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, delete: mocks.delete } }));
 
 import { PatientDetail } from "./PatientDetail";
@@ -49,6 +49,22 @@ describe("PatientDetail read logic", () => {
     mocks.setToken("session-a");
     mocks.router.replace.mockReset();
     mocks.router.push.mockReset();
+  });
+
+  it("focuses the delete confirmation and restores its trigger when cancelled with Escape", async () => {
+    mocks.getRole.mockReturnValue("ADMIN");
+    mocks.getById.mockResolvedValue(patientContractFixture);
+    render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    const trigger = screen.getByRole("button", { name: "Xóa bệnh nhân" });
+    fireEvent.click(trigger);
+    const confirmation = screen.getByRole("alertdialog");
+    expect(confirmation).toHaveFocus();
+    expect(confirmation).toHaveAccessibleDescription(expect.stringContaining("Nguyen Van A"));
+    fireEvent.keyDown(confirmation, { key: "Escape" });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(mocks.delete).not.toHaveBeenCalled();
   });
 
   it("requires confirmation and prevents duplicate deletion", async () => {

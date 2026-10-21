@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getToken } from "@/lib/session";
+import { getSessionKey } from "@/lib/session";
 import { patientFailure, type PatientFailure } from "./logic";
 
 /** Locks synchronously before the first await and ignores completions from a departed workspace/session. */
@@ -22,8 +22,8 @@ export function usePatientMutation(identity: string) {
     if (locked.current) return;
     locked.current = true;
     const version = generation.current;
-    const token = getToken();
-    const current = () => version === generation.current && token === getToken();
+    const token = getSessionKey();
+    const current = () => version === generation.current && token === getSessionKey();
     setPending(true); setError(null);
     let unknown = false;
     let succeeded = false;

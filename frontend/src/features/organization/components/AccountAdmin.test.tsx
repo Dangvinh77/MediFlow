@@ -3,10 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { accountContractFixture } from "../contract.fixture";
 
-const mocks = vi.hoisted(() => ({ createAccount: vi.fn(), updateAccountStatus: vi.fn(), getToken: vi.fn<() => string | null>(() => "session-a"), router: { replace: vi.fn() } }));
+const mocks = vi.hoisted(() => ({ createAccount: vi.fn(), updateAccountStatus: vi.fn(), getSessionKey: vi.fn<() => string | null>(() => "session-a"), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("../api", () => ({ organizationApi: mocks }));
-vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
+vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey }));
+
+vi.mock("./AccountDirectory", () => ({ AccountDirectory: () => null }));
+vi.mock("./StaffPicker", () => ({ StaffPicker: ({ value, onChange }: { value: string; onChange: (id: string) => void }) => <label>Mã nhân viên<input value={value} onChange={e => onChange(e.target.value)} /></label> }));
 
 import { ApiRequestError } from "@/lib/api";
 
@@ -33,7 +36,7 @@ describe("AccountAdmin command forms", () => {
 
   it.each([null, "session-b"])("handles account status 401 for session %s", async (token) => {
     mocks.updateAccountStatus.mockImplementation(async () => {
-      mocks.getToken.mockReturnValue(token);
+      mocks.getSessionKey.mockReturnValue(token);
       throw new ApiRequestError("Expired", 401);
     });
     render(<AccountAdmin />);
@@ -50,7 +53,7 @@ describe("AccountAdmin command forms", () => {
     mocks.router.replace.mockReset();
     mocks.createAccount.mockReset();
     mocks.updateAccountStatus.mockReset();
-    mocks.getToken.mockReturnValue("session-a");
+    mocks.getSessionKey.mockReturnValue("session-a");
   });
 
   it("creates a patient account linked to the submitted patient UUID and resets the password", async () => {
@@ -101,7 +104,7 @@ describe("AccountAdmin command forms", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Tạo tài khoản" }).closest("form")!);
     await waitFor(() => expect(mocks.createAccount).toHaveBeenCalledTimes(1));
 
-    mocks.getToken.mockReturnValue("session-b");
+    mocks.getSessionKey.mockReturnValue("session-b");
     await act(async () => { resolve(accountContractFixture); await request; });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });

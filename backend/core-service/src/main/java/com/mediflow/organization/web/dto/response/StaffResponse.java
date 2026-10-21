@@ -35,4 +35,21 @@ public record StaffResponse(
                 staff.getUpdatedAt(),
                 staff.getIdentityNumber());
     }
+    /** Public work directory: personal and administrative fields are never populated. */
+    public static StaffResponse directory(Staff staff) {
+        return new StaffResponse(
+                staff.getStaffId(),
+                staff.getFullName(),
+                staff.getDepartmentId(),
+                staff.getJobTitle(),
+                staff.getSpecialization(),
+                null,
+                null,
+                null,
+                staff.isActive(),
+                null,
+                null,
+                null);
+    }
+
 }

@@ -10,7 +10,8 @@ public record VerifiedAccountResponse(
         UUID staffId,
         UUID departmentId,
         UUID patientId,
-        Role role) {
+        Role role,
+        long credentialVersion) {
 
     public static VerifiedAccountResponse from(VerifiedAccount account) {
         return new VerifiedAccountResponse(
@@ -18,6 +19,7 @@ public record VerifiedAccountResponse(
                 account.staffId(),
                 account.departmentId(),
                 account.patientId(),
-                account.role());
+                account.role(),
+                account.credentialVersion());
     }
 }

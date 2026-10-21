@@ -92,6 +92,6 @@ export interface StaffDTO {
   phoneNumber: string | null;
   email: string | null;
   active: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
 }

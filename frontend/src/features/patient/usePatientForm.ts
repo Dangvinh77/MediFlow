@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getRole } from "@/lib/auth";
-import { getToken } from "@/lib/session";
+import { getSessionKey } from "@/lib/session";
 import { patientApi } from "./api";
 import { emptyPatientDraft, patientCreateBody, patientFailure, patientPermissions,
   patientToDraft, patientUpdateBody, validatePatientDraft,
@@ -11,7 +11,7 @@ import { emptyPatientDraft, patientCreateBody, patientFailure, patientPermission
 import { usePatientMutation } from "./usePatientMutation";
 
 /** One mounted workspace per patient and session. No markup, storage or automatic mutation retries. */
-export function usePatientForm(patientId?: string) {
+export function usePatientForm(patientId?: string, onSaved?: () => void) {
   const router = useRouter();
   const [form, setForm] = useState<PatientDraft>(emptyPatientDraft);
   const [loading, setLoading] = useState(Boolean(patientId));
@@ -25,8 +25,8 @@ export function usePatientForm(patientId?: string) {
   useEffect(() => {
     if (!patientId) return;
     let active = true;
-    const token = getToken();
-    const current = () => active && token === getToken();
+    const token = getSessionKey();
+    const current = () => active && token === getSessionKey();
     patientApi.getById(patientId).then((patient) => {
       if (!current()) return;
       setForm(patientToDraft(patient)); setLoaded(true);
@@ -66,7 +66,7 @@ export function usePatientForm(patientId?: string) {
     await mutation.run(() => patientId
       ? patientApi.update(patientId, patientUpdateBody(form))
       : patientApi.create(patientCreateBody(form)),
-      (patient) => router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`));
+      (patient) => { onSaved?.(); router.push(`/patients/${encodeURIComponent(patient.maBenhNhan)}?notice=${patientId ? "updated" : "created"}`); });
   }
 
   return { form, set, loading, loaded, saving: mutation.pending, blocked: mutation.blocked,

@@ -65,7 +65,8 @@ public class AuthController {
                             account.role(),
                             account.staffId(),
                             account.departmentId(),
-                            account.patientId());
+                            account.patientId(),
+                            account.credentialVersion());
                     return ResponseEntity.ok((Object) new LoginResponse(
                             accessToken,
                             refreshToken,
@@ -102,6 +103,7 @@ public class AuthController {
                 requestedCorrelationId);
 
         final UUID accountId;
+        final long credentialVersion;
         try {
             Claims claims = jwt.parse(request.refreshToken());
             if (!JwtClaims.REFRESH_TOKEN_TYPE.equals(
@@ -111,13 +113,16 @@ public class AuthController {
                 throw new IllegalArgumentException("Invalid refresh token");
             }
             accountId = UUID.fromString(claims.getSubject());
+            Number version = claims.get(JwtTokenService.CREDENTIAL_VERSION_CLAIM, Number.class);
+            credentialVersion = version == null ? 0 : version.longValue();
+            if (credentialVersion < 0) throw new IllegalArgumentException("Invalid credential version");
         } catch (Exception exception) {
             return Mono.just(invalidRefreshResponse(correlationId));
         }
 
         return organizationAuthClient.lookupCurrentIdentity(accountId, correlationId)
                 .map(identity -> {
-                    if (!identity.exists() || !identity.active()) {
+                    if (!identity.exists() || !identity.active() || identity.credentialVersion() != credentialVersion) {
                         return invalidRefreshResponse(correlationId);
                     }
                     if (!accountId.equals(identity.accountId())) {

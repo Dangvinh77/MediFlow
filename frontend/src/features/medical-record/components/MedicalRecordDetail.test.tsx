@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({ getById: vi.fn(), addDiagnosis: vi.fn(), compl
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: () => mocks.role,
-  getToken: () => mocks.token,
+  getSessionKey: () => mocks.token,
   subscribeToAuthChanges: (listener: () => void) => { mocks.listeners.add(listener); return () => { mocks.listeners.delete(listener); }; },
 }));
 vi.mock("../api", () => ({ medicalRecordApi: { getById: mocks.getById, addDiagnosis: mocks.addDiagnosis, complete: mocks.complete, createLabOrder: mocks.createLabOrder } }));

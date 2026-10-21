@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DataTableShell } from "@/components/ui/DataTableShell";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
 import { organizationApi } from "../api";
-import { getToken } from "@/lib/auth";
+import { getSessionKey } from "@/lib/auth";
 import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, DepartmentType } from "../types";
 
@@ -36,7 +37,7 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function DepartmentList() {
+export function DepartmentList({ onLoaded }: { onLoaded?: (departments: DepartmentDTO[]) => void }) {
   const router = useRouter();
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +53,10 @@ export function DepartmentList() {
 
   useEffect(() => {
     let disposed = false;
-    const sessionToken = getToken();
+    const sessionToken = getSessionKey();
     organizationApi.departments(false)
       .then((result) => {
-        if (!disposed && isRequestSessionCurrent(sessionToken)) setDepartments(result);
+        if (!disposed && isRequestSessionCurrent(sessionToken)) { setDepartments(result); onLoaded?.(result); }
       })
       .catch((cause: unknown) => {
         if (disposed || !isRequestSessionCurrent(sessionToken, cause)) return;
@@ -69,19 +70,10 @@ export function DepartmentList() {
         if (!disposed && isRequestSessionCurrent(sessionToken)) setLoading(false);
       });
     return () => { disposed = true; };
-  }, [router, attempt]);
+  }, [router, attempt, onLoaded]);
 
   return (
-    <section className="mt-8" aria-labelledby="organization-departments-heading">
-      <div className="mb-4">
-        <h2 id="organization-departments-heading" className="text-lg font-semibold">
-          Khoa phòng
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Danh sách khoa phòng và trạng thái hoạt động.
-        </p>
-      </div>
-
+    <DataTableShell title="Khoa phòng" description="Danh sách khoa phòng và trạng thái hoạt động.">
       {loading ? <AsyncState kind="loading" message="Đang tải danh sách khoa…" /> : null}
 
       {!loading && error ? (
@@ -94,12 +86,13 @@ export function DepartmentList() {
       ) : null}
 
       {!loading && !error && departments.length === 0 ? (
-        <AsyncState kind="empty" message="Chưa có khoa đang hoạt động." />
+        <AsyncState kind="empty" message="Chưa có khoa phòng nào." />
       ) : null}
 
       {!loading && !error && departments.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <div className="overflow-x-auto border-t border-border">
           <table className="w-full min-w-3xl text-left text-sm">
+            <caption className="sr-only">Khoa phòng</caption>
             <thead className="border-b border-border bg-surface-muted">
               <tr>
                 <th scope="col" className="px-4 py-3">Tên khoa</th>
@@ -111,8 +104,8 @@ export function DepartmentList() {
             </thead>
             <tbody>
               {departments.map((department) => (
-                <tr key={department.departmentId} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium"><Link href={`/organization/departments/${department.departmentId}`} className="text-primary hover:underline">{department.departmentName}</Link></td>
+                <tr key={department.departmentId} className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0">
+                  <td className="px-4 py-3 font-medium"><Link href={`/organization/departments/${department.departmentId}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">{department.departmentName}</Link></td>
                   <td className="px-4 py-3">{department.abbreviation}</td>
                   <td className="px-4 py-3">
                     {departmentTypeLabels[department.departmentType] ?? "Không xác định"}
@@ -129,6 +122,6 @@ export function DepartmentList() {
           </table>
         </div>
       ) : null}
-    </section>
+    </DataTableShell>
   );
 }

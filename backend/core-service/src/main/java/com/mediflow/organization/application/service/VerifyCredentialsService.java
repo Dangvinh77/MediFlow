@@ -32,7 +32,7 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
 
     @Override
     public VerifiedAccount execute(String username, String rawPassword) {
-        Account account = accountRepository.findByUsername(username)
+        Account account = accountRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> invalidCredentials());
 
         if (account.getRole() == Role.SYSTEM
@@ -57,7 +57,8 @@ public class VerifyCredentialsService implements VerifyCredentialsUseCase {
                 account.getStaffId(),
                 departmentId,
                 account.getPatientId(),
-                account.getRole());
+                account.getRole(),
+                accountRepository.credentialVersion(account.getAccountId()));
     }
 
     private InvalidCredentialsException invalidCredentials() {

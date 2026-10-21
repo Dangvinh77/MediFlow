@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("client-only", () => ({}));
-const session = vi.hoisted(() => ({ getToken: vi.fn(), clearSession: vi.fn() }));
+const session = vi.hoisted(() => ({ getToken: vi.fn(), getSessionKey: vi.fn(() => "test-session"), getRefreshToken: vi.fn(() => null), clearSession: vi.fn() }));
 vi.mock("./session", () => session);
 import { api, ApiRequestError } from "./api";
 

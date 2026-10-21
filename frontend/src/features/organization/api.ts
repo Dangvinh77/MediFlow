@@ -22,6 +22,17 @@ export interface StaffSearchParams {
 }
 
 export const organizationApi = {
+  accounts: (params: { keyword?: string; role?: string; active?: boolean; page?: number } = {}) => {
+    const query = new URLSearchParams({ page: String(params.page ?? 0), size: "20" });
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    if (params.role) query.set("role", params.role);
+    if (params.active !== undefined) query.set("active", String(params.active));
+    return api.get<PageResult<AccountDTO>>(`/v1/org/accounts?${query}`);
+  },
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put<boolean>("/v1/org/accounts/me/password", { currentPassword, newPassword }),
+  resetPassword: (accountId: string, newPassword: string) =>
+    api.put<boolean>(`/v1/org/accounts/${encodeURIComponent(accountId)}/password`, { newPassword }),
   departments: (activeOnly = true) =>
     api.get<DepartmentDTO[]>(`/v1/org/departments?activeOnly=${activeOnly}`),
   department: (departmentId: string) =>

@@ -43,6 +43,19 @@ import com.mediflow.organization.application.service.UpdateStaffService;
 
 @Configuration
 public class ApplicationConfig {
+        @Bean
+        public com.mediflow.organization.application.port.in.BootstrapAdminUseCase bootstrapAdminUseCase(
+                        AccountRepository accounts, CreateDepartmentUseCase departments,
+                        CreateStaffUseCase staff, CreateAccountUseCase createAccount) {
+                return new com.mediflow.organization.application.service.BootstrapAdminService(accounts, departments, staff, createAccount);
+        }
+
+        @Bean
+        public com.mediflow.organization.application.port.in.ManageAccountsUseCase manageAccountsUseCase(
+                        AccountRepository accounts, PasswordHasher passwords) {
+                return new com.mediflow.organization.application.service.ManageAccountsService(accounts, passwords);
+        }
+
 
         @Bean
         public VerifyCredentialsUseCase verifyCredentialsUseCase(

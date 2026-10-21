@@ -1,6 +1,6 @@
 import "client-only";
 
-import { clearSession, getToken } from "./session";
+import { clearSession, getToken, getSessionKey, getRefreshToken, getRole, renewAccessToken } from "./session";
 import type {
   ApiError,
   ApiResponse,
@@ -44,10 +44,58 @@ function isApiResponse(
   );
 }
 
+let refreshFlight: { session: string; promise: Promise<void> } | null = null;
+
+function jwtIdentity(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split(".")[1];
+    return JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch { return null; }
+}
+
+async function refreshAccess(session: string, rejectedToken: string): Promise<void> {
+  if (getSessionKey() !== session) throw new ApiRequestError("Phiên đăng nhập đã thay đổi.", 401);
+  if (getToken() !== rejectedToken) return; // Another request/tab already renewed this login.
+  if (refreshFlight?.session === session) return refreshFlight.promise;
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new ApiRequestError("Phiên đăng nhập đã hết hạn.", 401);
+  const promise = (async () => {
+    const response = await fetch("/api/v1/auth/refresh", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }), cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    const body = await response.json().catch(() => null);
+    if (getSessionKey() !== session) throw new ApiRequestError("Phiên đăng nhập đã thay đổi.", 401);
+    if (!response.ok) {
+      if (response.status === 401) clearSession();
+      throw new ApiRequestError(
+        response.status === 401 ? "Phiên đăng nhập đã hết hạn." : "Chưa thể gia hạn phiên. Hãy thử lại.",
+        response.status, body?.error?.code, body?.error?.details ?? [], body?.correlationId ?? null,
+      );
+    }
+    const identity = typeof body?.accessToken === "string" ? jwtIdentity(body.accessToken) : null;
+    const previous = jwtIdentity(rejectedToken);
+    // These claims protect UI continuity only; signature verification belongs to Gateway.
+    if (!identity || !previous?.sub || identity.type !== "access" || identity.role !== getRole()
+        || ["sub", "staffId", "departmentId", "patientId"].some(key => (identity[key] ?? null) !== (previous[key] ?? null))) {
+      clearSession();
+      throw new ApiRequestError("Thông tin truy cập đã thay đổi. Vui lòng đăng nhập lại.", 401);
+    }
+    renewAccessToken(session, body.accessToken);
+  })();
+  refreshFlight = { session, promise };
+  try { await promise; } finally { if (refreshFlight?.promise === promise) refreshFlight = null; }
+}
+
 async function requestJson<T>(
   path: string,
   init?: RequestInit,
+  retried = false,
+  expectedSession?: string | null,
 ): Promise<T> {
+  const session = getSessionKey();
+  if (expectedSession !== undefined && session !== expectedSession) throw new ApiRequestError("Phiên đăng nhập đã thay đổi.", 401);
   const token = getToken();
 
   const headers = new Headers(init?.headers);
@@ -74,9 +122,14 @@ async function requestJson<T>(
     .catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401 && !retried && token && session && getSessionKey() === session
+        && !path.startsWith("/v1/auth/") && getRefreshToken()) {
+      await refreshAccess(session, token);
+      return requestJson<T>(path, init, true, session);
+    }
     // Remove the rejected bearer only while it still belongs to this session.
     // A late response (including a delayed body) must preserve a newer login.
-    if (response.status === 401 && token && getToken() === token) {
+    if (response.status === 401 && token && getToken() === token && getSessionKey() === session) {
       clearSession();
     }
 

@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   createStaff: vi.fn(),
   updateStaff: vi.fn(),
   changeStaffDepartment: vi.fn(),
-  getToken: vi.fn<() => string | null>(() => "session-a"),
+  getSessionKey: vi.fn<() => string | null>(() => "session-a"),
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
 }));
 
@@ -24,7 +24,7 @@ vi.mock("../api", () => ({
     changeStaffDepartment: mocks.changeStaffDepartment,
   },
 }));
-vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
+vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey }));
 
 import { ApiRequestError } from "@/lib/api";
 
@@ -139,7 +139,7 @@ describe("StaffForm", () => {
   it("redirects on a 401 while reconciling a failed transfer after transport clears the token", async () => {
     mocks.departments.mockResolvedValue([departmentContractFixture, targetDepartment]);
     mocks.staffMember.mockResolvedValueOnce(staffContractFixture).mockImplementationOnce(async () => {
-      mocks.getToken.mockReturnValue(null);
+      mocks.getSessionKey.mockReturnValue(null);
       throw new ApiRequestError("Expired", 401);
     });
     mocks.updateStaff.mockResolvedValue(staffContractFixture);
@@ -160,7 +160,7 @@ describe("StaffForm", () => {
     mocks.createStaff.mockReset();
     mocks.updateStaff.mockReset();
     mocks.changeStaffDepartment.mockReset();
-    mocks.getToken.mockReturnValue("session-a");
+    mocks.getSessionKey.mockReturnValue("session-a");
     mocks.router.back.mockReset();
     mocks.router.push.mockReset();
     mocks.router.replace.mockReset();
@@ -379,7 +379,7 @@ describe("StaffForm", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Lưu thay đổi" }).closest("form")!);
     await waitFor(() => expect(mocks.updateStaff).toHaveBeenCalledTimes(1));
 
-    mocks.getToken.mockReturnValue("session-b");
+    mocks.getSessionKey.mockReturnValue("session-b");
     await act(async () => { resolve({ ...staffContractFixture, fullName: "Updated Name" }); await request; });
     expect(mocks.changeStaffDepartment).not.toHaveBeenCalled();
     expect(mocks.router.push).not.toHaveBeenCalled();

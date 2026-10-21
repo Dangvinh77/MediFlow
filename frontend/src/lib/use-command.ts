@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "./api";
 import type { ApiError } from "./types";
-import { getToken } from "./session";
+import { getSessionKey } from "./session";
 
 export interface CommandError {
   status: number | null;
@@ -35,8 +35,8 @@ export function useCommand() {
     setError(null);
     setUncertain(false);
     let unknownOutcome = false;
-    const token = getToken();
-    const isCurrent = () => mounted.current && getToken() === token;
+    const token = getSessionKey();
+    const isCurrent = () => mounted.current && getSessionKey() === token;
     try {
       const result = await command();
       if (isCurrent()) onSuccess(result);
