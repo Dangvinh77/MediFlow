@@ -29,6 +29,12 @@ ADMIN/CASHIER can record an already completed refund with
 confirmation. The obligation is not presented as the remaining refundable balance. The backend
 validates eligibility and cumulative refunds. Unknown outcomes block blind resend. This command
 records a cashier refund; it does not transfer money through a bank.
+The 2026-10-21 lookup update adds an in-place “Tra cứu đơn khác” action after a definitive
+outcome. Pending, uncertain and non-completed refund results keep that action locked. A completed
+refund retains its receipt and reloads the authoritative adjustment; a read failure keeps the
+receipt, blocks writes against the stale snapshot, and offers a read-only retry. A successful
+refresh clears refund drafts and requires a fresh reconciliation confirmation for another refund.
+The returned obligation remains server-owned; the client does not subtract recorded refunds.
 The previous Gateway blocker is superseded by implemented rules (PR #431); the existing handoff's
 broader acceptance criteria remain owned by its maintainers.
 
