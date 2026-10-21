@@ -37,7 +37,7 @@ class UpdateAccountStatusServiceTest {
     @Test
     void execute_false_deactivatesAccount() {
         Account account = account(false);
-        when(accountRepository.findById(account.getAccountId()))
+        when(accountRepository.findByIdForUpdate(account.getAccountId()))
                 .thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -50,7 +50,7 @@ class UpdateAccountStatusServiceTest {
     @Test
     void execute_true_activatesAccount() {
         Account account = account(false);
-        when(accountRepository.findById(account.getAccountId()))
+        when(accountRepository.findByIdForUpdate(account.getAccountId()))
                 .thenReturn(Optional.of(account));
         when(accountRepository.save(any(Account.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -63,7 +63,7 @@ class UpdateAccountStatusServiceTest {
     @Test
     void execute_unknownAccount_throwsNotFoundException() {
         UUID accountId = UUID.randomUUID();
-        when(accountRepository.findById(accountId))
+        when(accountRepository.findByIdForUpdate(accountId))
                 .thenReturn(Optional.empty());
 
         assertThrows(

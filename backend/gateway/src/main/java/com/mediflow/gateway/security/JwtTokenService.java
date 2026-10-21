@@ -22,6 +22,7 @@ import java.util.UUID;
 @Service
 public class JwtTokenService {
 
+    public static final String CREDENTIAL_VERSION_CLAIM = "credentialVersion";
     public static final String DEPARTMENT_ID_CLAIM = JwtClaims.DEPARTMENT_ID;
 
     private final SecretKey key;
@@ -88,6 +89,16 @@ public class JwtTokenService {
             UUID staffId,
             UUID departmentId,
             UUID patientId) {
+        return issueRefreshToken(accountId, role, staffId, departmentId, patientId, 0);
+    }
+
+    public String issueRefreshToken(
+            UUID accountId,
+            String role,
+            UUID staffId,
+            UUID departmentId,
+            UUID patientId,
+            long credentialVersion) {
         return build(
                 accountId.toString(),
                 role,
@@ -96,7 +107,7 @@ public class JwtTokenService {
                 staffId,
                 departmentId,
                 patientId,
-                UUID.randomUUID().toString());
+                UUID.randomUUID().toString(), credentialVersion);
     }
 
     public String issueServiceToken(
@@ -124,6 +135,19 @@ public class JwtTokenService {
             UUID patientId,
             String correlationId) {
 
+        return build(subject, role, tokenType, ttlSeconds, staffId, departmentId, patientId, correlationId, null);
+    }
+
+    private String build(
+            String subject,
+            String role,
+            String tokenType,
+            long ttlSeconds,
+            UUID staffId,
+            UUID departmentId,
+            UUID patientId,
+            String correlationId, Long credentialVersion) {
+
         Objects.requireNonNull(subject, "subject is required");
         Objects.requireNonNull(role, "role is required");
 
@@ -150,6 +174,7 @@ public class JwtTokenService {
         if (patientId != null) {
             builder.claim(JwtClaims.PATIENT_ID, patientId.toString());
         }
+        if (credentialVersion != null) builder.claim(CREDENTIAL_VERSION_CLAIM, credentialVersion);
         return builder.signWith(key).compact();
     }
 

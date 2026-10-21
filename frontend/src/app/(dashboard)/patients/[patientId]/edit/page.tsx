@@ -1,3 +1,4 @@
+import { RecordBreadcrumb } from "@/features/patient/components/RecordLayout";
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
@@ -9,5 +10,5 @@ interface Props { params: Promise<{ patientId: string }> }
 
 export default async function EditPatientPage({ params }: Props) {
   const { patientId } = await params; const id = patientId.trim();
-  return <PageShell title="Sửa bệnh nhân" description="Cập nhật thông tin liên hệ; số định danh được giữ nguyên.">{!isUuid(id) ? <section role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">Mã bệnh nhân không phải UUID hợp lệ.</section> : <RoleGate allowed={["ADMIN", "NURSE"]}><PatientForm patientId={id} /></RoleGate>}</PageShell>;
+  return <PageShell title="Sửa bệnh nhân" description="Cập nhật thông tin cá nhân, định danh và liên hệ."><RecordBreadcrumb href="/patients" parent="Bệnh nhân" current="Sửa bệnh nhân" />{!isUuid(id) ? <section role="alert" className="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-6 text-sm text-danger">Mã bệnh nhân không phải UUID hợp lệ.</section> : <RoleGate allowed={["ADMIN", "NURSE"]}><PatientForm patientId={id} /></RoleGate>}</PageShell>;
 }

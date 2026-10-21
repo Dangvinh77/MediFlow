@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import type { Role } from "@/lib/roles";
 import { appointmentApi } from "../api";
@@ -57,7 +57,7 @@ function Identifier({ label, value }: { label: string; value: string }) {
 
 export function AppointmentDetail(props: AppointmentDetailProps) {
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, getServerRole);
-  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, getServerToken);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, getServerToken);
   return <AppointmentDetailContent key={`${props.appointmentId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} {...props} role={role} />;
 }
 

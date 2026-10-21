@@ -5,11 +5,12 @@ import { departmentContractFixture, staffContractFixture } from "../contract.fix
 
 const mocks = vi.hoisted(() => ({
   department: vi.fn(), staffMember: vi.fn(),
-  getToken: vi.fn<() => string | null>(() => "session-a"),
+  getRole: vi.fn(() => "ADMIN"),
+  getSessionKey: vi.fn<() => string | null>(() => "session-a"),
   router: { replace: vi.fn() },
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken, getRole: () => "ADMIN", subscribeToAuthChanges: () => () => {} }));
+vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey, getRole: mocks.getRole, subscribeToAuthChanges: () => () => {} }));
 vi.mock("../api", () => ({ organizationApi: { department: mocks.department, staffMember: mocks.staffMember } }));
 
 import { DepartmentDetail } from "./DepartmentDetail";
@@ -24,9 +25,10 @@ describe.each(["department", "staff"] as const)("Organization %s detail lifecycl
     ? <DepartmentDetail departmentId={value} /> : <StaffDetail staffId={value} />;
 
   beforeEach(() => {
+    mocks.getRole.mockReturnValue("ADMIN");
     mocks.department.mockReset();
     mocks.staffMember.mockReset();
-    mocks.getToken.mockReturnValue("session-a");
+    mocks.getSessionKey.mockReturnValue("session-a");
     mocks.router.replace.mockReset();
   });
 
@@ -62,12 +64,27 @@ describe.each(["department", "staff"] as const)("Organization %s detail lifecycl
 
   it.each([null, "session-b"])("handles 401 for session %s", async (token) => {
     request().mockImplementation(async () => {
-      mocks.getToken.mockReturnValue(token);
+      mocks.getSessionKey.mockReturnValue(token);
       throw new ApiRequestError("Expired", 401);
     });
     render(detail());
     await waitFor(() => expect(request()).toHaveBeenCalledTimes(1));
     if (token === null) expect(mocks.router.replace).toHaveBeenCalledWith("/login");
     else expect(mocks.router.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("Staff directory privacy", () => {
+  it.each(["MANAGER", "DOCTOR", "NURSE"])("hides personal fields for %s even if the payload contains them", async (role) => {
+    mocks.getRole.mockReturnValue(role);
+    mocks.staffMember.mockResolvedValue({ ...staffContractFixture,
+      identityNumber: "012345678901", licenseNumber: "PRIVATE-LICENSE",
+      phoneNumber: "0901234567", email: "private@example.test" });
+    render(<StaffDetail staffId={staffContractFixture.staffId} />);
+    await screen.findByRole("heading", { name: staffContractFixture.fullName });
+    for (const value of ["012345678901", "PRIVATE-LICENSE", "0901234567", "private@example.test"]) {
+      expect(screen.queryByText(value)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByRole("link", { name: "Chỉnh sửa" })).not.toBeInTheDocument();
   });
 });

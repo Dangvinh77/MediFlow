@@ -13,5 +13,17 @@ public interface AccountRepository {
 
     Optional<Account> findByUsername(String username);
 
+    Optional<Account> findByIdForUpdate(UUID accountId);
+
+    Optional<Account> findByUsernameForUpdate(String username);
+
+    com.mediflow.common.api.PageResult<Account> search(String keyword,
+            com.mediflow.organization.domain.model.Role role, Boolean active,
+            com.mediflow.common.api.PageQuery page);
+
+    long credentialVersion(UUID accountId);
+
+    void incrementCredentialVersion(UUID accountId);
+
     Account save(Account account);
 }

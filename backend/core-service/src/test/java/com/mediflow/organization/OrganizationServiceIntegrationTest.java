@@ -167,6 +167,32 @@ class OrganizationServiceIntegrationTest {
     @org.springframework.beans.factory.annotation.Qualifier("organizationTransactionManager")
     private org.springframework.transaction.PlatformTransactionManager organizationTransactions;
 
+    @Autowired
+    private com.mediflow.organization.application.port.in.ManageAccountsUseCase manageAccounts;
+
+    @Test
+    void accountSearchAndPasswordManagementUseRealPostgresAndBcrypt() {
+        var doctor = newDoctor(newDepartment().getDepartmentId());
+        String username = "manage_" + UUID.randomUUID().toString().substring(0, 8);
+        var account = createAccountUseCase.execute(username, "original-password", doctor.getStaffId(), Role.DOCTOR);
+        var page = manageAccounts.search(username, Role.DOCTOR, true, com.mediflow.common.api.PageQuery.of(0, 20));
+        assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(page.content().getFirst().getAccountId()).isEqualTo(account.getAccountId());
+        assertThat(manageAccounts.search("%", null, null, com.mediflow.common.api.PageQuery.of(0, 20)).content()).isEmpty();
+        assertThat(lookupAccountIdentityUseCase.lookup(account.getAccountId()).credentialVersion()).isZero();
+        manageAccounts.changePassword(account.getAccountId(), "original-password", "changed-password");
+        assertThat(lookupAccountIdentityUseCase.lookup(account.getAccountId()).credentialVersion()).isEqualTo(1);
+        assertThrows(com.mediflow.organization.domain.exception.InvalidCredentialsException.class,
+                () -> verifyCredentialsUseCase.execute(username, "original-password"));
+        assertThat(verifyCredentialsUseCase.execute(username, "changed-password").accountId()).isEqualTo(account.getAccountId());
+        manageAccounts.resetPassword(account.getAccountId(), "recovery-password");
+        assertThat(lookupAccountIdentityUseCase.lookup(account.getAccountId()).credentialVersion()).isEqualTo(2);
+        assertThat(verifyCredentialsUseCase.execute(username, "recovery-password").accountId()).isEqualTo(account.getAccountId());
+        updateAccountStatusUseCase.execute(account.getAccountId(), false);
+        assertThrows(com.mediflow.organization.domain.exception.InvalidCredentialsException.class,
+                () -> verifyCredentialsUseCase.execute(username, "recovery-password"));
+    }
+
     @Test
     void changingDepartmentHeadToNonDoctorCannotLeaveInvalidHeadReference() {
         var department = newDepartment();

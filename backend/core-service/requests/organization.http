@@ -214,5 +214,28 @@ GET {{host}}/api/v1/org/accounts/00000000-0000-0000-0000-000000000000/identity
 Authorization: Bearer {{token}}
 X-Correlation-Id: 11111111-1111-1111-1111-111111111111
 
-### Expected data: exists, active, accountId, role, staffId, departmentId, patientId.
+### Expected data: exists, active, accountId, role, staffId, departmentId, patientId, credentialVersion.
 ### Missing accounts return exists=false; credentials and personal account data are never returned.
+
+### Search accounts (ADMIN; literal keyword, optional role/active, zero-based page)
+GET {{host}}/api/v1/org/accounts?keyword=alex&role=DOCTOR&active=true&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Change own password (human account; account ID comes from authentication)
+PUT {{host}}/api/v1/org/accounts/me/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "{{currentPassword}}",
+  "newPassword": "{{newPassword}}"
+}
+
+### Reset selected human account password (ADMIN; verify ownership outside this API)
+PUT {{host}}/api/v1/org/accounts/00000000-0000-0000-0000-000000000000/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newPassword": "{{newPassword}}"
+}

@@ -82,3 +82,53 @@ acceptance run passed **1,500 tests** in total, including the exact EXAM refund-
 role/method/path checks. Organization API/StaffForm focused
 frontend tests passed **11 tests**, with typecheck and lint also passing. These are module
 and contract results; they do not certify deployed browser or six-application acceptance.
+
+
+## Staff privacy and account security — 2026-10-22
+
+Human staff GET list/detail responses expose private fields only to ADMIN. Other permitted
+roles receive the work directory: staff ID, full name, department, job title, specialization
+and active status. Identity number, license, telephone, email and audit timestamps are null.
+Both responses use Cache-Control: no-store. Service lookup contracts remain separate.
+
+ADMIN can search `GET /api/v1/org/accounts` using `keyword`, `role`, `active`, `page`, `size`.
+Keyword matches a literal username substring; results never contain password hashes.
+Human accounts can `PUT /api/v1/org/accounts/me/password` with currentPassword/newPassword.
+Successful password commands return HTTP 200 with the standard ApiResponse and data=true.
+ADMIN can `PUT /api/v1/org/accounts/{accountId}/password` with newPassword after verifying
+the account owner. SYSTEM accounts cannot be reset using this human management endpoint.
+There is no email/SMS password recovery provider in this implementation.
+Passwords require at least 8 characters and at most 72 UTF-8 bytes; unchanged passwords
+are rejected. Password changes increment credential_version in the same locked transaction.
+Verify credentials and the Gateway-only identity snapshot include credentialVersion.
+Gateway refresh tokens must match the current version, so old refresh tokens stop working
+after password changes. Already issued access tokens remain valid until their configured TTL
+(default 30 minutes); this does not implement immediate access-token revocation.
+
+### Explicit first administrator for local development
+
+Bootstrap is disabled by default, requires Spring profile `local` and the explicit enabled
+property, and skips creation when any ADMIN account already exists (including inactive).
+It creates a department, staff with required unique 12-digit identity number, and ADMIN in
+one Organization transaction. An advisory lock prevents duplicate concurrent bootstraps.
+Do not use this as a production recovery endpoint. After building Core, run in PowerShell
+from the repository root with PostgreSQL/RabbitMQ/Eureka available:
+
+```powershell
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED = "true"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME = Read-Host "Admin username"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME = Read-Host "Full name"
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER = Read-Host "12-digit identity number"
+$secret = Read-Host "Admin password (8+ characters, max 72 UTF-8 bytes)" -AsSecureString
+$env:MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new("", $secret).Password
+try {
+    java -jar backend/core-service/target/core-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
+} finally {
+    Remove-Item Env:MEDIFLOW_BOOTSTRAP_ADMIN_ENABLED, Env:MEDIFLOW_BOOTSTRAP_ADMIN_USERNAME, Env:MEDIFLOW_BOOTSTRAP_ADMIN_FULL_NAME, Env:MEDIFLOW_BOOTSTRAP_ADMIN_IDENTITY_NUMBER, Env:MEDIFLOW_BOOTSTRAP_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+}
+```
+
+Stop the existing Core instance before launching another on the same port. This example
+starts a local jar; Docker Compose containers do not inherit these host variables automatically.
+Subsequent starts need no bootstrap settings. Flyway applies Organization V9 automatically;
+deploy updated Core before updated Gateway so both understand credentialVersion.

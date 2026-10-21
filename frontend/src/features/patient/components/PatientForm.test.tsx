@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   return {
     getById: vi.fn(), create: vi.fn(), update: vi.fn(), getRole: vi.fn(() => "ADMIN"),
-    getToken: vi.fn(() => token),
+    getSessionKey: vi.fn(() => token),
     subscribeToAuthChanges: vi.fn((listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({ getRole: mocks.getRole }));
-vi.mock("@/lib/session", () => ({ getToken: mocks.getToken, subscribeToAuthChanges: mocks.subscribeToAuthChanges }));
+vi.mock("@/lib/session", () => ({ getSessionKey: mocks.getSessionKey, subscribeToAuthChanges: mocks.subscribeToAuthChanges }));
 vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, create: mocks.create, update: mocks.update } }));
 
 import { PatientForm } from "./PatientForm";
@@ -53,8 +53,13 @@ describe("PatientForm", () => {
   it("validates programmatic submissions independently of native HTML", async () => {
     render(<PatientForm />);
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Họ tên");
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("Họ tên");
     expect(mocks.create).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveFocus();
+    expect(screen.getByLabelText(/Họ tên/)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Họ tên/)).toHaveAccessibleDescription("Họ tên phải có từ 1 đến 100 ký tự.");
+    fireEvent.change(screen.getByLabelText(/Họ tên/), { target: { value: "Nguyen Van B" } });
+    expect(screen.getByLabelText(/Họ tên/)).toHaveAttribute("aria-invalid", "false");
   });
 
   it("creates once with trimmed/null wire fields and navigates by returned patient identity", async () => {
@@ -97,7 +102,7 @@ describe("PatientForm", () => {
     render(<PatientForm />);
     fill();
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("không có quyền");
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("không có quyền");
     expect(mocks.create).not.toHaveBeenCalled();
   });
 
@@ -121,7 +126,7 @@ describe("PatientForm", () => {
     const identity = screen.getByLabelText(/Số CMND\/CCCD/);
     fireEvent.change(identity, { target: { value: "002" } });
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("edit-trace");
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("edit-trace");
     expect(identity).toHaveValue("002");
     expect(mocks.router.push).not.toHaveBeenCalled();
 
@@ -136,7 +141,7 @@ describe("PatientForm", () => {
     render(<PatientForm />);
     fill();
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("trace-409");
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("trace-409");
     expect(screen.getByLabelText(/Số CMND\/CCCD/)).toHaveValue(" 001234567890 ");
     expect(mocks.router.push).not.toHaveBeenCalled();
   });
@@ -146,7 +151,7 @@ describe("PatientForm", () => {
     render(<PatientForm />);
     fill();
     submit();
-    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa xác định");
+    expect(await screen.findByRole("alert", { name: "Không thể lưu bệnh nhân" })).toHaveTextContent("Chưa xác định");
     submit();
     expect(mocks.create).toHaveBeenCalledTimes(1);
   });

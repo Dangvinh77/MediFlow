@@ -4,11 +4,11 @@ import { useState, useSyncExternalStore } from "react";
 import { ClinicalLabOrderForm } from "@/features/medical-record/components/ClinicalLabOrderForm";
 import type { ClinicalLabOrderDTO } from "@/features/medical-record/types";
 import { CreateSourceLabRequest } from "@/features/lab/components/CreateSourceLabRequest";
-import { getRole, getToken, subscribeToAuthChanges } from "@/lib/session";
+import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/session";
 
 // The route composes the two Vinh-owned contexts; neither feature imports the other.
 export function LabOrderWorkspace({ recordId }: { recordId: string }) {
-  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   const role = useSyncExternalStore(subscribeToAuthChanges, getRole, () => null);
 
   return <LabOrderWorkspaceContents key={`${recordId}:${role ?? "anonymous"}:${token ?? "anonymous"}`} recordId={recordId} />;

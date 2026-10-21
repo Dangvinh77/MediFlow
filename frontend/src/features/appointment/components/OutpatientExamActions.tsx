@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { CommandFeedback } from "@/components/ui/CommandFeedback";
-import { getToken, subscribeToAuthChanges } from "@/lib/auth";
+import { getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { useCommand } from "@/lib/use-command";
 import { appointmentApi } from "../api";
@@ -18,7 +18,7 @@ interface OutpatientExamActionsProps {
 }
 
 export function OutpatientExamActions(props: OutpatientExamActionsProps) {
-  const token = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  const token = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   const sessionKey = token?.trim() ? token : null;
 
   return <OutpatientExamActionsForSession

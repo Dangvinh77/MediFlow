@@ -9,13 +9,13 @@ const mocks = vi.hoisted(() => ({
   staff: vi.fn(),
   router: { replace: vi.fn() },
   getRole: vi.fn(() => "ADMIN"),
-  getToken: vi.fn<() => string | null>(() => "session-a"),
+  getSessionKey: vi.fn<() => string | null>(() => "session-a"),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
-  getToken: mocks.getToken,
+  getSessionKey: mocks.getSessionKey,
   subscribeToAuthChanges: () => () => {},
 }));
 vi.mock("../api", () => ({ organizationApi: { departments: mocks.departments, staff: mocks.staff } }));
@@ -55,7 +55,7 @@ describe("Organization browse and actions", () => {
     let resolve!: (value: unknown) => void;
     mocks[resource].mockReturnValueOnce(new Promise((done) => { resolve = done; }));
     render(resource === "departments" ? <DepartmentList /> : <StaffTable />);
-    mocks.getToken.mockReturnValue("session-b");
+    mocks.getSessionKey.mockReturnValue("session-b");
     await act(async () => { resolve(resource === "departments" ? [departmentContractFixture] : staffPage()); });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
@@ -65,7 +65,7 @@ describe("Organization browse and actions", () => {
     mocks.staff.mockReset();
     mocks.router.replace.mockReset();
     mocks.getRole.mockReturnValue("ADMIN");
-    mocks.getToken.mockReturnValue("session-a");
+    mocks.getSessionKey.mockReturnValue("session-a");
   });
 
   it("loads departments and staff independently and can retry a failed department lookup", async () => {

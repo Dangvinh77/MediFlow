@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   department: vi.fn(),
   createDepartment: vi.fn(),
   updateDepartment: vi.fn(),
-  getToken: vi.fn<() => string | null>(() => "session-a"),
+  getSessionKey: vi.fn<() => string | null>(() => "session-a"),
   router: { back: vi.fn(), push: vi.fn(), replace: vi.fn() },
 }));
 
@@ -18,7 +18,9 @@ vi.mock("../api", () => ({
     updateDepartment: mocks.updateDepartment,
   },
 }));
-vi.mock("@/lib/auth", () => ({ getToken: mocks.getToken }));
+vi.mock("@/lib/auth", () => ({ getSessionKey: mocks.getSessionKey }));
+
+vi.mock("./StaffPicker", () => ({ StaffPicker: ({ value, onChange }: { value: string; onChange: (id: string) => void }) => <label>Mã trưởng khoa<input value={value} onChange={e => onChange(e.target.value)} /></label> }));
 
 import { ApiRequestError } from "@/lib/api";
 
@@ -55,7 +57,7 @@ describe("DepartmentForm", () => {
 
   it.each([null, "session-b"])("handles save 401 without redirecting a newer session (%s)", async (token) => {
     mocks.createDepartment.mockImplementation(async () => {
-      mocks.getToken.mockReturnValue(token);
+      mocks.getSessionKey.mockReturnValue(token);
       throw new ApiRequestError("Expired", 401);
     });
     render(<DepartmentForm />);
@@ -69,7 +71,7 @@ describe("DepartmentForm", () => {
     mocks.department.mockReset();
     mocks.createDepartment.mockReset();
     mocks.updateDepartment.mockReset();
-    mocks.getToken.mockReturnValue("session-a");
+    mocks.getSessionKey.mockReturnValue("session-a");
     mocks.router.back.mockReset();
     mocks.router.push.mockReset();
     mocks.router.replace.mockReset();

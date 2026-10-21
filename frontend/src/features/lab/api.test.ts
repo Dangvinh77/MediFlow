@@ -3,7 +3,7 @@ import { labApi } from "./api";
 import type { CreateLabRequest } from "./types";
 
 vi.mock("client-only", () => ({}));
-vi.mock("@/lib/session", () => ({ getToken: () => "test-token", clearSession: vi.fn() }));
+vi.mock("@/lib/session", () => ({ getToken: () => "test-token", getSessionKey: () => "test-session", getRefreshToken: () => null, clearSession: vi.fn() }));
 
 describe("Lab care contract through Gateway", () => {
   const fetchMock = vi.fn();

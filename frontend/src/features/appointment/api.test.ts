@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appointmentApi } from "./api";
 
 vi.mock("client-only", () => ({}));
-vi.mock("@/lib/session", () => ({ getToken: () => "test-token", clearSession: vi.fn() }));
+vi.mock("@/lib/session", () => ({ getToken: () => "test-token", getSessionKey: () => "test-session", getRefreshToken: () => null, clearSession: vi.fn() }));
 
 describe("appointment care commands through Gateway", () => {
   const fetchMock = vi.fn();

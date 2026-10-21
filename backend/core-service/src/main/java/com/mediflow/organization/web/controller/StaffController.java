@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -133,12 +134,13 @@ public class StaffController {
                         @RequestParam(name = "departmentId", required = false) UUID departmentId,
                         @RequestParam(name = "jobTitle", required = false) JobTitle jobTitle,
                         @RequestParam(name = "page", defaultValue = "0") int page,
-                        @RequestParam(name = "size", defaultValue = "20") int size) {
+                        @RequestParam(name = "size", defaultValue = "20") int size,
+                        Authentication authentication) {
                 PageResult<StaffResponse> response = getStaffUseCase
                                 .search(departmentId, jobTitle, PageQuery.of(page, size))
-                                .map(StaffResponse::from);
+                                .map(staff -> readableStaff(staff, authentication));
 
-                return ResponseEntity.ok(ApiResponse.ok(
+                return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
                                 response,
                                 correlationIds.currentOrCreate().toString()));
         }
@@ -164,10 +166,10 @@ public class StaffController {
 
         @GetMapping("/{id}")
         @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DOCTOR', 'NURSE')")
-        public ResponseEntity<ApiResponse<StaffResponse>> getStaffById(@PathVariable UUID id) {
+        public ResponseEntity<ApiResponse<StaffResponse>> getStaffById(@PathVariable UUID id, Authentication authentication) {
                 Staff staff = getStaffUseCase.getStaffById(id);
-                return ResponseEntity.ok(ApiResponse.ok(
-                                StaffResponse.from(staff),
+                return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(ApiResponse.ok(
+                                readableStaff(staff, authentication),
                                 correlationIds.currentOrCreate().toString()));
         }
 
@@ -188,6 +190,12 @@ public class StaffController {
                 return ResponseEntity.ok(ApiResponse.ok(
                                 result,
                                 correlationIds.currentOrCreate().toString()));
+        }
+
+        private StaffResponse readableStaff(Staff staff, Authentication authentication) {
+                boolean admin = authentication != null && authentication.getAuthorities().stream()
+                                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+                return admin ? StaffResponse.from(staff) : StaffResponse.directory(staff);
         }
 
 }

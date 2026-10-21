@@ -6,7 +6,7 @@ import type { DrugDTO } from "../../types";
 
 const mocks = vi.hoisted(() => ({ role: "DOCTOR" as Role | null, search: vi.fn(), create: vi.fn(), router: { replace: vi.fn() } }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
-vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, getToken: () => "actor-token", subscribeToAuthChanges: () => () => {} }));
+vi.mock("@/lib/auth", () => ({ getRole: () => mocks.role, getSessionKey: () => "actor-token", subscribeToAuthChanges: () => () => {} }));
 vi.mock("../../api", () => ({ pharmacyApi: { searchDrugs: mocks.search, createPrescription: mocks.create } }));
 import { CreatePrescriptionForm } from "./CreatePrescriptionForm";
 

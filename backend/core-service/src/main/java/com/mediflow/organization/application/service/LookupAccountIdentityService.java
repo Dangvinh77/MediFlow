@@ -37,6 +37,7 @@ public class LookupAccountIdentityService implements LookupAccountIdentityUseCas
                 account.getRole().name(),
                 account.getStaffId(),
                 departmentId,
-                account.getPatientId());
+                account.getPatientId(),
+                accounts.credentialVersion(account.getAccountId()));
     }
 }

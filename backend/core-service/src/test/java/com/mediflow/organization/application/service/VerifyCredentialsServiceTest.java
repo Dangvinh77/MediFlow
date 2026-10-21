@@ -63,7 +63,7 @@ class VerifyCredentialsServiceTest {
                 "0901234567",
                 "alex@example.com", "012345678901");
 
-        when(accountRepository.findByUsername("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("plainpass", account.getPasswordHash()))
                 .thenReturn(true);
@@ -86,7 +86,7 @@ class VerifyCredentialsServiceTest {
     void execute_patientCredentials_returnsNullDepartment() {
         UUID patientId = UUID.randomUUID();
         Account account = account(null, patientId, true, Role.PATIENT);
-        when(accountRepository.findByUsername("patient.one"))
+        when(accountRepository.findByUsernameForUpdate("patient.one"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("plainpass", account.getPasswordHash()))
                 .thenReturn(true);
@@ -101,14 +101,14 @@ class VerifyCredentialsServiceTest {
 
     @Test
     void execute_unknownAndWrongPassword_useSameError() {
-        when(accountRepository.findByUsername("unknown"))
+        when(accountRepository.findByUsernameForUpdate("unknown"))
                 .thenReturn(Optional.empty());
         InvalidCredentialsException unknown = assertThrows(
                 InvalidCredentialsException.class,
                 () -> service.execute("unknown", "plainpass"));
 
         Account account = account(UUID.randomUUID(), true);
-        when(accountRepository.findByUsername("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one"))
                 .thenReturn(Optional.of(account));
         when(passwordHasher.matches("wrongpass", account.getPasswordHash()))
                 .thenReturn(false);
@@ -122,7 +122,7 @@ class VerifyCredentialsServiceTest {
     @Test
     void execute_disabledAccount_usesSameErrorAndDoesNotCheckPassword() {
         Account account = account(UUID.randomUUID(), false);
-        when(accountRepository.findByUsername("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one"))
                 .thenReturn(Optional.of(account));
 
         InvalidCredentialsException exception = assertThrows(
@@ -136,7 +136,7 @@ class VerifyCredentialsServiceTest {
     @Test
     void execute_systemAccount_isRejectedAsHumanLogin() {
         Account account = account(null, true, Role.SYSTEM);
-        when(accountRepository.findByUsername("doctor.one"))
+        when(accountRepository.findByUsernameForUpdate("doctor.one"))
                 .thenReturn(Optional.of(account));
 
         assertThrows(InvalidCredentialsException.class,

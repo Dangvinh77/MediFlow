@@ -3,7 +3,7 @@ import { medicalRecordApi } from "./api";
 import type { ClinicalLabOrderDTO } from "./types";
 
 vi.mock("client-only", () => ({}));
-vi.mock("@/lib/session", () => ({ getToken: () => "test-token", clearSession: vi.fn() }));
+vi.mock("@/lib/session", () => ({ getToken: () => "test-token", getSessionKey: () => "test-session", getRefreshToken: () => null, clearSession: vi.fn() }));
 
 describe("record care commands through Gateway", () => {
   const fetchMock = vi.fn();

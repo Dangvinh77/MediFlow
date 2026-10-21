@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { getRole } from "@/lib/auth";
-import { getToken } from "@/lib/session";
+import { getSessionKey } from "@/lib/session";
 import { canReadReports } from "./components/ReportSessionBoundary";
 
 export type ReportRequestState<T> =
@@ -19,9 +19,9 @@ export function useReportRequest<T>(initialRequest: () => Promise<T>, autoLoad: 
   const sequence = useRef(0);
   const mounted = useRef(false);
   const lastRequest = useRef(initialRequest);
-  const session = useRef({ token: getToken(), role: getRole() });
+  const session = useRef({ token: getSessionKey(), role: getRole() });
   const isCurrent = useCallback(() => mounted.current && canReadReports()
-    && getToken() === session.current.token && getRole() === session.current.role, []);
+    && getSessionKey() === session.current.token && getRole() === session.current.role, []);
 
   const execute = useCallback((request: () => Promise<T>, requestId: number) => {
     // Also captures synchronous facade errors without allowing an obsolete request to commit.

@@ -20,6 +20,24 @@ public class AccountRepositoryAdapter implements AccountRepository {
     }
 
     @Override
+    public Optional<Account> findByIdForUpdate(UUID id) {
+        return jpaRepository.findByIdForUpdate(id).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Account> findByUsernameForUpdate(String username) {
+        return jpaRepository.findByUsernameForUpdate(username).map(this::toDomain);
+    }
+
+    @Override
+    public long credentialVersion(UUID id) { return jpaRepository.credentialVersion(id); }
+
+    @Override
+    public void incrementCredentialVersion(UUID id) {
+        if (jpaRepository.incrementCredentialVersion(id) != 1) throw new IllegalStateException("Account disappeared during credential change");
+    }
+
+    @Override
     public boolean existsByUsername(String username) {
         return jpaRepository.existsByUsername(username);
     }
@@ -38,6 +56,28 @@ public class AccountRepositoryAdapter implements AccountRepository {
     public Account save(Account account) {
         // JDBC command receipts reference this row before the transaction commits.
         return toDomain(jpaRepository.saveAndFlush(toEntity(account)));
+    }
+
+    @Override
+    public com.mediflow.common.api.PageResult<Account> search(String keyword,
+            com.mediflow.organization.domain.model.Role role, Boolean active,
+            com.mediflow.common.api.PageQuery query) {
+        org.springframework.data.jpa.domain.Specification<AccountEntity> filter = (root, criteria, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            if (keyword != null && !keyword.isBlank()) {
+                String escaped = keyword.trim().toLowerCase(java.util.Locale.ROOT)
+                        .replace("!", "!!").replace("%", "!%").replace("_", "!_");
+                predicates.add(cb.like(cb.lower(root.get("username")), "%" + escaped + "%", '!'));
+            }
+            if (role != null) predicates.add(cb.equal(root.get("role"), role));
+            if (active != null) predicates.add(cb.equal(root.get("active"), active));
+            return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
+        };
+        var result = jpaRepository.findAll(filter, org.springframework.data.domain.PageRequest.of(
+                query.page(), query.size(), org.springframework.data.domain.Sort.by("username").and(
+                        org.springframework.data.domain.Sort.by("accountId"))));
+        return com.mediflow.common.api.PageResult.of(result.getContent().stream().map(this::toDomain).toList(),
+                result.getTotalElements(), result.getNumber(), result.getSize());
     }
 
     private Account toDomain(AccountEntity entity) {

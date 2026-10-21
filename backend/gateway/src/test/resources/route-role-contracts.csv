@@ -125,3 +125,8 @@ surgery-service,POST,/api/v1/surgery/cases/{surgeryCaseId}/consents,ADMIN|DOCTOR
 surgery-service,GET,/api/v1/surgery/cases/{surgeryCaseId},ADMIN|MANAGER|DOCTOR|NURSE,true
 surgery-service,GET,/api/v1/surgery/cases,ADMIN|MANAGER|DOCTOR|NURSE,true
 surgery-service,PUT,/api/v1/surgery/cases/{surgeryCaseId}/schedule,ADMIN|MANAGER|DOCTOR,true
+
+# Account management additions — live Core controller guards, 2026-10-22.
+core-service,GET,/api/v1/org/accounts,ADMIN,true
+core-service,PUT,/api/v1/org/accounts/me/password,ADMIN|MANAGER|DOCTOR|NURSE|PHARMACIST|CASHIER|LAB_TECH|PATIENT,true
+core-service,PUT,/api/v1/org/accounts/{id}/password,ADMIN,true

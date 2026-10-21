@@ -241,7 +241,11 @@ public class OrganizationAuthClient {
             UUID staffId,
             UUID departmentId,
             UUID patientId,
-            String role) {
+            String role,
+            long credentialVersion) {
+        public VerifiedAccount(UUID accountId, UUID staffId, UUID departmentId, UUID patientId, String role) {
+            this(accountId, staffId, departmentId, patientId, role, 0);
+        }
     }
 
     public record CurrentIdentity(
@@ -251,7 +255,12 @@ public class OrganizationAuthClient {
             String role,
             UUID staffId,
             UUID departmentId,
-            UUID patientId) {
+            UUID patientId,
+            long credentialVersion) {
+        public CurrentIdentity(boolean exists, boolean active, UUID accountId, String role,
+                UUID staffId, UUID departmentId, UUID patientId) {
+            this(exists, active, accountId, role, staffId, departmentId, patientId, 0);
+        }
     }
 
     public static class UpstreamTimeoutException extends UpstreamUnavailableException {

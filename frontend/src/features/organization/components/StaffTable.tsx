@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DataTableShell } from "@/components/ui/DataTableShell";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { organizationApi } from "../api";
-import { getToken } from "@/lib/auth";
+import { getSessionKey } from "@/lib/auth";
 import { isRequestSessionCurrent } from "../request-session";
-import type { JobTitle, StaffDTO } from "../types";
+import type { DepartmentDTO, JobTitle, StaffDTO } from "../types";
 
 const STAFF_PAGE_SIZE = 20;
 
@@ -43,7 +45,7 @@ function getRequestError(cause: unknown): RequestError {
   };
 }
 
-export function StaffTable() {
+export function StaffTable({ departments = [] }: { departments?: DepartmentDTO[] }) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,19 +55,19 @@ export function StaffTable() {
   const [totalElements, setTotalElements] = useState(0);
   const [lastRequest, setLastRequest] = useState(0);
 
-  const [request, setRequest] = useState({ page: 0, attempt: 0 });
+  const [request, setRequest] = useState<{ page: number; attempt: number; departmentId?: string; jobTitle?: JobTitle }>({ page: 0, attempt: 0 });
 
   function loadStaff(page: number) {
     setLastRequest(page);
     setLoading(true);
     setError(null);
-    setRequest((previous) => ({ page, attempt: previous.attempt + 1 }));
+    setRequest((previous) => ({ ...previous, page, attempt: previous.attempt + 1 }));
   }
 
   useEffect(() => {
     let disposed = false;
-    const sessionToken = getToken();
-    organizationApi.staff({ page: request.page, size: STAFF_PAGE_SIZE })
+    const sessionToken = getSessionKey();
+    organizationApi.staff({ page: request.page, size: STAFF_PAGE_SIZE, ...(request.departmentId ? { departmentId: request.departmentId } : {}), ...(request.jobTitle ? { jobTitle: request.jobTitle } : {}) })
       .then((result) => {
         if (disposed || !isRequestSessionCurrent(sessionToken)) return;
         setStaff(result.content);
@@ -88,16 +90,11 @@ export function StaffTable() {
   }, [router, request]);
 
   return (
-    <section className="mt-10" aria-labelledby="organization-staff-heading">
-      <div className="mb-4">
-        <h2 id="organization-staff-heading" className="text-lg font-semibold">
-          Nhân sự
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Danh sách nhân sự theo từng trang.
-        </p>
+    <DataTableShell title="Nhân sự" description="Hồ sơ nhân sự, chức danh và khoa công tác.">
+      <div className="grid gap-3 border-t border-border p-4 sm:grid-cols-2">
+        <Field label="Lọc theo khoa" htmlFor="staff-department-filter"><select id="staff-department-filter" className={controlClassName} value={request.departmentId ?? ""} onChange={event => { setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, departmentId: event.target.value || undefined })); }}><option value="">Tất cả khoa</option>{departments.map(department => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}{department.active ? "" : " (ngừng hoạt động)"}</option>)}</select></Field>
+        <Field label="Lọc theo chức danh" htmlFor="staff-job-filter"><select id="staff-job-filter" className={controlClassName} value={request.jobTitle ?? ""} onChange={event => { setLoading(true); setError(null); setLastRequest(0); setRequest(previous => ({ ...previous, page: 0, jobTitle: (event.target.value || undefined) as JobTitle | undefined })); }}><option value="">Tất cả chức danh</option>{Object.entries(jobTitleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
       </div>
-
       {loading ? <AsyncState kind="loading" message="Đang tải danh sách nhân sự…" /> : null}
 
       {!loading && error ? (
@@ -115,26 +112,27 @@ export function StaffTable() {
 
       {!loading && !error && staff.length > 0 ? (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-4xl text-left text-sm">
+          <div className="overflow-x-auto border-t border-border">
+            <table className="w-full min-w-3xl text-left text-sm">
+            <caption className="sr-only">Nhân sự</caption>
               <thead className="border-b border-border bg-surface-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3">Họ tên</th>
                   <th scope="col" className="px-4 py-3">Chức danh</th>
                   <th scope="col" className="px-4 py-3">Chuyên môn</th>
-                  <th scope="col" className="px-4 py-3">Mã khoa</th>
+                  <th scope="col" className="px-4 py-3">Khoa công tác</th>
                   <th scope="col" className="px-4 py-3">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
                 {staff.map((member) => (
-                  <tr key={member.staffId} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-medium"><Link href={`/organization/staff/${member.staffId}`} className="text-primary hover:underline">{member.fullName}</Link></td>
+                  <tr key={member.staffId} className="border-b border-border transition-colors hover:bg-surface-muted/60 focus-within:bg-surface-muted/60 last:border-0">
+                    <td className="px-4 py-3 font-medium"><Link href={`/organization/staff/${member.staffId}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"><span className="flex items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{member.fullName.trim().split(/\s+/).slice(-2).map((part) => part[0]).join("")}</span><span>{member.fullName}</span></span></Link></td>
                     <td className="px-4 py-3">
                       {jobTitleLabels[member.jobTitle] ?? "Không xác định"}
                     </td>
                     <td className="px-4 py-3">{member.specialization ?? "—"}</td>
-                    <td className="break-all px-4 py-3 font-mono text-xs">{member.departmentId}</td>
+                    <td className="px-4 py-3"><Link href={`/organization/departments/${member.departmentId}`} aria-label={`Xem khoa của ${member.fullName}`} className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">{departments.find(department => department.departmentId === member.departmentId)?.departmentName ?? "Xem khoa →"}</Link></td>
                     <td className="px-4 py-3">
                       <StatusBadge tone={member.active ? "success" : "neutral"}>
                         {member.active ? "Đang làm việc" : "Đã ngừng làm việc"}
@@ -145,15 +143,15 @@ export function StaffTable() {
               </tbody>
             </table>
           </div>
-          <Pagination
+          <div className="border-t border-border px-4 pb-4"><Pagination
             page={pageNumber}
             totalPages={totalPages}
             totalElements={totalElements}
             loading={loading}
             onPageChange={(page) => void loadStaff(page)}
-          />
+          /></div>
         </>
       ) : null}
-    </section>
+    </DataTableShell>
   );
 }

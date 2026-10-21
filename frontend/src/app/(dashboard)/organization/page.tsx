@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { PageShell } from "@/components/layout/PageShell";
-import { DepartmentList } from "@/features/organization/components/DepartmentList";
-import { StaffTable } from "@/features/organization/components/StaffTable";
+import { OrganizationDirectory } from "@/features/organization/components/OrganizationDirectory";
 import { OrganizationAdminActions } from "@/features/organization/components/OrganizationAdminActions";
 
 export const metadata: Metadata = {
@@ -17,8 +16,7 @@ export default function OrganizationPage() {
     >
       <RoleGate allowed={["ADMIN", "MANAGER", "DOCTOR", "NURSE"]}>
         <OrganizationAdminActions />
-        <DepartmentList />
-        <StaffTable />
+        <OrganizationDirectory />
       </RoleGate>
     </PageShell>
   );

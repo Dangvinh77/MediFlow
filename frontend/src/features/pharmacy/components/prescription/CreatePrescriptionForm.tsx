@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Field, controlClassName } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getSessionKey, subscribeToAuthChanges } from "@/lib/auth";
 import type { Role } from "@/lib/roles";
 import { pharmacyApi } from "../../api";
 import { hasUncertainMutationStatus } from "../../mutationOutcome";
@@ -81,7 +81,7 @@ function mapPrescriptionValidationDetails(
 }
 
 export function CreatePrescriptionForm({ mode = "outpatient" }: { mode?: "outpatient" | "legacy" }) {
-  const actorToken = useSyncExternalStore(subscribeToAuthChanges, getToken, () => null);
+  const actorToken = useSyncExternalStore(subscribeToAuthChanges, getSessionKey, () => null);
   // A different session or deployment mode starts a fresh draft and command.
   return <PrescriptionForm key={`${mode}:${actorToken}`} mode={mode} actorToken={actorToken} />;
 }
@@ -230,7 +230,7 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || completed.current || getToken() !== actorToken || !getPharmacyCapabilities(getRole()).canCreatePrescription) return;
+    if (submittingRef.current || completed.current || getSessionKey() !== actorToken || !getPharmacyCapabilities(getRole()).canCreatePrescription) return;
 
     setFormError(null);
     const errors = mode === "outpatient" ? validateOutpatientPrescriptionForm(values, today) : validateCreatePrescriptionForm(values, today);
@@ -251,14 +251,14 @@ function PrescriptionForm({ mode, actorToken }: { mode: "outpatient" | "legacy";
       } else {
         created = await pharmacyApi.createPrescription(toCreatePrescriptionRequest(values));
       }
-      if (!active.current || getToken() !== actorToken) return;
+      if (!active.current || getSessionKey() !== actorToken) return;
       intent.current = null;
       setUncertain(false);
       completed.current = true;
       setCreated(true);
       router.replace(`/pharmacy/prescriptions/${created.prescriptionId}`);
     } catch (cause: unknown) {
-      if (!active.current || getToken() !== actorToken) return;
+      if (!active.current || getSessionKey() !== actorToken) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
         return;

@@ -347,6 +347,39 @@ class StaffControllerContractTest {
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "MANAGER", "DOCTOR", "NURSE"})
+    void staffReads_onlyAdminReceivesPersonalInformation(String role) throws Exception {
+        var staff = com.mediflow.organization.domain.model.Staff.create(
+                "Directory Person", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.DOCTOR,
+                "Cardiology", "LICENSE-PRIVATE", "0901234567", "private@example.test", "012345678901");
+        when(getStaffUseCase.getStaffById(staff.getStaffId())).thenReturn(staff);
+        when(getStaffUseCase.search(org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(PageResult.of(List.of(staff), 1, 0, 20));
+        for (String suffix : List.of("", "/" + staff.getStaffId())) {
+            String root = suffix.isEmpty() ? "$.data.content[0]" : "$.data";
+            var result = mockMvc.perform(get(BASE_PATH + suffix)
+                            .header("Authorization", "Bearer " + token(ACTOR_ID, role, JwtClaims.ACCESS_TOKEN_TYPE)))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Cache-Control", "no-store"))
+                    .andExpect(jsonPath(root + ".fullName").value("Directory Person"))
+                    .andExpect(jsonPath(root + ".departmentId").value(DEPARTMENT_ID.toString()));
+            if ("ADMIN".equals(role)) {
+                result.andExpect(jsonPath(root + ".identityNumber").value("012345678901"))
+                        .andExpect(jsonPath(root + ".licenseNumber").value("LICENSE-PRIVATE"))
+                        .andExpect(jsonPath(root + ".phoneNumber").value("0901234567"))
+                        .andExpect(jsonPath(root + ".email").value("private@example.test"))
+                        .andExpect(jsonPath(root + ".createdAt").isNotEmpty());
+            } else {
+                for (String field : List.of("identityNumber", "licenseNumber", "phoneNumber", "email", "createdAt", "updatedAt")) {
+                    result.andExpect(jsonPath(root + "." + field).doesNotExist());
+                }
+            }
+        }
+    }
+
     private String systemToken() {
         return token("clinical-service", "SYSTEM", JwtClaims.SERVICE_TOKEN_TYPE);
     }
