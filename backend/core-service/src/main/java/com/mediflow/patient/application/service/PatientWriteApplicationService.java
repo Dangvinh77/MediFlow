@@ -63,8 +63,12 @@ public class PatientWriteApplicationService
     public PatientDTO update(UUID patientId, UpdatePatientRequest request) {
         Patient patient = patients.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException(patientId));
+        String identityNumber = request.soCmnd() == null ? patient.identityNumber() : request.soCmnd().trim();
+        if (patients.existsByIdentityNumberAndPatientIdNot(identityNumber, patientId)) {
+            throw new DuplicateResourceException("PATIENT_CMND_DUPLICATE", "Số CMND/CCCD đã tồn tại");
+        }
         patient.update(request.hoTen(), request.ngaySinh(), request.gioiTinh(), request.diaChi(),
-                request.soDienThoai(), request.email(), request.bhytSo());
+                request.soDienThoai(), request.email(), request.bhytSo(), identityNumber);
         Patient saved = patients.save(patient);
         events.publishUpdated(new PatientUpdatedEvent(
                 UUID.randomUUID(), saved.updatedAt(), correlationIds.currentOrCreate().toString(),

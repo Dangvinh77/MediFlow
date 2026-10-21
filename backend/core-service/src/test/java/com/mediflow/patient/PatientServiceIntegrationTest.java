@@ -76,6 +76,9 @@ class PatientServiceIntegrationTest {
     private CreatePatientUseCase createPatient;
 
     @Autowired
+    private com.mediflow.patient.application.port.in.UpdatePatientUseCase updatePatient;
+
+    @Autowired
     private ReadPatientIdentityUseCase patientLookup;
 
     @Autowired
@@ -98,6 +101,76 @@ class PatientServiceIntegrationTest {
             amqpAdmin.deleteQueue(eventQueue);
             eventQueue = null;
         }
+    }
+
+    @Test
+    void concurrentCorrectionsCannotAssignOneIdentityToTwoPatients() throws Exception {
+        String prefix = UUID.randomUUID().toString().substring(0, 8);
+        PatientDTO first = createPatient.create(new CreatePatientRequest("Race A", LocalDate.of(1990, 1, 1),
+                Gender.M, prefix + "-a", null, null, null, null));
+        PatientDTO second = createPatient.create(new CreatePatientRequest("Race B", LocalDate.of(1990, 1, 1),
+                Gender.F, prefix + "-b", null, null, null, null));
+        var start = new java.util.concurrent.CyclicBarrier(2);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var results = new java.util.ArrayList<java.util.concurrent.Future<Boolean>>();
+            for (PatientDTO patient : java.util.List.of(first, second)) {
+                results.add(pool.submit(() -> {
+                    start.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                    try {
+                        updatePatient.update(patient.maBenhNhan(),
+                                new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                                        patient.hoTen(), patient.ngaySinh(), patient.gioiTinh(),
+                                        null, null, null, null, prefix + "-shared"));
+                        return true;
+                    } catch (com.mediflow.common.exception.DuplicateResourceException
+                             | org.springframework.dao.DataIntegrityViolationException expected) {
+                        return false;
+                    }
+                }));
+            }
+            int successes = 0;
+            for (var result : results) {
+                if (result.get(30, java.util.concurrent.TimeUnit.SECONDS)) successes++;
+            }
+            assertThat(successes).isEqualTo(1);
+        }
+        var identities = java.util.List.of(
+                patientRepository.findById(first.maBenhNhan()).orElseThrow().getIdentityNumber(),
+                patientRepository.findById(second.maBenhNhan()).orElseThrow().getIdentityNumber());
+        assertThat(identities.stream().filter((prefix + "-shared")::equals).count()).isEqualTo(1);
+        assertThat(identities).containsAnyOf(prefix + "-a", prefix + "-b");
+    }
+
+    @Test
+    void correctsIdentityInPostgresAndRejectsAnotherPatientsNumber() {
+        String prefix = UUID.randomUUID().toString().substring(0, 8);
+        PatientDTO first = createPatient.create(new CreatePatientRequest("Identity A", LocalDate.of(1990, 1, 1),
+                Gender.M, prefix + "-old", null, null, null, null));
+        PatientDTO second = createPatient.create(new CreatePatientRequest("Identity B", LocalDate.of(1990, 1, 1),
+                Gender.F, prefix + "-other", null, null, null, null));
+        var correction = new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                first.hoTen(), first.ngaySinh(), first.gioiTinh(), null, null, null, null, prefix + "-new");
+        var persistedCreatedAt = patientRepository.findById(first.maBenhNhan()).orElseThrow().getCreatedAt();
+
+        PatientDTO updated = updatePatient.update(first.maBenhNhan(), correction);
+        assertThat(updated.maBenhNhan()).isEqualTo(first.maBenhNhan());
+        assertThat(updated.createdAt()).isEqualTo(persistedCreatedAt);
+        assertThat(patientRepository.findById(first.maBenhNhan()).orElseThrow().getIdentityNumber())
+                .isEqualTo(prefix + "-new");
+        assertThat(patientRepository.existsByIdentityNumber(prefix + "-old")).isFalse();
+        assertThat(updatePatient.update(first.maBenhNhan(), correction).soCmnd()).isEqualTo(prefix + "-new");
+        assertThat(updatePatient.update(first.maBenhNhan(),
+                new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                        first.hoTen(), first.ngaySinh(), first.gioiTinh(), null, null, null, null, null)).soCmnd())
+                .isEqualTo(prefix + "-new");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> updatePatient.update(first.maBenhNhan(),
+                new com.mediflow.patient.application.dto.request.UpdatePatientRequest(
+                        "Rejected name", first.ngaySinh(), first.gioiTinh(), null, null, null, null, second.soCmnd())))
+                .isInstanceOf(com.mediflow.common.exception.DuplicateResourceException.class);
+        var persisted = patientRepository.findById(first.maBenhNhan()).orElseThrow();
+        assertThat(persisted.getIdentityNumber()).isEqualTo(prefix + "-new");
+        assertThat(persisted.getFullName()).isEqualTo(first.hoTen());
     }
 
     @Test

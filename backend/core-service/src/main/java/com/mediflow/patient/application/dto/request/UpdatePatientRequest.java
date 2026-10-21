@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-/** soCmnd is intentionally absent: the identity number is immutable after creation. */
+/** Missing/null soCmnd preserves the current number for existing clients. */
 public record UpdatePatientRequest(
         @NotBlank(message = "hoTen không được để trống")
         @Size(max = 100, message = "hoTen tối đa 100 ký tự")
@@ -34,5 +34,9 @@ public record UpdatePatientRequest(
         String email,
 
         @Pattern(regexp = "\\d{2}-\\d{8}-\\d", message = "bhytSo không đúng định dạng")
-        String bhytSo) {
+        String bhytSo,
+
+        @Size(min = 1, max = 20, message = "soCmnd phải có từ 1 đến 20 ký tự")
+        @Pattern(regexp = "(?s).*\\S.*", message = "soCmnd không được để trống")
+        String soCmnd) {
 }

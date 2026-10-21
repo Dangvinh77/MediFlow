@@ -12,6 +12,8 @@ public interface PatientJpaRepository extends JpaRepository<PatientJpaEntity, UU
 
     boolean existsByIdentityNumber(String identityNumber);
 
+    boolean existsByIdentityNumberAndPatientIdNot(String identityNumber, UUID patientId);
+
     @Query("""
             select p from PatientJpaEntity p
             where :keyword = ''

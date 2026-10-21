@@ -19,3 +19,19 @@ RabbitMQ and Eureka use the shared MediFlow settings.
 
 Request examples are in `requests/organization.http` and `requests/patient.http`.
 The Markdown files in `requests/` retain the original context documentation.
+
+## Patient identity correction — 2026-10-20
+
+`PUT /api/v1/patients/{id}` accepts optional `soCmnd` for ADMIN/NURSE. Missing/null retains
+the current number for existing clients. A supplied number must contain 1–20 characters with
+nonblank content and is trimmed before persistence. A number belonging to another patient
+returns `409 PATIENT_CMND_DUPLICATE`; retaining the current number is allowed. The patient UUID
+and creation time remain unchanged. The existing PostgreSQL unique constraint guards concurrent
+assignments; no schema migration or new endpoint/role is introduced. Existing `patient.updated`
+event bytes retain their contract and do not include the identity number.
+
+Verification 2026-10-21: `mvn -q -pl backend/core-service -am test` passed with Docker Engine
+28.5.1, **194 Core tests**, zero failures/errors/skips. All three Patient integration tests ran
+against PostgreSQL/RabbitMQ Testcontainers, including correction/legacy request compatibility
+and concurrent assignment of the same identity number to two patients (exactly one succeeds).
+This is module integration evidence; signed Gateway/browser acceptance is separate.
