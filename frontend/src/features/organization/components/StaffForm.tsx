@@ -8,6 +8,7 @@ import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { organizationApi } from "../api";
+import { CreationIntentError, prepareCreation } from "../creation-intent";
 import { isRequestSessionCurrent } from "../request-session";
 import type { DepartmentDTO, JobTitle } from "../types";
 
@@ -19,10 +20,10 @@ export function StaffForm({ staffId }: Props) {
 }
 
 function StaffFormWorkspace({ staffId }: Props) {
+  const [identityNumber, setIdentityNumber] = useState("");
   const router = useRouter(); const editing = Boolean(staffId);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const mounted = useRef(true);
-  const createIntent = useRef<{ fingerprint: string; session: string | null; key: string } | null>(null);
   const submitting = useRef(false);
   const savedProfile = useRef<{ fingerprint: string; session: string | null } | null>(null);
   const originalDepartment = useRef<string | null>(null);
@@ -41,6 +42,7 @@ function StaffFormWorkspace({ staffId }: Props) {
       if (staff) {
         originalDepartment.current = staff.departmentId;
         setFullName(staff.fullName);
+        setIdentityNumber(staff.identityNumber ?? "");
         setDepartmentId(staff.departmentId);
         setJobTitle(staff.jobTitle);
         setSpecialization(staff.specialization ?? "");
@@ -60,6 +62,7 @@ function StaffFormWorkspace({ staffId }: Props) {
   function applyStaff(staff: Awaited<ReturnType<typeof organizationApi.staffMember>>) {
     originalDepartment.current = staff.departmentId;
     setFullName(staff.fullName);
+    setIdentityNumber(staff.identityNumber ?? "");
     setJobTitle(staff.jobTitle);
     setSpecialization(staff.specialization ?? "");
     setLicenseNumber(staff.licenseNumber ?? "");
@@ -70,12 +73,18 @@ function StaffFormWorkspace({ staffId }: Props) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+    if (!editing && !/^[0-9]{12}$/.test(identityNumber.trim())) {
+      setError("CCCD phải gồm đúng 12 chữ số.");
+      return;
+    }
     submitting.current = true;
     setSaving(true); setError(null);
     const sessionToken = getToken();
     // Capture the user's transfer intent before a save/read refreshes the baseline.
     const wantsTransfer = departmentId !== originalDepartment.current;
     const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null };
+    let creationIntent: Awaited<ReturnType<typeof prepareCreation>> | undefined;
+    let completed = false;
     try {
       if (staffId) {
         const fingerprint = JSON.stringify(shared);
@@ -95,6 +104,7 @@ function StaffFormWorkspace({ staffId }: Props) {
             applyStaff(movedStaff);
             setDepartmentId(movedStaff.departmentId);
             router.push(`/organization/staff/${movedStaff.staffId}?notice=updated`);
+            completed = true;
             return;
           } catch (transferCause: unknown) {
             if (!mounted.current || !isRequestSessionCurrent(sessionToken, transferCause)) return;
@@ -110,6 +120,7 @@ function StaffFormWorkspace({ staffId }: Props) {
               if (currentStaff.departmentId === requestedDepartmentId) {
                 setDepartmentId(currentStaff.departmentId);
                 router.push(`/organization/staff/${currentStaff.staffId}?notice=updated`);
+                completed = true;
                 return;
               }
               setDepartmentId(requestedDepartmentId);
@@ -128,21 +139,27 @@ function StaffFormWorkspace({ staffId }: Props) {
           }
         }
         router.push(`/organization/staff/${updatedStaff.staffId}?notice=updated`);
+        completed = true;
       } else {
-        const body = { ...shared, departmentId };
-        const fingerprint = JSON.stringify(body);
-        if (createIntent.current?.fingerprint !== fingerprint || createIntent.current.session !== sessionToken) {
-          createIntent.current = { fingerprint, session: sessionToken, key: crypto.randomUUID() };
-        }
-        const staff = await organizationApi.createStaff(body, createIntent.current.key);
+        const body = { ...shared, departmentId, identityNumber: identityNumber.trim() };
+        creationIntent = await prepareCreation("staff", sessionToken, body, body.identityNumber);
+        if (!mounted.current || getToken() !== sessionToken) { creationIntent.cancelUnsent(); return; }
+        const staff = await organizationApi.createStaff(body, creationIntent.key);
+        creationIntent.settle();
         if (!mounted.current || getToken() !== sessionToken) return;
         router.push(`/organization/staff/${staff.staffId}?notice=created`);
+        completed = true;
       }
     } catch (cause: unknown) {
+      creationIntent?.settle(cause);
       if (!mounted.current || !isRequestSessionCurrent(sessionToken, cause)) return;
       if (cause instanceof ApiRequestError && cause.status === 401) {
         router.replace("/login");
-      } else if (!staffId && (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status === 408)) {
+      } else if (cause instanceof ApiRequestError && cause.code === "STAFF_IDENTITY_DUPLICATE") {
+        setError("CCCD này đã có hồ sơ nhân sự. Hãy kiểm tra hồ sơ hiện có trước khi tạo mới.");
+      } else if (cause instanceof CreationIntentError) {
+        setError(cause.message);
+      } else if (!staffId && (!(cause instanceof ApiRequestError) || cause.status < 400 || cause.status >= 500 || cause.status === 408)) {
         setError("Chưa xác nhận được kết quả tạo nhân sự. Hãy thử lưu lại cùng thông tin để hệ thống đối soát và trả về hồ sơ đã tạo. "
           + (cause instanceof Error ? cause.message : "Kết nối bị gián đoạn."));
       } else {
@@ -150,8 +167,10 @@ function StaffFormWorkspace({ staffId }: Props) {
       }
     }
     finally {
-      submitting.current = false;
-      if (mounted.current && getToken() === sessionToken) setSaving(false);
+      if (!completed) {
+        submitting.current = false;
+        if (mounted.current && getToken() === sessionToken) setSaving(false);
+      }
     }
   }
 
@@ -161,5 +180,5 @@ function StaffFormWorkspace({ staffId }: Props) {
     return <AsyncState kind="error" message={message} onRetry={() => { setLoading(true); setLoadError(null); setRetryToken((value) => value + 1); }} />;
   }
   if (loading || loadedStaffId !== (staffId ?? "new")) return <AsyncState kind="loading" message="Đang tải dữ liệu nhân sự…" />;
-  return <form onSubmit={submit} className="mt-6 space-y-6">{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}<div className="grid gap-5 rounded-xl border border-border bg-surface p-6 md:grid-cols-2"><Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field><Field label="Khoa" htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value="">Chọn khoa</option>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</select></Field><Field label="Chức danh" htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}>{jobs.map((job) => <option key={job.value} value={job.value}>{job.label}</option>)}</select></Field><Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field><Field label="Số giấy phép" htmlFor="staff-license"><input id="staff-license" maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field><Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field><Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field></div><div className="flex gap-2"><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button><Button type="button" disabled={saving} onClick={() => router.back()}>Quay lại</Button></div></form>;
+  return <form onSubmit={submit} className="mt-6 space-y-6">{error ? <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">{error}</p> : null}<fieldset disabled={saving} className="grid gap-5 rounded-xl border border-border bg-surface p-6 md:grid-cols-2"><Field label="Họ tên" htmlFor="staff-name" required><input id="staff-name" required maxLength={100} value={fullName} onChange={(event) => setFullName(event.target.value)} className={controlClassName} /></Field><Field label="CCCD" htmlFor="staff-identity" required={!editing} hint={editing ? "CCCD được xác lập khi tạo hồ sơ." : "Nhập đủ 12 chữ số."}><input id="staff-identity" required={!editing} readOnly={editing} inputMode="numeric" pattern="[0-9]{12}" maxLength={12} value={identityNumber} placeholder={editing && !identityNumber ? "Chưa có CCCD" : undefined} onChange={(event) => setIdentityNumber(event.target.value)} className={controlClassName} /></Field><Field label="Khoa" htmlFor="staff-department" required><select id="staff-department" required value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} className={controlClassName}><option value="">Chọn khoa</option>{departments.map((department) => <option key={department.departmentId} value={department.departmentId}>{department.departmentName}</option>)}</select></Field><Field label="Chức danh" htmlFor="staff-job" required><select id="staff-job" value={jobTitle} onChange={(event) => setJobTitle(event.target.value as JobTitle)} className={controlClassName}>{jobs.map((job) => <option key={job.value} value={job.value}>{job.label}</option>)}</select></Field><Field label="Chuyên môn" htmlFor="staff-specialization"><input id="staff-specialization" maxLength={100} value={specialization} onChange={(event) => setSpecialization(event.target.value)} className={controlClassName} /></Field><Field label="Số giấy phép" htmlFor="staff-license"><input id="staff-license" maxLength={50} value={licenseNumber} onChange={(event) => setLicenseNumber(event.target.value)} className={controlClassName} /></Field><Field label="Số điện thoại" htmlFor="staff-phone" hint="10 đến 15 chữ số."><input id="staff-phone" pattern="[0-9]{10,15}" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} className={controlClassName} /></Field><Field label="Email" htmlFor="staff-email"><input id="staff-email" type="email" maxLength={100} value={email} onChange={(event) => setEmail(event.target.value)} className={controlClassName} /></Field></fieldset><div className="flex gap-2"><Button type="submit" variant="primary" loading={saving}>{editing ? "Lưu thay đổi" : "Tạo nhân sự"}</Button><Button type="button" disabled={saving} onClick={() => router.back()}>Quay lại</Button></div></form>;
 }

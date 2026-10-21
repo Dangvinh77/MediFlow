@@ -91,6 +91,7 @@ Content-Type: application/json
 
 {
   "fullName": "Alex Morgan",
+  "identityNumber": "012345678901",
   "departmentId": "00000000-0000-0000-0000-000000000000",
   "jobTitle": "DOCTOR",
   "specialization": "Internal Medicine",
@@ -120,6 +121,7 @@ Content-Type: application/json
 
 {
   "fullName": "Taylor Lee",
+  "identityNumber": "012345678902",
   "departmentId": "00000000-0000-0000-0000-000000000000",
   "jobTitle": "DOCTOR",
   "phoneNumber": "0901234568"
@@ -170,9 +172,12 @@ X-Correlation-Id: 11111111-1111-1111-1111-111111111111
 ### DOCTOR => PRIMARY_SURGEON, ASSISTANT_SURGEON, ANESTHESIOLOGIST;
 ### NURSE => OR_NURSE; other current job titles => []
 
-### Create an account (ADMIN only)
+### Create an account (ADMIN only). Retry this exact body/key after losing the response:
+### first success is 201, replay is 200 with the same accountId and Idempotency-Replayed: true.
+### Changed body/password with the same key returns 409 ACCOUNT_IDEMPOTENCY_KEY_REUSED.
 POST {{host}}/api/v1/org/accounts
 Authorization: Bearer {{token}}
+Idempotency-Key: account-create-2026-10-21-001
 Content-Type: application/json
 
 {

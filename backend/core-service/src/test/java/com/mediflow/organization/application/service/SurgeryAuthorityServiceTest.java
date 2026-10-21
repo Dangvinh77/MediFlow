@@ -42,7 +42,7 @@ class SurgeryAuthorityServiceTest {
         department = Department.reconstitute(DEPT, "Surgery", "SUR", DepartmentType.CLINICAL,
                 null, "A", true, NOW, NOW);
         doctor = Staff.reconstitute(STAFF, "Doctor", DEPT, JobTitle.DOCTOR, null,
-                "LIC-001", null, null, true, NOW, NOW);
+                "LIC-001", null, null, true, NOW, NOW, "012345678901");
     }
 
     @Test

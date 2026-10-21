@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.security.core.Authentication;
 
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
@@ -64,7 +66,30 @@ public class AccountController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
-            @Valid @RequestBody CreateAccountRequest request) {
+            @Valid @RequestBody CreateAccountRequest request,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+            Authentication authentication) {
+
+        if (idempotencyKey != null) {
+            if (idempotencyKey.isBlank() || idempotencyKey.length() > 160
+                    || idempotencyKey.chars().anyMatch(character -> character < 0x20 || character == 0x7f)) {
+                throw new IllegalArgumentException("Invalid Idempotency-Key");
+            }
+            UUID actorAccountId;
+            try {
+                actorAccountId = UUID.fromString(authentication.getName());
+            } catch (RuntimeException invalidPrincipal) {
+                throw new IllegalArgumentException("Authenticated account identity is invalid");
+            }
+            var result = createAccountUseCase.executeWithIdempotency(actorAccountId, idempotencyKey,
+                    request.username(), request.password(), request.staffId(), request.patientId(), request.role());
+            return ResponseEntity.status(result.replayed()
+                            ? org.springframework.http.HttpStatus.OK : org.springframework.http.HttpStatus.CREATED)
+                    .location(URI.create("/api/v1/org/accounts/" + result.account().getAccountId()))
+                    .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
+                    .body(ApiResponse.ok(AccountResponse.from(result.account()),
+                            correlationIds.currentOrCreate().toString()));
+        }
 
         Account account = createAccountUseCase.execute(
                 request.username(),

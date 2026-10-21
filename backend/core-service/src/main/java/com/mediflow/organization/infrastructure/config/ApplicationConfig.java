@@ -15,6 +15,7 @@ import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCas
 import com.mediflow.organization.application.port.out.DepartmentRepository;
 import com.mediflow.organization.application.port.out.EventPublisher;
 import com.mediflow.organization.application.port.out.AccountRepository;
+import com.mediflow.organization.application.port.out.AccountCreationReceiptRepository;
 import com.mediflow.organization.application.port.out.CorrelationIdProvider;
 import com.mediflow.organization.application.port.out.PasswordHasher;
 import com.mediflow.organization.application.port.out.StaffRepository;
@@ -72,11 +73,13 @@ public class ApplicationConfig {
         @Bean
         public CreateAccountUseCase createAccountUseCase(
                         AccountRepository accountRepository,
-                        PasswordHasher passwordHasher) {
+                        PasswordHasher passwordHasher,
+                        AccountCreationReceiptRepository receipts) {
 
                 return new CreateAccountService(
                                 accountRepository,
-                                passwordHasher);
+                                passwordHasher,
+                                receipts);
         }
 
         @Bean

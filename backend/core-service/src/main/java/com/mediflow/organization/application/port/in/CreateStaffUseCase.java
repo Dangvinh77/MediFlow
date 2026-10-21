@@ -9,17 +9,18 @@ public interface CreateStaffUseCase {
 
     record CreationResult(Staff staff, boolean replayed) {}
 
-        Staff execute(
+    Staff execute(
             String fullName,
             UUID departmentId,
             JobTitle jobTitle,
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email
+            String email,
+            String identityNumber
     );
 
-    /** Optional keyed variant; existing clients retain the original create contract. */
+    /** Keyed retries return the original staff when the complete creation payload matches. */
     default CreationResult executeWithIdempotency(
             UUID actorAccountId,
             String idempotencyKey,
@@ -29,8 +30,9 @@ public interface CreateStaffUseCase {
             String specialization,
             String licenseNumber,
             String phoneNumber,
-            String email) {
+            String email,
+            String identityNumber) {
         return new CreationResult(execute(fullName, departmentId, jobTitle, specialization,
-                licenseNumber, phoneNumber, email), false);
+                licenseNumber, phoneNumber, email, identityNumber), false);
     }
 }
