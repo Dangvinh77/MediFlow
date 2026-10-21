@@ -22,6 +22,7 @@ function PatientFormWorkspace({ patientId }: PatientFormProps) {
   const editing = Boolean(patientId);
   const { form, set, loading, loaded, saving, blocked, error, save, retry } = usePatientForm(patientId);
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void save(); }
+
   if (loading) return <AsyncState kind="loading" message="Đang tải thông tin bệnh nhân…" />;
   if (error && editing && !loaded) return <AsyncState kind="error" message={error.message} correlationId={error.correlationId} onRetry={retry} />;
 

@@ -50,6 +50,39 @@ void main() {
     invalidated.clear();
   });
   tearDown(() => client.close());
+  test(
+    'authenticated mutations preserve methods, body and Gateway prefix',
+    () async {
+      await client.put('/v1/patients/patient-id', {'hoTen': 'Updated'});
+      await client.patch('/v1/example/id', {'active': false});
+      expect(adapter.requests.map((request) => request.method), [
+        'PUT',
+        'PATCH',
+      ]);
+      expect(adapter.requests.first.uri.path, '/api/v1/patients/patient-id');
+      expect(adapter.requests.first.data, {'hoTen': 'Updated'});
+      expect(
+        adapter.requests.last.headers['Authorization'],
+        'Bearer signed-token',
+      );
+    },
+  );
+  test('delete accepts 204 and never replays a rejected command', () async {
+    adapter.status = 204;
+    adapter.body = null;
+    expect(await client.delete('/v1/patients/patient-id'), isNull);
+    expect(adapter.requests.single.method, 'DELETE');
+    adapter.status = 403;
+    adapter.body = {
+      'success': false,
+      'error': {'code': 'DENIED', 'message': 'Denied'},
+    };
+    await expectLater(
+      client.delete('/v1/patients/patient-id'),
+      throwsA(isA<ApiFailure>()),
+    );
+    expect(adapter.requests, hasLength(2));
+  });
   test('uses one Gateway prefix and exact encoded filter query', () async {
     expect(
       await client.get('/v1/appointments', query: {'page': 2, 'size': 20}),

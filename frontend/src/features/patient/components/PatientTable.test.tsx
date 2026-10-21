@@ -171,4 +171,13 @@ describe("PatientTable read logic", () => {
     expect(screen.queryByText("Patient Older")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Patient Newer" })).toBeVisible();
   });
+
+  it("keeps patient browsing available to doctors without showing create controls", async () => {
+    mocks.getRole.mockReturnValue("DOCTOR");
+    mocks.search.mockResolvedValue(page({ content: [patient], totalPages: 1 }));
+    render(<PatientTable />);
+
+    expect(await screen.findByRole("link", { name: "Nguyen Van A" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Thêm bệnh nhân" })).not.toBeInTheDocument();
+  });
 });

@@ -21,7 +21,9 @@ remains unavailable to browser code.
 - `FE-PATIENT-01` — `DONE`: live controller/DTO verified.
 - `FE-PATIENT-02` — `DONE`: exact Vietnamese wire mapping and list/search route.
 - `FE-PATIENT-03` — `DONE`: detail/create/update/delete with controller roles and validation.
-- `FE-PATIENT-04` — local API/logic/component regression tests exist; signed Gateway acceptance remains open.
+- `FE-PATIENT-04` — `DONE` for local API/logic/component regression coverage; signed Gateway acceptance
+  remains open. Tests exercise create/update payloads, editable identity, lookup retry, failed-save
+  retention, role checks, admin-only delete visibility, confirmation/cancel, and rejected-delete feedback.
 
 ## Logic checkpoint — 2026-10-20
 
@@ -61,7 +63,7 @@ including all three Patient PostgreSQL/RabbitMQ integration tests. Correction pr
 creation time; duplicate correction is rejected; concurrent assignment of one number to two
 patients allows exactly one success and preserves the losing patient's old identity.
 
-Shared dependency resolved on master `07a87477` (synchronized 2026-10-21): `src/lib/api.ts`
+Shared dependency resolved on master `63b5f233` (synchronized 2026-10-21): `src/lib/api.ts`
 clears a session on HTTP 401 only when the request bearer is still current. Patient continues to
 ignore stale local callbacks. Post-update Patient + shared API regression: **71/71 / 7 files**.
 Earlier handoff/checkpoint references describe the dependency before the shared owner fix.

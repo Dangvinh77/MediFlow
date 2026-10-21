@@ -1,13 +1,37 @@
 # Frontend Workboard
 
+## Hoàng Anh/Lộc client completion — 2026-10-21
+
+The user delegates Organization/Patient and Billing/Notification frontend/mobile
+completion to Vinh. Existing web Billing/Notification workflows remain in place;
+this frontend slice closes Organization/Patient form/error-path and FE-04 test gaps.
+The corresponding mobile implementations and app composition are recorded in
+[mobile completion](../../mobile/docs/ha-loc-client-completion.md).
+
+Organization edit forms must not become editable after a failed initial read.
+Staff profile update and department transfer are separate commands: if transfer
+fails after saving the profile, the UI reports the saved portion and retries only
+against refreshed authoritative state. Patient identity is editable on update; the
+service retains the existing UUID and creation time and rejects duplicate corrections.
+The API has no account-list, notification resend or mark-read command; this closeout
+does not invent those workflows or enable deferred Surgery/Inpatient.
+
+Verification before the latest Patient logic merge: full frontend suite **701/701
+tests, 75 files PASS** (two workers, Node 26 with experimental web storage disabled);
+Organization/Patient **39/39, 9 files PASS**. Typecheck, lint and production build PASS.
+Independent review found no actionable defect in that web slice. Mobile evidence is
+recorded separately; older dated evidence below refers to its original candidate.
+
 ## Hoàng Anh — đồng bộ master và khôi phục Patient, 2026-10-21
 
-Master fast-forward `26bf2ef7` → `07a87477`; giữ toàn bộ thay đổi local Patient BE/FE và các
-file mới. Workboard ghép đủ entries của upstream và Patient, không còn conflict. Bản stash
-`patient-cccd-before-master-update-2026-10-21` vẫn giữ làm dự phòng. Core/Patient source giống
-bản đã đạt Docker test 194/194; không chạy lại backend vì upstream không đổi phạm vi này.
-Patient + shared API regression sau đồng bộ **71/71 / 7 files**. Shared late-401 fix đã có
-trên master; các blocker tương ứng trong checkpoint cũ là lịch sử. Chưa commit/push.
+Master sync `07a87477` → `63b5f233` includes PR #477 / Patient logic commit `ac7ed78b`; local
+Patient BE/FE work remains intact. The `patient-cccd-before-master-update-2026-10-21` stash
+remains as a backup. Core/Patient source matches the Docker-verified revision (**194/194**); the
+backend source did not change in this merge. The Patient + shared API regression after the prior
+sync passed **71/71 tests across 7 files**. Master also includes the shared late-401 fix, so earlier
+handoff blockers describe the state before that fix. Final merged frontend verification:
+**745/745 tests across 77 files**, typecheck, lint and production build PASS. The merged
+Patient regression subset passes **64/64 tests across 6 files**.
 
 ## Vinh/Lộc — outpatient frontend closeout, 2026-10-20
 
