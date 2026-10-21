@@ -15,7 +15,7 @@ class SurgicalCapabilityTest {
 
     private Staff member(JobTitle title) {
         return Staff.create("Test member", department.getDepartmentId(), title, null,
-                title == JobTitle.DOCTOR ? "LIC-001" : null, null, null);
+                title == JobTitle.DOCTOR ? "LIC-001" : null, null, null, "012345678901");
     }
 
     @ParameterizedTest

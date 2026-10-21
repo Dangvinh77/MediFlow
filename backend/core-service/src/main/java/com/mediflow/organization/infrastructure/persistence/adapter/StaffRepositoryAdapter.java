@@ -103,7 +103,7 @@ public class StaffRepositoryAdapter
                 entity.getStatus() == StaffStatus.ACTIVE,
 
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(), entity.getIdentityNumber());
     }
 
         private StaffEntity toEntity(Staff staff) {
@@ -125,7 +125,7 @@ public class StaffRepositoryAdapter
                         : StaffStatus.INACTIVE,
 
                 staff.getCreatedAt(),
-                staff.getUpdatedAt());
+                staff.getUpdatedAt(), staff.getIdentityNumber());
     }
 
     @Override

@@ -129,7 +129,7 @@ function PatientTableWorkspace({ notice }: { notice?: "deleted" }) {
             id="patient-keyword"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Tên hoặc mã bệnh nhân"
+            placeholder="Tên hoặc CMND/CCCD"
             className="min-h-12 w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:min-h-10"
           />
         </div>

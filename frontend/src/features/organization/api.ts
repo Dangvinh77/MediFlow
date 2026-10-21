@@ -47,7 +47,8 @@ export const organizationApi = {
       `/v1/org/staff/${encodeURIComponent(staffId)}/department`,
       { newDepartmentId } satisfies ChangeStaffDepartmentRequest,
     ),
-  createAccount: (body: CreateAccountRequest) => api.post<AccountDTO>("/v1/org/accounts", body),
+  createAccount: (body: CreateAccountRequest, idempotencyKey: string) =>
+    api.post<AccountDTO>("/v1/org/accounts", body, { idempotencyKey }),
   updateAccountStatus: (accountId: string, isActive: boolean) =>
     api.put<AccountDTO>(
       `/v1/org/accounts/${encodeURIComponent(accountId)}/status`,

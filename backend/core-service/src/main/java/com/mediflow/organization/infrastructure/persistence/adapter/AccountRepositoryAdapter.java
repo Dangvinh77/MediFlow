@@ -36,7 +36,8 @@ public class AccountRepositoryAdapter implements AccountRepository {
 
     @Override
     public Account save(Account account) {
-        return toDomain(jpaRepository.save(toEntity(account)));
+        // JDBC command receipts reference this row before the transaction commits.
+        return toDomain(jpaRepository.saveAndFlush(toEntity(account)));
     }
 
     private Account toDomain(AccountEntity entity) {

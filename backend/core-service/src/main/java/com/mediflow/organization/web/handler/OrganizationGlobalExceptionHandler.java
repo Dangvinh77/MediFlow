@@ -108,6 +108,10 @@ public class OrganizationGlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException exception) {
         String constraint = findConstraint(exception);
+        if ("uk_staff_identity_number".equals(constraint)) {
+            return buildResponse(HttpStatus.CONFLICT,
+                    "STAFF_IDENTITY_DUPLICATE", "A staff member with this identity number already exists");
+        }
         if ("uk_account_username".equals(constraint)) {
             return buildResponse(HttpStatus.CONFLICT,
                     "ACCOUNT_USERNAME_DUPLICATE", "Account username already exists");
@@ -249,6 +253,9 @@ public class OrganizationGlobalExceptionHandler {
             String message = current.getMessage();
             if (message == null) {
                 continue;
+            }
+            if (message.contains("uk_staff_identity_number")) {
+                return "uk_staff_identity_number";
             }
             if (message.contains("uk_account_username")) {
                 return "uk_account_username";

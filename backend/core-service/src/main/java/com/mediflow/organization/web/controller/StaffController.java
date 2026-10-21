@@ -77,7 +77,7 @@ public class StaffController {
                                         request.specialization(),
                                         request.licenseNumber(),
                                         request.phoneNumber(),
-                                        request.email());
+                                        request.email(), request.identityNumber());
                         URI location = URI.create("/api/v1/org/staff/" + result.staff().getStaffId());
                         return ResponseEntity.status(result.replayed()
                                                 ? org.springframework.http.HttpStatus.OK
@@ -96,7 +96,7 @@ public class StaffController {
                                 request.specialization(),
                                 request.licenseNumber(),
                                 request.phoneNumber(),
-                                request.email());
+                                request.email(), request.identityNumber());
 
                 return ResponseEntity
                                 .created(URI.create("/api/v1/org/staff/" + staff.getStaffId()))

@@ -91,7 +91,7 @@ class UpdateDepartmentServiceTest {
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
         Staff doctor = Staff.reconstitute(
                 staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
+                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
         when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
         when(departmentRepository.save(any(Department.class)))
@@ -111,7 +111,7 @@ class UpdateDepartmentServiceTest {
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
         Staff doctor = Staff.reconstitute(
                 staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
+                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
         department.changeHead(doctor);
         when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(departmentRepository.save(any(Department.class)))
@@ -133,7 +133,7 @@ class UpdateDepartmentServiceTest {
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
         Staff doctor = Staff.reconstitute(
                 staffId, "Dr. One", otherDepartmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
-                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
+                "0901234567", "doctor@example.com", true, Instant.now(), Instant.now(), "012345678901");
         when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
 

@@ -119,8 +119,8 @@ describe("organizationApi facade contract", () => {
 
   it("creates accounts and locks them with the isActive request property", async () => {
     post.mockResolvedValueOnce(accountContractFixture);
-    await organizationApi.createAccount(createAccountRequestFixture);
-    expect(post).toHaveBeenCalledWith("/v1/org/accounts", createAccountRequestFixture);
+    await organizationApi.createAccount(createAccountRequestFixture, "account-command-1");
+    expect(post).toHaveBeenCalledWith("/v1/org/accounts", createAccountRequestFixture, { idempotencyKey: "account-command-1" });
 
     put.mockResolvedValueOnce(accountContractFixture);
     await organizationApi.updateAccountStatus(accountContractFixture.accountId, false);

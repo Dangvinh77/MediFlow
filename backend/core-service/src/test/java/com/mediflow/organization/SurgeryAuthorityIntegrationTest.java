@@ -53,6 +53,8 @@ import static org.assertj.core.api.Assertions.*;
         webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class SurgeryAuthorityIntegrationTest {
+    private static final java.util.concurrent.atomic.AtomicLong IDENTITIES = new java.util.concurrent.atomic.AtomicLong(200000000000L);
+
     private static final String SECRET="integration-surgery-authority-secret-at-least-32-bytes";
     @Container static final PostgreSQLContainer<?> PG=new PostgreSQLContainer<>("postgres:16-alpine");
     @Container static final PostgreSQLContainer<?> PATIENT_PG=new PostgreSQLContainer<>("postgres:16-alpine");
@@ -90,7 +92,7 @@ class SurgeryAuthorityIntegrationTest {
         jdbc.update("DELETE FROM surgical_capability");
         jdbc.update("DELETE FROM operating_room");
         department=departments.save(Department.create(UUID.randomUUID(),"Surgery", "S"+UUID.randomUUID().toString().substring(0,8).toUpperCase(java.util.Locale.ROOT),DepartmentType.CLINICAL,"A"));
-        doctor=staff.save(Staff.create("Doctor",department.getDepartmentId(),JobTitle.DOCTOR,null,"LIC-001",null,null));
+        doctor=staff.save(Staff.create("Doctor",department.getDepartmentId(),JobTitle.DOCTOR,null,"LIC-001",null,null, Long.toString(IDENTITIES.incrementAndGet())));
     }
 
     @Test void http_adminDecisionThenServiceLookup_preservesRealIdentityAndAudit() throws Exception {
