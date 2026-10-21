@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { ApiRequestError } from "@/lib/api";
-import { getRole, subscribeToAuthChanges } from "@/lib/auth";
+import { getRole, getToken, subscribeToAuthChanges } from "@/lib/auth";
 import { formatInstant, formatLocalDate } from "@/lib/format";
 import { patientApi } from "../api";
 import type { PatientDTO } from "../types";
@@ -22,8 +22,14 @@ export function PatientDetail({ patientId, notice }: PatientDetailProps) {
   const [retryToken, setRetryToken] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const mounted = useRef(true);
   const requestKey = `${patientId}\u0000${retryToken}`;
   const retry = useCallback(() => setRetryToken((value) => value + 1), []);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -37,10 +43,21 @@ export function PatientDetail({ patientId, notice }: PatientDetailProps) {
   }, [patientId, requestKey, router]);
 
   async function remove() {
+    const sessionToken = getToken();
     setDeleting(true);
-    try { await patientApi.delete(patientId); router.push("/patients?notice=deleted"); }
-    catch (cause: unknown) { setState({ key: requestKey, status: "error", message: cause instanceof Error ? cause.message : "Không thể xóa bệnh nhân.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null }); setConfirmDelete(false); }
-    finally { setDeleting(false); }
+    try {
+      await patientApi.delete(patientId);
+      if (!mounted.current || getToken() !== sessionToken) return;
+      router.push("/patients?notice=deleted");
+    } catch (cause: unknown) {
+      if (!mounted.current || getToken() !== sessionToken) return;
+      if (cause instanceof ApiRequestError && cause.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      setState({ key: requestKey, status: "error", message: cause instanceof Error ? cause.message : "Không thể xóa bệnh nhân.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
+      setConfirmDelete(false);
+    } finally { if (mounted.current && getToken() === sessionToken) setDeleting(false); }
   }
 
   if (state.key !== requestKey) return <AsyncState kind="loading" message="Đang tải bệnh nhân…" />;

@@ -1,5 +1,26 @@
 # Frontend Workboard
 
+## Hoàng Anh/Lộc client completion — 2026-10-21
+
+The user delegates Organization/Patient and Billing/Notification frontend/mobile
+completion to Vinh. Existing web Billing/Notification workflows remain in place;
+this frontend slice closes Organization/Patient form/error-path and FE-04 test gaps.
+The corresponding mobile implementations and app composition are recorded in
+[mobile completion](../../mobile/docs/ha-loc-client-completion.md).
+
+Organization edit forms must not become editable after a failed initial read.
+Staff profile update and department transfer are separate commands: if transfer
+fails after saving the profile, the UI reports the saved portion and retries only
+against refreshed authoritative state. Patient national ID remains immutable on edit.
+The API has no account-list, notification resend or mark-read command; this closeout
+does not invent those workflows or enable deferred Surgery/Inpatient.
+
+Verification: full frontend suite **701/701 tests, 75 files PASS** (two workers,
+Node 26 with experimental web storage disabled); Organization/Patient **39/39,
+9 files PASS**. Typecheck, lint and production build PASS. Independent review
+found no actionable defect in the web slice. Mobile evidence is recorded separately;
+older dated evidence below refers to its original candidate.
+
 ## Vinh/Lộc — outpatient frontend closeout, 2026-10-20
 
 User delegated completion of both Vinh and Lộc frontend scope. Candidate is based on master

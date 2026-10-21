@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Button } from "@/components/ui/Button";
 import { controlClassName, Field } from "@/components/ui/Field";
 import { ApiRequestError } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { patientApi } from "../api";
 import type { CreatePatientRequest, GioiTinh } from "../types";
 
@@ -24,6 +25,12 @@ export function PatientForm({ patientId }: PatientFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<{ message: string; correlationId: string | null } | null>(null);
   const [retryToken, setRetryToken] = useState(0);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   useEffect(() => {
     if (!patientId) return;
@@ -46,17 +53,20 @@ export function PatientForm({ patientId }: PatientFormProps) {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const sessionToken = getToken();
     setSaving(true); setError(null);
     const shared = { hoTen: form.hoTen.trim(), ngaySinh: form.ngaySinh, gioiTinh: form.gioiTinh, diaChi: form.diaChi.trim() || null, soDienThoai: form.soDienThoai.trim() || null, email: form.email.trim() || null, bhytSo: form.bhytSo.trim() || null };
     try {
       const patient = patientId
         ? await patientApi.update(patientId, shared)
         : await patientApi.create({ ...shared, soCmnd: form.soCmnd.trim() } satisfies CreatePatientRequest);
+      if (!mounted.current || getToken() !== sessionToken) return;
       router.push(`/patients/${patient.maBenhNhan}?notice=${editing ? "updated" : "created"}`);
     } catch (cause: unknown) {
+      if (!mounted.current || getToken() !== sessionToken) return;
       if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login");
       else setError({ message: cause instanceof Error ? cause.message : "Không thể lưu bệnh nhân.", correlationId: cause instanceof ApiRequestError ? cause.correlationId : null });
-    } finally { setSaving(false); }
+    } finally { if (mounted.current && getToken() === sessionToken) setSaving(false); }
   }
 
   if (loading) return <AsyncState kind="loading" message="Đang tải thông tin bệnh nhân…" />;

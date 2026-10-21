@@ -5,16 +5,19 @@ import { patientContractFixture } from "../contract.fixture";
 
 const mocks = vi.hoisted(() => ({
   getById: vi.fn(),
+  delete: vi.fn(),
   getRole: vi.fn(() => "DOCTOR"),
+  getToken: vi.fn(() => "session-a"),
   router: { replace: vi.fn(), push: vi.fn() },
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => mocks.router }));
 vi.mock("@/lib/auth", () => ({
   getRole: mocks.getRole,
+  getToken: mocks.getToken,
   subscribeToAuthChanges: () => () => {},
 }));
-vi.mock("../api", () => ({ patientApi: { getById: mocks.getById } }));
+vi.mock("../api", () => ({ patientApi: { getById: mocks.getById, delete: mocks.delete } }));
 
 import { PatientDetail } from "./PatientDetail";
 
@@ -31,7 +34,9 @@ function deferred<T>() {
 describe("PatientDetail read logic", () => {
   beforeEach(() => {
     mocks.getById.mockReset();
+    mocks.delete.mockReset();
     mocks.getRole.mockReturnValue("DOCTOR");
+    mocks.getToken.mockReturnValue("session-a");
     mocks.router.replace.mockReset();
     mocks.router.push.mockReset();
   });
@@ -72,5 +77,39 @@ describe("PatientDetail read logic", () => {
     await act(async () => previous.resolve(previousPatient));
     expect(screen.queryByRole("heading", { name: "Patient One" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Patient Two" })).toBeVisible();
+  });
+
+  it("shows delete controls only to admins and lets an admin cancel", async () => {
+    mocks.getById.mockResolvedValue(patientContractFixture);
+    mocks.getRole.mockReturnValue("NURSE");
+    const view = render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    expect(screen.getByRole("link", { name: "Chỉnh sửa" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Xóa bệnh nhân" })).not.toBeInTheDocument();
+
+    view.rerender(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    mocks.getRole.mockReturnValue("ADMIN");
+    // Auth subscriptions drive the role change; rerender after changing the mocked snapshot.
+    view.rerender(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    expect(screen.getByRole("button", { name: "Xóa bệnh nhân" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("không thể hoàn tác");
+    fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(mocks.delete).not.toHaveBeenCalled();
+  });
+
+  it("confirms an admin delete and shows a rejected delete without losing retry context", async () => {
+    mocks.getRole.mockReturnValue("ADMIN");
+    mocks.getById.mockResolvedValue(patientContractFixture);
+    mocks.delete.mockRejectedValue(new Error("Hồ sơ đang được tham chiếu"));
+    render(<PatientDetail patientId={patientContractFixture.maBenhNhan} />);
+    await screen.findByRole("heading", { name: "Nguyen Van A" });
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bệnh nhân" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Hồ sơ đang được tham chiếu");
+    expect(mocks.delete).toHaveBeenCalledWith(patientContractFixture.maBenhNhan);
+    expect(mocks.router.push).not.toHaveBeenCalled();
   });
 });

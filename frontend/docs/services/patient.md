@@ -20,7 +20,9 @@ edit form. The service-only existence lookup remains unavailable to browser code
 - `FE-PATIENT-01` — `DONE`: live controller/DTO verified.
 - `FE-PATIENT-02` — `DONE`: exact Vietnamese wire mapping and list/search route.
 - `FE-PATIENT-03` — `DONE`: detail/create/update/delete with controller roles and validation.
-- `FE-PATIENT-04` — `IMPLEMENT`: add contract/component tests after the shared harness exists.
+- `FE-PATIENT-04` — `DONE`: component coverage exercises create/update payloads, immutable identity,
+  lookup retry, failed-save retention, patient browse roles, admin-only delete visibility,
+  confirmation/cancel, and rejected-delete feedback.
 
 ## Handoffs and blockers
 
