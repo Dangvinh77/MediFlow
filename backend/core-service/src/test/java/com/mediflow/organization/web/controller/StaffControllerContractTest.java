@@ -3,6 +3,7 @@ package com.mediflow.organization.web.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,6 +52,9 @@ class StaffControllerContractTest {
     private static final String SECRET = "test-secret-must-have-at-least-32-bytes";
     private static final SecretKey SIGNING_KEY = Keys.hmacShaKeyFor(
             SECRET.getBytes(StandardCharsets.UTF_8));
+    private static final String ACTOR_ID = "22222222-2222-2222-2222-222222222222";
+    private static final String IDEMPOTENCY_KEY = "staff-create-contract-1";
+    private static final UUID DEPARTMENT_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
     @Autowired
     private MockMvc mockMvc;
@@ -69,6 +73,51 @@ class StaffControllerContractTest {
 
     @MockBean
     private UpdateStaffUseCase updateStaffUseCase;
+
+    @Test
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
+    void createStaff_keyedReplayReturnsSameLocationWithExplicitReplayFlag() throws Exception {
+        var staff = com.mediflow.organization.domain.model.Staff.create(
+                "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE,
+                null, null, null, null);
+        when(createStaffUseCase.executeWithIdempotency(
+                UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null))
+                .thenReturn(new CreateStaffUseCase.CreationResult(staff, false),
+                        new CreateStaffUseCase.CreationResult(staff, true));
+        String body = "{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
+                + "\",\"jobTitle\":\"NURSE\"}";
+
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed", "false"))
+                .andExpect(header().string("Location", "/api/v1/org/staff/" + staff.getStaffId()))
+                .andExpect(jsonPath("$.data.staffId").value(staff.getStaffId().toString()));
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Idempotency-Replayed", "true"))
+                .andExpect(header().string("Location", "/api/v1/org/staff/" + staff.getStaffId()))
+                .andExpect(jsonPath("$.data.staffId").value(staff.getStaffId().toString()));
+    }
+
+    @Test
+    @WithMockUser(username = ACTOR_ID, roles = "ADMIN")
+    void createStaff_keyedDifferentPayloadReturnsStableConflict() throws Exception {
+        when(createStaffUseCase.executeWithIdempotency(
+                UUID.fromString(ACTOR_ID), IDEMPOTENCY_KEY, "Alex Morgan", DEPARTMENT_ID,
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null))
+                .thenThrow(new com.mediflow.organization.domain.exception.StaffCreateIdempotencyConflictException());
+
+        mockMvc.perform(post(BASE_PATH).header("Idempotency-Key", IDEMPOTENCY_KEY)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Alex Morgan\",\"departmentId\":\"" + DEPARTMENT_ID
+                                + "\",\"jobTitle\":\"NURSE\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("STAFF_IDEMPOTENCY_KEY_REUSED"));
+    }
 
     @Test
     @WithMockUser(roles = "ADMIN")

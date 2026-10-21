@@ -15,6 +15,18 @@ import com.mediflow.lab.domain.exception.LabRuleException;
 
 class LabTestTest {
 
+    @Test
+    void cancellationRetainsActorAndReasonInsteadOfOnlyStatus() {
+        LabTest test = LabTest.createV2(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), CareEpisodeType.OUTPATIENT_VISIT, UUID.randomUUID(),
+                "CBC", "LAB-CBC", LocalDate.now());
+        UUID actor = UUID.randomUUID();
+        test.cancel("Patient declined", actor);
+        assertThat(test).hasFieldOrPropertyWithValue("cancelledBy", actor)
+                .hasFieldOrPropertyWithValue("cancellationReason", "Patient declined");
+        assertThat(test).extracting("cancelledAt").isNotNull();
+    }
+
     private static final UUID RECORD_ID = UUID.randomUUID();
     private static final UUID PATIENT_ID = UUID.randomUUID();
     private static final UUID DEPARTMENT_ID = UUID.randomUUID();

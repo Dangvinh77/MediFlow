@@ -1,6 +1,7 @@
 package com.mediflow.organization.web.controller;
 
 import com.mediflow.organization.application.port.in.CreateAccountUseCase;
+import com.mediflow.organization.application.port.in.LookupAccountIdentityUseCase;
 import com.mediflow.organization.application.port.in.UpdateAccountStatusUseCase;
 import com.mediflow.organization.application.port.in.VerifyCredentialsUseCase;
 import com.mediflow.organization.domain.model.Role;
@@ -41,6 +42,9 @@ class AccountControllerSecurityTest {
 
     @MockBean
     private VerifyCredentialsUseCase verifyCredentialsUseCase;
+
+    @MockBean
+    private LookupAccountIdentityUseCase lookupAccountIdentityUseCase;
 
     @Test
     @WithMockUser(username = "gateway", authorities = "ROLE_SYSTEM_SERVICE")

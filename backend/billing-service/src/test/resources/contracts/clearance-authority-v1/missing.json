@@ -8,6 +8,8 @@
     "accountId": null,
     "patientId": null,
     "purpose": null,
+    "sourceType": null,
+    "sourceId": null,
     "careEpisodeType": null,
     "careEpisodeId": null,
     "admissionId": null,

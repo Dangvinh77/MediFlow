@@ -2,6 +2,7 @@ package com.mediflow.billing;
 
 import com.mediflow.billing.application.port.out.LabTestChargeRepositoryPort;
 import com.mediflow.billing.application.port.out.LabTestChargeWirePort;
+import com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
 import com.mediflow.billing.infrastructure.config.LabTestChargeConfiguration;
 import com.mediflow.billing.messaging.consumer.LabTestChargeConsumer;
@@ -38,6 +39,7 @@ class LabTestChargeConfigurationTest {
                 .withBean(TopicExchange.class, () -> new TopicExchange("mediflow.events"))
                 .withBean(PlatformTransactionManager.class, () -> mock(PlatformTransactionManager.class))
                 .withBean(LabTestChargeRepositoryPort.class, () -> mock(LabTestChargeRepositoryPort.class))
+                .withBean(OutpatientCancellationRepositoryPort.class, () -> mock(OutpatientCancellationRepositoryPort.class))
                 .withBean(LabTestChargeWirePort.class, () -> mock(LabTestChargeWirePort.class))
                 .withBean(PriceCatalogPort.class, () -> mock(PriceCatalogPort.class));
     }

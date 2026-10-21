@@ -21,8 +21,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ConditionalOnProperty(name = {"mediflow.billing.ledger.enabled", "mediflow.billing.exam-charge-consumer.enabled"}, havingValue = "true")
 public class ExamChargeConfiguration {
     @Bean IssueExamChargeUseCase issueExamCharges(ExamChargeRepositoryPort repository, PriceCatalogPort prices,
+            com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort cancellations,
             PlatformTransactionManager manager) {
-        var service = new ExamChargePlannedRequestService(repository, prices);
+        var service = new ExamChargePlannedRequestService(repository, prices, cancellations);
         var transaction = new TransactionTemplate(manager); transaction.setTimeout(5);
         return command -> transaction.execute(status -> service.issue(command));
     }

@@ -34,7 +34,7 @@ class OutpatientCoverageAcceptancePostgresTest {
         String schema="approval_"+UUID.randomUUID().toString().replace("-","");
         var flyway=Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword())
                 .schemas(schema).defaultSchema(schema).locations("classpath:db/migration");
-        // Explicit upgrade from deployed V27, then validate the additive V28 migration.
+        // Explicit upgrade from deployed V27, then validate additive V28 and V29 migrations.
         flyway.target("27").load().migrate();
         Flyway.configure().dataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword()).schemas(schema)
                 .defaultSchema(schema).locations("classpath:db/migration").load().migrate();
@@ -62,6 +62,27 @@ class OutpatientCoverageAcceptancePostgresTest {
                     metric_type,department_id,care_episode_type,care_episode_id,metric_date,occurred_at,numeric_value,fact_fingerprint)
                 VALUES (?,?,'LAB_RESULT',?,1,'LAB_TESTS',?,'OUTPATIENT_VISIT',?,?,?::timestamptz,1,?)
                 """,UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),department,UUID.randomUUID(),Date.valueOf(date),occurred,"a".repeat(64));
+    }
+    private void coverage(Fixture f, UUID coverageId, String acceptanceReference, String fingerprint) throws Exception {
+        var references=new TreeMap<String,String>();
+        com.mediflow.report.domain.model.OutpatientCoverage.REQUIRED_SOURCES.forEach(source -> references.put(source,"ISOLATED_TEST:"+source));
+        f.jdbc.update("""
+                INSERT INTO report_outpatient_coverage(coverage_id,covered_from,covered_to,department_id,zone_id,currency,
+                    source_references,source_observed_at,reconciled_at,accepted_at,accepted_by,acceptance_reference,local_evidence_fingerprint)
+                VALUES (?,?,?,NULL,?,'VND',?::jsonb,?,?,?,?,?,?)
+                """,coverageId,Date.valueOf(date),Date.valueOf(date),zone.getId(),new ObjectMapper().writeValueAsString(references),
+                java.sql.Timestamp.from(clock.instant().minusSeconds(60)),java.sql.Timestamp.from(clock.instant().minusSeconds(30)),
+                java.sql.Timestamp.from(clock.instant()),actor,acceptanceReference,fingerprint);
+    }
+    @Test void newestApprovalWinsWhenAcceptedAtTiesAndItsCoverageIdSortsLast() throws Exception {
+        var f=fixture();
+        var initialFingerprint=OutpatientReportReadPersistenceAdapter.evidenceFingerprint(List.of());
+        coverage(f,UUID.fromString("00000000-0000-0000-0000-000000000001"),"OLDER_TEST_APPROVAL",initialFingerprint);
+        lab(f,UUID.randomUUID(),"2026-10-01T01:00:00Z");
+        var current=f.tx.execute(s->f.approvals.preview(date,date,null));
+        coverage(f,UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"),"NEWER_TEST_APPROVAL",current.fingerprint());
+
+        assertThat(f.tx.execute(s->f.reader.daily(date,date,null)).periods().getFirst().labTests()).isOne();
     }
     @Test void acceptedZeroIsAuditedAndLateInputInvalidatesWithoutRetryReacceptance() {
         var f=fixture(); var request=reviewed(f,null);
@@ -97,14 +118,20 @@ class OutpatientCoverageAcceptancePostgresTest {
         assertThatThrownBy(()->f.tx.execute(s->f.approvals.accept(request,actor))).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThat(f.jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isZero();
         f.jdbc.execute("ALTER TABLE report_outpatient_coverage_acceptance DROP CONSTRAINT reject_audit");
+        UUID acceptedId;
         try (var pool=Executors.newFixedThreadPool(2)) {
             var latch=new CountDownLatch(1);
             Callable<UUID> command=()-> { latch.await(); return f.tx.execute(s->f.approvals.accept(request,actor)).coverageId(); };
             var a=pool.submit(command); var b=pool.submit(command); latch.countDown();
-            assertThat(a.get(10,TimeUnit.SECONDS)).isEqualTo(b.get(10,TimeUnit.SECONDS));
+            acceptedId=a.get(10,TimeUnit.SECONDS);
+            assertThat(acceptedId).isEqualTo(b.get(10,TimeUnit.SECONDS));
         }
         assertThat(f.jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage",Integer.class)).isOne();
         assertThat(f.jdbc.queryForObject("SELECT count(*) FROM report_outpatient_coverage_acceptance",Integer.class)).isOne();
+        Long order=f.jdbc.queryForObject("SELECT acceptance_order FROM report_outpatient_coverage",Long.class);
+        var replay=f.tx.execute(s->f.approvals.accept(request,actor));
+        assertThat(replay.coverageId()).isEqualTo(acceptedId);
+        assertThat(f.jdbc.queryForObject("SELECT acceptance_order FROM report_outpatient_coverage",Long.class)).isEqualTo(order);
     }
     @Test void fractionalMetricsAndPendingRefundCannotReceiveApprovalEvenWithMatchingHashes() {
         var f=fixture(); lab(f,UUID.randomUUID(),"2026-10-01T01:00:00Z");

@@ -72,13 +72,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String role = claims.get(JwtClaims.ROLE, String.class);
             boolean lookup = "GET".equals(request.getMethod()) && request.getRequestURI().matches(
                     "/api/v1/billing/financial-clearances/[0-9a-fA-F-]{36}/lookup");
+            boolean executionStart = "POST".equals(request.getMethod()) && request.getRequestURI().matches(
+                    "/api/v1/billing/financial-clearances/[0-9a-fA-F-]{36}/execution-starts");
+            boolean clearanceServiceCall = lookup || executionStart;
             boolean serviceToken = JwtClaims.SERVICE_TOKEN_TYPE.equals(claims.get(JwtClaims.TYPE, String.class));
-            if (lookup || serviceToken || "SYSTEM".equals(role)) {
+            if (clearanceServiceCall || serviceToken || "SYSTEM".equals(role)) {
                 var issued = claims.getIssuedAt();
                 var expires = claims.getExpiration();
                 var now = java.time.Instant.now();
-                boolean permittedCaller = "surgery-service".equals(subject) || "pharmacy-service".equals(subject);
-                if (!lookup || !serviceToken || !"SYSTEM".equals(role) || !permittedCaller
+                boolean permittedCaller = executionStart
+                        ? "clinical-service".equals(subject) || "lab-service".equals(subject)
+                        : "surgery-service".equals(subject) || "pharmacy-service".equals(subject)
+                            || "clinical-service".equals(subject) || "lab-service".equals(subject);
+                if (!clearanceServiceCall || !serviceToken || !"SYSTEM".equals(role) || !permittedCaller
                         || issued == null || expires == null || !expires.after(issued)
                         || expires.toInstant().isAfter(issued.toInstant().plusSeconds(60))
                         || issued.toInstant().isAfter(now.plusSeconds(5))) {

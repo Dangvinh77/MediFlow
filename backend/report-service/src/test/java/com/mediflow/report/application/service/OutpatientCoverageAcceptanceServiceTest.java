@@ -47,6 +47,21 @@ class OutpatientCoverageAcceptanceServiceTest {
         var ordered=inOrder(store,evidence); ordered.verify(store).lock(); ordered.verify(store).find(request.requestId());
         ordered.verify(evidence).inspect(date,date,null,"Asia/Bangkok","VND"); ordered.verify(store).save(request,actor,coverage.toModel());
     }
+    @Test void newAcceptanceSamplesServerTimeAfterSerializedEvidenceCheck() {
+        var clock=mock(Clock.class); when(clock.instant()).thenReturn(now.minusSeconds(10),now);
+        var underTest=new OutpatientCoverageAcceptanceService(evidence,store,ZoneId.of("Asia/Bangkok"),clock);
+        var request=valid(); when(evidence.inspect(date,date,null,"Asia/Bangkok","VND")).thenReturn(snapshot(false));
+
+        var accepted=underTest.accept(request,actor);
+
+        assertThat(accepted.acceptedAt()).isEqualTo(now);
+        var ordered=inOrder(clock,store,evidence);
+        ordered.verify(clock).instant(); // validate the request before acquiring persistence locks
+        ordered.verify(store).lock();
+        ordered.verify(store).find(request.requestId());
+        ordered.verify(evidence).inspect(date,date,null,"Asia/Bangkok","VND");
+        ordered.verify(clock).instant();
+    }
     @Test void exactRetryReturnsOriginalReceiptWithoutReacceptingDriftedInputs() {
         var request=valid(); when(evidence.inspect(any(),any(),any(),any(),any())).thenReturn(snapshot(false));
         var original=service.accept(request,actor); clearInvocations(evidence,store);
@@ -89,5 +104,14 @@ class OutpatientCoverageAcceptanceServiceTest {
         assertThatThrownBy(()->service.accept(request(proofs,"Asia/Bangkok",now,now),actor)).isInstanceOf(ReportPeriodValidationException.class);
         assertThatThrownBy(()->service.preview(date,date.plusDays(366),null)).isInstanceOf(ReportPeriodValidationException.class);
         verifyNoInteractions(store,evidence);
+    }
+    @Test void maximumDateIsRejectedAsPeriodValidationBeforePersistence() {
+        LocalDate maximum = LocalDate.MAX;
+        var request = new AcceptOutpatientCoverageRequest(UUID.randomUUID(), maximum, maximum, null,
+                "Asia/Bangkok", "VND", proofs(), now, now, "REVIEW-TEST-ONLY", "a".repeat(64));
+
+        assertThatThrownBy(() -> service.accept(request, actor)).isInstanceOf(ReportPeriodValidationException.class);
+
+        verifyNoInteractions(store, evidence);
     }
 }

@@ -47,6 +47,7 @@ import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabClinicalOrderContextPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
+import com.mediflow.lab.application.port.out.LabExecutionAuthorityPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
 import com.mediflow.lab.domain.exception.LabRuleException;
@@ -69,10 +70,11 @@ class LabCareFinanceV2ApplicationServiceTest {
     private final LabOutboxPort outbox = mock(LabOutboxPort.class);
     private final LabClearanceRepositoryPort clearances = mock(LabClearanceRepositoryPort.class);
     private final LabEmergencyOverrideRepositoryPort overrides = mock(LabEmergencyOverrideRepositoryPort.class);
+    private final LabExecutionAuthorityPort executionAuthority = mock(LabExecutionAuthorityPort.class);
     private final AuthenticatedStaffContextPort authenticatedStaff = mock(AuthenticatedStaffContextPort.class);
     private final LabApplicationService service = new LabApplicationService(tests, compatibilityEvents,
             mapper, correlations, outbox, clearances, overrides, authenticatedStaff, true,
-            Clock.fixed(NOW, ZoneOffset.UTC));
+            false, Clock.fixed(NOW, ZoneOffset.UTC), null, null, executionAuthority);
 
     @Test
     void create_v2AppendsRequestTimeChargeFactToOutbox() {
@@ -363,6 +365,7 @@ class LabCareFinanceV2ApplicationServiceTest {
         assertThat(test.getStatus()).isEqualTo(LabTestStatus.COMPLETED);
         assertThat(test.getUpdatedAt()).isEqualTo(NOW);
         verify(clearances).findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId());
+        verify(executionAuthority).requireCurrent(clearance, test.getTestId(), correlationId.toString());
         ArgumentCaptor<DomainEventEnvelope<?>> envelope = ArgumentCaptor.forClass(DomainEventEnvelope.class);
         verify(outbox).append(envelope.capture());
         assertThat(envelope.getValue().occurredAt()).isEqualTo(NOW);
@@ -431,6 +434,30 @@ class LabCareFinanceV2ApplicationServiceTest {
     }
 
     @Test
+    void addResults_v2FailsClosedWhenBillingHasRevokedTheCurrentGrant() {
+        LabTest test = v2Test();
+        UUID correlationId = UUID.randomUUID();
+        LabFinancialClearance clearance = clearanceFor(test);
+        test.grantClearance(clearance);
+        test.start(clearance, null, NOW.minusSeconds(1));
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(clearances.findByTestIdAndClearanceId(test.getTestId(), clearance.clearanceId()))
+                .thenReturn(Optional.of(clearance));
+        when(correlations.currentOrCreate()).thenReturn(correlationId);
+        org.mockito.Mockito.doThrow(new LabRuleException("LAB_CLEARANCE_REQUIRED", "Billing revoked the grant"))
+                .when(executionAuthority).requireCurrent(clearance, test.getTestId(), correlationId.toString());
+
+        assertThatThrownBy(() -> service.addResults(test.getTestId(), new AddResultRequest(
+                List.of(new LabResultItem("Hemoglobin", "13.5", "g/dL", "12-16")),
+                "Normal", REQUESTED_DATE)))
+                .isInstanceOf(LabRuleException.class)
+                .hasFieldOrPropertyWithValue("code", "LAB_CLEARANCE_REQUIRED");
+
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
+    }
+
+    @Test
     void create_v2DuplicateSourceOrder_rejectsBeforePersisting() {
         UUID sourceOrderId = UUID.randomUUID();
         when(tests.existsBySourceOrderId(sourceOrderId)).thenReturn(true);
@@ -458,6 +485,27 @@ class LabCareFinanceV2ApplicationServiceTest {
                 .isEqualTo("LAB_CLEARANCE_REQUIRED");
         verify(tests, never()).save(any());
         verifyNoInteractions(overrides);
+    }
+
+    @Test
+    void start_v2FailsClosedWhenBillingCannotDurablyAdmitTheTest() {
+        LabTest test = v2Test();
+        LabFinancialClearance clearance = clearanceFor(test);
+        UUID correlationId = UUID.randomUUID();
+        test.grantClearance(clearance);
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(clearances.findValidByTestId(eq(test.getTestId()), any(Instant.class)))
+                .thenReturn(Optional.of(clearance));
+        when(correlations.currentOrCreate()).thenReturn(correlationId);
+        org.mockito.Mockito.doThrow(new LabUpstreamUnavailableException())
+                .when(executionAuthority).start(clearance, test.getTestId(), correlationId.toString());
+
+        assertThatThrownBy(() -> service.start(test.getTestId(), new StartLabTestRequest(null)))
+                .isInstanceOf(LabUpstreamUnavailableException.class);
+
+        verify(executionAuthority).start(clearance, test.getTestId(), correlationId.toString());
+        verify(tests, never()).save(any());
+        verifyNoInteractions(outbox);
     }
 
     @Test
@@ -522,6 +570,7 @@ class LabCareFinanceV2ApplicationServiceTest {
         when(clearances.findLatestByTestId(test.getTestId())).thenReturn(Optional.empty());
         when(authenticatedStaff.currentStaff())
                 .thenReturn(Optional.of(new AuthenticatedStaffContext(actor, "ADMIN")));
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
         EmergencyOverrideRequest approval = new EmergencyOverrideRequest(UUID.randomUUID(), actor, "ADMIN",
                 "Urgent diagnostic care", NOW.minusSeconds(1));
 
@@ -533,6 +582,31 @@ class LabCareFinanceV2ApplicationServiceTest {
         verify(overrides).save(audit.capture());
         assertThat(audit.getValue().approvedBy()).isEqualTo(actor);
         assertThat(audit.getValue().approverRole()).isEqualTo("ADMIN");
+        verify(tests).save(test);
+    }
+
+    @Test
+    void start_explicitValidEmergencyOverrideTakesPrecedenceOverLocalGrantAndSkipsBilling() {
+        LabTest test = v2Test();
+        LabFinancialClearance clearance = clearanceFor(test);
+        test.grantClearance(clearance);
+        UUID actor = UUID.randomUUID();
+        when(tests.findByIdForUpdate(test.getTestId())).thenReturn(Optional.of(test));
+        when(clearances.findValidByTestId(eq(test.getTestId()), any(Instant.class)))
+                .thenReturn(Optional.of(clearance));
+        when(authenticatedStaff.currentStaff())
+                .thenReturn(Optional.of(new AuthenticatedStaffContext(actor, "ADMIN")));
+        when(correlations.currentOrCreate()).thenReturn(UUID.randomUUID());
+        EmergencyOverrideRequest approval = new EmergencyOverrideRequest(UUID.randomUUID(), actor, "ADMIN",
+                "Urgent diagnostic care", NOW.minusSeconds(1));
+
+        service.start(test.getTestId(), new StartLabTestRequest(approval));
+
+        assertThat(test.getStatus()).isEqualTo(LabTestStatus.IN_PROGRESS);
+        assertThat(test.isPaid()).isFalse();
+        assertThat(test.getEmergencyOverrideId()).isEqualTo(approval.overrideId());
+        verify(overrides).save(any());
+        verifyNoInteractions(executionAuthority);
         verify(tests).save(test);
     }
 
@@ -602,7 +676,14 @@ class LabCareFinanceV2ApplicationServiceTest {
             com.mediflow.lab.application.port.in.CreateLabRequestUseCase creation) {
         return new LabApplicationService(tests, compatibilityEvents, mapper, correlations, outbox,
                 clearances, overrides, authenticatedStaff, true, true, Clock.fixed(NOW, ZoneOffset.UTC),
-                contexts, creation);
+                contexts, creation, executionAuthority);
+    }
+
+    private static LabFinancialClearance clearanceFor(LabTest test) {
+        return LabFinancialClearance.grant(test.getTestId(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), test.getTestId(), test.getPatientId(),
+                test.getCareEpisodeType(), test.getCareEpisodeId(), ClearancePurpose.LAB_TEST,
+                new BigDecimal("250000.00"), "VND", NOW.plusSeconds(60), false, NOW.minusSeconds(60));
     }
 
     private static LabTest v2Test() {

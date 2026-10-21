@@ -28,6 +28,7 @@ import com.mediflow.lab.application.event.DomainEventEnvelope;
 import com.mediflow.lab.application.event.LabRequestCreatedEvent;
 import com.mediflow.lab.application.event.LabResultCreatedEvent;
 import com.mediflow.lab.application.event.LabRequestV2Payload;
+import com.mediflow.lab.application.event.LabRequestCancelledPayload;
 import com.mediflow.lab.application.event.LabResultV2Payload;
 import com.mediflow.lab.application.mapper.LabTestDtoMapper;
 import com.mediflow.lab.application.port.in.ManageLabTestUseCase;
@@ -41,6 +42,7 @@ import com.mediflow.lab.application.port.out.CorrelationIdProvider;
 import com.mediflow.lab.application.port.out.LabClearanceRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEmergencyOverrideRepositoryPort;
 import com.mediflow.lab.application.port.out.LabEventPublisherPort;
+import com.mediflow.lab.application.port.out.LabExecutionAuthorityPort;
 import com.mediflow.lab.application.port.out.LabClinicalOrderContextPort;
 import com.mediflow.lab.application.port.out.LabOutboxPort;
 import com.mediflow.lab.application.port.out.LabTestRepositoryPort;
@@ -70,6 +72,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
     private final Clock clock;
     private final LabClinicalOrderContextPort clinicalOrders;
     private final CreateLabRequestUseCase requestCreation;
+    private final LabExecutionAuthorityPort executionAuthority;
 
     public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
                                  LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
@@ -101,6 +104,20 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                                  boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
                                  Clock clock, LabClinicalOrderContextPort clinicalOrders,
                                  CreateLabRequestUseCase requestCreation) {
+        this(tests, publisher, mapper, correlationIds, outbox, clearances, overrides,
+                authenticatedStaff, careFinanceV2Enabled, outpatientMvpEnabled, clock,
+                clinicalOrders, requestCreation, LabExecutionAuthorityPort.unavailable());
+    }
+
+    public LabApplicationService(LabTestRepositoryPort tests, LabEventPublisherPort publisher,
+                                 LabTestDtoMapper mapper, CorrelationIdProvider correlationIds,
+                                 LabOutboxPort outbox, LabClearanceRepositoryPort clearances,
+                                 LabEmergencyOverrideRepositoryPort overrides,
+                                 AuthenticatedStaffContextPort authenticatedStaff,
+                                 boolean careFinanceV2Enabled, boolean outpatientMvpEnabled,
+                                 Clock clock, LabClinicalOrderContextPort clinicalOrders,
+                                 CreateLabRequestUseCase requestCreation,
+                                 LabExecutionAuthorityPort executionAuthority) {
         this.tests = tests;
         this.publisher = publisher;
         this.mapper = mapper;
@@ -114,6 +131,7 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         this.clock = clock;
         this.clinicalOrders = clinicalOrders;
         this.requestCreation = requestCreation;
+        this.executionAuthority = java.util.Objects.requireNonNull(executionAuthority);
     }
 
     /** Compatibility constructor retained for version-0 unit fixtures. */
@@ -235,12 +253,16 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         LabEmergencyOverride override = toOverride(request == null ? null : request.emergencyOverride(), test, now);
         LabFinancialClearance clearance = clearances.findValidByTestId(id, now)
                 .orElseGet(() -> clearances.findLatestByTestId(id).orElse(null));
-        if (override != null && clearance != null && clearance.isExpiredAt(now)) {
+        // An explicitly requested, validated and audited emergency decision is its own authority.
+        if (override != null) {
             clearance = null;
         }
 
         UUID previousOverrideId = test.getEmergencyOverrideId();
         test.start(clearance, override, now);
+        if (test.getEmergencyOverrideId() == null && clearance != null) {
+            executionAuthority.start(clearance, test.getTestId(), correlationIds.currentOrCreate().toString());
+        }
         if (override != null && !override.overrideId().equals(previousOverrideId)
                 && override.overrideId().equals(test.getEmergencyOverrideId())) {
             overrides.save(override);
@@ -259,8 +281,19 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
         } else {
             requireOutpatientV1Mutation(test);
         }
-        test.cancel(request.reason(), request.cancelledBy());
-        return mapper.toDto(tests.save(test));
+        boolean alreadyCancelled = test.getStatus() == LabTestStatus.CANCELLED;
+        test.cancel(request.reason(), request.cancelledBy(), clock.instant());
+        LabTest saved = tests.save(test);
+        if (!alreadyCancelled && saved.getCareContractVersion() == 1) {
+            var payload = new LabRequestCancelledPayload(saved.getTestId(), saved.getPatientId(),
+                    saved.getRecordId(), saved.getRequestingDepartmentId(), saved.getCareEpisodeType(),
+                    saved.getCareEpisodeId(), saved.getSourceOrderId(), "LAB_TEST", saved.getTestId(),
+                    saved.getPriceCode(), saved.getLabType(), saved.getCancelledBy(),
+                    saved.getCancellationReason(), saved.getCancelledAt());
+            outbox.append(new DomainEventEnvelope<>(UUID.randomUUID(), "lab.request.cancelled", 1,
+                    saved.getCancelledAt(), correlationIds.currentOrCreate().toString(), "lab-service", payload));
+        }
+        return mapper.toDto(saved);
     }
 
     @Override
@@ -280,6 +313,10 @@ public class LabApplicationService implements ManageLabTestUseCase, ReactToClini
                     ? clearances.findByTestIdAndClearanceId(test.getTestId(), test.getClearanceId()).orElse(null)
                     : null;
             test.recordResults(results, request.conclusion(), request.performedDate(), clearance, completedAt);
+            if (test.getEmergencyOverrideId() == null && clearance != null) {
+                executionAuthority.requireCurrent(clearance, test.getTestId(),
+                        correlationIds.currentOrCreate().toString());
+            }
         } else {
             test.recordResults(results, request.conclusion(), request.performedDate());
         }

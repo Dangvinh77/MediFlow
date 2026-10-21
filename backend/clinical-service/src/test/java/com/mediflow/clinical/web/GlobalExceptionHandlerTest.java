@@ -86,7 +86,8 @@ class GlobalExceptionHandlerTest {
         UUID id = UUID.randomUUID();
         when(manageAppointmentUseCase.changeStatus(
                 org.mockito.ArgumentMatchers.eq(id),
-                org.mockito.ArgumentMatchers.eq(AppointmentStatus.ARRIVED)))
+                org.mockito.ArgumentMatchers.eq(AppointmentStatus.ARRIVED),
+                org.mockito.ArgumentMatchers.isNull()))
                 .thenThrow(new InvalidClinicalDataException(
                         "APPOINTMENT_INVALID_TRANSITION",
                         "Chuyển trạng thái không hợp lệ"));

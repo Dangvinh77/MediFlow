@@ -32,7 +32,10 @@ public class LabOutboxPersistenceAdapter implements LabOutboxPort {
             UUID aggregateId = payload.path("labId").isTextual()
                     ? UUID.fromString(payload.path("labId").asText())
                     : payload.path("payload").path("labId").isTextual()
-                    ? UUID.fromString(payload.path("payload").path("labId").asText()) : null;
+                    ? UUID.fromString(payload.path("payload").path("labId").asText())
+                    : "lab.request.cancelled".equals(event.eventType())
+                            && payload.path("payload").path("testId").isTextual()
+                    ? UUID.fromString(payload.path("payload").path("testId").asText()) : null;
             if (aggregateId == null) {
                 throw new IllegalArgumentException("Lab outbox payload must include labId");
             }

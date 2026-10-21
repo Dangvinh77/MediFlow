@@ -47,7 +47,7 @@ class ConsumerInboxPostgresTest {
     @org.junit.jupiter.api.Test
     void freshSchema_preservesExactDeliveryBytesAndDedupeSemantics() {
         TestDatabase db = migrateFresh();
-        assertThat(latestVersion(db)).isEqualTo("4");
+        assertThat(latestVersion(db)).isEqualTo("5");
         ConsumerInboxBoundary boundary = boundary(db);
         String operationKey = "lab:medical-record:v0:" + RECORD_ID;
         UUID firstEvent = UUID.fromString("00000000-0000-0000-0000-000000002101");
@@ -165,7 +165,7 @@ class ConsumerInboxPostgresTest {
 
         migrate(db, null);
 
-        assertThat(latestVersion(db)).isEqualTo("4");
+        assertThat(latestVersion(db)).isEqualTo("5");
         createEffectTable(db);
         assertThat(count(db, "processed_event")).isEqualTo(1);
         assertThat(count(db, "lab_test")).isEqualTo(1);
@@ -211,7 +211,7 @@ class ConsumerInboxPostgresTest {
                     id.equals(published) ? Timestamp.from(sent) : null);
         }
         migrate(db, null);
-        assertThat(latestVersion(db)).isEqualTo("4");
+        assertThat(latestVersion(db)).isEqualTo("5");
         assertThat(count(db, "lab_outbox_event")).isEqualTo(2);
         for (UUID id : List.of(pending, published)) {
             var row = db.jdbc.queryForMap("SELECT * FROM lab_outbox_event WHERE event_id=?", id);

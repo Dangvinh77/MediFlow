@@ -85,13 +85,18 @@ class AuthorizationForwardingInterceptorTest {
 
     @Test
     void apply_requestHasHumanBearerToken_doesNotForwardHumanCredential() {
+        UUID expectedCorrelation = UUID.randomUUID();
+        correlationIds.bind(expectedCorrelation);
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         RequestTemplate template = new RequestTemplate();
+        template.header(JwtClaims.HEADER_CORRELATION_ID, "wrong-existing-correlation");
+        template.header(HttpHeaders.AUTHORIZATION, "Bearer template-user-token");
         interceptor.apply(template);
-        assertThat(template.headers().get(HttpHeaders.AUTHORIZATION))
-                .doesNotContain("Bearer test-token");
+        assertThat(template.headers().get(HttpHeaders.AUTHORIZATION)).hasSize(1);
+        assertThat(template.headers().get(HttpHeaders.AUTHORIZATION).iterator().next())
+                .startsWith("Bearer ").doesNotContain("test-token", "template-user-token");
         Claims claims = parseServiceClaims(template);
         assertThat(claims.getSubject()).isEqualTo("clinical-service");
         assertThat(claims.get(JwtClaims.ROLE, String.class)).isEqualTo(Roles.SYSTEM);
@@ -99,7 +104,8 @@ class AuthorizationForwardingInterceptorTest {
                 .isEqualTo(JwtClaims.SERVICE_TOKEN_TYPE);
         assertThat(claims.getIssuedAt().toInstant()).isEqualTo(NOW);
         assertThat(claims.getExpiration().toInstant()).isEqualTo(NOW.plusSeconds(60));
-        assertThat(template.headers().get(JwtClaims.HEADER_CORRELATION_ID)).hasSize(1);
+        assertThat(template.headers().get(JwtClaims.HEADER_CORRELATION_ID))
+                .containsExactly(expectedCorrelation.toString());
     }
 
     @Test

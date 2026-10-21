@@ -17,6 +17,8 @@ export function StaffForm({ staffId }: Props) {
   const router = useRouter(); const editing = Boolean(staffId);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]); const [originalDepartmentId, setOriginalDepartmentId] = useState(""); const [departmentId, setDepartmentId] = useState(""); const [fullName, setFullName] = useState(""); const [jobTitle, setJobTitle] = useState<JobTitle>("DOCTOR"); const [specialization, setSpecialization] = useState(""); const [licenseNumber, setLicenseNumber] = useState(""); const [phoneNumber, setPhoneNumber] = useState(""); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(true); const [loadedStaffId, setLoadedStaffId] = useState<string | null>(null); const [retryToken, setRetryToken] = useState(0); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const [loadError, setLoadError] = useState<{ key: string; message: string } | null>(null);
   const mounted = useRef(true);
+  const createIntent = useRef<{ fingerprint: string; session: string | null; key: string } | null>(null);
+  const submitting = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -58,7 +60,10 @@ export function StaffForm({ staffId }: Props) {
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setSaving(true); setError(null);
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setSaving(true); setError(null);
     const sessionToken = getToken();
     const shared = { fullName: fullName.trim(), jobTitle, specialization: specialization.trim() || null, licenseNumber: licenseNumber.trim() || null, phoneNumber: phoneNumber.trim() || null, email: email.trim() || null };
     try {
@@ -104,15 +109,30 @@ export function StaffForm({ staffId }: Props) {
         }
         router.push(`/organization/staff/${updatedStaff.staffId}?notice=updated`);
       } else {
-        const staff = await organizationApi.createStaff({ ...shared, departmentId });
+        const body = { ...shared, departmentId };
+        const fingerprint = JSON.stringify(body);
+        if (createIntent.current?.fingerprint !== fingerprint || createIntent.current.session !== sessionToken) {
+          createIntent.current = { fingerprint, session: sessionToken, key: crypto.randomUUID() };
+        }
+        const staff = await organizationApi.createStaff(body, createIntent.current.key);
         if (!mounted.current || getToken() !== sessionToken) return;
         router.push(`/organization/staff/${staff.staffId}?notice=created`);
       }
     } catch (cause: unknown) {
       if (!mounted.current || getToken() !== sessionToken) return;
-      if (cause instanceof ApiRequestError && cause.status === 401) router.replace("/login"); else setError(cause instanceof Error ? cause.message : "Không thể lưu nhân sự.");
+      if (cause instanceof ApiRequestError && cause.status === 401) {
+        router.replace("/login");
+      } else if (!staffId && (!(cause instanceof ApiRequestError) || cause.status >= 500 || cause.status === 408)) {
+        setError("Chưa xác nhận được kết quả tạo nhân sự. Hãy thử lưu lại cùng thông tin để hệ thống đối soát và trả về hồ sơ đã tạo. "
+          + (cause instanceof Error ? cause.message : "Kết nối bị gián đoạn."));
+      } else {
+        setError(cause instanceof Error ? cause.message : "Không thể lưu nhân sự.");
+      }
     }
-    finally { if (mounted.current && getToken() === sessionToken) setSaving(false); }
+    finally {
+      submitting.current = false;
+      if (mounted.current && getToken() === sessionToken) setSaving(false);
+    }
   }
 
   const currentLoadError = loadError;

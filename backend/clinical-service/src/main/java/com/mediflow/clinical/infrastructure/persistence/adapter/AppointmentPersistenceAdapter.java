@@ -73,7 +73,8 @@ public class AppointmentPersistenceAdapter implements AppointmentRepositoryPort 
                 e.getAppointmentDate(), e.getAppointmentTime(), e.getStatus(), e.getReason(),
                 e.getCreatedAt(), e.getUpdatedAt(), e.getCareContractVersion(), e.getExamClearanceId(),
                 e.getExamClearanceAt(), e.getEmergencyOverrideId(), e.getExamPriceCode(), e.getCheckedInAt(),
-                e.getExaminationStartedAt(), e.getCompletedAt());
+                e.getExaminationStartedAt(), e.getCompletedAt(), e.getCancelledBy(),
+                e.getCancellationReason(), e.getCancelledAt());
     }
     private AppointmentJpaEntity toEntity(Appointment a) {
         return AppointmentJpaEntity.builder().appointmentId(a.getAppointmentId()).patientId(a.getPatientId())
@@ -84,7 +85,8 @@ public class AppointmentPersistenceAdapter implements AppointmentRepositoryPort 
                 .examClearanceId(a.getExamClearanceId()).examClearanceAt(a.getExamClearanceAt())
                 .emergencyOverrideId(a.getEmergencyOverrideId()).examPriceCode(a.getExamPriceCode())
                 .checkedInAt(a.getCheckedInAt()).examinationStartedAt(a.getExaminationStartedAt())
-                .completedAt(a.getCompletedAt()).build();
+                .completedAt(a.getCompletedAt()).cancelledBy(a.getCancelledBy())
+                .cancellationReason(a.getCancellationReason()).cancelledAt(a.getCancelledAt()).build();
     }
 
     private static boolean hasConstraint(Throwable error, String constraint) {

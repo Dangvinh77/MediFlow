@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mediflow.billing.application.dto.request.CompleteLedgerPaymentRequest;
 import com.mediflow.billing.application.port.in.ProcessLedgerPaymentUseCase;
+import com.mediflow.billing.application.port.in.RefundLedgerPaymentUseCase;
 import com.mediflow.billing.domain.model.PaymentMethod;
 import com.mediflow.billing.infrastructure.pricing.CareFinancePriceProperties;
 import java.io.InputStream;
@@ -29,6 +30,7 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 /**
@@ -41,6 +43,7 @@ import static org.awaitility.Awaitility.await;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "eureka.client.enabled=false", "mediflow.jwt.secret=billing-exam-integration-secret-at-least-32-bytes",
         "mediflow.billing.ledger.enabled=true", "mediflow.billing.exam-charge-consumer.enabled=true",
+        "mediflow.billing.refunds.enabled=true",
         "mediflow.billing.outbox.enabled=false", "mediflow.billing.outbox.metrics-enabled=false", "mediflow.billing.outbox.maintenance-enabled=false",
         "spring.rabbitmq.listener.simple.auto-startup=false", "spring.rabbitmq.publisher-confirm-type=simple"})
 class ExamChargeRabbitIntegrationTest {
@@ -56,6 +59,7 @@ class ExamChargeRabbitIntegrationTest {
     @Autowired RabbitAdmin admin;
     @Autowired RabbitListenerEndpointRegistry registry;
     @Autowired ProcessLedgerPaymentUseCase payments;
+    @Autowired RefundLedgerPaymentUseCase refunds;
     @Autowired CareFinancePriceProperties catalog;
     @Autowired ObjectMapper mapper;
     private static final String QUEUE = "billing.q", DLQ = "billing.dlq";
@@ -120,6 +124,36 @@ class ExamChargeRabbitIntegrationTest {
         assertThat(count("CHARGE")).isZero();
     }
 
+    @Test void consume_exactClinicalCancellationFixtureUnlocksOnlyAuditedRefundDue() throws Exception {
+        byte[] creation = fixture(); send(creation); drain(1);
+        UUID appointmentId = UUID.fromString(tree(creation).path("payload").path("appointmentId").asText());
+        UUID request = jdbc.queryForObject("SELECT payment_request_id FROM PAYMENT_REQUEST", UUID.class);
+        var payment = payments.complete(request,
+                new CompleteLedgerPaymentRequest("exam-cash", new BigDecimal("100000.00"), "VND", PaymentMethod.CASH, null),
+                UUID.randomUUID(), "exam-payment");
+        assertThat(count("outpatient_execution_start")).isZero();
+        assertThatThrownBy(() -> refunds.refund(payment.transactionId(), refund("exam-refund-before-cancel", "1000.00"),
+                UUID.randomUUID(), "exam-refund-before-cancel"))
+                .hasMessage("BILLING_REFUND_REQUIRES_CANCELLATION_EVIDENCE");
+
+        byte[] cancellation = examCancellationFixture();
+        listener().start();
+        send(cancellation);
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(jdbc.queryForObject("SELECT status FROM outpatient_cancellation_source WHERE source_type='EXAM' AND source_id=?",
+                        String.class, appointmentId)).isEqualTo("APPLIED"));
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(admin.getQueueInfo(QUEUE).getMessageCount()).isZero());
+        listener().stop();
+
+        assertThat(jdbc.queryForObject("SELECT status FROM CHARGE", String.class)).isEqualTo("VOIDED");
+        assertThat(jdbc.queryForObject("SELECT amount FROM outpatient_cancellation_refund_due", BigDecimal.class))
+                .isEqualByComparingTo("100000.00");
+        var refund = refunds.refund(payment.transactionId(), refund("exam-refund-after-cancel", "1000.00"),
+                UUID.randomUUID(), "exam-refund-after-cancel");
+        assertThat(refund.originalTransactionId()).isEqualTo(payment.transactionId());
+        assertThat(count("outpatient_execution_start")).isZero();
+    }
+
     private org.springframework.amqp.rabbit.listener.MessageListenerContainer listener() { return registry.getListenerContainer("billingEvents"); }
     private long count(String table) { return jdbc.queryForObject("SELECT count(*) FROM " + table, Long.class); }
     private void drain(long deliveries) {
@@ -133,13 +167,27 @@ class ExamChargeRabbitIntegrationTest {
         assertThat(message).isNotNull(); assertThat(message.getBody()).isEqualTo(body); return message.getBody();
     }
     private void send(byte[] body) {
-        rabbit.invoke(operations -> { operations.send("mediflow.events", ROUTING_KEY, new Message(body, new MessageProperties())); operations.waitForConfirmsOrDie(10000); return null; });
+        final String routingKey;
+        try { routingKey = mapper.readTree(body).path("eventType").asText(); }
+        catch (Exception malformed) { throw new AssertionError("Test message must carry an eventType", malformed); }
+        rabbit.invoke(operations -> { operations.send("mediflow.events", routingKey, new Message(body, new MessageProperties())); operations.waitForConfirmsOrDie(10000); return null; });
+    }
+    private com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest refund(String key, String amount) {
+        return new com.mediflow.billing.application.dto.request.RefundLedgerPaymentRequest(key, new BigDecimal(amount),
+                "Patient declined before examination", PaymentMethod.CASH);
     }
     private ObjectNode tree(byte[] body) throws Exception { return (ObjectNode) mapper.readTree(body); }
     private static byte[] fixture() throws Exception {
         try (InputStream in = ExamChargeRabbitIntegrationTest.class.getClassLoader()
                 .getResourceAsStream("contracts/appointment-status-changed-v1/appointment.status.changed.v1.json")) {
             assertThat(in).as("EXAM check-in fixture must exist").isNotNull();
+            return in.readAllBytes();
+        }
+    }
+    private static byte[] examCancellationFixture() throws Exception {
+        try (InputStream in = ExamChargeRabbitIntegrationTest.class.getClassLoader()
+                .getResourceAsStream("contracts/appointment-exam-cancelled-v1/appointment.exam.cancelled.v1.json")) {
+            assertThat(in).as("Clinical EXAM cancellation fixture must exist").isNotNull();
             return in.readAllBytes();
         }
     }

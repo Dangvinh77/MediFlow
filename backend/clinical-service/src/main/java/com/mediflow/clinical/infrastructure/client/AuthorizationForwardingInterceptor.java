@@ -61,7 +61,11 @@ public class AuthorizationForwardingInterceptor implements RequestInterceptor {
         if (correlationId == null) {
             correlationId = correlationIds.currentOrCreate();
         }
+        // Method-level headers may already provide the correlation id (Billing's start call does).
+        // Replace them to avoid a comma-joined duplicate and never allow a human bearer through.
+        template.removeHeader(JwtClaims.HEADER_CORRELATION_ID);
         template.header(JwtClaims.HEADER_CORRELATION_ID, correlationId.toString());
+        template.removeHeader(HttpHeaders.AUTHORIZATION);
         template.header(HttpHeaders.AUTHORIZATION, "Bearer " + issueServiceToken());
     }
 

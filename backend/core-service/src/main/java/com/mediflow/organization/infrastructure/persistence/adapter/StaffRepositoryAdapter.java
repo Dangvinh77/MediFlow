@@ -78,7 +78,10 @@ public class StaffRepositoryAdapter
 
         StaffEntity entity = toEntity(staff);
 
-        StaffEntity savedEntity = jpaRepository.save(entity);
+        // CreateStaffService can persist an idempotency receipt through JDBC in the
+        // same transaction immediately after this call. Flush the new staff row so
+        // PostgreSQL can validate the receipt's staff_id foreign key at that point.
+        StaffEntity savedEntity = jpaRepository.saveAndFlush(entity);
 
         return toDomain(savedEntity);
     }

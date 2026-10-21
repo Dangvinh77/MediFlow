@@ -14,6 +14,9 @@ public interface ManageAppointmentUseCase {
     AppointmentDTO create(CreateAppointmentRequest request);
     AppointmentDTO update(UUID id, UpdateAppointmentRequest request);
     AppointmentDTO changeStatus(UUID id, AppointmentStatus status);
+    default AppointmentDTO changeStatus(UUID id, AppointmentStatus status, String reason) {
+        return changeStatus(id, status);
+    }
     AppointmentDTO getById(UUID id);
     List<AppointmentDTO> byPatient(UUID patientId);
     PageResult<AppointmentDTO> search(UUID departmentId, LocalDate appointmentDate, PageQuery page);

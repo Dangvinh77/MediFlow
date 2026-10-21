@@ -31,6 +31,7 @@ public class OutpatientCoverageAcceptancePersistenceAdapter implements Outpatien
     @Override public void lock() {
         jdbc.execute("SET LOCAL lock_timeout = '2s'");
         jdbc.execute("SET LOCAL statement_timeout = '10s'");
+        // Serialize new approvals before the database sequence assigns their durable acceptance order.
         jdbc.execute("LOCK TABLE report_outpatient_coverage IN SHARE ROW EXCLUSIVE MODE");
         jdbc.execute("LOCK TABLE operational_contribution, report_cash_receipt, report_cash_refund IN SHARE MODE");
     }

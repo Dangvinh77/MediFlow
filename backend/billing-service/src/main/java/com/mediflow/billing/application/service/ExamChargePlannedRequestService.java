@@ -4,6 +4,7 @@ import com.mediflow.billing.application.dto.command.ExamChargeCommand;
 import com.mediflow.billing.application.port.in.IssueExamChargeUseCase;
 import com.mediflow.billing.application.port.out.ExamChargeRepositoryPort;
 import com.mediflow.billing.application.port.out.PriceCatalogPort;
+import com.mediflow.billing.application.port.out.OutpatientCancellationRepositoryPort;
 import com.mediflow.billing.domain.exception.BillingRuleException;
 import com.mediflow.billing.domain.model.Charge;
 import java.math.BigDecimal;
@@ -15,10 +16,17 @@ import java.util.UUID;
 public final class ExamChargePlannedRequestService implements IssueExamChargeUseCase {
     private final ExamChargeRepositoryPort repository;
     private final PriceCatalogPort prices;
+    private final OutpatientCancellationRepositoryPort cancellations;
 
     public ExamChargePlannedRequestService(ExamChargeRepositoryPort repository, PriceCatalogPort prices) {
+        this(repository, prices, null);
+    }
+
+    public ExamChargePlannedRequestService(ExamChargeRepositoryPort repository, PriceCatalogPort prices,
+            OutpatientCancellationRepositoryPort cancellations) {
         this.repository = repository;
         this.prices = prices;
+        this.cancellations = cancellations;
     }
 
     @Override
@@ -26,6 +34,7 @@ public final class ExamChargePlannedRequestService implements IssueExamChargeUse
         repository.claimDelivery(command);
         var recorded = repository.lockRecordedSource(command);
         if (recorded.isPresent()) {
+            recoverCancellation(command.appointmentId());
             return recorded.get();
         }
         UUID account = repository.openAndLockExactAccount(command);
@@ -39,7 +48,12 @@ public final class ExamChargePlannedRequestService implements IssueExamChargeUse
         require(money(charge.getGrossAmount()) && charge.getGrossAmount().signum() > 0,
                 "BILLING_PAYMENT_REQUEST_INVALID");
         var issued = repository.saveChargeAndRequest(command, account, charge);
+        recoverCancellation(command.appointmentId());
         return issued.paymentRequestId();
+    }
+
+    private void recoverCancellation(UUID appointmentId) {
+        if (cancellations != null) cancellations.recoverDuringIssuance("EXAM", appointmentId);
     }
 
     private static boolean money(BigDecimal amount) {
