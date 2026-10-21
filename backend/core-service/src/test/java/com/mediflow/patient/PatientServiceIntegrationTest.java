@@ -68,6 +68,7 @@ class PatientServiceIntegrationTest {
         registry.add("spring.rabbitmq.username", RABBITMQ::getAdminUsername);
         registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
         registry.add("eureka.client.enabled", () -> false);
+        registry.add("mediflow.patient.outbox.scheduling-enabled", () -> false);
         registry.add("mediflow.jwt.secret", () ->
                 "integration-test-secret-that-is-long-enough-for-hs256");
     }
@@ -92,6 +93,139 @@ class PatientServiceIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private com.mediflow.patient.infrastructure.messaging.PatientOutboxDispatcher dispatcher;
+    @org.springframework.boot.test.mock.mockito.SpyBean
+    private com.mediflow.patient.infrastructure.messaging.PatientOutboxStore outbox;
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("patientDataSource")
+    private javax.sql.DataSource patientDataSource;
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("patientTransactionManager")
+    private org.springframework.transaction.PlatformTransactionManager patientTransactions;
+    @Autowired
+    private org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory;
+
+    @org.junit.jupiter.api.BeforeEach
+    void clearOutboxFixture() {
+        jdbc().update("DELETE FROM patient_event_outbox");
+    }
+
+    private org.springframework.jdbc.core.JdbcTemplate jdbc() {
+        return new org.springframework.jdbc.core.JdbcTemplate(patientDataSource);
+    }
+
+    private void bindEvents() {
+        eventQueue = "patient.integration." + UUID.randomUUID();
+        // The outage test closes broker connections; use a durable, non-exclusive consumer queue.
+        amqpAdmin.declareQueue(new Queue(eventQueue, true, false, false));
+        amqpAdmin.declareBinding(BindingBuilder.bind(new Queue(eventQueue))
+                .to(new TopicExchange(RabbitConfig.EXCHANGE)).with("patient.*"));
+    }
+
+    private PatientDTO newPatient(String name) {
+        return createPatient.create(new CreatePatientRequest(name, LocalDate.of(1990, 1, 2), Gender.M,
+                UUID.randomUUID().toString().substring(0, 20), "Address", "0901234567", "audit@example.com", null));
+    }
+
+    private com.mediflow.patient.application.dto.request.UpdatePatientRequest correction(PatientDTO patient, String name) {
+        return new com.mediflow.patient.application.dto.request.UpdatePatientRequest(name, patient.ngaySinh(),
+                patient.gioiTinh(), "New address", patient.soDienThoai(), patient.email(), null, null);
+    }
+
+    private com.mediflow.patient.infrastructure.messaging.PatientOutboxDispatcher restartedWorker(int attempts) {
+        var rabbit = new RabbitTemplate(connectionFactory);
+        rabbit.setMandatory(true);
+        return new com.mediflow.patient.infrastructure.messaging.PatientOutboxDispatcher(outbox, rabbit,
+                new org.springframework.transaction.support.TransactionTemplate(patientTransactions), attempts);
+    }
+
+    @Test
+    void createAndUpdateSurviveBrokerOutageAndWorkerRestartWithOriginalPayloads() throws Exception {
+        bindEvents();
+        assertThat(RABBITMQ.execInContainer("rabbitmqctl", "stop_app").getExitCode()).isZero();
+        java.util.List<java.util.Map<String, Object>> originals;
+        try {
+            var patient = newPatient("Outage create");
+            updatePatient.update(patient.maBenhNhan(), correction(patient, "Outage update"));
+            assertThat(patientRepository.findById(patient.maBenhNhan()).orElseThrow().getFullName())
+                    .isEqualTo("Outage update");
+            originals = jdbc().queryForList("SELECT event_id,payload,correlation_id,routing_key FROM patient_event_outbox");
+            assertThat(originals).hasSize(2);
+            dispatcher.dispatch();
+            assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_event_outbox WHERE status='PENDING' AND attempts=1", Integer.class))
+                    .isEqualTo(2);
+        } finally {
+            assertThat(RABBITMQ.execInContainer("rabbitmqctl", "start_app").getExitCode()).isZero();
+        }
+        jdbc().update("UPDATE patient_event_outbox SET next_attempt_at=CURRENT_TIMESTAMP");
+        restartedWorker(8).dispatch();
+        for (int i = 0; i < 2; i++) {
+            Message delivered = rabbitTemplate.receive(eventQueue, 5_000);
+            assertThat(delivered).isNotNull();
+            var id = delivered.getMessageProperties().getMessageId();
+            var original = originals.stream().filter(row -> row.get("event_id").toString().equals(id)).findFirst().orElseThrow();
+            assertThat(delivered.getBody()).isEqualTo(original.get("payload").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            assertThat(delivered.getMessageProperties().getCorrelationId()).isEqualTo(original.get("correlation_id"));
+            assertThat(delivered.getMessageProperties().getReceivedRoutingKey()).isEqualTo(original.get("routing_key"));
+        }
+        assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_event_outbox WHERE status='PUBLISHED'", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void failureAfterBrokerConfirmReplaysSameBytesAndEventIdAfterWorkerRestart() {
+        bindEvents();
+        newPatient("Replay patient");
+        org.mockito.Mockito.doThrow(new IllegalStateException("simulated termination before mark"))
+                .doCallRealMethod().when(outbox).markPublished(org.mockito.ArgumentMatchers.any());
+        dispatcher.dispatch();
+        Message first = rabbitTemplate.receive(eventQueue, 5_000);
+        assertThat(first).isNotNull();
+        assertThat(jdbc().queryForObject("SELECT status FROM patient_event_outbox", String.class)).isEqualTo("PENDING");
+        restartedWorker(8).dispatch();
+        Message replay = rabbitTemplate.receive(eventQueue, 5_000);
+        assertThat(replay).isNotNull();
+        assertThat(replay.getBody()).isEqualTo(first.getBody());
+        assertThat(replay.getMessageProperties().getMessageId()).isEqualTo(first.getMessageProperties().getMessageId());
+        assertThat(replay.getMessageProperties().getCorrelationId()).isEqualTo(first.getMessageProperties().getCorrelationId());
+        assertThat(jdbc().queryForObject("SELECT status FROM patient_event_outbox", String.class)).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    void outboxPersistenceFailureRollsBackPatientCreateAndUpdate() {
+        var existing = newPatient("Before rollback");
+        jdbc().update("DELETE FROM patient_event_outbox");
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataAccessResourceFailureException("outbox storage failure")).when(outbox).append(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+        long before = patientRepository.count();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> newPatient("Must roll back"))
+                .isInstanceOf(org.springframework.dao.DataAccessResourceFailureException.class);
+        assertThat(patientRepository.count()).isEqualTo(before);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> updatePatient.update(existing.maBenhNhan(), correction(existing, "Must roll back")))
+                .isInstanceOf(org.springframework.dao.DataAccessResourceFailureException.class);
+        assertThat(patientRepository.findById(existing.maBenhNhan()).orElseThrow().getFullName()).isEqualTo("Before rollback");
+        assertThat(jdbc().queryForObject("SELECT count(*) FROM patient_event_outbox", Integer.class)).isZero();
+    }
+
+    @Test
+    void mandatoryReturnQuarantinesAfterBoundedRetriesAndRetainsPayload() {
+        // Use an unbound routing key: broker ack alone must not mark success.
+        newPatient("Unroutable patient");
+        jdbc().update("UPDATE patient_event_outbox SET routing_key='patient.audit.unroutable'");
+        String payload = jdbc().queryForObject("SELECT payload FROM patient_event_outbox", String.class);
+        var worker = restartedWorker(2);
+        worker.dispatch();
+        assertThat(jdbc().queryForObject("SELECT status FROM patient_event_outbox", String.class)).isEqualTo("PENDING");
+        jdbc().update("UPDATE patient_event_outbox SET next_attempt_at=CURRENT_TIMESTAMP");
+        worker.dispatch();
+        assertThat(jdbc().queryForObject("SELECT status FROM patient_event_outbox", String.class)).isEqualTo("QUARANTINED");
+        assertThat(jdbc().queryForObject("SELECT attempts FROM patient_event_outbox", Integer.class)).isEqualTo(2);
+        assertThat(jdbc().queryForObject("SELECT payload FROM patient_event_outbox", String.class)).isEqualTo(payload);
+        worker.dispatch();
+        assertThat(jdbc().queryForObject("SELECT attempts FROM patient_event_outbox", Integer.class)).isEqualTo(2);
+    }
 
     private String eventQueue;
 
@@ -201,6 +335,7 @@ class PatientServiceIntegrationTest {
                     assertThat(result.patientId()).isEqualTo(missingId);
                 });
 
+        dispatcher.dispatch();
         Message message = rabbitTemplate.receive(eventQueue, 5_000);
         assertThat(message).as("patient.created message").isNotNull();
         Map<?, ?> event = objectMapper.readValue(message.getBody(), Map.class);

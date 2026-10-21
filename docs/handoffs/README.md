@@ -9,6 +9,12 @@ Hoàng Anh. Race HA-AUDIT-03 đã có PostgreSQL proof, không còn chỉ là ng
 - [Core owner handoff, 3 lỗi và tiêu chí nghiệm thu](HANDOFF-HA-BACKEND-AUDIT-2026-10-20.md).
 - [Evidence và trạng thái kiểm thử lượt này](../acceptance/backend-audit-2026-10-20/README.md).
 
+Cập nhật owner 21/10: ba lỗi Core đã có implementation trên `codex/core-audit-reliability`;
+full Core local **205 tests xanh, không skip**, gồm regression PostgreSQL/RabbitMQ.
+[Quy định chức danh/trưởng khoa và outbox](../../backend/core-service/docs.md).
+Handoff còn mở để Vinh nghiệm thu Gateway/Notification/packaged trên commit cuối,
+đặc biệt consumer dedupe khi replay welcome event.
+
 Các số test lịch sử bên dưới không thay kết quả trên revision mới. Không kết luận hết lỗi chỉ
 từ suite mặc định hoặc đóng các packaged profile chưa chạy.
 

@@ -153,8 +153,7 @@ public class ApplicationConfig {
 
         @Bean
         public UpdateStaffUseCase updateStaffUseCase(
-                        StaffRepository staffRepository) {
-                return new UpdateStaffService(
-                                staffRepository);
+                        StaffRepository staffRepository, DepartmentRepository departmentRepository) {
+                return new UpdateStaffService(staffRepository, departmentRepository);
         }
 }

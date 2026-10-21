@@ -39,7 +39,7 @@ class CreateStaffServiceTest {
         Department department = Department.create(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
         department.deactivate(false);
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
 
         CreateStaffService service = new CreateStaffService(
                 staffRepository, departmentRepository, eventPublisher);
@@ -54,7 +54,7 @@ class CreateStaffServiceTest {
         UUID departmentId = UUID.randomUUID();
         Department department = Department.create(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL, "Building A");
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.save(any(Staff.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

@@ -71,6 +71,23 @@ class StaffControllerContractTest {
     private UpdateStaffUseCase updateStaffUseCase;
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void changingDepartmentHeadTitleReturnsExistingBusinessErrorContract() throws Exception {
+        UUID staffId = UUID.randomUUID();
+        when(updateStaffUseCase.execute(staffId, "Audit Nurse",
+                com.mediflow.organization.domain.model.JobTitle.NURSE, null, null, null, null))
+                .thenThrow(new com.mediflow.organization.domain.exception.InvalidDepartmentHeadException(
+                        "Remove or reassign the department head before changing their professional title"));
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(BASE_PATH + "/{id}", staffId)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Audit Nurse\",\"jobTitle\":\"NURSE\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("DEPARTMENT_HEAD_INVALID"))
+                .andExpect(header().exists(JwtClaims.HEADER_CORRELATION_ID));
+    }
+
+    @Test
     @WithMockUser(authorities = "ROLE_SYSTEM_SERVICE")
     void lookup_eligibleDoctor_returnsEnvelopeAndDepartment() throws Exception {
         UUID staffId = UUID.randomUUID();

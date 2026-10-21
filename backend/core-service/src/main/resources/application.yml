@@ -30,6 +30,11 @@ mediflow:
       driver-class-name: org.postgresql.Driver
   jwt:
     secret: ${MEDIFLOW_JWT_SECRET}
+  patient:
+    outbox:
+      scheduling-enabled: ${MEDIFLOW_PATIENT_OUTBOX_SCHEDULING_ENABLED:true}
+      delay-ms: ${MEDIFLOW_PATIENT_OUTBOX_DELAY_MS:5000}
+      maximum-attempts: ${MEDIFLOW_PATIENT_OUTBOX_MAXIMUM_ATTEMPTS:8}
   organization:
     surgery-authority:
       outbox-enabled: ${MEDIFLOW_ORGANIZATION_SURGERY_AUTHORITY_OUTBOX_ENABLED:false}

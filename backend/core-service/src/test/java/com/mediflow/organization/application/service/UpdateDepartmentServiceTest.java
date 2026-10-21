@@ -49,7 +49,7 @@ class UpdateDepartmentServiceTest {
         UUID departmentId = UUID.randomUUID();
         Department department = department(
                 departmentId, "Old Name", "OLD", DepartmentType.CLINICAL);
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -66,7 +66,7 @@ class UpdateDepartmentServiceTest {
     @Test
     void execute_unknownDepartment_throwsNotFoundException() {
         UUID departmentId = UUID.randomUUID();
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.empty());
 
         assertThrows(DepartmentNotFoundException.class, () -> service.execute(
                 departmentId, "New Name", DepartmentType.CLINICAL, "Building B", null, null));
@@ -75,7 +75,7 @@ class UpdateDepartmentServiceTest {
     @Test
     void execute_blankName_throwsInvalidDepartmentException() {
         UUID departmentId = UUID.randomUUID();
-        when(departmentRepository.findById(departmentId))
+        when(departmentRepository.findByIdForUpdate(departmentId))
                 .thenReturn(Optional.of(department(departmentId, "Old Name", "OLD",
                         DepartmentType.CLINICAL)));
 
@@ -92,7 +92,7 @@ class UpdateDepartmentServiceTest {
         Staff doctor = Staff.reconstitute(
                 staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
                 "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -113,7 +113,7 @@ class UpdateDepartmentServiceTest {
                 staffId, "Dr. One", departmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
                 "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
         department.changeHead(doctor);
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -134,7 +134,7 @@ class UpdateDepartmentServiceTest {
         Staff doctor = Staff.reconstitute(
                 staffId, "Dr. One", otherDepartmentId, JobTitle.DOCTOR, "Cardiology", "MED-1",
                 "0901234567", "doctor@example.com", true, Instant.now(), Instant.now());
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.findById(staffId)).thenReturn(Optional.of(doctor));
 
         assertThrows(InvalidDepartmentHeadException.class, () -> service.execute(
@@ -146,7 +146,7 @@ class UpdateDepartmentServiceTest {
         UUID departmentId = UUID.randomUUID();
         Department department = department(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.existsByDepartmentIdAndActiveTrue(departmentId)).thenReturn(true);
 
         assertThrows(DepartmentHasActiveStaffException.class, () -> service.execute(
@@ -159,7 +159,7 @@ class UpdateDepartmentServiceTest {
         UUID departmentId = UUID.randomUUID();
         Department department = department(
                 departmentId, "Clinical", "CLN", DepartmentType.CLINICAL);
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(department));
+        when(departmentRepository.findByIdForUpdate(departmentId)).thenReturn(Optional.of(department));
         when(staffRepository.existsByDepartmentIdAndActiveTrue(departmentId)).thenReturn(false);
         when(departmentRepository.save(any(Department.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
